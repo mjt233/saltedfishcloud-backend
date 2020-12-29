@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咸鱼云资源站（开发中）</title>
+    <script src="/src/js/base.js"></script>
+    <link rel="stylesheet" href="/src/css/base.css">
+    <link rel="stylesheet" href="/src/css/list.css">
+    <link rel="stylesheet" href="/src/css/icon.css">
+    <link rel="stylesheet/less" href="/src/css/xiaotao-ui.less">
+    <script src="/src/dep/js/less.min.js"></script>
+    <script src="/src/dep/js/vue.js"></script>
+    <script src="/src/js/xiaotao-ui.js"></script>
+    <script>
+    </script>
+    <style>
+        #search {
+            display: flex;
+            justify-content: center;
+            width: 60%;
+            margin: 20px auto 0 auto;
+        }
+
+        #search input {
+            padding: 4px;
+            border: 1px solid darkgray;
+            border-radius: 5px 0 0 5px;
+            border-right-width: 0;
+            outline: none;
+            flex-grow: 1;
+        }
+
+        #search button {
+            border: 1px solid darkgray;
+            border-radius: 0 5px 5px 0px;
+            border-left: 1px solid #eee;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="app">
+        <form action="/page/search.html" id="search">
+            <input placeholder="文件搜索 支持空格分割关键词" v-model="key_word" type="text" name="key">
+            <button type="submit">搜索</button>
+        </form>
+        <a href="/public"><button>返回首页</button></a>
+        <p style="color: rgb(53, 53, 53);margin: 5px;font-size: 12px;">检索耗时：{{(res.time).toFixed(3)}}秒
+            结果总数：{{res.total}} 索引缓存日期：{{formatDate(new Date(res.last_make_cache*1000))}}</p>
+        <span style="color: rgb(100,100,100);font-size: 12px;">注：索引创建有延迟，新加入文件短期内可能无法被搜索到</span>
+        <ul id="list">
+            <li class="item head" style="background-image:none">
+                <div class="content" style="flex-grow: 2;">文件名</div>
+                <span class="size" style="flex-grow: 1;">大小</span>
+                <span style="flex-grow: 3;">位置</span>
+            </li>
+            <li class="item" :class="item.size>=0?'file ' + 'type-' + getSuffix(item.name):'dir'"
+                v-for="item in res.data" :key="item.id">
+                <a target="_blank" style="flex-grow: 2;" class="content" :href="'/public' + item['path']">
+                    {{item['name']}} </a>
+                <span class="size" style="flex-grow: 1;">{{item['size']==-1? '-' : getSizeString(item['size'])}}</span>
+                <span style="flex-grow: 3;word-break: break-all"><a style="color: blue;" target="_blank"
+                        :href="'/public' + removeFileName(item['path'])">{{removeFileName(item['path'])}}</a></span>
+            </li>
+        </ul>
+        <xt-pagination @page-change='pagechange' :maxpage="res.last_page"></xt-pagination>
+    </div>
+    <script>
+        /**
+         *
+         * @param {string} type 请求类型
+         * @param {string} url 请求URL
+         * @param {object} opation 选项参数
+         * @return {XMLHttpRequest}
+         */
+        function majax(type, url, opation) {
+            if (opation == undefined) {
+                opation = {}
+            }
+            var ajax;
+            // 创建ajax对象
+            if (window.XMLHttpRequest) {
+                ajax = new XMLHttpRequest()
+            } else {
+                ajax = new ActiveXObject("Microsoft.XMLHTTP")
+            }
+
+            // 添加事件监听 - 请求完成
+            ajax.addEventListener('load', () => {
+                var ct = ajax.getResponseHeader('Content-Type')
+                ajax.data = ajax.response
+                // 自动解析json
+                if (ct != null && ct.indexOf('json') != -1) {
+                    try {
+                        ajax.data = JSON.parse(ajax.data)
+                    } catch (error) { }
+                }
+                opation.success ? opation.success(ajax) : ''
+            })
+            // 添加事件监听 - 请求出错
+            ajax.onerror = () => {
+                opation.error ? opation.error(ajax) : opation.success ? opation.success(ajax) : null
+            }
+            // 添加事件监听 - 发送请求过程
+            ajax.upload.addEventListener("progress", opation.prog ? opation.prog : null)
+
+
+            // 添加请求数据 - GET
+            if (type == 'GET' || type == 'get') {
+                // GET类型的请求自动把data拼接到URL上
+                // 若URL中已经有GET参数了，就直接在后面加&否则就加?
+                if (url.indexOf('?') == -1) { url += '?' } else { url += '&' }
+
+                // 将数据对象序列化为QueryString拼接到URL中
+                for (const key in opation.data) {
+                    const value = opation.data[key]
+                    url += key + '=' + value + '&'
+                }
+                if (opation.data) { url = url.substring(0, url.length - 1) }
+            }
+
+            ajax.open(type, url, true)
+
+            // 添加header
+            if (opation.header) {
+                for (const key in opation.header) {
+                    ajax.setRequestHeader(key, opation.header[key])
+                }
+            }
+            ajax.setRequestHeader("X-Requested-With", "XMLHttpRequest")
+
+
+            // 添加请求数据 - POST
+            if (type == 'POST' || type == 'post') {
+                if (opation.data && opation.data.constructor.name == "FormData") {
+                    ajax.send(opation.data)
+                    return
+                }
+                var fd = new FormData
+                for (const key in opation.data) {
+                    fd.append(key, opation.data[key])
+                }
+                ajax.send(fd)
+            } else {
+                ajax.send()
+            }
+        }
+
+        app = new Vue({
+            el: "#app",
+            data: {
+                res: {
+                    time: 0
+                },
+                key_word: ''
+            }, created() {
+                this.key_word = decodeURI(getQueryString('key').replace(/\+/g, ' '));
+                if (this.key_word != '') {
+                    this.loadData(1)
+                } else {
+                    this.alert("标题", "请输入关键词")
+                }
+            }, methods: {
+                pagechange(page) {
+                    this.loadData(page)
+                },
+                loadData(page) {
+                    $ajax('get', '/api/Resource/search', {
+                        data: {
+                            key: this.key_word, page: page
+                        },
+                        header: {
+                            "a": "b",
+                            'b': 'c'
+                        },
+                        success: e => {
+                            if (e.status == 422) {
+                                $alert("错误 - 422", "参数不被服务器接受")
+                                return
+                            }
+                            if (e.status == 429) {
+                                $alert("错误 - 429", "慢...慢点，要顶不住了QAQ 我要歇歇才能动")
+                                return
+                            }
+                            if (e.status != 200) {
+                                $alert("错误 - " + e.status, "其他错误：" + e.data.msg)
+                                return
+                            }
+                            this.res = e.data.data
+                        }
+                    })
+                },
+                removeFileName(path) {
+                    var arr = path.split('/')
+                    arr.pop()
+                    if (arr.length == 1) {
+                        return '/'
+                    } else {
+                        return arr.join('/');
+                    }
+                }
+            },
+        })
+    </script>
+</body>
+
+</html>

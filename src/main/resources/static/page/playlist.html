@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>播放器</title>
+    <link rel="stylesheet/less" href="/src/css/xiaotao-ui.less">
+    <script src="/src/dep/js/vue.js"></script>
+    <script src="/src/js/xiaotao-ui.js"></script>
+</head>
+<body>
+    <script>
+        majax("post", '/api/Media/getPlaylist',{
+            success:(e)=>{
+                console.log(e.data);
+            }
+        })
+    </script>
+</body>
+</html>

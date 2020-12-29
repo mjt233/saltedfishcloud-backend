@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'咸鱼云文件下载 - '+${file.getName()}"></title>
+    <link rel="stylesheet" href="/src/css/base.css">
+    <link rel="stylesheet" href="/src/css/icon.css">
+    <style>
+    a{
+        color: #007bFF;
+        text-decoration: none;
+    }
+    #app{
+        width: 800px;
+        padding:0 110px;
+        margin: 0 auto;
+    }
+    .icon{
+        background-repeat: no-repeat;
+        background-size: 64px 64px;
+    }
+    .fileinfo{
+        color: darkslategray;
+        margin-top: 30px;
+    }
+    </style>
+</head>
+<body>
+    <div id="app" class="app">
+        <div class="fileinfo">
+            <div style="width: 64px; height:64px" th:class="'icon file type-'+${file.getSuffix()}"></div>
+            <p th:text="'文件：'+${file.getName()}"></p>
+            <p th:text="'大小：'+${file.getFormatSize()}"></p>
+        </div>
+        <p style="color:rgb(53,53,53);font-size:12px">tips:部分资源点击下载可在线预览（如pdf,mp4,mp3,jpg,png,gif等</p>
+            <p>
+                <a th:href="'/pubdown'+${file.getURLLink()}"><button>点击下载</button></a>
+            </p>
+        <p><a href="../">返回</a></p>
+    </div>
+</body>
+</html>

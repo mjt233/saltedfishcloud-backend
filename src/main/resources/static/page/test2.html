@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咸鱼云资源站（开发中）</title>
+    <script src="/src/js/base.js"></script>
+    <link rel="stylesheet" href="/src/css/base.css">
+    <link rel="stylesheet" href="/src/css/list.css">
+    <link rel="stylesheet" href="/src/css/icon.css">
+    <link rel="stylesheet/less" href="/src/css/xiaotao-ui.less">
+    <script src="/src/dep/js/less.min.js"></script>
+    <script src="/src/dep/js/ajax.js"></script>
+    <script src="/src/dep/js/vue.js"></script>
+    <script src="/src/js/xiaotao-ui.js"></script>
+    <script>
+    </script>
+    <style>
+        #search{
+            display: flex;
+            justify-content: center;
+            width: 60%;
+            margin: 20px auto 0 auto;
+        }
+        #search input{
+            padding: 4px;
+            border: 1px solid darkgray;
+            border-radius: 5px 0 0 5px;
+            border-right-width: 0;
+            outline: none;
+            flex-grow: 1;
+        }
+        #search button{
+            border: 1px solid darkgray;
+            border-radius: 0 5px 5px 0px;
+            border-left: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <xt-input placeholder='test' v-model="inputa"></xt-input>
+        <xt-input placeholder='test' v-model="inputa"></xt-input>
+    </div>
+    <script>
+        app = new Vue({
+            el:"#app",
+            data:{
+                inputa:"asdasd"
+            }
+        })
+    </script>
+</body>
+</html>

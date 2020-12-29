@@ -1,0 +1,22 @@
+server:
+  port: 8087
+  servlet:
+    encoding:
+      charset: utf-8
+      enabled: true
+      force: true
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://127.0.0.1/disk?useSSL=false&serverTimezone=UTC
+      username: user
+      password: password
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+  servlet:
+    multipart:
+      max-file-size: 8192MB
+      max-request-size: 8192MB

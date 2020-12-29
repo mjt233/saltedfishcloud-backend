@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="/src/dep/js/vue.js"></script>
+    <link rel="stylesheet/less" href="/src/css/xiaotao-ui.less">
+    <script src="/src/js/xiaotao-ui.js"></script>
+    <script src="/src/dep/js/less.min.js"></script>
+    <title>xiaotaoUI预览</title>
+    <style>
+        main{
+            display: flex;
+            align-items: stretch;
+            flex-wrap: wrap;
+        }
+        main>*{
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <xt-card title="ui展示 (我是xt-card)" style="width: 98%;">
+            <main>
+                <xt-card title="输入框xt-input">
+                    <p>输入框 xt-input</p>
+                    <xt-input style="width: 100%;" v-model="input1" placeholder="我是输入框" autocomplete="off" name="test"></xt-input>
+                    <xt-input style="width: 100%;" v-model="input2" placeholder="我是密码输入框" type="password" autocomplete="off" name="test2"></xt-input>
+                </xt-card>
+                <xt-card title="进度条xt-prog">
+                    <p>进度条 xt-prog </p>
+                    <xt-prog total=100 :value="progValue"></xt-prog>
+                    <p>多段自定义进度条</p>
+                    <xt-prog total=100 :data="progData"></xt-prog>
+                    <xt-btn @click="fun1">Click me</xt-btn>
+                </xt-card>
+                <xt-card title="按钮xt-btn">
+                    <xt-btn>默认按钮</xt-btn>
+                    <xt-btn type="primary">主要按钮</xt-btn>
+                    <xt-btn type="success">主要按钮</xt-btn>
+                    <xt-btn type="warning">警告按钮</xt-btn>
+                    <xt-btn type="danger">危险按钮</xt-btn>
+                    <xt-card title="特殊按钮xt-menu-switch" style="width: 98%;">
+                        <xt-menu-switch @click="menuswitch"></xt-menu-switch>
+                        <label>菜单开关按钮{{status ? '已被打开' : '未打开'}}</label>
+                    </xt-card>
+                </xt-card>
+                <xt-card title="弹窗alert">
+                    <xt-btn type="primary" @click="alert('普通弹窗','我是内容本体')">普通弹窗</xt-btn>
+                    <xt-btn type="primary" @click="confirmdemo">确认弹窗</xt-btn>
+                </xt-card>
+                <xt-card title="分页xt-pagination(未完成)">
+                    <xt-pagination @page-change="pagechange" :maxpage="maxpage" title="分页（未完成）"></xt-pagination>
+                </xt-card>
+            </main>
+        </xt-card>
+    </div>
+    <script>
+        app = new Vue({
+            el:"#app",
+            data:{
+                input1:"",
+                input2:"",
+                maxpage:4,
+                progValue:50,
+                status:false,
+                progData:[
+                    {
+                        value:10,
+                        title:'测试'
+                    },{
+                        value:35,
+                        title:'黄教练和黎教练太厉害啦啦啦啦啦啦啦啦'
+                    },{
+                        value:5,
+                        title:'嘤嘤嘤'
+                    },{
+                        value:10,
+                        title:'啦啦啦'
+                    },{
+                        value:30,
+                        title:'我是基佬紫',
+                        color:'#8E24AA'
+                    },{
+                        value:8
+                    }
+                ]
+            },methods: {
+                fun1() {
+                    // this.progData[0].value = (Math.random()*1000)%10
+                    this.progData[1].value = (Math.random()*1000)%35
+                    this.progValue = (Math.random()*1000)%50
+                    // this.progData[2].value = (Math.random()*1000)%5
+                    // this.progData[3].value = (Math.random()*1000)%10
+                    // this.progData[4].value = (Math.random()*1000)%7
+                },confirmdemo(){
+                    this.confirm('确认框','确定要发射核弹？',{
+                        callback:e=>{
+                            if(e)
+                                this.alert('普通弹窗','世界核平了')
+                            else
+                                this.alert('普通弹窗','世界和平了')
+                            }
+                    })
+                },pagechange(page){
+                    this.alert("提示","切换到了第"+page+"页")
+                },menuswitch(status){
+                    this.status = status
+                }
+            }
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <link rel="stylesheet" href="/src/dep/element-ui/2.13.2/index.css"> -->
+    <link rel="stylesheet/less" href="/src/css/xiaotao-ui.less">
+    <link rel="stylesheet/less" href="/src/css/xt-player.less">
+    <link rel="stylesheet" href="/src/css/base.css">
+    <script src="/src/dep/js/vue.js"></script>
+    <!-- <script src="/src/dep/element-ui/2.13.2/index.js"></script> -->
+    <script src="/src/js/xiaotao-ui.js"></script>
+    <script src="/src/dep/js/less.min.js"></script>
+    <script src="/src/js/base.js"></script>
+    <script src="/src/js/xt-player.js"></script>
+    <title>咸鱼云音乐</title>
+</head>
+<body>
+    <header id="header">
+        <button class="menu-switch" :class="{active:menu_active}" @click="menuswitch">
+            <span></span>
+        </button>
+        <img src="/favicon.ico" width="24px" height="24px">
+        <span class='title'>咸鱼云音乐</span>
+        <span class="search-frame">
+            <input @keyup.enter="search" v-model="search_key" placeholder="搜索乐库">
+            <button @click="search"><img width="16px" height="16px" src="/src/imgs/icon/search.png" alt=""></button>
+        </span>
+        <span class="user-info">{{user_info.user}}</span>
+    </header>
+    <main id="app">
+        <div class="menu-bar" :class="{active:menu_active}">
+            <tp-menu title="做雷锋">
+                <ul class="tp-playlist">
+                    <li @click="window_name = 'upload'" class="list-icon-item" style="background-image: url(/src/imgs/icon/upload.png);" :class="{selected:window_name=='upload'}">上传音乐</li>
+                </ul>
+            </tp-menu>
+            <tp-menu title="公共歌单">
+                <ul class="tp-playlist">
+                    <li v-for="list in publiclist" @click="selectList(list.id)" :class="{selected:selected_list_id == list.id && window_name == 'playlist'}" class="list-icon-item" style="background-image: url(/src/imgs/icon/musiclist.png);">{{list.name}}</li>
+                </ul>
+            </tp-menu>
+            <tp-menu title="我的歌单">
+                <ul class="tp-playlist">
+                    <li v-for="list in playlist" @click="selectList(list.id)" :class="{selected:selected_list_id == list.id && window_name == 'playlist'}" class="list-icon-item" style="background-image: url(/src/imgs/icon/musiclist.png);">{{list.name}}</li>
+                </ul>
+            </tp-menu>
+            <div class="playinfo">
+                <div>
+                    <img style="margin-left: 10px;" src="/src/imgs/icon/audio.png" width="36px" height="36px" alt="">
+                </div>
+                <div style="height: 90%;color: rgb(90, 90, 90);margin-left: 10px;">
+                    <span>{{player.playing_info.name}}</span>
+                </div>
+            </div>
+        </div>
+        <div class="tp-content">
+            <!-- 歌单显示 -->
+            <div class="tp-content-playlist" v-show="window_name == 'playlist'">
+                <div class="playlist-info">
+                    <div class="cover-frame">
+                        <div :style="{backgroundImage:'url('+playlist_content.list_info.img_url+')'}" class="cover"></div>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <p class="list-name">{{playlist_content.list_info.name}}</p>
+                        <p>创建用户：{{playlist_content.list_info.creater}}</p>
+                        <p>创建时间：{{formatDate(new Date(playlist_content.list_info.created_at))}}</p>
+                        <p>更新时间：{{formatDate(new Date(playlist_content.list_info.updated_at))}}</p>
+                        <xt-btn type='success' @click="play(0)">播放歌单</xt-btn>
+                        <xt-btn @click="alert('嘤嘤嘤','未开发')">分享</xt-btn>
+                    </div>
+                </div>
+                <div>
+                    <div class="tp-music-list">
+                        <div class="row head">
+                            <span class="num"></span>
+                            <span style="width: 60px;">操作</span>
+                            <span>歌曲</span>
+                        </div>
+                        <div class="row" v-for="(music,key) in playlist_content.list_content">
+                            <span class="num">{{player.playing == key && playlist_content.list_info.id == player.list_id ? "播放中":key+1}}</span>
+                            <span style="width: 60px;display: inline-flex;align-items: center;">
+                                <span @click="play(key)" class="play-btn icon"></span>
+                                <span @click="removeFromList(music)" class="icon" style="cursor: pointer;;background-image: url(/src/imgs/icon/delete_gray.png);"></span>
+                            </span>
+                            <span class="name">{{music.name}}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 上传窗口 -->
+            <div class="tp-content-upload" v-show="window_name == 'upload'">
+                <h1 id="upload" style="width: 300px;height: 300px;background-color: rebeccapurple;">上传窗口（未开发）</h1>
+            </div>
+            <!-- 搜索窗口 -->
+            <div id="search" class="tp-content-upload" v-show="window_name == 'search'">
+                <p style="font-size: 12px;color: rgb(90, 90, 90);">搜索：{{search_result.key}} 结果条数：{{search_result.total}} 检索耗时：{{search_result.time | searchTimeFixed}}s</p>
+                <div class="tp-music-list">
+                    <div class="row head">
+                        <span class="num"></span>
+                        <span style="width: 60px;">操作</span>
+                        <span>歌曲</span>
+                    </div>
+                    <div class="row" v-for="(music,key) in search_result.data">
+                        <span class="num">{{key+1}}</span>
+                        <span style="width: 60px;display: inline-flex;align-items: center;">
+                            <span @click="playone(music)" class="play-btn icon"></span>
+                        </span>
+                        <span class="name">{{music.name}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 播放器控制 -->
+        <div class="controller">
+            <!-- 播放与切歌 -->
+            <div class="ctrl-btn-group">
+                <div class="last-song" @click="playlast"></div>
+                <div class="play" @click="playswitch" :class="{pause:player.stat=='playing'}"></div>
+                <div class="next-song" @click="playnext"></div>
+            </div>
+            <!-- 进度条 -->
+            <div class="play-prog-bar">
+                <span>{{player.current | LenFmt}}</span>
+                <div ref="prog" class="play-prog" @mousedown="progseek">
+                    <div class="play-prog-track"  >
+                        <div class="play-prog-current" :style="{width:player.prog}">
+                        </div>
+                    </div>
+                    <button class="play-prog-btn" :style="{left:player.prog}"></button>
+                </div>
+                <span>{{player.duration | LenFmt}}</span>
+            </div>
+        </div>
+        <audio id="audio" ref="audio"></audio>
+    </main>
+    <script>
+        app = new Vue({
+            el:"#app",
+            data:{
+                search_result:{},
+                user_info:{},
+                selected_list_id:0,
+                playlist:[],
+                window_name:"",
+                playlist_content:{
+                    list_info:{img_url:"https://disk.xiaotao2333.top:344/download/%E5%9B%BE%E7%89%87%E8%B5%84%E6%BA%90/%E5%98%A4%E5%98%A4%E5%98%A4.gif"},
+                    list_content:[]
+                },
+                playstat:'pause',
+                publiclist:[],
+                player:{
+                    stat:'pause',
+                    prog:'%',
+                    current:0,
+                    duration:0,
+                    audio:null,
+                    playing_info:{
+                        name:"等待播放中..."
+                    }
+                },
+                menu_active:false
+            },mounted(){
+                this.getPubliclist()
+                this.getMyList()
+                this.player.audio = this.$refs.audio
+                this.player.audio.addEventListener("timeupdate", e=>{
+                    this.player.prog = this.player.audio.currentTime/this.player.audio.duration*100 + '%'
+                    if ( !isNaN(this.player.audio.duration) ){
+                        this.player.duration = this.player.audio.duration
+                    }
+                    this.player.current = this.player.audio.currentTime
+                })
+                this.player.audio.addEventListener("ended", ()=>{
+                    this.play(++this.player.playing)
+                })
+            },filters:{
+                LenFmt(timestamp){
+                    var min = parseInt(timestamp/60)
+                    var sec = parseInt(timestamp%60)
+                    if  ( sec < 10 ){
+                        sec = '0' + sec
+                    }
+                    return min + ':' + sec
+                },searchTimeFixed(input){
+                    if(input == undefined){
+                        return 0
+                    }else{
+                        return input.toFixed(3)
+                    }
+                }
+            },
+            methods: {
+                getPubliclist(){
+                    aoej.load()
+                    majax("post", '/api/Media/getPubliclist',{
+                        success:e=>{
+                            aoej.finish()
+                            this.publiclist = e.data.data
+                            this.selectList(this.publiclist[0].id)
+                        }
+                    })
+                },
+                getMyList() {
+                    aoej.load()
+                    majax('post', '/api/Media/getMyList',{
+                        success:e=>{
+                            aoej.finish()
+                            if ( e.data.status == 1){
+                                this.playlist = e.data.data
+                            }else{
+                                if ( e.status == 403 && e.data.status == -1 ){
+                                    this.confirm("提示", "未登录无法获取个人歌单，是否前往登录？",{
+                                        callback:(e)=>{
+                                            if ( e ){
+                                                location.href = "/page/login.html?from=/page/musicPlayer.html"
+                                            }
+                                        }
+                                    })
+                                }else{
+                                    this.alert("错误", "响应码:" + e.status+"<br>状态码："+ e.data.status+ "<br>服务器消息："+ e.data.msg)
+                                }
+                            }
+                        }
+                    })
+                },selectList(list_id){
+                    this.selected_list_id = list_id
+                    this.window_name = "playlist"
+                    this.loadList(list_id)
+                },loadList(list_id){
+                    majax('post', '/api/Media/getListContent',{
+                        data:{
+                            list_id:list_id
+                        },
+                        success:e=>{
+                            if ( e.data.data.list_info.img_url == null ){
+                                e.data.data.list_info.img_url = "https://disk.xiaotao2333.top:344/download/%E5%9B%BE%E7%89%87%E8%B5%84%E6%BA%90/%E5%98%A4%E5%98%A4%E5%98%A4.gif"
+                            }
+                            this.playlist_content = e.data.data
+                        }
+                    })
+                },playswitch(){
+                    if ( this.player.stat == 'playing' ){
+                        this.player.stat = 'pause'
+                        this.player.audio.pause()
+                    }else{
+                        this.player.stat = 'playing'
+                        this.player.audio.play()
+                    }
+                },play(key){
+                    this.player.list = JSON.parse(JSON.stringify(this.playlist_content.list_content))
+                    this.player.playing = key - 1
+                    this.player.list_id = this.playlist_content.list_info.id
+                    this.playnext()
+                },progseek(e){
+                    rate = e.layerX/this.$refs.prog.clientWidth;
+                    if ( rate < 0 ){
+                        rate = 0
+                    }
+                    this.player.audio.currentTime = rate*this.player.audio.duration
+                },playone(music_info){
+                    this.player.stat = 'playing'
+                    this.player.audio.src = '/download/' + encodeURI(music_info.path)
+                    this.player.playing_info = music_info
+                    this.player.audio.play()
+                    document.title = music_info.name + " - 咸鱼云音乐"
+                },
+                playnext(){
+                    this.player.playing++
+                    if ( (this.player.playing) >= this.player.list.length){
+                        this.player.playing = 0
+                    }else if( this.player.playing < 0 ){
+                        this.player.playing = this.player.list.length - 1
+                    }
+                    this.playone(this.player.list[this.player.playing])
+                },playlast(){
+                    this.player.playing -= 2
+                    this.playnext()
+                },removeFromList(music){
+                    this.confirm("删除确认","你确定要从歌单中移除"+ music.name+"吗？",{
+                        callback:e=>{
+                            if(e){
+                                aoej.load()
+                                majax('post','/api/Media/removeFromList',{
+                                    data:{
+                                        list_id:this.playlist_content.list_info.id,
+                                        num:music.num
+                                    },success:e=>{
+                                        aoej.finish()
+                                        if(e.status == 200 && e.data.status == 1){
+                                            this.loadList(this.playlist_content.list_info.id)
+                                            this.alert("提示","删除成功")
+                                        }else{
+                                            this.alert("提示","删除失败<br>HTTP："+e.status+"<br>status："+e.data.status+"<br>msg："+e.data.msg)
+                                        }
+                                    }
+                                })
+                            }
+                        }
+                    })
+                }
+            }
+        })
+    header = new Vue({
+        el:"header",
+        data:{
+            user_info:{
+                user:"未登录"
+            },
+            search_key:"",
+            menu_active:false
+        },mounted(){
+            majax('post','/api/User/getInfo',{
+                success:e=>{
+                    if (e.data.status != 1){
+                        this.user_info.user = "未登录"
+                    }else{
+                        this.user_info = e.data.data
+                        app._data.user_info = e.data.data
+                    }
+                }
+            })
+        },methods: {
+            search() {
+                if(this.search_key == ''){
+                    this.alert("提示","未输入关键词")
+                    return
+                }
+                majax('post','/api/Resource/search',{
+                    data:{
+                        pre_page_max:100,
+                        path:'/影视作品/音乐仓库',
+                        key:this.search_key
+                    },success:e=>{
+                        app._data.window_name = "search"
+                        app._data.search_result = e.data.data
+                    }
+                })
+            },menuswitch(){
+                this.menu_active = !this.menu_active
+                app._data.menu_active = this.menu_active
+            }
+        }
+    })
+    </script>
+</body>
+</html>

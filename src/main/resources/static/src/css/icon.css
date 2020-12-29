@@ -1,0 +1,29 @@
+.dir{ background-image: url("/src/imgs/icon/dir.png"); }
+.file{ background-image: url("/src/imgs/icon/file.png"); }
+/* 压缩文件 */
+.type-zip,.type-rar,.type-gz,.type-7z,.type-tar,.type-xz{ background-image: url("/src/imgs/icon/zipped.png"); }
+/* 视频 */
+.type-mp4,.type-mkv,.type-flv{ background-image: url("/src/imgs/icon/video.png"); }
+/* 音频 */
+.type-mp3,.type-wav,.type-m4a,.type-flac{ background-image: url("/src/imgs/icon/audio.png"); }
+/* 图片 */
+.type-jpeg,.type-jpg,.type-gif,.type-png,.type-bmp,.type-icon{ background-image: url("/src/imgs/icon/picture.png"); }
+/* Office */
+.type-ppt,.type-pptx{ background-image: url("/src/imgs/icon/ppt.png"); }
+.type-doc,.type-docx{ background-image: url("/src/imgs/icon/doc.png"); }
+.type-xls,.type-xlsx{ background-image: url("/src/imgs/icon/excel.png"); }
+/* 文本 */
+.type-txt{background-image: url("/src/imgs/icon/txt.png");}
+/* EXE */
+.type-exe{ background-image: url("/src/imgs/icon/exe.png"); }
+/* 镜像类 */
+    /* ISO */
+.type-iso{ background-image: url("/src/imgs/icon/iso.png"); }
+    /* 其他 */
+.type-image,.type-dmg{ background-image: url("/src/imgs/icon/img.png"); }
+/* 代码类文件 */
+    /* html */
+.type-html,.type.htm { background-image: url("/src/imgs/icon/code.png"); }
+    /* 配置 */
+.type-ini,.type-conf,.type-cnf{ background-image: url("/src/imgs/icon/config.png"); }
+.type-apk{ background-image: url("/src/imgs/icon/android.png"); }

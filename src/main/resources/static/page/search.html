@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咸鱼云资源站（开发中）</title>
+    <script src="/src/js/base.js"></script>
+    <link rel="stylesheet" href="/src/css/base.css">
+    <link rel="stylesheet" href="/src/css/list.css">
+    <link rel="stylesheet" href="/src/css/icon.css">
+    <link rel="stylesheet/less" href="/src/css/xiaotao-ui.less">
+    <script src="/src/dep/js/less.min.js"></script>
+    <script src="/src/dep/js/ajax.js"></script>
+    <script src="/src/dep/js/vue.js"></script>
+    <script src="/src/js/xiaotao-ui.js"></script>
+    <script>
+    </script>
+    <style>
+        #search{
+            display: flex;
+            justify-content: center;
+            width: 60%;
+            margin: 20px auto 0 auto;
+        }
+        #search input{
+            padding: 4px;
+            border: 1px solid darkgray;
+            border-radius: 5px 0 0 5px;
+            border-right-width: 0;
+            outline: none;
+            flex-grow: 1;
+        }
+        #search button{
+            border: 1px solid darkgray;
+            border-radius: 0 5px 5px 0px;
+            border-left: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="app">
+        <form action="/page/search.html" id="search">
+            <input placeholder="文件搜索 支持空格分割关键词"  v-model="key_word" type="text" name="key">
+            <button type="submit">搜索</button>
+        </form>
+        <a href="/public"><button>返回首页</button></a>
+        <p style="color: rgb(53, 53, 53);margin: 5px;font-size: 12px;">检索耗时：{{(res.time).toFixed(3)}}秒 结果总数：{{res.total}} 索引缓存日期：{{formatDate(new Date(res.last_make_cache*1000))}}</p>
+        <span style="color: rgb(100,100,100);font-size: 12px;">注：索引创建有延迟，新加入文件短期内可能无法被搜索到</span>
+        <ul id="list">
+            <li class="item head" style="background-image:none">
+                <div class="content" style="flex-grow: 2;">文件名</div>
+                <span class="size" style="flex-grow: 1;">大小</span>
+                <span style="flex-grow: 3;">位置</span>
+            </li>
+            <li class="item"  :class="item.size>=0?'file ' + 'type-' + getSuffix(item.name):'dir'" v-for="item in res.data" :key="item.id">
+                <a target="_blank" style="flex-grow: 2;" class="content"  :href="'/public' + item['path']" > {{item['name']}} </a>
+                <span class="size" style="flex-grow: 1;">{{item['size']==-1? '-' : getSizeString(item['size'])}}</span>
+                <span style="flex-grow: 3;word-break: break-all"><a style="color: blue;" target="_blank" :href="'/public' + removeFileName(item['path'])">{{removeFileName(item['path'])}}</a></span>
+            </li>
+        </ul>
+        <xt-pagination @page-change='pagechange' :maxpage="res.last_page"></xt-pagination>
+    </div>
+    <script>
+        app = new Vue({
+            el:"#app",
+            data:{
+                res:{
+                    time:0
+                },
+                key_word:''
+            },created(){
+                this.key_word = decodeURI(getQueryString('key').replace(/\+/g,' '));
+                this.loadData(1)
+            },methods: {
+                pagechange(page) {
+                    this.loadData(page)
+                },
+                loadData(page){
+                    aoej.load()
+                    $ajax('post','/api/Resource/search',{key:this.key_word,page:page},(e)=>{
+                        aoej.finish()
+                        if(e.status == 422){
+                            $alert("错误 - 422","参数不被服务器接受")
+                            return
+                        }
+                        if(e.status == 429){
+                            $alert("错误 - 429","慢...慢点，要顶不住了QAQ 我要歇歇才能动")
+                            return
+                        }
+                        if(e.status != 200){
+                            $alert("错误 - "+e.status,"其他错误：" + e.data.msg)
+                            return
+                        }
+                        if(e.data.status != 1){
+                            $alert("错误"+e.data.status,"服务器消息：" + e.data.msg)
+                        }
+                        this.res = e.data.data
+                    })
+                },
+                removeFileName(path){
+                    var arr = path.split('/')
+                    arr.pop()
+                    if(arr.length == 1){
+                        return '/'
+                    }else{
+                        return arr.join('/');
+                    }
+                }
+            },
+        })
+    </script>
+</body>
+</html>
