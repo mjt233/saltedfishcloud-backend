@@ -12,21 +12,18 @@ import javax.servlet.http.HttpServletRequest;
 
 /**
  * 删除资源相关控制器
- * @TODO 删除时连同数据库文件信息缓存
+ * @// TODO: 2020/12/30   删除时连同数据库文件信息缓存
  */
 @RestController
 @RequestMapping("/api/delete")
 public class DeleteController {
     @Resource
     FileService fileService;
-    @RequestMapping("/private/**")
+    @RequestMapping("private/**")
     public JsonResult deletePrivate(HttpServletRequest request) {
         String target = URLUtils.getRequestFilePath("/api/delete/private", request);
         String path = DiskConfig.getUserPrivatePath() + "/" + target;
-        if (fileService.deleteFile(path) ) {
-            return JsonResult.getInstance();
-        } else {
-            return JsonResult.getInstance(500, path, "删除失败");
-        }
+        fileService.deleteFile(path);
+        return JsonResult.getInstance();
     }
 }

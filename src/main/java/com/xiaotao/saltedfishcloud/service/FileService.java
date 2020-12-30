@@ -79,7 +79,17 @@ public class FileService {
     }
 
     public List<FileCacheInfo> search(String key) {
+        key = "%" + key.replaceAll("/s+", "%") + "%";
         return fileDao.search(key);
+    }
+
+    /**
+     * 带SQL注入漏洞的文件搜索
+     * @param key 关键字
+     * @return
+     */
+    public List<FileCacheInfo> searchWithSqlInject(String key) {
+        return fileDao.searchWithSqlInject(key);
     }
 
     /**
@@ -92,14 +102,14 @@ public class FileService {
         DirCollection res = new DirCollection();
         Arrays.stream(new File(path).listFiles()).forEach(file -> {
             if (file.isDirectory()) detectedDirs.push(file);
-            else res.addFile(file);
+            res.addFile(file);
         });
         while (!detectedDirs.isEmpty()) {
             File dir = detectedDirs.getLast();
             detectedDirs.removeLast();
             Arrays.stream(new File(dir.getPath()).listFiles()).forEach(file -> {
                 if (file.isDirectory()) detectedDirs.addLast(file);
-                else res.addFile(file);
+                res.addFile(file);
             });
         }
         return res;
@@ -116,7 +126,7 @@ public class FileService {
             FileInfo fileInfo = new FileInfo(file);
             Long size = -1l;
             String md5 = "";
-            if(fileInfo.getType() == fileInfo.TYPE_FILE) {
+            if(fileInfo.getType() == FileInfo.TYPE_FILE) {
                 size = fileInfo.getSize();
                 md5 = fileInfo.computeMd5();
                 finishSize[0] += size;
@@ -152,10 +162,17 @@ public class FileService {
     /**
      * 从网盘中删除一个文件
      * @param localFilePath 本地文件路径
-     * @return 删除的文件数量
+     * @return
      */
-    public boolean deleteFile(String localFilePath) {
+    public void deleteFile(String localFilePath) {
         File file = new File(localFilePath);
-        return file.delete();
+        if (file.isDirectory()) {
+            DirCollection dirCollection = deepScanDir(localFilePath);
+            dirCollection.getDirList().addLast(file);
+            dirCollection.getFileList().forEach(File::delete);
+            dirCollection.getDirList().forEach(File::delete);
+        } else {
+            file.delete();
+        }
     }
 }

@@ -15,14 +15,15 @@ public class DirCollection {
     private Long dirsCount = 0L;
     private Long filesCount = 0L;
     private LinkedList<File> fileList = new LinkedList<>();
-
+    private LinkedList<File> dirList = new LinkedList<>();
     public void addFile(File file) {
         if (file.isFile()) {
             size += file.length();
+            fileList.addLast(file);
             filesCount += 1;
         } else {
             dirsCount += 1;
+            dirList.addLast(file);
         }
-        fileList.addLast(file);
     }
 }
