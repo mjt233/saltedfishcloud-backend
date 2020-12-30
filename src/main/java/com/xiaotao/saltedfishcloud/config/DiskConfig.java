@@ -33,7 +33,7 @@ public class DiskConfig {
     }
 
     /**
-     * 获取用户的私人网盘根目录
+     * 获取用户的私人网盘根目录（不以/结尾）
      * @return 本地文件目录
      */
     public static String getUserPrivatePath() {

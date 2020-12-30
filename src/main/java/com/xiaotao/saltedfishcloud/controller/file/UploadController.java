@@ -22,9 +22,6 @@ public class UploadController {
     FileService fileService;
     @PostMapping("private/**")
     public JsonResult uploadPrivate(HttpServletRequest request, @RequestParam("file") MultipartFile file) throws HasResultException, IOException {
-        if (file.isEmpty()) {
-            throw new HasResultException("文件为空");
-        }
         String path = URLUtils.getRequestFilePath("/api/upload/private", request);
         String userBasePath = DiskConfig.getUserPrivatePath();
         String targetFilePath = userBasePath + path + "/" + file.getOriginalFilename();

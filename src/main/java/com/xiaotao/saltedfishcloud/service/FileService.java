@@ -148,4 +148,14 @@ public class FileService {
         file.transferTo(f);
         return flag;
     }
+
+    /**
+     * 从网盘中删除一个文件
+     * @param localFilePath 本地文件路径
+     * @return 删除的文件数量
+     */
+    public boolean deleteFile(String localFilePath) {
+        File file = new File(localFilePath);
+        return file.delete();
+    }
 }
