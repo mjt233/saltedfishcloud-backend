@@ -26,15 +26,7 @@ public class ResourcesController {
         return JsonResult.getInstance(pageInfo);
     }
 
-    @GetMapping("searchWithSqlInject")
-    public JsonResult searchWithSqlInject(String key,@RequestParam(value = "page", defaultValue = "1") Integer page) {
-//        PageHelper.startPage(page, 10);
-//        PageInfo<FileCacheInfo> data = new PageInfo<>(fileService.searchWithSqlInject(key));
-//        return JsonResult.getInstance(data);
-        return JsonResult.getInstance(fileService.searchWithSqlInject(key));
-    }
-
-    @RequestMapping("updateCache")
+    @PostMapping("updateCache")
     @RolesAllowed({"ADMIN"})
     public JsonResult updateCache() {
         fileService.updateCache();

@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
+import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.DirCollection;
 import com.xiaotao.saltedfishcloud.po.FileCacheInfo;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
@@ -124,20 +125,19 @@ public class FileService {
         final Long[] finishSize = { 0l };
         dirCollection.getFileList().forEach(file -> {
             FileInfo fileInfo = new FileInfo(file);
-            Long size = -1l;
-            String md5 = "";
-            if(fileInfo.getType() == FileInfo.TYPE_FILE) {
-                size = fileInfo.getSize();
-                md5 = fileInfo.computeMd5();
-                finishSize[0] += size;
-            }
-            fileDao.addCache(fileInfo.getName(), fileInfo.getPath().substring(DiskConfig.PUBLIC_ROOT.length()), size, md5);
+            Long size = fileInfo.getSize();
+            String md5 = fileInfo.computeMd5();
+            fileDao.addPublicCache(fileInfo.getName(), fileInfo.getPath().substring(DiskConfig.PUBLIC_ROOT.length()), size, md5);
+            finishSize[0] += file.length();
             System.out.println(String.format("[%d%% %d/%d %s]",
                     finishSize[0]*100/dirCollection.getSize(),
                     finishSize[0],
                     dirCollection.getSize(),
                     fileInfo.getName()
             ));
+        });
+        dirCollection.getDirList().forEach(file -> {
+            fileDao.addPublicCache(file.getName(), file.getPath().substring(DiskConfig.PUBLIC_ROOT.length()), -1L, "");
         });
     }
 
@@ -148,15 +148,48 @@ public class FileService {
      * @return
      * @throws IOException
      */
-    public int saveUploadFile(String localFilePath, MultipartFile file) throws IOException {
+    public int saveUploadFile(String localFilePath, MultipartFile file) throws IOException, HasResultException {
         int flag = 0;
         File f = new File(localFilePath);
         if (f.exists()) {
+            if (f.isDirectory()) {
+                throw new HasResultException(400, "存在同名文件夹");
+            }
             flag = 1;
             f.delete();
         }
         file.transferTo(f);
         return flag;
+    }
+
+    /**
+     * 向私有网盘中添加文件缓存信息
+     * @param uid   用户ID
+     * @param fileInfo  文件信息
+     * @return
+     */
+    public int addPrivateFileCacheInfo(Integer uid ,FileInfo fileInfo) {
+        return fileDao.addPrivateCache(uid,
+                fileInfo.getName(),
+                fileInfo.getType() == FileInfo.TYPE_DIR ? -1L : fileInfo.getSize(),
+                fileInfo.getType() == FileInfo.TYPE_DIR ? "" : fileInfo.computeMd5(),
+                fileInfo.getPath().substring(DiskConfig.getUserPrivatePath().length())
+        );
+    }
+
+    /**
+     * 向私有网盘中更新文件缓存信息
+     * @param uid   用户ID
+     * @param fileInfo  文件信息
+     * @return
+     */
+    public int updatePrivateFileCacheInfo(Integer uid, FileInfo fileInfo) {
+        return fileDao.updatePrivateCache(uid,
+                    fileInfo.getName(),
+                    fileInfo.getType() == FileInfo.TYPE_DIR ? -1L : fileInfo.getSize(),
+                    fileInfo.getType() == FileInfo.TYPE_DIR ? "" : fileInfo.computeMd5(),
+                    fileInfo.getPath().substring(DiskConfig.getUserPrivatePath().length())
+                );
     }
 
     /**
@@ -174,5 +207,15 @@ public class FileService {
         } else {
             file.delete();
         }
+    }
+
+    /**
+     * 从私人网盘中删除一个文件缓存记录
+     * @param uid
+     * @param fileInfo
+     * @return
+     */
+    public int deletePrivateFileCache(Integer uid, FileInfo fileInfo) {
+        return fileDao.deletePrivateDirCache(uid, fileInfo.getPath().substring(DiskConfig.getUserPrivatePath().length()));
     }
 }

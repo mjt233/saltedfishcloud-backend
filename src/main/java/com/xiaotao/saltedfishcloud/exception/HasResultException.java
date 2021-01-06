@@ -23,6 +23,6 @@ public class HasResultException extends Exception {
     }
 
     public HasResultException() {
-
+        jsonResult = JsonResult.getInstance(500, null, "服务器其他错误");
     }
 }

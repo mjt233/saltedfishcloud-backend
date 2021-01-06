@@ -7,10 +7,10 @@ import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.FileService;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -25,7 +25,7 @@ import java.util.List;
 public class BrowseController {
     @Resource
     FileService fileService;
-    @RequestMapping("/public/**")
+    @GetMapping("/public/**")
     public String publicList(Model model, HttpServletRequest request, HttpServletResponse response) {
         String uri = null;
         List<FileInfo>[] fileList = null;
@@ -46,7 +46,7 @@ public class BrowseController {
         return "filelist";
     }
 
-    @RequestMapping("/api/getPublicList/**")
+    @GetMapping("/api/getPublicList/**")
     @ResponseBody
     public JsonResult getPublicList(HttpServletRequest request) throws HasResultException {
         String path = URLUtils.getRequestFilePath("/api/getPublicList", request);
@@ -59,7 +59,7 @@ public class BrowseController {
         return JsonResult.getInstance(fileList);
     }
 
-    @RequestMapping("/api/getPrivateList/**")
+    @GetMapping("/api/getPrivateList/**")
     @ResponseBody
     public JsonResult getPrivateList(HttpServletRequest request) throws FileNotFoundException {
         String requestFilePath = URLUtils.getRequestFilePath("/api/getPrivateList", request);

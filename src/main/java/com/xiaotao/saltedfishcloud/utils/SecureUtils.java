@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.xiaotao.saltedfishcloud.po.User;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.DigestUtils;
 
 import java.util.Date;
@@ -16,5 +18,9 @@ public class SecureUtils {
 
     static public String getMd5(String input) {
         return DigestUtils.md5DigestAsHex(input.getBytes());
+    }
+
+    static public User getSpringSecurityUser() {
+        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 }
