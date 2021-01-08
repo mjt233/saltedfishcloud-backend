@@ -81,25 +81,17 @@ public class FileInfo {
         return localDateTime.toLocalDate() + " " + localDateTime.toLocalTime();
     }
 
-    /**
-     * 计算文件的MD5
-     *
-     */
-    public String getMd5() {
-        if (originFile.isDirectory()) return "";
+    public void computeMd5() {
+        if (originFile.isDirectory()) return;
         if (md5 == null) {
             try {
                 InputStream is = new FileInputStream(originFile);
                 String res = DigestUtils.md5DigestAsHex(is);
                 is.close();
                 md5 = res;
-                return res;
             } catch (IOException e) {
                 e.printStackTrace();
-                return "failed";
             }
-        } else {
-            return md5;
         }
     }
 }

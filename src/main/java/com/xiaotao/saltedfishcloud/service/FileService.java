@@ -126,6 +126,7 @@ public class FileService {
         dirCollection.getFileList().forEach(file -> {
             FileInfo fileInfo = new FileInfo(file);
             Long size = fileInfo.getSize();
+            fileInfo.computeMd5();
             String md5 = fileInfo.getMd5();
             fileDao.addPublicCache(fileInfo.getName(), fileInfo.getPath().substring(DiskConfig.PUBLIC_ROOT.length()), size, md5);
             finishSize[0] += file.length();
@@ -169,6 +170,7 @@ public class FileService {
      * @return
      */
     public int addPrivateFileCacheInfo(Integer uid ,FileInfo fileInfo) {
+        fileInfo.computeMd5();
         return fileDao.addPrivateCache(uid,
                 fileInfo.getName(),
                 fileInfo.getType() == FileInfo.TYPE_DIR ? -1L : fileInfo.getSize(),
@@ -184,6 +186,7 @@ public class FileService {
      * @return
      */
     public int updatePrivateFileCacheInfo(Integer uid, FileInfo fileInfo) {
+        fileInfo.computeMd5();
         return fileDao.updatePrivateCache(uid,
                     fileInfo.getName(),
                     fileInfo.getType() == FileInfo.TYPE_DIR ? -1L : fileInfo.getSize(),
