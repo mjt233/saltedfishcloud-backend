@@ -7,39 +7,19 @@ import com.xiaotao.saltedfishcloud.service.UserType;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
 
 @Controller
-@RequestMapping(value = "/api/User", method = RequestMethod.POST)
+@RequestMapping(value = "/api")
 @ResponseBody
 public class UserController {
     @Resource
     UserService userService;
 
-//    @RequestMapping("login")
-//    public JsonResult login(@RequestParam("user") String userName, @RequestParam("passwd") String passwd,
-//                            HttpServletResponse response, HttpServletRequest request) throws HasResultException {
-//        String pwd = SecureUtils.getPassswd(passwd);
-//        User user = userService.getUserByUser(userName);
-//        if ( !user.getPwd().equals(pwd)) {
-//            throw new HasResultException(-1, "密码错误");
-//        }
-//        userService.updateLoginDate(user.getId());
-//        return JsonResult.getInstance(user.getToken());
-//    }
-
-    @RequestMapping("test")
-    public JsonResult test() {
-        throw new RuntimeException();
-    }
-
-    @RequestMapping("getUserInfo")
+    @GetMapping("user")
     public JsonResult getUserInfo() throws UserNoExistException {
         String name = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userService.getUserByUser(name);
@@ -48,14 +28,8 @@ public class UserController {
         return JsonResult.getInstance(user);
     }
 
-    @RequestMapping("getAdminInfo")
+    @PutMapping("user")
     @RolesAllowed({"ADMIN"})
-    public JsonResult getAdminInfo() throws UserNoExistException {
-        return getUserInfo();
-    }
-
-
-    @RequestMapping("/admin/addUser")
     public JsonResult addUser(@RequestParam("user") String user,
                               @RequestParam("passwd") String passwd,
                               @RequestParam("type") String type) {

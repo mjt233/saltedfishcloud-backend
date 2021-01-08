@@ -18,10 +18,10 @@ import java.util.List;
 public class ResourcesController {
     @Resource
     FileService fileService;
-    @GetMapping("/publicSearch/**")
+    @GetMapping("/search/public/**")
     public JsonResult search(HttpServletRequest request, String key,@RequestParam(value = "page", defaultValue = "1") Integer page) {
         PageHelper.startPage(page, 10);
-        String filePath = URLUtils.getRequestFilePath("/api/publicSearch", request);
+        String filePath = URLUtils.getRequestFilePath("/api/search/public", request);
         PageInfo<FileCacheInfo> pageInfo = new PageInfo<>(fileService.search(key));
         return JsonResult.getInstance(pageInfo);
     }
