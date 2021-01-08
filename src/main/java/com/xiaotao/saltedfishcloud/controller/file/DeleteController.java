@@ -28,7 +28,7 @@ public class DeleteController {
     public JsonResult deletePrivate(HttpServletRequest request, @RequestBody FileNameList fileName) {
         String target = DiskConfig.getUserPrivatePath() + "/" + URLUtils.getRequestFilePath("/api/private", request);
         fileName.getFileName().forEach(name -> {
-            String path = target + name;
+            String path = target + "/" + name;
             fileService.deletePrivateFileCache(SecureUtils.getSpringSecurityUser().getId(), new FileInfo(new File(path)));
             fileService.deleteFile(path);
         });

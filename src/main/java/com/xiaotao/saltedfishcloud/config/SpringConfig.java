@@ -16,13 +16,8 @@ public class SpringConfig implements WebMvcConfigurer {
     LoginInterceptor loginInterceptor;
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-//        registry.addInterceptor(loginInterceptor)
-//                .addPathPatterns("/api/**")
-//                .excludePathPatterns(
-//                        "/api/User/login",
-//                        "/api/getPublicList/**",
-//                        "/pubdown/**"
-//                );
+        registry.addInterceptor(loginInterceptor)
+                .addPathPatterns("/api/**");
     }
 
     @Override

@@ -126,7 +126,7 @@ public class FileService {
         dirCollection.getFileList().forEach(file -> {
             FileInfo fileInfo = new FileInfo(file);
             Long size = fileInfo.getSize();
-            String md5 = fileInfo.computeMd5();
+            String md5 = fileInfo.getMd5();
             fileDao.addPublicCache(fileInfo.getName(), fileInfo.getPath().substring(DiskConfig.PUBLIC_ROOT.length()), size, md5);
             finishSize[0] += file.length();
             System.out.println(String.format("[%d%% %d/%d %s]",
@@ -148,7 +148,7 @@ public class FileService {
      * @return
      * @throws IOException
      */
-    public int saveUploadFile(String localFilePath, MultipartFile file) throws IOException, HasResultException {
+    public int storeUploadFile(String localFilePath, MultipartFile file) throws IOException, HasResultException {
         int flag = 0;
         File f = new File(localFilePath);
         if (f.exists()) {
@@ -172,7 +172,7 @@ public class FileService {
         return fileDao.addPrivateCache(uid,
                 fileInfo.getName(),
                 fileInfo.getType() == FileInfo.TYPE_DIR ? -1L : fileInfo.getSize(),
-                fileInfo.getType() == FileInfo.TYPE_DIR ? "" : fileInfo.computeMd5(),
+                fileInfo.getType() == FileInfo.TYPE_DIR ? "" : fileInfo.getMd5(),
                 fileInfo.getPath().substring(DiskConfig.getUserPrivatePath().length())
         );
     }
@@ -187,7 +187,7 @@ public class FileService {
         return fileDao.updatePrivateCache(uid,
                     fileInfo.getName(),
                     fileInfo.getType() == FileInfo.TYPE_DIR ? -1L : fileInfo.getSize(),
-                    fileInfo.getType() == FileInfo.TYPE_DIR ? "" : fileInfo.computeMd5(),
+                    fileInfo.getType() == FileInfo.TYPE_DIR ? "" : fileInfo.getMd5(),
                     fileInfo.getPath().substring(DiskConfig.getUserPrivatePath().length())
                 );
     }

@@ -16,6 +16,7 @@ import java.time.ZoneOffset;
 @Data
 @NoArgsConstructor
 public class FileInfo {
+    private String md5;
     public final static int TYPE_DIR = 1;
     public final static int TYPE_FILE = 2;
     private String name;
@@ -82,17 +83,23 @@ public class FileInfo {
 
     /**
      * 计算文件的MD5
+     *
      */
-    public String computeMd5() {
+    public String getMd5() {
         if (originFile.isDirectory()) return "";
-        try {
-            InputStream is = new FileInputStream(originFile);
-            String res = DigestUtils.md5DigestAsHex(is);
-            is.close();
-            return res;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "failed";
+        if (md5 == null) {
+            try {
+                InputStream is = new FileInputStream(originFile);
+                String res = DigestUtils.md5DigestAsHex(is);
+                is.close();
+                md5 = res;
+                return res;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return "failed";
+            }
+        } else {
+            return md5;
         }
     }
 }

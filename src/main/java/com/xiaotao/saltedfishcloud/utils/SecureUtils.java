@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.po.User;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.DigestUtils;
 
@@ -21,6 +22,10 @@ public class SecureUtils {
     }
 
     static public User getSpringSecurityUser() {
-        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        try {
+            return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

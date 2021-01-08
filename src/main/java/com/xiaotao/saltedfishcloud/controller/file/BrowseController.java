@@ -6,11 +6,13 @@ import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.FileService;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -23,6 +25,7 @@ import java.util.List;
 
 @Controller
 public class BrowseController {
+
     @Resource
     FileService fileService;
     @GetMapping("/public/**")
@@ -61,9 +64,9 @@ public class BrowseController {
 
     @GetMapping("/api/getPrivateList/**")
     @ResponseBody
-    public JsonResult getPrivateList(HttpServletRequest request) throws FileNotFoundException {
+    public JsonResult getPrivateList(HttpServletRequest request,
+                                     @RequestAttribute User user) throws FileNotFoundException {
         String requestFilePath = URLUtils.getRequestFilePath("/api/getPrivateList", request);
-        User user = (User)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String userBasePath = DiskConfig.PRIVATE_ROOT + "/" + user.getUser();
         File file = new File(userBasePath);
         if (!file.exists()) {
