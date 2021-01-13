@@ -43,7 +43,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
-                .antMatchers("/","/public/**", "/api/logout", "/login", "/api/userLogin","/api/getPublicList/**", "/pubdown/**")
+                .antMatchers("/","/api/public/**", "/api/logout", "/login", "/api/userLogin","/api/getPublicList/**", "/pubdown/**", "/api/regUser")
                 .permitAll() // 放行主页和公共网盘浏览
                 .antMatchers("/private/**").hasRole("COMMON")
                 .anyRequest()

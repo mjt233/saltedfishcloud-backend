@@ -122,7 +122,7 @@ public class FileService {
      */
     public void updateCache() {
         DirCollection dirCollection = deepScanDir(DiskConfig.PUBLIC_ROOT);
-        final Long[] finishSize = { 0l };
+        final Long[] finishSize = { 0L };
         dirCollection.getFileList().forEach(file -> {
             FileInfo fileInfo = new FileInfo(file);
             Long size = fileInfo.getSize();

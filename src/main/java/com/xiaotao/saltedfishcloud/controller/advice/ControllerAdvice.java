@@ -34,6 +34,7 @@ public class ControllerAdvice {
         log.error("异常", e);
         return JsonResult.getInstance(500, e.getClass().getCanonicalName(), e.getMessage());
     }
+
     @ExceptionHandler(DuplicateKeyException.class)
     public JsonResult handle(DuplicateKeyException e) {
         return JsonResult.getInstance(-4, null, "资源冲突");

@@ -20,6 +20,13 @@ public class DiskConfig {
     // 个人用户数据路径（包括网盘文件，用户配置文件）
     public static String PRIVATE_ROOT;
 
+    public static String REG_CODE;
+
+    @Value("${RegCode}")
+    public void setRegCode(String v) {
+        REG_CODE = v;
+    }
+
     @Value("${public.root}")
     public void setRoot(String root) {
         File file = new File(root);

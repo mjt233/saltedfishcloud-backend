@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import jdk.nashorn.internal.objects.annotations.Getter;
@@ -15,6 +16,7 @@ import java.time.ZoneOffset;
 
 @Data
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class FileInfo {
     private String md5;
     public final static int TYPE_DIR = 1;

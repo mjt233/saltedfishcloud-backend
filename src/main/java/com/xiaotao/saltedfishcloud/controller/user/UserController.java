@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller.user;
 
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.UserService;
@@ -28,7 +30,7 @@ public class UserController {
         return JsonResult.getInstance(user);
     }
 
-    @PutMapping("user")
+    @PostMapping("user")
     @RolesAllowed({"ADMIN"})
     public JsonResult addUser(@RequestParam("user") String user,
                               @RequestParam("passwd") String passwd,
@@ -41,6 +43,18 @@ public class UserController {
                 return JsonResult.getInstance(400, null, "无效的用户类型");
         }
         userService.addUser(user, passwd, userType);
+        return JsonResult.getInstance();
+    }
+
+    @PostMapping("regUser")
+    public JsonResult regUser(@RequestParam("user") String user,
+                              @RequestParam("passwd") String rawPassword,
+                              @RequestParam("regcode") String regCode
+                              ) throws HasResultException {
+        if (!regCode.equals(DiskConfig.REG_CODE)) {
+            throw new HasResultException("注册码不正确");
+        }
+        userService.addUser(user, rawPassword, User.TYPE_COMMON);
         return JsonResult.getInstance();
     }
 
