@@ -44,6 +44,11 @@ mvn package
 
 ### 运行项目
 ```shell script
-java -jar xxxx.jar
+java -jar xxxx.jar --RegCode=123456 --public.root=D:/public --private.root=D:/private
 # xxx.jar为打包后的/target下的jar文件
 ```
+
+### 应用程序命令行参数说明
+- RegCode - 注册邀请码，默认为114514，普通用户注册账号需要提供注册邀请码
+- public.root - 公共网盘的根目录
+- private.root - 私人网盘的根目录
