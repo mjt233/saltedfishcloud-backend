@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.po.User;
-import com.xiaotao.saltedfishcloud.service.FileService;
+import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.stereotype.Controller;

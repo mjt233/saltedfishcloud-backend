@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service;
+package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.User;

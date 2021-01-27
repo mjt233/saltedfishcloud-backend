@@ -1,15 +1,13 @@
 package com.xiaotao.saltedfishcloud.controller.file;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.service.FileService;
+import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;

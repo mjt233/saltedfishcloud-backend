@@ -19,11 +19,11 @@ public class DirCollection {
     public void addFile(File file) {
         if (file.isFile()) {
             size += file.length();
-            fileList.addLast(file);
+            fileList.addFirst(file);
             filesCount += 1;
         } else {
             dirsCount += 1;
-            dirList.addLast(file);
+            dirList.addFirst(file);
         }
     }
 }

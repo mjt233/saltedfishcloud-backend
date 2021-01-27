@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.po.FileCacheInfo;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
 import org.apache.ibatis.annotations.*;
 
-import java.util.Date;
+import java.util.Collection;
 import java.util.List;
 
 public interface FileDao {
@@ -12,37 +12,101 @@ public interface FileDao {
     List<FileCacheInfo> search(String key);
 
     /**
-     * 一个存在SQL注入的查询
-     * @param key
-     * @return
+     * 添加一条文件记录
+     * @param uid 用户ID 0表示公共
+     * @param fileName 文件名
+     * @param size 文件大小
+     * @param md5 文件md5
+     * @param nodeId 文件所在路径（不包含文件名）的映射ID（路径的md5值）
+     * @return 影响的行数
      */
-    @Select("SELECT * FROM file_cache WHERE name like '%${key}%'")
-    List<FileCacheInfo> searchWithSqlInject(String key);
+    @Insert("INSERT IGNORE INTO file_table (uid,name,size,md5,node,created_at) VALUES (#{uid},#{name},#{size},#{md5},#{node},NOW())")
+    int addRecord(@Param("uid") Integer uid,
+                    @Param("name") String fileName,
+                    @Param("size") Long size,
+                    @Param("md5") String md5,
+                    @Param("node") String nodeId);
 
-    @Insert("INSERT INTO public_file_cache (md5,path,size,name) VALUES (#{md5},#{path},#{size},#{name})")
-    int addPublicCache(@Param("name") String fileName, @Param("path") String path, @Param("size") Long size, @Param("md5") String md5);
 
-    @Insert("INSERT INTO private_file_cache (uid,name,size,md5,path,created_at) VALUES (#{uid},#{name},#{size},#{md5},#{path},NOW())")
-    int addPrivateCache(@Param("uid") Integer uid,
-                        @Param("name") String fileName,
-                        @Param("size") Long size,
-                        @Param("md5") String md5,
-                        @Param("path") String path);
 
-    @Update("UPDATE private_file_cache SET uid=#{uid},name=#{name},size=#{size},md5=#{md5},created_at=NOW() " +
-            "WHERE uid=#{uid} AND path=#{path}")
-    int updatePrivateCache(@Param("uid") Integer uid,
-                           @Param("name") String fileName,
-                           @Param("size") Long size,
-                           @Param("md5") String md5,
-                           @Param("path") String path);
+    /**
+     * 删除多条文件记录
+     * @param uid 用户ID 0表示公共用户
+     * @param node 文件路径ID
+     * @param name 文件名
+     * @return 受影响的行数
+     */
+//    @Delete("DELETE FROM private_file_cache WHERE uid=#{uid} AND name in #{name} AND (path = #{path} OR path like concat(#{path},'/%'))")
+    @Delete({
+            "<script>",
+                "DELETE FROM file_table WHERE uid=#{uid} AND node = #{node} AND name in ",
+                "<foreach collection='name' item='item' open='(' separator=',' close=')'>",
+                    "#{item}",
+                "</foreach>",
+            "</script>"
+    })
+    int deleteRecord(@Param("uid") Integer uid,
+                     @Param("node") String node,
+                     @Param("name") List<String> name);
 
-    @Update("DELETE FROM private_file_cache WHERE uid=#{uid} AND name=#{name} AND path=#{path}")
-    int deletePrivateCache(@Param("uid") Integer uid,
-                           @Param("name") String fileName,
-                           @Param("path") String path);
 
-    @Delete("DELETE FROM private_file_cache WHERE uid=#{uid} AND (path = #{path} OR path like concat(#{path},'/%'))")
-    int deletePrivateDirCache(@Param("uid") Integer uid,
-                              @Param("path") String path);
+    /**
+     * 批量删除某个文件节点下的文件夹记录
+     * @param uid    用户ID 0表示公共
+     * @param nodes  节点ID列表
+     * @return 删除数
+     */
+    @Delete({
+            "<script>",
+            "DELETE FROM file_table WHERE uid=#{uid} AND node in ",
+                "<foreach collection='nodes' item='node' open='(' separator=',' close=')'>",
+                    "#{node}",
+                "</foreach>",
+            "</script>"
+    })
+    int deleteDirsRecord(@Param("uid") Integer uid,
+                         @Param("nodes") List<String> nodes
+                      );
+
+    /**
+     * 更新文件记录
+     * @param uid 用户ID 0表示公共用户
+     * @param nodeId 原文件所在路径的ID
+     * @param newSize 新文件大小
+     * @param newMd5 新文件MD5
+     * @return 受影响行数
+     */
+    @Update("UPDATE file_table SET md5=#{newMd5}, size=#{newSize}, updated_at=NOW() WHERE uid=#{uid} AND name=#{name} AND node=#{node}")
+    int updateRecord(@Param("uid") Integer uid,
+                     @Param("name") String name,
+                     @Param("node") String nodeId,
+                     @Param("newSize") Long newSize,
+                     @Param("newMd5") String newMd5);
+
+    /**
+     * 获取文件信息
+     * @param uid    用户ID 0表示公共
+     * @param name   文件名
+     * @param nodeId 文件所在节点ID
+     * @return 文件信息
+     */
+    @Select("SELECT name, size, md5, path FROM file_table A, path_map B WHERE A.node=B.id AND uid=#{uid} AND node=#{nodeId} AND name=#{name}")
+    FileInfo getFileInfo(@Param("uid") Integer uid, @Param("name") String name, @Param("nodeId") String nodeId);
+
+    /**
+     * 批量获取某个目录下的文件信息
+     * @param uid    用户ID 0表示公共
+     * @param name   文件名列表
+     * @param nodeId 路径ID
+     * @return 删除数
+     */
+    @Select({
+            "<script>",
+            "SELECT name, size, md5, path FROM file_table A, path_map B WHERE A.node=B.id AND uid=#{uid} AND node=#{nodeId} AND name in ",
+                "<foreach collection='names' item='name' open='(' separator=',' close=')'>",
+                    "#{name}",
+                "</foreach>",
+            "</script>"
+    })
+    List<FileInfo> getFilesInfo(@Param("uid") Integer uid, @Param("names") Collection<String> name, @Param("nodeId") String nodeId);
 }

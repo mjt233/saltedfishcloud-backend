@@ -47,13 +47,12 @@ public class FileInfo {
         }
     }
 
-    /**
-     * 获取文件相对于本地公共资源目录的相对路径，
-     * @return
-     */
-    @JsonIgnore
-    public String getResourcesRelativePath() {
-        return path.substring(DiskConfig.PUBLIC_ROOT.length()).replaceAll("\\\\+","/");
+    public boolean isFile() {
+        return size != -1L;
+    }
+
+    public boolean isDir() {
+        return !isFile();
     }
 
     @Getter
@@ -68,7 +67,7 @@ public class FileInfo {
 
     /**
      * 获取文件后缀名，不带点.
-     * @return
+     * @return 后缀名
      */
     public String getSuffix() {
         return StringUtils.getFileSuffix(name);
@@ -76,7 +75,7 @@ public class FileInfo {
 
     /**
      * 获取格式化的最后一次修改日期，格式为"yyyy-MM-dd hh:mm"
-     * @return
+     * @return 日期字符串
      */
     public String getFormatModified() {
         LocalDateTime localDateTime = LocalDateTime.ofEpochSecond(lastModified / 1000, 0, ZoneOffset.ofHours(8));

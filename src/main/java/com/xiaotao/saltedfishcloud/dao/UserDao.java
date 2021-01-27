@@ -11,8 +11,8 @@ public interface UserDao {
     @Select("SELECT * FROM user WHERE user = #{user}")
     User getUserByUser(String user);
 
-    @Select("SELECT * FROM user WHERE token = #{token}")
-    User getUserByToken(String token);
+//    @Select("SELECT * FROM user WHERE token = #{token}")
+//    User getUserByToken(String token);
 
     @Update("UPDATE user SET last_login = #{loginTime} WHERE id = #{uid}")
     int updateLoginDate(@Param("uid") Integer uid, @Param("loginTime") Long loginTime);

@@ -1,6 +1,5 @@
-package com.xiaotao.saltedfishcloud.service;
+package com.xiaotao.saltedfishcloud.service.user;
 
-import com.sun.istack.NotNull;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.User;
@@ -24,14 +23,14 @@ public class UserServiceImp implements UserService{
         return user1;
     }
 
-    @Override
-    public User getUserByToken(@NotNull String token) throws UserNoExistException {
-        User user1 = userDao.getUserByToken(token);
-        if (user1 == null) {
-            throw new UserNoExistException(-1, "Token" + token + "所标识的用户不存在");
-        }
-        return user1;
-    }
+//    @Override
+//    public User getUserByToken(@NotNull String token) throws UserNoExistException {
+//        User user1 = userDao.getUserByToken(token);
+//        if (user1 == null) {
+//            throw new UserNoExistException(-1, "Token" + token + "所标识的用户不存在");
+//        }
+//        return user1;
+//    }
 
     @Override
     public int modifyPasswd(Integer uid, String oldPassword, String newPassword) {
@@ -41,8 +40,7 @@ public class UserServiceImp implements UserService{
     @Override
     public int updateLoginDate(Integer uid) {
 
-        int i = userDao.updateLoginDate(uid, new Date().getTime()/1000);
-        return i;
+        return userDao.updateLoginDate(uid, new Date().getTime()/1000);
     }
 
     @Override
