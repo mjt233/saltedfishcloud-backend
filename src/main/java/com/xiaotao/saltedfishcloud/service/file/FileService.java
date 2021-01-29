@@ -22,7 +22,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +34,8 @@ public class FileService {
     PathMapService pathMapService;
     @javax.annotation.Resource
     FileRecordService fileRecordService;
+    @javax.annotation.Resource
+    StoreService storeService;
 
     /**
      * 获取文件列表
@@ -94,40 +95,19 @@ public class FileService {
         return fileDao.search(key);
     }
 
-    /**
-     * 深度搜索遍历目录，取出文件夹下的所有文件和目录
-     * @param path 本地文件夹路径
-     * @return DirCollection对象
-     */
-    public DirCollection deepScanDir(String path) {
-        LinkedList<File> detectedDirs = new LinkedList<>();
-        DirCollection res = new DirCollection();
-        Arrays.stream(new File(path).listFiles()).forEach(file -> {
-            if (file.isDirectory()) detectedDirs.push(file);
-            res.addFile(file);
-        });
-        while (!detectedDirs.isEmpty()) {
-            File dir = detectedDirs.getLast();
-            detectedDirs.removeLast();
-            Arrays.stream(new File(dir.getPath()).listFiles()).forEach(file -> {
-                if (file.isDirectory()) detectedDirs.addLast(file);
-                res.addFile(file);
-            });
-        }
-        return res;
-    }
+
 
     /**
      *
      * 更新公共网盘根目录的文件缓存信息
      */
     public void updateCache() {
-        DirCollection dirCollection = deepScanDir(DiskConfig.PUBLIC_ROOT);
+        DirCollection dirCollection = FileUtils.deepScanDir(DiskConfig.PUBLIC_ROOT);
         final Long[] finishSize = { 0L };
         dirCollection.getFileList().forEach(file -> {
             FileInfo fileInfo = new FileInfo(file);
             Long size = fileInfo.getSize();
-            fileInfo.computeMd5();
+            fileInfo.updateMd5();
             String md5 = fileInfo.getMd5();
             String fullPath = fileInfo.getPath().substring(DiskConfig.PUBLIC_ROOT.length());
             int len = fullPath.length() - fileInfo.getName().length() - 1;
@@ -146,28 +126,6 @@ public class FileService {
         });
     }
 
-    /**
-     * 保存用户上传的文件，文件发生覆盖返回1，否则返回0
-     * @param localFilePath 要保存到的本地文件名
-     * @param file 接收到的文件
-     * @return 1是文件发生覆盖 0是正常添加
-     * @throws HasResultException 文件夹同名时抛出
-     * @throws IOException 准备覆盖但原文件删除失败时抛出
-     */
-    public int storeUploadFile(String localFilePath, MultipartFile file) throws IOException, HasResultException {
-        int flag = 0;
-        File f = new File(localFilePath);
-        if (f.exists()) {
-            if (f.isDirectory()) {
-                throw new HasResultException(400, "存在同名文件夹");
-            }
-            flag = 1;
-            f.delete();
-        }
-        file.transferTo(f);
-        return flag;
-    }
-
 
     /**
      * 保存上传的文件
@@ -183,25 +141,23 @@ public class FileService {
                         MultipartFile file,
                         String requestPath,
                         String md5) throws IOException, HasResultException {
-        String basePath = (uid == 0 ? DiskConfig.PUBLIC_ROOT : DiskConfig.getUserPrivatePath()) + "/" + requestPath;
-        String localPath = basePath + "/" + file.getOriginalFilename();
 
+        FileInfo fileInfo = new FileInfo(file);
         // 先保存文件
-        int flag = storeUploadFile(localPath, file);
+        int flag = storeService.store(uid, file.getInputStream(), requestPath, fileInfo);
 
         // 获取上传的文件信息 并看情况计算MD5
-        FileInfo fileInfo = new FileInfo(new File(localPath));
         if (md5 != null) {
             fileInfo.setMd5(md5);
         } else {
-            fileInfo.computeMd5();
+            fileInfo.updateMd5();
         }
 
 
         if(flag == 0) {
             return fileRecordService.addRecord(uid, file.getOriginalFilename(), fileInfo.getSize(), fileInfo.getMd5(), requestPath);
         } else {
-            return fileRecordService.updateRecord(uid, file.getOriginalFilename(), requestPath, file.getSize(), fileInfo.getMd5());
+            return fileRecordService.updateFileRecord(uid, file.getOriginalFilename(), requestPath, file.getSize(), fileInfo.getMd5());
         }
     }
 
@@ -246,7 +202,7 @@ public class FileService {
             String local = basePath + "/" + fileName;
             File file = new File(local);
             if (file.isDirectory()) {
-                DirCollection dirCollection = deepScanDir(local);
+                DirCollection dirCollection = FileUtils.deepScanDir(local);
                 dirCollection.getFileList().forEach(File::delete);
                 dirCollection.getDirList().forEach(File::delete);
             }
@@ -254,4 +210,21 @@ public class FileService {
         });
         return fileRecordService.deleteRecords(uid, path, name);
     }
+
+//    /**
+//     * 移动文件
+//     * @param uid 用户ID 0表示公共
+//     * @param fromNode 被移动的文件或文件夹所在节点ID
+//     * @param name 文件名或文件夹名
+//     * @param to 移动目的地完整路径
+//     * @return 1
+//     */
+//    public int move(int uid, String fromNode, String name, String to) {
+//        FileInfo fileInfo = fileDao.getFileInfo(uid, name, fromNode);
+//        if (fileInfo.isDir()) {
+//
+//        } else {
+//
+//        }
+//    }
 }

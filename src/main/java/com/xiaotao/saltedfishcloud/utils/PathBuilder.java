@@ -44,6 +44,20 @@ public class PathBuilder {
         return this;
     }
 
+    /**
+     * 对路径进行格式化 去除重复或末尾的的/或\
+     * @param path 输入路径
+     * @return 标准化后的路径
+     */
+    public static String formatPath(String path) {
+        PathBuilder pb = new PathBuilder();
+        return pb.append(path).toString();
+    }
+
+    /**
+     * 清空
+     * @return
+     */
     public PathBuilder clear() {
         path.clear();
         return this;
@@ -55,6 +69,10 @@ public class PathBuilder {
         path.forEach(node -> {
             sb.append("/").append(node);
         });
-        return sb.toString();
+        if (sb.length() == 0) {
+            return "/";
+        } else {
+            return sb.toString();
+        }
     }
 }

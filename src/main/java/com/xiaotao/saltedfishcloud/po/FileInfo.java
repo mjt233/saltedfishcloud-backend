@@ -1,18 +1,18 @@
 package com.xiaotao.saltedfishcloud.po;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import jdk.nashorn.internal.objects.annotations.Getter;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Date;
 
 @Data
 @NoArgsConstructor
@@ -27,9 +27,21 @@ public class FileInfo {
     private Integer type;
     private Long lastModified;
 
-    @lombok.Getter(AccessLevel.NONE)
-    @lombok.Setter(AccessLevel.NONE)
+    public FileInfo(MultipartFile file) {
+        name = file.getOriginalFilename();
+        size = file.getSize();
+        type = TYPE_FILE;
+        lastModified = new Date().getTime();
+        originFile2 = file;
+    }
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private File originFile;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private MultipartFile originFile2;
+
     public FileInfo(File file) {
         originFile = file;
         name = file.getName();
@@ -48,22 +60,12 @@ public class FileInfo {
     }
 
     public boolean isFile() {
-        return size != -1L;
+        return size != -1L || type == TYPE_FILE;
     }
 
     public boolean isDir() {
         return !isFile();
     }
-
-    @Getter
-    @JsonIgnore
-    public String getPath() {
-        return path.replaceAll("\\\\+","/");
-    }
-
-//    public String getURLLink() {
-//        return StringUtils.linkToURLEncoding(getResourcesRelativePath());
-//    }
 
     /**
      * 获取文件后缀名，不带点.
@@ -82,11 +84,13 @@ public class FileInfo {
         return localDateTime.toLocalDate() + " " + localDateTime.toLocalTime();
     }
 
-    public void computeMd5() {
-        if (originFile.isDirectory()) return;
+    public void updateMd5() {
+        if (isDir()) return;
         if (md5 == null) {
             try {
-                InputStream is = new FileInputStream(originFile);
+                InputStream is = null;
+                if (originFile != null) is = new FileInputStream(originFile);
+                else is = originFile2.getInputStream();
                 String res = DigestUtils.md5DigestAsHex(is);
                 is.close();
                 md5 = res;

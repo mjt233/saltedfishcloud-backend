@@ -40,13 +40,13 @@ public class FileRecordService {
      * @return 添加数量
      */
     public int addRecord(int uid, String name, Long size, String md5, String path) {
-        String nid = SecureUtils.getMd5(path);
-        pathMapService.setRecord(path, nid);
+        String nid = SecureUtils.getMd5( PathBuilder.formatPath(path) );
+        pathMapService.setRecord(path);
         return fileDao.addRecord(uid, name, size, md5, nid);
     }
 
     /**
-     * 更新一条记录
+     * 因文件被替换而更新一条记录
      * @param uid   用户ID 0表示公共
      * @param name  文件名
      * @param path  文件所在路径
@@ -54,7 +54,7 @@ public class FileRecordService {
      * @param newMd5 新的文件MD5
      * @return 影响行数
      */
-    int updateRecord(int uid, String name, String path, Long newSize,String newMd5) {
+    int updateFileRecord(int uid, String name, String path, Long newSize, String newMd5) {
         String nid = SecureUtils.getMd5(path);
         FileInfo fileInfo = fileDao.getFileInfo(uid, name, path);
         if(fileInfo != null && fileInfo.isDir()) {
@@ -66,7 +66,7 @@ public class FileRecordService {
             }
             String nid2 = SecureUtils.getMd5(path2);
             pathMapService.deleteRecord(nid2);
-            pathMapService.setRecord(path2, nid2);
+            pathMapService.setRecord(path2);
         }
         return fileDao.updateRecord(uid, name, nid, newSize, newMd5);
     }
