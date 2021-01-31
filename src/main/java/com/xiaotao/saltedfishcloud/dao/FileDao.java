@@ -102,7 +102,7 @@ public interface FileDao {
      */
     @Select({
             "<script>",
-            "SELECT name, size, md5, path FROM file_table A, path_map B WHERE A.node=B.id AND uid=#{uid} AND node=#{nodeId} AND name in ",
+            "SELECT name, size, md5, node AS parent FROM file_table WHERE uid=#{uid} AND node=#{nodeId} AND name in ",
                 "<foreach collection='names' item='name' open='(' separator=',' close=')'>",
                     "#{name}",
                 "</foreach>",

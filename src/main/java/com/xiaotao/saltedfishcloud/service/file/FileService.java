@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.DirCollection;
 import com.xiaotao.saltedfishcloud.po.FileCacheInfo;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
+import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathBuilder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -31,11 +32,11 @@ public class FileService {
     @javax.annotation.Resource
     FileDao fileDao;
     @javax.annotation.Resource
-    PathMapService pathMapService;
-    @javax.annotation.Resource
     FileRecordService fileRecordService;
     @javax.annotation.Resource
     StoreService storeService;
+    @javax.annotation.Resource
+    NodeService nodeService;
 
     /**
      * 获取文件列表
@@ -170,17 +171,13 @@ public class FileService {
     public boolean mkdir(int uid, String path, String name) {
         String localFilePath = (uid == 0 ? DiskConfig.PUBLIC_ROOT : DiskConfig.getUserPrivatePath()) + "/" + path + "/" + name;
         File file = new File(localFilePath);
-        String pid = SecureUtils.getMd5(path);
+        String pid = nodeService.getNodeIdByPath(path);
+        nodeService.addNode(name, pid);
 
         fileDao.addRecord(uid, name, (long) -1, null, pid);
         PathBuilder pb = new PathBuilder();
         pb.append(path).append(name);
-        if (file.mkdir()) {
-            pathMapService.setRecord(pb.toString());
-            return true;
-        } else {
-            return false;
-        }
+        return file.mkdir();
     }
 
     /**
@@ -195,7 +192,7 @@ public class FileService {
         AtomicInteger rec = new AtomicInteger();
 
         // 本地物理基础路径
-        String basePath = (uid == 0 ? DiskConfig.PUBLIC_ROOT : DiskConfig.getUserPrivatePath()) + "/" + path;
+        String basePath = FileUtils.getFileStoreRootPath(uid)  + "/" + path;
         name.forEach(fileName -> {
 
             // 本地完整路径
@@ -211,20 +208,21 @@ public class FileService {
         return fileRecordService.deleteRecords(uid, path, name);
     }
 
-//    /**
-//     * 移动文件
-//     * @param uid 用户ID 0表示公共
-//     * @param fromNode 被移动的文件或文件夹所在节点ID
-//     * @param name 文件名或文件夹名
-//     * @param to 移动目的地完整路径
-//     * @return 1
-//     */
-//    public int move(int uid, String fromNode, String name, String to) {
-//        FileInfo fileInfo = fileDao.getFileInfo(uid, name, fromNode);
+    /**
+     * 移动文件
+     * @param uid 用户ID 0表示公共
+     * @param from 被移动的文件或文件夹所在目录（相对用户根目录）
+     * @param name 被操作的文件名或文件夹名
+     * @param to 被移动到的目录（相对用户根目录）
+     * @param newName 新文件名
+     */
+    public void move(int uid, String from, String name, String to, String newName) {
+        storeService.move(uid, from, name, to, newName);
+//        String originLocalPath =
 //        if (fileInfo.isDir()) {
 //
 //        } else {
-//
+//            storeService.move(uid, f);
 //        }
-//    }
+    }
 }

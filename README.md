@@ -38,13 +38,17 @@
 ### 打包项目成jar
 在项目目录中运行命令
 ```shell script
-mvn package
+shell> mvn package
 ```
 目录执行完成后jar文件将被创建在项目目录下的`/target`
 
+### 创建和初始化数据库
+```
+mysql> SOURCE db.sql
+```
 ### 运行项目
 ```shell script
-java -jar xxxx.jar --RegCode=123456 --public.root=D:/public --private.root=D:/private
+shell> java -jar xxxx.jar --RegCode=123456 --public.root=D:/public --private.root=D:/private
 # xxx.jar为打包后的/target下的jar文件
 ```
 

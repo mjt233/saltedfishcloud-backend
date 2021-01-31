@@ -23,6 +23,7 @@ public class FileInfo {
     public final static int TYPE_FILE = 2;
     private String name;
     private String path;
+    private String node;
     private Long size;
     private Integer type;
     private Long lastModified;
@@ -60,7 +61,7 @@ public class FileInfo {
     }
 
     public boolean isFile() {
-        return size != -1L || type == TYPE_FILE;
+        return size != -1L || (type != null && type == TYPE_FILE);
     }
 
     public boolean isDir() {

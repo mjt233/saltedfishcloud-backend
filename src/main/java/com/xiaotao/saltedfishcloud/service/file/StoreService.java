@@ -1,15 +1,16 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * 本地文件存储服务，用于管理本地文件系统中的文件的创建，复制，删除，移动等操作
@@ -57,6 +58,22 @@ public class StoreService {
     public int store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws HasResultException {
         String target = pathHandler.getStorePath(uid, targetDir, fileInfo);
         return writeFile(input, new File(target));
+    }
+
+    /**
+     * 移动文件 也可用于重命名文件
+     * @param uid   用户ID 0表示公共
+     * @param from  被移动的文件所在目录（相对用户根目录）
+     * @param oldName 旧文件名
+     * @param to    被移动到的位置（相对用户根目录）
+     * @param newName 新文件名
+     */
+    public void move(int uid, String from, String oldName, String to, String newName) {
+        if (pathHandler instanceof RawPathHandler) {
+            System.out.println("原始");
+        } else {
+            System.out.println("唯一");
+        }
     }
 
 }
