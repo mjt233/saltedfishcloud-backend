@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class NodeInfo {
     private String name;
+    private Integer uid;
     private String id;
     private String parent;
 }

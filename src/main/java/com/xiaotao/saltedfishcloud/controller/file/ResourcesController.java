@@ -22,11 +22,4 @@ public class ResourcesController {
         PageInfo<FileCacheInfo> pageInfo = new PageInfo<>(fileService.search(key));
         return JsonResult.getInstance(pageInfo);
     }
-
-    @PostMapping("updateCache")
-    @RolesAllowed({"ADMIN"})
-    public JsonResult updateCache() {
-        fileService.updateCache();
-        return JsonResult.getInstance();
-    }
 }

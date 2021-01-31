@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Collection;
 import java.util.List;
 
 @Controller
@@ -28,7 +29,7 @@ public class BrowseController {
     @GetMapping("/public/**")
     public String publicList(Model model, HttpServletRequest request, HttpServletResponse response) {
         String uri = null;
-        List<FileInfo>[] fileList = null;
+        Collection<? extends FileInfo>[] fileList = null;
         String path = URLUtils.getRequestFilePath("/public", request);
         String srcPath = DiskConfig.PUBLIC_ROOT + "/" + path;
         model.addAttribute("uri", path);
@@ -50,7 +51,7 @@ public class BrowseController {
     @ResponseBody
     public JsonResult getPublicList(HttpServletRequest request) throws HasResultException {
         String path = URLUtils.getRequestFilePath("/api/public", request);
-        List<FileInfo>[] fileList = null;
+        Collection<? extends FileInfo>[] fileList = null;
         try {
             fileList = fileService.getFileList(DiskConfig.PUBLIC_ROOT + "/" + path);
         } catch (FileNotFoundException e) {
@@ -69,7 +70,7 @@ public class BrowseController {
         if (!file.exists()) {
             file.mkdir();
         }
-        List<FileInfo>[] fileList = fileService.getFileList(userBasePath + requestFilePath);
+        Collection<? extends FileInfo>[] fileList = fileService.getFileList(userBasePath + requestFilePath);
         return JsonResult.getInstance(fileList);
     }
 

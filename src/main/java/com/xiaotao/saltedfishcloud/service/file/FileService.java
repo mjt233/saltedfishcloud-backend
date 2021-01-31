@@ -23,9 +23,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service("fileService")
 public class FileService {
@@ -39,20 +42,20 @@ public class FileService {
     NodeService nodeService;
 
     /**
-     * 获取文件列表
+     * 通过一个本地路径获取获取该路径下的所有文件列表并区分文件与目录
      * 若路径不存在则抛出异常
      * 若路径指向一个文件则返回null
-     * 若路径指向一个目录则返回一个List数组，数组下标0为目录，1为文件
+     * 若路径指向一个目录则返回一个集合，数组下标0为目录，1为文件
      * @param localPath 本地文件夹路径
      * @return 一个List数组，数组下标0为目录，1为文件，或null
      * @throws FileNotFoundException 路径不存在
      */
-    public List<FileInfo>[] getFileList(String localPath) throws FileNotFoundException {
+    public Collection<? extends FileInfo>[] getFileList(String localPath) throws FileNotFoundException {
         File file = new File(localPath);
         return getFileList(file);
     }
     /**
-     * 获取文件列表
+     * 通过一个本地路径获取获取该路径下的所有文件列表并区分文件与目录
      * 若路径不存在则抛出异常
      * 若路径指向一个文件则返回null
      * 若路径指向一个目录则返回一个List数组，数组下标0为目录，1为文件
@@ -60,7 +63,7 @@ public class FileService {
      * @param file 本地文件夹路径
      * @return 一个List数组，数组下标0为目录，1为文件，或null
      */
-    public List<FileInfo>[] getFileList(File file) throws FileNotFoundException {
+    public Collection<? extends FileInfo>[] getFileList(File file) throws FileNotFoundException {
         if (!file.exists()) {
             throw new FileNotFoundException();
         }
@@ -70,14 +73,16 @@ public class FileService {
         List<FileInfo> dirs = new LinkedList<>();
         List<FileInfo> files = new LinkedList<>();
         try {
-            for (File listFile : file.listFiles()) {
+            for (File listFile : Objects.requireNonNull(file.listFiles())) {
                 if (listFile.isDirectory()) {
                     dirs.add(new FileInfo(listFile));
                 } else {
                     files.add(new FileInfo(listFile));
                 }
             }
-        } catch (NullPointerException e) {}
+        } catch (NullPointerException e) {
+            // do nothing
+        }
         return new List[]{dirs, files};
     }
 
@@ -94,37 +99,6 @@ public class FileService {
     public List<FileCacheInfo> search(String key) {
         key = "%" + key.replaceAll("/s+", "%") + "%";
         return fileDao.search(key);
-    }
-
-
-
-    /**
-     *
-     * 更新公共网盘根目录的文件缓存信息
-     */
-    public void updateCache() {
-        DirCollection dirCollection = FileUtils.deepScanDir(DiskConfig.PUBLIC_ROOT);
-        final Long[] finishSize = { 0L };
-        dirCollection.getFileList().forEach(file -> {
-            FileInfo fileInfo = new FileInfo(file);
-            Long size = fileInfo.getSize();
-            fileInfo.updateMd5();
-            String md5 = fileInfo.getMd5();
-            String fullPath = fileInfo.getPath().substring(DiskConfig.PUBLIC_ROOT.length());
-            int len = fullPath.length() - fileInfo.getName().length() - 1;
-            String path = fullPath.substring(0, Math.max(1, len));
-            fileDao.addRecord(0, fileInfo.getName(), size, md5, path);
-            finishSize[0] += file.length();
-            System.out.println(String.format("[%d%% %d/%d %s]",
-                    finishSize[0]*100/dirCollection.getSize(),
-                    finishSize[0],
-                    dirCollection.getSize(),
-                    fileInfo.getName()
-            ));
-        });
-        dirCollection.getDirList().forEach(file -> {
-            fileDao.addRecord(0, file.getName(), -1L, null, file.getPath().substring(DiskConfig.PUBLIC_ROOT.length()));
-        });
     }
 
 
@@ -168,16 +142,11 @@ public class FileService {
      * @param path 请求的路径
      * @param name 文件夹名称
      */
-    public boolean mkdir(int uid, String path, String name) {
-        String localFilePath = (uid == 0 ? DiskConfig.PUBLIC_ROOT : DiskConfig.getUserPrivatePath()) + "/" + path + "/" + name;
-        File file = new File(localFilePath);
-        String pid = nodeService.getNodeIdByPath(path);
-        nodeService.addNode(name, pid);
-
-        fileDao.addRecord(uid, name, (long) -1, null, pid);
-        PathBuilder pb = new PathBuilder();
-        pb.append(path).append(name);
-        return file.mkdir();
+    public void mkdir(int uid, String path, String name) throws HasResultException {
+        if ( !storeService.mkdir(uid, path, name) ) {
+            throw new HasResultException("在" + path + "创建文件夹失败");
+        }
+        fileRecordService.mkdir(uid, name, path);
     }
 
     /**
@@ -187,29 +156,17 @@ public class FileService {
      * @param name  文件名列表
      * @return 删除的数量
      */
-    public int deleteFile(int uid, String path, List<String> name) {
+    public long deleteFile(int uid, String path, List<String> name) {
         // 计数删除数
-        AtomicInteger rec = new AtomicInteger();
-
-        // 本地物理基础路径
-        String basePath = FileUtils.getFileStoreRootPath(uid)  + "/" + path;
-        name.forEach(fileName -> {
-
-            // 本地完整路径
-            String local = basePath + "/" + fileName;
-            File file = new File(local);
-            if (file.isDirectory()) {
-                DirCollection dirCollection = FileUtils.deepScanDir(local);
-                dirCollection.getFileList().forEach(File::delete);
-                dirCollection.getDirList().forEach(File::delete);
-            }
-            file.delete();
-        });
-        return fileRecordService.deleteRecords(uid, path, name);
+        long res = 0L;
+        res += storeService.delete(uid, path, name);
+        fileRecordService.deleteRecords(uid, path, name);
+        return res;
     }
 
     /**
      * 移动文件
+     * @TODO 待完成，用于移动或重命名文件/文件夹
      * @param uid 用户ID 0表示公共
      * @param from 被移动的文件或文件夹所在目录（相对用户根目录）
      * @param name 被操作的文件名或文件夹名

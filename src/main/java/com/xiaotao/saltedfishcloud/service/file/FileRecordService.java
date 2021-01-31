@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.dao.FileDao;
+import com.xiaotao.saltedfishcloud.dao.NodeDao;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -24,6 +25,9 @@ public class FileRecordService {
 
     @Resource
     private NodeService nodeService;
+
+    @Resource
+    private NodeDao nodeDao;
 
     /**
      * 添加一个记录
@@ -50,17 +54,6 @@ public class FileRecordService {
      */
     int updateFileRecord(int uid, String name, String path, Long newSize, String newMd5) {
         String nid = nodeService.getNodeIdByPath(path);
-//        if(fileInfo != null && fileInfo.isDir()) {
-//            String path2;
-//            if ("/".equals(path)) {
-//                path2 = path + name;
-//            } else {
-//                path2 = path + "/" + name;
-//            }
-//            String nid2 = SecureUtils.getMd5(path2);
-//            pathMapService.deleteRecord(nid2);
-//            pathMapService.setRecord(path2);
-//        }
         return fileDao.updateRecord(uid, name, nid, newSize, newMd5);
     }
 
@@ -94,6 +87,18 @@ public class FileRecordService {
     }
 
     /**
+     * 向数据库系统新建一个文件夹记录
+     * @param uid   用户ID
+     * @param name  文件夹名称
+     * @param path  路径
+     */
+    public void mkdir(int uid, String name, String path) {
+        String pid = nodeService.getNodeIdByPath(path);
+        nodeService.addNode(uid, name, pid);
+        fileDao.addRecord(uid, name, (long) -1, null, pid);
+    }
+
+    /**
      * 删除一个文件夹下的所有文件记录
      * @param uid   用户ID 0表示公共
      * @param name  文件夹名
@@ -110,9 +115,8 @@ public class FileRecordService {
             ids.add(nodeInfo.getId());
         });
         int res = 0;
-        if (!ids.isEmpty()) {
-            res += fileDao.deleteDirsRecord(uid, ids);
-        }
+        nodeDao.deleteNodes(uid, ids);
+        res += fileDao.deleteDirsRecord(uid, ids);
         res += fileDao.deleteRecord(uid, nid, Collections.singletonList(name));
         return res;
     }

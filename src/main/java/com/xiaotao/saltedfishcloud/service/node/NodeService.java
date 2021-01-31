@@ -45,7 +45,7 @@ public class NodeService {
      * @param parent 父节点ID
      * @return 新节点ID
      */
-    public String addNode(String name, String parent) {
+    public String addNode(int uid, String name, String parent) {
         int i;
         String id;
         NodeInfo node = nodeDao.getNodeByParentId(parent, name);
@@ -54,7 +54,7 @@ public class NodeService {
         } else {
             do {
                 id = SecureUtils.getMd5(name + new Date() + Math.random());
-                i = nodeDao.addNode(name, id, parent);
+                i = nodeDao.addNode(uid, name, id, parent);
             } while (i == 0);
             return id;
         }
@@ -62,7 +62,9 @@ public class NodeService {
 
     /**
      * 取某节点下的所有子节点
-     * @return 某节点下的所有子节点（不包含自己）
+     * @param uid 用户ID
+     * @param nid 目标节点ID
+     * @return 目标节点下的所有子节点（不包含自己）
      */
     public List<NodeInfo> getChildNodes(int uid, String nid) {
         // 最终结果
@@ -75,7 +77,7 @@ public class NodeService {
         List<String> ids = new LinkedList<>();
         ids.add(nid);
         do {
-            nodes = nodeDao.getUserChildNodesByMulti(uid, ids);
+            nodes = nodeDao.getChildNodes(uid, ids);
             res.addAll(nodes);
             ids.clear();
             nodes.forEach(nodeInfo -> {

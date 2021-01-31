@@ -44,9 +44,9 @@ DROP TABLE IF EXISTS `node_list`;
 CREATE TABLE `node_list` (
   `name` varchar(512) DEFAULT NULL,
   `id` char(32) DEFAULT NULL,
-  `parent_id` char(32) NOT NULL DEFAULT 'root',
-  UNIQUE KEY `node_name_index` (`name`,`parent_id`),
-  KEY `id_index` (`id`)
+  `parent` char(32) DEFAULT NULL,
+  `uid` int(10) unsigned DEFAULT NULL,
+  UNIQUE KEY `node_name_index` (`parent`,`uid`,`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -92,4 +92,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-01-31 17:43:20
+-- Dump completed on 2021-02-01  1:03:59
