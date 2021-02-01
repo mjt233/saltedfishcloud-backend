@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class HasResultException extends Exception {
+public class HasResultException extends RuntimeException {
     private JsonResult jsonResult;
 
     public HasResultException(String message) {

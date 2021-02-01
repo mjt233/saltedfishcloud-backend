@@ -57,7 +57,7 @@ public class PathBuilder {
 
     /**
      * 清空
-     * @return
+     * @return 自己
      */
     public PathBuilder clear() {
         path.clear();

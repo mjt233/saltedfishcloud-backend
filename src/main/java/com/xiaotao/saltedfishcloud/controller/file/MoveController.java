@@ -24,6 +24,9 @@ public class MoveController {
                            @RequestParam("oldName") String oldName,
                            @RequestParam("newName") String newName) throws HasResultException {
         String from = URLUtils.getRequestFilePath("/api/rename/private", request);
+        if (newName.length() < 1) {
+            throw new HasResultException(400, "文件名不能为空");
+        }
         fileService.rename(SecureUtils.getSpringSecurityUser().getId(), from, oldName, newName);
         return JsonResult.getInstance();
     }
