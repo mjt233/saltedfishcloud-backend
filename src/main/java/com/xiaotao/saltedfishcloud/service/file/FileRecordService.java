@@ -115,7 +115,6 @@ public class FileRecordService {
      * @param uid   用户ID 0表示公共
      * @param name  文件夹名
      * @param nid  文件夹所在节点
-     * @TODO 增加删除无效的节点记录
      * @return 删除的条数
      */
     private int deleteDirRecord(int uid, String name, String nid) {
