@@ -109,4 +109,18 @@ public interface FileDao {
             "</script>"
     })
     List<FileInfo> getFilesInfo(@Param("uid") Integer uid, @Param("names") Collection<String> name, @Param("nodeId") String nodeId);
+
+    /**
+     * 重命名文件或文件夹
+     * @param uid   用户ID
+     * @param nid   文件所在节点ID
+     * @param oldName   旧文件名
+     * @param newName   新文件名
+     * @return  受影响的行数
+     */
+    @Update("UPDATE file_table SET name=#{newName} WHERE uid=#{uid} AND node=#{nid} AND name=#{oldName}")
+    int rename(@Param("uid") Integer uid,
+               @Param("nid") String nid,
+               @Param("oldName") String oldName,
+               @Param("newName") String newName);
 }

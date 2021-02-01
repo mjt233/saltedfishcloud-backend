@@ -2,10 +2,7 @@ package com.xiaotao.saltedfishcloud.dao;
 
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.PathInfo;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 import org.springframework.security.core.parameters.P;
 
 import java.util.Collection;
@@ -35,8 +32,8 @@ public interface NodeDao {
     })
     List<NodeInfo> getChildNodes(@Param("uid") Integer uid, @Param("nid") Collection<String> nid );
 
-    @Select("SELECT name, id, parent, uid parent FROM node_list WHERE parent = #{pid} AND name = #{name}")
-    NodeInfo getNodeByParentId(@Param("pid") String pid, @Param("name") String name);
+    @Select("SELECT name, id, parent, uid parent FROM node_list WHERE uid = #{uid} AND parent = #{pid} AND name = #{name}")
+    NodeInfo getNodeByParentId(@Param("uid") Integer uid, @Param("pid") String pid, @Param("name") String name);
 
     @Delete({
             "<script>",
@@ -47,4 +44,35 @@ public interface NodeDao {
             "</script>"
     })
     int deleteNodes(@Param("uid") Integer uid, @Param("nodes") Collection<String> nodes);
+
+    /**
+     * 修改节点的父节点
+     * @param uid   用户ID
+     * @param nid   节点ID
+     * @param parent    新的父节点ID
+     * @return 影响的行数
+     */
+    @Update("UPDATE node_list SET parent=#{parent} WHERE nid=#{nid} AND uid=#{uid}")
+    int changeParent(@Param("uid") Integer uid, @Param("nid") String nid, @Param("parent") String parent);
+
+    /**
+     * 修改节点的名称
+     * @param uid   用户ID
+     * @param nid   节点ID
+     * @param name  节点名称
+     * @return 影响的行数
+     */
+    @Update("UPDATE node_list SET name=#{name} WHERE nid=#{nid} AND uid=#{uid}")
+    int changeName(@Param("uid") Integer uid, @Param("nid") String nid, @Param("name") String name);
+
+    /**
+     * 修改节点的父节点和名称
+     * @param uid   用户ID
+     * @param nid   节点ID
+     * @param parent    新的父节点ID
+     * @param name   新的节点名称
+     * @return 影响的行数
+     */
+    @Update("UPDATE node_list SET name=#{name}, parent=#{parent} WHERE nid=#{nid} AND uid=#{uid}")
+    int changNode(@Param("uid") Integer uid, @Param("nid") String nid,@Param("parent") String parent, @Param("name") String name);
 }

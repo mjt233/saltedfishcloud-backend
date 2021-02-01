@@ -1,15 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
-import com.xiaotao.saltedfishcloud.po.DirCollection;
 import com.xiaotao.saltedfishcloud.po.FileCacheInfo;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.PathBuilder;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.ResponseEntity;
@@ -27,8 +23,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service("fileService")
 public class FileService {
@@ -168,18 +162,12 @@ public class FileService {
      * 移动文件
      * @TODO 待完成，用于移动或重命名文件/文件夹
      * @param uid 用户ID 0表示公共
-     * @param from 被移动的文件或文件夹所在目录（相对用户根目录）
+     * @param path 文件所在路径（相对用户网盘目录）
      * @param name 被操作的文件名或文件夹名
-     * @param to 被移动到的目录（相对用户根目录）
      * @param newName 新文件名
      */
-    public void move(int uid, String from, String name, String to, String newName) {
-        storeService.move(uid, from, name, to, newName);
-//        String originLocalPath =
-//        if (fileInfo.isDir()) {
-//
-//        } else {
-//            storeService.move(uid, f);
-//        }
+    public void rename(int uid, String path, String name, String newName) throws HasResultException {
+        storeService.rename(uid, path, name, newName);
+        fileRecordService.rename(uid, path, name, newName);
     }
 }

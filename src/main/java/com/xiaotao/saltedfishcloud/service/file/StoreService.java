@@ -66,19 +66,29 @@ public class StoreService {
     }
 
     /**
-     * 移动文件 也可用于重命名文件
+     * 文件重命名
      * @param uid   用户ID 0表示公共
-     * @param from  被移动的文件所在目录（相对用户根目录）
+     * @param path  文件所在路径
      * @param oldName 旧文件名
-     * @param to    被移动到的位置（相对用户根目录）
      * @param newName 新文件名
      */
-    public void move(int uid, String from, String oldName, String to, String newName) {
-        if (pathHandler instanceof RawPathHandler) {
-            System.out.println("原始");
-        } else {
-            System.out.println("唯一");
+    public void rename(int uid, String path, String oldName, String newName) throws HasResultException {
+        if ( !(pathHandler instanceof RawPathHandler)){
+            return;
         }
+        String base = FileUtils.getFileStoreRootPath(uid);
+        File origin = new File(base + "/" + path + "/" + oldName);
+        File dist = new File(base + "/" + path + "/" + newName);
+        if (!origin.exists()) {
+            throw new HasResultException("原文件不存在");
+        }
+        if (dist.exists()) {
+            throw new HasResultException("文件名冲突");
+        }
+        if (!origin.renameTo(dist)) {
+            throw new HasResultException("移动失败");
+        }
+
     }
 
     /**

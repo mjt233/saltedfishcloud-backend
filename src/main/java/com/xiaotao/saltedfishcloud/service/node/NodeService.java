@@ -23,14 +23,14 @@ public class NodeService {
      * @param path 完整路径
      * @return 路径ID
      */
-    public String getNodeIdByPath(String path) {
+    public String getNodeIdByPath(int uid, String path) {
         LinkedList<NodeInfo> link = new LinkedList<>();
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         Collection<String> paths = pb.getPath();
         paths.forEach(node -> {
             String parent = link.isEmpty() ? "root" : link.getLast().getId();
-            link.add(nodeDao.getNodeByParentId(parent, node));
+            link.add(nodeDao.getNodeByParentId(uid, parent, node));
         });
         if (link.isEmpty()) {
             return "root";
@@ -48,7 +48,7 @@ public class NodeService {
     public String addNode(int uid, String name, String parent) {
         int i;
         String id;
-        NodeInfo node = nodeDao.getNodeByParentId(parent, name);
+        NodeInfo node = nodeDao.getNodeByParentId(uid, parent, name);
         if (node != null) {
             return node.getId();
         } else {

@@ -11,7 +11,7 @@ public class HasResultException extends Exception {
 
     public HasResultException(String message) {
         super(message);
-        jsonResult = JsonResult.getInstance(-1, null, message);
+        jsonResult = JsonResult.getInstance(500, null, message);
     }
 
     public HasResultException(JsonResult jsonResult) {

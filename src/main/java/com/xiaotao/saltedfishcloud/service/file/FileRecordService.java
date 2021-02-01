@@ -39,7 +39,7 @@ public class FileRecordService {
      * @return 添加数量
      */
     public int addRecord(int uid, String name, Long size, String md5, String path) {
-        String nodeId = nodeService.getNodeIdByPath(path);
+        String nodeId = nodeService.getNodeIdByPath(uid, path);
         return fileDao.addRecord(uid, name, size, md5, nodeId);
     }
 
@@ -53,7 +53,7 @@ public class FileRecordService {
      * @return 影响行数
      */
     int updateFileRecord(int uid, String name, String path, Long newSize, String newMd5) {
-        String nid = nodeService.getNodeIdByPath(path);
+        String nid = nodeService.getNodeIdByPath(uid, path);
         return fileDao.updateRecord(uid, name, nid, newSize, newMd5);
     }
 
@@ -65,7 +65,7 @@ public class FileRecordService {
      * @return 删除的文件个数
      */
     public int deleteRecords(int uid, String path, Collection<String> name) {
-        String nid = nodeService.getNodeIdByPath(path);
+        String nid = nodeService.getNodeIdByPath(uid, path);
         List<FileInfo> infos = fileDao.getFilesInfo(uid, name, nid);
 
         // 先将文件和文件夹分开并单独提取其文件名
@@ -93,9 +93,21 @@ public class FileRecordService {
      * @param path  路径
      */
     public void mkdir(int uid, String name, String path) {
-        String pid = nodeService.getNodeIdByPath(path);
+        String pid = nodeService.getNodeIdByPath(uid, path);
         nodeService.addNode(uid, name, pid);
         fileDao.addRecord(uid, name, (long) -1, null, pid);
+    }
+
+    /**
+     * 对文件或文件夹进行重命名
+     * @param uid   用户ID
+     * @param path  目标文件或文件夹所在路径
+     * @param name  新文件名
+     * @param newName 新文件名
+     */
+    public void rename(int uid, String path, String name, String newName) {
+        String nid = nodeService.getNodeIdByPath(uid, path);
+        fileDao.rename(uid, nid, name, newName);
     }
 
     /**

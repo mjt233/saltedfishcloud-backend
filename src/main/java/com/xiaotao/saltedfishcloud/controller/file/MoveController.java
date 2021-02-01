@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.controller.file;
 
+import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -18,13 +19,12 @@ public class MoveController {
     @Resource
     private FileService fileService;
 
-    @PostMapping("/move/private/**")
+    @PostMapping("/rename/private/**")
     public JsonResult move(HttpServletRequest request,
-                           @RequestParam("to") String to,
                            @RequestParam("oldName") String oldName,
-                           @RequestParam("newName") String newName) {
-        String from = URLUtils.getRequestFilePath("/api/private/move", request);
-        fileService.move(SecureUtils.getSpringSecurityUser().getId(), from, oldName, to, newName);
-        return JsonResult.getInstance(from);
+                           @RequestParam("newName") String newName) throws HasResultException {
+        String from = URLUtils.getRequestFilePath("/api/rename/private", request);
+        fileService.rename(SecureUtils.getSpringSecurityUser().getId(), from, oldName, newName);
+        return JsonResult.getInstance();
     }
 }

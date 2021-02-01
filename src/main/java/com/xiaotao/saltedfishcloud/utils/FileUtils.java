@@ -71,7 +71,7 @@ public class FileUtils {
     /**
      * 通过UID获取文件存储的用户根目录，公共用户使用DiskConfig.PUBLIC_ROOT 其他用户使用DiskConfig.PRIVATE_ROOT + "/" + {username}
      * @param uid 用户ID 0表示公共
-     * @return 本地文件存储用户根目录
+     * @return 本地文件存储用户根目录，末尾不带/
      */
     static public String getFileStoreRootPath(int uid) {
         return PathBuilder.formatPath(uid == 0 ? DiskConfig.PUBLIC_ROOT : DiskConfig.getUserPrivatePath());
