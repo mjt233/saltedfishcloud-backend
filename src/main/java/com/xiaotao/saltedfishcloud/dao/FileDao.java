@@ -90,7 +90,7 @@ public interface FileDao {
      * @param nodeId 文件所在节点ID
      * @return 文件信息
      */
-    @Select("SELECT name, size, md5, path FROM file_table A, path_map B WHERE A.node=B.id AND uid=#{uid} AND node=#{nodeId} AND name=#{name}")
+    @Select("SELECT name, size, md5 FROM file_table WHERE uid=#{uid} AND node=#{nodeId} AND name=#{name}")
     FileInfo getFileInfo(@Param("uid") Integer uid, @Param("name") String name, @Param("nodeId") String nodeId);
 
     /**

@@ -52,17 +52,17 @@ public interface NodeDao {
      * @param parent    新的父节点ID
      * @return 影响的行数
      */
-    @Update("UPDATE node_list SET parent=#{parent} WHERE nid=#{nid} AND uid=#{uid}")
+    @Update("UPDATE node_list SET parent=#{parent} WHERE id=#{nid} AND uid=#{uid}")
     int changeParent(@Param("uid") Integer uid, @Param("nid") String nid, @Param("parent") String parent);
 
     /**
      * 修改节点的名称
      * @param uid   用户ID
      * @param nid   节点ID
-     * @param name  节点名称
+     * @param name  新的节点名称
      * @return 影响的行数
      */
-    @Update("UPDATE node_list SET name=#{name} WHERE nid=#{nid} AND uid=#{uid}")
+    @Update("UPDATE node_list SET name=#{name} WHERE id=#{nid} AND uid=#{uid}")
     int changeName(@Param("uid") Integer uid, @Param("nid") String nid, @Param("name") String name);
 
     /**
@@ -73,6 +73,6 @@ public interface NodeDao {
      * @param name   新的节点名称
      * @return 影响的行数
      */
-    @Update("UPDATE node_list SET name=#{name}, parent=#{parent} WHERE nid=#{nid} AND uid=#{uid}")
+    @Update("UPDATE node_list SET name=#{name}, parent=#{parent} WHERE id=#{nid} AND uid=#{uid}")
     int changNode(@Param("uid") Integer uid, @Param("nid") String nid,@Param("parent") String parent, @Param("name") String name);
 }

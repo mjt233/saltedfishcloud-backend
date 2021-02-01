@@ -167,7 +167,7 @@ public class FileService {
      * @param newName 新文件名
      */
     public void rename(int uid, String path, String name, String newName) throws HasResultException {
-        storeService.rename(uid, path, name, newName);
         fileRecordService.rename(uid, path, name, newName);
+        storeService.rename(uid, path, name, newName);
     }
 }
