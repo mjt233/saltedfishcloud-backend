@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.controller.file;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.po.FileCacheInfo;
+import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class ResourcesController {
     @GetMapping("/search/public/**")
     public JsonResult search(HttpServletRequest request, String key,@RequestParam(value = "page", defaultValue = "1") Integer page) {
         PageHelper.startPage(page, 10);
-        PageInfo<FileCacheInfo> pageInfo = new PageInfo<>(fileService.search(key));
+        PageInfo<FileInfo> pageInfo = new PageInfo<>(fileService.search(0, key));
         return JsonResult.getInstance(pageInfo);
     }
 }

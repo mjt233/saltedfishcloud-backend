@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +19,7 @@ public class UploadController {
     @Resource
     FileService fileService;
     @RequestMapping("private/**")
+    @Transactional(rollbackFor = Exception.class)
     public JsonResult uploadPrivate(HttpServletRequest request,
                                     @RequestAttribute User user,
                                     @RequestParam("file") MultipartFile file,

@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -16,6 +17,7 @@ public class MkdirController {
     @Resource
     FileService fileService;
     @PostMapping("private/**")
+    @Transactional(rollbackFor = Exception.class)
     public JsonResult privateMkdir(@RequestAttribute User user,
                                    HttpServletRequest request,
                                    @RequestParam("name") String name) throws HasResultException {

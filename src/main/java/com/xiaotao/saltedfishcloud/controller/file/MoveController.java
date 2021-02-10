@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,6 +21,7 @@ public class MoveController {
     private FileService fileService;
 
     @PostMapping("/rename/private/**")
+    @Transactional(rollbackFor = Exception.class)
     public JsonResult move(HttpServletRequest request,
                            @RequestParam("oldName") String oldName,
                            @RequestParam("newName") String newName) throws HasResultException {

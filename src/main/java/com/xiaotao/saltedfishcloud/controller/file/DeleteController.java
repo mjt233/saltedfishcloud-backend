@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -19,6 +20,7 @@ public class DeleteController {
     @Resource
     FileService fileService;
     @DeleteMapping("private/**")
+    @Transactional(rollbackFor = Exception.class)
     public JsonResult deletePrivate(HttpServletRequest request, @RequestBody FileNameList fileName, @RequestAttribute User user) {
         String path = URLUtils.getRequestFilePath("/api/private", request);
         fileService.deleteFile(user.getId(), path, fileName.getFileName());

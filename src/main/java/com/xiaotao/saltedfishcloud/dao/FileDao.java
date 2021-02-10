@@ -8,8 +8,9 @@ import java.util.Collection;
 import java.util.List;
 
 public interface FileDao {
-    @Select("SELECT * FROM file_cache WHERE name like #{key}")
-    List<FileCacheInfo> search(String key);
+    @Select("SELECT * FROM file_table WHERE uid = #{uid} AND name like #{key}")
+    List<FileInfo> search(@Param("uid") Integer uid,
+                                     @Param("key") String key);
 
     /**
      * 添加一条文件记录

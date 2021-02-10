@@ -90,9 +90,9 @@ public class FileService {
                 .body(urlResource);
     }
 
-    public List<FileCacheInfo> search(String key) {
+    public List<FileInfo> search(int uid, String key) {
         key = "%" + key.replaceAll("/s+", "%") + "%";
-        return fileDao.search(key);
+        return fileDao.search(uid, key);
     }
 
 
