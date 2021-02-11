@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.po;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.*;
@@ -27,6 +28,8 @@ public class FileInfo {
     private Long size;
     private Integer type;
     private Long lastModified;
+    private Date created_at;
+    private Date updated_at;
 
     public FileInfo(MultipartFile file) {
         name = file.getOriginalFilename();
@@ -52,6 +55,7 @@ public class FileInfo {
         lastModified = file.lastModified();
     }
 
+    @JsonIgnore
     public String getFormatSize() {
         if (type == TYPE_DIR) {
             return "-";
@@ -81,7 +85,15 @@ public class FileInfo {
      * @return 日期字符串
      */
     public String getFormatModified() {
-        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond(lastModified / 1000, 0, ZoneOffset.ofHours(8));
+        long time = 0;
+        if (lastModified != null) {
+            time = lastModified;
+        } else if (updated_at != null) {
+            time = updated_at.getTime();
+        } else if (created_at != null) {
+            time = created_at.getTime();
+        }
+        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond(time / 1000, 0, ZoneOffset.ofHours(8));
         return localDateTime.toLocalDate() + " " + localDateTime.toLocalTime();
     }
 

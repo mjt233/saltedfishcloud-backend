@@ -1,9 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file.path;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.PathBuilder;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import org.springframework.stereotype.Component;
 
 /**

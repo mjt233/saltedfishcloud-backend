@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.utils;
+package com.xiaotao.saltedfishcloud.po;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.LinkedHashMap;

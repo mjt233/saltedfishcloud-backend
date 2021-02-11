@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.exception;
 
-import com.xiaotao.saltedfishcloud.utils.JsonResult;
+import com.xiaotao.saltedfishcloud.po.JsonResult;
 
 public class UserNoExistException extends HasResultException{
 

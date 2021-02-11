@@ -1,14 +1,13 @@
 package com.xiaotao.saltedfishcloud.controller.advice;
 
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
-import com.xiaotao.saltedfishcloud.utils.JsonResult;
+import com.xiaotao.saltedfishcloud.po.JsonResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
 
 @Slf4j

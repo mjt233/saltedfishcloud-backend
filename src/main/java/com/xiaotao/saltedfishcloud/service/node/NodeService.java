@@ -1,10 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
+import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
-import com.xiaotao.saltedfishcloud.utils.PathBuilder;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.Collection;
@@ -24,21 +26,34 @@ public class NodeService {
      * @return 路径ID
      */
     public NodeInfo getNodeIdByPath(int uid, String path) {
+        return getPathNodeByPath(uid, path).getLast();
+    }
+
+    /**
+     * 获取某个路径中途径的节点信息
+     * @param uid   用户ID
+     * @param path  路径
+     * @return  节点信息列表
+     */
+    public LinkedList<NodeInfo> getPathNodeByPath(int uid, String path) {
         LinkedList<NodeInfo> link = new LinkedList<>();
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         Collection<String> paths = pb.getPath();
-        paths.forEach(node -> {
-            String parent = link.isEmpty() ? "root" : link.getLast().getId();
-            link.add(nodeDao.getNodeByParentId(uid, parent, node));
-        });
-        if (link.isEmpty()) {
+        try {
+            paths.forEach(node -> {
+                String parent = link.isEmpty() ? "root" : link.getLast().getId();
+                link.add(nodeDao.getNodeByParentId(uid, parent, node));
+            });
+            if (link.isEmpty()) {
+                throw new NullPointerException();
+            }
+        } catch (NullPointerException e) {
             NodeInfo info = new NodeInfo();
             info.setId("root");
-            return info;
-        } else {
-            return link.getLast();
+            link.add(info);
         }
+        return link;
     }
 
     /**
@@ -93,5 +108,42 @@ public class NodeService {
         } else {
             return 0;
         }
+    }
+
+    /**
+     * 通过节点ID 获取节点所在的完整路径位置
+     * @param uid       用户ID
+     * @param nodeId    节点ID
+     * @return          完整路径
+     */
+    public String getPathByNode(int uid, String nodeId) {
+        if (nodeId.equals("root")) {
+            return "/";
+        }
+        LinkedList<String> link = new LinkedList<>();
+        String lastId = nodeId;
+        NodeInfo info;
+
+        // 递归查询
+        while ( (info = nodeDao.getNodeById(uid, lastId)) != null) {
+            link.addFirst(info.getName());
+            lastId = info.getParent();
+            if (info.getParent().equals("root")) {
+                break;
+            }
+        }
+        if (link.isEmpty()) {
+            throw new HasResultException(404, "无效的nodeId");
+        }
+        StringBuilder stringBuilder = new StringBuilder();
+        link.forEach(name -> {
+            stringBuilder.append("/").append(name);
+        });
+        return stringBuilder.toString();
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void test() {
+        nodeDao.addNode(233, "test", "test", "test");
     }
 }

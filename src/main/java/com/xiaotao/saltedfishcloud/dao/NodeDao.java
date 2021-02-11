@@ -9,6 +9,25 @@ import java.util.Collection;
 import java.util.List;
 
 public interface NodeDao {
+
+    /**
+     * 通过节点ID获取节点详细信息
+     * @param uid   用户ID
+     * @param nodeId    节点ID
+     * @return  节点信息或null
+     */
+    @Select("SELECT name,id,parent,uid FROM node_list WHERE uid=#{uid} AND id=#{nodeId}")
+    NodeInfo getNodeById(@Param("uid") Integer uid,
+                         @Param("nodeId") String nodeId);
+
+    /**
+     * 插入一个节点
+     * @param uid   用户ID
+     * @param name  节点名称
+     * @param id    节点ID
+     * @param parent    父节点
+     * @return  插入的行数
+     */
     @Insert("INSERT IGNORE INTO node_list (name, id, parent, uid) VALUES (#{name}, #{id}, #{parent}, #{uid})")
     int addNode(@Param("uid") Integer uid,
                 @Param("name") String name,
@@ -32,6 +51,13 @@ public interface NodeDao {
     })
     List<NodeInfo> getChildNodes(@Param("uid") Integer uid, @Param("nid") Collection<String> nid );
 
+    /**
+     * 通过父节点ID获取某个目录节点信息
+     * @param uid   用户ID
+     * @param pid   父节点ID
+     * @param name  目标节点名称
+     * @return  节点信息
+     */
     @Select("SELECT name, id, parent, uid parent FROM node_list WHERE uid = #{uid} AND parent = #{pid} AND name = #{name}")
     NodeInfo getNodeByParentId(@Param("uid") Integer uid, @Param("pid") String pid, @Param("name") String name);
 

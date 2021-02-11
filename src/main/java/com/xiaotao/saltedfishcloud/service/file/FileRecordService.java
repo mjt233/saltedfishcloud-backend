@@ -2,9 +2,13 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
+import com.xiaotao.saltedfishcloud.po.DirCollection;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -19,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 文件索引记录服务，管理数据库中的文件结构表
  */
 @Service
+@Slf4j
 public class FileRecordService {
     @Resource
     private FileDao fileDao;
@@ -40,6 +45,7 @@ public class FileRecordService {
      */
     public int addRecord(int uid, String name, Long size, String md5, String path) {
         NodeInfo node = nodeService.getNodeIdByPath(uid, path);
+        log.info("addRecord: uid="+uid+" name="+name+" size="+size+" md5="+md5+" path="+path);
         return fileDao.addRecord(uid, name, size, md5, node.getId());
     }
 
@@ -90,12 +96,13 @@ public class FileRecordService {
      * 向数据库系统新建一个文件夹记录
      * @param uid   用户ID
      * @param name  文件夹名称
-     * @param path  路径
+     * @param path  所在路径
      */
     public void mkdir(int uid, String name, String path) {
+        log.info("mkdir name=" + name +" path=" + path);
         NodeInfo node = nodeService.getNodeIdByPath(uid, path);
-        nodeService.addNode(uid, name, node.getId());
-        fileDao.addRecord(uid, name, (long) -1, null, node.getId());
+        String nodeId = nodeService.addNode(uid, name, node.getId());
+        fileDao.addRecord(uid, name, -1L, nodeId, node.getId());
     }
 
     /**
@@ -116,6 +123,22 @@ public class FileRecordService {
     }
 
     /**
+     * 将本地公共网盘的文件信息写入数据库
+     */
+    public void makePublicRecord() {
+        DirCollection dirCollection = FileUtils.broadScanDir(FileUtils.getFileStoreRootPath(0));
+        dirCollection.getDirList().forEach(file -> {
+            mkdir(0, file.getName(), PathUtils.getRelativePath(0, file.getParent()));
+        });
+        dirCollection.getFileList().forEach(file -> {
+            log.info("Reading " + file.getPath());
+            FileInfo fileInfo = new FileInfo(file);
+            fileInfo.updateMd5();
+            addRecord(0, file.getName(), file.length(), fileInfo.getMd5(), PathUtils.getRelativePath(0, file.getParent()));
+        });
+    }
+
+    /**
      * 删除一个文件夹下的所有文件记录
      * @param uid   用户ID 0表示公共
      * @param name  文件夹名
@@ -130,7 +153,9 @@ public class FileRecordService {
         childNodes.forEach(nodeInfo -> ids.add(nodeInfo.getId()));
         int res = 0;
         nodeService.deleteNodes(uid, ids);
-        res += fileDao.deleteDirsRecord(uid, ids);
+        if (!ids.isEmpty()) {
+            res += fileDao.deleteDirsRecord(uid, ids);
+        }
         res += fileDao.deleteRecord(uid, nid, Collections.singletonList(name));
         return res;
     }

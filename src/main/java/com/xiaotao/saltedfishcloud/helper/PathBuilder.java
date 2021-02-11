@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.utils;
+package com.xiaotao.saltedfishcloud.helper;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -44,6 +44,7 @@ public class PathBuilder {
         }
         return this;
     }
+
 
     /**
      * 对路径进行格式化 去除重复或末尾的的/或\

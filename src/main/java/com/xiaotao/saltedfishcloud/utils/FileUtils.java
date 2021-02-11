@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.DirCollection;
 
 import java.io.File;
@@ -58,8 +59,31 @@ public class FileUtils {
             res.addFile(file);
         });
         while (!detectedDirs.isEmpty()) {
-            File dir = detectedDirs.getLast();
-            detectedDirs.removeLast();
+            File dir = detectedDirs.getFirst();
+            detectedDirs.pop();
+            Arrays.stream(new File(dir.getPath()).listFiles()).forEach(file -> {
+                if (file.isDirectory()) detectedDirs.push(file);
+                res.addFile(file);
+            });
+        }
+        return res;
+    }
+
+    /**
+     * 广度搜索遍历目录，取出文件夹下的所有文件和目录
+     * @param path 本地文件夹路径
+     * @return DirCollection对象
+     */
+    static public DirCollection broadScanDir(String path) {
+        LinkedList<File> detectedDirs = new LinkedList<>();
+        DirCollection res = new DirCollection();
+        Arrays.stream(new File(path).listFiles()).forEach(file -> {
+            if (file.isDirectory()) detectedDirs.addLast(file);
+            res.addFile(file);
+        });
+        while (!detectedDirs.isEmpty()) {
+            File dir = detectedDirs.getFirst();
+            detectedDirs.removeFirst();
             Arrays.stream(new File(dir.getPath()).listFiles()).forEach(file -> {
                 if (file.isDirectory()) detectedDirs.addLast(file);
                 res.addFile(file);

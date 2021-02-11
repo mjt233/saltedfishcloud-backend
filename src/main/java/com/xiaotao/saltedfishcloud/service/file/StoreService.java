@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.PathBuilder;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
