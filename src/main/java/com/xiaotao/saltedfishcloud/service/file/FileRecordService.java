@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -45,7 +47,6 @@ public class FileRecordService {
      */
     public int addRecord(int uid, String name, Long size, String md5, String path) {
         NodeInfo node = nodeService.getNodeIdByPath(uid, path);
-        log.info("addRecord: uid="+uid+" name="+name+" size="+size+" md5="+md5+" path="+path);
         return fileDao.addRecord(uid, name, size, md5, node.getId());
     }
 
@@ -99,7 +100,6 @@ public class FileRecordService {
      * @param path  所在路径
      */
     public void mkdir(int uid, String name, String path) {
-        log.info("mkdir name=" + name +" path=" + path);
         NodeInfo node = nodeService.getNodeIdByPath(uid, path);
         String nodeId = nodeService.addNode(uid, name, node.getId());
         fileDao.addRecord(uid, name, -1L, nodeId, node.getId());
@@ -127,15 +127,34 @@ public class FileRecordService {
      */
     public void makePublicRecord() {
         DirCollection dirCollection = FileUtils.broadScanDir(FileUtils.getFileStoreRootPath(0));
+        AtomicLong atomicLong = new AtomicLong();
+        atomicLong.set(0);
+        long total = dirCollection.getDirsCount();
+
+        // 先创建目录
+        long finalTotal = total;
         dirCollection.getDirList().forEach(file -> {
-            mkdir(0, file.getName(), PathUtils.getRelativePath(0, file.getParent()));
+            String path = PathUtils.getRelativePath(0, file.getParent());
+            String proc = StringUtils.getProcStr(atomicLong.get(), finalTotal, 10);
+            log.info("mkdir" + proc + " " + file.getName() + " at " + path);
+            mkdir(0, file.getName(), path);
+            atomicLong.incrementAndGet();
         });
+
+        // 再添加文件
+        atomicLong.set(0);
+        total = dirCollection.getSize();
+        long finalTotal1 = total;
         dirCollection.getFileList().forEach(file -> {
-            log.info("Reading " + file.getPath());
+            String path = PathUtils.getRelativePath(0, file.getParent());
+            String proc = StringUtils.getProcStr(atomicLong.get(), finalTotal1, 10);
+            log.info("addFile " + proc + " " + file.getName() + " at " + path);
             FileInfo fileInfo = new FileInfo(file);
             fileInfo.updateMd5();
-            addRecord(0, file.getName(), file.length(), fileInfo.getMd5(), PathUtils.getRelativePath(0, file.getParent()));
+            addRecord(0, file.getName(), file.length(), fileInfo.getMd5(), path);
+            atomicLong.addAndGet(file.length());
         });
+        log.info("Finish");
     }
 
     /**

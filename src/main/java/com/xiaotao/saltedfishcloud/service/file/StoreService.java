@@ -41,7 +41,7 @@ public class StoreService {
             byte[] buffer = new byte[8192];
             int len = 0;
             while ( (len = inputStream.read(buffer)) != -1 ) {
-                fileOutputStream.write(buffer);
+                fileOutputStream.write(buffer, 0, len);
             }
             fileOutputStream.close();
             inputStream.close();

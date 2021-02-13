@@ -51,7 +51,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         "/api/userLogin",
                         "/api/getPublicList/**",
                         "/pubdown/**",
-                        "/api/resource/search/public/**",
+                        "/api/resource/search/**",
                         "/api/resource/getPath",
                         "/api/regUser")
                 .permitAll() // 放行主页和公共网盘浏览

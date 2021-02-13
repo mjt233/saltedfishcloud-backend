@@ -112,6 +112,7 @@ public class NodeService {
 
     /**
      * 通过节点ID 获取节点所在的完整路径位置
+     * @TODO 使用缓存优化查询速度
      * @param uid       用户ID
      * @param nodeId    节点ID
      * @return          完整路径

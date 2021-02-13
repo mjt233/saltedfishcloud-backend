@@ -30,12 +30,22 @@ public class ResourcesController {
     NodeService nodeService;
 
     /**
-     * 公共文件搜索
+     * 文件搜索
      */
-    @GetMapping("/search/public/**")
-    public JsonResult search(HttpServletRequest request, String key,@RequestParam(value = "page", defaultValue = "1") Integer page) {
+    @GetMapping("/search/{uid}")
+    public JsonResult search(HttpServletRequest request,
+                             String key,
+                             @PathVariable int uid,
+                             @RequestParam(value = "page", defaultValue = "1") Integer page) {
+        try {
+            if (uid != 0 && uid != Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getId()) {
+                throw new NullPointerException();
+            }
+        } catch (NullPointerException e) {
+            throw new HasResultException(403, "无权访问");
+        }
         PageHelper.startPage(page, 10);
-        List<FileInfo> res = fileService.search(0, key);
+        List<FileInfo> res = fileService.search(uid, key);
         PageInfo<FileInfo> pageInfo = new PageInfo<>(res);
         return JsonResult.getInstance(pageInfo);
     }

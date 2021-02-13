@@ -46,4 +46,27 @@ public class StringUtils {
         }
     }
 
+    /**
+     * 生成一个进度条字符串
+     * @param loaded    已完成
+     * @param total     总量
+     * @param len       进度条长度
+     * @return          进度条字符串
+     */
+    public static String getProcStr(long loaded, long total, int len) {
+        StringBuilder stringBuilder = new StringBuilder();
+        double rate = (double)loaded/total;
+        stringBuilder.append(String.format("[%.2f%%][", rate*100));
+        int ok = (int) (rate*len);
+        for (int i = 0; i < ok; i++) {
+            stringBuilder.append("+");
+        }
+        int n = len - ok;
+        for (int i = 0; i < n; i++) {
+            stringBuilder.append("-");
+        }
+        stringBuilder.append("]");
+        return stringBuilder.toString();
+    }
+
 }
