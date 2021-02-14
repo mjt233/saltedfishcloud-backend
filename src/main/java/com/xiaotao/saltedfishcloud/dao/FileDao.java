@@ -8,7 +8,10 @@ import java.util.Collection;
 import java.util.List;
 
 public interface FileDao {
-    @Select("SELECT * FROM file_table WHERE uid = #{uid} AND name like #{key}")
+    @Select("SELECT A.*, B.name AS parent FROM " +
+            "file_table A LEFT JOIN node_list B ON " +
+            " A.node = B.id " +
+            "WHERE A.uid = #{uid} AND A.name like #{key}")
     List<FileInfo> search(@Param("uid") Integer uid,
                                      @Param("key") String key);
 

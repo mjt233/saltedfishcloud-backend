@@ -1,22 +1,19 @@
 package com.xiaotao.saltedfishcloud.controller.file;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
-import com.xiaotao.saltedfishcloud.po.User;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
+import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Collection;
 
@@ -25,52 +22,26 @@ public class BrowseController {
 
     @Resource
     FileService fileService;
-    @GetMapping("/public/**")
-    public String publicList(Model model, HttpServletRequest request, HttpServletResponse response) {
-        String uri = null;
-        Collection<? extends FileInfo>[] fileList = null;
-        String path = URLUtils.getRequestFilePath("/public", request);
-        String srcPath = DiskConfig.PUBLIC_ROOT + "/" + path;
-        model.addAttribute("uri", path);
-        try {
-            fileList = fileService.getFileList(srcPath);
-            model.addAttribute("files", fileList[1]);
-            model.addAttribute("dirs", fileList[0]);
-        } catch (FileNotFoundException e) {
-            response.setStatus(404);
-            return "error/404";
-        } catch (NullPointerException e) {
-            model.addAttribute("file",new FileInfo(new File(srcPath)));
-            return "fileDownload";
-        }
-        return "filelist";
-    }
 
-    @GetMapping("/api/public/**")
+    @GetMapping("/api/fileList/{uid}/**")
     @ResponseBody
-    public JsonResult getPublicList(HttpServletRequest request) throws HasResultException {
-        String path = URLUtils.getRequestFilePath("/api/public", request);
+    public JsonResult getFileList(HttpServletRequest request,
+                                  @PathVariable int uid) {
+        // 解析URL
+        UIDValidator.validate(uid);
+        String prefix = "/api/fileList/" + uid;
+        String requestPath = URLUtils.getRequestFilePath(prefix, request);
+
+        String baseLocalPath = FileUtils.getFileStoreRootPath(uid);
+
         Collection<? extends FileInfo>[] fileList = null;
         try {
-            fileList = fileService.getFileList(DiskConfig.PUBLIC_ROOT + "/" + path);
+            fileList = fileService.getFileList(baseLocalPath + "/" + requestPath);
         } catch (FileNotFoundException e) {
             throw new HasResultException(404, "路径不存在");
         }
         return JsonResult.getInstance(fileList);
-    }
 
-    @GetMapping("/api/private/**")
-    @ResponseBody
-    public JsonResult getPrivateList(HttpServletRequest request,
-                                     @RequestAttribute User user) throws FileNotFoundException {
-        String requestFilePath = URLUtils.getRequestFilePath("/api/private", request);
-        String userBasePath = DiskConfig.PRIVATE_ROOT + "/" + user.getUser();
-        File file = new File(userBasePath);
-        if (!file.exists()) {
-            file.mkdir();
-        }
-        Collection<? extends FileInfo>[] fileList = fileService.getFileList(userBasePath + requestFilePath);
-        return JsonResult.getInstance(fileList);
     }
 
 }

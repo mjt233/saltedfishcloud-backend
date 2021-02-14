@@ -98,6 +98,6 @@ public class FileUtils {
      * @return 本地文件存储用户根目录，末尾不带/
      */
     static public String getFileStoreRootPath(int uid) {
-        return PathBuilder.formatPath(uid == 0 ? DiskConfig.PUBLIC_ROOT : DiskConfig.getUserPrivatePath());
+        return PathBuilder.formatPath(uid == 0 ? DiskConfig.PUBLIC_ROOT : DiskConfig.getUserPrivatePath(), false);
     }
 }

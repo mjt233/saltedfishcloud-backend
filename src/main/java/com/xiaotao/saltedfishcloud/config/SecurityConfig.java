@@ -45,12 +45,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
                 .antMatchers("/",
-                        "/api/public/**",
+                        "/api/fileList/*/**",
+                        "/download/*/**",
                         "/api/logout",
                         "/login",
                         "/api/userLogin",
-                        "/api/getPublicList/**",
-                        "/pubdown/**",
                         "/api/resource/search/**",
                         "/api/resource/getPath",
                         "/api/regUser")

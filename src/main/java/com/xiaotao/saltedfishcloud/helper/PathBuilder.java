@@ -1,13 +1,18 @@
 package com.xiaotao.saltedfishcloud.helper;
 
+import lombok.Data;
+
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 用于构建URL
  */
+@Data
 public class PathBuilder {
     private LinkedList<String> path;
+    private boolean prefix = true;
 
 
     public PathBuilder() {
@@ -49,11 +54,22 @@ public class PathBuilder {
     /**
      * 对路径进行格式化 去除重复或末尾的的/或\
      * @param path 输入路径
+     * @param prefix 前缀
+     * @return 标准化后的路径
+     */
+    public static String formatPath(String path, boolean prefix) {
+        PathBuilder pb = new PathBuilder();
+        pb.setPrefix(prefix);
+        return pb.append(path).toString();
+    }
+
+    /**
+     * 对路径进行格式化 去除重复或末尾的的/或\
+     * @param path 输入路径
      * @return 标准化后的路径
      */
     public static String formatPath(String path) {
-        PathBuilder pb = new PathBuilder();
-        return pb.append(path).toString();
+        return formatPath(path, true);
     }
 
     /**
@@ -68,8 +84,13 @@ public class PathBuilder {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        AtomicBoolean first = new AtomicBoolean(true);
         path.forEach(node -> {
-            sb.append("/").append(node);
+            if (prefix || !first.get()) {
+                sb.append("/");
+            }
+            sb.append(node);
+            first.set(false);
         });
         if (sb.length() == 0) {
             return "/";

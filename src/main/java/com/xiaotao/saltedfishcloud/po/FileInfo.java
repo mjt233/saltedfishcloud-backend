@@ -23,6 +23,9 @@ public class FileInfo {
     public final static int TYPE_DIR = 1;
     public final static int TYPE_FILE = 2;
     private String name;
+    private String parent;
+
+    @JsonIgnore
     private String path;
     private String node;
     private Long size;
@@ -49,7 +52,7 @@ public class FileInfo {
     public FileInfo(File file) {
         originFile = file;
         name = file.getName();
-        size = file.length();
+        size = file.isFile() ? file.length() : -1;
         type = file.isDirectory() ? TYPE_DIR : TYPE_FILE;
         path = file.getPath();
         lastModified = file.lastModified();

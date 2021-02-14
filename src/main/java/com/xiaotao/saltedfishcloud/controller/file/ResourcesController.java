@@ -2,22 +2,18 @@ package com.xiaotao.saltedfishcloud.controller.file;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.config.SecurityConfig;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
+import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
-import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.UIDValidator;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/resource")
@@ -37,13 +33,7 @@ public class ResourcesController {
                              String key,
                              @PathVariable int uid,
                              @RequestParam(value = "page", defaultValue = "1") Integer page) {
-        try {
-            if (uid != 0 && uid != Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getId()) {
-                throw new NullPointerException();
-            }
-        } catch (NullPointerException e) {
-            throw new HasResultException(403, "无权访问");
-        }
+        UIDValidator.validate(uid);
         PageHelper.startPage(page, 10);
         List<FileInfo> res = fileService.search(uid, key);
         PageInfo<FileInfo> pageInfo = new PageInfo<>(res);
@@ -67,15 +57,9 @@ public class ResourcesController {
      * @return
      */
     @GetMapping("/getPath")
-    public JsonResult getPath(@RequestParam("uid") Integer uid,
+    public JsonResult getPath(@RequestParam("uid") int uid,
                               @RequestParam("nodeId") String node) {
-        try {
-            if (uid !=0 && uid != Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getId()) {
-                throw new NullPointerException();
-            }
-        } catch (NullPointerException e) {
-            throw new HasResultException(403, "无权访问");
-        }
+        UIDValidator.validate(uid);
         return JsonResult.getInstance(nodeService.getPathByNode(uid, node));
     }
 }
