@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.config;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,6 +14,7 @@ import java.io.File;
  */
 @Component
 @PropertySource("classpath:config.properties")
+@Slf4j
 public class DiskConfig {
     // 公共网盘路径
     public static String PUBLIC_ROOT;
@@ -24,17 +26,20 @@ public class DiskConfig {
 
     @Value("${RegCode}")
     public void setRegCode(String v) {
+        log.info("[注册邀请码]" + v);
         REG_CODE = v;
     }
 
     @Value("${public.root}")
     public void setRoot(String root) {
+        log.info("[公共网盘路径]" + root);
         File file = new File(root);
         DiskConfig.PUBLIC_ROOT =file.getPath();
     }
 
     @Value("${private.root}")
     public void setPublicRoot(String root) {
+        log.info("[私人网盘根目录]" + root);
         File file = new File(root);
         DiskConfig.PRIVATE_ROOT =file.getPath();
     }

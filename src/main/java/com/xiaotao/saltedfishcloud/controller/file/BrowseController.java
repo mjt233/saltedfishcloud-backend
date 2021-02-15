@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +20,7 @@ import java.io.FileNotFoundException;
 import java.util.Collection;
 
 @Controller
+@Slf4j
 public class BrowseController {
 
     @Resource
@@ -43,6 +45,8 @@ public class BrowseController {
         try {
             fileList = fileService.getFileList(baseLocalPath + "/" + requestPath);
         } catch (FileNotFoundException e) {
+            log.warn("[访问了不存在的路径]" + baseLocalPath + "/" + requestPath);
+            log.warn(e.getMessage());
             throw new HasResultException(404, "路径不存在");
         }
         return JsonResult.getInstance(fileList);
