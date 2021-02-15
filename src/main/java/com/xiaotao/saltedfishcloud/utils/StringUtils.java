@@ -37,15 +37,6 @@ public class StringUtils {
         return sb.toString();
     }
 
-    public static String getFileSuffix(String name) {
-        String[] split = name.split("\\.");
-        if (split.length != 0) {
-            return split[split.length - 1].toLowerCase();
-        } else {
-            return name;
-        }
-    }
-
     /**
      * 生成一个进度条字符串
      * @param loaded    已完成

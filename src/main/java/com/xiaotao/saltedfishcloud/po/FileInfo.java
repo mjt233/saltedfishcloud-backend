@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.*;
 import org.springframework.util.DigestUtils;
@@ -80,7 +81,7 @@ public class FileInfo {
      * @return 后缀名
      */
     public String getSuffix() {
-        return StringUtils.getFileSuffix(name);
+        return FileUtils.getSuffix(name);
     }
 
     /**

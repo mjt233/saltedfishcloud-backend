@@ -76,17 +76,18 @@ public class FileRecordService {
         List<FileInfo> infos = fileDao.getFilesInfo(uid, name, node.getId());
 
         // 先将文件和文件夹分开并单独提取其文件名
-        LinkedList<String> dirs = new LinkedList<>(), files = new LinkedList<>();
+        LinkedList<FileInfo> dirs = new LinkedList<>();
+        LinkedList<String> files = new LinkedList<>();
         infos.forEach(info -> {
             if( info.isDir()) {
-                dirs.push(info.getName());
+                dirs.push(info);
             } else {
                 files.push(info.getName());
             }
         });
         AtomicInteger cnt = new AtomicInteger();
 
-        dirs.forEach(dir -> cnt.addAndGet(deleteDirRecord(uid, dir, node.getId())));
+        dirs.forEach(dir -> cnt.addAndGet(deleteDirRecord(uid, dir)));
         if (files.size() != 0) {
             cnt.addAndGet(fileDao.deleteRecord(uid, node.getId(), files));
         }
@@ -160,22 +161,22 @@ public class FileRecordService {
     /**
      * 删除一个文件夹下的所有文件记录
      * @param uid   用户ID 0表示公共
-     * @param name  文件夹名
-     * @param nid  文件夹所在节点
+     * @param dirInfo   文件夹信息
      * @return 删除的条数
      */
-    private int deleteDirRecord(int uid, String name, String nid) {
+    private int deleteDirRecord(int uid, FileInfo dirInfo) {
 
         // 目录下的所有子目录信息
-        List<NodeInfo> childNodes = nodeService.getChildNodes(uid, nid);
+        List<NodeInfo> childNodes = nodeService.getChildNodes(uid, dirInfo.getMd5());
         List<String> ids = new LinkedList<>();
+        ids.add(dirInfo.getMd5());
         childNodes.forEach(nodeInfo -> ids.add(nodeInfo.getId()));
         int res = 0;
         nodeService.deleteNodes(uid, ids);
         if (!ids.isEmpty()) {
             res += fileDao.deleteDirsRecord(uid, ids);
         }
-        res += fileDao.deleteRecord(uid, nid, Collections.singletonList(name));
+        res += fileDao.deleteRecord(uid, dirInfo.getParent(), Collections.singletonList(dirInfo.getName()));
         return res;
     }
 }

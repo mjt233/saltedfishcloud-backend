@@ -80,6 +80,13 @@ public class FileService {
         return new List[]{dirs, files};
     }
 
+    /**
+     * 向客户端响应一个文件内容
+     * @param localFilePath     本地文件路径
+     * @return  响应实体
+     * @throws MalformedURLException
+     * @throws UnsupportedEncodingException
+     */
     public ResponseEntity<Resource> sendFile(String localFilePath) throws MalformedURLException, UnsupportedEncodingException {
         UrlResource urlResource = new UrlResource(Paths.get(localFilePath).toUri());
         File file = new File(localFilePath);
@@ -153,8 +160,8 @@ public class FileService {
     public long deleteFile(int uid, String path, List<String> name) {
         // 计数删除数
         long res = 0L;
-        res += storeService.delete(uid, path, name);
         fileRecordService.deleteRecords(uid, path, name);
+        res += storeService.delete(uid, path, name);
         return res;
     }
 

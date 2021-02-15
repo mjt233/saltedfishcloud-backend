@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 public class FileUtils {
-    private static HashMap<String,String> map = new HashMap<>();
+    private static final HashMap<String,String> map = new HashMap<>();
     static {
         // 一般网页资源
         map.put("html", "text/html;charset=utf-8");
@@ -41,7 +41,7 @@ public class FileUtils {
     }
 
     static public String getContentType(String name) {
-        name = StringUtils.getFileSuffix(name);
+        name = getSuffix(name);
         String res = map.get(name);
         return res == null ? "application/octet-stream" : res;
     }
@@ -67,6 +67,22 @@ public class FileUtils {
             });
         }
         return res;
+    }
+
+
+    /**
+     * 获取文件名中的后缀名，即最后一个字符'.'后面的子字符串，若无后缀名，则返回整个原文件名
+     * @author xiaotao
+     * @param name  文件名或文件路径
+     * @return  后缀名，不带'.'
+     */
+    public static String getSuffix(String name) {
+        String[] split = name.split("\\.");
+        if (split.length != 0) {
+            return split[split.length - 1].toLowerCase();
+        } else {
+            return name;
+        }
     }
 
     /**

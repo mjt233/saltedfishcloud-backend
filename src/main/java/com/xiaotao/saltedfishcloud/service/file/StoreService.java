@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -14,6 +15,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -21,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * 本地文件存储服务，用于管理本地文件系统中的文件的创建，复制，删除，移动等操作
  */
 @Service
+@Slf4j
 public class StoreService {
 
     @Resource
@@ -123,23 +127,28 @@ public class StoreService {
             String local = basePath + "/" + fileName;
             File file = new File(local);
             if (file.isDirectory()) {
-                DirCollection dirCollection = FileUtils.deepScanDir(local);
-                dirCollection.getFileList().forEach(file1 -> {
-                    if (!file1.delete()) {
-                        throw new HasResultException(500, "删除失败");
-                    }
-                });
-                dirCollection.getDirList().forEach(file1 -> {
-                    if (!file1.delete()) {
-                        throw new HasResultException(500, "删除失败");
-                    }
-                });
-                cnt.addAndGet(dirCollection.getItemCount());
+                Path path1 = Paths.get(local);
+                try {
+                    Files.walkFileTree(path1, new SimpleFileVisitor<Path>() {
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                            Files.delete(file);
+                            log.debug("删除文件 " + file);
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                        @Override
+                        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                            Files.delete(dir);
+                            log.debug("删除目录 " + dir);
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
+                } catch (IOException e) {
+                    throw new HasResultException(500, e.getMessage());
+                }
             } else {
                 cnt.incrementAndGet();
-            }
-            if(!file.delete()){
-                throw new HasResultException(500, "删除失败");
             }
         });
         return cnt.longValue();
