@@ -18,16 +18,6 @@ import javax.servlet.http.HttpServletRequest;
 public class MkdirController {
     @Resource
     FileService fileService;
-    @PostMapping("private/**")
-    @Transactional(rollbackFor = Exception.class)
-    public JsonResult privateMkdir(@RequestAttribute User user,
-                                   HttpServletRequest request,
-                                   @RequestParam("name") String name) throws HasResultException {
-        String requestPath = URLUtils.getRequestFilePath("/api/private", request);
-        fileService.mkdir(user.getId(), requestPath, name);
-        return JsonResult.getInstance();
-
-    }
 
     @PostMapping("mkdir/{uid}/**")
     @Transactional(rollbackFor = Exception.class)
