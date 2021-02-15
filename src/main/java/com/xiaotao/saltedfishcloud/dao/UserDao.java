@@ -17,9 +17,8 @@ public interface UserDao {
     @Update("UPDATE user SET last_login = #{loginTime} WHERE id = #{uid}")
     int updateLoginDate(@Param("uid") Integer uid, @Param("loginTime") Long loginTime);
 
-    @Insert("INSERT INTO user (user,pwd,token,type) VALUE (#{user},#{pwd},#{token},#{type})")
+    @Insert("INSERT INTO user (user,pwd,type) VALUE (#{user},#{pwd},#{type})")
     int addUser(@Param("user") String user,
                 @Param("pwd") String pwd,
-                @Param("token") String token,
                 @Param("type") Integer type);
 }

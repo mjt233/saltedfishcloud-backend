@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Collection;
 
@@ -35,6 +36,10 @@ public class BrowseController {
         String baseLocalPath = FileUtils.getFileStoreRootPath(uid);
 
         Collection<? extends FileInfo>[] fileList = null;
+        File root = new File(baseLocalPath);
+        if (!root.exists()) {
+            root.mkdir();
+        }
         try {
             fileList = fileService.getFileList(baseLocalPath + "/" + requestPath);
         } catch (FileNotFoundException e) {

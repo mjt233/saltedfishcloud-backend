@@ -46,6 +46,6 @@ public class UserServiceImp implements UserService{
     @Override
     public int addUser(String user, String passwd, Integer type) {
         String pwd = SecureUtils.getPassswd(passwd);
-        return userDao.addUser(user, pwd, SecureUtils.getToken(pwd), type);
+        return userDao.addUser(user, pwd, type);
     }
 }
