@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.po;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jdk.nashorn.internal.objects.annotations.Setter;
 import lombok.AllArgsConstructor;
@@ -41,6 +42,7 @@ public class User implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;
     }
