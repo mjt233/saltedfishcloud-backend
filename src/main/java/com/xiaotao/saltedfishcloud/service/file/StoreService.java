@@ -124,13 +124,23 @@ public class StoreService {
             File file = new File(local);
             if (file.isDirectory()) {
                 DirCollection dirCollection = FileUtils.deepScanDir(local);
-                dirCollection.getFileList().forEach(File::delete);
-                dirCollection.getDirList().forEach(File::delete);
+                dirCollection.getFileList().forEach(file1 -> {
+                    if (!file1.delete()) {
+                        throw new HasResultException(500, "删除失败");
+                    }
+                });
+                dirCollection.getDirList().forEach(file1 -> {
+                    if (!file1.delete()) {
+                        throw new HasResultException(500, "删除失败");
+                    }
+                });
                 cnt.addAndGet(dirCollection.getItemCount());
             } else {
                 cnt.incrementAndGet();
             }
-            file.delete();
+            if(!file.delete()){
+                throw new HasResultException(500, "删除失败");
+            }
         });
         return cnt.longValue();
     }

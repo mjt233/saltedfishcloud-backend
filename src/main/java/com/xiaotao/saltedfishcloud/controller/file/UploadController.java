@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
+import com.xiaotao.saltedfishcloud.utils.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -18,13 +19,16 @@ import java.io.IOException;
 public class UploadController {
     @Resource
     FileService fileService;
-    @RequestMapping("private/**")
+
+    @RequestMapping("fileList/{uid}/**")
     @Transactional(rollbackFor = Exception.class)
-    public JsonResult uploadPrivate(HttpServletRequest request,
-                                    @RequestAttribute User user,
+    public JsonResult upload(HttpServletRequest request,
+                                    @PathVariable int uid,
                                     @RequestParam("file") MultipartFile file,
                                     @RequestParam(value = "md5", required = false) String md5) throws HasResultException, IOException {
-        int i = fileService.saveFile(user.getId(), file, URLUtils.getRequestFilePath("/api/private", request), md5);
+        UIDValidator.validate(uid, true);
+        String prefix = "/api/fileList/" + uid;
+        int i = fileService.saveFile(uid, file, URLUtils.getRequestFilePath(prefix, request), md5);
         return JsonResult.getInstance(i);
     }
 }
