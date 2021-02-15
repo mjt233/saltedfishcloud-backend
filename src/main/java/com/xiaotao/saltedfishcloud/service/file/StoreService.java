@@ -148,7 +148,11 @@ public class StoreService {
                     throw new HasResultException(500, e.getMessage());
                 }
             } else {
-                cnt.incrementAndGet();
+                if (!file.delete()){
+                    log.error("文件删除失败：" + file.getPath());
+                } else {
+                    cnt.incrementAndGet();
+                }
             }
         });
         return cnt.longValue();

@@ -29,7 +29,7 @@ public class DeleteController {
                              @RequestAttribute User user) {
         UIDValidator.validate(uid, true);
         String path = URLUtils.getRequestFilePath("/api/resource/" + uid, request);
-        fileService.deleteFile(uid, path, fileName.getFileName());
-        return JsonResult.getInstance();
+        long res = fileService.deleteFile(uid, path, fileName.getFileName());
+        return JsonResult.getInstance(res);
     }
 }
