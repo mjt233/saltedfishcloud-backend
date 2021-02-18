@@ -46,21 +46,8 @@ CREATE TABLE `node_list` (
   `id` char(32) DEFAULT NULL,
   `parent` char(32) DEFAULT NULL,
   `uid` int(10) unsigned DEFAULT NULL,
-  UNIQUE KEY `node_name_index` (`parent`,`uid`,`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `path_map`
---
-
-DROP TABLE IF EXISTS `path_map`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `path_map` (
-  `id` char(32) NOT NULL,
-  `path` varchar(2048) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  UNIQUE KEY `node_name_index` (`id`,`parent`,`name`),
+  KEY `id_index` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -80,7 +67,7 @@ CREATE TABLE `user` (
   `role` varchar(32) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_index` (`user`)
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -92,4 +79,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-02-01  1:03:59
+-- Dump completed on 2021-02-17 15:22:55
