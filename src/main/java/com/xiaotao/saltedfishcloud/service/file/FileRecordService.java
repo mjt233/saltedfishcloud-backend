@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -126,8 +127,8 @@ public class FileRecordService {
     /**
      * 将本地公共网盘的文件信息写入数据库
      */
-    public void makePublicRecord() {
-        DirCollection dirCollection = FileUtils.broadScanDir(FileUtils.getFileStoreRootPath(0));
+    public void makePublicRecord() throws IOException {
+        DirCollection dirCollection = FileUtils.scanDir(FileUtils.getFileStoreRootPath(0));
         AtomicLong atomicLong = new AtomicLong();
         atomicLong.set(0);
         long total = dirCollection.getDirsCount();

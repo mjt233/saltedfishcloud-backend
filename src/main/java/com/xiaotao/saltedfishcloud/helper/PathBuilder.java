@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.helper;
 
+import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import lombok.Data;
 
 import java.util.Collection;
@@ -54,7 +55,7 @@ public class PathBuilder {
     /**
      * 对路径进行格式化 去除重复或末尾的的/或\
      * @param path 输入路径
-     * @param prefix 前缀
+     * @param prefix 是否使用/或\作为根节点
      * @return 标准化后的路径
      */
     public static String formatPath(String path, boolean prefix) {
@@ -69,7 +70,11 @@ public class PathBuilder {
      * @return 标准化后的路径
      */
     public static String formatPath(String path) {
-        return formatPath(path, true);
+        if (OSInfo.isWindows()) {
+            return formatPath(path, false);
+        } else {
+            return formatPath(path, true);
+        }
     }
 
     /**

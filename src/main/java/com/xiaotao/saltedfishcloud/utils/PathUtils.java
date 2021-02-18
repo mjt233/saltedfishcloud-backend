@@ -12,8 +12,7 @@ public class PathUtils {
      * @return          相对网盘的路径
      */
     public static String getRelativePath(int uid, String localPath) {
-        PathBuilder pb = new PathBuilder();
-        String local = pb.append(localPath).toString();
+        String local = PathBuilder.formatPath(localPath);
         String userBasePath = FileUtils.getFileStoreRootPath(uid);
         String res = local.substring(userBasePath.length());
         return res.length() == 0 ? "/" : res;

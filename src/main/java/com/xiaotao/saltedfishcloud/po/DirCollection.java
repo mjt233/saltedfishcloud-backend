@@ -22,11 +22,11 @@ public class DirCollection {
         ++itemCount;
         if (file.isFile()) {
             size += file.length();
-            fileList.addLast(file);
+            fileList.addFirst(file);
             filesCount += 1;
         } else {
             dirsCount += 1;
-            dirList.addLast(file);
+            dirList.addFirst(file);
         }
     }
 
