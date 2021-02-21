@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.po;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jdk.nashorn.internal.objects.annotations.Setter;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,7 +31,8 @@ public class User implements UserDetails {
     private Integer lastLogin;
     private Integer type;
 
-    private List<SimpleGrantedAuthority> authorities = new LinkedList<>();
+    @lombok.Setter(AccessLevel.NONE)
+    protected List<SimpleGrantedAuthority> authorities = new LinkedList<>();
 
     @Setter()
     public void setType(Integer type) {
@@ -48,31 +50,37 @@ public class User implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public String getPassword() {
         return getPwd();
     }
 
     @Override
+    @JsonIgnore
     public String getUsername() {
         return getUser();
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonLocked() {
         return true;
     }
 
     @Override
+    @JsonIgnore
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore
     public boolean isEnabled() {
         return true;
     }

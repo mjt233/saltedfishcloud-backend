@@ -1,7 +1,9 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
+@Component
 public class MyPasswordEncoder implements PasswordEncoder {
     @Override
     public String encode(CharSequence rawPassword) {

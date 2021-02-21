@@ -1,15 +1,18 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.po.JsonResult;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import org.apache.catalina.security.SecurityUtil;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+@RestController
 public class LoginController {
-    @RequestMapping("/api/userLogin")
-    @ResponseBody
-    public JsonResult login() {
-        return JsonResult.getInstance(-1, null, "未登录");
+
+    @GetMapping("/test")
+    public JsonResult test() {
+        System.out.println("测试控制器:" + SecureUtils.getSpringSecurityUser());
+        return JsonResult.getInstance();
     }
 }

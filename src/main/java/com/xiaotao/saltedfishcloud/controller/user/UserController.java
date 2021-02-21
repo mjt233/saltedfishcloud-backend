@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.service.user.UserType;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -23,11 +24,7 @@ public class UserController {
 
     @GetMapping("user")
     public JsonResult getUserInfo() throws UserNoExistException {
-        String name = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userService.getUserByUser(name);
-        user.setPwd(null);
-        user.setToken(null);
-        return JsonResult.getInstance(user);
+        return JsonResult.getInstance(SecureUtils.getSpringSecurityUser());
     }
 
     @PostMapping("user")
