@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
@@ -22,7 +24,7 @@ public class DownloadController {
     @javax.annotation.Resource
     FileService fileService;
 
-    @GetMapping("/download/{uid}/**")
+    @RequestMapping(value = "/download/{uid}/**", method = {RequestMethod.POST, RequestMethod.GET})
     public ResponseEntity<Resource> download(HttpServletRequest request,
                                              @PathVariable int uid)
             throws MalformedURLException, UnsupportedEncodingException {

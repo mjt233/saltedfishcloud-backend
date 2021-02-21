@@ -24,7 +24,7 @@ public class JwtValidateFilter extends OncePerRequestFilter {
         if (token == null) {
             token = req.getParameter(JwtUtils.AUTHORIZATION);
         }
-        if (token == null) {
+        if (token == null || token.length() == 0) {
             chain.doFilter(req, response);
             return;
         } else {
