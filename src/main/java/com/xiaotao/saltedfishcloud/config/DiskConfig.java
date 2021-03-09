@@ -20,7 +20,7 @@ public class DiskConfig {
     public static String PUBLIC_ROOT;
 
     // 个人用户数据路径（包括网盘文件，用户配置文件）
-    public static String PRIVATE_ROOT;
+    public static String STORE_ROOT;
 
     public static String REG_CODE;
 
@@ -30,18 +30,18 @@ public class DiskConfig {
         REG_CODE = v;
     }
 
-    @Value("${public.root}")
+    @Value("${public-root}")
     public void setRoot(String root) {
         log.info("[公共网盘路径]" + root);
         File file = new File(root);
         DiskConfig.PUBLIC_ROOT =file.getPath();
     }
 
-    @Value("${private.root}")
+    @Value("${store-root}")
     public void setPublicRoot(String root) {
         log.info("[私人网盘根目录]" + root);
         File file = new File(root);
-        DiskConfig.PRIVATE_ROOT =file.getPath();
+        DiskConfig.STORE_ROOT =file.getPath();
     }
 
     /**
@@ -49,6 +49,6 @@ public class DiskConfig {
      * @return 本地文件目录
      */
     public static String getUserPrivatePath() {
-        return DiskConfig.PRIVATE_ROOT + "/" + SecurityContextHolder.getContext().getAuthentication().getName();
+        return DiskConfig.STORE_ROOT + "/user_file/" + SecurityContextHolder.getContext().getAuthentication().getName();
     }
 }

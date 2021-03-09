@@ -73,6 +73,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         //  放行公共API和登录API
         http.authorizeRequests()
                 .antMatchers("/",
+                        "/static/**",
                         "/api/fileList/*/**",
                         "/download/*/**",
                         "/test",

@@ -23,15 +23,6 @@ public class UserServiceImp implements UserService{
         return user1;
     }
 
-//    @Override
-//    public User getUserByToken(@NotNull String token) throws UserNoExistException {
-//        User user1 = userDao.getUserByToken(token);
-//        if (user1 == null) {
-//            throw new UserNoExistException(-1, "Token" + token + "所标识的用户不存在");
-//        }
-//        return user1;
-//    }
-
     @Override
     public int modifyPasswd(Integer uid, String oldPassword, String newPassword) {
         return 0;

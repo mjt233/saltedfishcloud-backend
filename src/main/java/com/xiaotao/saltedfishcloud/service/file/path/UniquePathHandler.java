@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.file.path;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
 
 /**
  * 利用文件MD5获得文件路径，保证一个内容相同的文件存储的路径是唯一的且不受文件名影响。
@@ -29,7 +28,7 @@ public class UniquePathHandler implements PathHandler {
                 fileInfo.updateMd5();
             }
             String md5 = fileInfo.getMd5();
-            return DiskConfig.PRIVATE_ROOT
+            return DiskConfig.STORE_ROOT
                     + "/"
                     + md5.substring(0,1)
                     + "/"

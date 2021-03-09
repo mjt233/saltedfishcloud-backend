@@ -28,7 +28,8 @@ public class UploadController {
                                     @RequestParam(value = "md5", required = false) String md5) throws HasResultException, IOException {
         UIDValidator.validate(uid, true);
         String prefix = "/api/fileList/" + uid;
-        int i = fileService.saveFile(uid, file, URLUtils.getRequestFilePath(prefix, request), md5);
+        String requestPath = URLUtils.getRequestFilePath(prefix, request);
+        int i = fileService.saveFile(uid, file, requestPath, md5);
         return JsonResult.getInstance(i);
     }
 }

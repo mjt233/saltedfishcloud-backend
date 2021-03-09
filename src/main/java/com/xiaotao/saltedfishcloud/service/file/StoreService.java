@@ -1,12 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
-import com.xiaotao.saltedfishcloud.po.DirCollection;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

@@ -48,11 +48,11 @@ mysql> SOURCE db.sql
 ```
 ### 运行项目
 ```shell script
-shell> java -jar xxxx.jar --RegCode=123456 --public.root=D:/public --private.root=D:/private
+shell> java -jar xxxx.jar --reg-code=123456 --public-root=D:/public --store-root=D:/sfd_store
 # xxx.jar为打包后的/target下的jar文件
 ```
 
 ### 应用程序命令行参数说明
-- RegCode - 注册邀请码，默认为114514，普通用户注册账号需要提供注册邀请码
-- public.root - 公共网盘的根目录
-- private.root - 私人网盘的根目录
+- reg-code - 注册邀请码，默认为114514，普通用户注册账号需要提供注册邀请码
+- public-root - 公共网盘的根目录
+- store-root - 私人网盘的根目录和用户个人数据存储目录（头像等）
