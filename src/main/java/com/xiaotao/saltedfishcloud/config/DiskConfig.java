@@ -24,7 +24,7 @@ public class DiskConfig {
 
     public static String REG_CODE;
 
-    @Value("${RegCode}")
+    @Value("${reg-code}")
     public void setRegCode(String v) {
         log.info("[注册邀请码]" + v);
         REG_CODE = v;
