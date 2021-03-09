@@ -56,3 +56,6 @@ shell> java -jar xxxx.jar --reg-code=123456 --public-root=D:/public --store-root
 - reg-code - 注册邀请码，默认为114514，普通用户注册账号需要提供注册邀请码
 - public-root - 公共网盘的根目录
 - store-root - 私人网盘的根目录和用户个人数据存储目录（头像等）
+
+### 接口测试
+可将`postman_collection.json`文件导入到`postman`中进行测试

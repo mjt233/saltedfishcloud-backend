@@ -1,0 +1,814 @@
+{
+	"info": {
+		"_postman_id": "94b0e8f8-4f44-4df3-9f89-c5b0bd22a46f",
+		"name": "咸鱼云Java版",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "用户",
+			"item": [
+				{
+					"name": "登录",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "passwd",
+									"value": "23333",
+									"description": "密码",
+									"type": "text"
+								},
+								{
+									"key": "user",
+									"value": "xiaotao",
+									"description": "用户名",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/login",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "取用户信息",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "passwd",
+									"value": "mojintao233",
+									"type": "text"
+								},
+								{
+									"key": "user",
+									"value": "xiaotao",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/user",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"user"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "取用户信息",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "passwd",
+											"value": "mojintao233",
+											"type": "text"
+										},
+										{
+											"key": "user",
+											"value": "xiaotao",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/user",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Feb 2021 15:14:05 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1,\n    \"data\": {\n        \"id\": 3,\n        \"user\": \"xiaoxi\",\n        \"type\": 0,\n        \"username\": \"xiaoxi\",\n        \"accountNonExpired\": true,\n        \"accountNonLocked\": true,\n        \"credentialsNonExpired\": true,\n        \"enabled\": true\n    },\n    \"msg\": \"OK\"\n}"
+						}
+					]
+				},
+				{
+					"name": "[管理员]增加用户",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "token",
+								"value": "340377d8990b13f09d4b30d473d43c74",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "user",
+									"value": "test233",
+									"description": "用户名",
+									"type": "text"
+								},
+								{
+									"key": "passwd",
+									"value": "test",
+									"description": "密码",
+									"type": "text"
+								},
+								{
+									"key": "type",
+									"value": "common",
+									"description": "类型 common或admin",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/user",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"user"
+							]
+						},
+						"description": "该接口仅允许管理员请求"
+					},
+					"response": [
+						{
+							"name": "增加用户（测试）",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "340377d8990b13f09d4b30d473d43c74",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "user",
+											"value": "test233",
+											"description": "用户名",
+											"type": "text"
+										},
+										{
+											"key": "passwd",
+											"value": "test",
+											"description": "密码",
+											"type": "text"
+										},
+										{
+											"key": "type",
+											"value": "common",
+											"description": "类型 common或admin",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/user",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Feb 2021 15:15:33 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
+						}
+					]
+				},
+				{
+					"name": "注册用户",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "user",
+									"value": "xiaox",
+									"description": "用户名",
+									"type": "text"
+								},
+								{
+									"key": "passwd",
+									"value": "xiaoxi123",
+									"description": "密码",
+									"type": "text"
+								},
+								{
+									"key": "regcode",
+									"value": "123456",
+									"description": "注册邀请码",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/regUser",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"regUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "注销",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{addr}}/api/logout",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "系统资源操作",
+			"item": [
+				{
+					"name": "解析节点ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/getPath?uid=0&nodeId=f653ca15bedc69a9690e0ce20d960ff8",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"getPath"
+							],
+							"query": [
+								{
+									"key": "uid",
+									"value": "0",
+									"description": "用户ID 只能使用自己的ID或表示公共的0"
+								},
+								{
+									"key": "nodeId",
+									"value": "f653ca15bedc69a9690e0ce20d960ff8",
+									"description": "节点ID"
+								}
+							]
+						},
+						"description": "用于将节点ID解析为网盘路径，因为搜索文件接口返回的结果中，只有文件所处的节点ID或节点本身的ID，进一步访问需要得知该资源的网盘路径。"
+					},
+					"response": []
+				},
+				{
+					"name": "[管理员]初始化公开资源数据库",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/makePublicRecord",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"makePublicRecord"
+							]
+						},
+						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "文件操作",
+			"item": [
+				{
+					"name": "取文件列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/fileList/0",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"fileList",
+								"0"
+							]
+						},
+						"description": "获取网盘中的文件列表/api/fileList/{用户id}/{请求的路径}\r\n响应结果中，文件夹的md5表示该文件夹本身的节点ID，parent为文件所在节点的名称，node为文件所在节点的ID"
+					},
+					"response": [
+						{
+							"name": "取文件列表",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/fileList/0",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"fileList",
+										"0"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Feb 2021 15:16:03 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1,\n    \"data\": [\n        [\n            {\n                \"name\": \"其他\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601457910295,\n                \"file\": false,\n                \"suffix\": \"其他\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 17:25:10\"\n            },\n            {\n                \"name\": \"图片资源\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1605077251788,\n                \"file\": false,\n                \"suffix\": \"图片资源\",\n                \"dir\": true,\n                \"formatModified\": \"2020-11-11 14:47:31\"\n            },\n            {\n                \"name\": \"安卓APP\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463156268,\n                \"file\": false,\n                \"suffix\": \"安卓app\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:52:36\"\n            },\n            {\n                \"name\": \"工具软件\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463281242,\n                \"file\": false,\n                \"suffix\": \"工具软件\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:54:41\"\n            },\n            {\n                \"name\": \"驱动\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601468904893,\n                \"file\": false,\n                \"suffix\": \"驱动\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 20:28:24\"\n            }\n        ],\n        [\n            {\n                \"name\": \"autoindex.html\",\n                \"size\": 11795,\n                \"type\": 2,\n                \"lastModified\": 1595249972503,\n                \"file\": true,\n                \"suffix\": \"html\",\n                \"dir\": false,\n                \"formatModified\": \"2020-07-20 20:59:32\"\n            },\n            {\n                \"name\": \"web.config\",\n                \"size\": 168,\n                \"type\": 2,\n                \"lastModified\": 1602303497178,\n                \"file\": true,\n                \"suffix\": \"config\",\n                \"dir\": false,\n                \"formatModified\": \"2020-10-10 12:18:17\"\n            }\n        ]\n    ],\n    \"msg\": \"OK\"\n}"
+						}
+					]
+				},
+				{
+					"name": "新建文件夹",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "新建文件夹",
+									"description": "文件夹名称",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/mkdir/1",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"mkdir",
+								"1"
+							]
+						},
+						"description": "在网盘中创建文件夹/api/mkdir/{用户id}/{请求的路径}"
+					},
+					"response": []
+				},
+				{
+					"name": "删除文件",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"fileName\": [\r\n        \"cb85a661e0074edfc2260057807ba16d.jpg\",\r\n        \"IMG_20210131_205153_1.jpg\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/resource/1/我的图片",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"1",
+								"我的图片"
+							]
+						},
+						"description": "可对某个目录下的多个文件进行删除，url为/api/resource/{用户UID}/{请求的路径}\r\n注意：需要使用JSON传递参数\r\n请求后data为删除的文件和文件夹总数量"
+					},
+					"response": [
+						{
+							"name": "删除2个文件",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"fileName\": [\r\n        \"cb85a661e0074edfc2260057807ba16d.jpg\",\r\n        \"IMG_20210131_205153_1.jpg\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/resource/1/我的图片",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"resource",
+										"1",
+										"我的图片"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Feb 2021 15:09:37 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1,\n    \"data\": 2,\n    \"msg\": \"OK\"\n}"
+						}
+					]
+				},
+				{
+					"name": "搜索文件",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "key",
+									"value": "jpg",
+									"description": "关键字 空格分隔",
+									"type": "text"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "页码 起始页数为1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/resource/search/0",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"search",
+								"0"
+							]
+						},
+						"description": "搜索网盘中的文件/api/resource/search/{用户id}\r\n响应结果中，文件夹的md5表示该文件夹本身的节点ID，parent为文件所在节点的名称，node为文件所在节点的ID"
+					},
+					"response": []
+				},
+				{
+					"name": "上传文件",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/12079/Desktop/empty.txt"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/fileList/1",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"fileList",
+								"1"
+							]
+						},
+						"description": "将文件上传到网盘/api/fileList/{用户id}/{请求的路径}\r\n注意：请求的路径必须是存在的路径，若不存在需要手动提前创建，否则文件会保存失败"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "value",
+				"value": "eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wiaWRcIjoxLFwidXNlclwiOlwieGlhb3RhbzIzM1wiLFwidHlwZVwiOjF9IiwiZXhwIjoxNjEzOTg5MzgxLCJpYXQiOjE2MTM5MDI5ODF9.FcVYE8gRK11D0dny3dB3OAFqCa_ofsDM5o210k3cuqs",
+				"type": "string"
+			},
+			{
+				"key": "key",
+				"value": "Token",
+				"type": "string"
+			},
+			{
+				"key": "in",
+				"value": "header",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
