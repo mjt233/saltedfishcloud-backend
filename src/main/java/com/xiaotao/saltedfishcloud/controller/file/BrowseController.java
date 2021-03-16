@@ -19,6 +19,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Collection;
 
+/**
+ * 浏览控制器，提供浏览功能
+ */
 @Controller
 @Slf4j
 public class BrowseController {
@@ -26,6 +29,12 @@ public class BrowseController {
     @Resource
     FileService fileService;
 
+    /**
+     * 取网盘中某个目录的文件列表
+     * @param request
+     * @param uid   目标用户资源的ID
+     * @return
+     */
     @GetMapping("/api/fileList/{uid}/**")
     @ResponseBody
     public JsonResult getFileList(HttpServletRequest request,

@@ -14,12 +14,21 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
+/**
+ * 上传资源相关控制器
+ */
 @RestController
 @RequestMapping(value = "/api", method = RequestMethod.PUT)
 public class UploadController {
     @Resource
     FileService fileService;
 
+    /**
+     * 上传文件到网盘系统中
+     * @param uid   目标用户的ID
+     * @param file  接收到的文件
+     * @param md5   文件MD5
+     */
     @RequestMapping("fileList/{uid}/**")
     @Transactional(rollbackFor = Exception.class)
     public JsonResult upload(HttpServletRequest request,

@@ -17,6 +17,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+/**
+ * 在SpringSecurity过滤器链中处理用户登录的过滤器
+ */
 public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
 
     protected JwtLoginFilter(String defaultFilterProcessesUrl, AuthenticationManager authenticationManager) {

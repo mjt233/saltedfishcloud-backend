@@ -19,7 +19,7 @@ public class DiskConfig {
     // 公共网盘路径
     public static String PUBLIC_ROOT;
 
-    // 个人用户数据路径（包括网盘文件，用户配置文件）
+    // 个人用户数据路径（包括网盘文件，用户配置文件，用户头像等）
     public static String STORE_ROOT;
 
     public static String REG_CODE;

@@ -16,6 +16,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 系统资源管理控制器
+ */
 @RestController
 @RequestMapping("/api/resource")
 public class ResourcesController {
@@ -27,7 +30,9 @@ public class ResourcesController {
     NodeService nodeService;
 
     /**
-     * 文件搜索
+     * 搜索目标用户网盘中的文件或文件夹
+     * @param uid 目标UID，非管理员只能搜索公共用户和自己的资源
+     * @param page 页码，起始页为1
      */
     @GetMapping("/search/{uid}")
     public JsonResult search(HttpServletRequest request,
@@ -42,7 +47,7 @@ public class ResourcesController {
     }
 
     /**
-     * 生成公共文件信息记录
+     * 仅限管理员：生成公共文件信息记录并写入到数据库中
      */
     @PostMapping("/makePublicRecord")
     @RolesAllowed({"ADMIN"})
@@ -52,9 +57,9 @@ public class ResourcesController {
     }
 
     /**
-     * 解析节点ID
-     * @param uid
-     * @param node
+     * 解析节点ID，获取节点ID对应的文件夹路径
+     * @param uid   用户ID
+     * @param node  节点ID
      * @return
      */
     @GetMapping("/getPath")

@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.io.FileNotFoundException;
 
+/**
+ * 全局异常处理，捕获进入控制器的异常并进行处理
+ */
 @Slf4j
 @RestControllerAdvice
 public class ControllerAdvice {

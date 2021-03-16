@@ -11,6 +11,9 @@ import javax.servlet.http.HttpServletResponse;
 
 @Component
 public class LoginInterceptor implements HandlerInterceptor {
+    /**
+     * 向request的Attribute中添加用户对象方便在控制器中获取
+     */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws HasResultException {
         request.setAttribute("user", SecureUtils.getSpringSecurityUser());

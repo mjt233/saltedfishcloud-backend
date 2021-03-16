@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
+/**
+ * SpringSecurity配置类
+ */
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(jsr250Enabled = true)
@@ -62,6 +65,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .addFilterBefore(new JwtValidateFilter(), UsernamePasswordAuthenticationFilter.class)
                 .csrf().disable();
 
+        //  处理过滤器链中出现的异常
         http.exceptionHandling().authenticationEntryPoint(new AuthenticationEntryPoint() {
             @Override
             public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {

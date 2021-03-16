@@ -20,6 +20,10 @@ public class SpringConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**");
     }
 
+    /**
+     * 静态资源路径配置
+     * @param registry
+     */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/**")

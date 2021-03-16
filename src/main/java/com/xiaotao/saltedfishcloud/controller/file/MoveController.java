@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+/**
+ * 移动/重命名资源控制器
+ */
 @RestController
 @RequestMapping("/api")
 public class MoveController {

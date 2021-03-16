@@ -55,7 +55,7 @@ public class StoreService {
     }
 
     /**
-     * 向系统保存一个文件
+     * 向用户网盘目录中保存一个文件
      * @param uid   用户ID 0表示公共
      * @param input 文件输入流（该方法执行完成后会自动关闭流，不需要再次关闭）
      * @param targetDir    保存到的目标网盘目录位置（注意：不是本地真是路径）

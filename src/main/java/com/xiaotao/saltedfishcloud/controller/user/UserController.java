@@ -22,11 +22,20 @@ public class UserController {
     @Resource
     UserService userService;
 
+    /**
+     * 获取用户基本信息
+     */
     @GetMapping("user")
     public JsonResult getUserInfo() throws UserNoExistException {
         return JsonResult.getInstance(SecureUtils.getSpringSecurityUser());
     }
 
+    /**
+     * 仅限管理员：添加一个用户
+     * @param user  用户名
+     * @param passwd    原始密码（即密码原文）
+     * @param type  用户类型，可选"admin"与"common"
+     */
     @PostMapping("user")
     @RolesAllowed({"ADMIN"})
     public JsonResult addUser(@RequestParam("user") String user,
@@ -43,6 +52,12 @@ public class UserController {
         return JsonResult.getInstance();
     }
 
+    /**
+     * 用户自主注册账号
+     * @param user  用户名
+     * @param rawPassword   原始密码（即密码原文）
+     * @param regCode   注册邀请码
+     */
     @PostMapping("regUser")
     public JsonResult regUser(@RequestParam("user") String user,
                               @RequestParam("passwd") String rawPassword,

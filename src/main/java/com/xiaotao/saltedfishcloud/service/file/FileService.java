@@ -104,7 +104,7 @@ public class FileService {
 
 
     /**
-     * 保存上传的文件
+     * 保存上传的文件到网盘系统中
      * @param uid         用户ID 0表示公共
      * @param file        接收到的文件对象
      * @param requestPath 请求的文件路径

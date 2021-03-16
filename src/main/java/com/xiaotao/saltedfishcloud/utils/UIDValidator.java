@@ -5,6 +5,12 @@ import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 
 public class UIDValidator {
+    /**
+     * 验证某个UID是否有权限对某个UID的资源进行操作。
+     * 若非管理员账号对非己UID资源进行操作，将会被拒绝
+     * @param uid 用户ID
+     * @param onlyAdmin 是否只允许管理员通过验证
+     */
     static public void validate(int uid, boolean onlyAdmin) {
         if (!onlyAdmin && uid == 0) return;
         User springSecurityUser = SecureUtils.getSpringSecurityUser();
@@ -19,6 +25,11 @@ public class UIDValidator {
         }
     }
 
+    /**
+     * 验证某个UID是否有权限对某个UID的资源进行操作。
+     * 若非管理员账号对非己UID资源进行操作，将会被拒绝
+     * @param uid 用户ID
+     */
     static public void validate(int uid) {
         validate(uid, false);
     }

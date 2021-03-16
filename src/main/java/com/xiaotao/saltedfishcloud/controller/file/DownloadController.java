@@ -18,6 +18,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 
 
+/**
+ * 下载功能相关的路由器
+ */
 @Controller
 @Slf4j
 public class DownloadController {
