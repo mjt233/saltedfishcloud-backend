@@ -39,6 +39,11 @@ public class FileUtils {
         map.put("pdf", "application/pdf");
     }
 
+    /**
+     * 通过文件名获取对应文件类型的Content-Type
+     * @param name  文件名
+     * @return Content-Type结果
+     */
     static public String getContentType(String name) {
         name = getSuffix(name);
         String res = map.get(name);

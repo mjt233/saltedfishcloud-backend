@@ -15,6 +15,11 @@ public class JwtUtils {
     private final static String SECRET = "1145141919810";
     public static final String AUTHORIZATION = "Token";
 
+    /**
+     * 生成一个包含了data作为负载信息的token
+     * @param data  要附加的数据
+     * @return  token字符串
+     */
     public static String generateToken(Object data) {
         Calendar calendar = Calendar.getInstance();
         Date now = calendar.getTime();
@@ -33,6 +38,11 @@ public class JwtUtils {
         return res;
     }
 
+    /**
+     * 解析一个token中的负载数据
+     * @param token 输入的token
+     * @return
+     */
     public static Object parse(String token) {
         try {
             Claims body = Jwts.parser()

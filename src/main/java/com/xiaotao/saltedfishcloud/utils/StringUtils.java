@@ -22,21 +22,6 @@ public class StringUtils {
         return String.format("%.2f%s", showSize, suffix);
     }
 
-    public static String linkToURLEncoding(String link) {
-        String[] split = link.split("/");
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < split.length; i++) {
-            try {
-                String t = URLEncoder.encode(split[i], "utf-8");
-                sb.append(t.replaceAll("\\+", "%20"));
-                if (i != split.length - 1) {
-                    sb.append("/");
-                }
-            } catch (UnsupportedEncodingException e) { }
-        }
-        return sb.toString();
-    }
-
     /**
      * 生成一个进度条字符串
      * @param loaded    已完成
