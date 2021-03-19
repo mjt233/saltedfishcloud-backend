@@ -31,14 +31,14 @@ public class DiskConfig {
     }
 
     @Value("${public-root}")
-    public void setRoot(String root) {
+    public void setPublicRoot(String root) {
         log.info("[公共网盘路径]" + root);
         File file = new File(root);
         DiskConfig.PUBLIC_ROOT =file.getPath();
     }
 
     @Value("${store-root}")
-    public void setPublicRoot(String root) {
+    public void setStoreRoot(String root) {
         log.info("[私人网盘根目录]" + root);
         File file = new File(root);
         DiskConfig.STORE_ROOT =file.getPath();
