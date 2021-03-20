@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,6 +70,10 @@ public class UserServiceImp implements UserService{
         try {
             Path profileRoot = Paths.get(DiskConfig.getUserProfileRoot(username));
             Files.createDirectories(profileRoot);
+            File[] avatars = profileRoot.toFile().listFiles(pathname -> pathname.getName().contains("avatar"));
+            if (avatars != null && avatars.length != 0) {
+                avatars[0].delete();
+            }
             file.transferTo(Paths.get(profileRoot + "/avatar." + suffix));
         } catch (IOException e) {
             throw new HasResultException(500, e.getMessage());
