@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.18, for Linux (x86_64)
 --
--- Host: localhost    Database: xyy
+-- Host: localhost    Database: xyy_dev
 -- ------------------------------------------------------
 -- Server version	8.0.18
 
@@ -65,6 +65,7 @@ CREATE TABLE `user` (
   `last_login` int(10) unsigned DEFAULT NULL,
   `type` int(10) unsigned DEFAULT '0',
   `role` varchar(32) DEFAULT NULL,
+  `quota` int(10) unsigned DEFAULT '10',
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_index` (`user`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -79,4 +80,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-02-17 15:22:55
+-- Dump completed on 2021-03-20 21:39:05

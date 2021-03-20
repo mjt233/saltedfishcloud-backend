@@ -434,6 +434,9 @@
 				},
 				{
 					"name": "获取用户头像",
+					"protocolProfileBehavior": {
+						"followRedirects": true
+					},
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -449,6 +452,25 @@
 							]
 						},
 						"description": "- URL：`/api/getAvatar/{用户名}`\r\n\r\n直接响应图片类型数据\r\n用户名为可选参数，若不传入用户名，则默认响应当前已登录用户头像\r\n\r\n若头像不存在则响应默认头像"
+					},
+					"response": []
+				},
+				{
+					"name": "获取空间配额使用情况",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/quotaUsed",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"quotaUsed"
+							]
+						},
+						"description": "- URL: `/api/quotaUsed`  \r\n- 描述：查询已登录用户的空间配额使用情况  \r\n\r\n#### 响应data样例  \r\n```json\r\n{\r\n    // 单位均为字节（Byte）\r\n    \"used\": 114514,         // 已用空间\r\n    \"quota\": 10737418240    // 总配额\r\n}\r\n```"
 					},
 					"response": []
 				}

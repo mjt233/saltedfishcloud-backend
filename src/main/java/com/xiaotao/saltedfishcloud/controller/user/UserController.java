@@ -1,9 +1,11 @@
 package com.xiaotao.saltedfishcloud.controller.user;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
+import com.xiaotao.saltedfishcloud.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -36,6 +38,8 @@ public class UserController {
     @Resource
     FileService fileService;
 
+    @Resource
+    UserDao userDao;
     /**
      * 获取用户基本信息
      */
@@ -115,6 +119,15 @@ public class UserController {
             response.sendRedirect("/api/static/static/defaultAvatar.png");
             return null;
         }
+    }
+
+    /**
+     * 获取用户空间配额使用情况
+     */
+    @GetMapping("quotaUsed")
+    public JsonResult getQuotaUsed() {
+        QuotaInfo used = userDao.getUserQuotaUsed(SecureUtils.getSpringSecurityUser().getId());
+        return JsonResult.getInstance(used);
     }
 
 }
