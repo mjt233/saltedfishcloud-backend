@@ -26,7 +26,7 @@ public class SpringConfig implements WebMvcConfigurer {
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/**")
+        registry.addResourceHandler("/**", "/api/static/**")
                 .addResourceLocations("classpath:/static/")
                 .setUseLastModified(true)
                 .setCacheControl(CacheControl.maxAge(24, TimeUnit.HOURS));

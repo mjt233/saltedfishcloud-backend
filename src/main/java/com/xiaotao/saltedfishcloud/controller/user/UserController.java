@@ -9,6 +9,8 @@ import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.service.user.UserType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +28,7 @@ import java.net.MalformedURLException;
 @Controller
 @RequestMapping(value = "/api")
 @ResponseBody
+@Slf4j
 public class UserController {
     @Resource
     UserService userService;
@@ -109,7 +112,7 @@ public class UserController {
             // 数组越界，空指针操作均视为头像不存在
             return fileService.sendFile(avatars[0].getPath());
         } catch (Exception e) {
-            response.sendRedirect("/static/defaultAvatar.png");
+            response.sendRedirect("/api/static/static/defaultAvatar.png");
             return null;
         }
     }
