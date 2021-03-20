@@ -10,6 +10,22 @@
 			"item": [
 				{
 					"name": "登录",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let res = JSON.parse(responseBody)\r",
+									"if (res.code === 1) {\r",
+									"    pm.environment.set(\"token\", res.data)\r",
+									"} else {\r",
+									"    console.log('登录失败:' + res.msg)\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -18,7 +34,7 @@
 							"formdata": [
 								{
 									"key": "passwd",
-									"value": "23333",
+									"value": "mojintao233",
 									"description": "密码",
 									"type": "text"
 								},
@@ -335,13 +351,13 @@
 							"formdata": [
 								{
 									"key": "user",
-									"value": "xiaox",
+									"value": "wodiu",
 									"description": "用户名",
 									"type": "text"
 								},
 								{
 									"key": "passwd",
-									"value": "xiaoxi123",
+									"value": "wodiu",
 									"description": "密码",
 									"type": "text"
 								},
@@ -385,6 +401,54 @@
 								"logout"
 							]
 						}
+					},
+					"response": []
+				},
+				{
+					"name": "上传用户头像",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/12079/Desktop/6520480_xiaotao233_1609163680.png"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/uploadAvatar",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"uploadAvatar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "获取用户头像",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/getAvatar/xiaotao",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"getAvatar",
+								"xiaotao"
+							]
+						},
+						"description": "- URL：`/api/getAvatar/{用户名}`\r\n\r\n直接响应图片类型数据\r\n用户名为可选参数，若不传入用户名，则默认响应当前已登录用户头像\r\n\r\n若头像不存在则响应默认头像"
 					},
 					"response": []
 				}
@@ -466,7 +530,7 @@
 								"0"
 							]
 						},
-						"description": "获取网盘中的文件列表/api/fileList/{用户id}/{请求的路径}\r\n响应结果中，文件夹的md5表示该文件夹本身的节点ID，parent为文件所在节点的名称，node为文件所在节点的ID"
+						"description": "- 描述：获取网盘中的文件列表  \r\n- URL：`/api/fileList/{用户id}/{请求的路径} `  \r\n响应结果中，文件夹的md5表示该文件夹本身的节点ID，parent为文件所在节点的名称，node为文件所在节点的ID"
 					},
 					"response": [
 						{
@@ -776,7 +840,7 @@
 		"apikey": [
 			{
 				"key": "value",
-				"value": "eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wiaWRcIjoxLFwidXNlclwiOlwieGlhb3RhbzIzM1wiLFwidHlwZVwiOjF9IiwiZXhwIjoxNjEzOTg5MzgxLCJpYXQiOjE2MTM5MDI5ODF9.FcVYE8gRK11D0dny3dB3OAFqCa_ofsDM5o210k3cuqs",
+				"value": "{{token}}",
 				"type": "string"
 			},
 			{

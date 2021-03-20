@@ -2,6 +2,10 @@ package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.User;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.InputStream;
 
 public interface UserService {
 
@@ -38,4 +42,11 @@ public interface UserService {
      * @return      数据库操作影响的行数
      */
     int updateLoginDate(Integer uid);
+
+    /**
+     * 设置用户头像
+     * @param username  用户名
+     * @param file      头像文件
+     */
+    void setAvatar(String username, MultipartFile file);
 }

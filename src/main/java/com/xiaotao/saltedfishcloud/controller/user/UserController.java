@@ -3,17 +3,25 @@ package com.xiaotao.saltedfishcloud.controller.user;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.service.user.UserType;
-import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 
 @Controller
 @RequestMapping(value = "/api")
@@ -21,6 +29,9 @@ import javax.annotation.security.RolesAllowed;
 public class UserController {
     @Resource
     UserService userService;
+
+    @Resource
+    FileService fileService;
 
     /**
      * 获取用户基本信息
@@ -68,6 +79,39 @@ public class UserController {
         }
         userService.addUser(user, rawPassword, User.TYPE_COMMON);
         return JsonResult.getInstance();
+    }
+
+    /**
+     * 上传用户头像
+     * @param file  头像文件
+     */
+    @PostMapping("uploadAvatar")
+    public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file,
+                                   @RequestAttribute User user) throws IOException {
+        userService.setAvatar(user.getUsername(), file);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 获取用户头像信息，直接响应头像文件
+     * @param username  用户名
+     */
+    @GetMapping({
+            "getAvatar/{username}",
+            "getAvatar"
+    })
+    public ResponseEntity<org.springframework.core.io.Resource>
+                getAvatar(HttpServletResponse response, @PathVariable(required = false) String username) throws IOException {
+        try {
+            String profilePath = username == null ? DiskConfig.getLoginUserProfileRoot() : DiskConfig.getUserProfileRoot(username);
+            File[] avatars = new File(profilePath).listFiles(pathname -> pathname.getName().contains("avatar"));
+
+            // 数组越界，空指针操作均视为头像不存在
+            return fileService.sendFile(avatars[0].getPath());
+        } catch (Exception e) {
+            response.sendRedirect("/static/defaultAvatar.png");
+            return null;
+        }
     }
 
 }
