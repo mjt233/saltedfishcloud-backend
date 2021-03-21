@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.FileCacheInfo;
 import com.xiaotao.saltedfishcloud.po.FileInfo;
+import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import org.springframework.core.io.Resource;
@@ -34,6 +35,31 @@ public class FileService {
     StoreService storeService;
     @javax.annotation.Resource
     NodeService nodeService;
+
+    /**
+     * 获取某个用户网盘目录下的所有文件信息
+     * 若路径不存在则抛出异常
+     * 若路径指向一个文件则返回null
+     * 若路径指向一个目录则返回一个集合，数组下标0为目录，1为文件
+     * @param uid   用户ID
+     * @param path  网盘路径
+     * @return      一个List数组，数组下标0为目录，1为文件，或null
+     */
+    public Collection<? extends FileInfo>[] getUserFileList(int uid, String path) {
+        NodeInfo nodeId = nodeService.getNodeIdByPath(uid, path);
+        List<FileInfo> fileList = fileDao.getFileListByNodeId(uid, nodeId.getId());
+        List<FileInfo> dirs = new LinkedList<>(), files = new LinkedList<>();
+        fileList.forEach(file -> {
+            if (file.isFile()) {
+                file.setType(FileInfo.TYPE_FILE);
+                files.add(file);
+            } else {
+                file.setType(FileInfo.TYPE_DIR);
+                dirs.add(file);
+            }
+        });
+        return new List[]{dirs, files};
+    }
 
     /**
      * 通过一个本地路径获取获取该路径下的所有文件列表并区分文件与目录

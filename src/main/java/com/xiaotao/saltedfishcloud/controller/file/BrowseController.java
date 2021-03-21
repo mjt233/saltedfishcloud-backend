@@ -51,13 +51,7 @@ public class BrowseController {
         if (!root.exists()) {
             root.mkdir();
         }
-        try {
-            fileList = fileService.getFileList(baseLocalPath + "/" + requestPath);
-        } catch (FileNotFoundException e) {
-            log.warn("[访问了不存在的路径]" + baseLocalPath + "/" + requestPath);
-            log.warn(e.getMessage());
-            throw new HasResultException(404, "路径不存在");
-        }
+        fileList = fileService.getUserFileList(uid, requestPath);
         return JsonResult.getInstance(fileList);
 
     }

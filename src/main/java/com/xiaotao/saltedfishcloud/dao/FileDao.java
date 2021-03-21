@@ -8,6 +8,17 @@ import java.util.Collection;
 import java.util.List;
 
 public interface FileDao {
+
+
+    /**
+     * 获取用户某个节点下的所有文件
+     * @param uid       用户ID
+     * @param nodeId    节点ID
+     * @return 文件信息列表
+     */
+    @Select("SELECT uid, name, node, size, md5, created_at, updated_at FROM file_table WHERE uid = #{uid} AND node = #{nid}")
+    List<FileInfo> getFileListByNodeId(@Param("uid") Integer uid, @Param("nid") String nodeId);
+
     @Select("SELECT A.*, B.name AS parent FROM " +
             "file_table A LEFT JOIN node_list B ON " +
             " A.node = B.id " +
