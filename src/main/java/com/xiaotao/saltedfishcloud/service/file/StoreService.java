@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.po.FileInfo;
+import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -55,7 +55,7 @@ public class StoreService {
         if ( !(pathHandler instanceof RawPathHandler)){
             return;
         }
-        String base = FileUtils.getFileStoreRootPath(uid);
+        String base = DiskConfig.getRawFileStoreRootPath(uid);
         File origin = new File(base + "/" + path + "/" + oldName);
         File dist = new File(base + "/" + path + "/" + newName);
         if (!origin.exists()) {
@@ -78,7 +78,7 @@ public class StoreService {
      * @return 是否创建成功
      */
     public boolean mkdir(int uid, String path, String name) {
-        String localFilePath = FileUtils.getFileStoreRootPath(uid) + "/" + path + "/" + name;
+        String localFilePath = DiskConfig.getRawFileStoreRootPath(uid) + "/" + path + "/" + name;
         File file = new File(localFilePath);
         PathBuilder pb = new PathBuilder();
         pb.append(path).append(name);
@@ -95,7 +95,7 @@ public class StoreService {
     public long delete(int uid, String path, Collection<String> name) {
         AtomicLong cnt = new AtomicLong();
         // 本地物理基础路径
-        String basePath = FileUtils.getFileStoreRootPath(uid)  + "/" + path;
+        String basePath = DiskConfig.getRawFileStoreRootPath(uid)  + "/" + path;
         name.forEach(fileName -> {
 
             // 本地完整路径

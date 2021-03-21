@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.po;
+package com.xiaotao.saltedfishcloud.po.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -16,21 +16,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class FileInfo {
-    private String md5;
-    public final static int TYPE_DIR = 1;
-    public final static int TYPE_FILE = 2;
-    private String name;
+public class FileInfo extends BasicFileInfo{
     private String parent;
 
     @JsonIgnore
     private String path;
     private String node;
-    private Long size;
-    private Integer type;
     private Long lastModified;
     private Date created_at;
     private Date updated_at;
@@ -57,31 +51,6 @@ public class FileInfo {
         type = file.isDirectory() ? TYPE_DIR : TYPE_FILE;
         path = file.getPath();
         lastModified = file.lastModified();
-    }
-
-    @JsonIgnore
-    public String getFormatSize() {
-        if (type == TYPE_DIR) {
-            return "-";
-        } else {
-            return StringUtils.getFormatSize(size);
-        }
-    }
-
-    public boolean isFile() {
-        return size != -1L || (type != null && type == TYPE_FILE);
-    }
-
-    public boolean isDir() {
-        return !isFile();
-    }
-
-    /**
-     * 获取文件后缀名，不带点.
-     * @return 后缀名
-     */
-    public String getSuffix() {
-        return FileUtils.getSuffix(name);
     }
 
     /**

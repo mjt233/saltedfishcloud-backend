@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 
 public class PathUtils {
@@ -17,7 +18,7 @@ public class PathUtils {
      */
     public static String getRelativePath(int uid, String localPath) {
         String local = PathBuilder.formatPath(localPath);
-        String userBasePath = FileUtils.getFileStoreRootPath(uid);
+        String userBasePath = DiskConfig.getRawFileStoreRootPath(uid);
         String res = local.substring(userBasePath.length());
         return res.length() == 0 ? "/" : res;
     }

@@ -1,10 +1,9 @@
 package com.xiaotao.saltedfishcloud.controller.file;
 
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
-import com.xiaotao.saltedfishcloud.po.FileInfo;
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.Collection;
 
 /**
@@ -44,7 +42,7 @@ public class BrowseController {
         String prefix = "/api/fileList/" + uid;
         String requestPath = URLUtils.getRequestFilePath(prefix, request);
 
-        String baseLocalPath = FileUtils.getFileStoreRootPath(uid);
+        String baseLocalPath = DiskConfig.getRawFileStoreRootPath(uid);
 
         Collection<? extends FileInfo>[] fileList = null;
         File root = new File(baseLocalPath);

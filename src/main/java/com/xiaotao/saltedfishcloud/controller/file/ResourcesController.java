@@ -1,13 +1,17 @@
 package com.xiaotao.saltedfishcloud.controller.file;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.xiaotao.saltedfishcloud.po.FileInfo;
+import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.UIDValidator;
+import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -28,6 +32,8 @@ public class ResourcesController {
     FileRecordService fileRecordService;
     @Resource
     NodeService nodeService;
+    @Resource
+    PathHandler pathHandler;
 
     /**
      * 搜索目标用户网盘中的文件或文件夹
@@ -60,12 +66,26 @@ public class ResourcesController {
      * 解析节点ID，获取节点ID对应的文件夹路径
      * @param uid   用户ID
      * @param node  节点ID
-     * @return
      */
     @GetMapping("/getPath")
     public JsonResult getPath(@RequestParam("uid") int uid,
                               @RequestParam("nodeId") String node) {
         UIDValidator.validate(uid);
         return JsonResult.getInstance(nodeService.getPathByNode(uid, node));
+    }
+
+    /**
+     * 获取文件下载码 FDC - FileDownloadCode
+     */
+    @GetMapping("/getFDC/{uid}/**")
+    public JsonResult getDC(@PathVariable int uid,
+                            HttpServletRequest request,
+                            @RequestParam("md5") String md5,
+                            @RequestParam("name") String name) throws JsonProcessingException {
+        UIDValidator.validate(uid);
+        String filePath = URLUtils.getRequestFilePath("/api/resource/getFDC/" + uid, request);
+        BasicFileInfo fileInfo = new BasicFileInfo(name, md5);
+        String dc = fileService.getFileDC(uid, filePath, fileInfo);
+        return JsonResult.getInstance(dc);
     }
 }

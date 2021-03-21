@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.controller.file;
 
-import com.xiaotao.saltedfishcloud.po.FileNameList;
+import com.xiaotao.saltedfishcloud.po.file.FileNameList;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.po.JsonResult;

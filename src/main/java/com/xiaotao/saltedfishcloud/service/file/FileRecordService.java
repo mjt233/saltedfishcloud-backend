@@ -1,9 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
-import com.xiaotao.saltedfishcloud.po.DirCollection;
-import com.xiaotao.saltedfishcloud.po.FileInfo;
+import com.xiaotao.saltedfishcloud.po.file.DirCollection;
+import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -128,7 +129,7 @@ public class FileRecordService {
      * 将本地公共网盘的文件信息写入数据库
      */
     public void makePublicRecord() throws IOException {
-        DirCollection dirCollection = FileUtils.scanDir(FileUtils.getFileStoreRootPath(0));
+        DirCollection dirCollection = FileUtils.scanDir(DiskConfig.getRawFileStoreRootPath(0));
         AtomicLong atomicLong = new AtomicLong();
         atomicLong.set(0);
         long total = dirCollection.getDirsCount();

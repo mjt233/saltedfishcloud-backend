@@ -1,6 +1,9 @@
 package com.xiaotao.saltedfishcloud.config;
 
 
+import com.xiaotao.saltedfishcloud.dao.UserDao;
+import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +22,9 @@ import java.util.Objects;
 @PropertySource("classpath:config.properties")
 @Slf4j
 public class DiskConfig {
+
+    private static UserDao userDao;
+
     public static final List<String> ACCEPT_AVATAR_TYPE = Arrays.asList("jpg", "jpeg", "gif", "png");
 
     // 公共网盘路径
@@ -32,6 +38,32 @@ public class DiskConfig {
 
     // 用户个性化配置文件根目录
     public static String USER_PROFILE_ROOT;
+
+    public DiskConfig(UserDao userDao) {
+        DiskConfig.userDao = userDao;
+    }
+
+    /**
+     * 通过UID获取文件存储的用户根目录，公共用户使用DiskConfig.PUBLIC_ROOT 其他用户使用DiskConfig.PRIVATE_ROOT + "/" + {username}
+     * @param uid 用户ID 0表示公共
+     * @return 本地文件存储用户根目录，末尾不带/
+     */
+    static public String getRawFileStoreRootPath(int uid) {
+        if (uid == 0) {
+            return PUBLIC_ROOT;
+        }
+
+        User user = SecureUtils.getSpringSecurityUser();
+        if (user != null && uid == user.getId()) {
+            return getLoginUserPrivateDiskRoot();
+        } else {
+            try {
+                return getUserPrivateDiskRoot(userDao.getUserById(uid).getUsername());
+            } catch (NullPointerException e) {
+                throw new HasResultException(404, "资源不存在");
+            }
+        }
+    }
 
     @Value("${reg-code}")
     public void setRegCode(String v) {
@@ -60,7 +92,11 @@ public class DiskConfig {
      * @throws NullPointerException 未登录
      */
     public static String getLoginUserPrivateDiskRoot() {
-        return DiskConfig.STORE_ROOT + "/user_file/" + Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getUsername();
+        return getUserPrivateDiskRoot(Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getUsername());
+    }
+
+    public static String getUserPrivateDiskRoot(String username) {
+        return DiskConfig.STORE_ROOT + "/user_file/" + username;
     }
 
     /**

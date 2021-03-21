@@ -78,6 +78,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests()
                 .antMatchers("/",
                         "/static/**",
+                        "/api/fdc/*",
                         "/api/static/**",
                         "/api/fileList/*/**",
                         "/download/*/**",

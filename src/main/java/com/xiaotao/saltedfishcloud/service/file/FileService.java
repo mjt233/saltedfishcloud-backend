@@ -1,12 +1,18 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
-import com.xiaotao.saltedfishcloud.po.FileCacheInfo;
-import com.xiaotao.saltedfishcloud.po.FileInfo;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.po.file.FileDCInfo;
+import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +25,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -33,6 +41,8 @@ public class FileService {
     FileRecordService fileRecordService;
     @javax.annotation.Resource
     StoreService storeService;
+    @javax.annotation.Resource
+    PathHandler pathHandler;
     @javax.annotation.Resource
     NodeService nodeService;
 
@@ -202,5 +212,47 @@ public class FileService {
     public void rename(int uid, String path, String name, String newName) throws HasResultException {
         fileRecordService.rename(uid, path, name, newName);
         storeService.rename(uid, path, name, newName);
+    }
+
+    /**
+     * 获取网盘中文件的下载码
+     * @param uid 用户ID
+     * @param path 文件所在网盘目录
+     * @param fileInfo 文件信息
+     */
+    public String getFileDC(int uid, String path, BasicFileInfo fileInfo) throws JsonProcessingException {
+        Path localPath = Paths.get(pathHandler.getStorePath(uid, path, fileInfo));
+        if ( !Files.exists(localPath) ){
+            throw new HasResultException(404, "文件不存在");
+        }
+        FileDCInfo info = new FileDCInfo();
+        info.setDir(path);
+        info.setMd5(fileInfo.getMd5());
+        info.setName(fileInfo.getName());
+        info.setUid(uid);
+        String token = JwtUtils.generateToken(new ObjectMapper().writeValueAsString(info));
+        return token;
+    }
+
+    /**
+     * 通过下载码获取资源响应体
+     * @param dc 下载码
+     * @return  资源响应体
+     */
+    public ResponseEntity<Resource> getResourceByDC(String dc) throws UnsupportedEncodingException, MalformedURLException {
+        FileDCInfo info;
+        try {
+            String data = (String) JwtUtils.parse(dc);
+            info = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false).readValue(data, FileDCInfo.class);
+        } catch (JsonProcessingException e) {
+            throw new HasResultException(400, "下载码无效");
+        }
+        Path localFilePath = Paths.get(pathHandler.getStorePath(info.getUid(), info.getDir(), info));
+        String name = localFilePath.getFileName().toString();
+        UrlResource urlResource = new UrlResource(localFilePath.toUri());
+        return ResponseEntity.ok()
+                .header("Content-Type", FileUtils.getContentType(name))
+                .header("Content-Disposition", "inline;filename=" + URLEncoder.encode(name, "utf-8"))
+                .body(urlResource);
     }
 }

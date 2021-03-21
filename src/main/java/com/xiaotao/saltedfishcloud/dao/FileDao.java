@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao;
 
-import com.xiaotao.saltedfishcloud.po.FileCacheInfo;
-import com.xiaotao.saltedfishcloud.po.FileInfo;
+import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import org.apache.ibatis.annotations.*;
 
 import java.util.Collection;

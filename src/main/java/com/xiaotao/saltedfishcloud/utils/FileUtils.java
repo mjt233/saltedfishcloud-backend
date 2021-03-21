@@ -1,8 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
-import com.xiaotao.saltedfishcloud.po.DirCollection;
+import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -94,15 +93,6 @@ public class FileUtils {
         } else {
             return name;
         }
-    }
-
-    /**
-     * 通过UID获取文件存储的用户根目录，公共用户使用DiskConfig.PUBLIC_ROOT 其他用户使用DiskConfig.PRIVATE_ROOT + "/" + {username}
-     * @param uid 用户ID 0表示公共
-     * @return 本地文件存储用户根目录，末尾不带/
-     */
-    static public String getFileStoreRootPath(int uid) {
-        return uid == 0 ? DiskConfig.PUBLIC_ROOT : DiskConfig.getLoginUserPrivateDiskRoot();
     }
 
 

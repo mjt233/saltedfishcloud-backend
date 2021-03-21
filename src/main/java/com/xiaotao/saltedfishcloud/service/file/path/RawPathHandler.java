@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.path;
 
-import com.xiaotao.saltedfishcloud.po.FileInfo;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import org.springframework.stereotype.Component;
 
@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 @Component("RawPathHandler")
 public class RawPathHandler implements PathHandler{
     @Override
-    public String getStorePath(int uid, String targetDir, FileInfo fileInfo) {
+    public String getStorePath(int uid, String targetDir, BasicFileInfo fileInfo) {
         PathBuilder pathBuilder = new PathBuilder();
-        pathBuilder.append(FileUtils.getFileStoreRootPath(uid))
+        pathBuilder.append(DiskConfig.getRawFileStoreRootPath(uid))
                 .append(targetDir)
                 .append(fileInfo.getName());
         return pathBuilder.toString();

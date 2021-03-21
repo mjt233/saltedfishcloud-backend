@@ -91,7 +91,7 @@ public class PathBuilder {
         StringBuilder sb = new StringBuilder();
         AtomicBoolean first = new AtomicBoolean(true);
         path.forEach(node -> {
-            if (prefix || !first.get()) {
+            if (!OSInfo.isWindows() || !first.get()) {
                 sb.append("/");
             }
             sb.append(node);

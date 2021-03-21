@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.po;
+package com.xiaotao.saltedfishcloud.po.file;
 
 import jdk.nashorn.internal.objects.annotations.Getter;
 import lombok.AllArgsConstructor;

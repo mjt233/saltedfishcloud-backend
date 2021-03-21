@@ -6,9 +6,14 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
+import org.springframework.stereotype.Component;
 
-
+@Component
 public interface UserDao {
+
+    @Select("SELECT * FROM user WHERE id = #{id}")
+    User getUserById(Integer id);
+
     @Select("SELECT * FROM user WHERE user = #{user}")
     User getUserByUser(String user);
 
