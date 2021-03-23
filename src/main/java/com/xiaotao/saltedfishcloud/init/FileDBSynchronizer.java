@@ -84,7 +84,7 @@ public class FileDBSynchronizer implements ApplicationRunner {
             int index = p.lastIndexOf('/');
             String path = p.substring(0, index);
             String name = p.substring(index + 1);
-            fileService.mkdir(0, name, path.length() == 0 ? "/" : path);
+            fileRecordService.mkdir(0, name, path.length() == 0 ? "/" : path);
         });
 
         //  处理数据库中已失效目录

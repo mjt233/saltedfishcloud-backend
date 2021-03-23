@@ -80,8 +80,6 @@ public class StoreService {
     public boolean mkdir(int uid, String path, String name) {
         String localFilePath = DiskConfig.getRawFileStoreRootPath(uid) + "/" + path + "/" + name;
         File file = new File(localFilePath);
-        PathBuilder pb = new PathBuilder();
-        pb.append(path).append(name);
         return file.mkdir();
     }
 
