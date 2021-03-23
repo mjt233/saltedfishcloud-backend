@@ -13,6 +13,7 @@ import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Service("fileService")
+@Slf4j
 public class FileService {
     @javax.annotation.Resource
     FileDao fileDao;
@@ -191,6 +193,7 @@ public class FileService {
      */
     public void mkdir(int uid, String path, String name) throws HasResultException {
         if ( !storeService.mkdir(uid, path, name) ) {
+            log.error("创建文件夹失败: " + path + "/" + name);
             throw new HasResultException("在" + path + "创建文件夹失败");
         }
         fileRecordService.mkdir(uid, name, path);
