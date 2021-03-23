@@ -80,12 +80,16 @@ public class FileDBSynchronizer implements ApplicationRunner {
         //  处理数据库缺失的目录
         LinkedList<String> dbLostDir = new LinkedList<>(SetUtils.diff(localDir, dbFile.keySet()));
         dbLostDir.sort(Comparator.comparingInt(o -> o.split("/").length));
-        dbLostDir.forEach(p -> {
-            int index = p.lastIndexOf('/');
-            String path = p.substring(0, index);
-            String name = p.substring(index + 1);
+
+        long cnt = 0, total = dbLostDir.size();
+        for (String p1 : dbLostDir) {
+            int index = p1.lastIndexOf('/');
+            String path = p1.substring(0, index);
+            String name = p1.substring(index + 1);
             fileRecordService.mkdir(0, name, path.length() == 0 ? "/" : path);
-        });
+            String proc = "创建目录:" + StringUtils.getProcStr(++cnt, total, 32);
+            log.info(proc);
+        }
 
         //  处理数据库中已失效目录
         LinkedList<String> localLostDir = new LinkedList<>(SetUtils.diff(dbFile.keySet(), localDir));
@@ -115,7 +119,7 @@ public class FileDBSynchronizer implements ApplicationRunner {
                     deleteCnt.getAndIncrement();
                     fileDao.deleteRecord(0, fileInfo.getNode(), Collections.singletonList(fileInfo.getName()));
                 } else {
-                    dbFiles.put(k + "/" + fileInfo.getName(), fileInfo);
+                    dbFiles.put(k + (k.equals("/") ? "" : "/") + fileInfo.getName(), fileInfo);
                 }
             });
         });
@@ -136,14 +140,29 @@ public class FileDBSynchronizer implements ApplicationRunner {
             }
         }
 
-        long cnt = 0, total = newFile.size();
-
+        cnt = 0;
+        total = newFile.size();
         for (FileInfo fileInfo : newFile) {
             fileInfo.updateMd5();
-            String proc = StringUtils.getProcStr(++cnt, total, 32);
+            String proc = "添加文件:" + StringUtils.getProcStr(++cnt, total, 32);
             if (fileRecordService.addRecord(0, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), fileInfo.getPath()) <= 0) {
                 log.error("信息添加失败：" + fileInfo.getPath() + "/" + fileInfo.getName() + " MD5:" + fileInfo.getMd5());
             }
+            log.info(proc);
+        }
+
+        cnt = 0;
+        total = changeFile.size();
+        for (FileInfo fileInfo : changeFile) {
+            fileInfo.updateMd5();
+            fileDao.updateRecord(
+                    0,
+                    fileInfo.getName(),
+                    nodeService.getNodeIdByPath(0, fileInfo.getPath()).getId(),
+                    fileInfo.getSize(),
+                    fileInfo.getMd5()
+            );
+            String proc = "更新文件:" + StringUtils.getProcStr(++cnt, total, 32);
             log.info(proc);
         }
         log.info("==== 任务统计 ====");
