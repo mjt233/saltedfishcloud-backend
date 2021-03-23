@@ -31,7 +31,7 @@ public interface FileDao {
      * @param fileName 文件名
      * @param size 文件大小
      * @param md5 文件md5
-     * @param nodeId 文件所在路径（不包含文件名）的映射ID（路径的md5值）
+     * @param nodeId 文件所在路径（不包含文件名）的映射ID，路径ID需要用NodeDao或NodeService获取
      * @return 影响的行数
      */
     @Insert("INSERT IGNORE INTO file_table (uid,name,size,md5,node,created_at) VALUES (#{uid},#{name},#{size},#{md5},#{node},NOW())")

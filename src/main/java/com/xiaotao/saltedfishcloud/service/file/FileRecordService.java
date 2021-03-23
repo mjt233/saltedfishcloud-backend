@@ -3,22 +3,24 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
+import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,6 +39,9 @@ public class FileRecordService {
 
     @Resource
     private NodeDao nodeDao;
+
+    @Resource
+    private FileService fileService;
 
     /**
      * 添加一个记录

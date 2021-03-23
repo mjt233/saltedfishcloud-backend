@@ -25,7 +25,11 @@ public class DiskConfig {
 
     private static UserDao userDao;
 
+    // 可接收的头像文件后缀名
     public static final List<String> ACCEPT_AVATAR_TYPE = Arrays.asList("jpg", "jpeg", "gif", "png");
+
+    // 同步间隔
+    public static int SYNC_DELAY;
 
     // 公共网盘路径
     public static String PUBLIC_ROOT;
@@ -69,6 +73,12 @@ public class DiskConfig {
     public void setRegCode(String v) {
         log.info("[注册邀请码]" + v);
         REG_CODE = v;
+    }
+
+    @Value("${sync-delay:5}")
+    public void setSyncDelay(int v) {
+        SYNC_DELAY = v;
+        log.info("[数据库同步间隔]:" + v + "分钟");
     }
 
     @Value("${public-root}")

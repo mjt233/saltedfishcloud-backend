@@ -45,4 +45,14 @@ public class StringUtils {
         return stringBuilder.toString();
     }
 
+    /**
+     * 移除字符串前缀
+     * @param prefix    前缀
+     * @param input     输入字符串
+     * @return          移除后的结果
+     */
+    public static String removePrefix(String prefix, String input) {
+        return input.substring(prefix.length());
+    }
+
 }

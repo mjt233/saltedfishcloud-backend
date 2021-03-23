@@ -12,6 +12,7 @@ import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;

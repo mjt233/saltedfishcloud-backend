@@ -57,7 +57,17 @@ public class FileService {
      */
     public Collection<? extends FileInfo>[] getUserFileList(int uid, String path) {
         NodeInfo nodeId = nodeService.getNodeIdByPath(uid, path);
-        List<FileInfo> fileList = fileDao.getFileListByNodeId(uid, nodeId.getId());
+        return getUserFileListByNodeId(uid, nodeId.getId());
+    }
+
+    /**
+     * 通过节点ID获取节点下的文件信息
+     * @param uid       用户ID
+     * @param nodeId    节点ID
+     * @return          一个List数组，数组下标0为目录，1为文件，或null
+     */
+    public Collection<? extends FileInfo>[] getUserFileListByNodeId(int uid, String nodeId) {
+        List<FileInfo> fileList = fileDao.getFileListByNodeId(uid, nodeId);
         List<FileInfo> dirs = new LinkedList<>(), files = new LinkedList<>();
         fileList.forEach(file -> {
             if (file.isFile()) {
