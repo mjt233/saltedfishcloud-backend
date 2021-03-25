@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `file_table`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `file_table` (
   `uid` int(10) unsigned NOT NULL,
-  `name` varchar(512) NOT NULL,
+  `name` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `node` char(32) DEFAULT NULL,
   `size` bigint(20) NOT NULL,
   `md5` char(32) DEFAULT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE `user` (
   `quota` int(10) unsigned DEFAULT '10',
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_index` (`user`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -80,4 +80,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-03-20 21:39:05
+-- Dump completed on 2021-03-25 21:10:34
