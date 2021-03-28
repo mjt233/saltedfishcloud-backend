@@ -46,11 +46,16 @@ public class FileDBSynchronizer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         while (DiskConfig.SYNC_DELAY > 0) {
-            log.info("开始同步文件信息");
-            long start = System.currentTimeMillis();
-            doAction();
-            log.info("同步完成，任务耗时：" + (System.currentTimeMillis() - start)/1000 + "s");
-            Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
+            try {
+                log.info("开始同步文件信息");
+                long start = System.currentTimeMillis();
+                doAction();
+                log.info("同步完成，任务耗时：" + (System.currentTimeMillis() - start)/1000 + "s");
+                Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
+            } catch (Exception e) {
+                log.warn("同步出错：" + e.getMessage() + " 本轮同步任务跳过，等待下一轮");
+                Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
+            }
         }
     }
 
