@@ -146,7 +146,7 @@ public class FileService {
     }
 
     public List<FileInfo> search(int uid, String key) {
-        key = "%" + key.replaceAll("/s+", "%") + "%";
+        key = "%" + key.replaceAll("%", "\\%").replaceAll("/s+", "%") + "%";
         return fileDao.search(uid, key);
     }
 
