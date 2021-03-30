@@ -31,14 +31,19 @@ public class JwtValidateFilter extends OncePerRequestFilter {
             chain.doFilter(req, response);
             return;
         } else {
+            try {
 
-            // 解析token，获取其中的负载数据字符串（这里是User对象的json序列化字符串）
-            String data = (String)JwtUtils.parse(token);
+                // 解析token，获取其中的负载数据字符串（这里是User对象的json序列化字符串）
+                String data = (String)JwtUtils.parse(token);
 
-            // 将其json反序列化为User对象
-            ObjectMapper mapper = new ObjectMapper();
-            User user = mapper.readValue(data, User.class);
-            SecurityContextHolder.getContext().setAuthentication( new UsernamePasswordAuthenticationToken( user, null, user.getAuthorities()) );
+                // 将其json反序列化为User对象
+                ObjectMapper mapper = new ObjectMapper();
+                User user = mapper.readValue(data, User.class);
+                SecurityContextHolder.getContext().setAuthentication( new UsernamePasswordAuthenticationToken( user, null, user.getAuthorities()) );
+
+            } catch (Exception ignored) {
+
+            }
         }
         chain.doFilter(req, response);
     }
