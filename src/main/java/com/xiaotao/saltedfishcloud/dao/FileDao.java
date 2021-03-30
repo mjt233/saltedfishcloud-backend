@@ -21,7 +21,7 @@ public interface FileDao {
     @Select("SELECT A.*, B.name AS parent FROM " +
             "file_table A LEFT JOIN node_list B ON " +
             " A.node = B.id " +
-            "WHERE A.uid = #{uid} AND A.name like #{key}")
+            "WHERE A.uid = #{uid} AND A.name like #{key} COLLATE utf8mb4_general_ci")
     List<FileInfo> search(@Param("uid") Integer uid,
                                      @Param("key") String key);
 
