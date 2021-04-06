@@ -1,9 +1,6 @@
 package com.xiaotao.saltedfishcloud.po.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.*;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +25,17 @@ public class FileInfo extends BasicFileInfo{
     private Long lastModified;
     private Date created_at;
     private Date updated_at;
+
+    /**
+     * 获取本地文件的文件信息（将自动计算其MD5）
+     * @param path  本地文件路径
+     * @return  文件信息对象
+     */
+    public static FileInfo getLocal(String path) {
+        FileInfo info = new FileInfo(new File(path));
+        info.updateMd5();
+        return info;
+    }
 
     public FileInfo(MultipartFile file) {
         name = file.getOriginalFilename();

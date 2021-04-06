@@ -4,6 +4,9 @@ package com.xiaotao.saltedfishcloud.config;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
+import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
+import com.xiaotao.saltedfishcloud.service.file.path.UniquePathHandler;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,14 +25,19 @@ import java.util.Objects;
 @PropertySource("classpath:config.properties")
 @Slf4j
 public class DiskConfig {
+    public static RawPathHandler rawPathHandler;
+    public static UniquePathHandler uniquePathHandler;
 
     private static UserDao userDao;
+
+    public static String STORE_TYPE;
 
     // 可接收的头像文件后缀名
     public static final List<String> ACCEPT_AVATAR_TYPE = Arrays.asList("jpg", "jpeg", "gif", "png");
 
     // 同步间隔
     public static int SYNC_DELAY;
+    public static boolean LAUNCH_SYNC;  // 启动时同步
 
     // 公共网盘路径
     public static String PUBLIC_ROOT;
@@ -43,8 +51,10 @@ public class DiskConfig {
     // 用户个性化配置文件根目录
     public static String USER_PROFILE_ROOT;
 
-    public DiskConfig(UserDao userDao) {
+    public DiskConfig(UserDao userDao, RawPathHandler rawPathHandler, UniquePathHandler uniquePathHandler) {
         DiskConfig.userDao = userDao;
+        DiskConfig.rawPathHandler = rawPathHandler;
+        DiskConfig.uniquePathHandler = uniquePathHandler;
     }
 
     /**
@@ -75,10 +85,15 @@ public class DiskConfig {
         REG_CODE = v;
     }
 
-    @Value("${sync-delay:5}")
+    @Value("${sync-delay}")
     public void setSyncDelay(int v) {
         SYNC_DELAY = v;
         log.info("[数据库同步间隔]:" + v + "分钟");
+    }
+
+    @Value("${sync-launch}")
+    public void setSyncLaunch(boolean a) {
+        LAUNCH_SYNC = a;
     }
 
     @Value("${public-root}")
@@ -96,6 +111,11 @@ public class DiskConfig {
         DiskConfig.USER_PROFILE_ROOT = STORE_ROOT + "/user_profile/";
     }
 
+    @Value("${store-type}")
+    public void setStoreType(String type) {
+        STORE_TYPE = type;
+    }
+
     /**
      * 获取当前登录用户的私人网盘根目录（不以/结尾）
      * @return 本地文件目录
@@ -107,6 +127,18 @@ public class DiskConfig {
 
     public static String getUserPrivateDiskRoot(String username) {
         return DiskConfig.STORE_ROOT + "/user_file/" + username;
+    }
+
+    /**
+     * 获取系统使用的的路径操纵器
+     * @return  路径操纵器示例
+     */
+    public static PathHandler getPathHandler() {
+        if (STORE_TYPE.equals("raw")) {
+            return rawPathHandler;
+        } else {
+            return uniquePathHandler;
+        }
     }
 
     /**

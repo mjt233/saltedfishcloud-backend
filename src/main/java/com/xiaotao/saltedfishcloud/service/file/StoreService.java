@@ -27,9 +27,6 @@ import static com.xiaotao.saltedfishcloud.utils.FileUtils.writeFile;
 @Slf4j
 public class StoreService {
 
-    @Resource
-    PathHandler pathHandler;
-
     /**
      * 向用户网盘目录中保存一个文件
      * @param uid   用户ID 0表示公共
@@ -40,7 +37,7 @@ public class StoreService {
      * @throws HasResultException 存储文件出错
      */
     public int store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws HasResultException {
-        String target = pathHandler.getStorePath(uid, targetDir, fileInfo);
+        String target = DiskConfig.getPathHandler().getStorePath(uid, targetDir, fileInfo);
         return writeFile(input, new File(target));
     }
 
@@ -52,7 +49,7 @@ public class StoreService {
      * @param newName 新文件名
      */
     public void rename(int uid, String path, String oldName, String newName) throws HasResultException {
-        if ( !(pathHandler instanceof RawPathHandler)){
+        if ( !(DiskConfig.getPathHandler() instanceof RawPathHandler)){
             return;
         }
         String base = DiskConfig.getRawFileStoreRootPath(uid);

@@ -33,8 +33,6 @@ public class ResourcesController {
     FileRecordService fileRecordService;
     @Resource
     NodeService nodeService;
-    @Resource
-    PathHandler pathHandler;
 
     /**
      * 搜索目标用户网盘中的文件或文件夹

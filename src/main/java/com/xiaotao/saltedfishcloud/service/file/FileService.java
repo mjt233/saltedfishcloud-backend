@@ -3,13 +3,13 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
@@ -43,8 +43,6 @@ public class FileService {
     FileRecordService fileRecordService;
     @javax.annotation.Resource
     StoreService storeService;
-    @javax.annotation.Resource
-    PathHandler pathHandler;
     @javax.annotation.Resource
     NodeService nodeService;
 
@@ -234,7 +232,7 @@ public class FileService {
      * @param fileInfo 文件信息
      */
     public String getFileDC(int uid, String path, BasicFileInfo fileInfo) throws JsonProcessingException {
-        Path localPath = Paths.get(pathHandler.getStorePath(uid, path, fileInfo));
+        Path localPath = Paths.get(DiskConfig.getPathHandler().getStorePath(uid, path, fileInfo));
         if ( !Files.exists(localPath) ){
             throw new HasResultException(404, "文件不存在");
         }
@@ -260,7 +258,7 @@ public class FileService {
         } catch (JsonProcessingException e) {
             throw new HasResultException(400, "下载码无效");
         }
-        Path localFilePath = Paths.get(pathHandler.getStorePath(info.getUid(), info.getDir(), info));
+        Path localFilePath = Paths.get(DiskConfig.getPathHandler().getStorePath(info.getUid(), info.getDir(), info));
         String name = localFilePath.getFileName().toString();
         UrlResource urlResource = new UrlResource(localFilePath.toUri());
         return ResponseEntity.ok()

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 /**
  * 原始路径操作器，用户请求什么路径，就返回什么路径
  */
-@Component("RawPathHandler")
+@Component
 public class RawPathHandler implements PathHandler{
     @Override
     public String getStorePath(int uid, String targetDir, BasicFileInfo fileInfo) {
