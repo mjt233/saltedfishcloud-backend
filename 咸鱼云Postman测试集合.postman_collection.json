@@ -530,12 +530,117 @@
 						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
 					},
 					"response": []
+				},
+				{
+					"name": "[管理员]更新公开资源数据库",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/updatePublicRecord",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"updatePublicRecord"
+							]
+						},
+						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
+					},
+					"response": []
 				}
 			]
 		},
 		{
 			"name": "文件操作",
 			"item": [
+				{
+					"name": "下载相关",
+					"item": [
+						{
+							"name": "获取文件下载码",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "md5",
+											"value": "414355cdb46159600930f6e2319e8c94",
+											"type": "text"
+										},
+										{
+											"key": "name",
+											"value": "54613529.jpg",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/resource/getFDC/37/新建文件夹",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"resource",
+										"getFDC",
+										"37",
+										"新建文件夹"
+									]
+								},
+								"description": "### 获取某个文件的下载码，使用下载码可用于免登录在外部工具下载或分享他人\r\n- API：`/api/resource/getFDC/{用户ID}/{文件所在路径}`  \r\n\r\n#### 参数列表\r\n- md5: 文件的MD5（当服务器使用原始文件结构存储文件时，该项不起作用）\r\n- name：文件名  \r\n\r\n#### 响应data\r\n- 下载码，用于'使用下载码下载文件'接口"
+							},
+							"response": []
+						},
+						{
+							"name": "直接下载",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/download/37/54613529.jpg",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"download",
+										"37",
+										"54613529.jpg"
+									]
+								},
+								"description": "## 从网盘中获取一个文件内容  \r\n- API：`/download/{用户ID}/文件路径`\r\n- 样例：`/download/37/新建文件夹/54613529.jpg`  \r\n\r\n要注意的是，使用该接口下载文件需要在header或表单中传递Token，在浏览器中可使用POST提交带Token的表单实现下载"
+							},
+							"response": []
+						},
+						{
+							"name": "使用下载码下载文件",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/fdc/eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wibmFtZVwiOlwiNTQ2MTM1MjkuanBnXCIsXCJtZDVcIjpcIjQxNDM1NWNkYjQ2MTU5NjAwOTMwZjZlMjMxOWU4Yzk0XCIsXCJzaXplXCI6MCxcInVpZFwiOjM3LFwiZGlyXCI6XCIv5paw5bu65paH5Lu25aS5XCIsXCJzdWZmaXhcIjpcImpwZ1wifSIsImV4cCI6MTYxNjQyMDY5MSwiaWF0IjoxNjE2MzM0MjkxfQ.hzZF5W3pkeIqEJ5nCofFbifqZzaCN_HFS7xpC-2ntWQ",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"fdc",
+										"eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wibmFtZVwiOlwiNTQ2MTM1MjkuanBnXCIsXCJtZDVcIjpcIjQxNDM1NWNkYjQ2MTU5NjAwOTMwZjZlMjMxOWU4Yzk0XCIsXCJzaXplXCI6MCxcInVpZFwiOjM3LFwiZGlyXCI6XCIv5paw5bu65paH5Lu25aS5XCIsXCJzdWZmaXhcIjpcImpwZ1wifSIsImV4cCI6MTYxNjQyMDY5MSwiaWF0IjoxNjE2MzM0MjkxfQ.hzZF5W3pkeIqEJ5nCofFbifqZzaCN_HFS7xpC-2ntWQ"
+									]
+								},
+								"description": "### 使用下载码下载文件  \r\n- 用途：用于需要免登录验证而又保护用户认证信息的情况下下载文件，比如 使用外部下载器，分享好友等\r\n- API：`/api/fdc/{下载码}`\r\n\r\n下载码通过'获取文件下载码'接口获得\r\n\r\n### 响应\r\n直接响应文件"
+							},
+							"response": []
+						}
+					]
+				},
 				{
 					"name": "取文件列表",
 					"request": {
