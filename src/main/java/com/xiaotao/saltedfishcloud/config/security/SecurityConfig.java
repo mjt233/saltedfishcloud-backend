@@ -70,7 +70,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             @Override
             public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
                 response.setContentType("application/json;charset=utf-8");
-                response.getWriter().print(JsonResult.getInstance(403, null, "拒绝访问，权限不足或未登录或用户token过期/无效"));
+                response.getWriter().print(JsonResult.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
             }
         });
 
@@ -86,7 +86,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         "/api/resource/search/**",
                         "/api/resource/getPath",
                         "/api/regUser",
-                        "/api/getAvatar/**")
+                        "/api/getAvatar/**",
+                        "/api/resource/getFDC/**")
                 .permitAll()
                 .antMatchers(HttpMethod.POST, "/api/login")
                 .permitAll()
