@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Component
 @Slf4j
-public class FileDBSynchronizer implements ApplicationRunner {
+public class FileDBSynchronizer implements ApplicationRunner, Runnable {
     @Resource
     NodeService nodeService;
     @Resource
@@ -45,18 +45,8 @@ public class FileDBSynchronizer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        while (DiskConfig.SYNC_DELAY > 0) {
-            try {
-                log.info("开始同步文件信息");
-                long start = System.currentTimeMillis();
-                doAction();
-                log.info("同步完成，任务耗时：" + (System.currentTimeMillis() - start)/1000 + "s");
-                Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
-            } catch (Exception e) {
-                log.warn("同步出错：" + e.getMessage() + " 本轮同步任务跳过，等待下一轮");
-                Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
-            }
-        }
+        Thread thread = new Thread(this);
+        thread.start();
     }
 
     public void doAction() throws IOException {
@@ -177,5 +167,30 @@ public class FileDBSynchronizer implements ApplicationRunner {
         log.info("被更改的文件数：" + changeFile.size());
         log.info("被删除的文件数：" + deleteCnt.get());
         log.info("==== 任务完成 ====");
+    }
+
+    @Override
+    public void run() {
+        boolean first = true;
+        while (DiskConfig.SYNC_DELAY > 0) {
+            try {
+                if (first && !DiskConfig.LAUNCH_SYNC) {
+                    first = false;
+                    Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
+                }
+                log.info("开始同步文件信息");
+                long start = System.currentTimeMillis();
+                doAction();
+                log.info("同步完成，任务耗时：" + (System.currentTimeMillis() - start)/1000 + "s");
+                Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
+            } catch (Exception e) {
+                log.warn("同步出错：" + e.getMessage() + " 本轮同步任务跳过，等待下一轮");
+                try {
+                    Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace();
+                }
+            }
+        }
     }
 }
