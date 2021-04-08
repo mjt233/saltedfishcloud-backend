@@ -18,14 +18,18 @@ public class JwtUtils {
     /**
      * 生成一个包含了data作为负载信息的token
      * @param data  要附加的数据
+     * @param expr  token有效时间，单位为秒
      * @return  token字符串
      */
-    public static String generateToken(Object data) {
+    public static String generateToken(Object data, int expr) {
         Calendar calendar = Calendar.getInstance();
         Date now = calendar.getTime();
-        calendar.setTime(now);
-        calendar.add(Calendar.SECOND, EXPIRATION_TIME);
-        Date expiration = calendar.getTime();
+        Date expiration = null;
+        if (expr > 0) {
+            calendar.setTime(now);
+            calendar.add(Calendar.SECOND, expr);
+            expiration = calendar.getTime();
+        }
 
         Map<String, Object> map = new HashMap<>();
         map.put("data", data);
@@ -36,6 +40,15 @@ public class JwtUtils {
                 .signWith(SignatureAlgorithm.HS256, SECRET)
                 .compact();
         return res;
+    }
+
+    /**
+     * 生成一个包含了data作为负载信息的token，默认有效时间为一天
+     * @param data  要附加的数据
+     * @return  token字符串
+     */
+    public static String generateToken(Object data) {
+        return generateToken(data, EXPIRATION_TIME);
     }
 
     /**

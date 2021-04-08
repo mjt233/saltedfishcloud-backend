@@ -230,8 +230,9 @@ public class FileService {
      * @param uid 用户ID
      * @param path 文件所在网盘目录
      * @param fileInfo 文件信息
+     * @param expr  下载码有效时长（单位：天），若小于0，则无限制
      */
-    public String getFileDC(int uid, String path, BasicFileInfo fileInfo) throws JsonProcessingException {
+    public String getFileDC(int uid, String path, BasicFileInfo fileInfo, int expr) throws JsonProcessingException {
         Path localPath = Paths.get(DiskConfig.getPathHandler().getStorePath(uid, path, fileInfo));
         if ( !Files.exists(localPath) ){
             throw new HasResultException(404, "文件不存在");
@@ -241,7 +242,7 @@ public class FileService {
         info.setMd5(fileInfo.getMd5());
         info.setName(fileInfo.getName());
         info.setUid(uid);
-        String token = JwtUtils.generateToken(new ObjectMapper().writeValueAsString(info));
+        String token = JwtUtils.generateToken(new ObjectMapper().writeValueAsString(info), expr < 0 ? expr : expr*60*60*24);
         return token;
     }
 

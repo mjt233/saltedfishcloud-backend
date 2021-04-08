@@ -80,11 +80,13 @@ public class ResourcesController {
     public JsonResult getDC(@PathVariable int uid,
                             HttpServletRequest request,
                             @RequestParam("md5") String md5,
-                            @RequestParam("name") String name) throws JsonProcessingException {
+                            @RequestParam("name") String name,
+                            @RequestParam(value = "expr", defaultValue = "1") int expr) throws JsonProcessingException {
         UIDValidator.validate(uid);
         String filePath = URLUtils.getRequestFilePath("/api/resource/getFDC/" + uid, request);
         BasicFileInfo fileInfo = new BasicFileInfo(name, md5);
-        String dc = fileService.getFileDC(uid, filePath, fileInfo);
+        System.out.println(expr);
+        String dc = fileService.getFileDC(uid, filePath, fileInfo, expr);
         return JsonResult.getInstance(dc);
     }
 }
