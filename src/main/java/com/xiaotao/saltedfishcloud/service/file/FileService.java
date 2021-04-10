@@ -65,6 +65,7 @@ public class FileService {
      * @param nodeId    节点ID
      * @return          一个List数组，数组下标0为目录，1为文件，或null
      */
+    @SuppressWarnings("unchecked")
     public Collection<? extends FileInfo>[] getUserFileListByNodeId(int uid, String nodeId) {
         List<FileInfo> fileList = fileDao.getFileListByNodeId(uid, nodeId);
         List<FileInfo> dirs = new LinkedList<>(), files = new LinkedList<>();
@@ -102,6 +103,7 @@ public class FileService {
      * @param file 本地文件夹路径
      * @return 一个List数组，数组下标0为目录，1为文件，或null
      */
+    @SuppressWarnings("unchecked")
     public Collection<? extends FileInfo>[] getFileList(File file) throws FileNotFoundException {
         if (!file.exists()) {
             throw new FileNotFoundException();
