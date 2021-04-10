@@ -6,7 +6,6 @@ import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.utils.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,7 +20,6 @@ import java.util.Collection;
  * 浏览控制器，提供浏览功能
  */
 @Controller
-@Slf4j
 public class BrowseController {
 
     @Resource

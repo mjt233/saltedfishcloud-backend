@@ -4,14 +4,11 @@ import com.xiaotao.saltedfishcloud.po.User;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.DigestUtils;
 
-import java.util.Date;
-
 /**
  * 安全与哈希相关的工具类
  */
 public class SecureUtils {
     final static private String SALT = "1145141919810";
-    final static private String TOKEN_SALT = "henghenghengeaaaaaaaa";
 
     /**
      * 取原始密码加盐哈希值

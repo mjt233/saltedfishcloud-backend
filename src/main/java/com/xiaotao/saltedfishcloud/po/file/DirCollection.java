@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.po.file;
 
-import jdk.nashorn.internal.objects.annotations.Getter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,7 +33,6 @@ public class DirCollection {
      * 取所有文件总大小
      * @return 文件总大小 单位字节
      */
-    @Getter
     public long getSize() {
         return size;
     }
@@ -43,7 +41,6 @@ public class DirCollection {
      * 取所有文件和文件夹的总数量
      * @return 文件总数量
      */
-    @Getter
     public long getItemCount() {
         return itemCount;
     }

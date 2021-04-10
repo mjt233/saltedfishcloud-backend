@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.config.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -18,7 +17,6 @@ import java.io.IOException;
 /**
  * 在SpringSecurity过滤器链中验证是否存在token且token是否有效，若有效则设置SpringSecurity用户认证信息
  */
-@Slf4j
 public class JwtValidateFilter extends OncePerRequestFilter {
 
     @Override

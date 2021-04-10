@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class HasResultException extends RuntimeException {
+    private static final long serialVersionUID = -6859013370470905290L;
     private JsonResult jsonResult;
 
     public HasResultException(String message) {

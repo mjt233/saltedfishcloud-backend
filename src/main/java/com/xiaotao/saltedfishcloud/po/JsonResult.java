@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.LinkedHashMap;
 
 public class JsonResult extends LinkedHashMap<String, Object>{
+    private static final long serialVersionUID = 1537580038140716422L;
+
     public JsonResult() {
         this(1, null, "OK");
     }

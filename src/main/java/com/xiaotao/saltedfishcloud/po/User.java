@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import jdk.nashorn.internal.objects.annotations.Setter;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +9,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -22,6 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User implements UserDetails {
+    private static final long serialVersionUID = -2530285292010387981L;
     public static final int TYPE_ADMIN = 1;
     public static final int TYPE_COMMON = 0;
     private Integer id;
@@ -35,7 +34,6 @@ public class User implements UserDetails {
     @lombok.Setter(AccessLevel.NONE)
     protected List<SimpleGrantedAuthority> authorities = new LinkedList<>();
 
-    @Setter()
     public void setType(Integer type) {
         authorities.add(new SimpleGrantedAuthority("ROLE_COMMON"));
         if (type == TYPE_ADMIN) {

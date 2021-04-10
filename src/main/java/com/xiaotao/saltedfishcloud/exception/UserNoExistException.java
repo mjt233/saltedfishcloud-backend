@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.exception;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 
 public class UserNoExistException extends HasResultException{
+    private static final long serialVersionUID = -1973360070517009554L;
 
     public UserNoExistException(String message) {
         super(message);

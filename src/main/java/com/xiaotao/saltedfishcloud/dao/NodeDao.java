@@ -1,9 +1,7 @@
 package com.xiaotao.saltedfishcloud.dao;
 
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
-import com.xiaotao.saltedfishcloud.po.PathInfo;
 import org.apache.ibatis.annotations.*;
-import org.springframework.security.core.parameters.P;
 
 import java.util.Collection;
 import java.util.List;

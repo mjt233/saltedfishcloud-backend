@@ -1,5 +1,12 @@
 package com.xiaotao.saltedfishcloud.controller.user;
 
+import java.io.File;
+import java.io.IOException;
+
+import javax.annotation.Resource;
+import javax.annotation.security.RolesAllowed;
+import javax.servlet.http.HttpServletResponse;
+
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
@@ -11,26 +18,21 @@ import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.service.user.UserType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.annotation.Resource;
-import javax.annotation.security.RolesAllowed;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 
 @Controller
 @RequestMapping(value = "/api")
 @ResponseBody
-@Slf4j
 public class UserController {
     @Resource
     UserService userService;

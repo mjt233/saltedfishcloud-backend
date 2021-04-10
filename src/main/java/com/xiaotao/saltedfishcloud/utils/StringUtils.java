@@ -1,8 +1,5 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-
 public class StringUtils {
     public static String getFormatSize(long size){
         double showSize;
