@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.po.User;
 
 public class UIDValidator {
     /**
-     * 验证某个UID是否有权限对某个UID的资源进行操作。
+     * 验证某个UID是否有权限对当前已登录用户资源进行操作。
      * 若非管理员账号对非己UID和公共资源进行操作，将会被拒绝
      * @param uid 用户ID
      * @param onlyAdmin 是否只允许管理员通过验证
@@ -25,7 +25,7 @@ public class UIDValidator {
     }
 
     /**
-     * 验证某个UID是否有权限对某个UID的资源进行操作。
+     * 验证某个UID是否有权限对当前已登录用户资源进行操作。
      * 若非管理员账号对非己UID和公共资源进行操作，将会被拒绝
      * @param uid 用户ID
      */

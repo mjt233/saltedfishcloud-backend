@@ -39,6 +39,24 @@ public class FileRecordService {
     private FileService fileService;
 
     /**
+     * 操作数据库移动网盘文件或目录到指定目录下
+     * @param uid       用户ID
+     * @param source    网盘文件或目录所在目录
+     * @param target    网盘目标目录
+     * @param name      文件名
+     * @return          受影响行数
+     */
+    public int move(int uid, String source, String target, String name) {
+        String nid = nodeService.getNodeIdByPath(uid, source).getId();
+        String targetNodeId = nodeService.getNodeIdByPath(uid, target).getId();
+        FileInfo fileInfo = fileDao.getFileInfo(uid, name, nid);
+        if (fileInfo.isDir()) {
+            nodeDao.move(uid, fileInfo.getMd5(), targetNodeId);
+        }
+        return fileDao.move(uid, nid, targetNodeId, name);
+    }
+
+    /**
      * 添加一个记录
      * @param uid   用户ID 0表示公共
      * @param name  文件名

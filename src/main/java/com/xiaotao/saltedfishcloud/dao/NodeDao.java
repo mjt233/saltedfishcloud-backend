@@ -9,6 +9,16 @@ import java.util.List;
 public interface NodeDao {
 
     /**
+     * 将节点移动到另一个节点下
+     * @param uid       用户ID
+     * @param nodeId    被移动的节点ID
+     * @param parentId  移动目的地节点ID
+     * @return  受影响行数
+     */
+    @Update("UPDATE node_list SET parent=#{pid} WHERE uid=#{uid} AND id=#{nid}")
+    int move(@Param("uid") Integer uid, @Param("nid") String nodeId, @Param("pid") String parentId);
+
+    /**
      * 通过节点ID获取节点详细信息
      * @param uid   用户ID
      * @param nodeId    节点ID

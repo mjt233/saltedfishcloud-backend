@@ -30,7 +30,7 @@ public class DiskConfig {
 
     private static UserDao userDao;
 
-    public static String STORE_TYPE;
+    public static StoreType STORE_TYPE;
 
     // 可接收的头像文件后缀名
     public static final List<String> ACCEPT_AVATAR_TYPE = Arrays.asList("jpg", "jpeg", "gif", "png");
@@ -113,7 +113,11 @@ public class DiskConfig {
 
     @Value("${store-type}")
     public void setStoreType(String type) {
-        STORE_TYPE = type;
+        if (type.equals("raw")) {
+            STORE_TYPE = StoreType.RAW;
+        } else {
+            STORE_TYPE = StoreType.UNIQUE;
+        }
     }
 
     /**
@@ -134,7 +138,7 @@ public class DiskConfig {
      * @return  路径操纵器示例
      */
     public static PathHandler getPathHandler() {
-        if (STORE_TYPE.equals("raw")) {
+        if (STORE_TYPE == StoreType.RAW) {
             return rawPathHandler;
         } else {
             return uniquePathHandler;

@@ -13,7 +13,6 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +33,6 @@ import java.util.List;
 import java.util.Objects;
 
 @Service("fileService")
-@Slf4j
 public class FileService {
     @javax.annotation.Resource
     FileDao fileDao;
@@ -44,6 +42,24 @@ public class FileService {
     StoreService storeService;
     @javax.annotation.Resource
     NodeService nodeService;
+
+    /**
+     * 移动网盘中的文件或目录到指定目录下
+     * @param uid       用户ID
+     * @param source    要被移动的网盘文件或目录所在目录
+     * @param target    要移动到的目标目录
+     * @param name      文件名
+     * @throws IOException  文件移动出错
+     */
+    public void move(int uid, String source, String target, String name) {
+        try {
+            storeService.move(uid, source, target, name);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new HasResultException(404, "资源不存在");
+        }
+        fileRecordService.move(uid, source, target, name);
+    }
 
     /**
      * 获取某个用户网盘目录下的所有文件信息
@@ -192,7 +208,6 @@ public class FileService {
      */
     public void mkdir(int uid, String path, String name) throws HasResultException {
         if ( !storeService.mkdir(uid, path, name) ) {
-            log.error("创建文件夹失败: " + path + "/" + name);
             throw new HasResultException("在" + path + "创建文件夹失败");
         }
         fileRecordService.mkdir(uid, name, path);

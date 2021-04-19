@@ -1,8 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,18 @@ public class StoreService {
     public int store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws HasResultException {
         String target = DiskConfig.getPathHandler().getStorePath(uid, targetDir, fileInfo);
         return writeFile(input, new File(target));
+    }
+
+    
+    public void move(int uid, String source, String target, String name) throws IOException {
+        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+            return;
+        }
+        PathHandler pathHandler = DiskConfig.getPathHandler();
+        BasicFileInfo fileInfo = new BasicFileInfo(name, null);
+        Path sourcePath = Paths.get(pathHandler.getStorePath(uid, source, fileInfo));
+        Path targetPath = Paths.get(pathHandler.getStorePath(uid, target, fileInfo));
+        Files.move(sourcePath, targetPath);
     }
 
     /**
@@ -74,7 +89,15 @@ public class StoreService {
     public boolean mkdir(int uid, String path, String name) {
         String localFilePath = DiskConfig.getRawFileStoreRootPath(uid) + "/" + path + "/" + name;
         File file = new File(localFilePath);
-        return file.mkdir();
+        if (file.mkdir()) {
+            return true;
+        } else {
+            if (file.exists()) {
+                throw new HasResultException("已存在同名文件或文件夹");
+            }
+            log.error("在本地路径\"" + localFilePath + "\"创建文件夹失败");
+            return false;
+        }
     }
 
     /**

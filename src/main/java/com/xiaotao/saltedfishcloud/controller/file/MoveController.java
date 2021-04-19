@@ -27,7 +27,7 @@ public class MoveController {
 
     @PostMapping("/rename/{uid}/**")
     @Transactional(rollbackFor = Exception.class)
-    public JsonResult move(HttpServletRequest request,
+    public JsonResult rename(HttpServletRequest request,
                            @PathVariable int uid,
                            @RequestParam("oldName") String oldName,
                            @RequestParam("newName") String newName) throws HasResultException {
@@ -38,5 +38,25 @@ public class MoveController {
         }
         fileService.rename(uid, from, oldName, newName);
         return JsonResult.getInstance();
+    }
+
+    /**
+     * 移动文件或目录到指定目录下
+     * @param uid    用户ID
+     * @param name   文件名
+     * @param target 目标目录
+     */
+    @PostMapping("/move/{uid}/**")
+    public JsonResult move(HttpServletRequest request,
+                            @PathVariable("uid") int uid,
+                            @RequestParam("name") String name,
+                            @RequestParam("target") String target){
+        UIDValidator.validate(uid);
+        String source = URLUtils.getRequestFilePath("/api/move/" + uid, request);
+        if (source.equals(target)) {
+            throw new HasResultException(400, "不能原处移动");
+        }
+        fileService.move(uid, source, target, name);
+        return JsonResult.getInstance(source);
     }
 }
