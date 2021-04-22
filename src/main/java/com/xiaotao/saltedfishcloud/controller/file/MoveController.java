@@ -56,7 +56,7 @@ public class MoveController {
                             @RequestParam("target") String target) throws UnsupportedEncodingException {
         UIDValidator.validate(uid);
         String source = URLUtils.getRequestFilePath("/api/move/" + uid, request);
-        System.out.println(URLDecoder.decode(target, "UTF-8"));
+        target = URLDecoder.decode(target, "UTF-8");
         if (source.equals(target)) {
             throw new HasResultException(400, "不能原处移动");
         }
