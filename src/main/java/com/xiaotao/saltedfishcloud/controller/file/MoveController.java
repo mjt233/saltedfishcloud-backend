@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+
 /**
  * 移动/重命名资源控制器
  */
@@ -50,9 +53,10 @@ public class MoveController {
     public JsonResult move(HttpServletRequest request,
                             @PathVariable("uid") int uid,
                             @RequestParam("name") String name,
-                            @RequestParam("target") String target){
+                            @RequestParam("target") String target) throws UnsupportedEncodingException {
         UIDValidator.validate(uid);
         String source = URLUtils.getRequestFilePath("/api/move/" + uid, request);
+        System.out.println(URLDecoder.decode(target, "UTF-8"));
         if (source.equals(target)) {
             throw new HasResultException(400, "不能原处移动");
         }
