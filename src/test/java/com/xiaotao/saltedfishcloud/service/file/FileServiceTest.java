@@ -9,6 +9,8 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.IOException;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class FileServiceTest {
@@ -27,6 +29,16 @@ public class FileServiceTest {
             fileService.move(uid, "/", "/test", "test2");
             fileService.move(uid, "/", "/test/test2", "ml.exe");
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void copy() {
+        int uid = userDao.getUserByUser("xiaotao").getId();
+        try {
+            fileService.copy(uid, "/f1", "/114514", uid, "233", true);
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

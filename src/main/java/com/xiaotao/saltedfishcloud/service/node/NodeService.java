@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Service
+@Slf4j
 public class NodeService {
     @Resource
     NodeDao nodeDao;
@@ -52,6 +54,13 @@ public class NodeService {
             NodeInfo info = new NodeInfo();
             info.setId("root");
             link.add(info);
+        }
+        if (log.isDebugEnabled()) {
+            StringBuilder sb = new StringBuilder();
+            for (NodeInfo nodeInfo : link) {
+                sb.append("/").append(nodeInfo.getName()).append('[').append(nodeInfo.getId()).append(']');
+            }
+            log.debug(sb.toString());
         }
         return link;
     }
@@ -137,9 +146,7 @@ public class NodeService {
             throw new HasResultException(404, "无效的nodeId");
         }
         StringBuilder stringBuilder = new StringBuilder();
-        link.forEach(name -> {
-            stringBuilder.append("/").append(name);
-        });
+        link.forEach(name -> stringBuilder.append("/").append(name));
         return stringBuilder.toString();
     }
 

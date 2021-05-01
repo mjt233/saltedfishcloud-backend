@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileDCInfo;
@@ -13,6 +14,7 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Service("fileService")
+@Slf4j
 public class FileService {
     @javax.annotation.Resource
     FileDao fileDao;
@@ -44,12 +47,29 @@ public class FileService {
     NodeService nodeService;
 
     /**
+     *
+     * @param uid       原资源的用户ID
+     * @param source    要操作的文件所在的网盘目录
+     * @param target    复制到的目的地目录
+     * @param targetUid 目的地用户ID
+     * @param name      文件或目录名
+     * @param overwrite 是否覆盖
+     */
+    public void copy(int uid, String source, String target, int targetUid, String name, Boolean overwrite) throws IOException {
+        if (PathBuilder.formatPath(source).equals(PathBuilder.formatPath(target))) {
+            throw new IllegalArgumentException("无法原地复制");
+        }
+        fileRecordService.copy(uid, source, target, targetUid, name, overwrite);
+        log.debug("Finish DB data copy");
+        storeService.copy(uid, source, target, targetUid, name, overwrite);
+    }
+
+    /**
      * 移动网盘中的文件或目录到指定目录下
      * @param uid       用户ID
      * @param source    要被移动的网盘文件或目录所在目录
      * @param target    要移动到的目标目录
      * @param name      文件名
-     * @throws IOException  文件移动出错
      */
     public void move(int uid, String source, String target, String name) {
         try {
@@ -70,7 +90,7 @@ public class FileService {
      * @param path  网盘路径
      * @return      一个List数组，数组下标0为目录，1为文件，或null
      */
-    public Collection<? extends FileInfo>[] getUserFileList(int uid, String path) {
+    public List<FileInfo>[] getUserFileList(int uid, String path) {
         NodeInfo nodeId = nodeService.getNodeIdByPath(uid, path);
         return getUserFileListByNodeId(uid, nodeId.getId());
     }
@@ -82,7 +102,7 @@ public class FileService {
      * @return          一个List数组，数组下标0为目录，1为文件，或null
      */
     @SuppressWarnings("unchecked")
-    public Collection<? extends FileInfo>[] getUserFileListByNodeId(int uid, String nodeId) {
+    public List<FileInfo>[] getUserFileListByNodeId(int uid, String nodeId) {
         List<FileInfo> fileList = fileDao.getFileListByNodeId(uid, nodeId);
         List<FileInfo> dirs = new LinkedList<>(), files = new LinkedList<>();
         fileList.forEach(file -> {

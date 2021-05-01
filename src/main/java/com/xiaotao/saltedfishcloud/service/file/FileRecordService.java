@@ -3,19 +3,29 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
+import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.po.PathInfo;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,6 +47,74 @@ public class FileRecordService {
 
     @Resource
     private FileService fileService;
+
+    /**
+     * 操作数据库复制网盘文件或目录到指定目录下
+     * @param uid       用户ID
+     * @param source    要复制的文件或目录所在目录
+     * @param target    复制到的目标目录
+     * @param targetId  复制到的目标目录所属用户ID
+     * @param name      要复制的文件或目录名
+     * @param overwrite 是否覆盖已存在的文件
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void copy(int uid, String source, String target, int targetId, String name, boolean overwrite) {
+        class PathIdPair {
+            public String path;
+            public String nid;
+            public PathIdPair(String path, String nid) {this.path = path;this.nid = nid;}
+        }
+        PathBuilder pathBuilder = new PathBuilder();
+        pathBuilder.setForcePrefix(true);
+        int prefixLength = source.length() + 1 + name.length();
+
+        FileInfo sourceInfo = fileDao.getFileInfo(uid, name, nodeService.getNodeIdByPath(uid, source).getId());
+        if (sourceInfo == null) {
+            throw new HasResultException(404, "原文件或目录不存在");
+        }
+        // 文件直接添加单条记录
+        if (sourceInfo.isFile()) {
+            addRecord(targetId, sourceInfo.getName(), sourceInfo.getSize(), sourceInfo.getMd5(), target);
+            return ;
+        }
+
+        //  需要遍历的目录列表
+        LinkedList<PathIdPair> t = new LinkedList<>();
+        String root = source + "/" + name;
+        t.add(new PathIdPair(root, nodeService.getNodeIdByPath(uid, root).getId()));
+
+        do {
+            //  更新目录列表
+            PathIdPair pairInfo = t.getLast();
+            t.removeLast();
+            String newDirPath = target + "/" + name + "/" + pairInfo.path.substring(prefixLength);
+            pathBuilder.update(newDirPath);
+            PathIdPair newPathInfo;
+            try {
+                newPathInfo = new PathIdPair(newDirPath, mkdir(targetId, pathBuilder.getPath().getLast(), pathBuilder.range(-1)));
+            } catch (DuplicateKeyException e) {
+                newPathInfo = new PathIdPair(newDirPath, nodeService.getNodeIdByPath(targetId, newDirPath).getId());
+            }
+
+
+            //  遍历一个目录并追加该目录下的子目录
+            List<FileInfo> t2 = fileDao.getFileListByNodeId(uid, pairInfo.nid);
+            for (FileInfo info : t2) {
+                if (info.isDir()) {
+                    t.add(new PathIdPair(pairInfo.path + "/" + info.getName(), info.getMd5()));
+                } else {
+                    if (fileDao.addRecord(targetId, info.getName(), info.getSize(), info.getMd5(), newPathInfo.nid) < 1 && overwrite) {
+                        fileDao.updateRecord(targetId, info.getName(), newPathInfo.nid, info.getSize(), info.getMd5());
+                        log.debug("overwrite " + info.getName() + " at " + newPathInfo.nid);
+                    } else if (!overwrite){
+                        log.error("addFile failed: " + info.getName() + " at " + newPathInfo.nid);
+                    } else {
+                        log.debug("addFile: " + info.getName() + " at " + newPathInfo.nid);
+                    }
+                }
+            }
+        } while (t.size() > 0);
+    }
 
     /**
      * 操作数据库移动网盘文件或目录到指定目录下
@@ -119,11 +197,22 @@ public class FileRecordService {
      * @param uid   用户ID
      * @param name  文件夹名称
      * @param path  所在路径
+     * @throws DuplicateKeyException
+     *      当目标目录已存在时抛出
      */
-    public void mkdir(int uid, String name, String path) {
+    public String mkdir(int uid, String name, String path) {
+        log.debug("mkdir " + name + " at " + path);
         NodeInfo node = nodeService.getNodeIdByPath(uid, path);
+        if (node == null) {
+            throw new HasResultException("目标目录 \"" + path + "\" 不存在，目录 \"" + name + "\"创建失败");
+        }
         String nodeId = nodeService.addNode(uid, name, node.getId());
+        if (fileDao.addRecord(uid, name, -1L, nodeId, node.getId()) < 1) {
+            throw new DuplicateKeyException("目录已存在");
+        }
         fileDao.addRecord(uid, name, -1L, nodeId, node.getId());
+        log.debug("mkdir finish: " + nodeId);
+        return nodeId;
     }
 
     /**
