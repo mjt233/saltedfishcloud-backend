@@ -249,8 +249,7 @@ public class FileService {
     }
 
     /**
-     * 移动文件
-     * @TODO 待完成，用于移动或重命名文件/文件夹
+     * 重命名文件或目录
      * @param uid 用户ID 0表示公共
      * @param path 文件所在路径（相对用户网盘目录）
      * @param name 被操作的文件名或文件夹名

@@ -27,9 +27,8 @@ public class BrowseController {
 
     /**
      * 取网盘中某个目录的文件列表
-     * @param request
      * @param uid   目标用户资源的ID
-     * @return
+     * @TODO 统一文件资源操作getList,copy,delete,download,mkdir,move,upload的API路由前缀
      */
     @GetMapping("/api/fileList/{uid}/**")
     @ResponseBody
@@ -42,7 +41,7 @@ public class BrowseController {
 
         String baseLocalPath = DiskConfig.getRawFileStoreRootPath(uid);
 
-        Collection<? extends FileInfo>[] fileList = null;
+        Collection<? extends FileInfo>[] fileList;
         File root = new File(baseLocalPath);
         if (!root.exists()) {
             root.mkdir();
