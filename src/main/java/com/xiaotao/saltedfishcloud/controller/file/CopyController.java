@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.controller.file;
 
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
-import com.xiaotao.saltedfishcloud.utils.UIDValidator;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.web.bind.annotation.*;
 

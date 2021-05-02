@@ -16,7 +16,7 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
-import com.xiaotao.saltedfishcloud.utils.UIDValidator;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 
 import org.springframework.web.bind.annotation.GetMapping;
