@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.nio.file.NoSuchFileException;
 import java.util.LinkedList;
 
 @SpringBootTest
@@ -17,7 +18,7 @@ public class SpringTest {
     private NodeService nodeService;
 
     @Test
-    public void doTest() {
+    public void doTest() throws NoSuchFileException {
         LinkedList<NodeInfo> pathNodeByPath = nodeService.getPathNodeByPath(0, "/");
         for (NodeInfo nodeInfo : pathNodeByPath) {
             System.out.println(nodeInfo);

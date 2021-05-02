@@ -22,6 +22,7 @@ public class CopyController {
      * @param uid    用户ID
      * @param name   文件名
      * @param target 目标目录
+     * @param targetName 源目标被复制后的名称
      * @param overwrite 覆盖同名文件
      * @TODO 使用数组传入需要复制的文件名以替代并发请求接口实现多文件粘贴的方式
      */
@@ -29,11 +30,12 @@ public class CopyController {
     public JsonResult copy(@PathVariable("uid") int uid,
                            @RequestParam("name") String name,
                            @RequestParam("target") String target,
+                           @RequestParam("targetName") String targetName,
                            @RequestParam(value = "overwrite", defaultValue = "true") Boolean overwrite,
                            HttpServletRequest request) throws IOException {
         UIDValidator.validate(uid);
         String source = URLUtils.getRequestFilePath("/api/copy/" + uid, request);
-        fileService.copy(uid, source, target, uid, name, overwrite);
+        fileService.copy(uid, source, target, uid, name, targetName, overwrite);
         return JsonResult.getInstance();
     }
 }

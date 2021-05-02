@@ -1,28 +1,29 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.dao.UserDao;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.Resource;
-import java.nio.file.NoSuchFileException;
 
-@RunWith(SpringRunner.class)
+import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 @SpringBootTest
-class FileRecordServiceTest {
+@RunWith(SpringRunner.class)
+class StoreServiceTest {
     @Resource
-    private FileRecordService fileRecordService;
+    private StoreService storeService;
     @Resource
     private UserDao userDao;
+
+
     @Test
-    void copy() throws NoSuchFileException {
+    void copy() throws IOException {
         int uid = userDao.getUserByUser("xiaotao").getId();
-        try {
-            fileRecordService.copy(uid, "/", "/", uid, "f1", "234", true);
-        } catch (UnsupportedOperationException ignore) {}
+        storeService.copy(uid, "/f1", "/", uid, "233", "f2", true);
     }
 }

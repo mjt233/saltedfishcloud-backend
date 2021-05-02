@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.nio.file.NoSuchFileException;
 
 /**
  * 删除资源相关控制器
@@ -26,7 +27,7 @@ public class DeleteController {
     public JsonResult delete(HttpServletRequest request,
                              @PathVariable int uid,
                              @RequestBody FileNameList fileName,
-                             @RequestAttribute User user) {
+                             @RequestAttribute User user) throws NoSuchFileException {
         UIDValidator.validate(uid, true);
         String path = URLUtils.getRequestFilePath("/api/resource/" + uid, request);
         long res = fileService.deleteFile(uid, path, fileName.getFileName());

@@ -27,6 +27,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -47,21 +48,30 @@ public class FileService {
     NodeService nodeService;
 
     /**
-     *
-     * @param uid       原资源的用户ID
-     * @param source    要操作的文件所在的网盘目录
-     * @param target    复制到的目的地目录
-     * @param targetUid 目的地用户ID
-     * @param name      文件或目录名
-     * @param overwrite 是否覆盖
+     * 复制指定用户的文件或目录到指定用户的某个目录下
+     * @param uid
+     *      原资源的用户ID
+     * @param source
+     *      要操作的文件所在的网盘目录
+     * @param target
+     *      复制到的目的地目录
+     * @param targetUid
+     *      目标用户ID
+     * @param sourceName
+     *      源文件或目录名
+     * @param targetName
+     *      目标文件或目录名，
+     * @param overwrite
+     *      是否覆盖
      */
-    public void copy(int uid, String source, String target, int targetUid, String name, Boolean overwrite) throws IOException {
+    public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
         if (PathBuilder.formatPath(source).equals(PathBuilder.formatPath(target))) {
             throw new IllegalArgumentException("无法原地复制");
         }
-        fileRecordService.copy(uid, source, target, targetUid, name, overwrite);
+        fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName,overwrite);
         log.debug("Finish DB data copy");
-        storeService.copy(uid, source, target, targetUid, name, overwrite);
+        storeService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+        log.debug("Finish local filesystem data copy");
     }
 
     /**
@@ -69,9 +79,10 @@ public class FileService {
      * @param uid       用户ID
      * @param source    要被移动的网盘文件或目录所在目录
      * @param target    要移动到的目标目录
+     * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      * @param name      文件名
      */
-    public void move(int uid, String source, String target, String name) {
+    public void move(int uid, String source, String target, String name) throws NoSuchFileException {
         try {
             storeService.move(uid, source, target, name);
         } catch (Exception e) {
@@ -90,8 +101,8 @@ public class FileService {
      * @param path  网盘路径
      * @return      一个List数组，数组下标0为目录，1为文件，或null
      */
-    public List<FileInfo>[] getUserFileList(int uid, String path) {
-        NodeInfo nodeId = nodeService.getNodeIdByPath(uid, path);
+    public List<FileInfo>[] getUserFileList(int uid, String path) throws NoSuchFileException {
+        NodeInfo nodeId = nodeService.getLastNodeInfoByPath(uid, path);
         return getUserFileListByNodeId(uid, nodeId.getId());
     }
 
@@ -225,8 +236,9 @@ public class FileService {
      * @param uid 用户ID 0表示公共
      * @param path 请求的路径
      * @param name 文件夹名称
+     * @throws NoSuchFileException 当目标目录不存在时抛出
      */
-    public void mkdir(int uid, String path, String name) throws HasResultException {
+    public void mkdir(int uid, String path, String name) throws HasResultException, NoSuchFileException {
         if ( !storeService.mkdir(uid, path, name) ) {
             throw new HasResultException("在" + path + "创建文件夹失败");
         }
@@ -238,9 +250,10 @@ public class FileService {
      * @param uid   用户ID 0表示公共
      * @param path  请求路径
      * @param name  文件名列表
+     * @throws NoSuchFileException 当目标路径不存在时抛出
      * @return 删除的数量
      */
-    public long deleteFile(int uid, String path, List<String> name) {
+    public long deleteFile(int uid, String path, List<String> name) throws NoSuchFileException {
         // 计数删除数
         long res = 0L;
         fileRecordService.deleteRecords(uid, path, name);
@@ -253,9 +266,10 @@ public class FileService {
      * @param uid 用户ID 0表示公共
      * @param path 文件所在路径（相对用户网盘目录）
      * @param name 被操作的文件名或文件夹名
+     * @throws NoSuchFileException 当目标路径不存在时抛出
      * @param newName 新文件名
      */
-    public void rename(int uid, String path, String name, String newName) throws HasResultException {
+    public void rename(int uid, String path, String name, String newName) throws HasResultException, NoSuchFileException {
         fileRecordService.rename(uid, path, name, newName);
         storeService.rename(uid, path, name, newName);
     }

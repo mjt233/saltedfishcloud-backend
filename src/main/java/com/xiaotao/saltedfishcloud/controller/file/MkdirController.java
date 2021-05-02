@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.file.NoSuchFileException;
+
 /**
  * 创建目录控制器
  */
@@ -29,7 +31,7 @@ public class MkdirController {
     @Transactional(rollbackFor = Exception.class)
     public JsonResult mkdir(@PathVariable int uid,
                                HttpServletRequest request,
-                               @RequestParam("name") String name) throws HasResultException {
+                               @RequestParam("name") String name) throws HasResultException, NoSuchFileException {
         UIDValidator.validate(uid, true);
         String prefix = "/api/mkdir/" + uid;
         String requestPath = URLUtils.getRequestFilePath(prefix, request);

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
+import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 
 /**
@@ -33,7 +34,7 @@ public class BrowseController {
     @GetMapping("/api/fileList/{uid}/**")
     @ResponseBody
     public JsonResult getFileList(HttpServletRequest request,
-                                  @PathVariable int uid) {
+                                  @PathVariable int uid) throws NoSuchFileException {
         // 解析URL
         UIDValidator.validate(uid);
         String prefix = "/api/fileList/" + uid;

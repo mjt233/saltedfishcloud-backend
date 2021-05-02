@@ -34,14 +34,14 @@ public class StoreService {
      * @param uid     用户ID
      * @param source  所在网盘路径
      * @param target  目的地网盘路径
-     * @param name    文件名
+     * @param sourceName    文件名
      * @param overwrite 是否覆盖，若非true，则跳过该文件
      */
-    public void copy(int uid, String source, String target, int targetId, String name, Boolean overwrite) throws IOException {
+    public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE ) {
             return ;
         }
-        BasicFileInfo fileInfo = new BasicFileInfo(name, null);
+        BasicFileInfo fileInfo = new BasicFileInfo(sourceName, null);
         String localSource = DiskConfig.getPathHandler().getStorePath(uid, source, fileInfo);
         String localTarget = DiskConfig.getPathHandler().getStorePath(targetId, target, null);
 
@@ -50,10 +50,10 @@ public class StoreService {
 
         //  判断源与目标是否存在
         if (!Files.exists(sourcePath)) {
-            throw new IOException("资源 \"" + source + "/" + name + "\" 不存在");
+            throw new NoSuchFileException("资源 \"" + source + "/" + sourceName + "\" 不存在");
         }
         if (!Files.exists(Paths.get(localTarget))) {
-            throw new IOException("目标目录 " + target + " 不存在");
+            throw new NoSuchFileException("目标目录 " + target + " 不存在");
         }
 
         CopyOption[] option;
@@ -64,26 +64,28 @@ public class StoreService {
         }
 
         if (fileInfo.isFile()) {
-            Files.copy(sourcePath, Paths.get(localTarget + "/" + name), option);
+            Files.copy(sourcePath, Paths.get(localTarget + "/" + targetName), option);
         }
 
         if (fileInfo.isDir()) {
             DirCollection dirCollection = FileUtils.scanDir(localSource);
-            Path targetDir = Paths.get(localTarget + "/" + name);
+            Path targetDir = Paths.get(localTarget + "/" + targetName);
             if (!Files.exists(targetDir)) {
                 Files.createDirectory(targetDir);
             }
             //  先创建文件夹
             for(File dir: dirCollection.getDirList()) {
-                String sour = dir.getPath().substring(localSource.length());
-                String dest = targetDir + "/" + sour;
+                String src = dir.getPath().substring(localSource.length());
+                String dest = targetDir + "/" + src;
+                log.debug("local filesystem mkdir: " + dest);
                 try { Files.createDirectory(Paths.get(dest)); } catch (FileAlreadyExistsException ignored) {}
             }
 
             //  复制文件
             for(File file: dirCollection.getFileList()) {
-                String sour = file.getPath().substring(localSource.length());
-                String dest = localTarget + "/" + name + sour;
+                String src = file.getPath().substring(localSource.length());
+                String dest = localTarget + "/" + targetName + src;
+                log.debug("local filesystem copy: " + file + " ==> " + dest);
                 try { Files.copy(Paths.get(file.getPath()), Paths.get(dest), option); }
                 catch (FileAlreadyExistsException ignored) {}
             }
