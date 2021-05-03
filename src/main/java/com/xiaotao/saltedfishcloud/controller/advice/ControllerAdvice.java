@@ -28,12 +28,12 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler({FileNotFoundException.class, NoSuchFileException.class})
-    public JsonResult handle(FileNotFoundException e) {
-        return JsonResult.getInstance(404, null, "文件或资源不存在");
+    public JsonResult handle(Exception e) {
+        return JsonResult.getInstance(404, null, e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
-    public JsonResult handle(Exception e) {
+    public JsonResult defaultHandle(Exception e) {
         log.error("异常", e);
         return JsonResult.getInstance(500, e.getClass().getCanonicalName(), e.getMessage());
     }

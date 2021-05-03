@@ -37,7 +37,7 @@ public class FileServiceTest {
     public void copy() {
         int uid = userDao.getUserByUser("xiaotao").getId();
         try {
-            fileService.copy(uid, "/", "/", uid, "f1", "234", true);
+            fileService.copy(uid, "/", "/", uid, "f1", "f2", true);
         } catch (IOException e) {
             e.printStackTrace();
         }

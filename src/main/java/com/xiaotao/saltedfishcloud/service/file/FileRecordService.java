@@ -68,6 +68,7 @@ public class FileRecordService {
         int prefixLength = source.length() + 1 + sourceName.length();
 
         FileInfo sourceInfo = fileDao.getFileInfo(uid, sourceName, nodeService.getLastNodeInfoByPath(uid, source).getId());
+        if (sourceInfo == null) throw new NoSuchFileException("文件 " + source + "/" + sourceName + " 不存在");
         // 文件直接添加单条记录
         if (sourceInfo.isFile()) {
             addRecord(targetId, targetName, sourceInfo.getSize(), sourceInfo.getMd5(), target);
