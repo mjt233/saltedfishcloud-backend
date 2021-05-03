@@ -112,8 +112,9 @@ public class StoreService {
      * @param source  所在网盘路径
      * @param target  目的地网盘路径
      * @param name    文件名
+     * @param overwrite 是否覆盖原文件
      */
-    public void move(int uid, String source, String target, String name) throws IOException {
+    public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
             return;
         }
@@ -121,7 +122,11 @@ public class StoreService {
         BasicFileInfo fileInfo = new BasicFileInfo(name, null);
         Path sourcePath = Paths.get(pathHandler.getStorePath(uid, source, fileInfo));
         Path targetPath = Paths.get(pathHandler.getStorePath(uid, target, fileInfo));
-        Files.move(sourcePath, targetPath);
+        if (overwrite) {
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        } else if (Files.exists(targetPath)) {
+            Files.move(sourcePath, targetPath);
+        }
     }
 
     /**

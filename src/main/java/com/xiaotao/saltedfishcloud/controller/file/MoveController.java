@@ -55,14 +55,16 @@ public class MoveController {
     public JsonResult move(HttpServletRequest request,
                             @PathVariable("uid") int uid,
                             @RequestParam("name") String name,
-                            @RequestParam("target") String target) throws UnsupportedEncodingException, NoSuchFileException {
+                            @RequestParam("target") String target,
+                            @RequestParam(value = "overwrite", defaultValue = "true") Boolean overwrite)
+            throws UnsupportedEncodingException, NoSuchFileException {
         UIDValidator.validate(uid);
         String source = URLUtils.getRequestFilePath("/api/move/" + uid, request);
         target = URLDecoder.decode(target, "UTF-8");
         if (source.equals(target)) {
             throw new HasResultException(400, "不能原处移动");
         }
-        fileService.move(uid, source, target, name);
+        fileService.move(uid, source, target, name, overwrite);
         return JsonResult.getInstance(source);
     }
 }

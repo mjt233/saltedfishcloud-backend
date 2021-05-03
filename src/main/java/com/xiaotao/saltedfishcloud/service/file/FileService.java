@@ -20,6 +20,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -66,6 +67,7 @@ public class FileService {
      * @param overwrite
      *      是否覆盖
      */
+    @Transactional(rollbackFor = Exception.class)
     public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
         FileNameValidator.valid(targetName, sourceName);
         if (PathBuilder.formatPath(source).equals(PathBuilder.formatPath(target)) && sourceName.equals(targetName)) {
@@ -82,18 +84,22 @@ public class FileService {
      * @param uid       用户ID
      * @param source    要被移动的网盘文件或目录所在目录
      * @param target    要移动到的目标目录
-     * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      * @param name      文件名
+     * @param overwrite 是否覆盖原文件
+     * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
+     * @TODO 解决下面的FIXME
+     * @// FIXME: 2021/5/4 文件名带空格时会导致数据库与本地文件失去同步
      */
-    public void move(int uid, String source, String target, String name) throws NoSuchFileException {
+    @Transactional(rollbackFor = Exception.class)
+    public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
         FileNameValidator.valid(name);
         try {
-            storeService.move(uid, source, target, name);
+            storeService.move(uid, source, target, name, overwrite);
         } catch (Exception e) {
             e.printStackTrace();
             throw new HasResultException(404, "资源不存在");
         }
-        fileRecordService.move(uid, source, target, name);
+        fileRecordService.move(uid, source, target, name, overwrite);
     }
 
     /**

@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
@@ -119,10 +118,12 @@ public class FileRecordService {
      * @param source    网盘文件或目录所在目录
      * @param target    网盘目标目录
      * @param name      文件名
+     * @param overwrite 是否覆盖原文件信息
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      * @return          受影响行数
+     * @TODO 实现overwrite参数的效果
      */
-    public int move(int uid, String source, String target, String name) throws NoSuchFileException {
+    public int move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
         String nid = nodeService.getLastNodeInfoByPath(uid, source).getId();
         String targetNodeId = nodeService.getLastNodeInfoByPath(uid, target).getId();
         FileInfo fileInfo = fileDao.getFileInfo(uid, name, nid);

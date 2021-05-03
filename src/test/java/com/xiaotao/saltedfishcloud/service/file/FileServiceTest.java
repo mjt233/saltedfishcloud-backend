@@ -26,8 +26,8 @@ public class FileServiceTest {
             int uid = userDao.getUserByUser("xiaotao").getId();
             fileService.mkdir(uid, "/", "test");
             fileService.mkdir(uid, "/", "test2");
-            fileService.move(uid, "/", "/test", "test2");
-            fileService.move(uid, "/", "/test/test2", "ml.exe");
+            fileService.move(uid, "/", "/test", "test2", true);
+            fileService.move(uid, "/", "/test/test2", "ml.exe", true);
         } catch (Exception e) {
             e.printStackTrace();
         }
