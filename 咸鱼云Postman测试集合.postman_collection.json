@@ -988,13 +988,13 @@
 							"formdata": [
 								{
 									"key": "name",
-									"value": "233",
+									"value": "f1",
 									"description": "要复制的文件或目录名",
 									"type": "text"
 								},
 								{
 									"key": "target",
-									"value": "/new",
+									"value": "/2312",
 									"description": "复制到的目标目录名",
 									"type": "text"
 								},
@@ -1003,11 +1003,17 @@
 									"value": "true",
 									"description": "是否覆盖原文件（可选，默认true）",
 									"type": "text"
+								},
+								{
+									"key": "targetName",
+									"value": "newf1",
+									"description": "复制后的文件或目录名",
+									"type": "text"
 								}
 							]
 						},
 						"url": {
-							"raw": "{{addr}}/api/copy/42/f1",
+							"raw": "{{addr}}/api/copy/42/",
 							"host": [
 								"{{addr}}"
 							],
@@ -1015,10 +1021,10 @@
 								"api",
 								"copy",
 								"42",
-								"f1"
+								""
 							]
 						},
-						"description": "### 复制文件或目录\r\n- API：`/api/copy/{用户ID}/{文件所在路径}`  \r\n\r\n#### 参数列表\r\n- name:     要复制的文件或目录名\r\n- target:   复制到的目标目录名\r\n- overwrite:是否覆盖原文件（可选参数，可选值为false或true，默认true）\r\n\r\n#### 响应data\r\n- 下载码，用于'使用下载码下载文件'接口"
+						"description": "### 复制文件或目录\r\n- API：`/api/copy/{用户ID}/{文件所在路径}`  \r\n\r\n#### 参数列表\r\n- name:         要复制的文件或目录名\r\n- target:       复制到的目标目录名\r\n- targetName:   复制后的文件或目录名，可利用该参数实现目标文件重命名\r\n- overwrite:    是否覆盖原文件（可选参数，可选值为false或true，默认true）\r\n\r\n#### 响应data\r\n- 下载码，用于'使用下载码下载文件'接口"
 					},
 					"response": []
 				}
