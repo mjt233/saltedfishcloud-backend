@@ -66,7 +66,7 @@ public interface NodeDao {
      * @param name  目标节点名称
      * @return  节点信息
      */
-    @Select("SELECT name, id, parent, uid parent FROM node_list WHERE uid = #{uid} AND parent = #{pid} AND name = #{name}")
+    @Select("SELECT name, id, parent, uid, parent FROM node_list WHERE uid = #{uid} AND parent = #{pid} AND name = #{name}")
     NodeInfo getNodeByParentId(@Param("uid") Integer uid, @Param("pid") String pid, @Param("name") String name);
 
     @Delete({

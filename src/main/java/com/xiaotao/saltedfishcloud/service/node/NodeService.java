@@ -51,7 +51,7 @@ public class NodeService {
                 String parent = link.isEmpty() ? "root" : link.getLast().getId();
                 NodeInfo info = nodeDao.getNodeByParentId(uid, parent, node);
                 if (info == null) {
-                    throw new NoSuchFileException("路径 " + path + " 不存在");
+                    throw new NoSuchFileException("路径 " + path + " 不存在，或目标节点信息已丢失");
                 }
                 link.add(info);
             }
@@ -67,7 +67,7 @@ public class NodeService {
             StringBuilder sb = new StringBuilder();
             for (NodeInfo nodeInfo : link) {
                 log.debug("nodeInfo:" + nodeInfo);
-                sb.append("/").append(nodeInfo.getName() == null ? nodeInfo.getName() : "").append('[').append(nodeInfo.getId()).append(']');
+                sb.append("/").append(nodeInfo.getName() == null ? "" : nodeInfo.getName()).append('[').append(nodeInfo.getId()).append(']');
             }
             log.debug(sb.toString());
         }

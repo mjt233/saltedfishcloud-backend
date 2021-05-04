@@ -11,14 +11,14 @@ public interface FileDao {
     /**
      * 移动资源到指定目录下
      * @param uid   用户ID
-     * @param nid   资源所属节点ID
+     * @param nid   原文件资源所属节点ID
      * @param targetNodeId  目标节点ID
      * @param name  文件名
      * @return  受影响的行数
      */
     @Update("UPDATE file_table SET node=#{targetNodeId} WHERE uid=#{uid} AND node=#{nid} AND name=#{name}")
-    int move(@Param("uid") Integer uid, 
-                @Param("nid") String nid, 
+    int move(@Param("uid") Integer uid,
+                @Param("nid") String nid,
                 @Param("targetNodeId") String targetNodeId,
                 @Param("name") String name);
 
@@ -117,7 +117,7 @@ public interface FileDao {
      * @param nodeId 文件所在节点ID
      * @return 文件信息
      */
-    @Select("SELECT name, size, md5 FROM file_table WHERE uid=#{uid} AND node=#{nodeId} AND name=#{name}")
+    @Select("SELECT name, size, md5, node FROM file_table WHERE uid=#{uid} AND node=#{nodeId} AND name=#{name}")
     FileInfo getFileInfo(@Param("uid") Integer uid, @Param("name") String name, @Param("nodeId") String nodeId);
 
     /**

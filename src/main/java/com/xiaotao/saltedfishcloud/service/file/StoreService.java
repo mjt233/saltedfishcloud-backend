@@ -122,10 +122,23 @@ public class StoreService {
         BasicFileInfo fileInfo = new BasicFileInfo(name, null);
         Path sourcePath = Paths.get(pathHandler.getStorePath(uid, source, fileInfo));
         Path targetPath = Paths.get(pathHandler.getStorePath(uid, target, fileInfo));
-        if (overwrite) {
+        if (Files.exists(targetPath)) {
+            if (Files.isDirectory(sourcePath) != Files.isDirectory(targetPath)) {
+                throw new UnsupportedOperationException("文件类型不一致，无法移动");
+            }
+
+            if (Files.isDirectory(sourcePath)) {
+                // 目录则合并
+                FileUtils.mergeDir(sourcePath.toString(), targetPath.toString(), overwrite);
+            } else if (overwrite){
+                // 文件则替换移动（仅当overwrite为true时）
+                Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                // 为了与数据库记录保持一致，原文件还是要删滴
+                Files.delete(sourcePath);
+            }
+        } else {
             Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-        } else if (Files.exists(targetPath)) {
-            Files.move(sourcePath, targetPath);
         }
     }
 

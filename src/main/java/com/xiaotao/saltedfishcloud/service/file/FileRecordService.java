@@ -120,17 +120,48 @@ public class FileRecordService {
      * @param name      文件名
      * @param overwrite 是否覆盖原文件信息
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
-     * @return          受影响行数
      * @TODO 实现overwrite参数的效果
      */
-    public int move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
-        String nid = nodeService.getLastNodeInfoByPath(uid, source).getId();
-        String targetNodeId = nodeService.getLastNodeInfoByPath(uid, target).getId();
-        FileInfo fileInfo = fileDao.getFileInfo(uid, name, nid);
-        if (fileInfo.isDir()) {
-            nodeDao.move(uid, fileInfo.getMd5(), targetNodeId);
+    public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
+        NodeInfo sourceInfo = nodeService.getLastNodeInfoByPath(uid, source);
+        NodeInfo targetInfo = nodeService.getLastNodeInfoByPath(uid, target);
+        FileInfo sourceFileInfo = fileDao.getFileInfo(uid, name, sourceInfo.getId());
+        FileInfo targetFileInfo = fileDao.getFileInfo(uid, name, targetInfo.getId());
+
+        if (sourceFileInfo.isDir()) {
+            if (targetFileInfo != null) {
+                // 当移动目录时存在同名文件或目录
+                if (targetFileInfo.isDir()) {
+                    // 目录 -> 目录 同名的是目录，则根据overwrite规则合并
+                    copy(uid, source, target, uid, name, name, overwrite);
+                    deleteRecords(uid, source, Collections.singleton(name));
+                } else {
+                    // 目录 -> 文件 同名的是文件，不支持的操作，需要手动解决
+                    throw new UnsupportedOperationException("目标位置存在同名文件\"" + name  + "\"，无法移动");
+                }
+            } else {
+                // 不存在同名目录，直接修改节点ID
+                fileDao.move(uid, sourceInfo.getId(), targetInfo.getId(), name);
+                nodeDao.move(uid, sourceFileInfo.getNode(), targetInfo.getId());
+            }
+        } else {
+            if (targetFileInfo != null) {
+                // 当移动文件时存在同名文件或目录
+                if (targetFileInfo.isFile()) {
+                    // 文件 -> 文件，覆盖/删除
+                    if (overwrite) {
+                        fileDao.updateRecord(uid, name, targetFileInfo.getNode(), sourceFileInfo.getSize(), sourceFileInfo.getMd5());
+                    }
+                    fileDao.deleteRecord(uid, sourceFileInfo.getNode(), Collections.singletonList(name));
+                } else if (targetFileInfo.isDir()){
+                    // 文件 -> 目录 不支持的操作，需要手动解决
+                    throw new UnsupportedOperationException("目标位置存在同名目录\"" + name  + "\"，无法移动");
+                }
+            } else {
+                // 不存在同名文件，直接修改文件所属节点ID
+                fileDao.move(uid, sourceFileInfo.getNode(), targetInfo.getId(), name);
+            }
         }
-        return fileDao.move(uid, nid, targetNodeId, name);
     }
 
     /**
@@ -222,10 +253,9 @@ public class FileRecordService {
      */
     public void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException {
         NodeInfo pathNodeInfo = nodeService.getLastNodeInfoByPath(uid, path);
-        NodeInfo nodeInfo = nodeService.getLastNodeInfoByPath(uid, path + "/" + oldName);
         FileInfo fileInfo = fileDao.getFileInfo(uid, oldName, pathNodeInfo.getId());
         if (fileInfo.isDir()) {
-            nodeDao.changeName(uid, nodeInfo.getId(), newName);
+            nodeDao.changeName(uid, nodeDao.getNodeByParentId(uid, pathNodeInfo.getId(), oldName).getId(), newName);
         }
         fileDao.rename(uid, pathNodeInfo.getId(), oldName, newName);
     }

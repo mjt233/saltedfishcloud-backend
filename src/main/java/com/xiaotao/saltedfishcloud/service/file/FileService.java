@@ -18,6 +18,7 @@ import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +68,6 @@ public class FileService {
      * @param overwrite
      *      是否覆盖
      */
-    @Transactional(rollbackFor = Exception.class)
     public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
         FileNameValidator.valid(targetName, sourceName);
         if (PathBuilder.formatPath(source).equals(PathBuilder.formatPath(target)) && sourceName.equals(targetName)) {
@@ -87,19 +87,18 @@ public class FileService {
      * @param name      文件名
      * @param overwrite 是否覆盖原文件
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
-     * @TODO 解决下面的FIXME
-     * @// FIXME: 2021/5/4 文件名带空格时会导致数据库与本地文件失去同步
      */
-    @Transactional(rollbackFor = Exception.class)
     public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
         FileNameValidator.valid(name);
         try {
+            fileRecordService.move(uid, source, target, name, overwrite);
             storeService.move(uid, source, target, name, overwrite);
+        } catch (DuplicateKeyException e) {
+            throw new HasResultException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
         } catch (Exception e) {
             e.printStackTrace();
             throw new HasResultException(404, "资源不存在");
         }
-        fileRecordService.move(uid, source, target, name, overwrite);
     }
 
     /**
