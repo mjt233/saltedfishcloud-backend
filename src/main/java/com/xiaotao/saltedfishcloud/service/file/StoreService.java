@@ -4,9 +4,11 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +30,69 @@ import static com.xiaotao.saltedfishcloud.utils.FileUtils.writeFile;
 public class StoreService {
 
     /**
+     * 在本地存储中复制用户网盘文件
+     * @param uid     用户ID
+     * @param source  所在网盘路径
+     * @param target  目的地网盘路径
+     * @param sourceName    文件名
+     * @param overwrite 是否覆盖，若非true，则跳过该文件
+     */
+    public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
+        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE ) {
+            return ;
+        }
+        BasicFileInfo fileInfo = new BasicFileInfo(sourceName, null);
+        String localSource = DiskConfig.getPathHandler().getStorePath(uid, source, fileInfo);
+        String localTarget = DiskConfig.getPathHandler().getStorePath(targetId, target, null);
+
+        fileInfo = FileInfo.getLocal(localSource);
+        Path sourcePath = Paths.get(localSource);
+
+        //  判断源与目标是否存在
+        if (!Files.exists(sourcePath)) {
+            throw new NoSuchFileException("资源 \"" + source + "/" + sourceName + "\" 不存在");
+        }
+        if (!Files.exists(Paths.get(localTarget))) {
+            throw new NoSuchFileException("目标目录 " + target + " 不存在");
+        }
+
+        CopyOption[] option;
+        if (overwrite) {
+            option = new CopyOption[]{StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING};
+        } else  {
+            option = new CopyOption[]{StandardCopyOption.COPY_ATTRIBUTES};
+        }
+
+        if (fileInfo.isFile()) {
+            Files.copy(sourcePath, Paths.get(localTarget + "/" + targetName), option);
+        }
+
+        if (fileInfo.isDir()) {
+            DirCollection dirCollection = FileUtils.scanDir(localSource);
+            Path targetDir = Paths.get(localTarget + "/" + targetName);
+            if (!Files.exists(targetDir)) {
+                Files.createDirectory(targetDir);
+            }
+            //  先创建文件夹
+            for(File dir: dirCollection.getDirList()) {
+                String src = dir.getPath().substring(localSource.length());
+                String dest = targetDir + "/" + src;
+                log.debug("local filesystem mkdir: " + dest);
+                try { Files.createDirectory(Paths.get(dest)); } catch (FileAlreadyExistsException ignored) {}
+            }
+
+            //  复制文件
+            for(File file: dirCollection.getFileList()) {
+                String src = file.getPath().substring(localSource.length());
+                String dest = localTarget + "/" + targetName + src;
+                log.debug("local filesystem copy: " + file + " ==> " + dest);
+                try { Files.copy(Paths.get(file.getPath()), Paths.get(dest), option); }
+                catch (FileAlreadyExistsException ignored) {}
+            }
+        }
+    }
+
+    /**
      * 向用户网盘目录中保存一个文件
      * @param uid   用户ID 0表示公共
      * @param input 文件输入流（该方法执行完成后会自动关闭流，不需要再次关闭）
@@ -41,8 +106,15 @@ public class StoreService {
         return writeFile(input, new File(target));
     }
 
-    
-    public void move(int uid, String source, String target, String name) throws IOException {
+    /**
+     * 在本地存储中移动用户网盘文件
+     * @param uid     用户ID
+     * @param source  所在网盘路径
+     * @param target  目的地网盘路径
+     * @param name    文件名
+     * @param overwrite 是否覆盖原文件
+     */
+    public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
             return;
         }
@@ -50,7 +122,24 @@ public class StoreService {
         BasicFileInfo fileInfo = new BasicFileInfo(name, null);
         Path sourcePath = Paths.get(pathHandler.getStorePath(uid, source, fileInfo));
         Path targetPath = Paths.get(pathHandler.getStorePath(uid, target, fileInfo));
-        Files.move(sourcePath, targetPath);
+        if (Files.exists(targetPath)) {
+            if (Files.isDirectory(sourcePath) != Files.isDirectory(targetPath)) {
+                throw new UnsupportedOperationException("文件类型不一致，无法移动");
+            }
+
+            if (Files.isDirectory(sourcePath)) {
+                // 目录则合并
+                FileUtils.mergeDir(sourcePath.toString(), targetPath.toString(), overwrite);
+            } else if (overwrite){
+                // 文件则替换移动（仅当overwrite为true时）
+                Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                // 为了与数据库记录保持一致，原文件还是要删滴
+                Files.delete(sourcePath);
+            }
+        } else {
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     /**

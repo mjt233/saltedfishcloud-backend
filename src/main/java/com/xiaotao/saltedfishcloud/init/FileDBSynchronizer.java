@@ -90,7 +90,7 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
         LinkedList<String> localLostDir = new LinkedList<>(SetUtils.diff(dbFile.keySet(), localDir));
         Set<String> hasDelete = new HashSet<>();
         localLostDir.sort( Comparator.comparingInt(o -> o.split("/").length) );
-        localLostDir.forEach(p -> {
+        for(String p : localLostDir ){
             int index = p.lastIndexOf('/');
             String path = p.substring(0, index);
             String name = p.substring(index + 1);
@@ -102,7 +102,7 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
             }
             fileRecordService.deleteRecords(0, path, Collections.singleton(name));
             hasDelete.add(p);
-        });
+        };
 
         //  数据库中的所有文件, key为文件路径，value为文件信息
         HashMap<String, FileInfo> dbFiles = new HashMap<>();
@@ -153,7 +153,7 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
             fileDao.updateRecord(
                     0,
                     fileInfo.getName(),
-                    nodeService.getNodeIdByPath(0, fileInfo.getPath()).getId(),
+                    nodeService.getLastNodeInfoByPath(0, fileInfo.getPath()).getId(),
                     fileInfo.getSize(),
                     fileInfo.getMd5()
             );

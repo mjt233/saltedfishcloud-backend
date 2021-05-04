@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.io.FileNotFoundException;
+import java.nio.file.NoSuchFileException;
 
 /**
  * 全局异常处理，捕获进入控制器的异常并进行处理
@@ -26,13 +27,13 @@ public class ControllerAdvice {
         return JsonResult.getInstance(403, null, e.getMessage());
     }
 
-    @ExceptionHandler(FileNotFoundException.class)
-    public JsonResult handle(FileNotFoundException e) {
-        return JsonResult.getInstance(404, null, "文件或资源不存在");
+    @ExceptionHandler({FileNotFoundException.class, NoSuchFileException.class})
+    public JsonResult handle(Exception e) {
+        return JsonResult.getInstance(404, null, e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
-    public JsonResult handle(Exception e) {
+    public JsonResult defaultHandle(Exception e) {
         log.error("异常", e);
         return JsonResult.getInstance(500, e.getClass().getCanonicalName(), e.getMessage());
     }

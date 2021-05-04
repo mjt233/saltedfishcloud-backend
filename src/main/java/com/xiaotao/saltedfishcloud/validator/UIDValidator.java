@@ -1,7 +1,8 @@
-package com.xiaotao.saltedfishcloud.utils;
+package com.xiaotao.saltedfishcloud.validator;
 
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 
 public class UIDValidator {
     /**

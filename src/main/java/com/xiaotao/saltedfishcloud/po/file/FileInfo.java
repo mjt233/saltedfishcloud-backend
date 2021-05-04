@@ -32,8 +32,20 @@ public class FileInfo extends BasicFileInfo{
      * @return  文件信息对象
      */
     public static FileInfo getLocal(String path) {
+        return getLocal(path, true);
+    }
+
+    /**
+     * 获取本地文件的文件信息
+     * @param path  本地文件路径
+     * @param computeMd5 是否计算MD5
+     * @return  文件信息对象
+     */
+    public static FileInfo getLocal(String path, boolean computeMd5) {
         FileInfo info = new FileInfo(new File(path));
-        info.updateMd5();
+        if (computeMd5) {
+            info.updateMd5();
+        }
         return info;
     }
 
@@ -82,7 +94,7 @@ public class FileInfo extends BasicFileInfo{
         if (isDir()) return;
         if (md5 == null) {
             try {
-                InputStream is = null;
+                InputStream is;
                 if (originFile != null) is = new FileInputStream(originFile);
                 else is = originFile2.getInputStream();
                 String res = DigestUtils.md5DigestAsHex(is);

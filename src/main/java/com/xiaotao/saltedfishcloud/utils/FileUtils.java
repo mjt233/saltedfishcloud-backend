@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -9,8 +10,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.function.Consumer;
 
+@Slf4j
 public class FileUtils {
     private static final HashMap<String,String> map = new HashMap<>();
     static {
@@ -121,5 +125,47 @@ public class FileUtils {
             throw new HasResultException(400, e.getMessage());
         }
         return res;
+    }
+
+    /**
+     * 合并两个本地目录的内容（包括子目录和文件，文件同名将被覆盖）
+     * @param source        源目录，合并完成后将被删除
+     * @param target        被合并到的位置
+     * @param overwrite     是否覆盖已有文件（若为false，源文件和目录将仍被删除）
+     */
+    public static void mergeDir(String source, String target, boolean overwrite) throws IOException {
+        DirCollection sourceCollection = scanDir(source);
+        if (!Files.exists(Paths.get(target))) {
+            throw new NoSuchFileException(target);
+        }
+
+        //  检查子目录和文件同名情况下类型是否一致
+        Consumer<File> consumer = file -> {
+            Path p = Paths.get(target + "/" + StringUtils.removePrefix(source, file.getPath()));
+            if (Files.exists(p)) {
+                if (file.isDirectory() != Files.isDirectory(p)) {
+                    throw new UnsupportedOperationException("已存在文件与被移动文件类型不一致: " + file.getName());
+                }
+            }
+        };
+        sourceCollection.getFileList().forEach(consumer);
+        sourceCollection.getDirList().forEach(consumer);
+
+        for (File file : sourceCollection.getDirList()) {
+            Path p = Paths.get(target + "/" + StringUtils.removePrefix(source, file.getPath()));
+            if (!Files.exists(p)) Files.createDirectory(p);
+        }
+
+        for (File file : sourceCollection.getFileList()) {
+            Path p = Paths.get(target + "/" + StringUtils.removePrefix(source, file.getPath()));
+            if (overwrite) Files.move(Paths.get(file.getPath()), p, StandardCopyOption.REPLACE_EXISTING);
+            else file.delete();
+            log.debug("move " + file.getPath() + " -> " + p);
+        }
+
+        //  删除源文件夹
+        Collections.reverse(sourceCollection.getDirList());
+        sourceCollection.getDirList().forEach(File::delete);
+        Files.delete(Paths.get(source));
     }
 }

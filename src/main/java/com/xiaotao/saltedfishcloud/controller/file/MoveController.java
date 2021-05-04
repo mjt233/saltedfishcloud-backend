@@ -6,7 +6,7 @@ import javax.servlet.http.HttpServletRequest;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
-import com.xiaotao.saltedfishcloud.utils.UIDValidator;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.file.NoSuchFileException;
 
 /**
  * 移动/重命名资源控制器
@@ -33,7 +34,7 @@ public class MoveController {
     public JsonResult rename(HttpServletRequest request,
                            @PathVariable int uid,
                            @RequestParam("oldName") String oldName,
-                           @RequestParam("newName") String newName) throws HasResultException {
+                           @RequestParam("newName") String newName) throws HasResultException, NoSuchFileException {
         UIDValidator.validate(uid, true);
         String from = URLUtils.getRequestFilePath("/api/rename/" + uid, request);
         if (newName.length() < 1) {
@@ -54,14 +55,16 @@ public class MoveController {
     public JsonResult move(HttpServletRequest request,
                             @PathVariable("uid") int uid,
                             @RequestParam("name") String name,
-                            @RequestParam("target") String target) throws UnsupportedEncodingException {
+                            @RequestParam("target") String target,
+                            @RequestParam(value = "overwrite", defaultValue = "true") Boolean overwrite)
+            throws UnsupportedEncodingException, NoSuchFileException {
         UIDValidator.validate(uid);
         String source = URLUtils.getRequestFilePath("/api/move/" + uid, request);
         target = URLDecoder.decode(target, "UTF-8");
         if (source.equals(target)) {
             throw new HasResultException(400, "不能原处移动");
         }
-        fileService.move(uid, source, target, name);
+        fileService.move(uid, source, target, name, overwrite);
         return JsonResult.getInstance(source);
     }
 }

@@ -5,27 +5,31 @@ import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
 @Service
+@Slf4j
 public class NodeService {
     @Resource
     NodeDao nodeDao;
 
     /**
-     * 使用路径取节点ID
+     * 使用路径取最后一个节点的信息
      * @TODO 使用缓存加快查询速度
      * @param path 完整路径
+     * @throws NoSuchFileException 请求的路径不存在时抛出此异常
      * @return 路径ID
      */
-    public NodeInfo getNodeIdByPath(int uid, String path) {
+    public NodeInfo getLastNodeInfoByPath(int uid, String path) throws NoSuchFileException {
         return getPathNodeByPath(uid, path).getLast();
     }
 
@@ -33,18 +37,24 @@ public class NodeService {
      * 获取某个路径中途径的节点信息
      * @param uid   用户ID
      * @param path  路径
+     * @throws NoSuchFileException 请求的路径不存在时抛出此异常
      * @return  节点信息列表
      */
-    public LinkedList<NodeInfo> getPathNodeByPath(int uid, String path) {
+    public LinkedList<NodeInfo> getPathNodeByPath(int uid, String path) throws NoSuchFileException {
+        log.debug("search path" + uid + ": " + path);
         LinkedList<NodeInfo> link = new LinkedList<>();
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         Collection<String> paths = pb.getPath();
         try {
-            paths.forEach(node -> {
+            for (String node : paths) {
                 String parent = link.isEmpty() ? "root" : link.getLast().getId();
-                link.add(nodeDao.getNodeByParentId(uid, parent, node));
-            });
+                NodeInfo info = nodeDao.getNodeByParentId(uid, parent, node);
+                if (info == null) {
+                    throw new NoSuchFileException("路径 " + path + " 不存在，或目标节点信息已丢失");
+                }
+                link.add(info);
+            }
             if (link.isEmpty()) {
                 throw new NullPointerException();
             }
@@ -52,6 +62,14 @@ public class NodeService {
             NodeInfo info = new NodeInfo();
             info.setId("root");
             link.add(info);
+        }
+        if (log.isDebugEnabled()) {
+            StringBuilder sb = new StringBuilder();
+            for (NodeInfo nodeInfo : link) {
+                log.debug("nodeInfo:" + nodeInfo);
+                sb.append("/").append(nodeInfo.getName() == null ? "" : nodeInfo.getName()).append('[').append(nodeInfo.getId()).append(']');
+            }
+            log.debug(sb.toString());
         }
         return link;
     }
@@ -137,9 +155,7 @@ public class NodeService {
             throw new HasResultException(404, "无效的nodeId");
         }
         StringBuilder stringBuilder = new StringBuilder();
-        link.forEach(name -> {
-            stringBuilder.append("/").append(name);
-        });
+        link.forEach(name -> stringBuilder.append("/").append(name));
         return stringBuilder.toString();
     }
 

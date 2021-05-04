@@ -2,10 +2,11 @@ package com.xiaotao.saltedfishcloud.helper;
 
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import lombok.Data;
+import org.apache.tomcat.jni.OS;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 用于构建URL
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Data
 public class PathBuilder {
     private LinkedList<String> path;
-    private boolean prefix = true;
+    private boolean forcePrefix = false;
 
 
     public PathBuilder() {
@@ -21,10 +22,78 @@ public class PathBuilder {
     }
 
     /**
+     * 清空路径信息并设置新的路径信息 <br> 等同于依次执行 {@link #clear()} 和 {@link #append(String)}
+     * @param path  路径字符串
+     * @return  自己
+     */
+    public PathBuilder update(String path) {
+        this.path.clear();
+        append(path);
+        return this;
+    }
+
+    /**
+     * 在已有路径信息中获取从起始位置开始的指定节点长度的路径字符串
+     * @see #range(int, int)
+     * @param length 若参数{@code length}为负数，则表示忽略末尾的长度
+     * @return 咸鱼云网盘标准格式化路径
+     */
+    public String range(int length) {
+        return range(length, 0);
+    }
+
+    /**
+     * 从已有路径信息中获取指定节点长度的路径字符串，若参数{@code length}为负数，则表示忽略末尾的长度
+     * @param length
+     *        节点长度，若为负数，则表示丢弃的末尾节点数。 <br>
+     *        如节点长度为5，参数length为-2时，则返回前3个节点的咸鱼云网盘标准格式化路径 <br>
+     *
+     * @param index
+     *        起始索引，若为负数，则表示从末尾开始往前计数
+     *
+     * @throws IndexOutOfBoundsException
+     *     当传入的length大于从指定的index到末尾的长度时抛出此异常
+     *
+     *
+     * @return 咸鱼云网盘标准格式化路径
+     */
+    public String range(int length, int index) {
+        int absLength = Math.abs(length);
+        int finalIndex = index < 0 ? this.path.size() + index : index;
+        int finalLength = length < 0 ? this.path.size() + length : length;
+        if ( absLength > path.size() - finalIndex ) {
+            throw new IndexOutOfBoundsException();
+        }
+
+
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        int cnt = 0;
+
+        Iterator<String> iterator = this.path.listIterator(finalIndex);
+        while (iterator.hasNext()) {
+            if (++cnt > finalLength) break;
+            if (forcePrefix ||
+                    ( !first || !OSInfo.isWindows())
+            )sb.append("/");
+
+            sb.append(iterator.next());
+
+            first = false;
+        }
+
+        if (sb.length() == 0) {
+            return "/";
+        } else {
+            return sb.toString();
+        }
+    }
+
+    /**
      * 获取路径位置集合
      * @return 目录路径集合
      */
-    public Collection<String> getPath() {
+    public LinkedList<String> getPath() {
         return path;
     }
 
@@ -60,7 +129,7 @@ public class PathBuilder {
      */
     public static String formatPath(String path, boolean prefix) {
         PathBuilder pb = new PathBuilder();
-        pb.setPrefix(prefix);
+        pb.setForcePrefix(prefix);
         return pb.append(path).toString();
     }
 
@@ -88,19 +157,6 @@ public class PathBuilder {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        AtomicBoolean first = new AtomicBoolean(true);
-        path.forEach(node -> {
-            if (!OSInfo.isWindows() || !first.get()) {
-                sb.append("/");
-            }
-            sb.append(node);
-            first.set(false);
-        });
-        if (sb.length() == 0) {
-            return "/";
-        } else {
-            return sb.toString();
-        }
+        return range(path.size());
     }
 }
