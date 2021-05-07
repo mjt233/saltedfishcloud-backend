@@ -14,14 +14,12 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -69,7 +67,6 @@ public class FileService {
      *      是否覆盖
      */
     public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        FileNameValidator.valid(targetName, sourceName);
         if (PathBuilder.formatPath(source).equals(PathBuilder.formatPath(target)) && sourceName.equals(targetName)) {
             throw new IllegalArgumentException("无法原地复制");
         }
@@ -89,7 +86,6 @@ public class FileService {
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
     public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
-        FileNameValidator.valid(name);
         try {
             fileRecordService.move(uid, source, target, name, overwrite);
             storeService.move(uid, source, target, name, overwrite);
@@ -248,7 +244,6 @@ public class FileService {
      * @throws NoSuchFileException 当目标目录不存在时抛出
      */
     public void mkdir(int uid, String path, String name) throws HasResultException, NoSuchFileException {
-        FileNameValidator.valid(name);
         if ( !storeService.mkdir(uid, path, name) ) {
             throw new HasResultException("在" + path + "创建文件夹失败");
         }
@@ -264,7 +259,6 @@ public class FileService {
      * @return 删除的数量
      */
     public long deleteFile(int uid, String path, List<String> name) throws NoSuchFileException {
-        name.forEach(FileNameValidator::valid);
         // 计数删除数
         long res = 0L;
         fileRecordService.deleteRecords(uid, path, name);
@@ -281,7 +275,6 @@ public class FileService {
      * @param newName 新文件名
      */
     public void rename(int uid, String path, String name, String newName) throws HasResultException, NoSuchFileException {
-        FileNameValidator.valid(name, newName);
         fileRecordService.rename(uid, path, name, newName);
         storeService.rename(uid, path, name, newName);
     }

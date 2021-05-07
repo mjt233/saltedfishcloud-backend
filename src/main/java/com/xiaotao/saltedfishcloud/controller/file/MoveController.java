@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.controller.file;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
@@ -9,7 +10,10 @@ import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 
+import com.xiaotao.saltedfishcloud.validator.custom.FileName;
+import com.xiaotao.saltedfishcloud.validator.custom.ValidPath;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +29,7 @@ import java.nio.file.NoSuchFileException;
  */
 @RestController
 @RequestMapping("/api")
+@Validated
 public class MoveController {
     @Resource
     private FileService fileService;
@@ -33,8 +38,8 @@ public class MoveController {
     @Transactional(rollbackFor = Exception.class)
     public JsonResult rename(HttpServletRequest request,
                            @PathVariable int uid,
-                           @RequestParam("oldName") String oldName,
-                           @RequestParam("newName") String newName) throws HasResultException, NoSuchFileException {
+                           @RequestParam("oldName") @Valid @FileName String oldName,
+                           @RequestParam("newName") @Valid @FileName String newName) throws HasResultException, NoSuchFileException {
         UIDValidator.validate(uid, true);
         String from = URLUtils.getRequestFilePath("/api/rename/" + uid, request);
         if (newName.length() < 1) {
@@ -54,8 +59,8 @@ public class MoveController {
     @PostMapping("/move/{uid}/**")
     public JsonResult move(HttpServletRequest request,
                             @PathVariable("uid") int uid,
-                            @RequestParam("name") String name,
-                            @RequestParam("target") String target,
+                            @RequestParam("name") @Valid @FileName  String name,
+                            @RequestParam("target") @Valid @ValidPath String target,
                             @RequestParam(value = "overwrite", defaultValue = "true") Boolean overwrite)
             throws UnsupportedEncodingException, NoSuchFileException {
         UIDValidator.validate(uid);
