@@ -98,6 +98,8 @@ public class FileService {
             throw new HasResultException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
         } catch (UnsupportedEncodingException e) {
             throw new HasResultException(400, "不支持的编码（请使用UTF-8）");
+        } catch (IllegalArgumentException e) {
+            throw new HasResultException(422, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             throw new HasResultException(404, "资源不存在");

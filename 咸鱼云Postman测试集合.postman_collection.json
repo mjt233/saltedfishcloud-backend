@@ -964,17 +964,28 @@
 					"request": {
 						"method": "POST",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"target\": \"/\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"123\",\r\n            \"target\": \"f1233\"\r\n        },\r\n        {\r\n            \"source\": \"123\",\r\n            \"target\": \"newf233\"\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
-							"raw": "{{addr}}/api/move/",
+							"raw": "{{addr}}/api/move/42/",
 							"host": [
 								"{{addr}}"
 							],
 							"path": [
 								"api",
 								"move",
+								"42",
 								""
 							]
-						}
+						},
+						"description": "### 复制文件或目录\r\n- API：`/api/move/{用户ID}/{原文件所在路径}`  \r\n\r\n此API使用JSON作为请求体传参\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  要移动的文件名\r\n    \"files\":[                       //  暂时无用\r\n        {\r\n            \"source\":\"文件名\", \r\n            \"target\":\"文件名\"     \r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file1\"\r\n        }\r\n    ]\r\n}\r\n```"
 					},
 					"response": []
 				},
@@ -984,33 +995,13 @@
 						"method": "POST",
 						"header": [],
 						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "name",
-									"value": "f1",
-									"description": "要复制的文件或目录名",
-									"type": "text"
-								},
-								{
-									"key": "target",
-									"value": "/2312",
-									"description": "复制到的目标目录名",
-									"type": "text"
-								},
-								{
-									"key": "overwrite",
-									"value": "true",
-									"description": "是否覆盖原文件（可选，默认true）",
-									"type": "text"
-								},
-								{
-									"key": "targetName",
-									"value": "newf1",
-									"description": "复制后的文件或目录名",
-									"type": "text"
+							"mode": "raw",
+							"raw": "{\r\n    \"target\": \"/././\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"f1\",\r\n            \"target\": \"f1233\"\r\n        },\r\n        {\r\n            \"source\": \"newf1\",\r\n            \"target\": \"newf233\"\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
 								}
-							]
+							}
 						},
 						"url": {
 							"raw": "{{addr}}/api/copy/42/",
@@ -1024,7 +1015,7 @@
 								""
 							]
 						},
-						"description": "### 复制文件或目录\r\n- API：`/api/copy/{用户ID}/{文件所在路径}`  \r\n\r\n#### 参数列表\r\n- name:         要复制的文件或目录名\r\n- target:       复制到的目标目录名\r\n- targetName:   复制后的文件或目录名，可利用该参数实现目标文件重命名\r\n- overwrite:    是否覆盖原文件（可选参数，可选值为false或true，默认true）\r\n\r\n#### 响应data\r\n- 下载码，用于'使用下载码下载文件'接口"
+						"description": "### 复制文件或目录\r\n- API：`/api/copy/{用户ID}/{原文件所在路径}`  \r\n\r\n此API使用JSON作为请求体传参\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  粘贴目录\r\n    \"files\":[                       //  要操作的文件列表\r\n        {\r\n            \"source\":\"旧文件名\",    //  被复制的文件名\r\n            \"target\":\"新文件名\"     //  粘贴后的文件名（可重命名）\r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file2\"\r\n        }\r\n    ]\r\n}\r\n```"
 					},
 					"response": []
 				}

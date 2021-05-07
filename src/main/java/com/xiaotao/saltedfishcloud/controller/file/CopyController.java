@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.net.URLDecoder;
 
 @RestController
 @RequestMapping("/api")
@@ -30,7 +31,7 @@ public class CopyController {
                             HttpServletRequest request) throws IOException {
         UIDValidator.validate(uid);
         String source = URLUtils.getRequestFilePath("/api/copy/" + uid, request);
-        String target = info.getTarget();
+        String target = URLDecoder.decode(info.getTarget(), "UTF-8");
         for (NamePair file : info.getFiles()) {
             fileService.copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
         }
