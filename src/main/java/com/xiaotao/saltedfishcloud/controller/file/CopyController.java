@@ -30,10 +30,9 @@ public class CopyController {
                             HttpServletRequest request) throws IOException {
         UIDValidator.validate(uid);
         String source = URLUtils.getRequestFilePath("/api/copy/" + uid, request);
-        boolean overwrite = info.isOverwrite();
         String target = info.getTarget();
         for (NamePair file : info.getFiles()) {
-            fileService.copy(uid, source, target, uid, file.getSource(), file.getTarget(), overwrite);
+            fileService.copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
         }
         return JsonResult.getInstance();
     }

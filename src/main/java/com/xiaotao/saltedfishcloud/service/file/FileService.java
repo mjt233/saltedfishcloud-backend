@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -87,10 +88,16 @@ public class FileService {
      */
     public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
         try {
+            target = URLDecoder.decode(target, "UTF-8");
+            if (PathBuilder.formatPath(target).equals(PathBuilder.formatPath(source))) {
+                throw new IllegalArgumentException("无法原地移动");
+            }
             fileRecordService.move(uid, source, target, name, overwrite);
             storeService.move(uid, source, target, name, overwrite);
         } catch (DuplicateKeyException e) {
             throw new HasResultException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
+        } catch (UnsupportedEncodingException e) {
+            throw new HasResultException(400, "不支持的编码（请使用UTF-8）");
         } catch (Exception e) {
             e.printStackTrace();
             throw new HasResultException(404, "资源不存在");

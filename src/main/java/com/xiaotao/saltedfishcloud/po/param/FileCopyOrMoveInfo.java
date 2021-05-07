@@ -5,6 +5,8 @@ import lombok.Data;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.List;
 
 
@@ -19,4 +21,8 @@ public class FileCopyOrMoveInfo {
     @Valid
     @NotEmpty(message = "缺少参数files")
     private List<NamePair> files;
+
+    public String getTarget() throws UnsupportedEncodingException {
+        return URLDecoder.decode(target, "UTF-8");
+    }
 }
