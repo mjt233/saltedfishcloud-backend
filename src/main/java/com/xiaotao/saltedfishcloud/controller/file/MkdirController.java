@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.controller.file;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
@@ -9,7 +10,9 @@ import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 
+import com.xiaotao.saltedfishcloud.validator.custom.FileName;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +26,7 @@ import java.nio.file.NoSuchFileException;
  */
 @RestController
 @RequestMapping("/api")
+@Validated
 public class MkdirController {
     @Resource
     FileService fileService;
@@ -31,7 +35,7 @@ public class MkdirController {
     @Transactional(rollbackFor = Exception.class)
     public JsonResult mkdir(@PathVariable int uid,
                                HttpServletRequest request,
-                               @RequestParam("name") String name) throws HasResultException, NoSuchFileException {
+                               @RequestParam("name") @Valid @FileName String name) throws HasResultException, NoSuchFileException {
         UIDValidator.validate(uid, true);
         String prefix = "/api/mkdir/" + uid;
         String requestPath = URLUtils.getRequestFilePath(prefix, request);

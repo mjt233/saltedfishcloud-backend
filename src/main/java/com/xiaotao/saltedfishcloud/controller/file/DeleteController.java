@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.controller.file;
 
-import com.xiaotao.saltedfishcloud.po.file.FileNameList;
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -26,8 +26,7 @@ public class DeleteController {
     @Transactional(rollbackFor = Exception.class)
     public JsonResult delete(HttpServletRequest request,
                              @PathVariable int uid,
-                             @RequestBody FileNameList fileName,
-                             @RequestAttribute User user) throws NoSuchFileException {
+                             @RequestBody @Validated FileNameList fileName) throws NoSuchFileException {
         UIDValidator.validate(uid, true);
         String path = URLUtils.getRequestFilePath("/api/resource/" + uid, request);
         long res = fileService.deleteFile(uid, path, fileName.getFileName());

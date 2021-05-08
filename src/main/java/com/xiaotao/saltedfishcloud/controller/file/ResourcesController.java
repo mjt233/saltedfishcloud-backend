@@ -6,6 +6,7 @@ import java.util.List;
 import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.pagehelper.PageHelper;
@@ -19,6 +20,8 @@ import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 
+import com.xiaotao.saltedfishcloud.validator.custom.FileName;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/resource")
+@Validated
 public class ResourcesController {
     @Resource
     FileService fileService;
@@ -85,12 +89,11 @@ public class ResourcesController {
     public JsonResult getDC(@PathVariable int uid,
                             HttpServletRequest request,
                             @RequestParam("md5") String md5,
-                            @RequestParam("name") String name,
+                            @RequestParam("name") @Valid @FileName String name,
                             @RequestParam(value = "expr", defaultValue = "1") int expr) throws JsonProcessingException {
         UIDValidator.validate(uid);
         String filePath = URLUtils.getRequestFilePath("/api/resource/getFDC/" + uid, request);
         BasicFileInfo fileInfo = new BasicFileInfo(name, md5);
-        System.out.println(expr);
         String dc = fileService.getFileDC(uid, filePath, fileInfo, expr);
         return JsonResult.getInstance(dc);
     }
