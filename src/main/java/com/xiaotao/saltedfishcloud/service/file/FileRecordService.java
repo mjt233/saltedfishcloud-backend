@@ -120,7 +120,6 @@ public class FileRecordService {
      * @param name      文件名
      * @param overwrite 是否覆盖原文件信息
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
-     * @TODO 实现overwrite参数的效果
      */
     public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
         NodeInfo sourceInfo = nodeService.getLastNodeInfoByPath(uid, source);

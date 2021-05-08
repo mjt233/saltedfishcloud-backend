@@ -23,7 +23,6 @@ public class CopyController {
 
     /**
      * 复制文件或目录到指定目录下
-     * @TODO 使用数组传入需要复制的文件名以替代并发请求接口实现多文件粘贴的方式
      */
     @PostMapping("/copy/{uid}/**")
     public JsonResult copy( @PathVariable("uid") int uid,

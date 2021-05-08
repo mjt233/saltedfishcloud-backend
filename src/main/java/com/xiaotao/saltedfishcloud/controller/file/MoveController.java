@@ -51,7 +51,6 @@ public class MoveController {
     /**
      * 移动文件或目录到指定目录下
      * @param uid    用户ID
-     * @TODO 使用数组传入需要移动的文件名以替代并发请求接口实现多文件粘贴的方式
      */
     @PostMapping("/move/{uid}/**")
     public JsonResult move(HttpServletRequest request,
