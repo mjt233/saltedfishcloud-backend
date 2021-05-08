@@ -142,7 +142,7 @@ public class FileRecordService {
             } else {
                 // 不存在同名目录，直接修改节点ID
                 fileDao.move(uid, sourceInfo.getId(), targetInfo.getId(), name);
-                nodeDao.move(uid, sourceFileInfo.getNode(), targetInfo.getId());
+                nodeDao.move(uid, sourceFileInfo.getMd5(), targetInfo.getId());
             }
         } else {
             if (targetFileInfo != null) {
