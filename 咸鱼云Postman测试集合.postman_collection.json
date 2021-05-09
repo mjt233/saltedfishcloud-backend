@@ -26,36 +26,28 @@
 							}
 						}
 					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
 					"request": {
-						"method": "POST",
+						"method": "GET",
 						"header": [],
 						"body": {
 							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "passwd",
-									"value": "mojintao233",
-									"description": "密码",
-									"type": "text"
-								},
-								{
-									"key": "user",
-									"value": "xiaotao",
-									"description": "用户名",
-									"type": "text"
-								}
-							]
+							"formdata": []
 						},
 						"url": {
-							"raw": "{{addr}}/api/login",
+							"raw": "{{addr}}/api/user/token",
 							"host": [
 								"{{addr}}"
 							],
 							"path": [
 								"api",
-								"login"
+								"user",
+								"token"
 							]
-						}
+						},
+						"description": "获取token以登录，在后续请求中将此token放于名为`Token`的header字段中实现身份鉴权\r\n- URI: `/api/user/token`\r\n- 动作：GET\r\n\r\n### 参数\r\n- user 用户名\r\n- passwd 密码"
 					},
 					"response": []
 				},
@@ -91,7 +83,8 @@
 								"api",
 								"user"
 							]
-						}
+						},
+						"description": "获取用户信息\r\n- URI: `/api/user/`\r\n- 动作：GET\r\n\r\n### 响应\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"id\": 42,\r\n        \"user\": \"xiaotao\",\r\n        \"type\": 1,          //  1为管理员，0为普通用户\r\n        \"quota\": 10         //  私人空间配额（GiB）\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
 					},
 					"response": [
 						{
@@ -188,6 +181,700 @@
 					]
 				},
 				{
+					"name": "注册用户",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "user",
+									"value": "wodiu",
+									"description": "用户名",
+									"type": "text"
+								},
+								{
+									"key": "passwd",
+									"value": "wodiu",
+									"description": "密码",
+									"type": "text"
+								},
+								{
+									"key": "regcode",
+									"value": "123456",
+									"description": "注册邀请码",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/user",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"user"
+							]
+						},
+						"description": "用户自主注册接口\r\n- URI: `/api/user/`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- user  用户名\r\n- passwd    登录密码\r\n- regcode   注册邀请码"
+					},
+					"response": []
+				},
+				{
+					"name": "上传用户头像",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/12079/Desktop/avatar.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/user/avatar",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"avatar"
+							]
+						},
+						"description": "用户自主注册接口\r\n- URI: `/api/user/avatar`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- file 头像文件"
+					},
+					"response": []
+				},
+				{
+					"name": "获取用户头像",
+					"protocolProfileBehavior": {
+						"followRedirects": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/user/avatar/xiaotao",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"avatar",
+								"xiaotao"
+							]
+						},
+						"description": "获取用户头像\r\n- URI: `/api/user/avatar`或`/api/user/avater/{用户名}`\r\n- 动作：GET\r\n\r\n### 响应\r\n直接响应文件"
+					},
+					"response": []
+				},
+				{
+					"name": "获取空间配额使用情况",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/user/quota",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"quota"
+							]
+						},
+						"description": "描述：查询已登录用户的空间配额使用情况  \r\n- URI: `/api/user/quota`  \r\n- 动作：GET\r\n\r\n#### 响应data样例  \r\n```json\r\n{\r\n    // 单位均为字节（Byte）\r\n    \"used\": 114514,         // 已用空间\r\n    \"quota\": 10737418240    // 总配额\r\n}\r\n```"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "系统资源操作",
+			"item": [
+				{
+					"name": "解析节点ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/42/path/root",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"42",
+								"path",
+								"root"
+							]
+						},
+						"description": "用于将节点ID解析为网盘路径，因为搜索文件接口返回的结果中，只有文件所处的节点ID或节点本身的ID，进一步访问需要得知该资源的网盘路径。\r\n\r\n- URI: `/api/resource/{uid}/path/{nodeId}`\r\n- 动作：GET  \r\n\r\n### URI参数\r\n- uid 用户ID  \r\n- nodeId 节点ID\r\n\r\n#### 响应\r\n```json\r\n{\r\n    \"code\":1,\r\n    \"data\": \"/this/is/a/path\",\r\n    \"msg\": \"ok\"\r\n}\r\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "使用下载码下载文件",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/0/fileContentByFDC/eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wibmFtZVwiOlwicGhvdG8xLnBuZ1wiLFwibWQ1XCI6XCJmZjljMTk4ZTNjZDFkNmU5NDg2OTgzNTU5OTJmMmZjM1wiLFwic2l6ZVwiOjAsXCJ1aWRcIjo0MixcImRpclwiOlwiL2ZvbGRlcjFcIixcInN1ZmZpeFwiOlwicG5nXCJ9IiwiZXhwIjoxNjIwNjYyNjE2LCJpYXQiOjE2MjA1NzYyMTZ9.mSdg9kS4xsStn4g8vUOdJJBv4VcVNWL0TratxkrQ86o",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"0",
+								"fileContentByFDC",
+								"eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wibmFtZVwiOlwicGhvdG8xLnBuZ1wiLFwibWQ1XCI6XCJmZjljMTk4ZTNjZDFkNmU5NDg2OTgzNTU5OTJmMmZjM1wiLFwic2l6ZVwiOjAsXCJ1aWRcIjo0MixcImRpclwiOlwiL2ZvbGRlcjFcIixcInN1ZmZpeFwiOlwicG5nXCJ9IiwiZXhwIjoxNjIwNjYyNjE2LCJpYXQiOjE2MjA1NzYyMTZ9.mSdg9kS4xsStn4g8vUOdJJBv4VcVNWL0TratxkrQ86o"
+							]
+						},
+						"description": "用于需要免登录验证而又保护用户认证信息的情况下下载文件，比如 使用外部下载器，分享好友等\r\n\r\n- URI：`/api/resource/0/fileContentByFDC/{下载码}`\r\n- 动作：GET\r\n\r\n下载码通过'获取文件下载码'接口获得\r\n\r\n### 响应\r\n直接响应文件"
+					},
+					"response": []
+				},
+				{
+					"name": "获取文件下载码",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{addr}}/api/resource/42/FDC/folder1?md5=ff9c198e3cd1d6e948698355992f2fc3&name=photo1.png",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"42",
+								"FDC",
+								"folder1"
+							],
+							"query": [
+								{
+									"key": "md5",
+									"value": "ff9c198e3cd1d6e948698355992f2fc3",
+									"description": "目标文件的MD5（当服务器采用唯一存储方式时，该值必须正确）"
+								},
+								{
+									"key": "name",
+									"value": "photo1.png",
+									"description": "目标文件名"
+								}
+							]
+						},
+						"description": "获取某个文件的下载码，使用下载码可用于免登录在外部工具下载或分享他人  \r\n- URI：`/api/resource/{用户ID}/FDC/{文件所在路径}`  \r\n- 动作：GET\r\n\r\n#### 参数列表\r\n- md5: 文件的MD5（当服务器使用原始文件结构存储文件时，该项不起作用）\r\n- name：文件名  \r\n\r\n#### 响应data\r\n- 下载码，用于'使用下载码下载文件'接口"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "文件操作",
+			"item": [
+				{
+					"name": "取文件列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/diskFile/0/fileList/byPath/软件工具/网络工具",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"diskFile",
+								"0",
+								"fileList",
+								"byPath",
+								"软件工具",
+								"网络工具"
+							]
+						},
+						"description": "获取网盘中的文件列表  \r\n- URI：`/api/file/list/{用户id}/{请求的路径} ` \r\n- 动作：GET \r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": [\r\n        [\r\n            {\r\n                \"name\": \"网络分析与抓包\",\r\n                \"md5\": \"334ca18030b781d171b5b65cf5f42388\",\r\n                \"type\": 1,\r\n                \"size\": -1,\r\n                \"node\": \"ed71dfc52b1cbf4237e69e6333bde461\",\r\n                \"created_at\": \"2021-05-08T17:06:01.000+00:00\",\r\n                \"formatModified\": \"2021-05-09 01:06:01\",\r\n                \"suffix\": \"网络分析与抓包\",\r\n                \"dir\": true\r\n            }\r\n        ],\r\n        [\r\n            {\r\n                \"name\": \"Postman-win64-7.26.0-Setup.exe\",\r\n                \"md5\": \"6ad1d3fdfd37f78284ac6a111eaddac2\",\r\n                \"type\": 2,\r\n                \"size\": 90929760,\r\n                \"node\": \"ed71dfc52b1cbf4237e69e6333bde461\",\r\n                \"created_at\": \"2021-05-08T17:06:01.000+00:00\",\r\n                \"formatModified\": \"2021-05-09 01:06:01\",\r\n                \"suffix\": \"exe\",\r\n                \"dir\": false\r\n            }\r\n        ]\r\n    ],\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+					},
+					"response": [
+						{
+							"name": "取文件列表",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/fileList/0",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"fileList",
+										"0"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Feb 2021 15:16:03 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1,\n    \"data\": [\n        [\n            {\n                \"name\": \"其他\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601457910295,\n                \"file\": false,\n                \"suffix\": \"其他\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 17:25:10\"\n            },\n            {\n                \"name\": \"图片资源\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1605077251788,\n                \"file\": false,\n                \"suffix\": \"图片资源\",\n                \"dir\": true,\n                \"formatModified\": \"2020-11-11 14:47:31\"\n            },\n            {\n                \"name\": \"安卓APP\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463156268,\n                \"file\": false,\n                \"suffix\": \"安卓app\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:52:36\"\n            },\n            {\n                \"name\": \"工具软件\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463281242,\n                \"file\": false,\n                \"suffix\": \"工具软件\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:54:41\"\n            },\n            {\n                \"name\": \"驱动\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601468904893,\n                \"file\": false,\n                \"suffix\": \"驱动\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 20:28:24\"\n            }\n        ],\n        [\n            {\n                \"name\": \"autoindex.html\",\n                \"size\": 11795,\n                \"type\": 2,\n                \"lastModified\": 1595249972503,\n                \"file\": true,\n                \"suffix\": \"html\",\n                \"dir\": false,\n                \"formatModified\": \"2020-07-20 20:59:32\"\n            },\n            {\n                \"name\": \"web.config\",\n                \"size\": 168,\n                \"type\": 2,\n                \"lastModified\": 1602303497178,\n                \"file\": true,\n                \"suffix\": \"config\",\n                \"dir\": false,\n                \"formatModified\": \"2020-10-10 12:18:17\"\n            }\n        ]\n    ],\n    \"msg\": \"OK\"\n}"
+						}
+					]
+				},
+				{
+					"name": "新建文件夹",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "新建文件夹233",
+									"description": "文件夹名称",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/diskFile/42/dir/",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"diskFile",
+								"42",
+								"dir",
+								""
+							]
+						},
+						"description": "在请求的路径下创建文件夹  \r\n- URI: `/api/diskFile/{用户id}/dir/{目标所在路径}`\r\n- 动作：PUT\r\n\r\n\r\n### 参数：\r\n- name 文件夹名称"
+					},
+					"response": []
+				},
+				{
+					"name": "删除文件",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"fileName\": [\r\n        \"avatar.jpg\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/diskFile/42/content/",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"diskFile",
+								"42",
+								"content",
+								""
+							]
+						},
+						"description": "对某个目录下的多个文件进行删除  \r\n- URI:`/api/diskFile/{uid}/content/{目标所在路径}`  \r\n- 动作：DELETE  \r\n\r\n#### 请求体\r\n```json\r\n{\r\n    \"fileName\": [\r\n        \"avatar.jpg\",\r\n        \"otherfile\"\r\n    ]\r\n}\r\n```\r\n\r\n#### 响应体\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": 3,          //  删除的文件和文件夹总数，若为0则表示没有删除任何数据\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+					},
+					"response": [
+						{
+							"name": "删除2个文件",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"fileName\": [\r\n        \"cb85a661e0074edfc2260057807ba16d.jpg\",\r\n        \"IMG_20210131_205153_1.jpg\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/resource/1/我的图片",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"resource",
+										"1",
+										"我的图片"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Feb 2021 15:09:37 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 1,\n    \"data\": 2,\n    \"msg\": \"OK\"\n}"
+						}
+					]
+				},
+				{
+					"name": "搜索文件",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/diskFile/42/fileList/byName/photo?page=1",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"diskFile",
+								"42",
+								"fileList",
+								"byName",
+								"photo"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						},
+						"description": "搜索网盘中的文件\r\n- URI：`/api/diskFile/{uid}/fileList/byName/{文件名关键字}`  \r\n- 动作：GET\r\n\r\n#### 响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"total\": 2,     //  文件总数\r\n        \"list\": [\r\n            {\r\n                \"name\": \"photo1.png\",                           //  文件名\r\n                \"md5\": \"ff9c198e3cd1d6e948698355992f2fc3\",      //  文件MD5\r\n                \"size\": 889946,                                 //  文件大小（Byte）,文件夹为-1\r\n                \"parent\": \"folder2\",                            //  所在文件夹名称\r\n                \"node\": \"de1e955ec96bd60c089d60bc05931032\",     //  所在文件夹节点ID\r\n                \"created_at\": \"2021-05-10T00:17:10.000+00:00\",  //  创建日期\r\n                \"formatModified\": \"2021-05-10 08:17:10\",        //  修改日期\r\n                \"suffix\": \"png\",                                //  后缀名\r\n                \"dir\": false                                    //  是否为文件夹\r\n            }\r\n        ],\r\n        \"pageNum\": 1,\r\n        \"pageSize\": 10,\r\n        \"size\": 2,\r\n        \"startRow\": 1,\r\n        \"endRow\": 2,\r\n        \"pages\": 1,\r\n        \"prePage\": 0,\r\n        \"nextPage\": 0,\r\n        \"isFirstPage\": true,\r\n        \"isLastPage\": true,\r\n        \"hasPreviousPage\": false,\r\n        \"hasNextPage\": false,\r\n        \"navigatePages\": 8,\r\n        \"navigatepageNums\": [\r\n            1\r\n        ],\r\n        \"navigateFirstPage\": 1,\r\n        \"navigateLastPage\": 1\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "上传文件",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/12079/Desktop/avatar.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/diskFile/42/file",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"diskFile",
+								"42",
+								"file"
+							]
+						},
+						"description": "将文件上传到网盘，若文件已存在则会覆盖  \r\n- URI: `/api/diskFile/{用户id}/file/{要上传到的路径}`\r\n- 动作：PUT  \r\n\r\n#### 参数:\r\n- file 类型：文件\r\n注意：请求的路径必须是存在的路径，若不存在需要手动提前创建，否则文件会保存失败"
+					},
+					"response": []
+				},
+				{
+					"name": "移动文件",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"target\": \"/folder1\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"folder2\",\r\n            \"target\": \"wow\"\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/diskFile/42/fromPath/",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"diskFile",
+								"42",
+								"fromPath",
+								""
+							]
+						},
+						"description": "移动多个文件或目录到指定目录下  \r\n- API：`/api/file/move/{用户ID}/{原文件所在路径}`  \r\n- 动作：POST\r\n\r\n\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  粘贴到的目标目录下\r\n    \"files\":[                       \r\n        {\r\n            \"source\":\"文件名\",      //  要移动的文件名\r\n            \"target\":\"文件名\"        //  暂时无用\r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file1\"\r\n        }\r\n    ]\r\n}\r\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "复制文件或目录",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"target\": \"/\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"folder1\",\r\n            \"target\": \"folder2\"\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/diskFile/42/fromPath/",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"diskFile",
+								"42",
+								"fromPath",
+								""
+							]
+						},
+						"description": "- URI：`/api/diskFile/{用户ID}/fromPath/{原文件所在路径}`  \r\n- 动作：POST\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  粘贴目录\r\n    \"files\":[                       //  要操作的文件列表\r\n        {\r\n            \"source\":\"旧文件名\",    //  被复制的文件名\r\n            \"target\":\"新文件名\"     //  粘贴后的文件名（可重命名）\r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file2\"\r\n        }\r\n    ]\r\n}\r\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "重命名文件或目录",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "oldName",
+									"value": "photo1.png",
+									"description": "旧文件名",
+									"type": "text"
+								},
+								{
+									"key": "newName",
+									"value": "photo2.png",
+									"description": "重命名后新文件名",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/diskFile/42/name/folder1",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"diskFile",
+								"42",
+								"name",
+								"folder1"
+							]
+						},
+						"description": "- API：`/api/file/rename/{用户ID}/{原文件所在路径}`  \r\n- 方法：POST\r\n\r\n### 参数\r\n- oldName 原文件名\r\n- newName 新文件名"
+					},
+					"response": []
+				},
+				{
+					"name": "直接下载网盘文件",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/diskFile/42/content/folder1/photo1.png",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"diskFile",
+								"42",
+								"content",
+								"folder1",
+								"photo1.png"
+							]
+						},
+						"description": "## 从网盘中获取一个文件内容  \r\n- URI：`/api/diskFile/{uid}/{文件路径}`\r\n- 动作：GET\r\n\r\n要注意的是，使用该接口下载文件需要在header或表单中传递Token，在浏览器中可使用POST提交带Token的表单实现下载\r\n\r\n### 响应\r\n直接响应文件"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "管理员（文档暂时不更新）",
+			"item": [
+				{
+					"name": "[管理员]更新公开资源数据库",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/updatePublicRecord",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"updatePublicRecord"
+							]
+						},
+						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
+					},
+					"response": []
+				},
+				{
+					"name": "[管理员]初始化公开资源数据库",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/makePublicRecord",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"makePublicRecord"
+							]
+						},
+						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
+					},
+					"response": []
+				},
+				{
 					"name": "[管理员]增加用户",
 					"request": {
 						"method": "POST",
@@ -222,13 +909,14 @@
 							]
 						},
 						"url": {
-							"raw": "{{addr}}/api/user",
+							"raw": "{{addr}}/api/user/admin",
 							"host": [
 								"{{addr}}"
 							],
 							"path": [
 								"api",
-								"user"
+								"user",
+								"admin"
 							]
 						},
 						"description": "该接口仅允许管理员请求"
@@ -340,684 +1028,26 @@
 							"body": "{\n    \"code\": 1,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
 						}
 					]
-				},
-				{
-					"name": "注册用户",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "user",
-									"value": "wodiu",
-									"description": "用户名",
-									"type": "text"
-								},
-								{
-									"key": "passwd",
-									"value": "wodiu",
-									"description": "密码",
-									"type": "text"
-								},
-								{
-									"key": "regcode",
-									"value": "123456",
-									"description": "注册邀请码",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/regUser",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"regUser"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "注销",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": []
-						},
-						"url": {
-							"raw": "{{addr}}/api/logout",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"logout"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "上传用户头像",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "file",
-									"type": "file",
-									"src": "/C:/Users/12079/Desktop/6520480_xiaotao233_1609163680.png"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/uploadAvatar",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"uploadAvatar"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "获取用户头像",
-					"protocolProfileBehavior": {
-						"followRedirects": true
-					},
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/getAvatar/xiaotao",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"getAvatar",
-								"xiaotao"
-							]
-						},
-						"description": "- URL：`/api/getAvatar/{用户名}`\r\n\r\n直接响应图片类型数据\r\n用户名为可选参数，若不传入用户名，则默认响应当前已登录用户头像\r\n\r\n若头像不存在则响应默认头像"
-					},
-					"response": []
-				},
-				{
-					"name": "获取空间配额使用情况",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/quotaUsed",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"quotaUsed"
-							]
-						},
-						"description": "- URL: `/api/quotaUsed`  \r\n- 描述：查询已登录用户的空间配额使用情况  \r\n\r\n#### 响应data样例  \r\n```json\r\n{\r\n    // 单位均为字节（Byte）\r\n    \"used\": 114514,         // 已用空间\r\n    \"quota\": 10737418240    // 总配额\r\n}\r\n```"
-					},
-					"response": []
 				}
-			]
-		},
-		{
-			"name": "系统资源操作",
-			"item": [
+			],
+			"event": [
 				{
-					"name": "解析节点ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/resource/getPath?uid=0&nodeId=f653ca15bedc69a9690e0ce20d960ff8",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"resource",
-								"getPath"
-							],
-							"query": [
-								{
-									"key": "uid",
-									"value": "0",
-									"description": "用户ID 只能使用自己的ID或表示公共的0"
-								},
-								{
-									"key": "nodeId",
-									"value": "f653ca15bedc69a9690e0ce20d960ff8",
-									"description": "节点ID"
-								}
-							]
-						},
-						"description": "用于将节点ID解析为网盘路径，因为搜索文件接口返回的结果中，只有文件所处的节点ID或节点本身的ID，进一步访问需要得知该资源的网盘路径。"
-					},
-					"response": []
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
 				},
 				{
-					"name": "[管理员]初始化公开资源数据库",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/resource/makePublicRecord",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"resource",
-								"makePublicRecord"
-							]
-						},
-						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
-					},
-					"response": []
-				},
-				{
-					"name": "[管理员]更新公开资源数据库",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/resource/updatePublicRecord",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"resource",
-								"updatePublicRecord"
-							]
-						},
-						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "文件操作",
-			"item": [
-				{
-					"name": "下载相关",
-					"item": [
-						{
-							"name": "获取文件下载码",
-							"protocolProfileBehavior": {
-								"disableBodyPruning": true
-							},
-							"request": {
-								"method": "GET",
-								"header": [],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{
-											"key": "md5",
-											"value": "414355cdb46159600930f6e2319e8c94",
-											"type": "text"
-										},
-										{
-											"key": "name",
-											"value": "54613529.jpg",
-											"type": "text"
-										}
-									]
-								},
-								"url": {
-									"raw": "{{addr}}/api/resource/getFDC/37/新建文件夹",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"resource",
-										"getFDC",
-										"37",
-										"新建文件夹"
-									]
-								},
-								"description": "### 获取某个文件的下载码，使用下载码可用于免登录在外部工具下载或分享他人\r\n- API：`/api/resource/getFDC/{用户ID}/{文件所在路径}`  \r\n\r\n#### 参数列表\r\n- md5: 文件的MD5（当服务器使用原始文件结构存储文件时，该项不起作用）\r\n- name：文件名  \r\n\r\n#### 响应data\r\n- 下载码，用于'使用下载码下载文件'接口"
-							},
-							"response": []
-						},
-						{
-							"name": "直接下载",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/download/37/54613529.jpg",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"download",
-										"37",
-										"54613529.jpg"
-									]
-								},
-								"description": "## 从网盘中获取一个文件内容  \r\n- API：`/download/{用户ID}/文件路径`\r\n- 样例：`/download/37/新建文件夹/54613529.jpg`  \r\n\r\n要注意的是，使用该接口下载文件需要在header或表单中传递Token，在浏览器中可使用POST提交带Token的表单实现下载"
-							},
-							"response": []
-						},
-						{
-							"name": "使用下载码下载文件",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/api/fdc/eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wibmFtZVwiOlwiNTQ2MTM1MjkuanBnXCIsXCJtZDVcIjpcIjQxNDM1NWNkYjQ2MTU5NjAwOTMwZjZlMjMxOWU4Yzk0XCIsXCJzaXplXCI6MCxcInVpZFwiOjM3LFwiZGlyXCI6XCIv5paw5bu65paH5Lu25aS5XCIsXCJzdWZmaXhcIjpcImpwZ1wifSIsImV4cCI6MTYxNjQyMDY5MSwiaWF0IjoxNjE2MzM0MjkxfQ.hzZF5W3pkeIqEJ5nCofFbifqZzaCN_HFS7xpC-2ntWQ",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"fdc",
-										"eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wibmFtZVwiOlwiNTQ2MTM1MjkuanBnXCIsXCJtZDVcIjpcIjQxNDM1NWNkYjQ2MTU5NjAwOTMwZjZlMjMxOWU4Yzk0XCIsXCJzaXplXCI6MCxcInVpZFwiOjM3LFwiZGlyXCI6XCIv5paw5bu65paH5Lu25aS5XCIsXCJzdWZmaXhcIjpcImpwZ1wifSIsImV4cCI6MTYxNjQyMDY5MSwiaWF0IjoxNjE2MzM0MjkxfQ.hzZF5W3pkeIqEJ5nCofFbifqZzaCN_HFS7xpC-2ntWQ"
-									]
-								},
-								"description": "### 使用下载码下载文件  \r\n- 用途：用于需要免登录验证而又保护用户认证信息的情况下下载文件，比如 使用外部下载器，分享好友等\r\n- API：`/api/fdc/{下载码}`\r\n\r\n下载码通过'获取文件下载码'接口获得\r\n\r\n### 响应\r\n直接响应文件"
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "取文件列表",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/fileList/0",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"fileList",
-								"0"
-							]
-						},
-						"description": "- 描述：获取网盘中的文件列表  \r\n- URL：`/api/fileList/{用户id}/{请求的路径} `  \r\n响应结果中，文件夹的md5表示该文件夹本身的节点ID，parent为文件所在节点的名称，node为文件所在节点的ID"
-					},
-					"response": [
-						{
-							"name": "取文件列表",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/api/fileList/0",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"fileList",
-										"0"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 15 Feb 2021 15:16:03 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 1,\n    \"data\": [\n        [\n            {\n                \"name\": \"其他\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601457910295,\n                \"file\": false,\n                \"suffix\": \"其他\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 17:25:10\"\n            },\n            {\n                \"name\": \"图片资源\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1605077251788,\n                \"file\": false,\n                \"suffix\": \"图片资源\",\n                \"dir\": true,\n                \"formatModified\": \"2020-11-11 14:47:31\"\n            },\n            {\n                \"name\": \"安卓APP\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463156268,\n                \"file\": false,\n                \"suffix\": \"安卓app\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:52:36\"\n            },\n            {\n                \"name\": \"工具软件\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463281242,\n                \"file\": false,\n                \"suffix\": \"工具软件\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:54:41\"\n            },\n            {\n                \"name\": \"驱动\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601468904893,\n                \"file\": false,\n                \"suffix\": \"驱动\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 20:28:24\"\n            }\n        ],\n        [\n            {\n                \"name\": \"autoindex.html\",\n                \"size\": 11795,\n                \"type\": 2,\n                \"lastModified\": 1595249972503,\n                \"file\": true,\n                \"suffix\": \"html\",\n                \"dir\": false,\n                \"formatModified\": \"2020-07-20 20:59:32\"\n            },\n            {\n                \"name\": \"web.config\",\n                \"size\": 168,\n                \"type\": 2,\n                \"lastModified\": 1602303497178,\n                \"file\": true,\n                \"suffix\": \"config\",\n                \"dir\": false,\n                \"formatModified\": \"2020-10-10 12:18:17\"\n            }\n        ]\n    ],\n    \"msg\": \"OK\"\n}"
-						}
-					]
-				},
-				{
-					"name": "新建文件夹",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "name",
-									"value": "新建文件夹",
-									"description": "文件夹名称",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/mkdir/1",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"mkdir",
-								"1"
-							]
-						},
-						"description": "在网盘中创建文件夹/api/mkdir/{用户id}/{请求的路径}"
-					},
-					"response": []
-				},
-				{
-					"name": "删除文件",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"fileName\": [\r\n        \"cb85a661e0074edfc2260057807ba16d.jpg\",\r\n        \"IMG_20210131_205153_1.jpg\"\r\n    ]\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{addr}}/api/resource/1/我的图片",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"resource",
-								"1",
-								"我的图片"
-							]
-						},
-						"description": "可对某个目录下的多个文件进行删除，url为/api/resource/{用户UID}/{请求的路径}\r\n注意：需要使用JSON传递参数\r\n请求后data为删除的文件和文件夹总数量"
-					},
-					"response": [
-						{
-							"name": "删除2个文件",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n    \"fileName\": [\r\n        \"cb85a661e0074edfc2260057807ba16d.jpg\",\r\n        \"IMG_20210131_205153_1.jpg\"\r\n    ]\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{addr}}/api/resource/1/我的图片",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"resource",
-										"1",
-										"我的图片"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 15 Feb 2021 15:09:37 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 1,\n    \"data\": 2,\n    \"msg\": \"OK\"\n}"
-						}
-					]
-				},
-				{
-					"name": "搜索文件",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
-					"request": {
-						"method": "GET",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "key",
-									"value": "jpg",
-									"description": "关键字 空格分隔",
-									"type": "text"
-								},
-								{
-									"key": "page",
-									"value": "1",
-									"description": "页码 起始页数为1",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/resource/search/0",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"resource",
-								"search",
-								"0"
-							]
-						},
-						"description": "搜索网盘中的文件/api/resource/search/{用户id}\r\n响应结果中，文件夹的md5表示该文件夹本身的节点ID，parent为文件所在节点的名称，node为文件所在节点的ID"
-					},
-					"response": []
-				},
-				{
-					"name": "上传文件",
-					"request": {
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "file",
-									"type": "file",
-									"src": "/C:/Users/12079/Desktop/empty.txt"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/fileList/1",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"fileList",
-								"1"
-							]
-						},
-						"description": "将文件上传到网盘/api/fileList/{用户id}/{请求的路径}\r\n注意：请求的路径必须是存在的路径，若不存在需要手动提前创建，否则文件会保存失败"
-					},
-					"response": []
-				},
-				{
-					"name": "移动文件",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"target\": \"/\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"123\",\r\n            \"target\": \"f1233\"\r\n        },\r\n        {\r\n            \"source\": \"123\",\r\n            \"target\": \"newf233\"\r\n        }\r\n    ]\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{addr}}/api/move/42/",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"move",
-								"42",
-								""
-							]
-						},
-						"description": "### 复制文件或目录\r\n- API：`/api/move/{用户ID}/{原文件所在路径}`  \r\n\r\n此API使用JSON作为请求体传参\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  要移动的文件名\r\n    \"files\":[                       //  暂时无用\r\n        {\r\n            \"source\":\"文件名\", \r\n            \"target\":\"文件名\"     \r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file1\"\r\n        }\r\n    ]\r\n}\r\n```"
-					},
-					"response": []
-				},
-				{
-					"name": "复制文件或目录",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"target\": \"/././\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"f1\",\r\n            \"target\": \"f1233\"\r\n        },\r\n        {\r\n            \"source\": \"newf1\",\r\n            \"target\": \"newf233\"\r\n        }\r\n    ]\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{addr}}/api/copy/42/",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"copy",
-								"42",
-								""
-							]
-						},
-						"description": "### 复制文件或目录\r\n- API：`/api/copy/{用户ID}/{原文件所在路径}`  \r\n\r\n此API使用JSON作为请求体传参\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  粘贴目录\r\n    \"files\":[                       //  要操作的文件列表\r\n        {\r\n            \"source\":\"旧文件名\",    //  被复制的文件名\r\n            \"target\":\"新文件名\"     //  粘贴后的文件名（可重命名）\r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file2\"\r\n        }\r\n    ]\r\n}\r\n```"
-					},
-					"response": []
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
 				}
 			]
 		}
