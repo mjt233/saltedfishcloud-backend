@@ -1,13 +1,26 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.po.User;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.parameters.P;
+import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+
+import javax.annotation.Resource;
+import java.util.*;
 
 /**
  * 安全与哈希相关的工具类
  */
+@Component
 public class SecureUtils {
+    @Resource
+    private RequestMappingHandlerMapping requestMappingHandlerMapping;
+
     final static private String SALT = "1145141919810";
 
     /**
@@ -38,5 +51,21 @@ public class SecureUtils {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * 获取已注册的控制器路由中允许匿名访问的URL
+     * @return 允许匿名访问的URL
+     */
+    public String[] getAnonymousUrls() {
+        Map<RequestMappingInfo, HandlerMethod> handlerMethods = requestMappingHandlerMapping.getHandlerMethods();
+        Set<String> res = new HashSet<>();
+        handlerMethods.forEach((info, method) -> {
+            AllowAnonymous an = method.getMethod().getAnnotation(AllowAnonymous.class);
+            if (an != null) {
+                res.addAll(info.getPatternValues());
+            }
+        });
+        return res.toArray(new String[0]);
     }
 }

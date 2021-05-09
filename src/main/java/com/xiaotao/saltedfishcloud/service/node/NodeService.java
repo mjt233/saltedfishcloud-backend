@@ -11,10 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.nio.file.NoSuchFileException;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -46,6 +43,7 @@ public class NodeService {
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         Collection<String> paths = pb.getPath();
+        Set<String> visited = new HashSet<>();
         try {
             for (String node : paths) {
                 String parent = link.isEmpty() ? "root" : link.getLast().getId();
@@ -53,7 +51,12 @@ public class NodeService {
                 if (info == null) {
                     throw new NoSuchFileException("路径 " + path + " 不存在，或目标节点信息已丢失");
                 }
-                link.add(info);
+                if (visited.contains(info.getId())) {
+                    throw new HasResultException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + info.getId() + " => " + node);
+                } else {
+                    visited.add(node);
+                    link.add(info);
+                }
             }
             if (link.isEmpty()) {
                 throw new NullPointerException();
@@ -140,13 +143,18 @@ public class NodeService {
             return "/";
         }
         LinkedList<String> link = new LinkedList<>();
+        Set<String> visited = new HashSet<>();
         String lastId = nodeId;
         NodeInfo info;
+        visited.add(nodeId);
 
         // 递归查询
         while ( (info = nodeDao.getNodeById(uid, lastId)) != null) {
             link.addFirst(info.getName());
             lastId = info.getParent();
+            if (visited.contains(lastId)) {
+                throw new HasResultException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + info.getId() + " => " + lastId);
+            }
             if (info.getParent().equals("root")) {
                 break;
             }

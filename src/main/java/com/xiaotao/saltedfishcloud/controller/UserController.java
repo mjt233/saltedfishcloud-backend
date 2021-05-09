@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.controller.user;
+package com.xiaotao.saltedfishcloud.controller;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +8,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletResponse;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -31,9 +32,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 @Controller
-@RequestMapping(value = "/api")
+@RequestMapping(UserController.PREFIX)
 @ResponseBody
 public class UserController {
+    public static final String PREFIX = "/api/user";
     @Resource
     UserService userService;
 
@@ -45,7 +47,7 @@ public class UserController {
     /**
      * 获取用户基本信息
      */
-    @GetMapping("user")
+    @GetMapping
     public JsonResult getUserInfo() throws UserNoExistException {
         return JsonResult.getInstance(SecureUtils.getSpringSecurityUser());
     }
@@ -56,7 +58,7 @@ public class UserController {
      * @param passwd    原始密码（即密码原文）
      * @param type  用户类型，可选"admin"与"common"
      */
-    @PostMapping("user")
+    @PostMapping("admin")
     @RolesAllowed({"ADMIN"})
     public JsonResult addUser(@RequestParam("user") String user,
                               @RequestParam("passwd") String passwd,
@@ -78,7 +80,8 @@ public class UserController {
      * @param rawPassword   原始密码（即密码原文）
      * @param regCode   注册邀请码
      */
-    @PostMapping("regUser")
+    @PostMapping
+    @AllowAnonymous
     public JsonResult regUser(@RequestParam("user") String user,
                               @RequestParam("passwd") String rawPassword,
                               @RequestParam("regcode") String regCode
@@ -94,7 +97,7 @@ public class UserController {
      * 上传用户头像
      * @param file  头像文件
      */
-    @PostMapping("uploadAvatar")
+    @PostMapping("avatar")
     public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file,
                                    @RequestAttribute User user) throws IOException {
         userService.setAvatar(user.getUsername(), file);
@@ -106,9 +109,10 @@ public class UserController {
      * @param username  用户名
      */
     @GetMapping({
-            "getAvatar/{username}",
-            "getAvatar"
+            "avatar/{username}",
+            "avatar"
     })
+    @AllowAnonymous
     public ResponseEntity<org.springframework.core.io.Resource>
                 getAvatar(HttpServletResponse response, @PathVariable(required = false) String username) throws IOException {
         try {
@@ -126,7 +130,7 @@ public class UserController {
     /**
      * 获取用户空间配额使用情况
      */
-    @GetMapping("quotaUsed")
+    @GetMapping("quota")
     public JsonResult getQuotaUsed() {
         QuotaInfo used = userDao.getUserQuotaUsed(SecureUtils.getSpringSecurityUser().getId());
         return JsonResult.getInstance(used);

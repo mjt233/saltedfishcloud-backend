@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.controller.advice;
+package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
@@ -28,10 +28,11 @@ public class ControllerAdvice {
         return JsonResult.getInstance(422, null, sb.toString());
     }
 
-    @ExceptionHandler(ConstraintViolationException.class)
-    public JsonResult validFieldError(ConstraintViolationException e) {
+    @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class})
+    public JsonResult paramsError(Exception e) {
         return JsonResult.getInstance(422, null, e.getMessage());
     }
+
 
 
     @ExceptionHandler(HasResultException.class)

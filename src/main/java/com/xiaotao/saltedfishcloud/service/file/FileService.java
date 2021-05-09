@@ -20,6 +20,7 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -86,6 +87,7 @@ public class FileService {
      * @param overwrite 是否覆盖原文件
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
+    @Transactional(rollbackFor = Exception.class)
     public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
         try {
             target = URLDecoder.decode(target, "UTF-8");
@@ -116,6 +118,13 @@ public class FileService {
      * @return      一个List数组，数组下标0为目录，1为文件，或null
      */
     public List<FileInfo>[] getUserFileList(int uid, String path) throws NoSuchFileException {
+
+        String baseLocalPath = DiskConfig.getRawFileStoreRootPath(uid);
+
+        File root = new File(baseLocalPath);
+        if (!root.exists()) {
+            root.mkdir();
+        }
         NodeInfo nodeId = nodeService.getLastNodeInfoByPath(uid, path);
         return getUserFileListByNodeId(uid, nodeId.getId());
     }
@@ -196,9 +205,12 @@ public class FileService {
      * @throws UnsupportedEncodingException
      */
     public ResponseEntity<Resource> sendFile(String localFilePath) throws MalformedURLException, UnsupportedEncodingException {
-        UrlResource urlResource = new UrlResource(Paths.get(localFilePath).toUri());
-        File file = new File(localFilePath);
-        String name = file.getName();
+        Path path = Paths.get(localFilePath);
+        if (Files.isDirectory(path)) {
+            throw new IllegalArgumentException("无法直接下载文件夹");
+        }
+        UrlResource urlResource = new UrlResource(path.toUri());
+        String name = path.getFileName().toString();
         return ResponseEntity.ok()
                 .header("Content-Type", FileUtils.getContentType(localFilePath))
                 .header("Content-Disposition", "inline;filename="+ URLEncoder.encode(name, "utf-8"))
