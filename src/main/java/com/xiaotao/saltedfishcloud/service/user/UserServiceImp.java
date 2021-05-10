@@ -26,9 +26,6 @@ public class UserServiceImp implements UserService{
     @Resource
     private UserDao userDao;
 
-    @Resource
-    private StoreService storeService;
-
     @Override
     public User getUserByUser(String user) throws UserNoExistException {
         User user1 = userDao.getUserByUser(user);
@@ -40,7 +37,12 @@ public class UserServiceImp implements UserService{
 
     @Override
     public int modifyPasswd(Integer uid, String oldPassword, String newPassword) {
-        return 0;
+        User user = userDao.getUserById(uid);
+        if (user == null) throw new UserNoExistException(404, "用户不存在");
+        if (!SecureUtils.getPassswd(oldPassword).equals(user.getPwd())) {
+            throw new HasResultException(403, "原密码错误");
+        }
+        return userDao.modifyPassword(uid, SecureUtils.getPassswd(newPassword));
     }
 
     @Override

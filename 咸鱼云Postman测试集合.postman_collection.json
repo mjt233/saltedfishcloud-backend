@@ -248,7 +248,7 @@
 								"avatar"
 							]
 						},
-						"description": "用户自主注册接口\r\n- URI: `/api/user/avatar`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- file 头像文件"
+						"description": "上传用户头像\r\n- URI: `/api/user/avatar`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- file 头像文件"
 					},
 					"response": []
 				},
@@ -293,6 +293,41 @@
 							]
 						},
 						"description": "描述：查询已登录用户的空间配额使用情况  \r\n- URI: `/api/user/quota`  \r\n- 动作：GET\r\n\r\n#### 响应data样例  \r\n```json\r\n{\r\n    // 单位均为字节（Byte）\r\n    \"used\": 114514,         // 已用空间\r\n    \"quota\": 10737418240    // 总配额\r\n}\r\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "修改密码",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "old",
+									"value": "233333",
+									"type": "text"
+								},
+								{
+									"key": "new",
+									"value": "123123123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{addr}}/api/user/passwd",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"passwd"
+							]
+						},
+						"description": "修改用户的密码\r\n- URI: `/api/user/passwd`\r\n- 动作：POST\r\n\r\n### 参数\r\n- old 旧密码\r\n- new 新密码"
 					},
 					"response": []
 				}

@@ -136,4 +136,11 @@ public class UserController {
         return JsonResult.getInstance(used);
     }
 
+    @PostMapping("passwd")
+    public JsonResult modifyPassword(@RequestParam("old") String oldPasswd,
+                                     @RequestParam("new") String newPasswd) {
+        int i = userService.modifyPasswd(SecureUtils.getSpringSecurityUser().getId(), oldPasswd, newPasswd);
+        return JsonResult.getInstance(1, i, "ok");
+    }
+
 }
