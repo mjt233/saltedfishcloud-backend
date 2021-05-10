@@ -10,12 +10,24 @@ import org.springframework.stereotype.Component;
 
 @Component
 public interface UserDao {
+
+    /**
+     * 修改用户权限类型
+     * @param uid       用户ID
+     * @param type      用户类型，1为管理员，0为普通人
+     * @return          受影响的行数
+     */
+    @Update("UPDATE user SET type = #{type} WHERE id = #{uid}")
+    int grant(@Param("uid") Integer uid, @Param("type") Integer type);
+
     /**
      * 获取用户数量
      * @return  用户数
      */
     @Select("SELECT COUNT(*) FROM user")
     int getUserCount();
+
+
     /**
      * 修改用户密码
      * @param encodedPassword   经过安全编码后的密码

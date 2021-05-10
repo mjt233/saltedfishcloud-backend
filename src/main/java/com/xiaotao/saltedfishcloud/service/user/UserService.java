@@ -7,6 +7,13 @@ import org.springframework.web.multipart.MultipartFile;
 public interface UserService {
 
     /**
+     * 设置用户权限类型
+     * @param uid 用户ID
+     * @param type 用户类型，1管理员，0普通用户
+     */
+    void grant(int uid, int type);
+
+    /**
      * 通过用户名获取用户信息
      * @param user  用户名
      * @return  用户对象

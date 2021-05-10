@@ -23,6 +23,16 @@ import static com.xiaotao.saltedfishcloud.config.DiskConfig.ACCEPT_AVATAR_TYPE;
 
 @Service
 public class UserServiceImp implements UserService{
+
+    @Override
+    public void grant(int uid, int type) {
+        if (type > 1 || type < 0) throw new IllegalArgumentException("不合法的用户类型");
+        int res = userDao.grant(uid, type);
+        if (res == 0) {
+            throw new UserNoExistException(404, "用户不存在");
+        }
+    }
+
     @Resource
     private UserDao userDao;
 

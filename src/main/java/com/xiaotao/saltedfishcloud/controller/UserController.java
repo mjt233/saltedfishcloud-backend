@@ -22,13 +22,7 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @Controller
@@ -136,11 +130,29 @@ public class UserController {
         return JsonResult.getInstance(used);
     }
 
+    /**
+     * @TODO 使用路径变量uid标识被控制变量方便管理员直接修改
+     * @param oldPasswd 旧密码
+     * @param newPasswd 新密码
+     */
     @PostMapping("passwd")
     public JsonResult modifyPassword(@RequestParam("old") String oldPasswd,
                                      @RequestParam("new") String newPasswd) {
         int i = userService.modifyPasswd(SecureUtils.getSpringSecurityUser().getId(), oldPasswd, newPasswd);
         return JsonResult.getInstance(1, i, "ok");
+    }
+
+    /**
+     * 授予或撤销用户权限
+     * @param uid  被操纵的用户ID
+     * @param type 要设置的权限类型
+     */
+    @PutMapping("{uid}/type/{typeCode}")
+    @RolesAllowed({"ADMIN"})
+    public JsonResult grant(@PathVariable("uid") int uid,
+                            @PathVariable("typeCode") int type) {
+        userService.grant(uid, type);
+        return JsonResult.getInstance();
     }
 
 }
