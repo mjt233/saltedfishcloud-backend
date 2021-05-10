@@ -36,6 +36,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping( FileController.PREFIX + "{uid}")
+@Validated
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 

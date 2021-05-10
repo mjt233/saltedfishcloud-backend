@@ -9,7 +9,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = FileNameValidator.class)
 public @interface FileName {
-    String message() default "非法文件名，不可包含/\\<>?|:或文件名为..";
+    String message() default "非法文件名，不可包含/\\<>?|:换行符，回车符或文件名为..";
 
     Class<?>[] groups() default {};
 
