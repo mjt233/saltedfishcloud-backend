@@ -11,6 +11,12 @@ import org.springframework.stereotype.Component;
 @Component
 public interface UserDao {
     /**
+     * 获取用户数量
+     * @return  用户数
+     */
+    @Select("SELECT COUNT(*) FROM user")
+    int getUserCount();
+    /**
      * 修改用户密码
      * @param encodedPassword   经过安全编码后的密码
      * @param uid               用户ID
