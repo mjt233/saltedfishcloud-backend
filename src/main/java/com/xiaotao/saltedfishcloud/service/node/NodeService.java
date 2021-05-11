@@ -15,6 +15,7 @@ import java.util.*;
 
 @Service
 @Slf4j
+@Transactional(rollbackFor = Exception.class)
 public class NodeService {
     @Resource
     NodeDao nodeDao;
@@ -167,7 +168,6 @@ public class NodeService {
         return stringBuilder.toString();
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void test() {
         nodeDao.addNode(233, "test", "test", "test");
     }

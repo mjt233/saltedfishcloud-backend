@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
@@ -22,6 +23,7 @@ import java.util.Date;
 import static com.xiaotao.saltedfishcloud.config.DiskConfig.ACCEPT_AVATAR_TYPE;
 
 @Service
+@Transactional(rollbackFor = Exception.class)
 public class UserServiceImp implements UserService{
 
     @Override

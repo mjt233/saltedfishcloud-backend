@@ -41,6 +41,7 @@ import java.util.Objects;
 
 @Service("fileService")
 @Slf4j
+@Transactional(rollbackFor = Exception.class)
 public class FileService {
     @javax.annotation.Resource
     FileDao fileDao;
@@ -87,7 +88,6 @@ public class FileService {
      * @param overwrite 是否覆盖原文件
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
-    @Transactional(rollbackFor = Exception.class)
     public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
         try {
             target = URLDecoder.decode(target, "UTF-8");
@@ -232,6 +232,7 @@ public class FileService {
      * @return 1
      * @throws IOException 本地文件写入失败时抛出
      * @throws HasResultException 文件夹同名时抛出
+     * @TODO 使用文件移动替代文件复制提高文件保存效率
      */
     public int saveFile(int uid,
                         MultipartFile file,
