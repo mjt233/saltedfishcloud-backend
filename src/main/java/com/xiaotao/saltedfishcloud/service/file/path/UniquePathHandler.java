@@ -35,6 +35,7 @@ public class UniquePathHandler implements PathHandler {
             }
             String md5 = fileInfo.getMd5();
             return DiskConfig.STORE_ROOT
+                    + "/repo/"
                     + "/"
                     + md5.substring(0,2)
                     + "/"

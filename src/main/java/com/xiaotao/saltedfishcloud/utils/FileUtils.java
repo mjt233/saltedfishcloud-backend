@@ -67,7 +67,7 @@ public class FileUtils {
         Path root = Paths.get(path);
         Files.walkFileTree(root , new SimpleFileVisitor<Path>() {
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 res.addFile(file.toFile());
                 return FileVisitResult.CONTINUE;
             }
@@ -97,34 +97,6 @@ public class FileUtils {
         } else {
             return name;
         }
-    }
-
-
-    /**
-     * 通过输入流保存一个文件，若outputFile是文件夹 则异常
-     * 传入的InputStream将在文件写入完毕后被关闭
-     * @TODO 改用Java nio进行重构并逐步使用java.nio取代java.io
-     * @param inputStream   文件的输入流
-     * @param outputFile    保存到的位置
-     * @return 若发生覆盖返回1 否则返回0
-     * @throws HasResultException 出错
-     */
-    public static int writeFile(InputStream inputStream, File outputFile) throws HasResultException {
-        int res = outputFile.exists() ? 1 : 0;
-        if (res == 1 && outputFile.isDirectory()) throw new HasResultException("已存在同名文件夹");
-        try {
-            FileOutputStream fileOutputStream = new FileOutputStream(outputFile);
-            byte[] buffer = new byte[8192];
-            int len = 0;
-            while ( (len = inputStream.read(buffer)) != -1 ) {
-                fileOutputStream.write(buffer, 0, len);
-            }
-            fileOutputStream.close();
-            inputStream.close();
-        } catch (IOException e) {
-            throw new HasResultException(400, e.getMessage());
-        }
-        return res;
     }
 
     /**

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
@@ -39,6 +40,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 对网盘文件的增删改查操作
+ * @TODO 解决唯一存储和原始存储之间的切换问题
+ */
 @Service("fileService")
 @Slf4j
 @Transactional(rollbackFor = Exception.class)
@@ -86,9 +91,8 @@ public class FileService {
      * @param target    要移动到的目标目录
      * @param name      文件名
      * @param overwrite 是否覆盖原文件
-     * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
-    public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
+    public void move(int uid, String source, String target, String name, boolean overwrite) {
         try {
             target = URLDecoder.decode(target, "UTF-8");
             if (PathBuilder.formatPath(target).equals(PathBuilder.formatPath(source))) {
@@ -117,14 +121,19 @@ public class FileService {
      * @param path  网盘路径
      * @return      一个List数组，数组下标0为目录，1为文件，或null
      */
-    public List<FileInfo>[] getUserFileList(int uid, String path) throws NoSuchFileException {
+    public List<FileInfo>[] getUserFileList(int uid, String path) throws IOException {
 
-        String baseLocalPath = DiskConfig.getRawFileStoreRootPath(uid);
-
-        File root = new File(baseLocalPath);
-        if (!root.exists()) {
-            root.mkdir();
+        if (uid == 0 || DiskConfig.STORE_TYPE == StoreType.RAW) {
+            // 初始化用户目录
+            String baseLocalPath = DiskConfig.getRawFileStoreRootPath(uid);
+            File root = new File(baseLocalPath);
+            if (!root.exists()) {
+                if (!root.mkdir()) {
+                    throw new IOException("目录" + path + "创建失败");
+                }
+            }
         }
+
         NodeInfo nodeId = nodeService.getLastNodeInfoByPath(uid, path);
         return getUserFileListByNodeId(uid, nodeId.getId());
     }
@@ -197,25 +206,7 @@ public class FileService {
         return new List[]{dirs, files};
     }
 
-    /**
-     * 向客户端响应一个文件内容
-     * @param localFilePath     本地文件路径
-     * @return  响应实体
-     * @throws MalformedURLException
-     * @throws UnsupportedEncodingException
-     */
-    public ResponseEntity<Resource> sendFile(String localFilePath) throws MalformedURLException, UnsupportedEncodingException {
-        Path path = Paths.get(localFilePath);
-        if (Files.isDirectory(path)) {
-            throw new IllegalArgumentException("无法直接下载文件夹");
-        }
-        UrlResource urlResource = new UrlResource(path.toUri());
-        String name = path.getFileName().toString();
-        return ResponseEntity.ok()
-                .header("Content-Type", FileUtils.getContentType(localFilePath))
-                .header("Content-Disposition", "inline;filename="+ URLEncoder.encode(name, "utf-8"))
-                .body(urlResource);
-    }
+
 
     public List<FileInfo> search(int uid, String key) {
         key = "%" + key.replaceAll("%", "\\%").replaceAll("/s+", "%") + "%";
@@ -232,7 +223,6 @@ public class FileService {
      * @return 1
      * @throws IOException 本地文件写入失败时抛出
      * @throws HasResultException 文件夹同名时抛出
-     * @TODO 使用文件移动替代文件复制提高文件保存效率
      */
     public int saveFile(int uid,
                         MultipartFile file,
@@ -240,9 +230,6 @@ public class FileService {
                         String md5) throws IOException, HasResultException {
 
         FileInfo fileInfo = new FileInfo(file);
-        // 先保存文件
-        int flag = storeService.store(uid, file.getInputStream(), requestPath, fileInfo);
-
         // 获取上传的文件信息 并看情况计算MD5
         if (md5 != null) {
             fileInfo.setMd5(md5);
@@ -250,11 +237,13 @@ public class FileService {
             fileInfo.updateMd5();
         }
 
+        storeService.store(uid, file, requestPath, fileInfo);
 
-        if(flag == 0) {
-            return fileRecordService.addRecord(uid, file.getOriginalFilename(), fileInfo.getSize(), fileInfo.getMd5(), requestPath);
-        } else {
+        int res = fileRecordService.addRecord(uid, file.getOriginalFilename(), fileInfo.getSize(), fileInfo.getMd5(), requestPath);
+        if ( res == 0) {
             return fileRecordService.updateFileRecord(uid, file.getOriginalFilename(), requestPath, file.getSize(), fileInfo.getMd5());
+        } else {
+            return res;
         }
     }
 

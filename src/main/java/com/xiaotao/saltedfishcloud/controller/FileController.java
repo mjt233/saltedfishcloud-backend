@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
@@ -11,11 +10,11 @@ import com.xiaotao.saltedfishcloud.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.po.param.NamePair;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.custom.FileName;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,7 +40,9 @@ public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
     @Resource
-    FileService fileService;
+    private FileService fileService;
+    @Resource
+    private ResponseService responseService;
 
 
     /*
@@ -92,7 +93,7 @@ public class FileController {
      */
     @AllowAnonymous
     @GetMapping("fileList/byPath/**")
-    public JsonResult getFileList(HttpServletRequest request, @PathVariable int uid) throws NoSuchFileException, UnsupportedEncodingException {
+    public JsonResult getFileList(HttpServletRequest request, @PathVariable int uid) throws IOException {
         UIDValidator.validate(uid);
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fileList/byPath", request);
         Collection<? extends FileInfo>[] fileList = fileService.getUserFileList(uid, requestPath);
@@ -117,19 +118,21 @@ public class FileController {
         return JsonResult.getInstance(pageInfo);
     }
 
+    /**
+     * 获取网盘文件内容（文件下载）
+     */
     @RequestMapping(value = "content/**", method = {RequestMethod.POST, RequestMethod.GET})
     @AllowAnonymous
     public ResponseEntity<org.springframework.core.io.Resource> download(HttpServletRequest request,
                                                                          @PathVariable int uid)
-            throws MalformedURLException, UnsupportedEncodingException {
+            throws MalformedURLException, UnsupportedEncodingException, NoSuchFileException {
 
         // 解析URL
         UIDValidator.validate(uid);
         String prefix = PREFIX + uid + "/content";
         String requestPath = URLUtils.getRequestFilePath(prefix, request);
 
-        String srcPath = DiskConfig.getRawFileStoreRootPath(uid) + "/" + requestPath;
-        return fileService.sendFile(srcPath);
+        return responseService.getUserFileResponse(uid, requestPath);
     }
 
     /*

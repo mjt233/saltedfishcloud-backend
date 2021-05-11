@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
@@ -10,17 +11,16 @@ import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static com.xiaotao.saltedfishcloud.utils.FileUtils.writeFile;
 
 /**
  * 本地文件存储服务，用于管理本地文件系统中的文件的创建，复制，删除，移动等操作
@@ -99,12 +99,30 @@ public class StoreService {
      * @param input 文件输入流（该方法执行完成后会自动关闭流，不需要再次关闭）
      * @param targetDir    保存到的目标网盘目录位置（注意：不是本地真是路径）
      * @param fileInfo 文件信息
-     * @return 若发生覆盖返回1 否则返回0
      * @throws HasResultException 存储文件出错
      */
-    public int store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws HasResultException {
+    public void store(int uid, MultipartFile input, String targetDir, FileInfo fileInfo) throws HasResultException, IOException {
         String target = DiskConfig.getPathHandler().getStorePath(uid, targetDir, fileInfo);
-        return writeFile(input, new File(target));
+        Path tarterPath = Paths.get(target);
+        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+            if (Files.exists(tarterPath) )
+                if (Files.size(tarterPath) != fileInfo.getSize()) {
+                    throw new DuplicateKeyException("文件MD5冲突");
+                } else {
+                    return;
+                }
+        }
+        PathBuilder pathBuilder = new PathBuilder();
+        pathBuilder.append(target);
+        Path dir = Paths.get(pathBuilder.range(-1));
+        if (!Files.exists(dir)) {
+            if (!dir.toFile().mkdirs()) {
+                throw new IOException("目标目录" + dir.toString() + "创建失败");
+            }
+        } else if (!Files.isDirectory(dir)) {
+            throw new IOException("目标目录" + dir.toString() + "是文件");
+        }
+        input.transferTo(tarterPath);
     }
 
     /**
@@ -177,6 +195,9 @@ public class StoreService {
      * @return 是否创建成功
      */
     public boolean mkdir(int uid, String path, String name) {
+        if (uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+            return true;
+        }
         String localFilePath = DiskConfig.getRawFileStoreRootPath(uid) + "/" + path + "/" + name;
         File file = new File(localFilePath);
         if (file.mkdir()) {
@@ -198,6 +219,9 @@ public class StoreService {
      * @return 删除的文件和文件夹总数
      */
     public long delete(int uid, String path, Collection<String> name) {
+        if (uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+            return 1;
+        }
         AtomicLong cnt = new AtomicLong();
         // 本地物理基础路径
         String basePath = DiskConfig.getRawFileStoreRootPath(uid)  + "/" + path;

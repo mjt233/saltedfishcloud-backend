@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
@@ -197,6 +198,7 @@ public class FileRecordService {
      * @param uid   用户ID 0表示公共
      * @param path  路径
      * @param name  文件名列表
+     * @TODO 唯一存储时若文件被删后再无引用则删除文件本体
      * @return 删除的文件个数
      */
     public int deleteRecords(int uid, String path, Collection<String> name) throws NoSuchFileException {

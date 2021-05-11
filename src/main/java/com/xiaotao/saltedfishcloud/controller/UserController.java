@@ -16,6 +16,7 @@ import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.service.user.UserType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -35,6 +36,9 @@ public class UserController {
 
     @Resource
     FileService fileService;
+
+    @Resource
+    ResponseService responseService;
 
     @Resource
     UserDao userDao;
@@ -93,7 +97,7 @@ public class UserController {
      */
     @PostMapping("avatar")
     public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file,
-                                   @RequestAttribute User user) throws IOException {
+                                   @RequestAttribute User user) {
         userService.setAvatar(user.getUsername(), file);
         return JsonResult.getInstance();
     }
@@ -114,7 +118,7 @@ public class UserController {
             File[] avatars = new File(profilePath).listFiles(pathname -> pathname.getName().contains("avatar"));
 
             // 数组越界，空指针操作均视为头像不存在
-            return fileService.sendFile(avatars[0].getPath());
+            return responseService.sendFile(avatars[0].getPath());
         } catch (Exception e) {
             response.sendRedirect("/api/static/static/defaultAvatar.png");
             return null;
