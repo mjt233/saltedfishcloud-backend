@@ -199,7 +199,7 @@ public class FileController {
     @DeleteMapping("content/**")
     public JsonResult delete(HttpServletRequest request,
                              @PathVariable @UID(true) int uid,
-                             @RequestBody @Validated FileNameList fileName) throws NoSuchFileException {
+                             @RequestBody @Validated FileNameList fileName) throws IOException {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/content", request);
         long res = fileService.deleteFile(uid, path, fileName.getFileName());
         return JsonResult.getInstance(res);

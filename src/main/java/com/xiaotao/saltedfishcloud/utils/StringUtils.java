@@ -1,6 +1,13 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 public class StringUtils {
+    /**
+     * 获取md5的最后2级存储路径
+     * @param md5 md5值
+     */
+    public static String getUniquePath(String md5) {
+        return md5.substring(0,2) + "/" + md5.substring(2,4) + "/" + md5;
+    }
     public static String getFormatSize(long size){
         double showSize;
         String suffix = "Byte";

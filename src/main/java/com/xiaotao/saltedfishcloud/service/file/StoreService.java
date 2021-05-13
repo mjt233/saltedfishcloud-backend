@@ -10,6 +10,7 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -212,20 +213,53 @@ public class StoreService {
     }
 
     /**
+     * 删除一个唯一存储类型的文件
+     * @param md5   文件MD5
+     * @return      删除的文件和目录数
+     */
+    public int delete(String md5) throws IOException {
+        int res = 1;
+        Path filePath = Paths.get(DiskConfig.getUniqueStoreRoot() + "/" + StringUtils.getUniquePath(md5));
+        Files.delete(filePath);
+        log.debug("删除本地文件：" + filePath);
+        DirectoryStream<Path> paths = Files.newDirectoryStream(filePath.getParent());
+        // 最里层目录
+        if (  !paths.iterator().hasNext() ) {
+            log.debug("删除本地目录：" + filePath.getParent());
+            res++;
+            paths.close();
+            Files.delete(filePath.getParent());
+            paths = Files.newDirectoryStream(filePath.getParent().getParent());
+
+            // 外层目录
+            if ( !paths.iterator().hasNext()) {
+                log.debug("删除本地目录：" + filePath.getParent().getParent());
+                res++;
+                Files.delete(filePath.getParent().getParent());
+                paths.close();
+            }
+            paths.close();
+        } else {
+            paths.close();
+        }
+        return res;
+    }
+
+    /**
      * 删除本地文件（文件夹会连同所有子文件和目录）
      * @param uid 用户ID
-     * @param path 所在路径
-     * @param name 文件名
+     * @param path 文件所在网盘目录的路径
+     * @param files 文件名
      * @return 删除的文件和文件夹总数
      */
-    public long delete(int uid, String path, Collection<String> name) {
+    public long delete(int uid, String path, Collection<String> files) {
         if (uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
             return 1;
         }
         AtomicLong cnt = new AtomicLong();
         // 本地物理基础路径
         String basePath = DiskConfig.getRawFileStoreRootPath(uid)  + "/" + path;
-        name.forEach(fileName -> {
+        files.forEach(fileName -> {
 
             // 本地完整路径
             String local = basePath + "/" + fileName;

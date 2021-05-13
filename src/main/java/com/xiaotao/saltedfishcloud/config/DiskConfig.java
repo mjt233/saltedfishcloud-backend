@@ -136,6 +136,13 @@ public class DiskConfig {
     }
 
     /**
+     * 获取唯一文件存储路径
+     */
+    public static String getUniqueStoreRoot() {
+        return DiskConfig.STORE_ROOT + "/repo/";
+    }
+
+    /**
      * 获取系统使用的的路径操纵器
      * @return  路径操纵器示例
      */

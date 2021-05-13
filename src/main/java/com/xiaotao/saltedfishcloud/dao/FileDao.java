@@ -9,6 +9,22 @@ import java.util.List;
 public interface FileDao {
 
     /**
+     * 取数据库中存在的有效的文件MD5
+     * @param md5 文件MD5集合
+     * @return 有效的MD5集合
+     */
+    @Select({
+            "<script>",
+                "SELECT md5 FROM file_table WHERE uid != 0 AND md5 in ",
+                "<foreach collection='md5' item='md5' open='(' separator=',' close=')'>",
+                "#{md5}",
+                "</foreach>" +
+                " GROUP BY md5",
+            "</script>"
+    })
+    List<String> getValidFileMD5s(Collection<String> md5);
+
+    /**
      * 移动资源到指定目录下
      * @param uid   用户ID
      * @param nid   原文件资源所属节点ID

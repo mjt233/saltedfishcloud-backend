@@ -15,6 +15,7 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -35,10 +36,8 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 对网盘文件的增删改查操作
@@ -269,11 +268,19 @@ public class FileService {
      * @throws NoSuchFileException 当目标路径不存在时抛出
      * @return 删除的数量
      */
-    public long deleteFile(int uid, String path, List<String> name) throws NoSuchFileException {
+    public long deleteFile(int uid, String path, List<String> name) throws IOException {
         // 计数删除数
         long res = 0L;
-        fileRecordService.deleteRecords(uid, path, name);
+        List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
         res += storeService.delete(uid, path, name);
+        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE && fileInfos.size() > 0) {
+            Set<String> all = fileInfos.stream().map(BasicFileInfo::getMd5).collect(Collectors.toSet());
+            Set<String> valid = new HashSet<>(fileDao.getValidFileMD5s(all));
+            Set<String> invalid = SetUtils.diff(all, valid);
+            for (String md5 : invalid) {
+                storeService.delete(md5);
+            }
+        }
         return res;
     }
 

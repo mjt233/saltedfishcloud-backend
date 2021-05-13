@@ -34,8 +34,7 @@ public class UniquePathHandler implements PathHandler {
                 throw new HasResultException(500, "无效MD5");
             }
             String md5 = fileInfo.getMd5();
-            return DiskConfig.STORE_ROOT
-                    + "/repo/"
+            return DiskConfig.getUniqueStoreRoot()
                     + "/"
                     + md5.substring(0,2)
                     + "/"
