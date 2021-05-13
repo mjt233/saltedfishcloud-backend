@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.FileName;
@@ -36,6 +37,8 @@ public class ResourceController {
     FileRecordService fileRecordService;
     @Resource
     NodeService nodeService;
+    @Resource
+    ResponseService responseService;
 
 
     /**
@@ -79,13 +82,14 @@ public class ResourceController {
 
 
     /**
-     * @TODO 控制Content-Type以实现浏览器可选预览或下载
      * @param code 文件下载码
      */
-    @GetMapping(value = "fileContentByFDC/{code}")
+    @GetMapping("fileContentByFDC/{code}/**")
     @AllowAnonymous
     @ResponseBody
-    public ResponseEntity<org.springframework.core.io.Resource> downloadByFDC(@PathVariable String code) throws UnsupportedEncodingException, MalformedURLException {
-        return fileService.getResourceByDC(code);
+    public ResponseEntity<org.springframework.core.io.Resource> downloadByFDC(@PathVariable String code,
+                                                                              @RequestParam(required = false, defaultValue = "false") boolean download)
+            throws MalformedURLException {
+        return responseService.getResourceByDC(code, download);
     }
 }

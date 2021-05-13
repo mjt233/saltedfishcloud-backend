@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
@@ -13,14 +12,10 @@ import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,9 +24,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -318,25 +311,4 @@ public class FileService {
         return token;
     }
 
-    /**
-     * 通过下载码获取资源响应体
-     * @param dc 下载码
-     * @return  资源响应体
-     */
-    public ResponseEntity<Resource> getResourceByDC(String dc) throws UnsupportedEncodingException, MalformedURLException {
-        FileDCInfo info;
-        try {
-            String data = (String) JwtUtils.parse(dc);
-            info = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false).readValue(data, FileDCInfo.class);
-        } catch (JsonProcessingException e) {
-            throw new HasResultException(400, "下载码无效");
-        }
-        Path localFilePath = Paths.get(DiskConfig.getPathHandler().getStorePath(info.getUid(), info.getDir(), info));
-        String name = localFilePath.getFileName().toString();
-        UrlResource urlResource = new UrlResource(localFilePath.toUri());
-        return ResponseEntity.ok()
-                .header("Content-Type", FileUtils.getContentType(name))
-                .header("Content-Disposition", "inline;filename=" + URLEncoder.encode(name, "utf-8"))
-                .body(urlResource);
-    }
 }
