@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.validator.custom;
+package com.xiaotao.saltedfishcloud.validator;
 
 import lombok.extern.slf4j.Slf4j;
 

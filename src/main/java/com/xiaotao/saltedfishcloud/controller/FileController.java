@@ -4,16 +4,16 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
-import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
+import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.po.param.NamePair;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
-import com.xiaotao.saltedfishcloud.validator.custom.FileName;
+import com.xiaotao.saltedfishcloud.validator.FileName;
+import com.xiaotao.saltedfishcloud.validator.UID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -55,10 +55,9 @@ public class FileController {
      * 创建文件夹
      */
     @PutMapping("dir/**")
-    public JsonResult mkdir(@PathVariable int uid,
+    public JsonResult mkdir(@PathVariable @UID(true) int uid,
                             HttpServletRequest request,
-                            @RequestParam("name") @Valid @FileName String name) throws HasResultException, NoSuchFileException {
-        UIDValidator.validate(uid, true);
+                            @RequestParam("name") @FileName String name) throws HasResultException, NoSuchFileException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/dir", request);
         fileService.mkdir(uid, requestPath, name);
         return JsonResult.getInstance();
@@ -72,10 +71,9 @@ public class FileController {
      */
     @PutMapping("file/**")
     public JsonResult upload(HttpServletRequest request,
-                             @PathVariable int uid,
+                             @PathVariable @UID(true) int uid,
                              @RequestParam("file") MultipartFile file,
                              @RequestParam(value = "md5", required = false) String md5) throws HasResultException, IOException {
-        UIDValidator.validate(uid, true);
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
         int i = fileService.saveFile(uid, file, requestPath, md5);
         return JsonResult.getInstance(i);
@@ -93,8 +91,7 @@ public class FileController {
      */
     @AllowAnonymous
     @GetMapping("fileList/byPath/**")
-    public JsonResult getFileList(HttpServletRequest request, @PathVariable int uid) throws IOException {
-        UIDValidator.validate(uid);
+    public JsonResult getFileList(HttpServletRequest request, @PathVariable @UID int uid) throws IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fileList/byPath", request);
         Collection<? extends FileInfo>[] fileList = fileService.getUserFileList(uid, requestPath);
         return JsonResult.getInstance(fileList);
@@ -109,9 +106,8 @@ public class FileController {
     @GetMapping("fileList/byName/{name}")
     @AllowAnonymous
     public JsonResult search(@PathVariable("name") String key,
-                             @PathVariable int uid,
+                             @PathVariable @UID int uid,
                              @RequestParam(value = "page", defaultValue = "1") Integer page) {
-        UIDValidator.validate(uid);
         PageHelper.startPage(page, 10);
         List<FileInfo> res = fileService.search(uid, key);
         PageInfo<FileInfo> pageInfo = new PageInfo<>(res);
@@ -124,11 +120,8 @@ public class FileController {
     @RequestMapping(value = "content/**", method = {RequestMethod.POST, RequestMethod.GET})
     @AllowAnonymous
     public ResponseEntity<org.springframework.core.io.Resource> download(HttpServletRequest request,
-                                                                         @PathVariable int uid)
+                                                                         @PathVariable @UID int uid)
             throws MalformedURLException, UnsupportedEncodingException, NoSuchFileException {
-
-        // 解析URL
-        UIDValidator.validate(uid);
         String prefix = PREFIX + uid + "/content";
         String requestPath = URLUtils.getRequestFilePath(prefix, request);
 
@@ -146,10 +139,9 @@ public class FileController {
      * 复制文件或目录到指定目录下
      */
     @PostMapping("fromPath/**")
-    public JsonResult copy( @PathVariable("uid") int uid,
+    public JsonResult copy( @PathVariable("uid") @UID(true) int uid,
                             @RequestBody @Validated FileCopyOrMoveInfo info,
                             HttpServletRequest request) throws IOException {
-        UIDValidator.validate(uid);
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
         String source = URLDecoder.decode(requestPath, "UTF-8");
         String target = URLDecoder.decode(info.getTarget(), "UTF-8");
@@ -165,10 +157,9 @@ public class FileController {
      */
     @PutMapping("/fromPath/**")
     public JsonResult move(HttpServletRequest request,
-                           @PathVariable("uid") int uid,
+                           @PathVariable("uid") @UID(true) int uid,
                            @RequestBody @Valid FileCopyOrMoveInfo info)
             throws UnsupportedEncodingException, NoSuchFileException {
-        UIDValidator.validate(uid);
         String source = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
         String target = URLDecoder.decode(info.getTarget(), "UTF-8");
         for (NamePair file : info.getFiles()) {
@@ -182,10 +173,9 @@ public class FileController {
      */
     @PutMapping("name/**")
     public JsonResult rename(HttpServletRequest request,
-                             @PathVariable int uid,
+                             @PathVariable @UID(true) int uid,
                              @RequestParam("oldName") @Valid @FileName String oldName,
                              @RequestParam("newName") @Valid @FileName String newName) throws HasResultException, NoSuchFileException {
-        UIDValidator.validate(uid, true);
         String from = URLUtils.getRequestFilePath(PREFIX + uid + "/name", request);
         if (newName.length() < 1) {
             throw new HasResultException(400, "文件名不能为空");
@@ -208,9 +198,8 @@ public class FileController {
      */
     @DeleteMapping("content/**")
     public JsonResult delete(HttpServletRequest request,
-                             @PathVariable int uid,
+                             @PathVariable @UID(true) int uid,
                              @RequestBody @Validated FileNameList fileName) throws NoSuchFileException {
-        UIDValidator.validate(uid, true);
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/content", request);
         long res = fileService.deleteFile(uid, path, fileName.getFileName());
         return JsonResult.getInstance(res);

@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.validator.custom;
+package com.xiaotao.saltedfishcloud.validator;
 
 import com.sun.xml.txw2.IllegalAnnotationException;
 

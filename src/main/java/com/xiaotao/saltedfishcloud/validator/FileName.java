@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.validator.custom;
+package com.xiaotao.saltedfishcloud.validator;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;

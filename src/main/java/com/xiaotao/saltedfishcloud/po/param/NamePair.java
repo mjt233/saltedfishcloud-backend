@@ -1,10 +1,9 @@
 package com.xiaotao.saltedfishcloud.po.param;
 
-import com.xiaotao.saltedfishcloud.validator.custom.FileName;
+import com.xiaotao.saltedfishcloud.validator.FileName;
 import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Pattern;
 
 @Data
 public class NamePair {
