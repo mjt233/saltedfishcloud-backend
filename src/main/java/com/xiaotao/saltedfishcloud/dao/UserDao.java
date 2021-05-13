@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public interface UserDao {
 
@@ -74,6 +76,12 @@ public interface UserDao {
                 @Param("pwd") String pwd,
                 @Param("type") Integer type);
 
+    /**
+     * 取用户列表
+     * @return
+     */
+    @Select("SELECT * FROM user")
+    List<User> getUserList();
 
     /**
      * 获取用户空间配额信息

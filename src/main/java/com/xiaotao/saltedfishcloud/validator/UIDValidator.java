@@ -4,6 +4,9 @@ import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 
+/**
+ * @TODO 使用注解验证支持
+ */
 public class UIDValidator {
     /**
      * 验证某个UID是否有权限对当前已登录用户资源进行操作。

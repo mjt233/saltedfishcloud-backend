@@ -2,11 +2,17 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
@@ -23,12 +29,14 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @RequestMapping(UserController.PREFIX)
 @ResponseBody
+@Validated
 public class UserController {
     public static final String PREFIX = "/api/user";
     @Resource
@@ -51,29 +59,7 @@ public class UserController {
     }
 
     /**
-     * 仅限管理员：添加一个用户
-     * @param user  用户名
-     * @param passwd    原始密码（即密码原文）
-     * @param type  用户类型，可选"admin"与"common"
-     */
-    @PostMapping("admin")
-    @RolesAllowed({"ADMIN"})
-    public JsonResult addUser(@RequestParam("user") String user,
-                              @RequestParam("passwd") String passwd,
-                              @RequestParam("type") String type) {
-        Integer userType;
-        switch (type) {
-            case "admin":userType = UserType.ADMIN;break;
-            case "common":userType = UserType.COMMON;break;
-            default:
-                return JsonResult.getInstance(400, null, "无效的用户类型");
-        }
-        userService.addUser(user, passwd, userType);
-        return JsonResult.getInstance();
-    }
-
-    /**
-     * 用户自主注册账号
+     * 注册新账号，管理员可直接添加无需邀请码
      * @param user  用户名
      * @param rawPassword   原始密码（即密码原文）
      * @param regCode   注册邀请码
@@ -82,12 +68,16 @@ public class UserController {
     @AllowAnonymous
     public JsonResult regUser(@RequestParam("user") String user,
                               @RequestParam("passwd") String rawPassword,
-                              @RequestParam("regcode") String regCode
+                              @RequestParam(value = "regcode", defaultValue = "") String regCode,
+                              @RequestParam(value = "type", defaultValue = "") int type
                               ) throws HasResultException {
-        if (!regCode.equals(DiskConfig.REG_CODE)) {
+        if (SecureUtils.getSpringSecurityUser() != null && SecureUtils.getSpringSecurityUser().getType() == User.TYPE_ADMIN) {
+            userService.addUser(user, rawPassword, type == User.TYPE_ADMIN ? User.TYPE_ADMIN : User.TYPE_COMMON);
+        } else if (!regCode.equals(DiskConfig.REG_CODE)) {
             throw new HasResultException("注册码不正确");
+        } else {
+            userService.addUser(user, rawPassword, User.TYPE_COMMON);
         }
-        userService.addUser(user, rawPassword, User.TYPE_COMMON);
         return JsonResult.getInstance();
     }
 
@@ -157,6 +147,22 @@ public class UserController {
                             @PathVariable("typeCode") int type) {
         userService.grant(uid, type);
         return JsonResult.getInstance();
+    }
+
+    /**
+     * 取用户列表
+     * @param page 页数
+     * @param size 每页大小
+     */
+    @GetMapping("list")
+    @RolesAllowed({"ADMIN"})
+    public JsonResult getUserList(@RequestParam(value = "page", defaultValue = "1") int page,
+                                  @RequestParam(value = "size", defaultValue = "10") @Max(50) @Min(5) @Valid int size) {
+        PageHelper.startPage(page, 10);
+        List<User> userList = userDao.getUserList();
+        userList.forEach(e -> e.setPwd(null));
+        PageInfo<User> pageInfo = new PageInfo<>(userList);
+        return JsonResult.getInstance(pageInfo);
     }
 
 }
