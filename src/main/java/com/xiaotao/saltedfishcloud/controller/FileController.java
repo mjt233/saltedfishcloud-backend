@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.xiaotao.saltedfishcloud.annotations.BlockWhileSwitching;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
@@ -36,6 +37,7 @@ import java.util.List;
 @RestController
 @RequestMapping( FileController.PREFIX + "{uid}")
 @Validated
+@BlockWhileSwitching
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
@@ -159,7 +161,7 @@ public class FileController {
     public JsonResult move(HttpServletRequest request,
                            @PathVariable("uid") @UID(true) int uid,
                            @RequestBody @Valid FileCopyOrMoveInfo info)
-            throws UnsupportedEncodingException, NoSuchFileException {
+            throws UnsupportedEncodingException {
         String source = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
         String target = URLDecoder.decode(info.getTarget(), "UTF-8");
         for (NamePair file : info.getFiles()) {

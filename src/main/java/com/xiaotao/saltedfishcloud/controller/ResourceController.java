@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.annotations.BlockWhileSwitching;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
@@ -20,7 +21,6 @@ import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 
 /**
@@ -29,6 +29,7 @@ import java.net.MalformedURLException;
 @RestController
 @RequestMapping(ResourceController.PREFIX + "{uid}")
 @Validated
+@BlockWhileSwitching
 public class ResourceController {
     public static final String PREFIX = "/api/resource/";
     @Resource

@@ -12,9 +12,11 @@ import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -131,6 +133,28 @@ public class FileService {
     }
 
     /**
+     * 获取用户所有文件信息<br>
+     * 默认正序为根目录优先，倒序为最深级目录优先
+     * @param uid   用户ID
+     * @param reverse 目录排序倒序
+     * @return      文件信息集合，key为目录名，value为该目录下的文件信息列表
+     */
+    public LinkedHashMap<String, List<FileInfo>> collectFiles(int uid, boolean reverse) {
+        LinkedHashMap<String, List<FileInfo>> res = new LinkedHashMap<>();
+        List<NodeInfo> nodes = new LinkedList<>();
+        //  获取目录结构
+        nodes.add(new NodeInfo(null, uid, "root", null));
+        nodes.addAll(nodeService.getChildNodes(uid, "root"));
+
+        if (reverse) Collections.reverse(nodes);
+        for (NodeInfo node : nodes) {
+            String dir = nodeService.getPathByNode(uid, node.getId());
+            res.put(dir, fileDao.getFileListByNodeId(uid, node.getId()));
+        }
+        return res;
+    }
+
+    /**
      * 通过节点ID获取节点下的文件信息
      * @param uid       用户ID
      * @param nodeId    节点ID
@@ -229,7 +253,7 @@ public class FileService {
             fileInfo.updateMd5();
         }
 
-        storeService.store(uid, file, requestPath, fileInfo);
+        storeService.store(uid, file.getInputStream(), requestPath, fileInfo);
 
         int res = fileRecordService.addRecord(uid, file.getOriginalFilename(), fileInfo.getSize(), fileInfo.getMd5(), requestPath);
         if ( res == 0) {

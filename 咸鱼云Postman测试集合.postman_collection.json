@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "94b0e8f8-4f44-4df3-9f89-c5b0bd22a46f",
+		"_postman_id": "62525ddb-1fd1-4f81-9895-4c4c6ee4e3ac",
 		"name": "咸鱼云Java版",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -92,21 +92,6 @@
 							"originalRequest": {
 								"method": "GET",
 								"header": [],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{
-											"key": "passwd",
-											"value": "mojintao233",
-											"type": "text"
-										},
-										{
-											"key": "user",
-											"value": "xiaotao",
-											"type": "text"
-										}
-									]
-								},
 								"url": {
 									"raw": "{{addr}}/api/user",
 									"host": [
@@ -867,8 +852,70 @@
 			]
 		},
 		{
-			"name": "管理员（文档暂时不更新）",
+			"name": "管理员",
 			"item": [
+				{
+					"name": "用户管理",
+					"item": [
+						{
+							"name": "取用户列表",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/user/list",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"list"
+									]
+								},
+								"description": "获取系统中的用户列表信息\r\n- URI：`/api/user/list` \r\n- 动作：GET \r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"total\": 3,\r\n        \"list\": [\r\n            {\r\n                \"id\": 49,\r\n                \"user\": \"admin\",\r\n                \"type\": 1,\r\n                \"quota\": 10\r\n            },\r\n            {\r\n                \"id\": 50,\r\n                \"user\": \"xiaotao\",\r\n                \"type\": 1,\r\n                \"quota\": 10\r\n            },\r\n            {\r\n                \"id\": 51,\r\n                \"user\": \"test\",\r\n                \"type\": 0,\r\n                \"quota\": 10\r\n            }\r\n        ],\r\n        \"pageNum\": 1,\r\n        \"pageSize\": 10,\r\n        \"size\": 3,\r\n        \"startRow\": 1,\r\n        \"endRow\": 3,\r\n        \"pages\": 1,\r\n        \"prePage\": 0,\r\n        \"nextPage\": 0,\r\n        \"isFirstPage\": true,\r\n        \"isLastPage\": true,\r\n        \"hasPreviousPage\": false,\r\n        \"hasNextPage\": false,\r\n        \"navigatePages\": 8,\r\n        \"navigatepageNums\": [\r\n            1\r\n        ],\r\n        \"navigateFirstPage\": 1,\r\n        \"navigateLastPage\": 1\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "系统管理",
+					"item": [
+						{
+							"name": "切换存储模式",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "type",
+											"value": "unique",
+											"description": "要切换到的模式，可选RAW或UNIQUE",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/admin/store/type",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"store",
+										"type"
+									]
+								},
+								"description": "切换网盘系统的存储模式  \r\n- URI：`/api/admin/store/type` \r\n- 动作：PUT \r\n\r\n注意:\r\n1. 切换过程中将会暂时阻断所有文件相关的接口调用\r\n2. 调用该接口可能会导致正在下载文件的用户连接断开\r\n3. 若切换过程中服务器异常（如程序bug，服务器断电等）导致切换中断，可能会造成数据丢失，请谨慎操作  \r\n\r\n参数\r\n- type 可选RAW与UNIQUE\r\n\r\n模式说明\r\n- RAW 原始存储模式，每个用户都使用独立的服务器文件资源，本地的文件名与目录结构与用户网盘文件结构保持一致\r\n    -   优点：方便管理员直接通过操作系统的文件操作来查看与更改用户文件\r\n    -   缺点：文件的复制，移动耗时长，消耗服务器资源大，相同文件存在多份时，文件冗余占用大\r\n- UNIQUE 唯一存储模式，每个相同的文件在服务器只存储一份，将依据文件散列值进行编配文件结构与文件名\r\n    -   优点：几乎零成本的复制和移动，服务器不会存储多个相同文件\r\n    -   缺点：可能会占用大量node节点，管理员不方便直接通过操作系统的文件操作来查看与更改用户文件\r\n\r\n切换成功响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": null,\r\n    \"msg\": \"ok\"\r\n}\r\n```\r\n\r\n系统当前存储模式与参数相同时的响应示例\r\n```json\r\n{\r\n    \"code\": 0,\r\n    \"data\": \"UNIQUE\",       //  服务器当前存储模式\r\n    \"msg\": \"请求被忽略，模式无变化\"\r\n}\r\n```"
+							},
+							"response": []
+						}
+					]
+				},
 				{
 					"name": "[管理员]更新公开资源数据库",
 					"request": {
@@ -908,161 +955,6 @@
 						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
 					},
 					"response": []
-				},
-				{
-					"name": "[管理员]增加用户",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "token",
-								"value": "340377d8990b13f09d4b30d473d43c74",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "user",
-									"value": "test233",
-									"description": "用户名",
-									"type": "text"
-								},
-								{
-									"key": "passwd",
-									"value": "test",
-									"description": "密码",
-									"type": "text"
-								},
-								{
-									"key": "type",
-									"value": "common",
-									"description": "类型 common或admin",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/user/admin",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"admin"
-							]
-						},
-						"description": "该接口仅允许管理员请求"
-					},
-					"response": [
-						{
-							"name": "增加用户（测试）",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "token",
-										"value": "340377d8990b13f09d4b30d473d43c74",
-										"type": "text"
-									}
-								],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{
-											"key": "user",
-											"value": "test233",
-											"description": "用户名",
-											"type": "text"
-										},
-										{
-											"key": "passwd",
-											"value": "test",
-											"description": "密码",
-											"type": "text"
-										},
-										{
-											"key": "type",
-											"value": "common",
-											"description": "类型 common或admin",
-											"type": "text"
-										}
-									]
-								},
-								"url": {
-									"raw": "{{addr}}/api/user",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"user"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 15 Feb 2021 15:15:33 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 1,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
-						}
-					]
 				}
 			],
 			"event": [

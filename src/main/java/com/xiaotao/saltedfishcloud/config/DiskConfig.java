@@ -51,6 +51,16 @@ public class DiskConfig {
     // 用户个性化配置文件根目录
     public static String USER_PROFILE_ROOT;
 
+    private static boolean STORE_SWITCHING = false;
+
+    public static boolean isStoreSwitching() {
+        return STORE_SWITCHING;
+    }
+
+    public static void setStoreSwitching(boolean storeSwitching) {
+        STORE_SWITCHING = storeSwitching;
+    }
+
     public DiskConfig(UserDao userDao, RawPathHandler rawPathHandler, UniquePathHandler uniquePathHandler) {
         DiskConfig.userDao = userDao;
         DiskConfig.rawPathHandler = rawPathHandler;
@@ -115,7 +125,7 @@ public class DiskConfig {
 
     @Value("${store-type}")
     public void setStoreType(String type) {
-        if (type.equals("raw")) {
+        if (type.toLowerCase().equals("raw")) {
             STORE_TYPE = StoreType.RAW;
         } else {
             STORE_TYPE = StoreType.UNIQUE;
@@ -132,7 +142,11 @@ public class DiskConfig {
     }
 
     public static String getUserPrivateDiskRoot(String username) {
-        return DiskConfig.STORE_ROOT + "/user_file/" + username;
+        return getRawStoreRoot() + username;
+    }
+
+    public static String getRawStoreRoot() {
+        return DiskConfig.STORE_ROOT + "/user_file/";
     }
 
     /**

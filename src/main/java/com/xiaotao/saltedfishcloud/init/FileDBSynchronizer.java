@@ -63,7 +63,7 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
             String path = nodeService.getPathByNode(0, n.getId());
             dbFile.put(path, fileList[1]);
         });
-        DirCollection local = FileUtils.scanDir(DiskConfig.PUBLIC_ROOT);
+        DirCollection local = FileUtils.scanDir(Paths.get(DiskConfig.PUBLIC_ROOT));
         LinkedList<File> dirList = local.getDirList();
         dirList.add(new File(DiskConfig.PUBLIC_ROOT));
         Set<String> localDir = new HashSet<>();
@@ -101,7 +101,7 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
             }
             fileRecordService.deleteRecords(0, path, Collections.singleton(name));
             hasDelete.add(p);
-        };
+        }
 
         //  数据库中的所有文件, key为文件路径，value为文件信息
         HashMap<String, FileInfo> dbFiles = new HashMap<>();

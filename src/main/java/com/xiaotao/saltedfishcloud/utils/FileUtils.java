@@ -58,13 +58,25 @@ public class FileUtils {
     }
 
     /**
+     * 删除一个文件或一个目录及其子目录与文件
+     * @param local 本地存储路径
+     */
+    public static void delete(Path local) throws IOException {
+        log.info(local.toString());
+        DirCollection dirCollection = scanDir(local);
+        Collections.reverse(dirCollection.getDirList());
+        dirCollection.getFileList().forEach(File::delete);
+        dirCollection.getDirList().forEach(File::delete);
+        Files.delete(local);
+    }
+
+    /**
      * 搜索遍历目录，取出文件夹下的所有文件和目录
-     * @param path 本地文件夹路径
+     * @param root 本地文件夹路径
      * @return DirCollection对象
      */
-    static public DirCollection scanDir(String path) throws IOException {
+    static public DirCollection scanDir(Path root) throws IOException {
         DirCollection res = new DirCollection();
-        Path root = Paths.get(path);
         Files.walkFileTree(root , new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
@@ -106,7 +118,7 @@ public class FileUtils {
      * @param overwrite     是否覆盖已有文件（若为false，源文件和目录将仍被删除）
      */
     public static void mergeDir(String source, String target, boolean overwrite) throws IOException {
-        DirCollection sourceCollection = scanDir(source);
+        DirCollection sourceCollection = scanDir(Paths.get(source));
         if (!Files.exists(Paths.get(target))) {
             throw new NoSuchFileException(target);
         }

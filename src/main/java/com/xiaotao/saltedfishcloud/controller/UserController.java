@@ -86,9 +86,8 @@ public class UserController {
      * @param file  头像文件
      */
     @PostMapping("avatar")
-    public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file,
-                                   @RequestAttribute User user) {
-        userService.setAvatar(user.getUsername(), file);
+    public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file) {
+        userService.setAvatar(SecureUtils.getSpringSecurityUser().getUsername(), file);
         return JsonResult.getInstance();
     }
 

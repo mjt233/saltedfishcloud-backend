@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
@@ -70,7 +71,7 @@ public class StoreService {
         }
 
         if (fileInfo.isDir()) {
-            DirCollection dirCollection = FileUtils.scanDir(localSource);
+            DirCollection dirCollection = FileUtils.scanDir(Paths.get(localSource));
             Path targetDir = Paths.get(localTarget + "/" + targetName);
             if (!Files.exists(targetDir)) {
                 Files.createDirectory(targetDir);
@@ -97,12 +98,12 @@ public class StoreService {
     /**
      * 向用户网盘目录中保存一个文件
      * @param uid   用户ID 0表示公共
-     * @param input 文件输入流（该方法执行完成后会自动关闭流，不需要再次关闭）
+     * @param input 输入的文件
      * @param targetDir    保存到的目标网盘目录位置（注意：不是本地真是路径）
      * @param fileInfo 文件信息
      * @throws HasResultException 存储文件出错
      */
-    public void store(int uid, MultipartFile input, String targetDir, FileInfo fileInfo) throws HasResultException, IOException {
+    public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws HasResultException, IOException {
         String target = DiskConfig.getPathHandler().getStorePath(uid, targetDir, fileInfo);
         Path tarterPath = Paths.get(target);
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
@@ -123,7 +124,7 @@ public class StoreService {
         } else if (!Files.isDirectory(dir)) {
             throw new IOException("目标目录" + dir.toString() + "是文件");
         }
-        input.transferTo(tarterPath);
+        Files.copy(input, tarterPath, StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**

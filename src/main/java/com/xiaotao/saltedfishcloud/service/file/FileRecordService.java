@@ -22,6 +22,7 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -269,7 +270,7 @@ public class FileRecordService {
      * 将本地公共网盘的文件信息写入数据库
      */
     public void makePublicRecord() throws IOException {
-        DirCollection dirCollection = FileUtils.scanDir(DiskConfig.getRawFileStoreRootPath(0));
+        DirCollection dirCollection = FileUtils.scanDir(Paths.get(DiskConfig.getRawFileStoreRootPath(0)));
         AtomicLong atomicLong = new AtomicLong();
         atomicLong.set(0);
         long total = dirCollection.getDirsCount();

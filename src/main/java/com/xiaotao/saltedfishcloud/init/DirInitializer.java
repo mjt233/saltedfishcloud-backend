@@ -20,7 +20,7 @@ public class DirInitializer implements ApplicationRunner {
         File[] files = {
                 new File(DiskConfig.PUBLIC_ROOT),
                 new File(DiskConfig.STORE_ROOT),
-                new File(DiskConfig.STORE_ROOT + "/user_file"),
+                new File(DiskConfig.getRawStoreRoot()),
                 new File(DiskConfig.STORE_ROOT + "/user_profile")
         };
         Arrays.stream(files).forEach(file -> {
