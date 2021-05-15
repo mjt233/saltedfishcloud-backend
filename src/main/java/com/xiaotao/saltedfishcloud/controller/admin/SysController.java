@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.controller;
+package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.annotations.BlockWhileSwitching;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
@@ -15,9 +15,9 @@ import javax.annotation.security.RolesAllowed;
 import java.io.IOException;
 
 @RestController
-@RequestMapping(AdminController.prefix)
+@RequestMapping(SysController.prefix)
 @RolesAllowed({"ADMIN"})
-public class AdminController {
+public class SysController {
     public static final String prefix = "/api/admin/sys/";
     @Resource
     private ConfigService configService;

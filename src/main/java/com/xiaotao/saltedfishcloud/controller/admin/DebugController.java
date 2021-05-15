@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.controller;
+package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
