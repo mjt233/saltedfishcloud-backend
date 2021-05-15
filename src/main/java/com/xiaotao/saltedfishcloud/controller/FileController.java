@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.annotations.BlockWhileSwitching;
+import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
@@ -37,7 +38,7 @@ import java.util.List;
 @RestController
 @RequestMapping( FileController.PREFIX + "{uid}")
 @Validated
-@BlockWhileSwitching
+@BlockWhileSwitching()
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
@@ -93,6 +94,7 @@ public class FileController {
      */
     @AllowAnonymous
     @GetMapping("fileList/byPath/**")
+    @NotBlock
     public JsonResult getFileList(HttpServletRequest request, @PathVariable @UID int uid) throws IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fileList/byPath", request);
         Collection<? extends FileInfo>[] fileList = fileService.getUserFileList(uid, requestPath);
@@ -107,6 +109,7 @@ public class FileController {
      */
     @GetMapping("fileList/byName/{name}")
     @AllowAnonymous
+    @NotBlock
     public JsonResult search(@PathVariable("name") String key,
                              @PathVariable @UID int uid,
                              @RequestParam(value = "page", defaultValue = "1") Integer page) {

@@ -18,7 +18,7 @@ import java.io.IOException;
 @RequestMapping(AdminController.prefix)
 @RolesAllowed({"ADMIN"})
 public class AdminController {
-    public static final String prefix = "/api/admin";
+    public static final String prefix = "/api/admin/sys/";
     @Resource
     private ConfigService configService;
 
