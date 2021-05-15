@@ -16,13 +16,11 @@ import javax.annotation.Resource;
 public class ConfigureInitializer implements ApplicationRunner {
     @Resource
     private ConfigDao configDao;
-    @Resource
-    private ConfigService configService;
     @Override
     public void run(ApplicationArguments args) throws Exception {
         String dbStoreType = configDao.getConfigure(StoreType.getConfigKey());
         if (dbStoreType == null) {
-            configService.setStoreType(DiskConfig.STORE_TYPE);
+            configDao.setConfigure(StoreType.getConfigKey(), DiskConfig.STORE_TYPE.toString());
             log.info("初始化配置表： " + StoreType.getConfigKey() + ":" + DiskConfig.STORE_TYPE);
             return;
         }
