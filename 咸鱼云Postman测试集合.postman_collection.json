@@ -298,21 +298,27 @@
 									"key": "new",
 									"value": "123123123",
 									"type": "text"
+								},
+								{
+									"key": "force",
+									"value": "true",
+									"type": "text"
 								}
 							]
 						},
 						"url": {
-							"raw": "{{addr}}/api/user/passwd",
+							"raw": "{{addr}}/api/user/51/passwd",
 							"host": [
 								"{{addr}}"
 							],
 							"path": [
 								"api",
 								"user",
+								"51",
 								"passwd"
 							]
 						},
-						"description": "修改用户的密码\r\n- URI: `/api/user/passwd`\r\n- 动作：POST\r\n\r\n### 参数\r\n- old 旧密码\r\n- new 新密码"
+						"description": "修改用户的密码\r\n- URI: `/api/user/{uid}/passwd`\r\n- 动作：POST\r\n\r\n### URI参数\r\n- uid 被操作的用户ID（非管理员用户只允许操作自己）\r\n\r\n### 表单参数\r\n- old 旧密码\r\n- new 新密码\r\n- force 强制重置，只允许管理员使用，可无视旧密码直接重置密码"
 					},
 					"response": []
 				}
