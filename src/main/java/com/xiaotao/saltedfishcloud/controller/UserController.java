@@ -1,16 +1,5 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
-import javax.annotation.Resource;
-import javax.annotation.security.RolesAllowed;
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
@@ -24,14 +13,24 @@ import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.service.user.UserType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-
+import com.xiaotao.saltedfishcloud.validator.UID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import javax.annotation.Resource;
+import javax.annotation.security.RolesAllowed;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 @Controller
 @RequestMapping(UserController.PREFIX)
@@ -124,15 +123,25 @@ public class UserController {
     }
 
     /**
-     * @TODO 使用路径变量uid标识被控制变量方便管理员直接修改
      * @param oldPasswd 旧密码
      * @param newPasswd 新密码
      */
-    @PostMapping("passwd")
+    @PostMapping("{uid}/passwd")
     public JsonResult modifyPassword(@RequestParam("old") String oldPasswd,
-                                     @RequestParam("new") String newPasswd) {
-        int i = userService.modifyPasswd(SecureUtils.getSpringSecurityUser().getId(), oldPasswd, newPasswd);
-        return JsonResult.getInstance(1, i, "ok");
+                                     @RequestParam("new") String newPasswd,
+                                     @PathVariable("uid") @UID int uid,
+                                     @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
+        if (force) {
+            if ( SecureUtils.getSpringSecurityUser().getType() != User.TYPE_ADMIN) {
+                throw new AccessDeniedException("非管理员不允许使用force参数");
+            } else {
+                userDao.modifyPassword(uid, SecureUtils.getPassswd(newPasswd));
+                return JsonResult.getInstance(1, null, "force reset");
+            }
+        } else {
+            int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
+            return JsonResult.getInstance(1, i, "ok");
+        }
     }
 
     /**
