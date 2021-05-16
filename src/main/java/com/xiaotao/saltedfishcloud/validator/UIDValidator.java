@@ -15,7 +15,7 @@ public class UIDValidator implements ConstraintValidator<UID, Object> {
      * @param uid 用户ID
      * @param publicOnlyAdmin 公共资源是否只允许管理员通过验证
      */
-    static public boolean validate(int uid, boolean publicOnlyAdmin) {
+    public boolean validate(int uid, boolean publicOnlyAdmin) {
         if (!publicOnlyAdmin && uid == 0) return true;
         User springSecurityUser = SecureUtils.getSpringSecurityUser();
         if (springSecurityUser == null) {

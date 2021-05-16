@@ -70,7 +70,6 @@ public class DiskConfig {
     /**
      * 通过UID获取文件存储的用户根目录，公共用户使用DiskConfig.PUBLIC_ROOT 其他用户使用DiskConfig.PRIVATE_ROOT + "/" + {username} <br>
      * 该目录为原始存储模式下的目录
-     * @TODO 使用用户名代替uid减少查询优化性能
      * @param uid 用户ID 0表示公共
      * @return 本地文件存储用户根目录，末尾不带/
      */
