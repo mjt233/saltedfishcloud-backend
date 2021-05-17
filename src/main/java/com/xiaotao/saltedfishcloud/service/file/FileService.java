@@ -16,7 +16,6 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +48,24 @@ public class FileService {
     StoreService storeService;
     @javax.annotation.Resource
     NodeService nodeService;
+
+    /**
+     * 通过文件MD5获取一个存储在系统中的文件<br>
+     * @param md5   文件MD5值
+     * @return      文件信息，path为本地文件系统中的实际存储文件路径，文件名将被重命名为md5+原文件拓展名
+     * @throws NoSuchFileException  没有文件时抛出
+     */
+    public FileInfo getFileByMD5(String md5) throws NoSuchFileException {
+        FileInfo fileInfo = null;
+        List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
+        if (files.size() == 0) throw new NoSuchFileException("文件不存在: " + md5);
+        fileInfo = files.get(0);
+        String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
+        fileInfo.setPath(path + "/" + fileInfo.getName());
+        fileInfo.setPath(DiskConfig.getPathHandler().getStorePath(fileInfo.getUid(), path, fileInfo));
+        fileInfo.setName(md5 + "." + FileUtils.getSuffix(fileInfo.getName()));
+        return fileInfo;
+    }
 
     /**
      * 复制指定用户的文件或目录到指定用户的某个目录下

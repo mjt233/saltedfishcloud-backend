@@ -9,6 +9,15 @@ import java.util.List;
 public interface FileDao {
 
     /**
+     * 通过文件MD5获取文件信息
+     * @param md5   文件MD5
+     * @param limit 限制的文件个数
+     * @return      文件信息列表
+     */
+    @Select("SELECT * FROM file_table WHERE md5 = #{md5} AND size != -1 LIMIT #{limit}")
+    List<FileInfo> getFilesByMD5(@Param("md5") String md5, @Param("limit") int limit);
+
+    /**
      * 取数据库中存在的有效的文件MD5
      * @param md5 文件MD5集合
      * @return 有效的MD5集合

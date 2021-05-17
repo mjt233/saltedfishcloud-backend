@@ -17,6 +17,10 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 public class FileInfo extends BasicFileInfo{
+    /**
+     * 文件所属用户ID
+     */
+    private Integer uid;
     private String parent;
 
     @JsonIgnore

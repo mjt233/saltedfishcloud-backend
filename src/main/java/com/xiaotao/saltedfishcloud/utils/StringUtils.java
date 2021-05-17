@@ -2,7 +2,9 @@ package com.xiaotao.saltedfishcloud.utils;
 
 public class StringUtils {
     /**
-     * 获取md5的最后2级存储路径
+     * 获取md5的最后2级存储路径+文件名<br>
+     * 例如输入<code>00a27b5294bbbfa65e9fa57bfdb0fa6a</code><br>
+     * 返回00/a2/00a27b5294bbbfa65e9fa57bfdb0fa6a
      * @param md5 md5值
      */
     public static String getUniquePath(String md5) {

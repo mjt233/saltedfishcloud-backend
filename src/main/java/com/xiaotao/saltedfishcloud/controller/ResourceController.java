@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.annotations.BlockWhileSwitching;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
@@ -21,7 +22,9 @@ import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.nio.file.NoSuchFileException;
 
 /**
  * 系统资源管理控制器
@@ -93,4 +96,18 @@ public class ResourceController {
             throws MalformedURLException {
         return responseService.getResourceByDC(code, download);
     }
+
+
+    /**
+     * 通过MD5获取网盘中的文件
+     * @param md5 文件MD5
+     */
+    @RequestMapping(value = "fileContentByMD5/{md5}/**", method = RequestMethod.GET)
+    @AllowAnonymous
+    public ResponseEntity<org.springframework.core.io.Resource> downloadByMD5(@PathVariable("md5") String md5)
+            throws NoSuchFileException, MalformedURLException, UnsupportedEncodingException {
+        FileInfo file = fileService.getFileByMD5(md5);
+        return responseService.sendFile(file.getPath(), file.getName());
+    }
+
 }
