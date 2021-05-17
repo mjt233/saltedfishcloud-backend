@@ -920,6 +920,28 @@
 								"description": "切换网盘系统的存储模式  \r\n- URI：`/api/admin/store/type` \r\n- 动作：PUT \r\n\r\n注意:\r\n1. 切换过程中将会暂时阻断所有文件相关的接口调用\r\n2. 调用该接口可能会导致正在下载文件的用户连接断开\r\n3. 若切换过程中服务器异常（如程序bug，服务器断电等）导致切换中断，可能会造成数据丢失，请谨慎操作  \r\n\r\n参数\r\n- type 可选RAW与UNIQUE\r\n\r\n模式说明\r\n- RAW 原始存储模式，每个用户都使用独立的服务器文件资源，本地的文件名与目录结构与用户网盘文件结构保持一致\r\n    -   优点：方便管理员直接通过操作系统的文件操作来查看与更改用户文件\r\n    -   缺点：文件的复制，移动耗时长，消耗服务器资源大，相同文件存在多份时，文件冗余占用大\r\n- UNIQUE 唯一存储模式，每个相同的文件在服务器只存储一份，将依据文件散列值进行编配文件结构与文件名\r\n    -   优点：几乎零成本的复制和移动，服务器不会存储多个相同文件\r\n    -   缺点：可能会占用大量node节点，管理员不方便直接通过操作系统的文件操作来查看与更改用户文件\r\n\r\n切换成功响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": null,\r\n    \"msg\": \"ok\"\r\n}\r\n```\r\n\r\n系统当前存储模式与参数相同时的响应示例\r\n```json\r\n{\r\n    \"code\": 0,\r\n    \"data\": \"UNIQUE\",       //  服务器当前存储模式\r\n    \"msg\": \"请求被忽略，模式无变化\"\r\n}\r\n```"
 							},
 							"response": []
+						},
+						{
+							"name": "获取存储状态",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/admin/sys/store/state",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"sys",
+										"store",
+										"state"
+									]
+								},
+								"description": "获取网盘系统的存储状态  \r\n- URI：`/api/admin/store/state` \r\n- 动作：GET \r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"store_type\": \"UNIQUE\",                                     //  存储模式\r\n        \"file_count\": 247,                                          //  文件总数\r\n        \"dir_count\": 69,                                            //  目录总数\r\n        \"real_size\": 9395037445,                                    //  实际存储大小\r\n        \"total_size\": 9537003165,                                   //  用户数据总大小\r\n        \"store_total_space\": 1000203087872,                         //  存储总空间\r\n        \"store_free_space\": 283437477888,                           //  存储可用空间\r\n        \"public_total_space\": 1000203087872,                        //  公共存储总大小\r\n        \"public_free_space\": 283437477888,                          //  公共存储可用空间\r\n        \"store_root\": \"D:\\\\data\\\\xiaotao\\\\saltedfishcloud\\\\store\",  //  存储根目录\r\n        \"public_root\": \"D:\\\\pack\"                                   //  公共存储根目录\r\n        \"store_type_switching\": false                               //  系统是否处于存储切换模式\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+							},
+							"response": []
 						}
 					]
 				},

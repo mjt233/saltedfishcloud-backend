@@ -32,6 +32,13 @@ public class JsonResult extends LinkedHashMap<String, Object>{
         return getInstance(1, null, "OK");
     }
 
+    /**
+     * 获取一个数据Map实例
+     */
+    public static LinkedHashMap<String, Object> getDataMap() {
+        return new LinkedHashMap<>();
+    }
+
     public int getCode() {
         return Integer.parseInt((String)this.get("code"));
     }

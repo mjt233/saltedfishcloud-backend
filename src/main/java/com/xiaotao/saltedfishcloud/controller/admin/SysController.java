@@ -3,16 +3,16 @@ package com.xiaotao.saltedfishcloud.controller.admin;
 import com.xiaotao.saltedfishcloud.annotations.BlockWhileSwitching;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.dao.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
+import java.io.File;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 
 @RestController
 @RequestMapping(SysController.prefix)
@@ -21,6 +21,8 @@ public class SysController {
     public static final String prefix = "/api/admin/sys/";
     @Resource
     private ConfigService configService;
+    @Resource
+    private FileAnalyseDao fileAnalyseDao;
 
     @PutMapping("store/type")
     @BlockWhileSwitching
@@ -35,5 +37,25 @@ public class SysController {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("无效的类型，可选RAW或UNIQUE");
         }
+    }
+
+    @GetMapping("store/state")
+    public JsonResult getStoreState() {
+        LinkedHashMap<String, Object> data = JsonResult.getDataMap();
+        File storeRoot = new File(DiskConfig.STORE_ROOT);
+        File publicRoot = new File(DiskConfig.PUBLIC_ROOT);
+        data.put("store_type", DiskConfig.STORE_TYPE);
+        data.put("file_count", fileAnalyseDao.getFileCount());
+        data.put("dir_count", fileAnalyseDao.getDirCount());
+        data.put("real_size", fileAnalyseDao.getRealTotalSize());
+        data.put("total_size", fileAnalyseDao.getUserTotalSize());
+        data.put("store_total_space", storeRoot.getTotalSpace());
+        data.put("store_free_space", storeRoot.getFreeSpace());
+        data.put("public_total_space", publicRoot.getTotalSpace());
+        data.put("public_free_space", publicRoot.getFreeSpace());
+        data.put("store_root", storeRoot.getPath());
+        data.put("public_root", publicRoot.getPath());
+        data.put("store_type_switching", DiskConfig.isStoreSwitching());
+        return JsonResult.getInstance(data);
     }
 }
