@@ -68,7 +68,7 @@ public class UserController {
     public JsonResult regUser(@RequestParam("user") String user,
                               @RequestParam("passwd") String rawPassword,
                               @RequestParam(value = "regcode", defaultValue = "") String regCode,
-                              @RequestParam(value = "type", defaultValue = "") int type
+                              @RequestParam(value = "type", defaultValue = "0") int type
                               ) throws HasResultException {
         if (SecureUtils.getSpringSecurityUser() != null && SecureUtils.getSpringSecurityUser().getType() == User.TYPE_ADMIN) {
             userService.addUser(user, rawPassword, type == User.TYPE_ADMIN ? User.TYPE_ADMIN : User.TYPE_COMMON);
