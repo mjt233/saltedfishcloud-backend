@@ -51,14 +51,14 @@ public class DiskConfig {
     // 用户个性化配置文件根目录
     public static String USER_PROFILE_ROOT;
 
-    private static boolean STORE_SWITCHING = false;
+    private static boolean READ_ONLY_BLOCK = false;
 
-    public static boolean isStoreSwitching() {
-        return STORE_SWITCHING;
+    public static boolean isReadOnlyBlock() {
+        return READ_ONLY_BLOCK;
     }
 
-    public static void setStoreSwitching(boolean storeSwitching) {
-        STORE_SWITCHING = storeSwitching;
+    public static void setReadOnlyBlock(boolean readOnlyBlock) {
+        READ_ONLY_BLOCK = readOnlyBlock;
     }
 
     public DiskConfig(UserDao userDao, RawPathHandler rawPathHandler, UniquePathHandler uniquePathHandler) {

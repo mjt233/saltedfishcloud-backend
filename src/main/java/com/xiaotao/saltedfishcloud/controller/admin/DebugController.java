@@ -14,12 +14,12 @@ public class DebugController {
 
     @PutMapping("switching")
     public JsonResult setSwitchingState(@RequestParam boolean state) {
-        DiskConfig.setStoreSwitching(state);
+        DiskConfig.setReadOnlyBlock(state);
         return JsonResult.getInstance();
     }
 
     @GetMapping("switching")
     public JsonResult getSwitchingState() {
-        return JsonResult.getInstance(DiskConfig.isStoreSwitching());
+        return JsonResult.getInstance(DiskConfig.isReadOnlyBlock());
     }
 }

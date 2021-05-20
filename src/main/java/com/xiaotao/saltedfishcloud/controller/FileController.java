@@ -2,10 +2,9 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.xiaotao.saltedfishcloud.annotations.BlockWhileSwitching;
+import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
@@ -14,8 +13,6 @@ import com.xiaotao.saltedfishcloud.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.po.param.NamePair;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.FileName;
 import com.xiaotao.saltedfishcloud.validator.UID;
@@ -32,7 +29,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
@@ -42,7 +38,7 @@ import java.util.List;
 @RestController
 @RequestMapping( FileController.PREFIX + "{uid}")
 @Validated
-@BlockWhileSwitching()
+@ReadOnlyBlock()
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 

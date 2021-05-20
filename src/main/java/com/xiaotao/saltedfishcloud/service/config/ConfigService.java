@@ -37,13 +37,13 @@ public class ConfigService {
         }
         log.info("存储切换：" + storeType.toString() + " -> " + type.toString());
         try {
-            DiskConfig.setStoreSwitching(true);
+            DiskConfig.setReadOnlyBlock(true);
             configDao.setConfigure(StoreType.getConfigKey(), type.toString());
             diskConfig.setStoreType(type.toString());
             storeTypeSwitch.switchTo(type);
-            DiskConfig.setStoreSwitching(false);
+            DiskConfig.setReadOnlyBlock(false);
         } catch (RuntimeException e) {
-            DiskConfig.setStoreSwitching(false);
+            DiskConfig.setReadOnlyBlock(false);
             throw e;
         }
         return true;

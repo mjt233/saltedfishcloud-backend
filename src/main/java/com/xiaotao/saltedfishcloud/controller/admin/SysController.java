@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
-import com.xiaotao.saltedfishcloud.annotations.BlockWhileSwitching;
+import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.FileAnalyseDao;
@@ -25,7 +25,7 @@ public class SysController {
     private FileAnalyseDao fileAnalyseDao;
 
     @PutMapping("store/type")
-    @BlockWhileSwitching
+    @ReadOnlyBlock
     public JsonResult setStoreType(@RequestParam("type") String type) throws IOException {
         try {
             StoreType storeType = StoreType.valueOf(type.toUpperCase());
@@ -59,7 +59,7 @@ public class SysController {
         data.put("public_free_space", publicRoot.getFreeSpace());
         data.put("store_root", storeRoot.getPath());
         data.put("public_root", publicRoot.getPath());
-        data.put("store_type_switching", DiskConfig.isStoreSwitching());
+        data.put("store_type_switching", DiskConfig.isReadOnlyBlock());
         return JsonResult.getInstance(data);
     }
 }
