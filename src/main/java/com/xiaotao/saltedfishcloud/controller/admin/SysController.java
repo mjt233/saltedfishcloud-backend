@@ -44,8 +44,8 @@ public class SysController {
         LinkedHashMap<String, Object> data = JsonResult.getDataMap();
         File storeRoot = new File(DiskConfig.STORE_ROOT);
         File publicRoot = new File(DiskConfig.PUBLIC_ROOT);
-        long realTotalUserSize = fileAnalyseDao.getRealTotalUserSize();
         long userTotalSize = fileAnalyseDao.getUserTotalSize();
+        long realTotalUserSize = DiskConfig.STORE_TYPE == StoreType.UNIQUE ? fileAnalyseDao.getRealTotalUserSize() : userTotalSize;
         long publicTotalSize = fileAnalyseDao.getPublicTotalSize();
         data.put("store_type", DiskConfig.STORE_TYPE);
         data.put("file_count", fileAnalyseDao.getFileCount());
