@@ -44,11 +44,15 @@ public class SysController {
         LinkedHashMap<String, Object> data = JsonResult.getDataMap();
         File storeRoot = new File(DiskConfig.STORE_ROOT);
         File publicRoot = new File(DiskConfig.PUBLIC_ROOT);
+        long realTotalUserSize = fileAnalyseDao.getRealTotalUserSize();
+        long userTotalSize = fileAnalyseDao.getUserTotalSize();
+        long publicTotalSize = fileAnalyseDao.getPublicTotalSize();
         data.put("store_type", DiskConfig.STORE_TYPE);
         data.put("file_count", fileAnalyseDao.getFileCount());
         data.put("dir_count", fileAnalyseDao.getDirCount());
-        data.put("real_size", fileAnalyseDao.getRealTotalSize());
-        data.put("total_size", fileAnalyseDao.getUserTotalSize());
+        data.put("real_user_size", realTotalUserSize);
+        data.put("total_user_size", userTotalSize);
+        data.put("total_public_size", publicTotalSize);
         data.put("store_total_space", storeRoot.getTotalSpace());
         data.put("store_free_space", storeRoot.getFreeSpace());
         data.put("public_total_space", publicRoot.getTotalSpace());
