@@ -59,7 +59,8 @@ public class SysController {
         data.put("public_free_space", publicRoot.getFreeSpace());
         data.put("store_root", storeRoot.getPath());
         data.put("public_root", publicRoot.getPath());
-        data.put("store_type_switching", DiskConfig.isReadOnlyBlock());
+        data.put("read_only", DiskConfig.isReadOnlyBlock());
+        data.put("invite_code", DiskConfig.REG_CODE);
         return JsonResult.getInstance(data);
     }
 }
