@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.manager.AdminService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -22,7 +23,7 @@ public class SysController {
     @Resource
     private ConfigService configService;
     @Resource
-    private FileAnalyseDao fileAnalyseDao;
+    private AdminService adminService;
 
     @PutMapping("store/type")
     @ReadOnlyBlock
@@ -39,28 +40,29 @@ public class SysController {
         }
     }
 
+    @GetMapping("overview")
+    public JsonResult getOverview() {
+        LinkedHashMap<String, Object> res = JsonResult.getDataMap();
+        res.put("store", adminService.getStoreState());
+        res.put("invite_reg_code", DiskConfig.REG_CODE);
+        return JsonResult.getInstance(res);
+    }
+
     @GetMapping("store/state")
     public JsonResult getStoreState() {
+        return JsonResult.getInstance(adminService.getStoreState());
+    }
+
+    @PutMapping("regCode/{code}")
+    public JsonResult setInviteRegCode(@PathVariable("code") String code) {
+        configService.setInviteRegCode(code);
+        return JsonResult.getInstance();
+    }
+
+    @GetMapping("settings")
+    public JsonResult getSysSettings() {
         LinkedHashMap<String, Object> data = JsonResult.getDataMap();
-        File storeRoot = new File(DiskConfig.STORE_ROOT);
-        File publicRoot = new File(DiskConfig.PUBLIC_ROOT);
-        long userTotalSize = fileAnalyseDao.getUserTotalSize();
-        long realTotalUserSize = DiskConfig.STORE_TYPE == StoreType.UNIQUE ? fileAnalyseDao.getRealTotalUserSize() : userTotalSize;
-        long publicTotalSize = fileAnalyseDao.getPublicTotalSize();
-        data.put("store_type", DiskConfig.STORE_TYPE);
-        data.put("file_count", fileAnalyseDao.getFileCount());
-        data.put("dir_count", fileAnalyseDao.getDirCount());
-        data.put("real_user_size", realTotalUserSize);
-        data.put("total_user_size", userTotalSize);
-        data.put("total_public_size", publicTotalSize);
-        data.put("store_total_space", storeRoot.getTotalSpace());
-        data.put("store_free_space", storeRoot.getFreeSpace());
-        data.put("public_total_space", publicRoot.getTotalSpace());
-        data.put("public_free_space", publicRoot.getFreeSpace());
-        data.put("store_root", storeRoot.getPath());
-        data.put("public_root", publicRoot.getPath());
-        data.put("read_only", DiskConfig.isReadOnlyBlock());
-        data.put("invite_code", DiskConfig.REG_CODE);
+        data.put("invite_reg_code", DiskConfig.REG_CODE);
         return JsonResult.getInstance(data);
     }
 }

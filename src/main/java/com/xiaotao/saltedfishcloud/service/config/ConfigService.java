@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.config;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.ConfigDao;
+import com.xiaotao.saltedfishcloud.enums.ConfigName;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,5 +48,14 @@ public class ConfigService {
             throw e;
         }
         return true;
+    }
+
+    /**
+     * 设置系统注册邀请码
+     * @param code  邀请码
+     */
+    public void setInviteRegCode(String code) {
+        configDao.setConfigure(ConfigName.REG_CODE, code);
+        DiskConfig.REG_CODE = code;
     }
 }
