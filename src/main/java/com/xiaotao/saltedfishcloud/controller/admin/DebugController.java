@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,14 +13,20 @@ import javax.annotation.security.RolesAllowed;
 public class DebugController {
     public static final String prefix = "/api/admin/debug/";
 
-    @PutMapping("switching")
-    public JsonResult setSwitchingState(@RequestParam boolean state) {
-        DiskConfig.setReadOnlyBlock(state);
+    @PutMapping("readOnly")
+    public JsonResult setReadOnlyLevel(@RequestParam String level) {
+        ReadOnlyLevel r;
+        try {
+            r = ReadOnlyLevel.valueOf(level);
+        } catch (Exception e) {
+            r = null;
+        }
+        DiskConfig.setReadOnlyLevel(r);
         return JsonResult.getInstance();
     }
 
-    @GetMapping("switching")
-    public JsonResult getSwitchingState() {
-        return JsonResult.getInstance(DiskConfig.isReadOnlyBlock());
+    @GetMapping("readOnly")
+    public JsonResult getReadOnlyLevel() {
+        return JsonResult.getInstance(DiskConfig.getReadOnlyLevel());
     }
 }

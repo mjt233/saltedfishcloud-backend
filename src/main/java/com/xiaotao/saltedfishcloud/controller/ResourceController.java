@@ -1,8 +1,10 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
@@ -62,6 +64,7 @@ public class ResourceController {
      */
     @GetMapping("path/{node}")
     @AllowAnonymous
+    @NotBlock
     public JsonResult getPath(@PathVariable("uid") @UID int uid,
                               @PathVariable("node") String node) {
         return JsonResult.getInstance(nodeService.getPathByNode(uid, node));
@@ -72,6 +75,7 @@ public class ResourceController {
      */
     @GetMapping("FDC/**")
     @AllowAnonymous
+    @NotBlock
     public JsonResult getFDC(@PathVariable @UID int uid,
                              HttpServletRequest request,
                              @RequestParam("md5") String md5,
@@ -91,6 +95,7 @@ public class ResourceController {
     @GetMapping("fileContentByFDC/{code}/**")
     @AllowAnonymous
     @ResponseBody
+    @NotBlock(level = ReadOnlyLevel.DATA_CHECKING)
     public ResponseEntity<org.springframework.core.io.Resource> downloadByFDC(@PathVariable String code,
                                                                               @RequestParam(required = false, defaultValue = "false") boolean download)
             throws MalformedURLException {

@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.ConfigName;
+import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,13 +39,13 @@ public class ConfigService {
         }
         log.info("存储切换：" + storeType.toString() + " -> " + type.toString());
         try {
-            DiskConfig.setReadOnlyBlock(true);
+            DiskConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_CHECKING);
             configDao.setConfigure(StoreType.getConfigKey(), type.toString());
             diskConfig.setStoreType(type.toString());
             storeTypeSwitch.switchTo(type);
-            DiskConfig.setReadOnlyBlock(false);
+            DiskConfig.setReadOnlyLevel(null);
         } catch (RuntimeException e) {
-            DiskConfig.setReadOnlyBlock(false);
+            DiskConfig.setReadOnlyLevel(null);
             throw e;
         }
         return true;

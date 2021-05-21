@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
+import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
@@ -177,12 +178,12 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
                     first = false;
                     Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
                 }
-                DiskConfig.setReadOnlyBlock(true);
+                DiskConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_CHECKING);
                 log.info("开始同步文件信息");
                 long start = System.currentTimeMillis();
                 doAction();
                 log.info("同步完成，任务耗时：" + (System.currentTimeMillis() - start)/1000 + "s");
-                DiskConfig.setReadOnlyBlock(false);
+                DiskConfig.setReadOnlyLevel(null);
                 Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
             } catch (Exception e) {
                 log.warn("同步出错：" + e.getMessage() + " 本轮同步任务跳过，等待下一轮");

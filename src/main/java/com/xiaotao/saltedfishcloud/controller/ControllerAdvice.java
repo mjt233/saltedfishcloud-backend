@@ -16,6 +16,7 @@ import java.nio.file.NoSuchFileException;
 
 /**
  * 全局异常处理，捕获进入控制器的异常并进行处理
+ * @TODO 异常时修改HTTP响应码
  */
 @Slf4j
 @RestControllerAdvice

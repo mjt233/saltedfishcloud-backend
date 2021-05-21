@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.config;
 
 
 import com.xiaotao.saltedfishcloud.dao.UserDao;
+import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
@@ -51,14 +52,22 @@ public class DiskConfig {
     // 用户个性化配置文件根目录
     public static String USER_PROFILE_ROOT;
 
-    private static boolean READ_ONLY_BLOCK = false;
+    private static ReadOnlyLevel READ_ONLY_LEVEL = null;
 
-    public static boolean isReadOnlyBlock() {
-        return READ_ONLY_BLOCK;
+    public static synchronized ReadOnlyLevel getReadOnlyLevel() {
+        return READ_ONLY_LEVEL;
     }
 
-    public static void setReadOnlyBlock(boolean readOnlyBlock) {
-        READ_ONLY_BLOCK = readOnlyBlock;
+    public static synchronized void setReadOnlyLevel (ReadOnlyLevel level) {
+        if (level != null && READ_ONLY_LEVEL != null) {
+            throw new IllegalStateException("当前已处于：" + READ_ONLY_LEVEL);
+        }
+        if (level != null) {
+            log.info("只读级别切换到" + level);
+        } else {
+            log.info("关闭只读模式");
+        }
+        READ_ONLY_LEVEL = level;
     }
 
     public DiskConfig(UserDao userDao, RawPathHandler rawPathHandler, UniquePathHandler uniquePathHandler) {

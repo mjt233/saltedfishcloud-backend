@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.annotations;
 
 
+import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+
 import java.lang.annotation.*;
 
 /**
@@ -12,4 +14,8 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ReadOnlyBlock {
+    /**
+     * 只读级别，当系统的只读级别与改属性匹配时将阻塞方法的执行
+     */
+    ReadOnlyLevel[] level() default {ReadOnlyLevel.DATA_CHECKING, ReadOnlyLevel.DATA_MOVING};
 }

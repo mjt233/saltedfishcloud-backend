@@ -46,6 +46,7 @@ public class ResponseService {
         String dir = pathBuilder.range(-1);
         String nid = nodeService.getLastNodeInfoByPath(uid, dir).getId();
         FileInfo fileInfo = fileDao.getFileInfo(uid, name, nid);
+        if (fileInfo == null) throw new NoSuchFileException("文件不存在");
         return sendFile(DiskConfig.getPathHandler().getStorePath(uid, dir, fileInfo), fileInfo.getName());
     }
 

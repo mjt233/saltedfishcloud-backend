@@ -5,6 +5,7 @@ import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
@@ -124,6 +125,7 @@ public class FileController {
      */
     @RequestMapping(value = "content/**", method = {RequestMethod.POST, RequestMethod.GET})
     @AllowAnonymous
+    @NotBlock(level = ReadOnlyLevel.DATA_CHECKING)
     public ResponseEntity<org.springframework.core.io.Resource> download(HttpServletRequest request,
                                                                          @PathVariable @UID int uid)
             throws MalformedURLException, UnsupportedEncodingException, NoSuchFileException {
