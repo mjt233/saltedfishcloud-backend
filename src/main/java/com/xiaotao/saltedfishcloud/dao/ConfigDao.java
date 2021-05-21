@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao;
 
+import com.xiaotao.saltedfishcloud.enums.ConfigName;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
 
@@ -10,7 +11,8 @@ public interface ConfigDao {
      * @return      配置值
      */
     @Select("SELECT `value` FROM config WHERE `key` = #{key}")
-    String getConfigure(String key);
+    String getConfigure(ConfigName key);
+
 
     /**
      * 设置一条配置信息
@@ -18,5 +20,5 @@ public interface ConfigDao {
      * @param value     值
      */
     @Insert("INSERT INTO config (`key`,`value`) VALUES (#{key}, #{value}) ON DUPLICATE KEY UPDATE `value`=#{value}")
-    int setConfigure(String key, String value);
+    int setConfigure(ConfigName key, String value);
 }

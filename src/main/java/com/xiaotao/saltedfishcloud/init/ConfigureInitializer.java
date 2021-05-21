@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.init;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.ConfigDao;
+import com.xiaotao.saltedfishcloud.enums.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -18,19 +19,22 @@ public class ConfigureInitializer implements ApplicationRunner {
     private ConfigDao configDao;
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        String dbStoreType = configDao.getConfigure(StoreType.getConfigKey());
-        if (dbStoreType == null) {
-            configDao.setConfigure(StoreType.getConfigKey(), DiskConfig.STORE_TYPE.toString());
-            log.info("初始化配置表： " + StoreType.getConfigKey() + ":" + DiskConfig.STORE_TYPE);
-            return;
+        String storeType = configDao.getConfigure(ConfigName.STORE_TYPE);
+        String regCode = configDao.getConfigure(ConfigName.REG_CODE);
+        if (storeType == null) {
+            configDao.setConfigure(ConfigName.STORE_TYPE, DiskConfig.STORE_TYPE.toString());
+            log.info("初始化存储模式记录：" + DiskConfig.STORE_TYPE);
+            storeType = DiskConfig.STORE_TYPE.toString();
         }
-        StoreType storeType = StoreType.valueOf(dbStoreType);
-        if (storeType == DiskConfig.STORE_TYPE) {
-            log.info("存储方式：" + DiskConfig.STORE_TYPE);
-        } else {
-            log.warn("应用参数存储方式与配置表数据不一致： 配置表 - " + dbStoreType + "| 应用参数 - " +  DiskConfig.STORE_TYPE);
-            log.warn("存储方式将以配置表为准运行");
-            DiskConfig.STORE_TYPE = storeType;
+        if (regCode == null) {
+            configDao.setConfigure(ConfigName.REG_CODE, DiskConfig.REG_CODE);
+            regCode = DiskConfig.REG_CODE;
+            log.info("初始化邀请邀请码：" + regCode);
         }
+
+        DiskConfig.STORE_TYPE = StoreType.valueOf(storeType);
+        DiskConfig.REG_CODE = regCode;
+        log.info("[存储模式]："+ storeType);
+        log.info("[注册邀请码]："+ regCode);
     }
 }
