@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.po.JsonResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.security.RolesAllowed;
+import java.util.LinkedHashMap;
 
 @RequestMapping(DebugController.prefix)
 @RolesAllowed({"ADMIN"})
@@ -28,5 +29,13 @@ public class DebugController {
     @GetMapping("readOnly")
     public JsonResult getReadOnlyLevel() {
         return JsonResult.getInstance(DiskConfig.getReadOnlyLevel());
+    }
+
+    @GetMapping("options")
+    public JsonResult getAllOptions() {
+        LinkedHashMap<String, Object> data = JsonResult.getDataMap();
+        data.put("read_only_level", DiskConfig.getReadOnlyLevel());
+        data.put("sync_delay", DiskConfig.SYNC_DELAY);
+        return JsonResult.getInstance(data);
     }
 }

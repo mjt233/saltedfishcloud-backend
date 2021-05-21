@@ -24,6 +24,7 @@ public class FileUtils {
         map.put("js", "application/x-javascript;charset=utf-8");
         map.put("css", "text/css;charset=utf-8");
         map.put("txt", "text/plain;charset=utf-8");
+        map.put(".otf" , "application/x-font-otf");
 
         // 图片
         map.put("gif", "image/gif");
