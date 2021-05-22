@@ -101,14 +101,12 @@ public class DiskConfig {
 
     @Value("${reg-code}")
     public void setRegCode(String v) {
-        log.info("[注册邀请码]" + v);
         REG_CODE = v;
     }
 
     @Value("${sync-delay}")
     public void setSyncDelay(int v) {
         SYNC_DELAY = v;
-        log.info("[数据库同步间隔]:" + v + "分钟");
     }
 
     @Value("${sync-launch}")

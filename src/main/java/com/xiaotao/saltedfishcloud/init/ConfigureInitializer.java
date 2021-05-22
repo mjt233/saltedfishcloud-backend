@@ -21,6 +21,7 @@ public class ConfigureInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         String storeType = configDao.getConfigure(ConfigName.STORE_TYPE);
         String regCode = configDao.getConfigure(ConfigName.REG_CODE);
+        String syncDelay = configDao.getConfigure(ConfigName.SYNC_DELAY);
         if (storeType == null) {
             configDao.setConfigure(ConfigName.STORE_TYPE, DiskConfig.STORE_TYPE.toString());
             log.info("初始化存储模式记录：" + DiskConfig.STORE_TYPE);
@@ -31,10 +32,16 @@ public class ConfigureInitializer implements ApplicationRunner {
             regCode = DiskConfig.REG_CODE;
             log.info("初始化邀请邀请码：" + regCode);
         }
+        if (syncDelay == null) {
+            syncDelay = DiskConfig.SYNC_DELAY + "";
+            configDao.setConfigure(ConfigName.SYNC_DELAY, syncDelay);
+        }
 
         DiskConfig.STORE_TYPE = StoreType.valueOf(storeType);
         DiskConfig.REG_CODE = regCode;
+        DiskConfig.SYNC_DELAY = Integer.parseInt(syncDelay);
         log.info("[存储模式]："+ storeType);
         log.info("[注册邀请码]："+ regCode);
+        log.info("[同步延迟]：" + syncDelay);
     }
 }
