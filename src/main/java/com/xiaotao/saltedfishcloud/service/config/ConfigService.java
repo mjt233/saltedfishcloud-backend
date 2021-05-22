@@ -73,7 +73,7 @@ public class ConfigService {
         }
         log.info("存储切换：" + storeType.toString() + " -> " + type.toString());
         try {
-            DiskConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_CHECKING);
+            DiskConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_MOVING);
             configDao.setConfigure(StoreType.getConfigKey(), type.toString());
             diskConfig.setStoreType(type.toString());
             storeTypeSwitch.switchTo(type);
