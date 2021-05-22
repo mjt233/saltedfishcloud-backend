@@ -948,17 +948,10 @@
 										"header": [],
 										"body": {
 											"mode": "urlencoded",
-											"urlencoded": [
-												{
-													"key": "type",
-													"value": "unique",
-													"description": "要切换到的模式，可选RAW或UNIQUE",
-													"type": "text"
-												}
-											]
+											"urlencoded": []
 										},
 										"url": {
-											"raw": "{{addr}}/api/admin/sys/store/type",
+											"raw": "{{addr}}/api/admin/sys/config/STORE_TYPE/UNIQUE",
 											"host": [
 												"{{addr}}"
 											],
@@ -966,11 +959,12 @@
 												"api",
 												"admin",
 												"sys",
-												"store",
-												"type"
+												"config",
+												"STORE_TYPE",
+												"UNIQUE"
 											]
 										},
-										"description": "切换网盘系统的存储模式  \r\n- URI：`/api/admin/store/type` \r\n- 动作：PUT \r\n\r\n注意:\r\n1. 切换过程中将会暂时阻断所有文件相关的接口调用\r\n2. 调用该接口可能会导致正在下载文件的用户连接断开\r\n3. 若切换过程中服务器异常（如程序bug，服务器断电等）导致切换中断，可能会造成数据丢失，请谨慎操作  \r\n\r\n参数\r\n- type 可选RAW与UNIQUE\r\n\r\n模式说明\r\n- RAW 原始存储模式，每个用户都使用独立的服务器文件资源，本地的文件名与目录结构与用户网盘文件结构保持一致\r\n    -   优点：方便管理员直接通过操作系统的文件操作来查看与更改用户文件\r\n    -   缺点：文件的复制，移动耗时长，消耗服务器资源大，相同文件存在多份时，文件冗余占用大\r\n- UNIQUE 唯一存储模式，每个相同的文件在服务器只存储一份，将依据文件散列值进行编配文件结构与文件名\r\n    -   优点：几乎零成本的复制和移动，服务器不会存储多个相同文件\r\n    -   缺点：可能会占用大量node节点，管理员不方便直接通过操作系统的文件操作来查看与更改用户文件\r\n\r\n切换成功响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": null,\r\n    \"msg\": \"ok\"\r\n}\r\n```\r\n\r\n系统当前存储模式与参数相同时的响应示例\r\n```json\r\n{\r\n    \"code\": 0,\r\n    \"data\": \"UNIQUE\",       //  服务器当前存储模式\r\n    \"msg\": \"请求被忽略，模式无变化\"\r\n}\r\n```"
+										"description": "切换网盘系统的存储模式  \r\n- URI：`/api/admin/sys/config/STORE_TYPE/{type}` \r\n- 动作：PUT \r\n\r\n注意:\r\n1. 切换过程中将会暂时阻断所有文件相关的接口调用\r\n2. 调用该接口可能会导致正在下载文件的用户连接断开\r\n3. 若切换过程中服务器异常（如程序bug，服务器断电等）导致切换中断，可能会造成数据丢失，请谨慎操作  \r\n\r\nURI参数\r\n- type 可选RAW与UNIQUE\r\n\r\n模式说明\r\n- RAW 原始存储模式，每个用户都使用独立的服务器文件资源，本地的文件名与目录结构与用户网盘文件结构保持一致\r\n    -   优点：方便管理员直接通过操作系统的文件操作来查看与更改用户文件\r\n    -   缺点：文件的复制，移动耗时长，消耗服务器资源大，相同文件存在多份时，文件冗余占用大\r\n- UNIQUE 唯一存储模式，每个相同的文件在服务器只存储一份，将依据文件散列值进行编配文件结构与文件名\r\n    -   优点：几乎零成本的复制和移动，服务器不会存储多个相同文件\r\n    -   缺点：可能会占用大量node节点，管理员不方便直接通过操作系统的文件操作来查看与更改用户文件\r\n\r\n切换成功响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": null,\r\n    \"msg\": \"ok\"\r\n}\r\n```\r\n\r\n系统当前存储模式与参数相同时的响应示例\r\n```json\r\n{\r\n    \"code\": 0,\r\n    \"data\": \"UNIQUE\",       //  服务器当前存储模式\r\n    \"msg\": \"请求被忽略，模式无变化\"\r\n}\r\n```"
 									},
 									"response": []
 								},
@@ -1002,12 +996,12 @@
 							"name": "常规设置",
 							"item": [
 								{
-									"name": "修改邀请码",
+									"name": "设置配置项值",
 									"request": {
 										"method": "PUT",
 										"header": [],
 										"url": {
-											"raw": "{{addr}}/api/admin/sys/regCode/10241024",
+											"raw": "{{addr}}/api/admin/sys/config/REG_CODE/10241024",
 											"host": [
 												"{{addr}}"
 											],
@@ -1015,21 +1009,22 @@
 												"api",
 												"admin",
 												"sys",
-												"regCode",
+												"config",
+												"REG_CODE",
 												"10241024"
 											]
 										},
-										"description": "修改注册邀请码\r\n- URI：`/api/admin/sys/regCode/{code}` \r\n- 动作：PUT  \r\n\r\nURI参数：\r\n- code 邀请码"
+										"description": "设置配置项的值\r\n- URI：`/api/admin/sys/config/{key}/{value}` \r\n- 动作：PUT  \r\n\r\nURI参数：\r\n- key 配置项名，可选STORE_TYPE，REG_CODE，SYNC_DELAY\r\n- value 要设置的值"
 									},
 									"response": []
 								},
 								{
-									"name": "获取常规设置选项值",
+									"name": "获取所有配置项的值",
 									"request": {
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{addr}}/api/admin/sys/settings",
+											"raw": "{{addr}}/api/admin/sys/config",
 											"host": [
 												"{{addr}}"
 											],
@@ -1037,10 +1032,53 @@
 												"api",
 												"admin",
 												"sys",
-												"settings"
+												"config"
 											]
 										},
-										"description": "获取常规设置选项值\r\n- URI：`/api/admin/sys/settings` \r\n- 动作：GET\r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"invite_reg_code\": \"10241024\"\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+										"description": "获取常规设置选项值\r\n- URI：`/api/admin/sys/config` \r\n- 动作：GET\r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"REG_CODE\": \"10241024\",\r\n        \"STORE_TYPE\": \"UNIQUE\",\r\n        \"SYNC_DELAY\": \"10\"\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+									},
+									"response": []
+								},
+								{
+									"name": "读取配置项值",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{addr}}/api/admin/sys/config/SYNC_DELAY",
+											"host": [
+												"{{addr}}"
+											],
+											"path": [
+												"api",
+												"admin",
+												"sys",
+												"config",
+												"SYNC_DELAY"
+											]
+										},
+										"description": "读取某项配置项值\r\n- URI：`/api/admin/sys/config/{key}` \r\n- 动作：GET\r\n\r\nURI参数：\r\n- key 参数名，可选STORE_TYPE，REG_CODE，SYNC_DELAY"
+									},
+									"response": []
+								},
+								{
+									"name": "取所有可用配置项",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{addr}}/api/admin/sys/configKeys",
+											"host": [
+												"{{addr}}"
+											],
+											"path": [
+												"api",
+												"admin",
+												"sys",
+												"configKeys"
+											]
+										},
+										"description": "取所有可用的配置项名\r\n- URI：`/api/admin/sys/configKeys` \r\n- 动作：GET\r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": [\r\n        \"REG_CODE\",\r\n        \"STORE_TYPE\",\r\n        \"SYNC_DELAY\"\r\n    ],\r\n    \"msg\": \"OK\"\r\n}\r\n```"
 									},
 									"response": []
 								}
@@ -1073,7 +1111,7 @@
 					"name": "开发调试接口",
 					"item": [
 						{
-							"name": "设置存储切换阻塞状态",
+							"name": "切换只读级别",
 							"request": {
 								"method": "PUT",
 								"header": [],
@@ -1081,14 +1119,14 @@
 									"mode": "urlencoded",
 									"urlencoded": [
 										{
-											"key": "state",
-											"value": "false",
+											"key": "level",
+											"value": "null",
 											"type": "text"
 										}
 									]
 								},
 								"url": {
-									"raw": "{{addr}}/api/admin/debug/switching",
+									"raw": "{{addr}}/api/admin/debug/readOnly",
 									"host": [
 										"{{addr}}"
 									],
@@ -1096,15 +1134,15 @@
 										"api",
 										"admin",
 										"debug",
-										"switching"
+										"readOnly"
 									]
 								},
-								"description": "设置系统的存储切换阻塞状态，用于测试阻塞状态下各接口的工作情况  \r\n\r\n该状态一般在切换存储模式执行过程中为true，其他情况下为false  \r\n\r\n该状态仅在运行时有效\r\n- URI：`/api/debug/switching` \r\n- 动作：PUT  \r\n\r\n参数：\r\n- state - boolean型"
+								"description": "设置系统的只读状态，用于只读状态下各接口的工作情况  \r\n\r\n该状态一般在切换存储模式执行过程中为null\r\n\r\n该状态仅在运行时有效\r\n- URI：`/api/admin/debug/readOnly` \r\n- 动作：PUT  \r\n\r\n参数：\r\n- level 只读级别，可选DATA_MOVING，DATA_CHECKING，和null。为null时表示关闭只读模式  \r\n\r\n当系统处于任意一种只读级别（null除外）时，无法切换到另一种只读级别，必须要先切换到null后才可切换到另一个级别"
 							},
 							"response": []
 						},
 						{
-							"name": "获取存储切换阻塞状态",
+							"name": "获取只读级别",
 							"protocolProfileBehavior": {
 								"disableBodyPruning": true
 							},
@@ -1113,16 +1151,10 @@
 								"header": [],
 								"body": {
 									"mode": "urlencoded",
-									"urlencoded": [
-										{
-											"key": "state",
-											"value": "true",
-											"type": "text"
-										}
-									]
+									"urlencoded": []
 								},
 								"url": {
-									"raw": "{{addr}}/api/admin/debug/switching",
+									"raw": "{{addr}}/api/admin/debug/readOnly",
 									"host": [
 										"{{addr}}"
 									],
@@ -1130,10 +1162,31 @@
 										"api",
 										"admin",
 										"debug",
-										"switching"
+										"readOnly"
 									]
 								},
-								"description": "获取系统当前的存储切换阻塞状态\r\n\r\n该状态一般在切换存储模式执行过程中为true，其他情况下为false  \r\n\r\n该状态仅在运行时有效\r\n- URI：`/api/debug/switching` \r\n- 动作：GET"
+								"description": "获取系统当前的只读级别\r\n- URI：`/api/admin/debug/readOnly` \r\n- 动作：GET"
+							},
+							"response": []
+						},
+						{
+							"name": "获取开发者选项值",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/admin/debug/options",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"debug",
+										"options"
+									]
+								},
+								"description": "获取系统开发者选项值\r\n- URI：`/api/admin/debug/options` \r\n- 动作：GET\r\n\r\n响应样例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"read_only_level\": null,    //  系统阻塞级别\r\n        \"sync_delay\": 5             //  公共网盘同步延迟\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
 							},
 							"response": []
 						}
