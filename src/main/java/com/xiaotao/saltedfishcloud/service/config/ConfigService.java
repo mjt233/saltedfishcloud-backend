@@ -78,7 +78,7 @@ public class ConfigService {
             diskConfig.setStoreType(type.toString());
             storeTypeSwitch.switchTo(type);
             DiskConfig.setReadOnlyLevel(null);
-        } catch (RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             DiskConfig.setReadOnlyLevel(null);
             throw e;
         }
