@@ -1,8 +1,12 @@
 package com.xiaotao.saltedfishcloud.dao;
 
 import com.xiaotao.saltedfishcloud.enums.ConfigName;
+import com.xiaotao.saltedfishcloud.po.ConfigInfo;
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 public interface ConfigDao {
     /**
@@ -13,6 +17,12 @@ public interface ConfigDao {
     @Select("SELECT `value` FROM config WHERE `key` = #{key}")
     String getConfigure(ConfigName key);
 
+    /**
+     * 读取所有配置选项
+     * @return
+     */
+    @Select("SELECT `key`,`value` FROM config")
+    List<ConfigInfo> getAllConfig();
 
     /**
      * 设置一条配置信息
