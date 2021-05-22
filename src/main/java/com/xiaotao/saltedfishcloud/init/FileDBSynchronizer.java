@@ -178,7 +178,7 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
                     first = false;
                     Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
                 }
-                DiskConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_CHECKING);
+                DiskConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_MOVING);
                 log.info("开始同步文件信息");
                 long start = System.currentTimeMillis();
                 doAction();
