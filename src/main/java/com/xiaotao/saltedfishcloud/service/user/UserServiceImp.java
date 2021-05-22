@@ -29,6 +29,10 @@ public class UserServiceImp implements UserService{
     @Override
     public void grant(int uid, int type) {
         if (type > 1 || type < 0) throw new IllegalArgumentException("不合法的用户类型");
+        User admin = userDao.getUserById(uid);
+        if (admin != null && type == User.TYPE_COMMON && "admin".equals(admin.getUsername())) {
+            throw new IllegalArgumentException("不允许撤销admin用户的管理员权限");
+        }
         int res = userDao.grant(uid, type);
         if (res == 0) {
             throw new UserNoExistException(404, "用户不存在");
