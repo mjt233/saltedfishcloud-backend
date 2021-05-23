@@ -307,7 +307,10 @@ public class FileService {
         List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
         res += storeService.delete(uid, path, name);
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE && fileInfos.size() > 0) {
-            Set<String> all = fileInfos.stream().map(BasicFileInfo::getMd5).collect(Collectors.toSet());
+            Set<String> all = fileInfos.stream().filter(BasicFileInfo::isFile).map(BasicFileInfo::getMd5).collect(Collectors.toSet());
+            if (all.size() == 0) {
+                return res;
+            }
             Set<String> valid = new HashSet<>(fileDao.getValidFileMD5s(all));
             Set<String> invalid = SetUtils.diff(all, valid);
             for (String md5 : invalid) {
