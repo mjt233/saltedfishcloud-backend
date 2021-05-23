@@ -75,12 +75,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf().disable();
 
         //  处理过滤器链中出现的异常
-        http.exceptionHandling().authenticationEntryPoint(new AuthenticationEntryPoint() {
-            @Override
-            public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-                response.setContentType("application/json;charset=utf-8");
-                response.getWriter().print(JsonResult.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
-            }
+        http.exceptionHandling().authenticationEntryPoint((request, response, authException) -> {
+            response.setContentType("application/json;charset=utf-8");
+            response.getWriter().print(JsonResult.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
         });
 
         //  放行公共API和登录API

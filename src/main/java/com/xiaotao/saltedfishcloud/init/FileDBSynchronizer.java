@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 用于同步本地网盘文件的信息到数据库
- * @TODO 适配唯一文件存储方式的情况，路径操作改用PathHandler
  */
 @Component
 @Slf4j
