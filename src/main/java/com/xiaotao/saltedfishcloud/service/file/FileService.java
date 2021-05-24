@@ -306,7 +306,7 @@ public class FileService {
         long res = 0L;
         List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
         res += storeService.delete(uid, path, name);
-        if (uid == 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE && fileInfos.size() > 0) {
+        if (uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE && fileInfos.size() > 0) {
             Set<String> all = fileInfos.stream().filter(BasicFileInfo::isFile).map(BasicFileInfo::getMd5).collect(Collectors.toSet());
             if (all.size() == 0) {
                 return res;
