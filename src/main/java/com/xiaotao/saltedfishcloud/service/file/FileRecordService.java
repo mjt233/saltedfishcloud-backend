@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.dao.NodeDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -278,7 +279,7 @@ public class FileRecordService {
         // 先创建目录
         long finalTotal = total;
         for (File file1 : dirCollection.getDirList()) {
-            String path = PathUtils.getRelativePath(0, file1.getParent());
+            String path = PathUtils.getRelativePath(User.getPublicUser(), file1.getParent());
             String proc = StringUtils.getProcStr(atomicLong.get(), finalTotal, 10);
             log.info("mkdir" + proc + " " + file1.getName() + " at " + path);
             mkdir(0, file1.getName(), path);
@@ -290,7 +291,7 @@ public class FileRecordService {
         total = dirCollection.getSize();
         long finalTotal1 = total;
         for (File file : dirCollection.getFileList()) {
-            String path = PathUtils.getRelativePath(0, file.getParent());
+            String path = PathUtils.getRelativePath(User.getPublicUser(), file.getParent());
             String proc = StringUtils.getProcStr(atomicLong.get(), finalTotal1, 10);
             log.info("addFile " + proc + " " + file.getName() + " at " + path);
             FileInfo fileInfo = new FileInfo(file);

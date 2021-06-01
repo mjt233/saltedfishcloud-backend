@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.po.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,24 +11,32 @@ import java.util.List;
 public class PathUtils {
 
     /**
-     * 提取一个文件的完整本地路径中 相对网盘的路径
-     * 如 本地文件D:/data/xiaotao/a.jpg
-     * 用户ID 233，对应用户名为xiaotao
-     * 用户文件存储路径为D:/data/
-     * 则返回 /a.jpg
-     * @param uid       用户ID
+     * 提取一个文件的完整本地路径中 相对网盘的路径<br>
+     * 如 本地文件D:/data/xiaotao/a.jpg <br>
+     * 用户ID 233，对应用户名为xiaotao <br>
+     * 用户文件存储路径为D:/data/ <br>
+     * 则返回 /a.jpg <br>
+     * @param user       用户信息
      * @param localPath 本地路径
      * @return          相对网盘的路径
      */
-    public static String getRelativePath(int uid, String localPath) {
+    public static String getRelativePath(User user, String localPath) {
         String local = PathBuilder.formatPath(localPath);
-        String userBasePath = DiskConfig.getRawFileStoreRootPath(uid);
-        String res = local.substring(userBasePath.length());
+        String userBasePath;
+        String res;
+        if (user.getId() == 0) {
+            userBasePath = DiskConfig.getRawFileStoreRootPath(0);
+        } else {
+            userBasePath = DiskConfig.getUserPrivateDiskRoot(user.getUser());
+        }
+        res = local.substring(userBasePath.length());
         return res.length() == 0 ? "/" : res;
     }
 
     /**
-     * 获取该路径途径的所有节点的完整路径
+     * 获取该路径途径的所有节点的完整路径<br>
+     *      输入：/a/b/c/d
+     *      返回：["/a", "/a/b", "/a/b/c", "/a/b/c/d"]
      * @param path  路径
      * @return  所有路径
      */

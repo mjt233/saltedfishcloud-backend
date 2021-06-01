@@ -42,6 +42,19 @@ public class User implements UserDetails {
         this.type = type;
     }
 
+    /**
+     * 获取公共用户信息实例
+     */
+    public static User getPublicUser() {
+        User user = new User();
+        user.setId(0);
+        user.setUser("__SYSTEM_PUBLIC");
+        return user;
+    }
+    public boolean isPublicUser() {
+        return id == 0;
+    }
+
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
