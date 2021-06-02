@@ -51,6 +51,8 @@ public class User implements UserDetails {
         user.setUser("__SYSTEM_PUBLIC");
         return user;
     }
+
+    @JsonIgnore
     public boolean isPublicUser() {
         return id == 0;
     }
