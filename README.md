@@ -44,7 +44,7 @@ cd script
 修改start.bat或start.sh的程序属性变量后执行以下shell命令即可
 ```shell
 cd script
-./build
+./start
 ```
 
 ### 接口测试
