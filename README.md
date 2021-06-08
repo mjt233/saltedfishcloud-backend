@@ -34,30 +34,18 @@
 ```
 mysql> SOURCE db.sql
 ```
-### 修改项目配置  
-1. 复制`application.simple.yml`为`application.yml`
-2. 修改数据库jdbc连接地址，用户名和密码
-3. 修改配置文件`config.properties`中的`public.root`和`private.root`，这两个值分别表示公共网盘根目录和私有网盘根目录，需要确保用户拥有这两个路径的读写权限（项目启动时若路径不存在，会尝试自动创建）  
-  当然，这些参数也可以通过启动项目的命令行来动态修改，具体可参考后面运行项目的命令
 
-### 打包项目成jar
-在项目目录中运行命令
-```shell script
-shell> mvn package
+### 构建项目
+```shell
+cd script
+./build
 ```
-目录执行完成后jar文件将被创建在项目目录下的`/target`
-
 ### 运行项目
-```shell script
-shell> java -jar xxxx.jar --reg-code=123456 --public-root=D:/public --store-root=D:/sfd_store
-# xxx.jar为打包后的/target下的jar文件
+修改start.bat或start.sh的程序属性变量后执行以下shell命令即可
+```shell
+cd script
+./build
 ```
-
-### 应用程序命令行参数说明
-- reg-code - 注册邀请码，默认为114514，普通用户注册账号需要提供注册邀请码
-- public-root - 公共网盘的根目录
-- store-root - 私人网盘的根目录和用户个人数据存储目录（头像等）
-- store-type - 
 
 ### 接口测试
 可将`postman_collection.json`文件导入到`postman`中进行测试
