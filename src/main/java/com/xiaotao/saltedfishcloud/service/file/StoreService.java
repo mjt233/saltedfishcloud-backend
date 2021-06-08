@@ -40,7 +40,7 @@ public class StoreService {
      * @param overwrite 是否覆盖，若非true，则跳过该文件
      */
     public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE ) {
+        if ( uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE ) {
             return ;
         }
         BasicFileInfo fileInfo = new BasicFileInfo(sourceName, null);
@@ -135,7 +135,7 @@ public class StoreService {
      * @param overwrite 是否覆盖原文件
      */
     public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
-        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+        if (uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
             return;
         }
         PathHandler pathHandler = DiskConfig.getPathHandler();
@@ -170,7 +170,7 @@ public class StoreService {
      * @param newName 新文件名
      */
     public void rename(int uid, String path, String oldName, String newName) throws HasResultException {
-        if ( !(DiskConfig.getPathHandler() instanceof RawPathHandler)){
+        if ( uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE){
             return;
         }
         String base = DiskConfig.getRawFileStoreRootPath(uid);
