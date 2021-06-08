@@ -16,6 +16,15 @@ spring:
       test-while-idle: true
       test-on-borrow: false
       test-on-return: false
+  redis:
+    host: 127.0.0.1
+    password:
+    port: 6379
+    lettuce:
+      pool:
+        min-idle: 0
+        max-idle: 8
+        max-active: 8
   servlet:
     multipart:
       max-file-size: 8192MB
