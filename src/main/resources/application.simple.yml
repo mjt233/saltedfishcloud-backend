@@ -29,3 +29,9 @@ spring:
     multipart:
       max-file-size: 8192MB
       max-request-size: 8192MB
+logging:
+  level:
+    org: warn
+    com: warn
+    com.xiaotao: info
+    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn

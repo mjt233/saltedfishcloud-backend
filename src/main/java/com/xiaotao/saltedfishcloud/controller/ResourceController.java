@@ -124,7 +124,6 @@ public class ResourceController {
         } else {
             name = file.getName();
         }
-        System.out.println(name);
         return responseService.sendFile(file.getPath(), name);
     }
 
