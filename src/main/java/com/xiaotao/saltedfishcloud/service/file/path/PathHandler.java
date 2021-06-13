@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.service.file.path;
 
-import com.sun.istack.Nullable;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 
 public interface PathHandler {
@@ -11,5 +10,5 @@ public interface PathHandler {
      * @param fileInfo  目标文件信息，若为null，则表示目标目录本身的本地存储路径
      * @return 路径
      */
-    String getStorePath(int uid, String targetDir,@Nullable BasicFileInfo fileInfo);
+    String getStorePath(int uid, String targetDir,BasicFileInfo fileInfo);
 }

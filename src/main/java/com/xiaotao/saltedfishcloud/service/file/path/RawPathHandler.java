@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.path;
 
-import com.sun.istack.Nullable;
+
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
@@ -19,7 +19,7 @@ public class RawPathHandler implements PathHandler{
      * @return          目标文件在本地的存储路径
      */
     @Override
-    public String getStorePath(int uid, String targetDir,@Nullable BasicFileInfo fileInfo) {
+    public String getStorePath(int uid, String targetDir, BasicFileInfo fileInfo) {
         PathBuilder pathBuilder = new PathBuilder();
         if (fileInfo != null) {
             pathBuilder.append(DiskConfig.getRawFileStoreRootPath(uid))

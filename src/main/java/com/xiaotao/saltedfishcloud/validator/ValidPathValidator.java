@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.validator;
 
-import com.sun.xml.txw2.IllegalAnnotationException;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -16,7 +15,7 @@ public class ValidPathValidator implements ConstraintValidator<ValidPath, Object
         if (value instanceof CharSequence) {
             return valid((CharSequence)value);
         } else {
-            throw new IllegalAnnotationException("该验证注解只能使用在CharSequence的实现类字段上，错误的字段类型：" + value.getClass().getName());
+            throw new IllegalArgumentException("该验证注解只能使用在CharSequence的实现类字段上，错误的字段类型：" + value.getClass().getName());
         }
     }
 
