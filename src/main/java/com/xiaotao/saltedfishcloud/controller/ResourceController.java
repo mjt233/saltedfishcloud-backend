@@ -109,10 +109,23 @@ public class ResourceController {
      */
     @RequestMapping(value = "fileContentByMD5/{md5}/**", method = RequestMethod.GET)
     @AllowAnonymous
-    public ResponseEntity<org.springframework.core.io.Resource> downloadByMD5(@PathVariable("md5") String md5)
+    public ResponseEntity<org.springframework.core.io.Resource> downloadByMD5(
+            @PathVariable("md5") String md5,
+            @PathVariable("uid") int uid,
+            HttpServletRequest request
+    )
             throws NoSuchFileException, MalformedURLException, UnsupportedEncodingException {
         FileInfo file = fileService.getFileByMD5(md5);
-        return responseService.sendFile(file.getPath(), file.getName());
+        String path = URLUtils.getRequestFilePath(PREFIX + uid + "/fileContentByMD5/" + md5, request);
+        String name;
+        if (path.length() > 1) {
+            name = path.substring(path.lastIndexOf('/') + 1);
+            if (name.length() == 0) name = file.getName();
+        } else {
+            name = file.getName();
+        }
+        System.out.println(name);
+        return responseService.sendFile(file.getPath(), name);
     }
 
 }
