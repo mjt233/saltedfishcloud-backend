@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.securityHandler;
+package com.xiaotao.saltedfishcloud.config.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.po.JsonResult;

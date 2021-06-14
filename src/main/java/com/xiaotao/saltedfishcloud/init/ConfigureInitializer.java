@@ -19,7 +19,7 @@ public class ConfigureInitializer implements ApplicationRunner {
     private ConfigDao configDao;
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        log.info("当前系统版本：" + DiskConfig.VERSION);
+        log.info("[当前系统版本]：" + DiskConfig.VERSION);
         String storeType = configDao.getConfigure(ConfigName.STORE_TYPE);
         String regCode = configDao.getConfigure(ConfigName.REG_CODE);
         String syncDelay = configDao.getConfigure(ConfigName.SYNC_DELAY);
