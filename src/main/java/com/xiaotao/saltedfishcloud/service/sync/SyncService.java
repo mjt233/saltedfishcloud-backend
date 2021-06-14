@@ -49,7 +49,7 @@ public class SyncService {
      * @throws IOException IO出错
      */
     public void syncLocal(User user) throws IOException {
-        if (user.isPublicUser() && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+        if (!user.isPublicUser() && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
             throw new IllegalStateException("无法在UNIQUE存储模式下对非公共网盘进行数据同步");
         }
         int uid = user.getId();
