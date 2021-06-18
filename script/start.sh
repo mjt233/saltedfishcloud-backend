@@ -1,22 +1,31 @@
 #!/bin/sh
 # 应用程序参数设置
 
-# server_port  服务器端口 
-# public_root  公共网盘存储位置 
-# store_root 私人网盘及用户数据存储位置 
-# store_type 初始存储方式，可选unique或raw 
-# reg_code 注册邀请码 
-# sync_delay  同步延迟，单位分支，-1关闭 
-# sync_launch  启动后立即同步 
-# ftp_port  FTP服务端口
+# server_port  服务器端口
+# public_root  公共网盘存储位置
+# store_root 私人网盘及用户数据存储位置
+# store_type 初始存储方式，可选unique或raw
+# reg_code 注册邀请码
+# sync_delay  同步延迟，单位分支，-1关闭
+# sync_launch  启动后立即同步
+# ftp_port  FTP服务控制端口
+# ftp_passive_port FTP被动模式数据端口
+  # FTP服务被动模式端口范围
+  # 2300 : 被动模式仅使用2300做数据端口
+  # 2300-2399 : 指定闭区间端口范围
+  # 2300- : 2300开始到往后的所有端口
+  # 2300, 2305, 2400- : 指定2300，2305和2400开始到往后的所有端口
+# ftp_passive_addr FTP服务被动模式地址（在外网环境需要改为公网地址）
 server_port=8087
 public_root=data/public
 store_root=data/xyy
-store_type=unique  
-reg_code=10241024  
-sync_delay=5   
-sync_launch=false  
+store_type=unique
+reg_code=10241024
+sync_delay=5
+sync_launch=false
 ftp_port=21
+ftp-passive-addr=localhost
+ftp-passive-port=20
 
 # 数据源设置
 db_host="127.0.0.1"
@@ -46,4 +55,6 @@ java -Dfile.encoding=utf-8 -jar ../target/saltedfishcloud-1.0.0-SNAPSHOT.jar \
 --RegCode=$reg_code \
 --sync-delay=$sync_delay \
 --sync-launch=$sync_launch \
---ftp-port=$ftp_port
+--ftp-port=$ftp_port \
+--ftp-passive-addr=$ftp_passive_addr \
+--ftp-passive-port=$ftp_passive_port

@@ -55,7 +55,6 @@ public class DiskConfig {
 
     private static ReadOnlyLevel READ_ONLY_LEVEL = null;
 
-    public static int FTP_PORT = 21;
 
     public static synchronized ReadOnlyLevel getReadOnlyLevel() {
         return READ_ONLY_LEVEL;
@@ -107,11 +106,6 @@ public class DiskConfig {
         REG_CODE = v;
     }
 
-    @Value("${ftp-port}")
-    public void setFtpPort(int port) {
-        log.info("[FTP]服务端口" + port);
-        FTP_PORT = port;
-    }
 
     @Value("${sync-delay}")
     public void setSyncDelay(int v) {
