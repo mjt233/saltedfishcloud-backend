@@ -8,6 +8,7 @@
 # reg_code 注册邀请码 
 # sync_delay  同步延迟，单位分支，-1关闭 
 # sync_launch  启动后立即同步 
+# ftp_port  FTP服务端口
 server_port=8087
 public_root=data/public
 store_root=data/xyy
@@ -15,6 +16,7 @@ store_type=unique
 reg_code=10241024  
 sync_delay=5   
 sync_launch=false  
+ftp_port=21
 
 # 数据源设置
 db_host="127.0.0.1"
@@ -43,4 +45,5 @@ java -Dfile.encoding=utf-8 -jar ../target/saltedfishcloud-1.0.0-SNAPSHOT.jar \
 --store-type="$store_type" \
 --RegCode=$reg_code \
 --sync-delay=$sync_delay \
---sync-launch=$sync_launch
+--sync-launch=$sync_launch \
+--ftp-port=$ftp_port

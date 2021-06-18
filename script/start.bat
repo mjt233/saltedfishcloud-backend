@@ -8,6 +8,7 @@
 @REM reg_code 注册邀请码 
 @REM sync_delay  同步延迟，单位分支，-1关闭 
 @REM sync_launch  启动后立即同步 
+@REM ftp_port   FTP服务端口
 set server_port=8087
 set public_root=data/public
 set store_root=data/xyy
@@ -15,6 +16,7 @@ set store_type=unique
 set reg_code=10241024  
 set sync_delay=5   
 set sync_launch=false  
+set ftp_port=21
 
 @REM 数据源设置
 set db_host=127.0.0.1
@@ -43,4 +45,5 @@ java -jar ../target/saltedfishcloud-1.0.0-SNAPSHOT.jar ^
 --store-type=%store_type% ^
 --RegCode=%reg_code% ^
 --sync-delay=%sync_delay% ^
---sync-launch=%sync_launch%
+--sync-launch=%sync_launch% ^
+--ftp-port=%ftp_port%
