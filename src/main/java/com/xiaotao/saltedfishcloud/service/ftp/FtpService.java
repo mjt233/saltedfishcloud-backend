@@ -24,7 +24,6 @@ public class FtpService {
         ConnectionConfigFactory connectionConfigFactory = new ConnectionConfigFactory();
 
 
-        dataConnectionConfigurationFactory.setPassiveAddress(FtpConfig.PASSIVE_ADDR);
         dataConnectionConfigurationFactory.setPassiveExternalAddress(FtpConfig.PASSIVE_ADDR);
         dataConnectionConfigurationFactory.setPassivePorts(FtpConfig.PASSIVE_PORT);
 
