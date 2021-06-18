@@ -49,5 +49,15 @@ cd script
 ./start
 ```
 
+### 协议支持
+- FTP（实验性功能预览）  
+    1. 默认开启和使用21端口，可通过参数`ftp-port`进行修改  
+    2. Linux下非root用户请使用大于1024的端口号（不建议以root用户身份或通过sudo运该项目），但可利用端口转发实现21端口到FTP端口的转发
+    3. 暂时只支持公共网盘只读，后续开发会不断完善FTP的支持
+- WebDev  
+    暂不支持
+- Samba  
+    暂不支持
+
 ### 接口测试
 可将`postman_collection.json`文件导入到`postman`中进行测试

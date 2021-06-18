@@ -10,6 +10,9 @@ import org.apache.ftpserver.usermanager.impl.BaseUser;
 import org.springframework.stereotype.Service;
 
 
+/**
+ * FTP服务类（实验性功能，目前仅支持公共网盘只读）
+ */
 @Service
 public class FtpService {
     public FtpServer getServer() throws FtpException {
