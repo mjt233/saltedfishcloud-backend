@@ -1,13 +1,10 @@
 package com.xiaotao.saltedfishcloud.validator;
 
-import lombok.extern.slf4j.Slf4j;
-
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.util.List;
 import java.util.regex.Pattern;
 
-@Slf4j
 public class FileNameValidator implements ConstraintValidator<FileName, Object> {
     private final Pattern pattern = Pattern.compile(RejectRegex.FILE_NAME);
     @Override

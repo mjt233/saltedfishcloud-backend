@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.dao;
 import com.xiaotao.saltedfishcloud.enums.ConfigName;
 import com.xiaotao.saltedfishcloud.po.ConfigInfo;
 import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;

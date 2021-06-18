@@ -2,9 +2,6 @@ package com.xiaotao.saltedfishcloud.helper;
 
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import lombok.Data;
-import org.apache.tomcat.jni.OS;
-
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 

@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.ConfigName;
-import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;

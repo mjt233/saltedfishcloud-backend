@@ -10,7 +10,6 @@ import javax.annotation.Resource;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
