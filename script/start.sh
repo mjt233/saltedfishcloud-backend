@@ -25,7 +25,7 @@ sync_delay=5
 sync_launch=false
 ftp_port=21
 ftp-passive-addr=localhost
-ftp-passive-port=20
+ftp-passive-port=1140-5140
 
 # 数据源设置
 db_host="127.0.0.1"

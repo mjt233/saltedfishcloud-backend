@@ -26,7 +26,7 @@ set sync_delay=5
 set sync_launch=false
 set ftp_port=21
 set ftp_passive_addr=localhost
-set ftp_passive_port=20
+set ftp_passive_port=1140-5140
 
 @REM 数据源设置
 set db_host=127.0.0.1
