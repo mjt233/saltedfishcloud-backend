@@ -177,8 +177,12 @@ public class SyncService {
             log.info("被更改的文件数：" + changeFile.size());
             log.info("被删除的文件数：" + deleteCnt.get());
             log.info("==== 任务完成 ====");
-        } finally {
             DiskConfig.setReadOnlyLevel(null);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            DiskConfig.setReadOnlyLevel(null);
+            throw e;
         }
     }
 }

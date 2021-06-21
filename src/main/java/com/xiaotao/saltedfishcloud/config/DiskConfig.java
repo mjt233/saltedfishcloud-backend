@@ -60,6 +60,19 @@ public class DiskConfig {
         return READ_ONLY_LEVEL;
     }
 
+    /**
+     * 切换系统的只读模式级别<br>
+     * NOTE: 只能在只读模式的开与关之间切换，无法从只读模式的某一级别切换到另一级别<br>
+     * 例：<br>
+     *     null -> DATA_MOVING          [OK]<br>
+     *     null -> DATA_CHECKING        [OK]<br>
+     *     DATA_MOVING -> null          [OK]<br>
+     *     DATA_CHECKING -> null        [OK]<br>
+     *     DATA_MOVING -> DATA_CHECKING <strong>[!NO!]</strong> <br>
+     *     DATA_CHECKING -> DATA_MOVING <strong>[!NO!]</strong>
+     * @param level 只读模式级别
+     * @throws IllegalStateException 当系统处于只读模式下抛出此异常
+     */
     public static synchronized void setReadOnlyLevel (ReadOnlyLevel level) {
         if (level != null && READ_ONLY_LEVEL != null) {
             throw new IllegalStateException("当前已处于：" + READ_ONLY_LEVEL);
