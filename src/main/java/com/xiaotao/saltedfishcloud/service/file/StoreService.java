@@ -38,9 +38,6 @@ public class StoreService {
      * @param overwrite 是否覆盖，若非true，则跳过该文件
      */
     public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        if ( uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE ) {
-            return ;
-        }
         BasicFileInfo fileInfo = new BasicFileInfo(sourceName, null);
         String localSource = DiskConfig.getPathHandler().getStorePath(uid, source, fileInfo);
         String localTarget = DiskConfig.getPathHandler().getStorePath(targetId, target, null);
@@ -85,9 +82,14 @@ public class StoreService {
             for(File file: dirCollection.getFileList()) {
                 String src = file.getPath().substring(localSource.length());
                 String dest = localTarget + "/" + targetName + src;
-                log.debug("local filesystem copy: " + file + " ==> " + dest);
-                try { Files.copy(Paths.get(file.getPath()), Paths.get(dest), option); }
-                catch (FileAlreadyExistsException ignored) {}
+                if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+                    log.debug("create hard link: " + file + " ==> " + dest);
+                    Files.createLink(Paths.get(dest), Paths.get(file.getPath()));
+                } else {
+                    log.debug("local filesystem copy: " + file + " ==> " + dest);
+                    try { Files.copy(Paths.get(file.getPath()), Paths.get(dest), option); }
+                    catch (FileAlreadyExistsException ignored) {}
+                }
             }
         }
     }
@@ -101,27 +103,29 @@ public class StoreService {
      * @throws HasResultException 存储文件出错
      */
     public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws HasResultException, IOException {
-        String target = DiskConfig.getPathHandler().getStorePath(uid, targetDir, fileInfo);
-        Path tarterPath = Paths.get(target);
+        Path md5Target = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, targetDir, fileInfo));
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
-            if (Files.exists(tarterPath) )
-                if (Files.size(tarterPath) != fileInfo.getSize()) {
+            if (Files.exists(md5Target)) {
+                log.debug("file md5 HIT:" + fileInfo.getMd5());
+                if (Files.size(md5Target) != fileInfo.getSize()) {
                     throw new DuplicateKeyException("文件MD5冲突");
-                } else {
-                    return;
                 }
-        }
-        PathBuilder pathBuilder = new PathBuilder();
-        pathBuilder.append(target);
-        Path dir = Paths.get(pathBuilder.range(-1));
-        if (!Files.exists(dir)) {
-            if (!dir.toFile().mkdirs()) {
-                throw new IOException("目标目录" + dir.toString() + "创建失败");
+            } else {
+                log.debug("file md5 NOT HIT, saving:" + fileInfo.getMd5());
+                FileUtils.createParentDirectory(md5Target);
+                Files.copy(input, md5Target, StandardCopyOption.REPLACE_EXISTING);
             }
-        } else if (!Files.isDirectory(dir)) {
-            throw new IOException("目标目录" + dir.toString() + "是文件");
         }
-        Files.copy(input, tarterPath, StandardCopyOption.REPLACE_EXISTING);
+        Path rawTarget = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, targetDir, fileInfo));
+        FileUtils.createParentDirectory(rawTarget);
+        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+            log.info("create hard link:" + md5Target + " <==> "  + rawTarget);
+            if (Files.exists(rawTarget)) Files.delete(rawTarget);
+            Files.createLink(rawTarget, md5Target);
+        } else {
+            log.info("save file:" + rawTarget);
+            Files.copy(input, rawTarget, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     /**
@@ -133,9 +137,6 @@ public class StoreService {
      * @param overwrite 是否覆盖原文件
      */
     public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
-        if (uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
-            return;
-        }
         PathHandler pathHandler = DiskConfig.getPathHandler();
         BasicFileInfo fileInfo = new BasicFileInfo(name, null);
         Path sourcePath = Paths.get(pathHandler.getStorePath(uid, source, fileInfo));
@@ -168,9 +169,6 @@ public class StoreService {
      * @param newName 新文件名
      */
     public void rename(int uid, String path, String oldName, String newName) throws HasResultException {
-        if ( uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE){
-            return;
-        }
         String base = DiskConfig.getRawFileStoreRootPath(uid);
         File origin = new File(base + "/" + path + "/" + oldName);
         File dist = new File(base + "/" + path + "/" + newName);
@@ -194,9 +192,6 @@ public class StoreService {
      * @return 是否创建成功
      */
     public boolean mkdir(int uid, String path, String name) {
-        if (uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
-            return true;
-        }
         String localFilePath = DiskConfig.getRawFileStoreRootPath(uid) + "/" + path + "/" + name;
         File file = new File(localFilePath);
         if (file.mkdir()) {
@@ -251,9 +246,6 @@ public class StoreService {
      * @return 删除的文件和文件夹总数
      */
     public long delete(int uid, String path, Collection<String> files) {
-        if (uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
-            return 1;
-        }
         AtomicLong cnt = new AtomicLong();
         // 本地物理基础路径
         String basePath = DiskConfig.getRawFileStoreRootPath(uid)  + "/" + path;

@@ -23,10 +23,6 @@ public class UniquePathHandler implements PathHandler {
      */
     @Override
     public String getStorePath(int uid, String targetDir, BasicFileInfo fileInfo) {
-        if (uid == 0) {
-            return rawPathHandler.getStorePath(uid, targetDir, fileInfo);
-        }
-
         if (fileInfo.isDir()) {
             return null;
         } else {

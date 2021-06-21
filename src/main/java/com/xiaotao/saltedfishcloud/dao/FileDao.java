@@ -24,7 +24,7 @@ public interface FileDao {
      */
     @Select({
             "<script>",
-                "SELECT md5 FROM file_table WHERE uid != 0 AND md5 in ",
+                "SELECT md5 FROM file_table WHERE md5 in ",
                 "<foreach collection='md5' item='md5' open='(' separator=',' close=')'>",
                 "#{md5}",
                 "</foreach>" +

@@ -183,11 +183,7 @@ public class DiskConfig {
      * @return  路径操纵器示例
      */
     public static PathHandler getPathHandler() {
-        if (STORE_TYPE == StoreType.RAW) {
-            return rawPathHandler;
-        } else {
-            return uniquePathHandler;
-        }
+        return rawPathHandler;
     }
 
     /**
