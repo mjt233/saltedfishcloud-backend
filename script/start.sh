@@ -16,16 +16,16 @@
   # 2300- : 2300开始到往后的所有端口
   # 2300, 2305, 2400- : 指定2300，2305和2400开始到往后的所有端口
 # ftp_passive_addr FTP服务被动模式地址（在外网环境需要改为公网地址）
-server_port=8087
-public_root=data/public
-store_root=data/xyy
-store_type=unique
-reg_code=10241024
-sync_delay=5
-sync_launch=false
-ftp_port=21
-ftp-passive-addr=localhost
-ftp-passive-port=1140-5140
+server_port="8087"
+public_root="/data/public"
+store_root="/data/xyy"
+store_type="unique"
+reg_code="10241024"
+sync_delay="5"
+sync_launch="false"
+ftp_port="2121"
+ftp_passive_addr="localhost"
+ftp_passive_port="1140-5140"
 
 # 数据源设置
 db_host="127.0.0.1"
