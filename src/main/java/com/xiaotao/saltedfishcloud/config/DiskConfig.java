@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.UniquePathHandler;
+import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -132,6 +133,9 @@ public class DiskConfig {
 
     @Value("${public-root}")
     public void setPublicRoot(String root) {
+        if (!OSInfo.isWindows() && !root.startsWith("/"))  {
+            throw new IllegalArgumentException("public-root must be start with \"/\" in Linux");
+        }
         log.info("[公共网盘路径]" + root);
         File file = new File(root);
         DiskConfig.PUBLIC_ROOT =file.getPath();
@@ -139,6 +143,9 @@ public class DiskConfig {
 
     @Value("${store-root}")
     public void setStoreRoot(String root) {
+        if (!OSInfo.isWindows() && !root.startsWith("/"))  {
+            throw new IllegalArgumentException("store-root must be start with \"/\" in Linux");
+        }
         log.info("[私人网盘根目录]" + root);
         File file = new File(root);
         DiskConfig.STORE_ROOT =file.getPath();
