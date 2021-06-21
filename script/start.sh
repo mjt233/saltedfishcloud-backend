@@ -41,7 +41,7 @@ redis_port="6379"
 
 jdbc_url="jdbc:mysql://${db_host}:${db_port}/${db_name}?${db_params}"
 
-java -Dfile.encoding=utf-8 -jar ../target/saltedfishcloud-1.0.0-SNAPSHOT.jar \
+java -Dfile.encoding=utf-8 -jar ../target/saltedfishcloud-1.1.0-SNAPSHOT.jar \
 --server.port=$server_port \
 --spring.datasource.druid.url="$jdbc_url" \
 --spring.datasource.druid.username="$db_username" \
