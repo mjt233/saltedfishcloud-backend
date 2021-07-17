@@ -27,6 +27,34 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 @Slf4j
 public class StoreService {
+    /**
+     * 通过文件移动的方式存储文件到网盘系统
+     * @param uid           用户ID
+     * @param nativePath    本地文件路径
+     * @param diskPath      网盘路径
+     * @param fileInfo      文件信息
+     */
+    public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
+        Path sourcePath = nativePath;
+        Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo));
+        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+            // 唯一文件仓库中的路径
+            sourcePath = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, diskPath, fileInfo));
+            if (Files.exists(sourcePath)) {
+                // 已存在相同文件时，直接删除本地文件
+                Files.delete(nativePath);
+            } else {
+                // 将本地文件移动到唯一仓库
+                FileUtils.createParentDirectory(sourcePath);
+                Files.move(nativePath, sourcePath, StandardCopyOption.REPLACE_EXISTING);
+            }
+            // 在目标网盘位置创建文件仓库中的文件链接
+            Files.createLink(targetPath, sourcePath);
+        } else {
+            // 非唯一模式，直接将文件移动到目标位置
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
 
     /**
      * 在本地存储中复制用户网盘文件

@@ -56,6 +56,12 @@ public interface FileDao {
     @Select("SELECT uid, name, node, size, md5, created_at, updated_at FROM file_table WHERE uid = #{uid} AND node = #{nid}")
     List<FileInfo> getFileListByNodeId(@Param("uid") Integer uid, @Param("nid") String nodeId);
 
+    /**
+     * 搜索某个用户的文件
+     * @param uid       用户ID
+     * @param key       文件名关键字
+     * @return      文件信息列表
+     */
     @Select("SELECT A.*, B.name AS parent FROM " +
             "file_table A LEFT JOIN node_list B ON " +
             " A.node = B.id " +

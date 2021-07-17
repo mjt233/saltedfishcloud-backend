@@ -2,41 +2,49 @@ package com.xiaotao.saltedfishcloud.service.ftp;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.*;
+import org.apache.ftpserver.usermanager.AnonymousAuthentication;
+import org.apache.ftpserver.usermanager.UsernamePasswordAuthentication;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
+import org.apache.ftpserver.usermanager.impl.ConcurrentLoginPermission;
+import org.apache.ftpserver.usermanager.impl.TransferRatePermission;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.LinkedList;
+import java.util.List;
 
-@Component
 @Slf4j
+@Component
 public class DiskFtpUserManager implements UserManager {
-    @Resource
-    private UserDao userDao;
+    private final UserDao userDao;
+
+    public DiskFtpUserManager(UserDao userDao) {
+        this.userDao = userDao;
+    }
 
     @Override
-    public User getUserByName(String username) throws FtpException {
+    public BaseUser getUserByName(String username) {
         BaseUser ftpUser = new BaseUser();
-        if (username.equals("anonymous")) {
-            ftpUser.setName(username);
-            ftpUser.setHomeDirectory(DiskConfig.PUBLIC_ROOT);
-            log.info("匿名登录");
-            return ftpUser;
-        }
-        com.xiaotao.saltedfishcloud.po.User user = userDao.getUserByUser(username);
+        List<Authority> authorities = new LinkedList<>();
 
-        if (user == null) {
-            throw new FtpException("用户" + username + "不存在");
-        }
-        ftpUser.setName(user.getUsername());
-        ftpUser.setPassword(user.getPassword());
+        authorities.add(new ConcurrentLoginPermission(0, 0));
+        authorities.add(new TransferRatePermission(0, 0));
+        ftpUser.setAuthorities(authorities);
+        ftpUser.setName(username);
+        ftpUser.setHomeDirectory(DiskConfig.PUBLIC_ROOT);
         return ftpUser;
     }
 
     @Override
     public String[] getAllUserNames() throws FtpException {
-        return new String[0];
+        String[] users = (String[]) userDao.getUserList()
+                .stream()
+                .map(com.xiaotao.saltedfishcloud.po.User::getUsername)
+                .toArray();
+        return users;
     }
 
     @Override
@@ -51,11 +59,22 @@ public class DiskFtpUserManager implements UserManager {
 
     @Override
     public boolean doesExist(String username) throws FtpException {
-        return true;
+        return userDao.getUserByUser(username) != null;
     }
 
     @Override
     public User authenticate(Authentication authentication) throws AuthenticationFailedException {
+        if (authentication instanceof AnonymousAuthentication) {
+            return getUserByName("anonymous");
+        }
+        if (authentication instanceof UsernamePasswordAuthentication) {
+            UsernamePasswordAuthentication auth = (UsernamePasswordAuthentication) authentication;
+            com.xiaotao.saltedfishcloud.po.User user = userDao.getUserByUser(auth.getUsername());
+            if (user == null) return null;
+            if (user.getPassword().equals(SecureUtils.getPassswd(auth.getPassword()))) {
+                return getUserByName(auth.getUsername());
+            }
+        }
         return null;
     }
 
@@ -66,7 +85,7 @@ public class DiskFtpUserManager implements UserManager {
 
     @Override
     public boolean isAdmin(String username) throws FtpException {
-        return false;
+        return userDao.getUserByUser(username).getType() == com.xiaotao.saltedfishcloud.po.User.TYPE_ADMIN;
     }
 }
 

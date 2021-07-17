@@ -11,6 +11,16 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class RawPathHandler implements PathHandler{
+    public String getStorePath(String username, String targetDir, BasicFileInfo fileInfo) {
+        PathBuilder pb = new PathBuilder();
+        pb.append(DiskConfig.getUserPrivateDiskRoot(username))
+                .append("/")
+                .append(targetDir);
+        if (fileInfo != null) {
+            pb.append(fileInfo.getName());
+        }
+        return PathBuilder.formatPath(pb.toString());
+    }
     /**
      *
      * @param uid       用户ID 0表示公共

@@ -12,8 +12,6 @@ import javax.annotation.Resource;
  */
 @Component
 public class UniquePathHandler implements PathHandler {
-    @Resource
-    private RawPathHandler rawPathHandler;
     /**
      * 若FileInfo是文件夹，则返回null。公共用户会使用RawPathHandler
      * @param uid       用户ID 0表示公共
