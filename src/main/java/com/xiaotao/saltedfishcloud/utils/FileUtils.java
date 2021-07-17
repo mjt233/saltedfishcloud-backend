@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +43,28 @@ public class FileUtils {
 
         // 视频
         map.put("pdf", "application/pdf");
+    }
+
+    /**
+     * 若路径path所在父目录不存在，则创建该path的父目录
+     * @param path  路径
+     */
+    static public void createParentDirectory(String path) throws IOException {
+        PathBuilder pathBuilder = new PathBuilder();
+        Path target = Paths.get(pathBuilder.append(path).range(-1));
+        if (!Files.exists(target)) {
+            Files.createDirectories(target);
+        } else if (!Files.isDirectory(target)) {
+            throw new IOException(target.toString() + "是文件");
+        }
+    }
+
+    /**
+     * 若路径path所在父目录不存在，则创建该path的父目录
+     * @param path  路径
+     */
+    static public void createParentDirectory(Path path) throws IOException {
+        createParentDirectory(path.toString());
     }
 
     /**

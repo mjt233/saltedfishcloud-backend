@@ -1,15 +1,20 @@
 package com.xiaotao.saltedfishcloud.service.ftp;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.FtpConfig;
+import com.xiaotao.saltedfishcloud.service.ftp.ftplet.FtpUploadHandler;
 import org.apache.ftpserver.ConnectionConfigFactory;
 import org.apache.ftpserver.DataConnectionConfigurationFactory;
 import org.apache.ftpserver.FtpServer;
 import org.apache.ftpserver.FtpServerFactory;
 import org.apache.ftpserver.ftplet.FtpException;
+import org.apache.ftpserver.ftplet.Ftplet;
 import org.apache.ftpserver.listener.ListenerFactory;
-import org.apache.ftpserver.usermanager.impl.BaseUser;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -17,28 +22,44 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class FtpService {
+    private final DiskFtpUserManager ftpUserManager;
+    private final DiskFtpFileSystemFactory ftpFileSystemFactory;
+    private final FtpUploadHandler ftpUploadHandler;
+
+    public FtpService(DiskFtpUserManager ftpUserManager, DiskFtpFileSystemFactory ftpFileSystemFactory, FtpUploadHandler ftpUploadHandler) {
+        this.ftpUserManager = ftpUserManager;
+        this.ftpFileSystemFactory = ftpFileSystemFactory;
+        this.ftpUploadHandler = ftpUploadHandler;
+    }
+
+    @Bean
     public FtpServer getServer() throws FtpException {
-        FtpServerFactory serverFactory = new FtpServerFactory();
         ListenerFactory listenerFactory = new ListenerFactory();
+
+        //  数据连接配置
         DataConnectionConfigurationFactory dataConnectionConfigurationFactory = new DataConnectionConfigurationFactory();
-        ConnectionConfigFactory connectionConfigFactory = new ConnectionConfigFactory();
-
-
         dataConnectionConfigurationFactory.setPassiveExternalAddress(FtpConfig.PASSIVE_ADDR);
         dataConnectionConfigurationFactory.setPassivePorts(FtpConfig.PASSIVE_PORT);
 
+        //  控制连接配置
+        ConnectionConfigFactory connectionConfigFactory = new ConnectionConfigFactory();
+        connectionConfigFactory.setMaxAnonymousLogins(10);
+        connectionConfigFactory.setMaxLogins(10);
+
+        //  监听配置
         listenerFactory.setPort(FtpConfig.FTP_PORT);
         listenerFactory.setServerAddress("0.0.0.0");
         listenerFactory.setDataConnectionConfiguration(dataConnectionConfigurationFactory.createDataConnectionConfiguration());
 
-        connectionConfigFactory.setMaxAnonymousLogins(10);
-        connectionConfigFactory.setMaxLogins(10);
-        serverFactory.addListener("default", listenerFactory.createListener());
+        Map<String, Ftplet> ftplets = new HashMap<>();
+        ftplets.put("upload", ftpUploadHandler);
 
-        BaseUser defaultUser = new BaseUser();
-        defaultUser.setHomeDirectory(DiskConfig.PUBLIC_ROOT);
-        defaultUser.setName("anonymous");
-        serverFactory.getUserManager().save(defaultUser);
+        //  服务实例配置
+        FtpServerFactory serverFactory = new FtpServerFactory();
+        serverFactory.addListener("default", listenerFactory.createListener());
+        serverFactory.setUserManager(ftpUserManager);
+        serverFactory.setFileSystem(ftpFileSystemFactory);
+        serverFactory.setFtplets(ftplets);
         return serverFactory.createServer();
     }
 }

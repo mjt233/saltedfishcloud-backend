@@ -44,6 +44,7 @@ public class StoreTypeSwitch {
         log.info("切换到RAW");
         if (!Files.exists(Paths.get(DiskConfig.getRawStoreRoot()))) Files.createDirectories(Paths.get(DiskConfig.getRawStoreRoot()));
         List<User> users = userDao.getUserList();
+        users.add(User.getPublicUser());
         for (User user : users) {
             int uid = user.getId();
             log.info("Processing user data: " + user.getUsername());
@@ -74,6 +75,7 @@ public class StoreTypeSwitch {
         log.info("切换到Unique");
         if (!Files.exists(Paths.get(DiskConfig.getUniqueStoreRoot()))) Files.createDirectories(Paths.get(DiskConfig.getUniqueStoreRoot()));
         List<User> users = userDao.getUserList();
+        users.add(User.getPublicUser());
         for (User user : users) {
             log.info("Processing user data: " + user.getUsername());
             LinkedHashMap<String, List<FileInfo>> allFile = fileService.collectFiles(user.getId(), false);
@@ -86,11 +88,9 @@ public class StoreTypeSwitch {
                     Path source = Paths.get(DiskConfig.rawPathHandler.getStorePath(user.getId(), path, fileInfo));
                     String target = DiskConfig.uniquePathHandler.getStorePath(user.getId(), path, fileInfo);
                     log.info("Copy file: " + source + " -> " + target);
-                    storeService.store(user.getId(), Files.newInputStream(source), target, fileInfo);
+                    storeService.store(user.getId(), Files.newInputStream(source), path, fileInfo);
                 }
             }
         }
-//        清理存储库
-        FileUtils.delete(Paths.get(DiskConfig.getRawStoreRoot()));
     }
 }

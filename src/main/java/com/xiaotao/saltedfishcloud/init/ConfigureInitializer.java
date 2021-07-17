@@ -3,7 +3,10 @@ package com.xiaotao.saltedfishcloud.init;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.ConfigDao;
+import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.enums.ConfigName;
+import com.xiaotao.saltedfishcloud.service.StaticFileService;
+import com.xiaotao.saltedfishcloud.service.file.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -16,8 +19,15 @@ import javax.annotation.Resource;
 public class ConfigureInitializer implements ApplicationRunner {
     @Resource
     private ConfigDao configDao;
+    @Resource
+    private FileService fileService;
+    @Resource
+    private UserDao userDao;
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        StaticFileService.fileService = fileService;
+        StaticFileService.userDao = userDao;
+
         log.info("[当前系统版本]：" + DiskConfig.VERSION);
         String storeType = configDao.getConfigure(ConfigName.STORE_TYPE);
         String regCode = configDao.getConfigure(ConfigName.REG_CODE);
