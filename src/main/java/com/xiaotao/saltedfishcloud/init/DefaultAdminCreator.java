@@ -7,12 +7,14 @@ import com.xiaotao.saltedfishcloud.service.user.UserType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
 @Component
 @Slf4j
+@Order(2)
 public class DefaultAdminCreator  implements ApplicationRunner {
     @Resource
     private UserDao userDao;

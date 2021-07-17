@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -14,6 +15,7 @@ import java.util.Arrays;
  */
 @Component
 @Slf4j
+@Order(3)
 public class DirInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
