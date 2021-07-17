@@ -6,11 +6,13 @@ import org.apache.ftpserver.FtpServer;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 import javax.annotation.Resource;
 
 @Configuration
 @Slf4j
+@Order(5)
 public class FtpRunner implements ApplicationRunner {
     @Resource
     private FtpServer ftpServer;

@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.UniquePathHandler;
@@ -27,7 +28,7 @@ import java.util.Objects;
 @PropertySource("classpath:config.properties")
 @Slf4j
 public class DiskConfig {
-    public static final String VERSION = "1.1.0-SNAPSHOT";
+    public static final Version VERSION = Version.load("1.1.0-SNAPSHOT");
     public static RawPathHandler rawPathHandler;
     public static UniquePathHandler uniquePathHandler;
 

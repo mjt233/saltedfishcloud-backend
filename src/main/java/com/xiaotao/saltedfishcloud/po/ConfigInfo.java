@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.po;
 
-import com.xiaotao.saltedfishcloud.enums.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

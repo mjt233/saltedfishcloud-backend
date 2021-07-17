@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.xiaotao.saltedfishcloud.enums.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 
-import static com.xiaotao.saltedfishcloud.enums.ConfigName.STORE_TYPE;
+import static com.xiaotao.saltedfishcloud.service.config.ConfigName.STORE_TYPE;
 
 public enum StoreType {
     RAW,UNIQUE;
