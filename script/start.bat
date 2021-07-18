@@ -42,7 +42,7 @@ set redis_port=6379
 
 set jdbc_url=jdbc:mysql://%db_host%:%db_port%/%db_name%?%db_params%
 
-java -jar ../target/saltedfishcloud-1.1.0-SNAPSHOT.jar ^
+java -jar ../target/saltedfishcloud-1.1.1-SNAPSHOT.jar ^
 --server.port=%server_port% ^
 --spring.datasource.druid.url=%jdbc_url% ^
 --spring.datasource.druid.username=%db_username% ^

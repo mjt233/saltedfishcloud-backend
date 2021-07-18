@@ -27,7 +27,7 @@ import java.util.Objects;
 @Component
 @Slf4j
 public class DiskConfig {
-    public static final Version VERSION = Version.load("1.1.0-SNAPSHOT");
+    public static Version VERSION;
     public static RawPathHandler rawPathHandler;
     public static UniquePathHandler uniquePathHandler;
 
@@ -113,6 +113,11 @@ public class DiskConfig {
                 throw new HasResultException(404, "资源不存在");
             }
         }
+    }
+
+    @Value("${app.version}")
+    public void setVersion(String v) {
+        VERSION = Version.load(v);
     }
 
     @Value("${reg-code}")
