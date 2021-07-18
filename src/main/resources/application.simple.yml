@@ -35,3 +35,5 @@ logging:
     com: warn
     com.xiaotao: info
     com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
+app:
+  version: ^project.version^

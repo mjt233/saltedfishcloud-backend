@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao;
 
-import com.xiaotao.saltedfishcloud.enums.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.po.ConfigInfo;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
@@ -17,6 +17,21 @@ public interface ConfigDao {
     String getConfigure(ConfigName key);
 
     /**
+     * 读取一条配置
+     * @param key   配置键名
+     * @param defaultValue 当配置项不存在时返回的默认值
+     * @return      配置值
+     */
+    default String getConfigure(ConfigName key, String defaultValue) {
+        String configure = getConfigure(key);
+        if (configure != null) {
+            return configure;
+        } else {
+            return defaultValue;
+        }
+    }
+
+    /**
      * 读取所有配置选项
      * @return
      */
@@ -30,4 +45,13 @@ public interface ConfigDao {
      */
     @Insert("INSERT INTO config (`key`,`value`) VALUES (#{key}, #{value}) ON DUPLICATE KEY UPDATE `value`=#{value}")
     int setConfigure(ConfigName key, String value);
+
+    /**
+     * 设置一条配置信息
+     * @param key       键
+     * @param value     值
+     */
+    default int setConfigure(ConfigName key, Enum<? extends Object> value) {
+        return setConfigure(key, value.toString());
+    }
 }

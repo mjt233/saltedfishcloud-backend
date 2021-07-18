@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.service.sync.SyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -16,6 +17,7 @@ import java.io.IOException;
  */
 @Component
 @Slf4j
+@Order(4)
 public class FileDBSynchronizer implements ApplicationRunner, Runnable {
     @Resource
     private SyncService syncService;

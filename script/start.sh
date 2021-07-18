@@ -16,16 +16,16 @@
   # 2300- : 2300开始到往后的所有端口
   # 2300, 2305, 2400- : 指定2300，2305和2400开始到往后的所有端口
 # ftp_passive_addr FTP服务被动模式地址（在外网环境需要改为公网地址）
-server_port=8087
-public_root=data/public
-store_root=data/xyy
-store_type=unique
-reg_code=10241024
-sync_delay=5
-sync_launch=false
-ftp_port=21
-ftp-passive-addr=localhost
-ftp-passive-port=1140-5140
+server_port="8087"
+public_root="/data/public"
+store_root="/data/xyy"
+store_type="unique"
+reg_code="10241024"
+sync_delay="5"
+sync_launch="false"
+ftp_port="2121"
+ftp_passive_addr="localhost"
+ftp_passive_port="1140-5140"
 
 # 数据源设置
 db_host="127.0.0.1"
@@ -41,7 +41,8 @@ redis_port="6379"
 
 jdbc_url="jdbc:mysql://${db_host}:${db_port}/${db_name}?${db_params}"
 
-java -Dfile.encoding=utf-8 -jar ../target/saltedfishcloud-1.0.0-SNAPSHOT.jar \
+jar_name=`ls ../target/saltedfishcloud-*.jar`
+java -Dfile.encoding=utf-8 -jar $jar_name \
 --server.port=$server_port \
 --spring.datasource.druid.url="$jdbc_url" \
 --spring.datasource.druid.username="$db_username" \
@@ -57,4 +58,4 @@ java -Dfile.encoding=utf-8 -jar ../target/saltedfishcloud-1.0.0-SNAPSHOT.jar \
 --sync-launch=$sync_launch \
 --ftp-port=$ftp_port \
 --ftp-passive-addr=$ftp_passive_addr \
---ftp-passive-port=$ftp_passive_port
+--ftp-passive-port=$ftp_passive_port $*

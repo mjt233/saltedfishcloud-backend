@@ -20,6 +20,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User implements UserDetails {
+    public static final String SYS_NAME_PUBLIC = "__SYSTEM_PUBLIC";
+    public static final String SYS_GROUP_NAME_PUBLIC = "__SYSTEM_PUBLIC_GROUP";
+
     private static final long serialVersionUID = -2530285292010387981L;
     public static final int TYPE_ADMIN = 1;
     public static final int TYPE_COMMON = 0;
@@ -28,7 +31,7 @@ public class User implements UserDetails {
     private String pwd;
     private String token;
     private Integer lastLogin;
-    private Integer type;
+    private Integer type = User.TYPE_COMMON;
     private int quota;
 
     @lombok.Setter(AccessLevel.NONE)
@@ -48,7 +51,7 @@ public class User implements UserDetails {
     public static User getPublicUser() {
         User user = new User();
         user.setId(0);
-        user.setUser("__SYSTEM_PUBLIC");
+        user.setUser(SYS_NAME_PUBLIC);
         return user;
     }
 

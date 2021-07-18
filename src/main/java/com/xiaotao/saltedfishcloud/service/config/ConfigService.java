@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.config;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.ConfigDao;
-import com.xiaotao.saltedfishcloud.enums.ConfigName;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

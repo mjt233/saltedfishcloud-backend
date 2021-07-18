@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud;
 
+import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.junit.Test;
 
@@ -10,5 +11,11 @@ public class PathTest {
         for (String s : allNode) {
             System.out.println(s);
         }
+    }
+
+    @Test
+    public void testFtpPath() {
+        FtpPathInfo pathInfo = new FtpPathInfo("/私人网盘/a");
+        System.out.println(pathInfo.getResourceParent());
     }
 }

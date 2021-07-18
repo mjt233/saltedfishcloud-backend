@@ -1,7 +1,11 @@
 package com.xiaotao.saltedfishcloud.helper;
 
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -9,9 +13,13 @@ import java.util.LinkedList;
  * 用于构建URL
  */
 @Data
+@Slf4j
 public class PathBuilder {
     private LinkedList<String> path;
     private boolean forcePrefix = false;
+
+    @Setter(AccessLevel.NONE)
+    private String cacheString;
 
 
     public PathBuilder() {
@@ -58,9 +66,6 @@ public class PathBuilder {
         int absLength = Math.abs(length);
         int finalIndex = index < 0 ? this.path.size() + index : index;
         int finalLength = length < 0 ? this.path.size() + length : length;
-        if ( absLength > path.size() - finalIndex ) {
-            throw new IndexOutOfBoundsException();
-        }
 
 
         StringBuilder sb = new StringBuilder();
@@ -101,6 +106,7 @@ public class PathBuilder {
      */
     public PathBuilder append(String path) {
         String[] split = path.split("(/+|\\\\+)");
+        cacheString = null;
         for (String node:
              split) {
             switch (node) {
@@ -108,7 +114,9 @@ public class PathBuilder {
                 case "":
                     continue;
                 case "..":
-                    this.path.removeLast();
+                    if (this.path.size() != 0) {
+                        this.path.removeLast();
+                    }
                     break;
                 default:
                     this.path.addLast(node);
@@ -149,11 +157,15 @@ public class PathBuilder {
      */
     public PathBuilder clear() {
         path.clear();
+        cacheString = null;
         return this;
     }
 
     @Override
     public String toString() {
-        return range(path.size());
+        if (cacheString == null) {
+            cacheString = range(path.size());
+        }
+        return cacheString;
     }
 }

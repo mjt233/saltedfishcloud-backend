@@ -21,10 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -89,9 +86,7 @@ public class FileService {
             throw new IllegalArgumentException("无法原地复制");
         }
         fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName,overwrite);
-        log.debug("Finish DB data copy");
         storeService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
-        log.debug("Finish local filesystem data copy");
     }
 
     /**
@@ -245,6 +240,47 @@ public class FileService {
         return fileDao.search(uid, key);
     }
 
+    /**
+     * 通过移动本地文件的方式存储文件
+     * @param uid               用户ID
+     * @param nativeFilePath    本地文件路径
+     * @param path              网盘路径
+     * @throws IOException      存储出错
+     */
+    public void moveToSaveFile(int uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
+        storeService.moveToSave(uid, nativeFilePath, path, fileInfo);
+        int res = fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), path);
+        if ( res == 0) {
+            fileRecordService.updateFileRecord(uid, fileInfo.getName(), path, fileInfo.getSize(), fileInfo.getMd5());
+        }
+    }
+
+
+    /**
+     * 保存数据流的数据到网盘系统中
+     * @param uid         用户ID 0表示公共
+     * @param stream      要保存的数据流
+     * @param path        文件要保存到的网盘目录
+     * @param fileInfo    文件信息
+     * @throws IOException 本地文件写入失败时抛出
+     * @throws HasResultException 文件夹同名时抛出
+     */
+    public int saveFile(int uid,
+                        InputStream stream,
+                        String path,
+                        FileInfo fileInfo) throws IOException {
+        if (fileInfo.getMd5() == null) {
+            fileInfo.updateMd5();
+        }
+        storeService.store(uid, stream, path, fileInfo);
+
+        int res = fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), path);
+        if ( res == 0) {
+            return fileRecordService.updateFileRecord(uid, fileInfo.getName(), path, fileInfo.getSize(), fileInfo.getMd5());
+        } else {
+            return res;
+        }
+    }
 
     /**
      * 保存上传的文件到网盘系统中
@@ -306,7 +342,7 @@ public class FileService {
         long res = 0L;
         List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
         res += storeService.delete(uid, path, name);
-        if (uid != 0 && DiskConfig.STORE_TYPE == StoreType.UNIQUE && fileInfos.size() > 0) {
+        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE && fileInfos.size() > 0) {
             Set<String> all = fileInfos.stream().filter(BasicFileInfo::isFile).map(BasicFileInfo::getMd5).collect(Collectors.toSet());
             if (all.size() == 0) {
                 return res;

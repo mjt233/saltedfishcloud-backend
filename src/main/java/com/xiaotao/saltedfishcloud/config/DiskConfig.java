@@ -5,13 +5,14 @@ import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.UniquePathHandler;
+import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -23,10 +24,9 @@ import java.util.Objects;
  * 全局配置信息类，用于读取配置文件中的参数
  */
 @Component
-@PropertySource("classpath:config.properties")
 @Slf4j
 public class DiskConfig {
-    public static final String VERSION = "1.0.0-SNAPSHOT";
+    public static Version VERSION;
     public static RawPathHandler rawPathHandler;
     public static UniquePathHandler uniquePathHandler;
 
@@ -114,6 +114,11 @@ public class DiskConfig {
         }
     }
 
+    @Value("${app.version}")
+    public void setVersion(String v) {
+        VERSION = Version.load(v);
+    }
+
     @Value("${reg-code}")
     public void setRegCode(String v) {
         REG_CODE = v;
@@ -132,6 +137,9 @@ public class DiskConfig {
 
     @Value("${public-root}")
     public void setPublicRoot(String root) {
+        if (!OSInfo.isWindows() && !root.startsWith("/"))  {
+            throw new IllegalArgumentException("public-root must be start with \"/\" in Linux");
+        }
         log.info("[公共网盘路径]" + root);
         File file = new File(root);
         DiskConfig.PUBLIC_ROOT =file.getPath();
@@ -139,6 +147,9 @@ public class DiskConfig {
 
     @Value("${store-root}")
     public void setStoreRoot(String root) {
+        if (!OSInfo.isWindows() && !root.startsWith("/"))  {
+            throw new IllegalArgumentException("store-root must be start with \"/\" in Linux");
+        }
         log.info("[私人网盘根目录]" + root);
         File file = new File(root);
         DiskConfig.STORE_ROOT =file.getPath();
@@ -183,11 +194,7 @@ public class DiskConfig {
      * @return  路径操纵器示例
      */
     public static PathHandler getPathHandler() {
-        if (STORE_TYPE == StoreType.RAW) {
-            return rawPathHandler;
-        } else {
-            return uniquePathHandler;
-        }
+        return rawPathHandler;
     }
 
     /**
