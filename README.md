@@ -47,9 +47,9 @@ cd script
 ```
 
 ### 命令行选项
-- --switch 可选值:RAW/UNIQUE,启动存储切换程序，一般用于低版本UNIQUE模式下升级到新版本以解决兼容性问题，用例：
+- --switch 可选值:RAW/UNIQUE,启动存储切换程序，一般用于低版本UNIQUE模式下升级到新版本以解决兼容性问题，以bash下为例：
     ```shell script
-    shell > java -jar xxx.jar --switch=RAW
+    项目目录/script@localhost $ start.sh --switch=RAW
     ```
   注意：对数据而言这是高危操作，仍然建议提前备份好数据防止丢失
 
