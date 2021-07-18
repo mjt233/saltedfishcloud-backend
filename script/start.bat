@@ -1,22 +1,22 @@
 @echo off
-@REM åº”ç”¨ç¨‹åºå‚æ•°è®¾ç½®
+@REM Ó¦ÓÃ³ÌĞò²ÎÊıÉèÖÃ
 
-@REM server_port  æœåŠ¡å™¨ç«¯å£
-@REM public_root  å…¬å…±ç½‘ç›˜å­˜å‚¨ä½ç½®
-@REM store_root ç§äººç½‘ç›˜åŠç”¨æˆ·æ•°æ®å­˜å‚¨ä½ç½®
-@REM store_type åˆå§‹å­˜å‚¨æ–¹å¼ï¼Œå¯é€‰uniqueæˆ–raw
-@REM reg_code æ³¨å†Œé‚€è¯·ç 
-@REM sync_delay  åŒæ­¥å»¶è¿Ÿï¼Œå•ä½åˆ†æ”¯ï¼Œ-1å…³é—­
-@REM sync_launch  å¯åŠ¨åç«‹å³åŒæ­¥
-@REM ftp_port   FTPæœåŠ¡ç«¯å£
+@REM server_port  ·şÎñÆ÷¶Ë¿Ú
+@REM public_root  ¹«¹²ÍøÅÌ´æ´¢Î»ÖÃ
+@REM store_root Ë½ÈËÍøÅÌ¼°ÓÃ»§Êı¾İ´æ´¢Î»ÖÃ
+@REM store_type ³õÊ¼´æ´¢·½Ê½£¬¿ÉÑ¡unique»òraw
+@REM reg_code ×¢²áÑûÇëÂë
+@REM sync_delay  Í¬²½ÑÓ³Ù£¬µ¥Î»·ÖÖ§£¬-1¹Ø±Õ
+@REM sync_launch  Æô¶¯ºóÁ¢¼´Í¬²½
+@REM ftp_port   FTP·şÎñ¶Ë¿Ú
 
-@REM ftp_passive_port FTPè¢«åŠ¨æ¨¡å¼æ•°æ®ç«¯å£
-    @REM FTPæœåŠ¡è¢«åŠ¨æ¨¡å¼ç«¯å£èŒƒå›´
-    @REM 2300 : è¢«åŠ¨æ¨¡å¼ä»…ä½¿ç”¨2300åšæ•°æ®ç«¯å£
-    @REM 2300-2399 : æŒ‡å®šé—­åŒºé—´ç«¯å£èŒƒå›´
-    @REM 2300- : 2300å¼€å§‹åˆ°å¾€åçš„æ‰€æœ‰ç«¯å£
-    @REM 2300, 2305, 2400- : æŒ‡å®š2300ï¼Œ2305å’Œ2400å¼€å§‹åˆ°å¾€åçš„æ‰€æœ‰ç«¯å£
-@REM ftp_passive_addr FTPæœåŠ¡è¢«åŠ¨æ¨¡å¼åœ°å€ï¼ˆåœ¨å¤–ç½‘ç¯å¢ƒéœ€è¦æ”¹ä¸ºå…¬ç½‘åœ°å€ï¼‰
+@REM ftp_passive_port FTP±»¶¯Ä£Ê½Êı¾İ¶Ë¿Ú
+    @REM FTP·şÎñ±»¶¯Ä£Ê½¶Ë¿Ú·¶Î§
+    @REM 2300 : ±»¶¯Ä£Ê½½öÊ¹ÓÃ2300×öÊı¾İ¶Ë¿Ú
+    @REM 2300-2399 : Ö¸¶¨±ÕÇø¼ä¶Ë¿Ú·¶Î§
+    @REM 2300- : 2300¿ªÊ¼µ½ÍùºóµÄËùÓĞ¶Ë¿Ú
+    @REM 2300, 2305, 2400- : Ö¸¶¨2300£¬2305ºÍ2400¿ªÊ¼µ½ÍùºóµÄËùÓĞ¶Ë¿Ú
+@REM ftp_passive_addr FTP·şÎñ±»¶¯Ä£Ê½µØÖ·£¨ÔÚÍâÍø»·¾³ĞèÒª¸ÄÎª¹«ÍøµØÖ·£©
 set server_port=8087
 set public_root=data/public
 set store_root=data/xyy
@@ -28,7 +28,7 @@ set ftp_port=21
 set ftp_passive_addr=localhost
 set ftp_passive_port=1140-5140
 
-@REM æ•°æ®æºè®¾ç½®
+@REM Êı¾İÔ´ÉèÖÃ
 set db_host=127.0.0.1
 set db_port=3306
 set db_name=xyy
@@ -58,4 +58,4 @@ java -jar ../target/saltedfishcloud-1.1.0-SNAPSHOT.jar ^
 --sync-launch=%sync_launch% ^
 --ftp-port=%ftp_port% ^
 --ftp-passive-addr=%ftp_passive_addr% ^
---ftp-passive-port=%ftp_passive_port%
+--ftp-passive-port=%ftp_passive_port% %*

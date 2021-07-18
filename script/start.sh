@@ -57,4 +57,4 @@ java -Dfile.encoding=utf-8 -jar ../target/saltedfishcloud-1.1.0-SNAPSHOT.jar \
 --sync-launch=$sync_launch \
 --ftp-port=$ftp_port \
 --ftp-passive-addr=$ftp_passive_addr \
---ftp-passive-port=$ftp_passive_port
+--ftp-passive-port=$ftp_passive_port $*
