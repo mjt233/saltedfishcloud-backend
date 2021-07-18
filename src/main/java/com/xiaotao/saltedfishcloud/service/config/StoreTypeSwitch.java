@@ -2,10 +2,12 @@ package com.xiaotao.saltedfishcloud.service.config;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.dao.ConfigDao;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -29,9 +31,7 @@ public class StoreTypeSwitch {
     @Resource
     private StoreService storeService;
     @Resource
-    private FileDao fileDao;
-    @Resource
-    private NodeService nodeService;
+    private ConfigDao configDao;
     @Resource
     private FileService fileService;
 
@@ -44,7 +44,12 @@ public class StoreTypeSwitch {
         log.info("切换到RAW");
         if (!Files.exists(Paths.get(DiskConfig.getRawStoreRoot()))) Files.createDirectories(Paths.get(DiskConfig.getRawStoreRoot()));
         List<User> users = userDao.getUserList();
-        users.add(User.getPublicUser());
+
+        // 1.0.0 -> 1.1.0切换兼容
+        String v = configDao.getConfigure(ConfigName.VERSION);
+        if (v != null) {
+            users.add(User.getPublicUser());
+        }
         for (User user : users) {
             int uid = user.getId();
             log.info("Processing user data: " + user.getUsername());
