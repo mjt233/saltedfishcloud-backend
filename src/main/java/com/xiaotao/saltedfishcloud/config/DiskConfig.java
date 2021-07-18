@@ -25,7 +25,6 @@ import java.util.Objects;
  * 全局配置信息类，用于读取配置文件中的参数
  */
 @Component
-@PropertySource("classpath:config.properties")
 @Slf4j
 public class DiskConfig {
     public static final Version VERSION = Version.load("1.1.0-SNAPSHOT");

@@ -45,4 +45,13 @@ public interface ConfigDao {
      */
     @Insert("INSERT INTO config (`key`,`value`) VALUES (#{key}, #{value}) ON DUPLICATE KEY UPDATE `value`=#{value}")
     int setConfigure(ConfigName key, String value);
+
+    /**
+     * 设置一条配置信息
+     * @param key       键
+     * @param value     值
+     */
+    default int setConfigure(ConfigName key, Enum value) {
+        return setConfigure(key, value.toString());
+    }
 }
