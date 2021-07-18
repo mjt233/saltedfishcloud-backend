@@ -51,7 +51,7 @@ public interface ConfigDao {
      * @param key       键
      * @param value     值
      */
-    default int setConfigure(ConfigName key, Enum value) {
+    default int setConfigure(ConfigName key, Enum<? extends Object> value) {
         return setConfigure(key, value.toString());
     }
 }
