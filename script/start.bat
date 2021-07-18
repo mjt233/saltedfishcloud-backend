@@ -42,7 +42,8 @@ set redis_port=6379
 
 set jdbc_url=jdbc:mysql://%db_host%:%db_port%/%db_name%?%db_params%
 
-java -jar ../target/saltedfishcloud-1.1.1-SNAPSHOT.jar ^
+for /F %%i in ('cmd /r dir "../target" /b ^| findstr "saltedfishcloud-.*.jar$"') do ( set jar_name=%%i )
+java -jar ../target/%jar_name% ^
 --server.port=%server_port% ^
 --spring.datasource.druid.url=%jdbc_url% ^
 --spring.datasource.druid.username=%db_username% ^
