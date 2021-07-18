@@ -5,10 +5,11 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.ConfigDao;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
-import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.StaticFileService;
+import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
+import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -78,5 +79,10 @@ public class ConfigureInitializer implements ApplicationRunner {
         log.info("[存储模式]："+ storeType);
         log.info("[注册邀请码]："+ regCode);
         log.info("[同步延迟]：" + syncDelay);
+        if (DiskConfig.VERSION.getTag() != VersionTag.RELEASE) {
+            log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
+            log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
+            log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
+        }
     }
 }
