@@ -26,7 +26,12 @@ public class FtpService {
     private final DiskFtpFileSystemFactory ftpFileSystemFactory;
     private final FtpUploadHandler ftpUploadHandler;
 
-    public FtpService(DiskFtpUserManager ftpUserManager, DiskFtpFileSystemFactory ftpFileSystemFactory, FtpUploadHandler ftpUploadHandler) {
+    public FtpService(
+        FtpConfig ftpConfig, 
+        DiskFtpUserManager ftpUserManager, 
+        DiskFtpFileSystemFactory ftpFileSystemFactory, 
+        FtpUploadHandler ftpUploadHandler
+    ) {
         this.ftpUserManager = ftpUserManager;
         this.ftpFileSystemFactory = ftpFileSystemFactory;
         this.ftpUploadHandler = ftpUploadHandler;
