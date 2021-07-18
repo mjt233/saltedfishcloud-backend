@@ -9,6 +9,7 @@ import org.apache.ftpserver.ftplet.User;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 
 @Component
 public class DiskFtpFileSystemFactory implements FileSystemFactory {
@@ -18,14 +19,18 @@ public class DiskFtpFileSystemFactory implements FileSystemFactory {
     }
     @Override
     public FileSystemView createFileSystemView(User user) throws FtpException {
-        if (user.getName().equals("anonymous")) {
-            return new DiskFtpFileSystemView(DiskFtpUser.getAnonymousUser());
+        try {
+            if (user.getName().equals("anonymous")) {
+                return new DiskFtpFileSystemView(DiskFtpUser.getAnonymousUser());
+            }
+            com.xiaotao.saltedfishcloud.po.User dbUser = userDao.getUserByUser(user.getName());
+            if (dbUser == null) {
+                throw new UserNoExistException("用户" + user + "不存在");
+            }
+            DiskFtpUser ftpUser = new DiskFtpUser(dbUser);
+            return new DiskFtpFileSystemView(ftpUser);
+        } catch (IOException e) {
+            throw new FtpException(e.getMessage());
         }
-        com.xiaotao.saltedfishcloud.po.User dbUser = userDao.getUserByUser(user.getName());
-        if (dbUser == null) {
-            throw new UserNoExistException("用户" + user + "不存在");
-        }
-        DiskFtpUser ftpUser = new DiskFtpUser(dbUser);
-        return new DiskFtpFileSystemView(ftpUser);
     }
 }
