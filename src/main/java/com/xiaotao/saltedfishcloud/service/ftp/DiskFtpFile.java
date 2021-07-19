@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.ftp;
 
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
@@ -78,6 +80,9 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean isWritable() {
+        if (DiskConfig.getReadOnlyLevel() == ReadOnlyLevel.DATA_MOVING) {
+            return false;
+        }
         // FTP根目录不可写
         if (pathInfo.isFtpRoot()) {
             log.debug("根目录写入拒绝");
