@@ -35,24 +35,30 @@ public class StoreService {
      * @param fileInfo      文件信息
      */
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
-        Path sourcePath = nativePath;
-        Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo));
+        Path sourcePath = nativePath; // 本地源文件
+        Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
             // 唯一文件仓库中的路径
-            sourcePath = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, diskPath, fileInfo));
+            sourcePath = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, diskPath, fileInfo)); // 文件仓库源文件路径
             if (Files.exists(sourcePath)) {
                 // 已存在相同文件时，直接删除本地文件
+                log.debug("file md5 HIT: {}", fileInfo.getMd5());
                 Files.delete(nativePath);
             } else {
                 // 将本地文件移动到唯一仓库
+                log.debug("file md5 NOT HIT: {}", fileInfo.getMd5());
                 FileUtils.createParentDirectory(sourcePath);
                 Files.move(nativePath, sourcePath, StandardCopyOption.REPLACE_EXISTING);
             }
             // 在目标网盘位置创建文件仓库中的文件链接
+            log.debug("Create file link: {} <==> {}", targetPath, sourcePath);
             Files.createLink(targetPath, sourcePath);
         } else {
             // 非唯一模式，直接将文件移动到目标位置
-            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            if (!sourcePath.equals(targetPath)) {
+                log.debug("File move {} => {}", sourcePath, targetPath);
+                Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
         }
     }
 

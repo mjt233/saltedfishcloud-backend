@@ -10,6 +10,7 @@ import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -21,12 +22,24 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+
+class ChangeFile {
+    public FileInfo oldFile;
+    public FileInfo newFile;
+
+    public ChangeFile(FileInfo oldFile, FileInfo newFile) {
+        this.oldFile = oldFile;
+        this.newFile = newFile;
+    }
+}
 
 @Service
 @Slf4j
@@ -42,16 +55,17 @@ public class SyncService {
     private FileService fileService;
     @Resource
     private FileDao fileDao;
+    @Resource
+    private StoreService storeService;
 
     /**
      * 同步目标用户的数据库与本地文件信息
+     * @TODO 这个代码太臃肿了，抽象分离出一个SyncDiffVisitor接口（仿Java NIO的FileVisitor)
+     * @TODO 性能优化：找出被重命名的文件，目录和被移动的目录
      * @param user  用户对象信息
      * @throws IOException IO出错
      */
     public void syncLocal(User user) throws IOException {
-        if (!user.isPublicUser() && DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
-            throw new IllegalStateException("无法在UNIQUE存储模式下对非公共网盘进行数据同步");
-        }
         int uid = user.getId();
         try {
             DiskConfig.setReadOnlyLevel(readOnlyLevel);
@@ -130,26 +144,28 @@ public class SyncService {
             });
 
             //  筛选出本地文件被更改和增加的部分
-            LinkedList<FileInfo> newFile = new LinkedList<>(), changeFile = new LinkedList<>();
+            LinkedList<FileInfo> newFiles = new LinkedList<>();
+            LinkedList<ChangeFile> changeFiles = new LinkedList<>();
             for (File e : local.getFileList()) {
                 String path = PathUtils.getRelativePath(user, e.getPath());
                 FileInfo f = dbFiles.get(path);
                 if ( f == null ) {
                     FileInfo fi = new FileInfo(e);
                     fi.setPath(PathUtils.getRelativePath(user, e.getParent()));
-                    newFile.add(fi);
+                    newFiles.add(fi);
                 } else if ( e.length() != f.getSize() ) {
                     FileInfo fi = new FileInfo(e);
                     fi.setPath(PathUtils.getRelativePath(user, e.getParent()));
-                    changeFile.add(fi);
+                    changeFiles.add(new ChangeFile(f, fi));
                 }
             }
 
             cnt = 0;
-            total = newFile.size();
-            for (FileInfo fileInfo : newFile) {
+            total = newFiles.size();
+            for (FileInfo fileInfo : newFiles) {
                 fileInfo.updateMd5();
                 String proc = "添加文件:" + StringUtils.getProcStr(++cnt, total, 32);
+                storeService.moveToSave(uid, fileInfo.getOriginFile().toPath(), fileInfo.getPath(), fileInfo);
                 if (fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), fileInfo.getPath()) <= 0) {
                     log.error("信息添加失败：" + fileInfo.getPath() + "/" + fileInfo.getName() + " MD5:" + fileInfo.getMd5());
                 }
@@ -157,24 +173,44 @@ public class SyncService {
             }
 
             cnt = 0;
-            total = changeFile.size();
-            for (FileInfo fileInfo : changeFile) {
-                fileInfo.updateMd5();
-                fileDao.updateRecord(
-                        uid,
-                        fileInfo.getName(),
-                        nodeService.getLastNodeInfoByPath(uid, fileInfo.getPath()).getId(),
-                        fileInfo.getSize(),
-                        fileInfo.getMd5()
-                );
+            total = changeFiles.size();
+            for (ChangeFile changeInfo : changeFiles) {
+                FileInfo newFile = changeInfo.newFile;
+                newFile.updateMd5();
+                if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+                    fileService.moveToSaveFile(
+                            uid,
+                            newFile.getOriginFile().toPath(),
+                            newFile.getPath(),
+                            newFile
+                            );
+                    FileInfo oldFile = changeInfo.oldFile;
+                    List<FileInfo> list = fileDao.getFilesByMD5(oldFile.getMd5(), 1);
+                    if (list.size() == 0) {
+                        log.debug("File no longer referenced: {}", oldFile.getMd5());
+                        try {
+                            storeService.delete(oldFile.getMd5());
+                        } catch (NoSuchFileException e) {
+                            log.warn("Not found md5 file : {}", e.getMessage());
+                        }
+                    }
+                } else {
+                    fileDao.updateRecord(
+                            uid,
+                            newFile.getName(),
+                            nodeService.getLastNodeInfoByPath(uid, newFile.getPath()).getId(),
+                            newFile.getSize(),
+                            newFile.getMd5()
+                    );
+                }
                 String proc = "更新文件:" + StringUtils.getProcStr(++cnt, total, 32);
                 log.info(proc);
             }
             log.info("==== 任务统计 ====");
             log.info("被删除的目录数：" + localLostDir.size());
             log.info("新增的目录数：" + dbLostDir.size());
-            log.info("新增的文件数：" + newFile.size());
-            log.info("被更改的文件数：" + changeFile.size());
+            log.info("新增的文件数：" + newFiles.size());
+            log.info("被更改的文件数：" + changeFiles.size());
             log.info("被删除的文件数：" + deleteCnt.get());
             log.info("==== 任务完成 ====");
             DiskConfig.setReadOnlyLevel(null);
