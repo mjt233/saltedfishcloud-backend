@@ -26,6 +26,9 @@ public class FtpUploadHandler extends DefaultFtplet {
         this.userDao = userDao;
     }
 
+    /**
+     * 开始文件上传时获取好用户id与路径信息
+     */
     @Override
     public FtpletResult onUploadStart(FtpSession session, FtpRequest request) throws FtpException, IOException {
         FtpPathInfo pathInfo = new FtpPathInfo(session.getFileSystemView().getWorkingDirectory().getAbsolutePath() + "/" + request.getArgument());
@@ -43,6 +46,10 @@ public class FtpUploadHandler extends DefaultFtplet {
         return FtpletResult.DEFAULT;
     }
 
+
+    /**
+     * 完成上传时更新文件表信息
+     */
     @Override
     public FtpletResult onUploadEnd(FtpSession session, FtpRequest request) throws FtpException, IOException {
         log.debug("upload end");
@@ -51,6 +58,10 @@ public class FtpUploadHandler extends DefaultFtplet {
         int uid = (int) session.getAttribute("uid");
         String tmpDir = System.getProperty("java.io.tmpdir");
         String tag = uid + SecureUtils.getMd5(pathInfo.getFullPath());
+
+        /*
+          获取FTP接收的临时文件路径
+         */
         Path nativePath = Paths.get(tmpDir + File.separator + tag);
 
         FileInfo fileInfo = FileInfo.getLocal(nativePath.toString());

@@ -37,24 +37,14 @@ import java.nio.file.NoSuchFileException;
 @ReadOnlyBlock
 public class ResourceController {
     public static final String PREFIX = "/api/resource/";
-    @Resource
-    FileService fileService;
-    @Resource
-    FileRecordService fileRecordService;
-    @Resource
-    NodeService nodeService;
-    @Resource
-    ResponseService responseService;
+    private final FileService fileService;
+    private final NodeService nodeService;
+    private final ResponseService responseService;
 
-
-    /**
-     * 仅限管理员：生成公共文件信息记录并写入到数据库中
-     */
-    @PostMapping("makePublicRecord")
-    @RolesAllowed({"ADMIN"})
-    public JsonResult makePublicRecord() throws IOException {
-        fileRecordService.makePublicRecord();
-        return JsonResult.getInstance();
+    public ResourceController(FileService fileService, NodeService nodeService, ResponseService responseService) {
+        this.fileService = fileService;
+        this.nodeService = nodeService;
+        this.responseService = responseService;
     }
 
     /**

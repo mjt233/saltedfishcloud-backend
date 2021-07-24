@@ -27,9 +27,9 @@ public class FtpService {
     private final FtpUploadHandler ftpUploadHandler;
 
     public FtpService(
-        FtpConfig ftpConfig, 
-        DiskFtpUserManager ftpUserManager, 
-        DiskFtpFileSystemFactory ftpFileSystemFactory, 
+        FtpConfig ftpConfig, // 仅声明依赖关系，FtpService依赖FtpConfig，否则FtpConfig被调用时可能未被Spring装配
+        DiskFtpUserManager ftpUserManager,
+        DiskFtpFileSystemFactory ftpFileSystemFactory,
         FtpUploadHandler ftpUploadHandler
     ) {
         this.ftpUserManager = ftpUserManager;

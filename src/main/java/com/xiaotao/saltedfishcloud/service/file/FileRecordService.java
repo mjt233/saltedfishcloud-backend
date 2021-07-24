@@ -266,41 +266,6 @@ public class FileRecordService {
     }
 
     /**
-     * 将本地公共网盘的文件信息写入数据库
-     */
-    public void makePublicRecord() throws IOException {
-        DirCollection dirCollection = FileUtils.scanDir(Paths.get(DiskConfig.getRawFileStoreRootPath(0)));
-        AtomicLong atomicLong = new AtomicLong();
-        atomicLong.set(0);
-        long total = dirCollection.getDirsCount();
-
-        // 先创建目录
-        long finalTotal = total;
-        for (File file1 : dirCollection.getDirList()) {
-            String path = PathUtils.getRelativePath(User.getPublicUser(), file1.getParent());
-            String proc = StringUtils.getProcStr(atomicLong.get(), finalTotal, 10);
-            log.info("mkdir" + proc + " " + file1.getName() + " at " + path);
-            mkdir(0, file1.getName(), path);
-            atomicLong.incrementAndGet();
-        }
-
-        // 再添加文件
-        atomicLong.set(0);
-        total = dirCollection.getSize();
-        long finalTotal1 = total;
-        for (File file : dirCollection.getFileList()) {
-            String path = PathUtils.getRelativePath(User.getPublicUser(), file.getParent());
-            String proc = StringUtils.getProcStr(atomicLong.get(), finalTotal1, 10);
-            log.info("addFile " + proc + " " + file.getName() + " at " + path);
-            FileInfo fileInfo = new FileInfo(file);
-            fileInfo.updateMd5();
-            addRecord(0, file.getName(), file.length(), fileInfo.getMd5(), path);
-            atomicLong.addAndGet(file.length());
-        }
-        log.info("Finish");
-    }
-
-    /**
      * 删除一个文件夹下的所有文件记录
      * @param uid   用户ID 0表示公共
      * @param dirInfo   文件夹信息
