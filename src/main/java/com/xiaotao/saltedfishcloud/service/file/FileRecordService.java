@@ -1,33 +1,23 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
-import com.xiaotao.saltedfishcloud.po.User;
-import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -153,7 +143,7 @@ public class FileRecordService {
                     if (overwrite) {
                         fileDao.updateRecord(uid, name, targetFileInfo.getNode(), sourceFileInfo.getSize(), sourceFileInfo.getMd5());
                     }
-                    fileDao.deleteRecord(uid, sourceFileInfo.getNode(), Collections.singletonList(name));
+                    fileDao.deleteRecords(uid, sourceFileInfo.getNode(), Collections.singletonList(name));
                 } else if (targetFileInfo.isDir()){
                     // 文件 -> 目录 不支持的操作，需要手动解决
                     throw new UnsupportedOperationException("目标位置存在同名目录\"" + name  + "\"，无法移动");
@@ -219,7 +209,7 @@ public class FileRecordService {
 
         dirs.forEach(dir -> res.addAll(deleteDirRecord(uid, dir)));
         if (files.size() != 0) {
-            fileDao.deleteRecord(uid, node.getId(), files);
+            fileDao.deleteRecords(uid, node.getId(), files);
         }
         return res;
     }
@@ -288,7 +278,7 @@ public class FileRecordService {
             }
             fileDao.deleteDirsRecord(uid, ids);
         }
-        fileDao.deleteRecord(uid, dirInfo.getParent(), Collections.singletonList(dirInfo.getName()));
+        fileDao.deleteRecords(uid, dirInfo.getParent(), Collections.singletonList(dirInfo.getName()));
         return res;
     }
 }

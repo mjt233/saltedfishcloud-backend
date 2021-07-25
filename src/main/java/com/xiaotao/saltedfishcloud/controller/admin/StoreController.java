@@ -34,7 +34,7 @@ public class StoreController {
      * 立即执行同步
      */
     @PostMapping("sync")
-    public JsonResult sync() throws IOException {
+    public JsonResult sync() throws Exception {
         syncService.syncLocal(User.getPublicUser());
         return JsonResult.getInstance();
     }

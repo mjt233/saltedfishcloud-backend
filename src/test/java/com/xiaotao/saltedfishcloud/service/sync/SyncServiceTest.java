@@ -22,7 +22,7 @@ class SyncServiceTest {
     private UserDao userDao;
 
     @Test
-    void syncLocal() throws IOException {
+    void syncLocal() throws Exception {
         configService.setStoreType(StoreType.RAW);
 //        syncService.syncLocal(User.getPublicUser());
         syncService.syncLocal(userDao.getUserByUser("xiaotao"));
