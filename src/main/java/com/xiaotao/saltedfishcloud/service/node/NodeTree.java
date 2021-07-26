@@ -2,15 +2,15 @@ package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * 存储整个目录树的结构，通常使用{@link NodeService}的getFullTree方法获取。<br>
  * 用于对大量数据的高速查询，避免频繁的数据库操作
  */
-public class NodeTree {
+public class NodeTree implements Iterable<NodeInfo> {
+
     private final Map<String, NodeInfo> payload = new HashMap<>();
 
     /**
@@ -43,7 +43,7 @@ public class NodeTree {
         LinkedList<String> paths = new LinkedList<>();
         StringBuilder sb = new StringBuilder();
         NodeInfo t;
-        while ( (t = payload.get(id)) != null ) {
+        while ( !id.equals("root") && (t = payload.get(id)) != null ) {
             paths.addFirst(t.getName());
             id = t.getParent();
         }
@@ -51,5 +51,10 @@ public class NodeTree {
         return paths.size() == 0 ? null : sb.toString();
     }
 
+
+    @Override
+    public Iterator<NodeInfo> iterator() {
+        return new NodeTreeIterator(payload);
+    }
 
 }

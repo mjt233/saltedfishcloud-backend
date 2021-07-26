@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
+import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import lombok.var;
 import org.junit.jupiter.api.Test;
@@ -41,5 +42,15 @@ class NodeTreeTest {
         System.out.println("从节点树取得的路径：" + res);
         assertEquals(targetPath, res);
 
+    }
+
+    @Test
+    public void testIterator() {
+        var tree = nodeService.getFullTree(0);
+        for (NodeInfo nodeInfo : tree) {
+            System.out.print(nodeInfo.getName() + " ");
+        }
+        System.out.println();
+        tree.forEach(System.out::println);
     }
 }
