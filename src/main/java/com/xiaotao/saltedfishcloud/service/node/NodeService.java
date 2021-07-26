@@ -23,6 +23,7 @@ public class NodeService {
     public NodeTree getFullTree(int uid) {
         NodeTree tree = new NodeTree();
         List<NodeInfo> allNode = nodeDao.getAllNode(uid);
+        tree.putNode(NodeInfo.getRootNode(uid));
         if (allNode != null) {
             allNode.forEach(tree::putNode);
         }

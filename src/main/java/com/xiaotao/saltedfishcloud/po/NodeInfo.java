@@ -4,6 +4,7 @@ package com.xiaotao.saltedfishcloud.po;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.var;
 
 @Data
 @AllArgsConstructor
@@ -13,4 +14,16 @@ public class NodeInfo {
     private Integer uid;
     private String id;
     private String parent;
+
+    public boolean isRootNode() {
+        return "root".equals(id);
+    }
+
+    public static NodeInfo getRootNode(int uid) {
+        var info = new NodeInfo();
+        info.setName("");
+        info.setId("root");
+        info.setUid(uid);
+        return info;
+    }
 }
