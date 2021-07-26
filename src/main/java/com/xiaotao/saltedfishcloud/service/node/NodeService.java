@@ -20,6 +20,15 @@ public class NodeService {
     @Resource
     NodeDao nodeDao;
 
+    public NodeTree getFullTree(int uid) {
+        NodeTree tree = new NodeTree();
+        List<NodeInfo> allNode = nodeDao.getAllNode(uid);
+        if (allNode != null) {
+            allNode.forEach(tree::putNode);
+        }
+        return tree;
+    }
+
     /**
      * 使用路径取最后一个节点的信息
      * @TODO 使用缓存加快查询速度

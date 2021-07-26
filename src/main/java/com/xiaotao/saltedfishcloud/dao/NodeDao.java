@@ -9,6 +9,14 @@ import java.util.List;
 public interface NodeDao {
 
     /**
+     * 获取用户的所有数据节点
+     * @param uid   用户ID
+     * @return      用户节点列表
+     */
+    @Select("SELECT name, id, parent, uid FROM node_list WHERE uid = #{uid}")
+    List<NodeInfo> getAllNode(@Param("uid") Integer uid);
+
+    /**
      * 将节点移动到另一个节点下
      * @param uid       用户ID
      * @param nodeId    被移动的节点ID
