@@ -12,6 +12,7 @@ import com.xiaotao.saltedfishcloud.service.sync.model.SyncDiffResultDefaultImpl;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
+import lombok.var;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -34,32 +35,15 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
      * 从数据库抓取用户指定节点下的文件信息
      * @return 以目录为Key，目录下的文件列表为Value的Map集合
      */
-    private Map<String, Collection<? extends FileInfo>> fetchDbFiles(int uid, List<NodeInfo> nodes) {
+    private Map<String, Collection<? extends FileInfo>> fetchDbFiles(int uid) {
         Map<String, Collection<? extends FileInfo>> dbFile = new HashMap<>();
-        nodes.forEach(n -> {
+        var tree = nodeService.getFullTree(uid);
+        tree.forEach(n -> {
             Collection<? extends FileInfo>[] fileList = fileService.getUserFileListByNodeId(uid, n.getId());
-            String path = nodeService.getPathByNode(uid, n.getId());
+            String path = tree.getPath(n.getId());
             dbFile.put(path, fileList[1]);
         });
         return dbFile;
-    }
-
-    /**
-     * 从数据库抓取用户的所有目录节点信息
-     * @TODO 性能优化：已获取所有的节点信息，使用已获取的信息直接查询节点路径，避免重复操作数据库
-     */
-    private List<NodeInfo> fetchNodes(int uid) {
-        // 获取根目录下的所有子目录
-        List<NodeInfo> nodes = nodeService.getChildNodes(uid, "root");
-
-        // 所有目录的集合
-        NodeInfo nodeInfo = new NodeInfo();
-        //   目录集合里加上根目录本身的信息
-        nodeInfo.setId("root");
-        nodeInfo.setName("/");
-        nodeInfo.setUid(uid);
-        nodes.add(nodeInfo);
-        return nodes;
     }
 
     @Override
@@ -69,10 +53,8 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
 
         // 原始数据获取与初步处理
 
-        // 所有目录节点
-        List<NodeInfo> nodes = fetchNodes(uid);
         // 数据库中所有文件信息
-        Map<String, Collection<? extends FileInfo>> dbFile = fetchDbFiles(uid, nodes);
+        Map<String, Collection<? extends FileInfo>> dbFile = fetchDbFiles(uid);
         // 用户目录本地硬盘上的信息集合
         DirCollection local = FileUtils.scanDir(Paths.get(DiskConfig.getPathHandler().getStorePath(user.getId(), "/", null)));
         // 本地硬盘上的目录集合
