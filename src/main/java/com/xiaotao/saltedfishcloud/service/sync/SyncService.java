@@ -3,17 +3,14 @@ package com.xiaotao.saltedfishcloud.service.sync;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.po.User;
-import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.sync.detector.SyncDiffDetector;
 import com.xiaotao.saltedfishcloud.service.sync.handler.SyncDiffHandler;
-import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
-import com.xiaotao.saltedfishcloud.service.sync.model.SyncDiffDetectResult;
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.List;
 
 
 @Service
@@ -38,12 +35,12 @@ public class SyncService {
     public void syncLocal(User user) throws Exception {
         try {
             DiskConfig.setReadOnlyLevel(WORKING_READ_ONLY_LEVEL);
-            SyncDiffDetectResult result = detector.detect(user);
-            List<FileInfo> deletedFiles = result.getDeletedFiles();
-            List<FileChangeInfo> changeFiles = result.getChangeFiles();
-            List<String> deletedDir = result.getDeletedDirPaths();
-            List<String> newDir = result.getNewDirPaths();
-            List<FileInfo> newFiles = result.getNewFiles();
+            var result = detector.detect(user);
+            var deletedFiles = result.getDeletedFiles();
+            var changeFiles = result.getChangeFiles();
+            var deletedDir = result.getDeletedDirPaths();
+            var newDir = result.getNewDirPaths();
+            var newFiles = result.getNewFiles();
 
             handler.handleDirDel(user, deletedDir);
             handler.handleFileDel(user, deletedFiles);
