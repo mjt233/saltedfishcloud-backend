@@ -1,11 +1,14 @@
-package com.xiaotao.saltedfishcloud.service.sync;
+package com.xiaotao.saltedfishcloud.service.sync.handler;
 
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 
 import java.util.Collection;
 
-
+/**
+ * 同步检测差异结果处理器，用于处理变动的文件或目录。
+ */
 public interface SyncDiffHandler {
     /**
      * 处理未通过咸鱼云网盘系统在用户目录创建的目录

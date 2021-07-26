@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.sync;
+package com.xiaotao.saltedfishcloud.service.sync.model;
 
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 
