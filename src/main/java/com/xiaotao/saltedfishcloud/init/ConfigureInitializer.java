@@ -26,10 +26,6 @@ public class ConfigureInitializer implements ApplicationRunner {
     private ConfigDao configDao;
     @Resource
     private ConfigService configService;
-    @Resource
-    private FileService fileService;
-    @Resource
-    private UserDao userDao;
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
