@@ -21,6 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 public class User implements UserDetails {
     public static final String SYS_NAME_PUBLIC = "__SYSTEM_PUBLIC";
+    public static final String SYS_NAME_ADMIN = "ADMIN";
     public static final String SYS_GROUP_NAME_PUBLIC = "__SYSTEM_PUBLIC_GROUP";
 
     private static final long serialVersionUID = -2530285292010387981L;
