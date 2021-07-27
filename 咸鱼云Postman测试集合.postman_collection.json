@@ -203,7 +203,7 @@
 								"user"
 							]
 						},
-						"description": "用户自主注册接口\r\n- URI: `/api/user/`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- user  用户名\r\n- passwd    登录密码\r\n- regcode   注册邀请码"
+						"description": "用户自主注册接口\r\n- URI: `/api/user/`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- user  用户名\r\n- passwd    登录密码\r\n- regcode   注册邀请码，如果是管理员用户请求该接口，则不需要填写邀请码"
 					},
 					"response": []
 				},
@@ -930,6 +930,42 @@
 									]
 								},
 								"description": "授予或撤销用户的管理员权限\r\n- URI：`/api/user/{uid}/type/{typeCode}` \r\n- 动作：PUT  \r\n\r\nURI参数：\r\n- uid 目标用户ID\r\n- typeCode 权限代码，1为设置管理员，0为撤销管理员"
+							},
+							"response": []
+						},
+						{
+							"name": "添加用户",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "user",
+											"value": "wodiu",
+											"description": "用户名",
+											"type": "text"
+										},
+										{
+											"key": "passwd",
+											"value": "wodiu",
+											"description": "密码",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/user",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user"
+									]
+								},
+								"description": "添加用户\r\n该接口与`用户/注册用户`为同一接口\r\n- URI: `/api/user/`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- user  用户名\r\n- passwd    登录密码"
 							},
 							"response": []
 						}
