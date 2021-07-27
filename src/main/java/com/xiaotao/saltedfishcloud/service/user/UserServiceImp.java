@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import lombok.var;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -68,6 +69,10 @@ public class UserServiceImp implements UserService{
 
     @Override
     public int addUser(String user, String passwd, Integer type) {
+        var upperName = user.toUpperCase();
+        if (User.SYS_NAME_PUBLIC.equals(upperName) || User.SYS_NAME_ADMIN.equals(upperName)) {
+            throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
+        }
         String pwd = SecureUtils.getPassswd(passwd);
         return userDao.addUser(user, pwd, type);
     }
