@@ -1031,7 +1031,7 @@
 										"method": "POST",
 										"header": [],
 										"url": {
-											"raw": "{{addr}}/api/admin/store/sync",
+											"raw": "{{addr}}/api/admin/store/sync?all=true",
 											"host": [
 												"{{addr}}"
 											],
@@ -1040,8 +1040,15 @@
 												"admin",
 												"store",
 												"sync"
+											],
+											"query": [
+												{
+													"key": "all",
+													"value": "true"
+												}
 											]
-										}
+										},
+										"description": "立即同步网盘（默认只同步公共网盘）与本地存储的文件信息\r\n- URI: `/api/admin/store/sync`\r\n- 动作：POST\r\n\r\n### 参数\r\n- all 类型：boolean 说明：是否同步所有私人用户的数据 默认值：false"
 									},
 									"response": []
 								}
@@ -1246,46 +1253,6 @@
 							"response": []
 						}
 					]
-				},
-				{
-					"name": "[管理员]更新公开资源数据库",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/resource/updatePublicRecord",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"resource",
-								"updatePublicRecord"
-							]
-						},
-						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
-					},
-					"response": []
-				},
-				{
-					"name": "[管理员]初始化公开资源数据库",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/resource/makePublicRecord",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"resource",
-								"makePublicRecord"
-							]
-						},
-						"description": "将公共网盘目录的信息录入到数据库，数据量大时会耗时很长"
-					},
-					"response": []
 				}
 			],
 			"event": [
