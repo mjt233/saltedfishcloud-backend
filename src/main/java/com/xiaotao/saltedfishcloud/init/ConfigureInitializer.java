@@ -5,7 +5,6 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.ConfigDao;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
-import com.xiaotao.saltedfishcloud.service.StaticFileService;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
@@ -27,14 +26,8 @@ public class ConfigureInitializer implements ApplicationRunner {
     private ConfigDao configDao;
     @Resource
     private ConfigService configService;
-    @Resource
-    private FileService fileService;
-    @Resource
-    private UserDao userDao;
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        StaticFileService.fileService = fileService;
-        StaticFileService.userDao = userDao;
 
         log.info("[当前系统版本]：" + DiskConfig.VERSION);
         String storeType = configDao.getConfigure(ConfigName.STORE_TYPE);

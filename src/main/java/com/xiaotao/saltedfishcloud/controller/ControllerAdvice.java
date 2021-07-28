@@ -48,6 +48,9 @@ public class ControllerAdvice {
 
     @ExceptionHandler({FileNotFoundException.class, NoSuchFileException.class})
     public JsonResult handle(Exception e) {
+        if (log.isDebugEnabled()) {
+            e.printStackTrace();
+        }
         return JsonResult.getInstance(404, null, e.getMessage());
     }
 

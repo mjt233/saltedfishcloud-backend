@@ -28,7 +28,7 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
         thread.start();
     }
 
-    public void doAction() throws IOException {
+    public void doAction() throws Exception {
         syncService.syncLocal(User.getPublicUser());
     }
 

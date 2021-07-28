@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
-    <version>1.1.7-RELEASE</version>
+    <version>1.1.9-RELEASE</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 

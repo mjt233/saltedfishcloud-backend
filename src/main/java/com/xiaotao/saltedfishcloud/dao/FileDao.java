@@ -94,7 +94,6 @@ public interface FileDao {
      * @param name 文件名
      * @return 受影响的行数
      */
-//    @Delete("DELETE FROM private_file_cache WHERE uid=#{uid} AND name in #{name} AND (path = #{path} OR path like concat(#{path},'/%'))")
     @Delete({
             "<script>",
                 "DELETE FROM file_table WHERE uid=#{uid} AND node = #{node} AND name in ",
@@ -103,9 +102,21 @@ public interface FileDao {
                 "</foreach>",
             "</script>"
     })
+    int deleteRecords(@Param("uid") Integer uid,
+                      @Param("node") String node,
+                      @Param("name") List<String> name);
+
+    /**
+     * 删除1条文件记录
+     * @param uid 用户ID 0表示公共用户
+     * @param node 文件路径ID
+     * @param name 文件名
+     * @return 受影响的行数
+     */
+    @Delete("DELETE FROM file_table WHERE uid=#{uid} AND node = #{node} AND name = #{name}")
     int deleteRecord(@Param("uid") Integer uid,
                      @Param("node") String node,
-                     @Param("name") List<String> name);
+                     @Param("name") String name);
 
 
     /**

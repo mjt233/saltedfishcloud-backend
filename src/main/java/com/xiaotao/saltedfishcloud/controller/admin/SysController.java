@@ -38,18 +38,12 @@ public class SysController {
         return JsonResult.getInstance(res);
     }
 
-    @GetMapping("store/state")
-    public JsonResult getStoreState() {
-        return JsonResult.getInstance(adminService.getStoreState());
-    }
 
     @GetMapping({"settings", "config"})
     public JsonResult getSysSettings() {
         List<ConfigInfo> res = configDao.getAllConfig();
         LinkedHashMap<String, Object> data = JsonResult.getDataMap();
-        res.forEach(e -> {
-            data.put(e.getKey().toString(), e.getValue());
-        });
+        res.forEach(e -> data.put(e.getKey().toString(), e.getValue()));
         return JsonResult.getInstance(data);
     }
 

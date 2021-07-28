@@ -61,10 +61,8 @@ public class FileInfo extends BasicFileInfo{
         originFile2 = file;
     }
 
-    @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private File originFile;
-    @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private MultipartFile originFile2;
 

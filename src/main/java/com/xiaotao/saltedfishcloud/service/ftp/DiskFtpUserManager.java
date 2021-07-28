@@ -12,7 +12,7 @@ import org.apache.ftpserver.usermanager.impl.ConcurrentLoginPermission;
 import org.apache.ftpserver.usermanager.impl.TransferRatePermission;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import static com.xiaotao.saltedfishcloud.po.User.SYS_NAME_PUBLIC;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -65,7 +65,7 @@ public class DiskFtpUserManager implements UserManager {
     @Override
     public User authenticate(Authentication authentication) throws AuthenticationFailedException {
         if (authentication instanceof AnonymousAuthentication) {
-            return getUserByName("anonymous");
+            return getUserByName(SYS_NAME_PUBLIC);
         }
         if (authentication instanceof UsernamePasswordAuthentication) {
             UsernamePasswordAuthentication auth = (UsernamePasswordAuthentication) authentication;

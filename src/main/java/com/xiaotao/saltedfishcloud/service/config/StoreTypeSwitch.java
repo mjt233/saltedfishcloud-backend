@@ -66,6 +66,10 @@ public class StoreTypeSwitch {
                     if (file.isDir()) continue;
                     Path source = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, p, file));
                     Path target = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, p, file));
+                    if (!Files.exists(source)) {
+                        log.warn("存储库文件丢失：" + file.getName() + " MD5:" + file.getMd5());
+                        continue;
+                    }
                     log.info("Copy file: " + source + " -> " + target);
                     Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
                 }
@@ -92,6 +96,10 @@ public class StoreTypeSwitch {
                     if(fileInfo.isDir()) continue;
                     Path source = Paths.get(DiskConfig.rawPathHandler.getStorePath(user.getId(), path, fileInfo));
                     String target = DiskConfig.uniquePathHandler.getStorePath(user.getId(), path, fileInfo);
+                    if (!Files.exists(source)) {
+                        log.warn("未同步的文件：" + path + "/" + fileInfo.getName());
+                        continue;
+                    }
                     log.info("Copy file: " + source + " -> " + target);
                     storeService.store(user.getId(), Files.newInputStream(source), path, fileInfo);
                 }

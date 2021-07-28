@@ -28,31 +28,39 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class StoreService {
     /**
-     * 通过文件移动的方式存储文件到网盘系统
+     * 通过文件移动的方式存储文件到网盘系统，相对于{@link #store}方法，避免了文件的重复写入操作。对本地文件操作后，原路径文件不再存在<br><br>
+     * 如果是UNIQUE存储模式，则会先将文件移动到存储仓库（若仓库已存在文件则忽略该操作），随后再在目标网盘目录创建文件链接<br><br>
+     * 如果是RAW存储模式，则会直接移动到目标位置。若本地文件路径与网盘路径对应的本地路径相同，操作将忽略。
      * @param uid           用户ID
      * @param nativePath    本地文件路径
      * @param diskPath      网盘路径
      * @param fileInfo      文件信息
      */
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
-        Path sourcePath = nativePath;
-        Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo));
+        Path sourcePath = nativePath; // 本地源文件
+        Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
             // 唯一文件仓库中的路径
-            sourcePath = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, diskPath, fileInfo));
+            sourcePath = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, diskPath, fileInfo)); // 文件仓库源文件路径
             if (Files.exists(sourcePath)) {
                 // 已存在相同文件时，直接删除本地文件
+                log.debug("file md5 HIT: {}", fileInfo.getMd5());
                 Files.delete(nativePath);
             } else {
                 // 将本地文件移动到唯一仓库
+                log.debug("file md5 NOT HIT: {}", fileInfo.getMd5());
                 FileUtils.createParentDirectory(sourcePath);
                 Files.move(nativePath, sourcePath, StandardCopyOption.REPLACE_EXISTING);
             }
             // 在目标网盘位置创建文件仓库中的文件链接
+            log.debug("Create file link: {} <==> {}", targetPath, sourcePath);
             Files.createLink(targetPath, sourcePath);
         } else {
             // 非唯一模式，直接将文件移动到目标位置
-            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            if (!sourcePath.equals(targetPath)) {
+                log.debug("File move {} => {}", sourcePath, targetPath);
+                Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
         }
     }
 
