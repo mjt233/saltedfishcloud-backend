@@ -23,6 +23,14 @@ public class SecureUtils {
     final static private String SALT = "1145141919810";
 
     /**
+     * 随机生成一个UUID<br>
+     * 注意：UUID
+     */
+    static public String getUUID() {
+        return UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
+    /**
      * 取原始密码加盐哈希值
      * @param originPwd 密码原文
      * @return  哈希运算后的结果
