@@ -20,7 +20,7 @@ import javax.annotation.Resource;
 
 @Component
 @Slf4j
-@Order(1)
+@Order(2)
 public class ConfigureInitializer implements ApplicationRunner {
     @Resource
     private ConfigDao configDao;
