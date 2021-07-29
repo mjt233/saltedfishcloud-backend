@@ -14,30 +14,41 @@ public class Version implements Comparable<Version>{
     private int bigVer = 1;
     private int mdVer = 0;
     private int smVer = 0;
+    private int bugFixVer = 0;
     private VersionTag tag = VersionTag.SNAPSHOT;
 
     /**
      * 获取有史以来最早的版本信息
      */
     public static Version getEarliestVersion() {
-        return load("1.0.0-SNAPSHOT");
+        return load("1.0.0.0-SNAPSHOT");
     }
 
-    public Version(int bigVer, int mdVer, int smVer, VersionTag tag) {
+    public Version(int bigVer, int mdVer, int smVer, int bugFixVer, VersionTag tag) {
         this.bigVer = bigVer;
         this.mdVer = mdVer;
         this.smVer = smVer;
+        this.bugFixVer = bugFixVer;
         this.tag = tag;
     }
 
     public static Version load(String version) {
         try {
-            String[] s = version.split("[.\\-]", 4);
+            String[] s = version.split("[.\\-]", 5);
+            int bufFixVer = 0;
+            VersionTag vt;
+            if (s.length == 5) {
+                bufFixVer = Integer.parseInt(s[3]);
+                vt = VersionTag.valueOf(s[4]);
+            } else {
+                vt = VersionTag.valueOf(s[3]);
+            }
             return new Version(
                     Integer.parseInt(s[0]),
                     Integer.parseInt(s[1]),
                     Integer.parseInt(s[2]),
-                    VersionTag.valueOf(s[3])
+                    bufFixVer,
+                    vt
             );
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -46,7 +57,7 @@ public class Version implements Comparable<Version>{
     }
 
     public int toInteger() {
-        return bigVer * 100000 + mdVer * 10000 + smVer;
+        return bigVer * 1000000 + mdVer * 100000 + smVer * 100 + bugFixVer;
     }
 
     /**
@@ -60,9 +71,9 @@ public class Version implements Comparable<Version>{
         int inVerVal = o.toInteger();
         int coef = 1;
         if (vl == VersionLevel.BIG) {
-            coef = 100000;
+            coef = 1000000;
         } else if (vl == VersionLevel.MIDDLE) {
-            coef = 10000;
+            coef = 100000;
         }
         return curVerVal/coef < inVerVal/coef;
     }
@@ -78,7 +89,7 @@ public class Version implements Comparable<Version>{
 
     @Override
     public String toString() {
-        return bigVer + "." + mdVer + "." + smVer + "-" + tag;
+        return bigVer + "." + mdVer + "." + smVer + "." + bugFixVer + "-" + tag;
     }
 
     /**
@@ -101,7 +112,8 @@ public class Version implements Comparable<Version>{
         Version version = (Version) o;
         return bigVer == version.bigVer &&
                 mdVer == version.mdVer &&
-                smVer == version.smVer;
+                smVer == version.smVer &&
+                bugFixVer == version.bugFixVer;
     }
 
 }
