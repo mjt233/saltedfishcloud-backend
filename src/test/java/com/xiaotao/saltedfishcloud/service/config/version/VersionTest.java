@@ -10,7 +10,7 @@ class VersionTest {
         Version v1 = Version.load("1.1.0-SNAPSHOT");
         Version v2 = Version.load("1.0.0-SNAPSHOT");
         Version v3 = Version.load("2.1.0-SNAPSHOT");
-        Version v4 = Version.load("1.1.0-SNAPSHOT");
+        Version v4 = Version.load("1.1.0.0-SNAPSHOT");
         assertEquals(1, v1.getBigVer());
         assertEquals(1, v1.getMdVer());
         assertEquals(0, v1.getSmVer());
