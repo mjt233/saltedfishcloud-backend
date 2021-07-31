@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.breakpoint;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
+import com.xiaotao.saltedfishcloud.service.breakpoint.exception.BreakPointTaskNotFoundException;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
@@ -55,7 +56,7 @@ public class TaskManager  {
     public TaskMetadata queryTask(String id) throws IOException {
         var metadataPath = Paths.get(getTaskDir(id) +"/metadata.json");
         if (!Files.exists(metadataPath)) {
-            return null;
+            throw new BreakPointTaskNotFoundException(id);
         }
 
         return mapper.readValue(Files.readAllBytes(metadataPath), TaskMetadata.class);
@@ -68,6 +69,9 @@ public class TaskManager  {
      */
     public void clear(String id) throws IOException {
         var taskPath = getTaskDir(id);
+        if (!Files.exists(taskPath)) {
+            throw new BreakPointTaskNotFoundException(id);
+        }
         Files.list(taskPath).forEach(path -> {
             try {
                 Files.delete(path);

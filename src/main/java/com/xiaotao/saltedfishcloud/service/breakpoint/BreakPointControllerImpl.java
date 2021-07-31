@@ -2,11 +2,11 @@ package com.xiaotao.saltedfishcloud.service.breakpoint;
 
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
+import com.xiaotao.saltedfishcloud.service.breakpoint.exception.BreakPointTaskNotFoundException;
 import lombok.var;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
@@ -28,7 +28,7 @@ public class BreakPointControllerImpl implements BreakPointController {
     public TaskMetadata queryTask(String id) throws Exception {
         var res = manager.queryTask(id);
         if (res == null) {
-            throw new FileNotFoundException("任务不存在或已释放");
+            throw new BreakPointTaskNotFoundException(id);
         }
         return res;
     }
@@ -38,7 +38,7 @@ public class BreakPointControllerImpl implements BreakPointController {
         try {
             manager.clear(id);
         } catch (NoSuchFileException e) {
-            return JsonResult.getInstance(404, null, "任务不存在或已释放");
+            throw new BreakPointTaskNotFoundException(id);
         }
         return JsonResult.getInstance();
     }
