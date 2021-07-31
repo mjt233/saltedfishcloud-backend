@@ -18,6 +18,7 @@ public class MappingInitializer {
     private final BreakPointController controller;
     private final RequestMappingHandlerMapping mappingHandler;
 
+    // 通过构造方法获取依赖的Bean，随后执行初始化任务
     MappingInitializer(BreakPointController controller, RequestMappingHandlerMapping mappingHandler) throws NoSuchMethodException {
         this.controller = controller;
         this.mappingHandler = mappingHandler;

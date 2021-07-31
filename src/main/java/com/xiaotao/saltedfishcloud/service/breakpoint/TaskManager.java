@@ -9,13 +9,14 @@ import lombok.var;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
- * 断点续传任务管理器，管理
+ * 断点续传任务管理器，管理任务的创建，查询，删除和文件块的存储
  */
 @Slf4j
 @Component
@@ -80,5 +81,16 @@ public class TaskManager  {
             }
         });
         Files.delete(taskPath);
+    }
+
+    /**
+     * 保存部分的断点续传任务文件片段
+     * @TODO 方法待实现
+     * @param id        任务ID
+     * @param part      文件块编号（从1开始）
+     * @param stream    文件流
+     */
+    public void save(String id, int part, InputStream stream) {
+
     }
 }

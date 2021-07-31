@@ -10,6 +10,9 @@ import lombok.Setter;
 
 import javax.validation.constraints.NotBlank;
 
+/**
+ * 断点续传任务元数据信息类
+ */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskMetadata {

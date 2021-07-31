@@ -10,6 +10,9 @@ import org.springframework.validation.annotation.Validated;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
+/**
+ * 断点续传管理控制器的实现类
+ */
 @Component
 public class BreakPointControllerImpl implements BreakPointController {
     private final TaskManager manager;
