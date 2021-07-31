@@ -328,6 +328,94 @@
 			"name": "系统资源操作",
 			"item": [
 				{
+					"name": "断点续传任务",
+					"item": [
+						{
+							"name": "创建断点续传任务",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/breakpoint?fileName=test.mp4&length=2097153",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"breakpoint"
+									],
+									"query": [
+										{
+											"key": "fileName",
+											"value": "test.mp4",
+											"description": "文件名"
+										},
+										{
+											"key": "length",
+											"value": "2097153",
+											"description": "文件长度"
+										}
+									]
+								},
+								"description": "创建断点续传任务\r\n\r\n- URI：`/api/breakpoint/`\r\n- 动作：POST\r\n\r\n### 参数\r\n- fileName - 文件名\r\n- length - 文件长度\r\n\r\n### 响应\r\n创建成功后响应任务信息\r\n```json\r\n{\r\n    \"taskId\": \"67ab0bc9-92d0-4b4c-ae22-f9e4b4196bec\",   //  任务ID\r\n    \"fileName\": \"test.mp4\", // 文件名\r\n    \"length\": 2097153,      // 文件长度\r\n    \"chunkSize\": 2097152,   // 每分块长度\r\n    \"chunkCount\": 2         // 总分块数量\r\n}\r\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "获取任务信息",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/breakpoint?id=b2c1ad18-6b93-4da3-872a-4f82dfeb0a8f",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"breakpoint"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "b2c1ad18-6b93-4da3-872a-4f82dfeb0a8f",
+											"description": "任务ID"
+										}
+									]
+								},
+								"description": "获取断点续传任务的详细信息\r\n\r\n- URI：`/api/breakpoint/`\r\n- 动作：GET\r\n\r\n### 参数\r\n- id - 要查询的任务ID\r\n\r\n### 响应\r\n创建成功后响应任务信息\r\n```json\r\n{\r\n    \"taskId\": \"67ab0bc9-92d0-4b4c-ae22-f9e4b4196bec\",   //  任务ID\r\n    \"fileName\": \"test.mp4\", // 文件名\r\n    \"length\": 2097153,      // 文件长度\r\n    \"chunkSize\": 2097152,   // 每分块长度\r\n    \"chunkCount\": 2         // 总分块数量\r\n}\r\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "结束断点续传任务",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/breakpoint?id=b2c1ad18-6b93-4da3-872a-4f82dfeb0a8f",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"breakpoint"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "b2c1ad18-6b93-4da3-872a-4f82dfeb0a8f",
+											"description": "任务ID"
+										}
+									]
+								},
+								"description": "结束断点续传任务，操作将使服务器释放对应的资源，同时会导致该断点续传任务不再可用\r\n\r\n- URI：`/api/breakpoint/`\r\n- 动作：DELETE\r\n\r\n### 参数：\r\n- id - 要结束的任务ID"
+							},
+							"response": []
+						}
+					]
+				},
+				{
 					"name": "解析节点ID",
 					"request": {
 						"method": "GET",

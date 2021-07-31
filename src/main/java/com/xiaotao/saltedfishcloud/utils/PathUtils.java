@@ -5,10 +5,18 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.User;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PathUtils {
+    /**
+     * 获取系统临时目录
+     */
+    public static String getTempDirectory() {
+        return System.getProperty("java.io.tmpdir");
+    }
 
     /**
      * 提取一个文件的完整本地路径中 相对网盘的路径<br>

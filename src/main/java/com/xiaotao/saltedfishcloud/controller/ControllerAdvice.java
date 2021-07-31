@@ -5,7 +5,9 @@ import com.xiaotao.saltedfishcloud.po.JsonResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import javax.validation.ConstraintViolationException;
 import java.io.FileNotFoundException;
 import java.nio.file.NoSuchFileException;
+import java.util.List;
 
 /**
  * 全局异常处理，捕获进入控制器的异常并进行处理
@@ -26,6 +29,14 @@ public class ControllerAdvice {
         BindingResult bindingResult = e.getBindingResult();
         StringBuilder sb = new StringBuilder();
         bindingResult.getFieldErrors().forEach(error -> sb.append(error.getDefaultMessage()).append(";"));
+        return JsonResult.getInstance(422, null, sb.toString());
+    }
+
+    @ExceptionHandler(BindException.class)
+    public JsonResult validError(BindException e) {
+        List<FieldError> errors = e.getFieldErrors();
+        StringBuilder sb = new StringBuilder();
+        errors.forEach(error -> sb.append(error.getField()).append(' ').append(error.getDefaultMessage()).append(";"));
         return JsonResult.getInstance(422, null, sb.toString());
     }
 
