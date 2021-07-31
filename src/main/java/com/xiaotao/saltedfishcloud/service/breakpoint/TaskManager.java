@@ -49,8 +49,8 @@ public class TaskManager  {
     /**
      * 查询任务信息
      * @param id 任务ID
-     * @return 任务信息
-     * @throws IOException 任务不存在或目录不可读
+     * @return 任务信息，若任务不存在则返回Null
+     * @throws IOException 目录读取出错
      */
     public TaskMetadata queryTask(String id) throws IOException {
         var metadataPath = Paths.get(getTaskDir(id) +"/metadata.json");

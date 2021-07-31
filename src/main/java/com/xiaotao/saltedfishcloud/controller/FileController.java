@@ -12,6 +12,7 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.po.param.NamePair;
+import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
@@ -74,6 +75,7 @@ public class FileController {
      * @param md5   文件MD5
      */
     @PutMapping("file/**")
+    @BreakPoint
     public JsonResult upload(HttpServletRequest request,
                              @PathVariable @UID(true) int uid,
                              @RequestParam("file") MultipartFile file,
