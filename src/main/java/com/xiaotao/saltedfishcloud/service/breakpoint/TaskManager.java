@@ -2,16 +2,19 @@ package com.xiaotao.saltedfishcloud.service.breakpoint;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
-import com.xiaotao.saltedfishcloud.service.breakpoint.exception.BreakPointTaskNotFoundException;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskStatMetadata;
+import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
+import com.xiaotao.saltedfishcloud.service.breakpoint.utils.PartParser;
+import com.xiaotao.saltedfishcloud.service.breakpoint.utils.TaskStorePath;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
+import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 /**
@@ -21,13 +24,6 @@ import java.util.UUID;
 public class TaskManager  {
     private final ObjectMapper mapper = new ObjectMapper();
 
-    /**
-     * 获取任务数据文件夹路径
-     * @param id 任务ID
-     */
-    private Path getTaskDir(String id) {
-        return Paths.get(PathUtils.getTempDirectory() + "/xyy/" + id);
-    }
 
     /**
      * 创建断点续传任务
@@ -38,9 +34,9 @@ public class TaskManager  {
     public String createTask(TaskMetadata info) throws IOException {
         var id = UUID.randomUUID().toString();
         info.setTaskId(id);
-        var taskDir = getTaskDir(id);
+        var taskDir = TaskStorePath.getRoot(id);
         Files.createDirectories(taskDir);
-        Files.write(Paths.get(taskDir + "/metadata.json"), mapper.writeValueAsBytes(info));
+        Files.write(TaskStorePath.getMetadata(id),mapper.writeValueAsBytes(info));
 
         log.debug("Create Breakpoint Task：" + taskDir);
         return id;
@@ -52,13 +48,14 @@ public class TaskManager  {
      * @return 任务信息，若任务不存在则返回Null
      * @throws IOException 目录读取出错
      */
-    public TaskMetadata queryTask(String id) throws IOException {
-        var metadataPath = Paths.get(getTaskDir(id) +"/metadata.json");
+    public TaskStatMetadata queryTask(String id) throws IOException {
+        var metadataPath = TaskStorePath.getMetadata(id);
         if (!Files.exists(metadataPath)) {
-            throw new BreakPointTaskNotFoundException(id);
+            throw new TaskNotFoundException(id);
         }
 
-        return mapper.readValue(Files.readAllBytes(metadataPath), TaskMetadata.class);
+        var basicInfo = mapper.readValue(Files.readAllBytes(metadataPath), TaskMetadata.class);
+        return new TaskStatMetadata(basicInfo);
     }
 
     /**
@@ -67,9 +64,9 @@ public class TaskManager  {
      * @throws IOException 目录不可写或任务不存在
      */
     public void clear(String id) throws IOException {
-        var taskPath = getTaskDir(id);
+        var taskPath = TaskStorePath.getRoot(id);
         if (!Files.exists(taskPath)) {
-            throw new BreakPointTaskNotFoundException(id);
+            throw new TaskNotFoundException(id);
         }
         Files.list(taskPath).forEach(path -> {
             try {
@@ -83,12 +80,23 @@ public class TaskManager  {
 
     /**
      * 保存部分的断点续传任务文件片段
-     * @TODO 方法待实现
      * @param id        任务ID
      * @param part      文件块编号（从1开始）
      * @param stream    文件流
      */
-    public void save(String id, int part, InputStream stream) {
-
+    public void save(String id, String part, InputStream stream) throws IOException {
+        var root = TaskStorePath.getRoot(id);
+        if (!Files.exists(root)) {
+            throw new TaskNotFoundException(id);
+        }
+        var parts = PartParser.parse(part);
+        var taskInfo = queryTask(id);
+        for (int i : parts) {
+            var size = taskInfo.getPartSize(i);
+            var out = Files.newOutputStream(TaskStorePath.getPartFile(id, i));
+            StreamUtils.copyRange(stream, out, 0, size - 1);
+            out.close();
+        }
+        stream.close();
     }
 }

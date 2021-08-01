@@ -1,15 +1,17 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint;
 
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 断点续传管理控制器接口，用于处理和响应Web请求的断点续传任务管理API
  */
 public interface BreakPointController {
+
+    @ResponseBody
+    @PostMapping
+    Object uploadPart(MultipartFile file, @PathVariable String id, @PathVariable String part) throws Exception;
 
     /**
      * 创建断点续传任务

@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
-import com.xiaotao.saltedfishcloud.service.breakpoint.exception.BreakPointTaskNotFoundException;
+import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
@@ -61,7 +61,7 @@ public class ControllerAdvice {
     @ExceptionHandler({
             FileNotFoundException.class,
             NoSuchFileException.class,
-            BreakPointTaskNotFoundException.class
+            TaskNotFoundException.class
     })
     public JsonResult handle(Exception e) {
         if (log.isDebugEnabled()) {

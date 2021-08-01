@@ -1,14 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint;
 
-import com.xiaotao.saltedfishcloud.service.breakpoint.exception.BreakPointTaskNotFoundException;
+import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import lombok.var;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import javax.annotation.Resource;
 
 /**
  * 断点续传的代理处理器，处理被注解{@link com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint}标记的控制器方法<br>
@@ -34,7 +32,7 @@ public class ProxyProcessor {
 
         var taskInfo = manager.queryTask(id);
         if (taskInfo == null) {
-            throw new BreakPointTaskNotFoundException(id);
+            throw new TaskNotFoundException(id);
         }
         var args = pjp.getArgs();
 
