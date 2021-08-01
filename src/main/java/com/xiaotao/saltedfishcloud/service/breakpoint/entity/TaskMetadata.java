@@ -1,12 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import jdk.nashorn.internal.objects.annotations.Getter;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Setter;
 
 import javax.validation.constraints.NotBlank;
 

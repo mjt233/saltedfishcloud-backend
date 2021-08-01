@@ -6,7 +6,6 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.exception.BreakPointTaskNo
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +18,6 @@ import java.util.UUID;
  * 断点续传任务管理器，管理任务的创建，查询，删除和文件块的存储
  */
 @Slf4j
-@Component
 public class TaskManager  {
     private final ObjectMapper mapper = new ObjectMapper();
 

@@ -5,7 +5,6 @@ import lombok.var;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -18,11 +17,12 @@ import javax.annotation.Resource;
  * <br>
  * 控制器方法成功执行无异常后，将会释放对应的断点续传任务数据
  */
-@Component
 @Aspect
 public class ProxyProcessor {
-    @Resource
-    private TaskManager manager;
+    private final TaskManager manager;
+    public ProxyProcessor(TaskManager taskManager) {
+        manager = taskManager;
+    }
 
     @Around("@annotation(com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint)")
     public Object proxy(ProceedingJoinPoint pjp) throws Throwable {

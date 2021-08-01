@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.breakpoint.config;
 import com.xiaotao.saltedfishcloud.service.breakpoint.BreakPointController;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import lombok.var;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -13,7 +12,6 @@ import java.lang.reflect.Method;
 /**
  * 初始化断点续传管理API，注册路由
  */
-@Component
 public class MappingInitializer {
     private final BreakPointController controller;
     private final RequestMappingHandlerMapping mappingHandler;

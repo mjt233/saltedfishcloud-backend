@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.BreakPointTaskNotFoundException;
 import lombok.var;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import java.io.IOException;
@@ -13,7 +12,6 @@ import java.nio.file.NoSuchFileException;
 /**
  * 断点续传管理控制器的实现类
  */
-@Component
 public class BreakPointControllerImpl implements BreakPointController {
     private final TaskManager manager;
     public BreakPointControllerImpl(TaskManager manager) {
