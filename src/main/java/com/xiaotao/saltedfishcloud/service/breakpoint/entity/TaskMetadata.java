@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.validation.constraints.NotBlank;
@@ -12,18 +13,19 @@ import javax.validation.constraints.NotBlank;
  * 断点续传任务元数据信息类
  */
 @Data
+@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskMetadata {
-    private String taskId;
+    protected String taskId;
     /**
      *  文件名
      */
     @NotBlank
-    private String fileName;
+    protected String fileName;
     /**
      *  文件长度
      */
-    private int length;
+    private long length;
 
     /**
      * 每个分块的大小（默认2MiB）
@@ -34,29 +36,30 @@ public class TaskMetadata {
     @Setter(AccessLevel.NONE)
     private int chunkCount = 0;
 
-    public void setLength(int length) {
+    private long lastChunkSize = 0;
+
+    public TaskMetadata(String taskId, @NotBlank String fileName, long length) {
+        this.taskId = taskId;
+        this.fileName = fileName;
+        setLength(length);
+    }
+
+    public void setLength(long length) {
         this.length = length;
         this.chunkCount = (int)Math.ceil((double)length / chunkSize);
+        long t = length % chunkSize;
+        lastChunkSize = t == 0 ? chunkSize : t;
     }
-
-    /**
-     * 取最后一个文件块的大小
-     */
-    public int getLastChunkSize() {
-        int res = length % chunkSize;
-        return res == 0 ? chunkSize : res;
-    }
-
     /**
      * 获取某个文件块的大小
      * @param part 文件块序号
      */
-    public int getPartSize(int part) {
+    public long getPartSize(int part) {
         if (part > chunkCount) {
             throw new IndexOutOfBoundsException();
         }
         if (part == chunkCount) {
-            return getLastChunkSize();
+            return lastChunkSize;
         } else {
             return chunkSize;
         }

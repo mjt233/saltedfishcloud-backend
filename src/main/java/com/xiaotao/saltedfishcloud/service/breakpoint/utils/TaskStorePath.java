@@ -11,6 +11,9 @@ public class TaskStorePath {
      * @param id 任务ID
      */
     public static Path getRoot(String id) {
+        if (id == null) {
+            throw new NullPointerException();
+        }
         return Paths.get(PathUtils.getTempDirectory() + "/xyy/" + id);
     }
 
