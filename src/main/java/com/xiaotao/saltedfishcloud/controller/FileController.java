@@ -12,7 +12,9 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.po.param.NamePair;
+import com.xiaotao.saltedfishcloud.service.breakpoint.MergeMultipartFile;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
+import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
@@ -78,8 +80,11 @@ public class FileController {
     @BreakPoint
     public JsonResult upload(HttpServletRequest request,
                              @PathVariable @UID(true) int uid,
-                             @RequestParam("file") MultipartFile file,
+                             @RequestParam(value = "file", required = false) @MergeFile MultipartFile file,
                              @RequestParam(value = "md5", required = false) String md5) throws HasResultException, IOException {
+        if (file == null || file.isEmpty()) {
+            return JsonResult.getInstance(400, null, "文件为空");
+        }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
         int i = fileService.saveFile(uid, file, requestPath, md5);
         return JsonResult.getInstance(i);

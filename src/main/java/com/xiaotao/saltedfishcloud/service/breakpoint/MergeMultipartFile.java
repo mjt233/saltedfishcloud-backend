@@ -13,6 +13,9 @@ import java.nio.file.StandardCopyOption;
 public class MergeMultipartFile implements MultipartFile {
     private final TaskStatMetadata taskData;
     public MergeMultipartFile(TaskStatMetadata data) {
+        if (!data.isFinish()) {
+            throw new IllegalStateException("任务未完成，无法合并");
+        }
         this.taskData = data;
     }
     @Override
