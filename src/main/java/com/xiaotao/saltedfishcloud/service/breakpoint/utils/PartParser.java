@@ -37,8 +37,11 @@ public class PartParser {
         }
         int[] pair;
         var t = part.split("-", 2);
-        pair = new int[2];
+        pair = new int[t.length];
         pair[0] = Integer.parseInt(t[0]);
+        if (t.length == 1) {
+            return pair;
+        }
         pair[1] = Integer.parseInt(t[1]);
         var size = pair[1] - pair[0] + 1;
         int[] res = new int[size];
