@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
@@ -136,6 +137,8 @@ public class StoreService {
      * @param targetDir    保存到的目标网盘目录位置（注意：不是本地真是路径）
      * @param fileInfo 文件信息
      * @throws HasResultException 存储文件出错
+     * @throws DuplicateKeyException UNIQUE模式下两个不相同的文件发生MD5碰撞
+     * @throws UnableOverwriteException 保存位置存在同名的目录
      */
     public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws HasResultException, IOException {
         Path md5Target = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, targetDir, fileInfo));
@@ -152,6 +155,9 @@ public class StoreService {
             }
         }
         Path rawTarget = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, targetDir, fileInfo));
+        if (Files.exists(rawTarget) && Files.isDirectory(rawTarget)) {
+            throw new UnableOverwriteException(409, "已存在同名目录: " + targetDir + "/" + fileInfo.getName());
+        }
         FileUtils.createParentDirectory(rawTarget);
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
             log.info("create hard link:" + md5Target + " <==> "  + rawTarget);
