@@ -1,19 +1,14 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint.entity;
 
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
-import com.xiaotao.saltedfishcloud.service.breakpoint.merge.InputStreamGenerator;
+import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskStorePath;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeInputStream;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MultipleFileMergeInputStreamGenerator;
-import com.xiaotao.saltedfishcloud.service.breakpoint.utils.TaskStorePath;
 import lombok.Getter;
-import lombok.var;
 
-import javax.validation.constraints.NotBlank;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 

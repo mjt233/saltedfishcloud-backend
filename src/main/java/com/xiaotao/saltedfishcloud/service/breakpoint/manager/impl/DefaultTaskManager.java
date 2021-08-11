@@ -1,11 +1,12 @@
-package com.xiaotao.saltedfishcloud.service.breakpoint;
+package com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskStatMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
-import com.xiaotao.saltedfishcloud.service.breakpoint.utils.PartParser;
-import com.xiaotao.saltedfishcloud.service.breakpoint.utils.TaskStorePath;
+import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
+import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.PartParser;
+import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskStorePath;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.springframework.util.StreamUtils;
@@ -19,7 +20,7 @@ import java.util.UUID;
  * 断点续传任务管理器，管理任务的创建，查询，删除和文件块的存储
  */
 @Slf4j
-public class TaskManager  {
+public class DefaultTaskManager implements TaskManager {
     private final ObjectMapper mapper = new ObjectMapper();
 
 
@@ -29,6 +30,7 @@ public class TaskManager  {
      * @return      创建成功后的任务ID
      * @throws IOException 任务数据存储目录无法写入
      */
+    @Override
     public String createTask(TaskMetadata info) throws IOException {
         var id = UUID.randomUUID().toString();
         info.setTaskId(id);
@@ -46,6 +48,7 @@ public class TaskManager  {
      * @return 任务信息，若任务不存在则返回Null
      * @throws IOException 目录读取出错
      */
+    @Override
     public TaskStatMetadata queryTask(String id) throws IOException {
         var metadataPath = TaskStorePath.getMetadata(id);
         if (!Files.exists(metadataPath)) {
@@ -61,6 +64,7 @@ public class TaskManager  {
      * @param id    任务ID
      * @throws IOException 目录不可写或任务不存在
      */
+    @Override
     public void clear(String id) throws IOException {
         var taskPath = TaskStorePath.getRoot(id);
         if (!Files.exists(taskPath)) {
@@ -82,6 +86,7 @@ public class TaskManager  {
      * @param part      文件块编号（从1开始）
      * @param stream    文件流
      */
+    @Override
     public void save(String id, String part, InputStream stream) throws IOException {
         var root = TaskStorePath.getRoot(id);
         if (!Files.exists(root)) {

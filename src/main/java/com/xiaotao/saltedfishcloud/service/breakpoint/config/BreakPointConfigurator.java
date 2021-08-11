@@ -3,7 +3,8 @@ package com.xiaotao.saltedfishcloud.service.breakpoint.config;
 import com.xiaotao.saltedfishcloud.service.breakpoint.BreakPointController;
 import com.xiaotao.saltedfishcloud.service.breakpoint.BreakPointControllerImpl;
 import com.xiaotao.saltedfishcloud.service.breakpoint.ProxyProcessor;
-import com.xiaotao.saltedfishcloud.service.breakpoint.TaskManager;
+import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
+import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.DefaultTaskManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -39,7 +40,7 @@ public class BreakPointConfigurator {
      */
     @Bean
     public TaskManager taskManager() {
-        return new TaskManager();
+        return new DefaultTaskManager();
     }
 
     /**
