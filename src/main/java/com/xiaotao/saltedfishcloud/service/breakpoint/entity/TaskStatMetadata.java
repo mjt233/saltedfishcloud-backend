@@ -17,19 +17,17 @@ import java.util.stream.Collectors;
  */
 public class TaskStatMetadata extends TaskMetadata {
 
-    @Getter
     private List<Integer> finishPart;
 
     /**
      * @param data 基础的任务元数据
      * @throws TaskNotFoundException 任务ID不存在
      */
-    public TaskStatMetadata(TaskMetadata data) throws IOException {
+    public TaskStatMetadata(TaskMetadata data) {
         super(data.getTaskId(), data.getFileName(), data.getLength());
         if (!Files.exists(TaskStorePath.getRoot(data.getTaskId()))) {
             throw new TaskNotFoundException(data.getTaskId());
         }
-        fresh();
     }
 
 
@@ -43,6 +41,13 @@ public class TaskStatMetadata extends TaskMetadata {
                     .map(e -> Integer.parseInt(e.getFileName().toString().replaceAll(".part", "")))
                     .sorted()
                     .collect(Collectors.toList());
+    }
+
+    public List<Integer> getFinishPart() throws IOException {
+        if (finishPart == null) {
+            fresh();
+        }
+        return finishPart;
     }
 
     /**
