@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundExce
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskStorePath;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeInputStream;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MultipleFileMergeInputStreamGenerator;
-import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 /**
  * 任务状态数据，除了元数据本身，还附加了任务的当前完成状态
  */
+@Slf4j
 public class TaskStatMetadata extends TaskMetadata {
 
     private List<Integer> finishPart;
@@ -54,7 +55,14 @@ public class TaskStatMetadata extends TaskMetadata {
      * 返回该分块任务是否已完成
      */
     public boolean isFinish() {
-        return finishPart.size() == getChunkCount();
+        try {
+            return getFinishPart().size() == getChunkCount();
+        } catch (IOException e) {
+            if (log.isDebugEnabled()) {
+                e.printStackTrace();
+            }
+            return false;
+        }
     }
 
     public MergeInputStream getMergeInputStream() throws IOException {
