@@ -1,10 +1,13 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.dao.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
+import lombok.var;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
 import java.util.LinkedHashMap;
 
@@ -13,6 +16,8 @@ import java.util.LinkedHashMap;
 @RestController
 public class DebugController {
     public static final String prefix = "/api/admin/debug/";
+    @Resource
+    private ConfigDao configDao;
 
     @PutMapping("readOnly")
     public JsonResult setReadOnlyLevel(@RequestParam String level) {
@@ -34,8 +39,16 @@ public class DebugController {
     @GetMapping("options")
     public JsonResult getAllOptions() {
         LinkedHashMap<String, Object> data = JsonResult.getDataMap();
+        var conf = configDao.getAllConfig();
+        if (conf != null) {
+            conf.forEach(e -> {
+                data.put(e.getKey().toString(), e.getValue());
+            });
+        }
+        data.put("READ_ONLY_LEVEL", DiskConfig.getReadOnlyLevel());
         data.put("read_only_level", DiskConfig.getReadOnlyLevel());
         data.put("sync_delay", DiskConfig.SYNC_DELAY);
-        return JsonResult.getInstance(data);
+
+        return JsonResult.getInstance(1, data, "小写字段将在后续版本中废弃");
     }
 }

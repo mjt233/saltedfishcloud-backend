@@ -39,6 +39,9 @@ public class ConfigService {
         switch (key) {
             case STORE_TYPE: return setStoreType(StoreType.valueOf(value));
             case REG_CODE: setInviteRegCode(value); return true;
+            case SYNC_DELAY:
+                DiskConfig.SYNC_DELAY = Integer.parseInt(value);
+                configDao.setConfigure(key, value);
             default:
                 configDao.setConfigure(key, value);
         }
