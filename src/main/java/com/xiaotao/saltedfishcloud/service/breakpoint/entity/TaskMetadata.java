@@ -1,10 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -34,7 +31,7 @@ public class TaskMetadata {
      */
     @Min(2097152)
     @Max(67108864)
-    private int chunkSize;
+    private int chunkSize = 2097152;
 
     @Setter(AccessLevel.NONE)
     private int chunkCount = 0;
@@ -45,20 +42,33 @@ public class TaskMetadata {
     public TaskMetadata(String taskId, @NotBlank String fileName, long length) {
         this.taskId = taskId;
         this.fileName = fileName;
-        setLength(length);
+        this.length = length;
     }
 
-    public void setLength(long length) {
-        this.length = length;
-        this.chunkCount = (int)Math.ceil((double)length / chunkSize);
-        long t = length % chunkSize;
-        lastChunkSize = t == 0 ? chunkSize : t;
+    private void updateChunkInfo() {
+        if (chunkCount == 0) {
+            this.chunkCount = (int)Math.ceil((double)length / chunkSize);
+            long t = length % chunkSize;
+            lastChunkSize = t == 0 ? chunkSize : t;
+        }
     }
+
+    public int getChunkCount() {
+        updateChunkInfo();
+        return chunkCount;
+    }
+
+    public long getLastChunkSize() {
+        updateChunkInfo();
+        return lastChunkSize;
+    }
+
     /**
      * 获取某个文件块的大小
      * @param part 文件块序号
      */
     public long getPartSize(int part) {
+        updateChunkInfo();
         if (part > chunkCount) {
             throw new IndexOutOfBoundsException();
         }
