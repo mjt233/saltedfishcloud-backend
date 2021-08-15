@@ -1,12 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 
 /**
@@ -29,14 +30,17 @@ public class TaskMetadata {
 
     /**
      * 每个分块的大小（默认2MiB）
+     * 最小2MiB，最大64MiB
      */
-    @Setter(AccessLevel.NONE)
-    private int chunkSize = 2097152;
+    @Min(2097152)
+    @Max(67108864)
+    private int chunkSize;
 
     @Setter(AccessLevel.NONE)
     private int chunkCount = 0;
 
     private long lastChunkSize = 0;
+
 
     public TaskMetadata(String taskId, @NotBlank String fileName, long length) {
         this.taskId = taskId;
