@@ -49,6 +49,6 @@ public class DebugController {
         data.put("read_only_level", DiskConfig.getReadOnlyLevel());
         data.put("sync_delay", DiskConfig.SYNC_DELAY);
 
-        return JsonResult.getInstance(1, data, "小写字段将在后续版本中废弃");
+        return JsonResult.getInstance(200, data, "小写字段将在后续版本中废弃");
     }
 }

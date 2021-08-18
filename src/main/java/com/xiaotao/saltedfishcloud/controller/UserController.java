@@ -5,7 +5,7 @@ import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.QuotaInfo;
@@ -15,6 +15,8 @@ import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.UID;
+import lombok.var;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
@@ -54,7 +56,11 @@ public class UserController {
      */
     @GetMapping
     public JsonResult getUserInfo() throws UserNoExistException {
-        return JsonResult.getInstance(SecureUtils.getSpringSecurityUser());
+        var user =  SecureUtils.getSpringSecurityUser();
+        if (user == null) {
+            throw new JsonException(401, "未登录");
+        }
+        return JsonResult.getInstance(user);
     }
 
     /**
@@ -69,11 +75,11 @@ public class UserController {
                               @RequestParam("passwd") String rawPassword,
                               @RequestParam(value = "regcode", defaultValue = "") String regCode,
                               @RequestParam(value = "type", defaultValue = "0") int type
-                              ) throws HasResultException {
+                              ) throws JsonException {
         if (SecureUtils.getSpringSecurityUser() != null && SecureUtils.getSpringSecurityUser().getType() == User.TYPE_ADMIN) {
             userService.addUser(user, rawPassword, type == User.TYPE_ADMIN ? User.TYPE_ADMIN : User.TYPE_COMMON);
         } else if (!regCode.equals(DiskConfig.REG_CODE)) {
-            throw new HasResultException("注册码不正确");
+            throw new JsonException(400, "注册码不正确");
         } else {
             userService.addUser(user, rawPassword, User.TYPE_COMMON);
         }
@@ -136,11 +142,11 @@ public class UserController {
                 throw new AccessDeniedException("非管理员不允许使用force参数");
             } else {
                 userDao.modifyPassword(uid, SecureUtils.getPassswd(newPasswd));
-                return JsonResult.getInstance(1, null, "force reset");
+                return JsonResult.getInstance(200, null, "force reset");
             }
         } else {
             int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
-            return JsonResult.getInstance(1, i, "ok");
+            return JsonResult.getInstance(200, i, "ok");
         }
     }
 

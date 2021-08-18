@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
@@ -89,7 +89,7 @@ public class ResponseService {
             String data = (String) JwtUtils.parse(dc);
             info = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false).readValue(data, FileDCInfo.class);
         } catch (JsonProcessingException e) {
-            throw new HasResultException(400, "下载码无效");
+            throw new JsonException(400, "下载码无效");
         }
         Path localFilePath = Paths.get(DiskConfig.getPathHandler().getStorePath(info.getUid(), info.getDir(), info));
         String name = info.getName();

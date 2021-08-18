@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import io.jsonwebtoken.*;
 
 import java.util.Calendar;
@@ -62,9 +62,9 @@ public class JwtUtils {
                     .getBody();
             return body.get("data");
         } catch (ExpiredJwtException e) {
-            throw new HasResultException("token已过期");
+            throw new JsonException("token已过期");
         } catch (Exception e) {
-            throw new HasResultException("token无效");
+            throw new JsonException("token无效");
         }
     }
 }

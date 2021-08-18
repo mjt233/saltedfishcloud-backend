@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
@@ -136,11 +136,11 @@ public class StoreService {
      * @param input 输入的文件
      * @param targetDir    保存到的目标网盘目录位置（注意：不是本地真是路径）
      * @param fileInfo 文件信息
-     * @throws HasResultException 存储文件出错
+     * @throws JsonException 存储文件出错
      * @throws DuplicateKeyException UNIQUE模式下两个不相同的文件发生MD5碰撞
      * @throws UnableOverwriteException 保存位置存在同名的目录
      */
-    public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws HasResultException, IOException {
+    public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws JsonException, IOException {
         Path md5Target = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, targetDir, fileInfo));
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
             if (Files.exists(md5Target)) {
@@ -209,18 +209,18 @@ public class StoreService {
      * @param oldName 旧文件名
      * @param newName 新文件名
      */
-    public void rename(int uid, String path, String oldName, String newName) throws HasResultException {
+    public void rename(int uid, String path, String oldName, String newName) throws JsonException {
         String base = DiskConfig.getRawFileStoreRootPath(uid);
         File origin = new File(base + "/" + path + "/" + oldName);
         File dist = new File(base + "/" + path + "/" + newName);
         if (!origin.exists()) {
-            throw new HasResultException("原文件不存在");
+            throw new JsonException("原文件不存在");
         }
         if (dist.exists()) {
-            throw new HasResultException("文件名冲突");
+            throw new JsonException("文件名冲突");
         }
         if (!origin.renameTo(dist)) {
-            throw new HasResultException("移动失败");
+            throw new JsonException("移动失败");
         }
 
     }
@@ -239,7 +239,7 @@ public class StoreService {
             return true;
         } else {
             if (file.exists()) {
-                throw new HasResultException("已存在同名文件或文件夹");
+                throw new JsonException("已存在同名文件或文件夹");
             }
             log.error("在本地路径\"" + localFilePath + "\"创建文件夹失败");
             return false;
@@ -314,7 +314,7 @@ public class StoreService {
                         }
                     });
                 } catch (IOException e) {
-                    throw new HasResultException(500, e.getMessage());
+                    throw new JsonException(500, e.getMessage());
                 }
             } else {
                 if (!file.delete()){

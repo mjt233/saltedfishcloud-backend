@@ -6,13 +6,13 @@ import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
+import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.po.param.NamePair;
-import com.xiaotao.saltedfishcloud.service.breakpoint.MergeMultipartFile;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
@@ -58,13 +58,18 @@ public class FileController {
         =======================================
      */
 
+    @GetMapping("info")
+    public User getUserInfo(@SessionAttribute User loginUser) {
+        return loginUser;
+    }
+
     /**
      * 创建文件夹
      */
     @PutMapping("dir/**")
     public JsonResult mkdir(@PathVariable @UID(true) int uid,
                             HttpServletRequest request,
-                            @RequestParam("name") @FileName String name) throws HasResultException, NoSuchFileException {
+                            @RequestParam("name") @FileName String name) throws JsonException, NoSuchFileException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/dir", request);
         fileService.mkdir(uid, requestPath, name);
         return JsonResult.getInstance();
@@ -81,9 +86,9 @@ public class FileController {
     public JsonResult upload(HttpServletRequest request,
                              @PathVariable @UID(true) int uid,
                              @RequestParam(value = "file", required = false) @MergeFile MultipartFile file,
-                             @RequestParam(value = "md5", required = false) String md5) throws HasResultException, IOException {
+                             @RequestParam(value = "md5", required = false) String md5) throws JsonException, IOException {
         if (file == null || file.isEmpty()) {
-            return JsonResult.getInstance(400, null, "文件为空");
+            throw new JsonException(400, "文件为空");
         }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
         int i = fileService.saveFile(uid, file, requestPath, md5);
@@ -189,10 +194,10 @@ public class FileController {
     public JsonResult rename(HttpServletRequest request,
                              @PathVariable @UID(true) int uid,
                              @RequestParam("oldName") @Valid @FileName String oldName,
-                             @RequestParam("newName") @Valid @FileName String newName) throws HasResultException, NoSuchFileException {
+                             @RequestParam("newName") @Valid @FileName String newName) throws JsonException, NoSuchFileException {
         String from = URLUtils.getRequestFilePath(PREFIX + uid + "/name", request);
         if (newName.length() < 1) {
-            throw new HasResultException(400, "文件名不能为空");
+            throw new JsonException(400, "文件名不能为空");
         }
         fileService.rename(uid, from, oldName, newName);
         return JsonResult.getInstance();

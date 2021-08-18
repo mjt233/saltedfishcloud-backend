@@ -67,6 +67,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         //  处理过滤器链中出现的异常
         http.exceptionHandling().authenticationEntryPoint((request, response, authException) -> {
             response.setContentType("application/json;charset=utf-8");
+            response.setStatus(403);
             response.getWriter().print(JsonResult.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
         });
 
@@ -74,7 +75,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests()
                 .antMatchers("/", "/static/**", "/api/static/**").permitAll()
                 .antMatchers(secureUtils.getAnonymousUrls()).permitAll()
-                .antMatchers(HttpMethod.GET, LOGIN_URI).permitAll()
+                .antMatchers(HttpMethod.POST, LOGIN_URI).permitAll()
                 .anyRequest().authenticated();
     }
 

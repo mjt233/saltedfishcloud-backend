@@ -2,12 +2,13 @@ package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.UserDao;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.var;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -56,7 +57,7 @@ public class UserServiceImp implements UserService{
         User user = userDao.getUserById(uid);
         if (user == null) throw new UserNoExistException(404, "用户不存在");
         if (!SecureUtils.getPassswd(oldPassword).equals(user.getPwd())) {
-            throw new HasResultException(403, "原密码错误");
+            throw new JsonException(403, "原密码错误");
         }
         return userDao.modifyPassword(uid, SecureUtils.getPassswd(newPassword));
     }
@@ -74,7 +75,11 @@ public class UserServiceImp implements UserService{
             throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
         }
         String pwd = SecureUtils.getPassswd(passwd);
-        return userDao.addUser(user, pwd, type);
+        try {
+            return userDao.addUser(user, pwd, type);
+        } catch (DuplicateKeyException e) {
+            throw new JsonException(400, "用户" + user + "已被注册");
+        }
     }
 
     @Override
@@ -82,11 +87,11 @@ public class UserServiceImp implements UserService{
 
         //  文件属性约束：大小不得大于3MiB，限定文件类型
         if (file.getSize() > 1024*1024*3) {
-            throw new HasResultException(400, "文件过大");
+            throw new JsonException(400, "文件过大");
         }
         String suffix = FileUtils.getSuffix(file.getOriginalFilename());
         if ( !ACCEPT_AVATAR_TYPE.contains(suffix)) {
-            throw new HasResultException(400, "不支持的格式，只支持jpg, jpeg, gif, png");
+            throw new JsonException(400, "不支持的格式，只支持jpg, jpeg, gif, png");
         }
 
         try {
@@ -98,7 +103,7 @@ public class UserServiceImp implements UserService{
             }
             file.transferTo(Paths.get(profileRoot + "/avatar." + suffix));
         } catch (IOException e) {
-            throw new HasResultException(500, e.getMessage());
+            throw new JsonException(500, e.getMessage());
         }
 
     }

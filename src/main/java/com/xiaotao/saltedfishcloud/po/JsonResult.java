@@ -7,7 +7,7 @@ public class JsonResult extends LinkedHashMap<String, Object>{
     private static final long serialVersionUID = 1537580038140716422L;
 
     public JsonResult() {
-        this(1, null, "OK");
+        this(200, null, "OK");
     }
 
     public JsonResult(int code, Object data, String msg) {
@@ -26,10 +26,10 @@ public class JsonResult extends LinkedHashMap<String, Object>{
         return new JsonResult(code, data, msg);
     }
     public static JsonResult getInstance(Object data) {
-        return getInstance(1, data, "OK");
+        return getInstance(200, data, "OK");
     }
     public static JsonResult getInstance() {
-        return getInstance(1, null, "OK");
+        return getInstance(200, null, "OK");
     }
 
     /**
@@ -40,7 +40,7 @@ public class JsonResult extends LinkedHashMap<String, Object>{
     }
 
     public int getCode() {
-        return Integer.parseInt((String)this.get("code"));
+        return (int)this.get("code");
     }
 
     public JsonResult setCode(int code) {

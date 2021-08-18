@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -63,7 +63,7 @@ public class NodeService {
                     throw new NoSuchFileException("路径 " + path + " 不存在，或目标节点信息已丢失");
                 }
                 if (visited.contains(info.getId())) {
-                    throw new HasResultException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + info.getId() + " => " + node);
+                    throw new JsonException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + info.getId() + " => " + node);
                 } else {
                     visited.add(node);
                     link.add(info);
@@ -164,14 +164,14 @@ public class NodeService {
             link.addFirst(info.getName());
             lastId = info.getParent();
             if (visited.contains(lastId)) {
-                throw new HasResultException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + info.getId() + " => " + lastId);
+                throw new JsonException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + info.getId() + " => " + lastId);
             }
             if (info.getParent().equals("root")) {
                 break;
             }
         }
         if (link.isEmpty()) {
-            throw new HasResultException(404, "无效的nodeId");
+            throw new JsonException(404, "无效的nodeId");
         }
         StringBuilder stringBuilder = new StringBuilder();
         link.forEach(name -> stringBuilder.append("/").append(name));

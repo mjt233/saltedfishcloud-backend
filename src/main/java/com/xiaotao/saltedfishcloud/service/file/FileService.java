@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.FileDao;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
@@ -106,14 +106,14 @@ public class FileService {
             fileRecordService.move(uid, source, target, name, overwrite);
             storeService.move(uid, source, target, name, overwrite);
         } catch (DuplicateKeyException e) {
-            throw new HasResultException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
+            throw new JsonException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
         } catch (UnsupportedEncodingException e) {
-            throw new HasResultException(400, "不支持的编码（请使用UTF-8）");
+            throw new JsonException(400, "不支持的编码（请使用UTF-8）");
         } catch (IllegalArgumentException e) {
-            throw new HasResultException(422, e.getMessage());
+            throw new JsonException(422, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new HasResultException(404, "资源不存在");
+            throw new JsonException(404, "资源不存在");
         }
     }
 
@@ -263,7 +263,7 @@ public class FileService {
      * @param path        文件要保存到的网盘目录
      * @param fileInfo    文件信息
      * @throws IOException 本地文件写入失败时抛出
-     * @throws HasResultException 文件夹同名时抛出
+     * @throws JsonException 文件夹同名时抛出
      */
     public int saveFile(int uid,
                         InputStream stream,
@@ -290,12 +290,12 @@ public class FileService {
      * @param md5         请求时传入的文件md5
      * @return 1
      * @throws IOException 本地文件写入失败时抛出
-     * @throws HasResultException 文件夹同名时抛出
+     * @throws JsonException 文件夹同名时抛出
      */
     public int saveFile(int uid,
                         MultipartFile file,
                         String requestPath,
-                        String md5) throws IOException, HasResultException {
+                        String md5) throws IOException, JsonException {
 
         FileInfo fileInfo = new FileInfo(file);
         // 获取上传的文件信息 并看情况计算MD5
@@ -322,9 +322,9 @@ public class FileService {
      * @param name 文件夹名称
      * @throws NoSuchFileException 当目标目录不存在时抛出
      */
-    public void mkdir(int uid, String path, String name) throws HasResultException, NoSuchFileException {
+    public void mkdir(int uid, String path, String name) throws JsonException, NoSuchFileException {
         if ( !storeService.mkdir(uid, path, name) ) {
-            throw new HasResultException("在" + path + "创建文件夹失败");
+            throw new JsonException("在" + path + "创建文件夹失败");
         }
         fileRecordService.mkdir(uid, name, path);
     }
@@ -364,7 +364,7 @@ public class FileService {
      * @throws NoSuchFileException 当目标路径不存在时抛出
      * @param newName 新文件名
      */
-    public void rename(int uid, String path, String name, String newName) throws HasResultException, NoSuchFileException {
+    public void rename(int uid, String path, String name, String newName) throws JsonException, NoSuchFileException {
         fileRecordService.rename(uid, path, name, newName);
         storeService.rename(uid, path, name, newName);
     }
@@ -379,7 +379,7 @@ public class FileService {
     public String getFileDC(int uid, String path, BasicFileInfo fileInfo, int expr) throws JsonProcessingException {
         Path localPath = Paths.get(DiskConfig.getPathHandler().getStorePath(uid, path, fileInfo));
         if ( !Files.exists(localPath) ){
-            throw new HasResultException(404, "文件不存在");
+            throw new JsonException(404, "文件不存在");
         }
         FileDCInfo info = new FileDCInfo();
         info.setDir(path);

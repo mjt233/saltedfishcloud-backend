@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@PropertySource("classpath:config.properties")
 public class FtpConfig {
     public static int FTP_PORT = 21;
 

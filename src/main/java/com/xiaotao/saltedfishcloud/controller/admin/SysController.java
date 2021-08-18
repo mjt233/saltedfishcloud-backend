@@ -71,7 +71,7 @@ public class SysController {
             if (configService.setStoreType(storeType)) {
                 return JsonResult.getInstance();
             } else {
-                return JsonResult.getInstance(0, DiskConfig.STORE_TYPE.toString(), "请求被忽略，模式无变化");
+                return JsonResult.getInstance(202, DiskConfig.STORE_TYPE.toString(), "请求被忽略，模式无变化");
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("无效的类型，可选RAW或UNIQUE");

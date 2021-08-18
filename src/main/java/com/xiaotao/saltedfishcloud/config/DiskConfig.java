@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.dao.UserDao;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
@@ -109,7 +109,7 @@ public class DiskConfig {
             try {
                 return getUserPrivateDiskRoot(userDao.getUserById(uid).getUsername());
             } catch (NullPointerException e) {
-                throw new HasResultException(404, "资源不存在");
+                throw new JsonException(404, "资源不存在");
             }
         }
     }

@@ -16,28 +16,23 @@
 							"script": {
 								"exec": [
 									"let res = JSON.parse(responseBody)\r",
-									"if (res.code === 1) {\r",
+									"if (pm.response.code === 200) {\r",
 									"    pm.environment.set(\"token\", res.data)\r",
-									"} else {\r",
-									"    console.log('登录失败:' + res.msg)\r",
 									"}"
 								],
 								"type": "text/javascript"
 							}
 						}
 					],
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "formdata",
 							"formdata": []
 						},
 						"url": {
-							"raw": "{{addr}}/api/user/token",
+							"raw": "{{addr}}/api/user/token?user=admin&passwd=admin666",
 							"host": [
 								"{{addr}}"
 							],
@@ -45,9 +40,19 @@
 								"api",
 								"user",
 								"token"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "admin"
+								},
+								{
+									"key": "passwd",
+									"value": "admin666"
+								}
 							]
 						},
-						"description": "获取token以登录，在后续请求中将此token放于名为`Token`的header字段中实现身份鉴权\r\n- URI: `/api/user/token`\r\n- 动作：GET\r\n\r\n### 参数\r\n- user 用户名\r\n- passwd 密码"
+						"description": "获取token以登录，在后续请求中将此token放于名为`Token`的header字段中实现身份鉴权\r\n- URI: `/api/user/token`\r\n- 动作：POST\r\n\r\n### 参数\r\n- user 用户名\r\n- passwd 密码"
 					},
 					"response": []
 				},
@@ -336,7 +341,7 @@
 								"method": "POST",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/breakpoint?fileName=test.mp4&length=2097153",
+									"raw": "{{addr}}/api/breakpoint?fileName=test.mp4&length=2097153&chunkSize=3024000",
 									"host": [
 										"{{addr}}"
 									],
@@ -354,6 +359,10 @@
 											"key": "length",
 											"value": "2097153",
 											"description": "文件长度"
+										},
+										{
+											"key": "chunkSize",
+											"value": "3024000"
 										}
 									]
 								},
@@ -410,6 +419,37 @@
 									]
 								},
 								"description": "结束断点续传任务，操作将使服务器释放对应的资源，同时会导致该断点续传任务不再可用\r\n\r\n- URI：`/api/breakpoint/`\r\n- 动作：DELETE\r\n\r\n### 参数：\r\n- id - 要结束的任务ID"
+							},
+							"response": []
+						},
+						{
+							"name": "上传文件片段",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": "/D:/game/mc/脚本启动.bat"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/breakpoint/9eb03bf5-2d61-4e3d-bb50-6e3179407c1b/1",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"breakpoint",
+										"9eb03bf5-2d61-4e3d-bb50-6e3179407c1b",
+										"1"
+									]
+								},
+								"description": "上传文件片段到断点续传任务\r\n\r\n- URI：`/api/breakpoint/{taskId}/{part}`\r\n- 动作：POST\r\n\r\n### URL参数\r\n- taskId 断点续传任务ID\r\n- part   本次上传的文件块编号，可以使用范围，如：3-6表示这个文件是文件块3，4，5，6的部分"
 							},
 							"response": []
 						}
@@ -820,24 +860,32 @@
 							"formdata": [
 								{
 									"key": "file",
+									"description": "文件[当使用断点续传时可为空或不使用]",
 									"type": "file",
-									"src": "/C:/Users/12079/Desktop/avatar.jpg"
+									"src": [],
+									"disabled": true
 								}
 							]
 						},
 						"url": {
-							"raw": "{{addr}}/api/diskFile/42/file",
+							"raw": "{{addr}}/api/diskFile/1/file?breakpoint_id=4f681cb5-1cfc-4210-869c-63222535718f",
 							"host": [
 								"{{addr}}"
 							],
 							"path": [
 								"api",
 								"diskFile",
-								"42",
+								"1",
 								"file"
+							],
+							"query": [
+								{
+									"key": "breakpoint_id",
+									"value": "4f681cb5-1cfc-4210-869c-63222535718f"
+								}
 							]
 						},
-						"description": "将文件上传到网盘，若文件已存在则会覆盖  \r\n- URI: `/api/diskFile/{用户id}/file/{要上传到的路径}`\r\n- 动作：PUT  \r\n\r\n#### 参数:\r\n- file 类型：文件\r\n注意：请求的路径必须是存在的路径，若不存在需要手动提前创建，否则文件会保存失败"
+						"description": "将文件上传到网盘，若文件已存在则会覆盖  \r\n- URI: `/api/diskFile/{用户id}/file/{要上传到的路径}`\r\n- 动作：PUT  \r\n\r\n#### QueryString参数\r\n- breakpoint_id 断点任务ID，当断点续传任务完成后，使用任务ID请求该接口，表示保存\"使用断点续传任务上传文件\"到用户网盘。保存成功后断点续传任务将被销毁\r\n\r\n#### body参数:\r\n- file 类型：文件 当使用断点续传时，可不需要\r\n注意：请求的路径必须是存在的路径，若不存在需要手动提前创建，否则文件会保存失败"
 					},
 					"response": []
 				},

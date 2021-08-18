@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.dao.FileDao;
 import com.xiaotao.saltedfishcloud.dao.NodeDao;
-import com.xiaotao.saltedfishcloud.exception.HasResultException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
@@ -247,7 +247,7 @@ public class FileRecordService {
         NodeInfo pathNodeInfo = nodeService.getLastNodeInfoByPath(uid, path);
         FileInfo fileInfo = fileDao.getFileInfo(uid, oldName, pathNodeInfo.getId());
         if (fileInfo == null) {
-            throw new HasResultException(404, "文件不存在");
+            throw new JsonException(404, "文件不存在");
         }
         if (fileInfo.isDir()) {
             nodeDao.changeName(uid, nodeDao.getNodeByParentId(uid, pathNodeInfo.getId(), oldName).getId(), newName);

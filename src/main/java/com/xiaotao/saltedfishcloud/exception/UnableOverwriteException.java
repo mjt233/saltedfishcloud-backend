@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.exception;
 
-public class UnableOverwriteException extends HasResultException {
+public class UnableOverwriteException extends JsonException {
     public UnableOverwriteException(String message) {
         super(message);
     }
