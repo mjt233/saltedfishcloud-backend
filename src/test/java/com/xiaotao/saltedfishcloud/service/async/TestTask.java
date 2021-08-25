@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.async;
 
 import com.xiaotao.saltedfishcloud.service.async.io.TaskMessageIOPair;
 import com.xiaotao.saltedfishcloud.service.async.task.AbstractAsyncTask;
-import com.xiaotao.saltedfishcloud.service.async.task.AsyncTaskResult;
 
 public class TestTask extends AbstractAsyncTask<String, String> {
     public TestTask(TaskMessageIOPair<String> input, TaskMessageIOPair<String> output) {
@@ -10,13 +9,13 @@ public class TestTask extends AbstractAsyncTask<String, String> {
     }
 
     @Override
-    protected AsyncTaskResult execute() {
+    protected long execute() {
         System.out.println("我被执行了");
         provideMessage("数据1");
         provideMessage("数据2");
         provideMessage("数据3");
         provideMessage("数据4");
-        return AsyncTaskResult.KEEP_ALIVE;
+        return 0;
     }
 
     @Override

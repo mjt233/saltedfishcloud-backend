@@ -1,20 +1,18 @@
 package com.xiaotao.saltedfishcloud.service.async.context;
 
+import com.xiaotao.saltedfishcloud.service.async.CustomConstructorTask;
 import com.xiaotao.saltedfishcloud.service.async.TestTask;
 import com.xiaotao.saltedfishcloud.service.async.TestTask2;
-import com.xiaotao.saltedfishcloud.service.async.task.AbstractAsyncTask;
 import lombok.var;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.InvocationTargetException;
-
 class TaskManagerTest {
+
+    private final TaskManagerImpl taskManager = new TaskManagerImpl();
+    private final TaskContextFactory factory = new TaskContextFactory(taskManager);
 
     @Test
     public void doTest() throws InterruptedException {
-
-        TaskManagerImpl taskManager = new TaskManagerImpl();
-        TaskContextFactory factory = new TaskContextFactory(taskManager);
 
         var t1 = factory.createContextFromAbstractAsyncTask(TestTask.class);
         var t2 = factory.createContextFromAbstractAsyncTask(TestTask2.class);
@@ -31,5 +29,26 @@ class TaskManagerTest {
         System.out.println("回收前 - 任务1是否被回收：" + (taskManager.getTask(t1.getId()) == null));
         taskManager.gc();
         System.out.println("回收后 - 任务1是否被回收：" + (taskManager.getTask(t1.getId()) == null));
+    }
+
+    @Test
+    public void testDelayExpire() throws InterruptedException {
+        TaskContext<CustomConstructorTask> task = factory.createContextFromAsyncTask(new CustomConstructorTask());
+        TaskContext<CustomConstructorTask> task2 = factory.createContextFromAsyncTask(new CustomConstructorTask());
+        taskManager.submit(task);
+        Thread.sleep(2000);
+        taskManager.gc();
+        System.out.println("2s过去，任务是否已过期：" + task.isExpire() + " 受管中：" + (taskManager.getTask(task.getId()) != null));
+        Thread.sleep(2000);
+        taskManager.gc();
+        System.out.println("4s过去，任务是否已过期：" + task.isExpire() + " 受管中：" + (taskManager.getTask(task.getId()) != null));
+
+        taskManager.submit(task2);
+        Thread.sleep(100);
+        System.out.println("0.1s过去，任务是否已过期：" + task2.isExpire() + " 是否已完成：" + task2.isFinish());
+        task2.interrupt();
+        Thread.sleep(100);
+        System.out.println("发送中断，任务是否已过期：" + task2.isExpire() + " 是否已完成：" + task2.isFinish());
+
     }
 }

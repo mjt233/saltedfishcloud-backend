@@ -12,11 +12,11 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
     protected final MessageWriter<MT> inputProducer;
     protected final MessageReader<MT> outputConsumer;
     protected final MessageReader<MT> inputConsumer;
+    private long expireAt = 0;
     @Getter
     private boolean hasStart = false;
     private boolean finish = false;
     @Setter(AccessLevel.PROTECTED)
-    @Getter
     protected boolean expire = false;
 
     public AbstractAsyncTask(TaskMessageIOPair<MT> input, TaskMessageIOPair<MT> output) {
@@ -70,9 +70,11 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
             hasStart = true;
         }
         try {
-            AsyncTaskResult res = execute();
-            if (res == null || res == AsyncTaskResult.DEFAULT) {
+            long res = execute();
+            if (res == 0) {
                 setExpire(true);
+            } else if (res > 0){
+                this.expireAt = res * 1000 + System.currentTimeMillis();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -81,10 +83,17 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
         }
     }
 
+    @Override
+    public boolean isExpire() {
+        return expire || (expireAt > 0 && expireAt < System.currentTimeMillis());
+    }
+
     /**
-     *  任务执行体
+     *  任务执行体，当返回值为0时，表示任务完成立即过期，将立即被管理器移除。
+     *  当返回值大于0时，表示任务信息最大保留的时长（秒数），超时后，isExpire将为true
+     *  当返回值小于0时，表示任务永不自动过期。
      */
-    protected abstract AsyncTaskResult execute() throws Exception;
+    protected abstract long execute() throws Exception;
 
     /**
      * 任务是否已完成
