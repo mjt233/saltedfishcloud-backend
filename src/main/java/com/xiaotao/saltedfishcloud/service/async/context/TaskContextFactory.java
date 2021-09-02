@@ -16,6 +16,10 @@ public class TaskContextFactory {
         this.taskManager = manager;
     }
 
+    public TaskManager getManager() {
+        return taskManager;
+    }
+
     /**
      * 直接装配一个继承了AbstractAsyncTask的AsyncTask任务类并创建他的任务上下文
      * @param t AbstractAsyncTask的子类的Class
