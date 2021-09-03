@@ -1,29 +1,71 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import lombok.*;
+import org.springframework.http.HttpMethod;
 
+import java.net.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
-@Data
-@NoArgsConstructor
 public class DownloadTaskBuilder {
-    private String url;
+    private String url = "";
+    private HttpMethod method = HttpMethod.GET;
+    private String savePath = PathUtils.getTempDirectory() + "/xyy/download_tmp/" + System.currentTimeMillis();
+    private Proxy proxy = null;
+
+    public static DownloadTaskBuilder create() {
+        return new DownloadTaskBuilder();
+    }
+
+    public static DownloadTaskBuilder create(String url) {
+        return new DownloadTaskBuilder().setUrl(url);
+    }
 
     @Setter(AccessLevel.NONE)
     private Map<String, String> headers = new HashMap<>();
 
-    @Setter(AccessLevel.NONE)
-    private String range;
-
-    public void setRange(int begin) {
-        this.range = begin + "-";
+    public DownloadTaskBuilder setHeader(String k, String v) {
+        headers.put(k, v);
+        return this;
     }
 
-    public void setRange(long begin, long end) {
-        this.range = begin + "-" + end;
+    public DownloadTaskBuilder setRange(int begin) {
+        headers.put("Range", "bytes=" + begin + "-");
+        return this;
+    }
+
+    public DownloadTaskBuilder setRange(long begin, long end) {
+        headers.put("Range", "bytes=" + begin + "-" + end);
+        return this;
+    }
+
+    public DownloadTask build() {
+        return new DownloadTask(url, method, headers, savePath, proxy);
+    }
+
+    public DownloadTaskBuilder setUrl(String url) {
+        this.url = url;
+        return this;
+    }
+
+    public DownloadTaskBuilder setMethod(HttpMethod method) {
+        this.method = method;
+        return this;
+    }
+
+    public DownloadTaskBuilder setSavePath(String savePath) {
+        this.savePath = savePath;
+        return this;
+    }
+
+    public DownloadTaskBuilder setProxy(Proxy proxy) {
+        this.proxy = proxy;
+        return this;
+    }
+
+    public DownloadTaskBuilder setHeaders(Map<String, String> headers) {
+        this.headers = headers;
+        return this;
     }
 }

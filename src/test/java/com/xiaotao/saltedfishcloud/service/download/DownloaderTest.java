@@ -14,7 +14,11 @@ class DownloaderTest {
     @Test
     public void testDownload() throws InterruptedException {
         String url = "https://down.qq.com/qqweb/LinuxQQ/linuxqq_2.0.0-b2-1089_amd64.deb";
-        var t = new DownloadTask(url, HttpMethod.GET, null, "D:\\a.exe", null);
+        var t = DownloadTaskBuilder
+                .create(url)
+                .setSavePath("D:\\a.exe")
+                .build();
+
         var factory = new TaskContextFactory(new TaskManagerImpl());
         var context = factory.createContextFromAsyncTask(t);
         factory.getManager().submit(context);
