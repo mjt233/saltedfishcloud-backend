@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud;
 
-import com.xiaotao.saltedfishcloud.listener.StartListener;
-import com.xiaotao.saltedfishcloud.utils.SpringUtils;
+import com.xiaotao.saltedfishcloud.utils.SpringContextHolder;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -21,7 +20,7 @@ public class SaltedfishcloudApplication {
 
     public static void main(String[] args) {
         SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
-        SpringUtils.SPRING_CONTEXT = sa.run(args);
+        SpringContextHolder.setContext(sa.run(args));
 
     }
 

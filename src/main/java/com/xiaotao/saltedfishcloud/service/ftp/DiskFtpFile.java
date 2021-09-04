@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.SpringUtils;
+import com.xiaotao.saltedfishcloud.utils.SpringContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FtpFile;
 
@@ -25,7 +25,7 @@ public class DiskFtpFile implements FtpFile {
     private final FtpPathInfo pathInfo;
     private final DiskFtpUser user;
     private File nativeFile;
-    private final FileService fileService = SpringUtils.SPRING_CONTEXT.getBean(FileService.class);
+    private final FileService fileService = SpringContextHolder.getContext().getBean(FileService.class);
 
     /**
      * 构造一个网盘FTP文件
@@ -155,7 +155,7 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean delete() {
-        FileService fileService = SpringUtils.SPRING_CONTEXT.getBean(FileService.class);
+        FileService fileService = SpringContextHolder.getContext().getBean(FileService.class);
         try {
             fileService.deleteFile(
                     pathInfo.isPublicArea() ? 0 : user.getId(),
