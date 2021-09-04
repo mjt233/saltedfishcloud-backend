@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.springframework.http.HttpEntity;
@@ -25,13 +26,15 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
     private final DownloadTaskStatus taskInfo = new DownloadTaskStatus();;
     private boolean finish = false;
     private final DownloadExtractor extractor;
+    @Getter
+    private final String savePath;
 
     public DownloadTask(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy) {
         this.url = url;
         this.method = method;
         this.headers = headers;
-        extractor = new DownloadExtractor(savePath);
-
+        this.savePath = savePath;
+        extractor = new DownloadExtractor(this.savePath);
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(1000);
         factory.setReadTimeout(60000);

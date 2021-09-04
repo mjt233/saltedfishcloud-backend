@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseExtractor;
 
@@ -29,6 +30,13 @@ public class DownloadExtractor implements ResponseExtractor<File>, ProgressExtra
 
     @Override
     public File extractData(ClientHttpResponse response) throws IOException {
+        var parent = savePath.getParent();
+        if (!Files.exists(parent)) {
+            Files.createDirectories(parent);
+        }
+        if (Files.exists(savePath) && Files.isDirectory(savePath)) {
+            throw new IOException(savePath + "为已存在的目录");
+        }
         InputStream body = response.getBody();
         total = response.getHeaders().getContentLength();
         log.debug("开始下载，文件保存到:{}", savePath);
