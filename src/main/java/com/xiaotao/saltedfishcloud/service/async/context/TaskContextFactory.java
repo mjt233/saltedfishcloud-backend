@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.async.context;
 import com.xiaotao.saltedfishcloud.service.async.TaskConstructException;
 import com.xiaotao.saltedfishcloud.service.async.io.TaskMessageIOPair;
 import com.xiaotao.saltedfishcloud.service.async.io.impl.StringMessageIOPair;
-import com.xiaotao.saltedfishcloud.service.async.task.AbstractAsyncTask;
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 import lombok.var;
 
