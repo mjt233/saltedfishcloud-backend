@@ -68,7 +68,6 @@ public class ConfigureInitializer implements ApplicationRunner {
         DiskConfig.STORE_TYPE = StoreType.valueOf(storeType);
         DiskConfig.REG_CODE = regCode;
         DiskConfig.SYNC_DELAY = Integer.parseInt(syncDelay);
-        configDao.setConfigure(ConfigName.VERSION, DiskConfig.VERSION.toString());
         log.info("[存储模式]："+ storeType);
         log.info("[注册邀请码]："+ regCode);
         log.info("[同步延迟]：" + syncDelay);

@@ -52,7 +52,7 @@ public class DatabaseInitializer implements ApplicationRunner {
         // 若数据库无数据表则先初始化
         if (!isTableExist(con)) {
             log.info("[数据库]正在初始化数据表...");
-            var resource = new ClassPathResource("db.sql");
+            var resource = new ClassPathResource("sql/full.sql");
             ScriptUtils.executeSqlScript(con, resource);
             log.info("[数据库]数据表初始化完成（好耶）");
         }
