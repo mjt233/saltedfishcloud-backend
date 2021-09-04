@@ -4,15 +4,21 @@ import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.ConfigDao;
+import com.xiaotao.saltedfishcloud.dao.ProxyDao;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.po.ConfigInfo;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
+import javax.validation.Valid;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,6 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping(SysController.prefix)
 @RolesAllowed({"ADMIN"})
+@Validated
 public class SysController {
     public static final String prefix = "/api/admin/sys/";
     @Resource
@@ -28,6 +35,8 @@ public class SysController {
     private ConfigDao configDao;
     @Resource
     private AdminService adminService;
+    @Resource
+    private ProxyDao proxyDao;
 
 
     @GetMapping("overview")
@@ -88,4 +97,37 @@ public class SysController {
         configService.setConfig(key, value);
         return JsonResult.getInstance();
     }
+
+    @PostMapping("proxy")
+    public JsonResult addProxy(@Validated ProxyInfo info) {
+        try {
+            proxyDao.addProxy(info);
+        } catch (DuplicateKeyException e) {
+            throw new JsonException(400, "名称已存在");
+        }
+        return JsonResult.getInstance();
+    }
+
+    @GetMapping("proxy")
+    public JsonResult getAllProxy() {
+        return JsonResult.getInstance(proxyDao.getAllProxy());
+    }
+
+    @PutMapping("proxy")
+    public JsonResult modifyProxy(@Valid ProxyInfo info, String proxyName) {
+        if (proxyDao.modifyProxy(proxyName, info) == 0) {
+            throw new JsonException(400, "代理" + proxyName + "不存在");
+        }
+        return JsonResult.getInstance();
+    }
+
+    @DeleteMapping("proxy")
+    public JsonResult deleteProxy(@RequestParam String proxyName) {
+        if (proxyDao.removeProxy(proxyName) == 0) {
+            throw new JsonException(400, "代理" + proxyName + "不存在");
+        }
+        return JsonResult.getInstance();
+    }
+
+
 }

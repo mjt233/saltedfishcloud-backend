@@ -1194,6 +1194,148 @@
 							"name": "常规设置",
 							"item": [
 								{
+									"name": "代理节点",
+									"item": [
+										{
+											"name": "添加代理节点",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "formdata",
+													"formdata": [
+														{
+															"key": "name",
+															"value": "local2",
+															"type": "text"
+														},
+														{
+															"key": "type",
+															"value": "SOCKS",
+															"type": "text"
+														},
+														{
+															"key": "address",
+															"value": "127.0.0.1",
+															"type": "text"
+														},
+														{
+															"key": "port",
+															"value": "1",
+															"type": "text"
+														}
+													]
+												},
+												"url": {
+													"raw": "{{addr}}/api/admin/sys/proxy",
+													"host": [
+														"{{addr}}"
+													],
+													"path": [
+														"api",
+														"admin",
+														"sys",
+														"proxy"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "获取所有代理",
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{addr}}/api/admin/sys/proxy",
+													"host": [
+														"{{addr}}"
+													],
+													"path": [
+														"api",
+														"admin",
+														"sys",
+														"proxy"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "修改代理节点信息",
+											"request": {
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "formdata",
+													"formdata": []
+												},
+												"url": {
+													"raw": "{{addr}}/api/admin/sys/proxy?proxyName=a&type=HTTP&port=1080&address=127.0.0.1&name=local",
+													"host": [
+														"{{addr}}"
+													],
+													"path": [
+														"api",
+														"admin",
+														"sys",
+														"proxy"
+													],
+													"query": [
+														{
+															"key": "proxyName",
+															"value": "a"
+														},
+														{
+															"key": "type",
+															"value": "HTTP"
+														},
+														{
+															"key": "port",
+															"value": "1080"
+														},
+														{
+															"key": "address",
+															"value": "127.0.0.1"
+														},
+														{
+															"key": "name",
+															"value": "local"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "删除代理节点",
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{addr}}/api/admin/sys/proxy?proxyName=local2",
+													"host": [
+														"{{addr}}"
+													],
+													"path": [
+														"api",
+														"admin",
+														"sys",
+														"proxy"
+													],
+													"query": [
+														{
+															"key": "proxyName",
+															"value": "local2"
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
 									"name": "设置配置项值",
 									"request": {
 										"method": "PUT",
