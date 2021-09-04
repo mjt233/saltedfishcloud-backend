@@ -5,11 +5,23 @@ import com.xiaotao.saltedfishcloud.service.async.context.TaskManagerImpl;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpMethod;
+
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 
 
 @Slf4j
 class DownloaderTest {
+    @Test
+    public void testProxy() {
+        String url = "http://192.168.5.1";
+        var t = DownloadTaskBuilder
+                .create(url)
+                .setProxy(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("127.0.0.1", 10808)))
+                .build();
+        t.start();
+
+    }
 
     @Test
     public void testDownload() throws InterruptedException {
