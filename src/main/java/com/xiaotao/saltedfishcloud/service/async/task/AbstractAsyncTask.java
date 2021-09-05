@@ -6,7 +6,9 @@ import com.xiaotao.saltedfishcloud.service.async.io.TaskMessageIOPair;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
     protected final MessageWriter<MT> outputProducer;
     protected final MessageWriter<MT> inputProducer;
@@ -77,7 +79,9 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
                 this.expireAt = res * 1000 + System.currentTimeMillis();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if (log.isDebugEnabled()) {
+                e.printStackTrace();
+            }
         } finally {
             finish = true;
         }
@@ -92,6 +96,7 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
      *  任务执行体，当返回值为0时，表示任务完成立即过期，将立即被管理器移除。
      *  当返回值大于0时，表示任务信息最大保留的时长（秒数），超时后，isExpire将为true
      *  当返回值小于0时，表示任务永不自动过期。
+     *  若任务执行失败，则需抛出异常表示失败
      */
     protected abstract long execute() throws Exception;
 

@@ -4,6 +4,13 @@ public interface TaskContext<T> {
     String getId();
 
     /**
+     * 设置事件回调
+     */
+    void setCallback(AsyncTaskEventCallback callback);
+
+
+
+    /**
      * 任务执行是否已完成
      * @return 任务执行流程完成为true，否则为false
      */

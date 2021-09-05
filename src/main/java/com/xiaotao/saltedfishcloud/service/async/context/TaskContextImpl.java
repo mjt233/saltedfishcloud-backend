@@ -4,7 +4,15 @@ import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 import lombok.Getter;
 
 import java.util.UUID;
+class DefaultCallback implements AsyncTaskEventCallback {
+    private DefaultCallback() {}
+    public final static DefaultCallback instance = new DefaultCallback();
 
+    @Override
+    public void onFinish() {
+
+    }
+}
 /**
  * 默认的任务上下文接口实现
  * @TODO 使用线程池
@@ -12,6 +20,7 @@ import java.util.UUID;
 public class TaskContextImpl<T> implements TaskContext<T> {
     private final AsyncTask task;
     private final Thread thread;
+    private AsyncTaskEventCallback callback;
     @Getter
     private final String id = UUID.randomUUID().toString();
 
@@ -35,6 +44,7 @@ public class TaskContextImpl<T> implements TaskContext<T> {
         this.task = (AsyncTask) task;
         this.thread = new Thread(() -> {
             this.task.start();
+            this.callback.onFinish();
             if (this.task.isExpire()) {
                 manager.remove(id);
             }
@@ -44,6 +54,12 @@ public class TaskContextImpl<T> implements TaskContext<T> {
     @Override
     public boolean isExpire() {
         return task.isExpire();
+    }
+
+
+    @Override
+    public void setCallback(AsyncTaskEventCallback callback) {
+        this.callback = callback;
     }
 
     @Override
