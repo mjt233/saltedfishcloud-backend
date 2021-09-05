@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 
 @Slf4j
 public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
@@ -64,7 +65,7 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
     /**
      * 开始执行任务
      */
-    public final void start() {
+    public final boolean start() {
         synchronized (this) {
             if (hasStart) {
                 throw new IllegalStateException("不可重复运行");
@@ -72,16 +73,18 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
             hasStart = true;
         }
         try {
-            long res = execute();
-            if (res == 0) {
+            var res = execute();
+            if (res.timeout == 0) {
                 setExpire(true);
-            } else if (res > 0){
-                this.expireAt = res * 1000 + System.currentTimeMillis();
+            } else if (res.timeout > 0){
+                this.expireAt = res.timeout * 1000 + System.currentTimeMillis();
             }
+            return res.status == AsyncTaskResult.Status.SUCCESS;
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 e.printStackTrace();
             }
+            return false;
         } finally {
             finish = true;
         }
@@ -94,11 +97,11 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
 
     /**
      *  任务执行体，当返回值为0时，表示任务完成立即过期，将立即被管理器移除。
-     *  当返回值大于0时，表示任务信息最大保留的时长（秒数），超时后，isExpire将为true
-     *  当返回值小于0时，表示任务永不自动过期。
-     *  若任务执行失败，则需抛出异常表示失败
+     *  当返回值大于0时，表示任务执行成功，信息最大保留的时长（秒数），超时后，isExpire将为true
+     *  当返回值等于0时，表示任务执行成功且永不自动过期。
+     *  当返回值等于时，表示
      */
-    protected abstract long execute() throws Exception;
+    protected abstract AsyncTaskResult execute();
 
     /**
      * 任务是否已完成

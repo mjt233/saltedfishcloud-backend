@@ -4,12 +4,12 @@ import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 import lombok.Getter;
 
 import java.util.UUID;
-class DefaultCallback implements AsyncTaskEventCallback {
+class DefaultCallback implements AsyncTackCallback {
     private DefaultCallback() {}
     public final static DefaultCallback instance = new DefaultCallback();
 
     @Override
-    public void onFinish() {
+    public void action() {
 
     }
 }
@@ -20,7 +20,9 @@ class DefaultCallback implements AsyncTaskEventCallback {
 public class TaskContextImpl<T> implements TaskContext<T> {
     private final AsyncTask task;
     private final Thread thread;
-    private AsyncTaskEventCallback callback;
+    private AsyncTackCallback success = DefaultCallback.instance;
+    private AsyncTackCallback failed = DefaultCallback.instance;
+    private AsyncTackCallback finish = DefaultCallback.instance;
     @Getter
     private final String id = UUID.randomUUID().toString();
 
@@ -43,8 +45,13 @@ public class TaskContextImpl<T> implements TaskContext<T> {
         }
         this.task = (AsyncTask) task;
         this.thread = new Thread(() -> {
-            this.task.start();
-            this.callback.onFinish();
+            if (this.task.start()) {
+                this.success.action();
+            } else {
+                this.failed.action();
+            }
+            this.finish.action();
+
             if (this.task.isExpire()) {
                 manager.remove(id);
             }
@@ -58,8 +65,18 @@ public class TaskContextImpl<T> implements TaskContext<T> {
 
 
     @Override
-    public void setCallback(AsyncTaskEventCallback callback) {
-        this.callback = callback;
+    public void onSuccess(AsyncTackCallback callback) {
+        this.success = callback;
+    }
+
+    @Override
+    public void onFailed(AsyncTackCallback callback) {
+        this.failed = callback;
+    }
+
+    @Override
+    public void onFinish(AsyncTackCallback callback) {
+        this.finish = callback;
     }
 
     @Override

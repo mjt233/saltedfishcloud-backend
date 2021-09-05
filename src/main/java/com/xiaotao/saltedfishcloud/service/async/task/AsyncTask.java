@@ -21,8 +21,9 @@ public interface AsyncTask<MT, ST> {
 
     /**
      * 开始执行任务，任务完成前，该方法应该处于阻塞状态
+     * @return true为任务正常执行成功，false为任务执行失败
      */
-    void start();
+    boolean start();
 
     /**
      * 任务是否已完成

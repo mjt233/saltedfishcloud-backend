@@ -4,10 +4,19 @@ public interface TaskContext<T> {
     String getId();
 
     /**
-     * 设置事件回调
+     * 设置任务成功时的事件回调
      */
-    void setCallback(AsyncTaskEventCallback callback);
+    void onSuccess(AsyncTackCallback callback);
 
+    /**
+     * 设置任务失败时的事件回调
+     */
+    void onFailed(AsyncTackCallback callback);
+
+    /**
+     * 设置任务完成时的事件回调，无论任务成功还是失败都会执行
+     */
+    void onFinish(AsyncTackCallback callback);
 
 
     /**
