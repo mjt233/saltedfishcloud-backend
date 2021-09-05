@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExistsException;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -230,16 +231,21 @@ public class StoreService {
      * @param uid   用户ID
      * @param path  所在路径
      * @param name  文件夹名
+     * @throws FileAlreadyExistsException 目标已存在时抛出
      * @return 是否创建成功
      */
-    public boolean mkdir(int uid, String path, String name) {
+    public boolean mkdir(int uid, String path, String name) throws FileAlreadyExistsException, DirectoryAlreadyExistsException {
         String localFilePath = DiskConfig.getRawFileStoreRootPath(uid) + "/" + path + "/" + name;
         File file = new File(localFilePath);
         if (file.mkdir()) {
             return true;
         } else {
             if (file.exists()) {
-                throw new JsonException("已存在同名文件或文件夹");
+                if (file.isDirectory()) {
+                    throw new DirectoryAlreadyExistsException(file + "/" + name);
+                } else {
+                    throw new FileAlreadyExistsException(file + "/" + name);
+                }
             }
             log.error("在本地路径\"" + localFilePath + "\"创建文件夹失败");
             return false;

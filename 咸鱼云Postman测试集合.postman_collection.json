@@ -1553,6 +1553,45 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "任务",
+			"item": [
+				{
+					"name": "下载任务",
+					"item": [
+						{
+							"name": "创建下载任务",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"savePath\": \"/\",\r\n    \"url\": \"https://bigota.d.miui.com/V11.0.5.0.PCACNXM/miui_MI6_V11.0.5.0.PCACNXM_996ffd2660_9.0.zip\",\r\n    \"headers\": {\r\n        \"ua\": \"a\",\r\n        \"name\": \"xiaotao\"\r\n    },\r\n    \"method\": \"GET\",\r\n    \"uid\": 1\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/task/download",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"task",
+										"download"
+									]
+								},
+								"description": "## 创建一个下载任务  \n异步API，请求后在data中返回异步任务ID\n\n### 请求体json参数\n- savePath: 必填，下载后保存的目录\n- url: 必填，文件下载地址\n- headers: 选填，附加的请求header，key-value类型对象\n- method： 选填，请求方法，默认GET,可选：[HEAD, TRACE, GET, PATCH, DELETE, OPTIONS, PUT, POST]，必须全大写\n请求体（Body）示例\n- proxy： 选填，代理节点名称\n\n### 请求体示例\n```json\n{\n    \"savePath\": \"/\",\n    \"url\": \"www.baidu.com\",\n    \"headers\": {\n        \"key\": \"value\",\n        \"token\": \"123123123\"\n    },\n    \"method\": \"GET\",\n    \"proxy\": \"local1\"\n}\n```"
+							},
+							"response": []
+						}
+					]
+				}
+			]
 		}
 	],
 	"auth": {

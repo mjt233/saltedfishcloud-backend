@@ -35,7 +35,7 @@ public class ControllerAdvice {
     public JsonResult validFormError(MethodArgumentNotValidException e) {
         BindingResult bindingResult = e.getBindingResult();
         StringBuilder sb = new StringBuilder();
-        bindingResult.getFieldErrors().forEach(error -> sb.append(error.getDefaultMessage()).append(";"));
+        bindingResult.getFieldErrors().forEach(error -> sb.append(error.getField()).append(error.getDefaultMessage()).append(";"));
         return responseError(422, sb.toString());
     }
 

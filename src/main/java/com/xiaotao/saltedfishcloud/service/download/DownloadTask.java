@@ -16,6 +16,7 @@ import java.util.Map;
 
 /**
  * @TODO 实现多线程下载
+ * @TODO 实现文件名的检测
  */
 @Slf4j
 public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
@@ -23,7 +24,7 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
     private final String url;
     private final HttpMethod method;
     private final Map<String, String> headers;
-    private final DownloadTaskStatus taskInfo = new DownloadTaskStatus();;
+    private final DownloadTaskStatus taskInfo = new DownloadTaskStatus();
     private boolean finish = false;
     private final DownloadExtractor extractor;
     @Getter
@@ -85,7 +86,7 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
                     extractor
             );
             taskInfo.status = TaskStatus.FINISH;
-        } catch (RestClientException e) {
+        } catch (Exception e) {
             taskInfo.error = e.getMessage();
             taskInfo.status = TaskStatus.FAILED;
             return false;

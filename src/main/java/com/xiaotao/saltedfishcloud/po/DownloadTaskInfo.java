@@ -16,15 +16,25 @@ public class DownloadTaskInfo {
     @Id
     public String id;
     public int uid;
+
     @NotEmpty
     public String url;
 
     public String proxy;
     public String state = "waiting";
+    public String message;
 
-    @CreatedDate
+    @Column(name = "save_path")
+    @NotEmpty
+    public String savePath;
+
     @Column(name = "created_at")
     public Date createdAt;
+    @Column(name = "finish_at")
+    public Date finishAt;
+
+    public int createdBy;
+
 
     @PrePersist
     protected void init() {

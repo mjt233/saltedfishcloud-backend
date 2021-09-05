@@ -45,15 +45,22 @@ public class TaskContextImpl<T> implements TaskContext<T> {
         }
         this.task = (AsyncTask) task;
         this.thread = new Thread(() -> {
-            if (this.task.start()) {
+            boolean r;
+            try {
+                r = this.task.start();
+            } catch (Throwable e) {
+                e.printStackTrace();
+                this.failed.action();
+                manager.remove(id);
+                return;
+            }
+            if (this.task.isExpire()) {
+                manager.remove(id);
+            }
+            if (r) {
                 this.success.action();
             } else {
                 this.failed.action();
-            }
-            this.finish.action();
-
-            if (this.task.isExpire()) {
-                manager.remove(id);
             }
         });
     }

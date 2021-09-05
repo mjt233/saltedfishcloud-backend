@@ -11,11 +11,13 @@ import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExistsException;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.net.URLDecoder;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,13 +46,31 @@ public class FileService {
     NodeService nodeService;
 
     /**
+     * 在网盘中连同所有父级目录，创建一个目录
+     * @param uid   用户ID
+     * @param path  网盘目录完整路径
+     * @throws JsonException 目录树中某个部分与文件名冲突时抛出
+     */
+    public void mkdirs(int uid, String path) throws FileAlreadyExistsException, NoSuchFileException {
+        var pb = new PathBuilder();
+        pb.append(path);
+        var p = new StringBuilder("/");
+        for (String node : pb.getPath()) {
+            try {
+                mkdir(uid, p.toString(), node);
+            } catch (DirectoryAlreadyExistsException ignored) {}
+            p.append("/").append(node);
+        }
+    }
+
+    /**
      * 通过文件MD5获取一个存储在系统中的文件<br>
      * @param md5   文件MD5值
      * @return      文件信息，path为本地文件系统中的实际存储文件路径，文件名将被重命名为md5+原文件拓展名
      * @throws NoSuchFileException  没有文件时抛出
      */
     public FileInfo getFileByMD5(String md5) throws NoSuchFileException {
-        FileInfo fileInfo = null;
+        FileInfo fileInfo;
         List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
         if (files.size() == 0) throw new NoSuchFileException("文件不存在: " + md5);
         fileInfo = files.get(0);
@@ -322,7 +339,7 @@ public class FileService {
      * @param name 文件夹名称
      * @throws NoSuchFileException 当目标目录不存在时抛出
      */
-    public void mkdir(int uid, String path, String name) throws JsonException, NoSuchFileException {
+    public void mkdir(int uid, String path, String name) throws JsonException, NoSuchFileException, FileAlreadyExistsException, DirectoryAlreadyExistsException {
         if ( !storeService.mkdir(uid, path, name) ) {
             throw new JsonException("在" + path + "创建文件夹失败");
         }

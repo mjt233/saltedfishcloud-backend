@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExistsException;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FtpFile;
 
 import java.io.*;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -146,7 +148,7 @@ public class DiskFtpFile implements FtpFile {
                     new PathBuilder().append(pathInfo.getResourcePath()).range(-1),
                     pathInfo.getName()
             );
-        } catch (NoSuchFileException e) {
+        } catch (NoSuchFileException | FileAlreadyExistsException | DirectoryAlreadyExistsException e) {
             e.printStackTrace();
             return false;
         }

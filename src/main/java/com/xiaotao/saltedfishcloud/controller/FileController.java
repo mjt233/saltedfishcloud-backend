@@ -16,6 +16,7 @@ import com.xiaotao.saltedfishcloud.po.param.NamePair;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExistsException;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.FileName;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.List;
@@ -69,8 +71,9 @@ public class FileController {
     @PutMapping("dir/**")
     public JsonResult mkdir(@PathVariable @UID(true) int uid,
                             HttpServletRequest request,
-                            @RequestParam("name") @FileName String name) throws JsonException, NoSuchFileException {
+                            @RequestParam("name") @FileName String name) throws JsonException, NoSuchFileException, FileAlreadyExistsException, DirectoryAlreadyExistsException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/dir", request);
+        fileService.mkdirs(uid, requestPath);
         fileService.mkdir(uid, requestPath, name);
         return JsonResult.getInstance();
     }
