@@ -9,12 +9,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AsyncTaskAutoConfigurator {
     @Bean
-    public TaskManager taskManager() {
+    public TaskManager asyncTaskManager() {
         return new TaskManagerImpl();
     }
 
     @Bean
     public TaskContextFactory factory() {
-        return new TaskContextFactory(taskManager());
+        return new TaskContextFactory(asyncTaskManager());
     }
 }
