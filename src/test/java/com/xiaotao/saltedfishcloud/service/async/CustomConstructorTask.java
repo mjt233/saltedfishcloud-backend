@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.async;
 
 import com.xiaotao.saltedfishcloud.service.async.io.impl.StringMessageIOPair;
 import com.xiaotao.saltedfishcloud.service.async.task.AbstractAsyncTask;
+import com.xiaotao.saltedfishcloud.service.async.task.AsyncTaskResult;
 
 public class CustomConstructorTask extends AbstractAsyncTask<String, String> {
     public CustomConstructorTask() {
@@ -9,9 +10,9 @@ public class CustomConstructorTask extends AbstractAsyncTask<String, String> {
     }
 
     @Override
-    protected long execute() {
+    protected AsyncTaskResult execute() {
         System.out.println("任务已执行，3s后过期");
-        return 3;
+        return AsyncTaskResult.getInstance(AsyncTaskResult.Status.SUCCESS, 3);
     }
 
     @Override

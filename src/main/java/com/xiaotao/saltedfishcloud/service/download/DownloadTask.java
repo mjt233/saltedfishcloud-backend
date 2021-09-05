@@ -66,7 +66,7 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
     }
 
     @Override
-    public void start() {
+    public boolean start() {
         // 初始化任务信息
         taskInfo.url = url;
         HttpHeaders headers = new HttpHeaders();
@@ -88,9 +88,10 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
         } catch (RestClientException e) {
             taskInfo.error = e.getMessage();
             taskInfo.status = TaskStatus.FAILED;
+            return false;
         }
         finish = true;
-
+        return true;
     }
 
     @Override

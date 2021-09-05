@@ -5,6 +5,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotEmpty;
 import java.util.Date;
 
 @Entity()
@@ -15,6 +16,7 @@ public class DownloadTaskInfo {
     @Id
     public String id;
     public int uid;
+    @NotEmpty
     public String url;
 
     public String proxy;

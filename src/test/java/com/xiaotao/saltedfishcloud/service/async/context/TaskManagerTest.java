@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.async.context;
 
 import com.xiaotao.saltedfishcloud.service.async.CustomConstructorTask;
+import com.xiaotao.saltedfishcloud.service.async.FailedTask;
 import com.xiaotao.saltedfishcloud.service.async.TestTask;
 import com.xiaotao.saltedfishcloud.service.async.TestTask2;
 import lombok.var;
@@ -10,6 +11,22 @@ class TaskManagerTest {
 
     private final TaskManagerImpl taskManager = new TaskManagerImpl();
     private final TaskContextFactory factory = new TaskContextFactory(taskManager);
+
+    @Test
+    public void testCallback() {
+        var context = factory.createContextFromAbstractAsyncTask(TestTask.class);
+        context.onSuccess(() -> {
+            System.out.println("success");
+        });
+        context.onFinish(() -> {
+            System.out.println("finish");
+        });
+        taskManager.submit(context);
+        var context2 = factory.createContextFromAbstractAsyncTask(FailedTask.class);
+        context2.onFinish(() -> {
+            System.out.println("");
+        });
+    }
 
     @Test
     public void doTest() throws InterruptedException {
