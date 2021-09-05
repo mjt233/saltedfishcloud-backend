@@ -9,9 +9,26 @@ import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 
-
 @Slf4j
 class DownloaderTest {
+    private TaskContextFactory factory =  new TaskContextFactory(new TaskManagerImpl());
+    @Test
+    public void testCallback() {
+        var url = "https://down.qq.com/qqweb/LinuxQQ/linuxqq_2.0.0-b2-1089_amd6a4.deb";
+        var t = DownloadTaskBuilder.create(url).build();
+        var context = factory.createContextFromAsyncTask(t);
+        context.onFinish(() -> System.out.println("finish"));
+        context.onSuccess(() -> System.out.println("success"));
+        context.onFailed(() -> System.out.println("failed"));
+
+        factory.getManager().submit(context);
+        try {
+            Thread.sleep(2500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+    }
     @Test
     public void testProxy() {
         String url = "http://192.168.5.1";
