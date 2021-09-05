@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.dao.UserDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserType;
 import lombok.extern.slf4j.Slf4j;

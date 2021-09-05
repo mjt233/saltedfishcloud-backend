@@ -6,6 +6,8 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 
 @Data
 public class ProxyInfo {
@@ -21,5 +23,9 @@ public class ProxyInfo {
 
     public enum Type {
         SOCKS, HTTP
+    }
+
+    public Proxy toProxy() {
+        return new Proxy(type == Type.SOCKS ? Proxy.Type.SOCKS : Proxy.Type.HTTP, new InetSocketAddress(address, port));
     }
 }

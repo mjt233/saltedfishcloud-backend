@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.dao.FileDao;
-import com.xiaotao.saltedfishcloud.dao.NodeDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;

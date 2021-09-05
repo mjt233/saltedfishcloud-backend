@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.xiaotao.saltedfishcloud.dao.NodeDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
 import com.xiaotao.saltedfishcloud.service.RedisTestService;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;

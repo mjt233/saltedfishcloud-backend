@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.config;
 
 
-import com.xiaotao.saltedfishcloud.dao.UserDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.po.User;

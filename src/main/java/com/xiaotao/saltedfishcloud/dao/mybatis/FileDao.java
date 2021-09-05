@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.dao;
+package com.xiaotao.saltedfishcloud.dao.mybatis;
 
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import org.apache.ibatis.annotations.*;

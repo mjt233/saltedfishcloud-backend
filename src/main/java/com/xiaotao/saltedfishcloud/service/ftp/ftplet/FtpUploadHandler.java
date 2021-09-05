@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.ftp.ftplet;
 
-import com.xiaotao.saltedfishcloud.dao.UserDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.ftp.DiskFtpUser;

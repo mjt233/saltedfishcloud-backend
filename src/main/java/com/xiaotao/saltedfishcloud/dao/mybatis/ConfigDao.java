@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.dao;
+package com.xiaotao.saltedfishcloud.dao.mybatis;
 
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.po.ConfigInfo;
@@ -51,7 +51,7 @@ public interface ConfigDao {
      * @param key       键
      * @param value     值
      */
-    default int setConfigure(ConfigName key, Enum<? extends Object> value) {
+    default int setConfigure(ConfigName key, Enum<?> value) {
         return setConfigure(key, value.toString());
     }
 }

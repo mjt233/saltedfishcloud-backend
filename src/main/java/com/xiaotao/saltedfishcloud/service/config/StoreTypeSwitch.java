@@ -2,15 +2,12 @@ package com.xiaotao.saltedfishcloud.service.config;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
-import com.xiaotao.saltedfishcloud.dao.ConfigDao;
-import com.xiaotao.saltedfishcloud.dao.FileDao;
-import com.xiaotao.saltedfishcloud.dao.UserDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

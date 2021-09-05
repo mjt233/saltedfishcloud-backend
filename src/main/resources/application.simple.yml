@@ -6,6 +6,10 @@ server:
       enabled: true
       force: true
 spring:
+  jpa:
+    database: mysql
+    hibernate:
+      ddl-auto: none
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:

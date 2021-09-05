@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
 import com.xiaotao.saltedfishcloud.config.StoreType;
-import com.xiaotao.saltedfishcloud.dao.ConfigDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.ftp;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.dao.UserDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.*;

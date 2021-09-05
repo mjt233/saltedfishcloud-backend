@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.dao;
+package com.xiaotao.saltedfishcloud.dao.mybatis;
 
 import com.xiaotao.saltedfishcloud.annotations.NullToZero;
 import org.apache.ibatis.annotations.Select;
