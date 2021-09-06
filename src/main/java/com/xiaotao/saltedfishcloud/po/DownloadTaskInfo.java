@@ -1,7 +1,5 @@
 package com.xiaotao.saltedfishcloud.po;
 
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -12,7 +10,9 @@ import java.util.Date;
 @Table(name = "download_task")
 @EntityListeners(AuditingEntityListener.class)
 public class DownloadTaskInfo {
-
+    public enum State {
+        WAITING, DOWNLOADING, FAILED, FINISH
+    }
     @Id
     public String id;
     public int uid;
@@ -21,8 +21,12 @@ public class DownloadTaskInfo {
     public String url;
 
     public String proxy;
-    public String state = "waiting";
+
+    @Enumerated(EnumType.STRING)
+    public State state = State.WAITING;
     public String message;
+    public long size;
+    public String name;
 
     @Column(name = "save_path")
     @NotEmpty
@@ -35,14 +39,4 @@ public class DownloadTaskInfo {
 
     public int createdBy;
 
-
-    @PrePersist
-    protected void init() {
-        if (createdAt == null) {
-            createdAt = new Date();
-        }
-        if (id == null) {
-            id = SecureUtils.getUUID();
-        }
-    }
 }

@@ -30,15 +30,15 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
     @Getter
     private final String savePath;
 
-    public DownloadTask(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy) {
+    public DownloadTask(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy, int connectTimeout, int readTimeout) {
         this.url = url;
         this.method = method;
         this.headers = headers;
         this.savePath = savePath;
         extractor = new DownloadExtractor(this.savePath);
         var factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(1000);
-        factory.setReadTimeout(60000);
+        factory.setConnectTimeout(connectTimeout);
+        factory.setReadTimeout(readTimeout);
         if (proxy != null) {
             factory.setProxy(proxy);
         }
@@ -93,6 +93,9 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
             );
             taskInfo.status = TaskStatus.FINISH;
         } catch (Exception e) {
+            if (log.isDebugEnabled()) {
+                e.printStackTrace();
+            }
             taskInfo.error = e.getMessage();
             taskInfo.status = TaskStatus.FAILED;
             return false;

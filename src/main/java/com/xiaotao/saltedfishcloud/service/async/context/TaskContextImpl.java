@@ -54,13 +54,13 @@ public class TaskContextImpl<T> implements TaskContext<T> {
                 manager.remove(id);
                 return;
             }
-            if (this.task.isExpire()) {
-                manager.remove(id);
-            }
             if (r) {
                 this.success.action();
             } else {
                 this.failed.action();
+            }
+            if (this.task.isExpire()) {
+                manager.remove(id);
             }
         });
     }

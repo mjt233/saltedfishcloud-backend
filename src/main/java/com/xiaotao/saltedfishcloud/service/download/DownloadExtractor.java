@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -73,16 +74,33 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
         OutputStream localFileStream = Files.newOutputStream(savePath);
         byte[] buffer = new byte[8192];
         int cnt;
+        int lastProc = 0;
         while ( (cnt = body.read(buffer)) != -1 ) {
+            if (log.isDebugEnabled()) {
+                if (total > 0) {
+                    int curProc = (int) (loaded * 100 / total);
+                    if (curProc > lastProc) {
+                        log.debug("已下载：{}({}) 总量：{}({}) 进度：{}%",
+                                loaded,
+                                StringUtils.getFormatSize(loaded),
+                                total,
+                                StringUtils.getFormatSize(total),
+                                curProc);
+                        lastProc = curProc;
+                    }
+                } else {
+                    log.debug("已下载：{} 大小未知", loaded );
+                }
+            }
             loaded += cnt;
             localFileStream.write(buffer, 0, cnt);
         }
+        log.debug("下载完成，大小：{} ", total);
 
         // 下载完毕，构造本地文件信息
         var res = new HttpResourceFile(savePath.toString(), resourceName);
         if (res.length() != total) {
             total = res.length();
-            log.debug("实际获取的总大小：" + total);
         }
         return res;
     }

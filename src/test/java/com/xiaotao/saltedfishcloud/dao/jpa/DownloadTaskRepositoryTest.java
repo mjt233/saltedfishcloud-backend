@@ -15,6 +15,14 @@ class DownloadTaskRepositoryTest {
     private DownloadTaskRepository downloadTaskRepository;
 
     @Test
+    public void testMethod() {
+        var res = downloadTaskRepository.findByUidOrderByCreatedAtDesc(1);
+        for (DownloadTaskInfo info : res) {
+            System.out.println(info);
+        }
+    }
+
+    @Test
     public void doTest() {
         var info = new DownloadTaskInfo();
         info.proxy = "local";

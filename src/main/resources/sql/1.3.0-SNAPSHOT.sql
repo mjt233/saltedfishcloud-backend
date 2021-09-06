@@ -11,6 +11,8 @@ CREATE TABLE `download_task` (
     `url` varchar(2048) DEFAULT NULL,
     `proxy` varchar(128) DEFAULT NULL,
     `state` varchar(128) DEFAULT 'waiting',
+    `name` VARCHAR(1024),
+    `size` bigint unsigned,
     `message` text,
     `created_at` datetime DEFAULT NULL,
     `finish_at` datetime DEFAULT NULL,

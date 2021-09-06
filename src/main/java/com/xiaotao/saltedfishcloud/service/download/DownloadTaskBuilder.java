@@ -2,17 +2,23 @@ package com.xiaotao.saltedfishcloud.service.download;
 
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.*;
+import lombok.experimental.Accessors;
 import org.springframework.http.HttpMethod;
 
 import java.net.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
+@Accessors(chain = true)
 public class DownloadTaskBuilder {
     private String url = "";
     private HttpMethod method = HttpMethod.GET;
     private String savePath = PathUtils.getTempDirectory() + "/xyy/download_tmp/" + System.currentTimeMillis();
     private Proxy proxy = null;
+    @Setter
+    private int connectTimeout = 10000;
+    @Setter
+    private int readTimeout = 60000;
 
     public static DownloadTaskBuilder create() {
         return new DownloadTaskBuilder();
@@ -41,7 +47,7 @@ public class DownloadTaskBuilder {
     }
 
     public DownloadTask build() {
-        return new DownloadTask(url, method, headers, savePath, proxy);
+        return new DownloadTask(url, method, headers, savePath, proxy, connectTimeout, readTimeout);
     }
 
     public DownloadTaskBuilder setUrl(String url) {

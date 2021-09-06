@@ -9,21 +9,18 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.param.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
-import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
+import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import lombok.var;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
+import java.util.Date;
+import java.util.List;
 
 @Service
 public class DownloadService {
@@ -37,6 +34,30 @@ public class DownloadService {
     private NodeService nodeService;
     @Resource
     private FileService fileService;
+    private final TaskManager taskManager;
+
+    /**
+     * 构造器按类型注入
+     */
+    public DownloadService(TaskManager taskManager) {
+        this.taskManager = taskManager;
+    }
+
+    /**
+     * 获取用户的所有下载任务
+     * @param uid   要查询的用户ID
+     */
+    public List<DownloadTaskInfo> getTaskList(int uid) {
+        var tasks = downloadDao.findByUidOrderByCreatedAtDesc(uid);
+        tasks.forEach(e -> {
+            if (e.state == DownloadTaskInfo.State.DOWNLOADING && taskManager.getTask(e.id) == null) {
+                e.state = DownloadTaskInfo.State.FAILED;
+                e.message = "interrupt";
+                downloadDao.save(e);
+            }
+        });
+        return tasks;
+    }
 
     /**
      * 创建一个下载任务
@@ -67,14 +88,14 @@ public class DownloadService {
         info.url = params.url;
         info.proxy = params.proxy;
         info.uid = params.uid;
-        info.state = "downloading";
+        info.state = DownloadTaskInfo.State.DOWNLOADING;
         info.createdBy = creator;
         info.savePath = params.savePath;
+        info.createdAt = new Date();
         downloadDao.save(info);
 
         // 绑定事件回调
         context.onSuccess(() -> {
-            info.state = "finish";
             try {
                 // 创建预期的保存目录以应对下载完成前用户删除目录的情况
                 fileService.mkdirs(params.uid, params.savePath);
@@ -86,6 +107,9 @@ public class DownloadService {
                 // 更改文件名为下载任务的文件名
                 if (task.getStatus().name != null) {
                     fileInfo.setName(task.getStatus().name);
+                    info.name = task.getStatus().name;
+                } else {
+                    info.name = fileInfo.getName();
                 }
 
                 // 保存文件到网盘目录
@@ -98,18 +122,22 @@ public class DownloadService {
                 } catch (FileAlreadyExistsException | NoSuchFileException ex) {
                     // 依旧失败那莫得办法咯
                     info.message = e.getMessage();
-                    info.state = "failed";
+                    info.state = DownloadTaskInfo.State.FAILED;
                 }
             } catch (Exception e) {
                 // 文件保存失败
                 e.printStackTrace();
                 info.message = e.getMessage();
-                info.state = "failed";
+                info.state = DownloadTaskInfo.State.FAILED;
             }
+            info.state = DownloadTaskInfo.State.FINISH;
+            info.finishAt = new Date();
+            info.size = task.getStatus().total;
+            System.out.println(info.name);
             downloadDao.save(info);
         });
         context.onFailed(() -> {
-            info.state = "failed";
+            info.state = DownloadTaskInfo.State.FAILED;
             info.message = task.getStatus().error;
             downloadDao.save(info);
         });
