@@ -48,6 +48,7 @@ public class StoreService {
                 // 已存在相同文件时，直接删除本地文件
                 log.debug("file md5 HIT: {}", fileInfo.getMd5());
                 Files.delete(nativePath);
+                Files.delete(targetPath);
             } else {
                 // 将本地文件移动到唯一仓库
                 log.debug("file md5 NOT HIT: {}", fileInfo.getMd5());

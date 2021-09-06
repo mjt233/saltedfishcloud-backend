@@ -12,10 +12,12 @@ import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
 import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
@@ -23,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 
 @Service
+@Slf4j
 public class DownloadService {
     @Resource
     private DownloadTaskRepository downloadDao;
@@ -96,13 +99,13 @@ public class DownloadService {
 
         // 绑定事件回调
         context.onSuccess(() -> {
+            // 获取文件信息（包括md5）
+            var tempFile = Paths.get(task.getSavePath());
+            var fileInfo = FileInfo.getLocal(tempFile.toString());
             try {
                 // 创建预期的保存目录以应对下载完成前用户删除目录的情况
                 fileService.mkdirs(params.uid, params.savePath);
 
-                // 获取文件信息（包括md5）
-                var tempFile = Paths.get(task.getSavePath());
-                var fileInfo = FileInfo.getLocal(tempFile.toString());
 
                 // 更改文件名为下载任务的文件名
                 if (task.getStatus().name != null) {
@@ -119,7 +122,8 @@ public class DownloadService {
                 info.savePath = "/download" + System.currentTimeMillis() + info.savePath;
                 try {
                     fileService.mkdirs(params.uid, info.savePath);
-                } catch (FileAlreadyExistsException | NoSuchFileException ex) {
+                    fileService.moveToSaveFile(params.uid, tempFile, params.savePath, fileInfo);
+                } catch (IOException ex) {
                     // 依旧失败那莫得办法咯
                     info.message = e.getMessage();
                     info.state = DownloadTaskInfo.State.FAILED;
