@@ -88,7 +88,7 @@ public class ResourceController {
     @NotBlock(level = ReadOnlyLevel.DATA_CHECKING)
     public ResponseEntity<org.springframework.core.io.Resource> downloadByFDC(@PathVariable String code,
                                                                               @RequestParam(required = false, defaultValue = "false") boolean download)
-            throws MalformedURLException {
+            throws MalformedURLException, UnsupportedEncodingException {
         return responseService.getResourceByDC(code, download);
     }
 

@@ -16,7 +16,7 @@ class DownloaderTest {
 
     @Test
     public void testHttpFilename() throws InterruptedException {
-        String url = "https://disk.xiaotao2333.top:344/api/resource/0/fileContentByFDC/eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wibmFtZVwiOlwiTWluZWNyYWZ0MS4xMi4yLnppcFwiLFwibWQ1XCI6XCJlMzBjMmY4NDI1ZTkyZmQxYmYzY2M0ZWZiZWMxMjljYlwiLFwic2l6ZVwiOjAsXCJ1aWRcIjowLFwiZGlyXCI6XCIv5ri45oiP55u45YWzL01pbmVjcmFmdFwiLFwic3VmZml4XCI6XCJ6aXBcIn0iLCJpYXQiOjE2MzA4OTcwODl9.QiNpzso1l595LBaoONdjRy_-6iBL5nHic-9G7ahFyS0/Minecraftasdasdasd1.12.2.zip";
+        String url = "http://127.0.0.1:8080/api/resource/0/fileContentByFDC/eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wibmFtZVwiOlwi5oql5ZCN6KGoLnBkZlwiLFwibWQ1XCI6XCJlYWQ0ZTY1NTUwZjQ5NzBmZTg4OTgwMTFiNzBiZTAwMlwiLFwic2l6ZVwiOjAsXCJ1aWRcIjowLFwiZGlyXCI6XCIvXCIsXCJzdWZmaXhcIjpcInBkZlwifSIsImlhdCI6MTYzMDkwNDQ4MX0.wCnCXgZpY3EpUrRRpTceniWPcgQCcgEjjMB-Dq8raTw/报名表233.pdf";
         var task = DownloadTaskBuilder.create(url).build();
         var context = factory.createContextFromAsyncTask(task);
         factory.getManager().submit(context);
@@ -36,7 +36,7 @@ class DownloaderTest {
             );
             lastRecord = status.loaded;
         }
-        Assert.assertEquals("Minecraft1.12.2.zip", task.getStatus().name);
+        Assert.assertEquals("报名表.pdf", task.getStatus().name);
 
     }
 

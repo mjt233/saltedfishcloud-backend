@@ -71,9 +71,10 @@ public class ResponseService {
             throw new IllegalArgumentException("无法直接下载文件夹");
         }
         UrlResource urlResource = new UrlResource(path.toUri());
+        String disposition = "inline;filename*=UTF-8''"+ URLEncoder.encode(name, "utf-8");
         return ResponseEntity.ok()
                 .header("Content-Type", FileUtils.getContentType(name))
-                .header("Content-Disposition", "inline;filename="+ URLEncoder.encode(name, "utf-8"))
+                .header("Content-Disposition", disposition)
                 .body(urlResource);
     }
 
@@ -83,7 +84,7 @@ public class ResponseService {
      * @param dc 下载码
      * @return  资源响应体
      */
-    public ResponseEntity<org.springframework.core.io.Resource> getResourceByDC(String dc, boolean directDownload) throws MalformedURLException {
+    public ResponseEntity<org.springframework.core.io.Resource> getResourceByDC(String dc, boolean directDownload) throws MalformedURLException, UnsupportedEncodingException {
         FileDCInfo info;
         try {
             String data = (String) JwtUtils.parse(dc);
@@ -95,9 +96,10 @@ public class ResponseService {
         String name = info.getName();
         UrlResource urlResource = new UrlResource(localFilePath.toUri());
         String ct = FileUtils.getContentType(directDownload ? "a" : name);
+        String disposition = "inline;filename*=UTF-8''"+ URLEncoder.encode(name, "utf-8");
         return ResponseEntity.ok()
                 .header("Content-Type", ct)
-                .header("Content-Disposition", "inline;filename=" + name)
+                .header("Content-Disposition", disposition)
                 .body(urlResource);
     }
 }

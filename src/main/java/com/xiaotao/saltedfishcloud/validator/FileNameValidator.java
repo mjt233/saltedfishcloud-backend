@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 public class FileNameValidator implements ConstraintValidator<FileName, Object> {
-    private final Pattern pattern = Pattern.compile(RejectRegex.FILE_NAME);
+    private final static Pattern pattern = Pattern.compile(RejectRegex.FILE_NAME);
     @Override
     public void initialize(FileName constraintAnnotation) {
     }
@@ -26,7 +26,7 @@ public class FileNameValidator implements ConstraintValidator<FileName, Object> 
         return true;
     }
 
-    public boolean valid(CharSequence input) {
+    public static boolean valid(CharSequence input) {
         return !pattern.matcher(input).find();
     }
 }

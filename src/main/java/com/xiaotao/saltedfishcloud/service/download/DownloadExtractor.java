@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
@@ -54,7 +55,7 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
         }
         // 文件名探测
         resourceName = response.getHeaders().getContentDisposition().getFilename();
-        if (resourceName != null) {
+        if (resourceName != null && FileNameValidator.valid(resourceName)) {
             log.debug("从响应头探测到文件名：" + resourceName);
         } else {
             log.debug("响应头无文件名");
