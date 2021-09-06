@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
@@ -8,15 +9,14 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.util.Map;
 
 /**
  * @TODO 实现多线程下载
- * @TODO 实现文件名的检测
  */
 @Slf4j
 public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
@@ -70,6 +70,12 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
     public boolean start() {
         // 初始化任务信息
         taskInfo.url = url;
+        try {
+            taskInfo.name = StringUtils.getURLLastName(url);
+            log.debug("通过URL获取的默认文件名：" + taskInfo.name);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
         HttpHeaders headers = new HttpHeaders();
         headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36");
         if(this.headers != null) {
@@ -102,6 +108,9 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
 
     @Override
     public DownloadTaskStatus getStatus() {
+        if (extractor.getResourceName() != null) {
+            taskInfo.name = extractor.getResourceName();
+        }
         taskInfo.total = extractor.getTotal();
         taskInfo.loaded = extractor.getLoaded();
         return taskInfo;

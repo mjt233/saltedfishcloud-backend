@@ -1,6 +1,27 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 public class StringUtils {
+    public static String getURLLastName(String url) throws MalformedURLException {
+        return getURLLastName(new URL(url));
+    }
+    /**
+     * 获取URL中最后一个目录节点的名称
+     * @param url   URL
+     * @return      资源名称，若URL中
+     */
+    public static String getURLLastName(URL url) {
+        String path = url.getPath();
+        if (path.endsWith("/")) {
+            path = path.substring(0, path.length() -1);
+        }
+        int i = path.lastIndexOf("/");
+        if (i == -1) return null;
+        return path.substring(i + 1);
+    }
+
     /**
      * 获取md5的最后2级存储路径+文件名<br>
      * 例如输入<code>00a27b5294bbbfa65e9fa57bfdb0fa6a</code><br>

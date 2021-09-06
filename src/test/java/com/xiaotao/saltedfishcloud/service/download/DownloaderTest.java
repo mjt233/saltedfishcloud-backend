@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManagerImpl;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
@@ -12,6 +13,33 @@ import java.net.Proxy;
 @Slf4j
 class DownloaderTest {
     private TaskContextFactory factory =  new TaskContextFactory(new TaskManagerImpl());
+
+    @Test
+    public void testHttpFilename() throws InterruptedException {
+        String url = "https://disk.xiaotao2333.top:344/api/resource/0/fileContentByFDC/eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wibmFtZVwiOlwiTWluZWNyYWZ0MS4xMi4yLnppcFwiLFwibWQ1XCI6XCJlMzBjMmY4NDI1ZTkyZmQxYmYzY2M0ZWZiZWMxMjljYlwiLFwic2l6ZVwiOjAsXCJ1aWRcIjowLFwiZGlyXCI6XCIv5ri45oiP55u45YWzL01pbmVjcmFmdFwiLFwic3VmZml4XCI6XCJ6aXBcIn0iLCJpYXQiOjE2MzA4OTcwODl9.QiNpzso1l595LBaoONdjRy_-6iBL5nHic-9G7ahFyS0/Minecraftasdasdasd1.12.2.zip";
+        var task = DownloadTaskBuilder.create(url).build();
+        var context = factory.createContextFromAsyncTask(task);
+        factory.getManager().submit(context);
+        double prog = 0;
+        long lastRecord = 0;
+        while (!task.isFinish()) {
+            var status = task.getStatus();
+            Thread.sleep(500);
+            if (status.total != 0) {
+                prog = ((double)status.loaded / status.total) * 100;
+            }
+            log.info("文件大小：{} 已下载：{} 进度：{}% 速度：{}kiB/s",
+                    status.total,
+                    status.loaded,
+                    String.format("%.2f", prog),
+                    ((status.loaded - lastRecord)*2)/1024
+            );
+            lastRecord = status.loaded;
+        }
+        Assert.assertEquals("Minecraft1.12.2.zip", task.getStatus().name);
+
+    }
+
     @Test
     public void testCallback() {
         var url = "https://down.qq.com/qqweb/LinuxQQ/linuxqq_2.0.0-b2-1089_amd6a4.deb";
