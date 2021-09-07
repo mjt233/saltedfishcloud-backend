@@ -17,4 +17,5 @@ public class DownloadTaskStatus {
     public long created_at = System.currentTimeMillis();
     public TaskStatus status = TaskStatus.READY;
     public String error;
+    public long speed;
 }

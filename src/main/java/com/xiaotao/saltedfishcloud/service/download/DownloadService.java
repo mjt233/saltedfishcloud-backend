@@ -24,6 +24,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -62,8 +63,8 @@ public class DownloadService {
                     downloadDao.save(e);
                 } else {
                     var task = context.getTask();
-                    e.size = task.getStatus().total;
-                    e.name = task.getStatus().name;
+                    e.loaded = task.getStatus().loaded;
+                    e.speed = task.getStatus().speed;
                 }
             }
         });
@@ -73,6 +74,7 @@ public class DownloadService {
     /**
      * 创建一个下载任务
      * @param params 任务参数
+     * @TODO 使用队列限制同时下载的任务数
      * @return 下载任务ID
      */
     public String createTask(DownloadTaskParams params, int creator) throws NoSuchFileException {
@@ -106,6 +108,13 @@ public class DownloadService {
         downloadDao.save(info);
 
         // 绑定事件回调
+        task.onReady(() -> {
+            info.size = task.getStatus().total;
+            info.name = task.getStatus().name;
+            downloadDao.save(info);
+            log.debug("Task ON Ready");
+        });
+
         context.onSuccess(() -> {
             // 获取文件信息（包括md5）
             var tempFile = Paths.get(task.getSavePath());
@@ -145,11 +154,13 @@ public class DownloadService {
             info.state = DownloadTaskInfo.State.FINISH;
             info.finishAt = new Date();
             info.size = task.getStatus().total;
-            System.out.println(info.name);
+            info.loaded = info.size;
             downloadDao.save(info);
         });
         context.onFailed(() -> {
             info.state = DownloadTaskInfo.State.FAILED;
+            info.loaded = task.getStatus().loaded;
+            info.size = task.getStatus().total;
             info.message = task.getStatus().error;
             downloadDao.save(info);
         });

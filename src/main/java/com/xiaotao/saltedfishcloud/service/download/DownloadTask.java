@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
@@ -30,7 +31,8 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
     @Getter
     private final String savePath;
 
-    public DownloadTask(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy, int connectTimeout, int readTimeout) {
+    public DownloadTask(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy,
+                        int connectTimeout, int readTimeout, AsyncTackCallback readyCallback) {
         this.url = url;
         this.method = method;
         this.headers = headers;
@@ -43,6 +45,23 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
             factory.setProxy(proxy);
         }
         restTemplate = new RestTemplate(factory);
+        extractor.setReadyCallback(readyCallback);
+    }
+
+    /**
+     * 当成功建立连接，准备开始正式下载响应体时执行的回调，此时任务已获取完成文件名与大小
+     * @param callback 执行回调
+     */
+    public void onReady(AsyncTackCallback callback) {
+        extractor.setReadyCallback(callback);
+    }
+
+    /**
+     * 下载进度发生变化时触发
+     * @param callback 回调
+     */
+    public void onProgressCallback(AsyncTackCallback callback) {
+        extractor.setProgressCallback(callback);
     }
 
     /**
@@ -116,6 +135,7 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
         }
         taskInfo.total = extractor.getTotal();
         taskInfo.loaded = extractor.getLoaded();
+        taskInfo.speed = extractor.getSpeed();
         return taskInfo;
     }
 }

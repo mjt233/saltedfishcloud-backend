@@ -25,7 +25,10 @@ public class DownloadTaskInfo {
     @Enumerated(EnumType.STRING)
     public State state = State.WAITING;
     public String message;
+    public long loaded;
     public long size;
+    @Transient
+    public long speed;
     public String name;
 
     @Column(name = "save_path")

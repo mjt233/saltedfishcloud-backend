@@ -1,8 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
+import com.xiaotao.saltedfishcloud.service.async.context.EmptyCallback;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.springframework.http.client.ClientHttpResponse;
@@ -35,7 +38,12 @@ class HttpResourceFile extends File {
 public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, ProgressExtractor {
     private long total;
     private long loaded;
+    private long speed;
     private final Path savePath;
+    @Setter
+    private AsyncTackCallback readyCallback;
+    @Setter
+    private AsyncTackCallback progressCallback = EmptyCallback.get();
     @Getter
     private String resourceName;
     public DownloadExtractor(Path savePath) {
@@ -75,24 +83,26 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
         byte[] buffer = new byte[8192];
         int cnt;
         int lastProc = 0;
+        long lastLoad = 0;
+        long lastRecordTime = System.currentTimeMillis();
+
+        readyCallback.action();
         while ( (cnt = body.read(buffer)) != -1 ) {
-            if (log.isDebugEnabled()) {
-                if (total > 0) {
-                    int curProc = (int) (loaded * 100 / total);
-                    if (curProc > lastProc) {
-                        log.debug("已下载：{}({}) 总量：{}({}) 进度：{}%",
-                                loaded,
-                                StringUtils.getFormatSize(loaded),
-                                total,
-                                StringUtils.getFormatSize(total),
-                                curProc);
-                        lastProc = curProc;
-                    }
-                } else {
-                    log.debug("已下载：{} 大小未知", loaded );
-                }
-            }
+            long curTime = System.currentTimeMillis();
             loaded += cnt;
+            if (curTime - lastRecordTime > 1000) {
+                log.debug("已下载：{}({}) 总量：{}({}) 进度：{}%",
+                        loaded, StringUtils.getFormatSize(loaded),
+                        total, StringUtils.getFormatSize(total), (int)(loaded * 100/ total));
+                speed = (loaded - lastLoad)/( (curTime - lastRecordTime)/1000 );
+                try {
+                    progressCallback.action();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+                lastRecordTime = curTime;
+                lastLoad = loaded;
+            }
             localFileStream.write(buffer, 0, cnt);
         }
         log.debug("下载完成，大小：{} ", total);
@@ -113,5 +123,10 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
     @Override
     public long getLoaded() {
         return loaded;
+    }
+
+    @Override
+    public long getSpeed() {
+        return speed;
     }
 }
