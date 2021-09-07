@@ -11,7 +11,7 @@ import java.util.Date;
 @EntityListeners(AuditingEntityListener.class)
 public class DownloadTaskInfo {
     public enum State {
-        WAITING, DOWNLOADING, FAILED, FINISH
+        WAITING, DOWNLOADING, FAILED, FINISH, CANCEL
     }
     @Id
     public String id;

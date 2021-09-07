@@ -5,12 +5,12 @@ import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -23,7 +23,6 @@ import java.util.List;
 
 /**
  * 全局异常处理，捕获进入控制器的异常并进行处理
- * @TODO 异常时修改HTTP响应码
  */
 @Slf4j
 @RestControllerAdvice
@@ -45,6 +44,11 @@ public class ControllerAdvice {
         StringBuilder sb = new StringBuilder();
         errors.forEach(error -> sb.append(error.getField()).append(' ').append(error.getDefaultMessage()).append(";"));
         return responseError(422, sb.toString());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public JsonResult requestParamsError(MissingServletRequestParameterException e) {
+        return JsonResult.getInstance(422, null, e.getMessage());
     }
 
     @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class})

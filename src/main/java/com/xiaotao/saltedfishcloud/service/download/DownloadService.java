@@ -24,7 +24,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.Date;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -46,6 +45,19 @@ public class DownloadService {
      */
     public DownloadService(TaskManager taskManager) {
         this.taskManager = taskManager;
+    }
+
+    public TaskContext<DownloadTask> getTaskContext(String taskId) {
+        return taskManager.getContext(taskId, DownloadTask.class);
+    }
+
+    public void interrupt(String id) {
+        var context = taskManager.getContext(id, DownloadTask.class);
+        if (context == null) {
+            throw new JsonException(404, id + "不存在");
+        } else {
+            context.interrupt();
+        }
     }
 
     /**
@@ -97,6 +109,7 @@ public class DownloadService {
         TaskContext<DownloadTask> context = factory.createContextFromAsyncTask(task);
         // 初始化下载任务信息和录入数据库
         var info = new DownloadTaskInfo();
+        task.bindingInfo = info;
         info.id = context.getId();
         info.url = params.url;
         info.proxy = params.proxy;
@@ -116,6 +129,7 @@ public class DownloadService {
         });
 
         context.onSuccess(() -> {
+
             // 获取文件信息（包括md5）
             var tempFile = Paths.get(task.getSavePath());
             var fileInfo = FileInfo.getLocal(tempFile.toString());
@@ -158,10 +172,15 @@ public class DownloadService {
             downloadDao.save(info);
         });
         context.onFailed(() -> {
-            info.state = DownloadTaskInfo.State.FAILED;
+            if (task.isInterrupted()) {
+                info.state = DownloadTaskInfo.State.CANCEL;
+                info.message = "has been interrupted";
+            } else {
+                info.state = DownloadTaskInfo.State.FAILED;
+                info.message = task.getStatus().error;
+            }
             info.loaded = task.getStatus().loaded;
             info.size = task.getStatus().total;
-            info.message = task.getStatus().error;
             downloadDao.save(info);
         });
 

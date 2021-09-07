@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -18,6 +19,7 @@ import java.util.Map;
 
 /**
  * @TODO 实现多线程下载
+ * @TODO 下载中途出错重试继续下载，出错一定次数后再设为任务失败
  */
 @Slf4j
 public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
@@ -30,6 +32,11 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
     private final DownloadExtractor extractor;
     @Getter
     private final String savePath;
+    public DownloadTaskInfo bindingInfo;
+
+    public boolean isInterrupted() {
+        return extractor.isInterrupted();
+    }
 
     public DownloadTask(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy,
                         int connectTimeout, int readTimeout, AsyncTackCallback readyCallback) {
@@ -65,10 +72,12 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
     }
 
     /**
-     * @TODO 实现下载中断
+     * 中断任务的下载
      */
     @Override
-    public void interrupt() { }
+    public void interrupt() {
+        extractor.interrupt();
+    }
 
     @Override
     public boolean isExpire() {
@@ -104,13 +113,18 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
         // 开始执行下载
         taskInfo.status = TaskStatus.DOWNLOADING;
         try {
-            restTemplate.execute(
+            HttpResourceFile res = restTemplate.execute(
                     url,
                     method,
                     restTemplate.httpEntityCallback(new HttpEntity<>(headers)),
                     extractor
             );
-            taskInfo.status = TaskStatus.FINISH;
+            if (res == null) {
+                taskInfo.status = isInterrupted() ? TaskStatus.CANCEL : TaskStatus.FAILED;
+                return false;
+            } else {
+                taskInfo.status = TaskStatus.FINISH;
+            }
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 e.printStackTrace();
@@ -118,8 +132,9 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
             taskInfo.error = e.getMessage();
             taskInfo.status = TaskStatus.FAILED;
             return false;
+        } finally {
+            finish = true;
         }
-        finish = true;
         return true;
     }
 

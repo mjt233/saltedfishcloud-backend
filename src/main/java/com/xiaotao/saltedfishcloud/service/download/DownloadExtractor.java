@@ -40,6 +40,8 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
     private long loaded;
     private long speed;
     private final Path savePath;
+    @Getter
+    private boolean interrupted = false;
     @Setter
     private AsyncTackCallback readyCallback;
     @Setter
@@ -54,6 +56,10 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
     }
     public DownloadExtractor(File saveFile) {
         this.savePath = saveFile.toPath();
+    }
+
+    public void interrupt() {
+        interrupted = true;
     }
 
     @Override
@@ -87,25 +93,47 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
         long lastRecordTime = System.currentTimeMillis();
 
         readyCallback.action();
-        while ( (cnt = body.read(buffer)) != -1 ) {
-            long curTime = System.currentTimeMillis();
-            loaded += cnt;
-            if (curTime - lastRecordTime > 1000) {
-                log.debug("已下载：{}({}) 总量：{}({}) 进度：{}%",
-                        loaded, StringUtils.getFormatSize(loaded),
-                        total, StringUtils.getFormatSize(total), (int)(loaded * 100/ total));
-                speed = (loaded - lastLoad)/( (curTime - lastRecordTime)/1000 );
-                try {
-                    progressCallback.action();
-                } catch (Throwable e) {
-                    e.printStackTrace();
+        try {
+            while ( (cnt = body.read(buffer)) != -1 ) {
+                // 中断信号检测
+                if (interrupted) {
+                    body.close();
+                    localFileStream.close();
+                    log.debug("下载被中断");
+                    return null;
                 }
-                lastRecordTime = curTime;
-                lastLoad = loaded;
+
+                // 调试模式下每1s输出下载进度，并计算下载速度和触发ProgressCallback
+                long curTime = System.currentTimeMillis();
+                loaded += cnt;
+                if (curTime - lastRecordTime > 1000) {
+                    log.debug("已下载：{}({}) 总量：{}({}) 进度：{}%",
+                            loaded, StringUtils.getFormatSize(loaded),
+                            total, StringUtils.getFormatSize(total), (int)(loaded * 100/ total));
+
+                    // 计算速度
+                    speed = (loaded - lastLoad)/( (curTime - lastRecordTime)/1000 );
+
+                    // 触发回调
+                    try {
+                        progressCallback.action();
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    // 更新记录
+                    lastRecordTime = curTime;
+                    lastLoad = loaded;
+                }
+                // 写入小块文件
+                localFileStream.write(buffer, 0, cnt);
             }
-            localFileStream.write(buffer, 0, cnt);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            body.close();
+            localFileStream.close();
         }
-        log.debug("下载完成，大小：{} ", total);
 
         // 下载完毕，构造本地文件信息
         var res = new HttpResourceFile(savePath.toString(), resourceName);

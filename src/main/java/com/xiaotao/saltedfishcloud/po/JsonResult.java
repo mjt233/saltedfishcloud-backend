@@ -3,6 +3,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.LinkedHashMap;
 
+/**
+ * @TODO 修改为可迭代的接口或抽象类，并编写一个默认的实现类和一个空数据的只读单例实现类
+ */
 public class JsonResult extends LinkedHashMap<String, Object>{
     private static final long serialVersionUID = 1537580038140716422L;
 
