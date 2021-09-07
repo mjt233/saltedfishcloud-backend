@@ -14,6 +14,8 @@ import com.xiaotao.saltedfishcloud.service.file.FileService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -22,7 +24,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.Date;
-import java.util.List;
 
 @Service
 @Slf4j
@@ -50,13 +51,20 @@ public class DownloadService {
      * 获取用户的所有下载任务
      * @param uid   要查询的用户ID
      */
-    public List<DownloadTaskInfo> getTaskList(int uid) {
-        var tasks = downloadDao.findByUidOrderByCreatedAtDesc(uid);
+    public Page<DownloadTaskInfo> getTaskList(int uid, int page, int size) {
+        var tasks = downloadDao.findByUidOrderByCreatedAtDesc(uid, PageRequest.of(page, size));
         tasks.forEach(e -> {
-            if (e.state == DownloadTaskInfo.State.DOWNLOADING && taskManager.getTask(e.id) == null) {
-                e.state = DownloadTaskInfo.State.FAILED;
-                e.message = "interrupt";
-                downloadDao.save(e);
+            if (e.state == DownloadTaskInfo.State.DOWNLOADING ) {
+                var context = taskManager.getContext(e.id, DownloadTask.class);
+                if (context == null) {
+                    e.state = DownloadTaskInfo.State.FAILED;
+                    e.message = "interrupt";
+                    downloadDao.save(e);
+                } else {
+                    var task = context.getTask();
+                    e.size = task.getStatus().total;
+                    e.name = task.getStatus().name;
+                }
             }
         });
         return tasks;

@@ -103,6 +103,6 @@ class DownloaderTest {
         } else {
             log.info("下载完成");
         }
-        log.info("任务是否已被管理器移除：{}", factory.getManager().getTask(context.getId()) == null);
+        log.info("任务是否已被管理器移除：{}", factory.getManager().getContext(context.getId()) == null);
     }
 }

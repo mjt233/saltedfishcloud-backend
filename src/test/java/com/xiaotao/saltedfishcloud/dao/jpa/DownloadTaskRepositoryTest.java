@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.po.DownloadTaskInfo;
 import lombok.var;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 
 import javax.annotation.Resource;
 
@@ -16,7 +17,7 @@ class DownloadTaskRepositoryTest {
 
     @Test
     public void testMethod() {
-        var res = downloadTaskRepository.findByUidOrderByCreatedAtDesc(1);
+        var res = downloadTaskRepository.findByUidOrderByCreatedAtDesc(1, PageRequest.of(0, 10));
         for (DownloadTaskInfo info : res) {
             System.out.println(info);
         }

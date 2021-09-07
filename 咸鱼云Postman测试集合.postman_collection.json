@@ -1588,6 +1588,40 @@
 								"description": "## 创建一个下载任务  \n异步API，请求后在data中返回异步任务ID\n\n### 请求体json参数\n- savePath: 必填，下载后保存的目录\n- url: 必填，文件下载地址\n- headers: 选填，附加的请求header，key-value类型对象\n- method： 选填，请求方法，默认GET,可选：[HEAD, TRACE, GET, PATCH, DELETE, OPTIONS, PUT, POST]，必须全大写\n请求体（Body）示例\n- proxy： 选填，代理节点名称\n\n### 请求体示例\n```json\n{\n    \"savePath\": \"/\",\n    \"url\": \"www.baidu.com\",\n    \"headers\": {\n        \"key\": \"value\",\n        \"token\": \"123123123\"\n    },\n    \"method\": \"GET\",\n    \"proxy\": \"local1\"\n}\n```"
 							},
 							"response": []
+						},
+						{
+							"name": "获取下载任务列表",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/task/download?uid=1&page=1&size=5",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"task",
+										"download"
+									],
+									"query": [
+										{
+											"key": "uid",
+											"value": "1"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "size",
+											"value": "5"
+										}
+									]
+								},
+								"description": "## 查询参数\n- uid：要查询的用户\n- page：选填，页数，从1开始，默认1\n- size：选填，每页大小，每页大小，5-400之间，默认10\n\n## 响应data数组元素\n- id：下载任务的ID\n- uid：目标用户\n- url：文件URL\n- proxy：使用的代理名称\n- state: 任务状态，FINISH - 任务完成， FAILED - 任务失败， DOWNLOADING - 下载中，WAITING - 等待中\n- message：任务消息，一般为null，当任务失败时为失败消息\n- size：文件大小\n- name：文件名\n- savePath：保存到的网盘位置\n- createdAt：创建日期\n- finishAt：完成日期\n- createdBy：创建者"
+							},
+							"response": []
 						}
 					]
 				}
