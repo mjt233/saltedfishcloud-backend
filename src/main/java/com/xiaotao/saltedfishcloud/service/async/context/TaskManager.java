@@ -21,9 +21,9 @@ public interface TaskManager {
      */
     boolean remove(String id);
 
-    TaskContext<? extends AsyncTask> getTask(String taskId);
+    TaskContext<? extends AsyncTask> getContext(String taskId);
 
-    <T> T getTask(String taskId, Class<T> type);
+    <T> TaskContext<T> getContext(String taskId, Class<T> type);
 
     /**
      * 移除所有失效的任务

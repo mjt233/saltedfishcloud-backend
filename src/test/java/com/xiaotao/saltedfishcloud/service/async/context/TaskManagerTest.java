@@ -43,9 +43,9 @@ class TaskManagerTest {
         t1.interrupt();
         Thread.sleep(1000);
         System.out.println("中断后 - 任务1是否过期：" + t1.isExpire());
-        System.out.println("回收前 - 任务1是否被回收：" + (taskManager.getTask(t1.getId()) == null));
+        System.out.println("回收前 - 任务1是否被回收：" + (taskManager.getContext(t1.getId()) == null));
         taskManager.gc();
-        System.out.println("回收后 - 任务1是否被回收：" + (taskManager.getTask(t1.getId()) == null));
+        System.out.println("回收后 - 任务1是否被回收：" + (taskManager.getContext(t1.getId()) == null));
     }
 
     @Test
@@ -55,10 +55,10 @@ class TaskManagerTest {
         taskManager.submit(task);
         Thread.sleep(2000);
         taskManager.gc();
-        System.out.println("2s过去，任务是否已过期：" + task.isExpire() + " 受管中：" + (taskManager.getTask(task.getId()) != null));
+        System.out.println("2s过去，任务是否已过期：" + task.isExpire() + " 受管中：" + (taskManager.getContext(task.getId()) != null));
         Thread.sleep(2000);
         taskManager.gc();
-        System.out.println("4s过去，任务是否已过期：" + task.isExpire() + " 受管中：" + (taskManager.getTask(task.getId()) != null));
+        System.out.println("4s过去，任务是否已过期：" + task.isExpire() + " 受管中：" + (taskManager.getContext(task.getId()) != null));
 
         taskManager.submit(task2);
         Thread.sleep(100);

@@ -24,17 +24,17 @@ public class TaskManagerImpl implements TaskManager {
     }
 
     @Override
-    public synchronized TaskContext<? extends AsyncTask> getTask(String taskId) {
+    public synchronized TaskContext<? extends AsyncTask> getContext(String taskId) {
         return tasks.get(taskId);
     }
 
     @Override
-    public synchronized <T> T getTask(String taskId, Class<T> type) {
+    public synchronized <T> TaskContext<T> getContext(String taskId, Class<T> type) {
         var task = tasks.get(taskId);
         if (task == null) {
             return null;
         }
-        return (T) task;
+        return (TaskContext<T>)task;
     }
 
 
