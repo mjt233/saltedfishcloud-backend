@@ -1619,7 +1619,52 @@
 										}
 									]
 								},
-								"description": "## 查询参数\n- uid：要查询的用户\n- page：选填，页数，从1开始，默认1\n- size：选填，每页大小，每页大小，5-400之间，默认10\n\n## 响应data数组元素\n- id：下载任务的ID\n- uid：目标用户\n- url：文件URL\n- proxy：使用的代理名称\n- state: 任务状态，FINISH - 任务完成， FAILED - 任务失败， DOWNLOADING - 下载中，WAITING - 等待中\n- message：任务消息，一般为null，当任务失败时为失败消息\n- size：文件大小\n- name：文件名\n- savePath：保存到的网盘位置\n- createdAt：创建日期\n- finishAt：完成日期\n- createdBy：创建者"
+								"description": "## 查询参数\n- uid：要查询的用户\n- page：选填，页数，从1开始，默认1\n- size：选填，每页大小，每页大小，5-400之间，默认10\n\n## 响应data数组元素\n- id：下载任务的ID\n- uid：目标用户\n- url：文件URL\n- proxy：使用的代理名称\n- state: 任务状态，FINISH - 任务完成， FAILED - 任务失败， DOWNLOADING - 下载中，WAITING - 等待中\n- message：任务消息，一般为null，当任务失败时为失败消息\n- size：文件大小\n- name：文件名\n- savePath：保存到的网盘位置\n- createdAt：创建日期\n- finishAt：完成日期\n- createdBy：创建者\n\n## 响应体其他字段\n- totalItem：总数量\n- totalPage：当前分页大小下的总页数"
+							},
+							"response": []
+						},
+						{
+							"name": "中止下载任务",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/task/download?taskId=2ecf7de0-46d8-4e0c-b77f-2153772b3266",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"task",
+										"download"
+									],
+									"query": [
+										{
+											"key": "taskId",
+											"value": "2ecf7de0-46d8-4e0c-b77f-2153772b3266"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "获取可用代理名称",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/task/download/proxy",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"task",
+										"download",
+										"proxy"
+									]
+								}
 							},
 							"response": []
 						}

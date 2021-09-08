@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.po;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import javax.validation.constraints.Max;
@@ -10,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProxyInfo {
     @NotEmpty
     private String name;
@@ -19,7 +21,7 @@ public class ProxyInfo {
     private String address;
     @Max(65535)
     @Min(1)
-    private int port;
+    private Integer port;
 
     public enum Type {
         SOCKS, HTTP

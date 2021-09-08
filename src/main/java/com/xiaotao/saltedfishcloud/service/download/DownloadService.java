@@ -100,6 +100,7 @@ public class DownloadService {
                 throw new JsonException(400, "无效的代理：" + params.proxy);
             }
             builder.setProxy(proxy.toProxy());
+            log.debug("使用代理创建下载任务：" + proxy);
         }
 
         // 校验参数合法性
@@ -180,7 +181,7 @@ public class DownloadService {
                 info.message = task.getStatus().error;
             }
             info.loaded = task.getStatus().loaded;
-            info.size = task.getStatus().total;
+            info.size = task.getStatus().total != -1 ? task.getStatus().total : task.getStatus().loaded;
             downloadDao.save(info);
         });
 

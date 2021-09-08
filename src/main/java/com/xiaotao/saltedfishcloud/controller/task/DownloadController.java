@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.controller.task;
 
+import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
@@ -24,6 +25,19 @@ import java.nio.file.NoSuchFileException;
 public class DownloadController {
     @Resource
     private DownloadService downloadService;
+    @Resource
+    private ProxyDao proxyDao;
+
+    @GetMapping("proxy")
+    public JsonResult getProxy() {
+        var res = proxyDao.getAllProxy();
+        res.forEach(e -> {
+            e.setAddress(null);
+            e.setPort(null);
+            e.setType(null);
+        });
+        return JsonResult.getInstance(res);
+    }
 
     @DeleteMapping
     public JsonResult interrupt(@RequestParam String taskId) {
