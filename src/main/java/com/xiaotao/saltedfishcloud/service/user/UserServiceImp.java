@@ -76,9 +76,14 @@ public class UserServiceImp implements UserService{
         }
         String pwd = SecureUtils.getPassswd(passwd);
         try {
-            return userDao.addUser(user, pwd, type);
+            var res = userDao.addUser(user, pwd, type);
+            Files.createDirectory(Paths.get(DiskConfig.getUserPrivateDiskRoot(user)));
+            return res;
         } catch (DuplicateKeyException e) {
             throw new JsonException(400, "用户" + user + "已被注册");
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new JsonException(500, "空间初始化失败");
         }
     }
 
