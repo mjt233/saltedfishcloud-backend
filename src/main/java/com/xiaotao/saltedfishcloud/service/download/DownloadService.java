@@ -129,7 +129,7 @@ public class DownloadService {
         });
 
         context.onSuccess(() -> {
-
+            info.state = DownloadTaskInfo.State.FINISH;
             // 获取文件信息（包括md5）
             var tempFile = Paths.get(task.getSavePath());
             var fileInfo = FileInfo.getLocal(tempFile.toString());
@@ -154,6 +154,7 @@ public class DownloadService {
                 try {
                     fileService.mkdirs(params.uid, info.savePath);
                     fileService.moveToSaveFile(params.uid, tempFile, params.savePath, fileInfo);
+                    info.state = DownloadTaskInfo.State.FINISH;
                 } catch (IOException ex) {
                     // 依旧失败那莫得办法咯
                     info.message = e.getMessage();
@@ -165,7 +166,6 @@ public class DownloadService {
                 info.message = e.getMessage();
                 info.state = DownloadTaskInfo.State.FAILED;
             }
-            info.state = DownloadTaskInfo.State.FINISH;
             info.finishAt = new Date();
             info.size = task.getStatus().total;
             info.loaded = info.size;
