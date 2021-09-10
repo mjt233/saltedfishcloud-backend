@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.po.param.DownloadTaskParams;
+import com.xiaotao.saltedfishcloud.po.param.TaskType;
 import com.xiaotao.saltedfishcloud.service.download.DownloadService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.UID;
@@ -61,9 +62,10 @@ public class DownloadController {
     public JsonResult getAllTask(
             @UID @RequestParam @Validated int uid,
             @RequestParam(defaultValue = "1") @Validated @Min(1) int page,
-            @RequestParam(defaultValue = "10") @Validated @Min(5) @Max(400) int size
+            @RequestParam(defaultValue = "10") @Validated @Min(5) @Max(400) int size,
+            @RequestParam(defaultValue = "ALL") TaskType type
     ) {
-        Page<DownloadTaskInfo> res = downloadService.getTaskList(uid, page - 1, size);
+        Page<DownloadTaskInfo> res = downloadService.getTaskList(uid, page - 1, size, type);
         return JsonResult
                 .getInstance(res.getContent())
                 .put("totalItem", res.getTotalElements())

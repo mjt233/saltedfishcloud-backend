@@ -1595,7 +1595,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/task/download?uid=1&page=1&size=5",
+									"raw": "{{addr}}/api/task/download?uid=1&page=1&size=40&type=FINISH",
 									"host": [
 										"{{addr}}"
 									],
@@ -1615,7 +1615,11 @@
 										},
 										{
 											"key": "size",
-											"value": "5"
+											"value": "40"
+										},
+										{
+											"key": "type",
+											"value": "FINISH"
 										}
 									]
 								},

@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.po.param.DownloadTaskParams;
+import com.xiaotao.saltedfishcloud.po.param.TaskType;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
@@ -23,11 +24,20 @@ import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 
 @Service
 @Slf4j
 public class DownloadService {
+    static final private Collection<DownloadTaskInfo.State> FINISH_TYPE = Arrays.asList(
+            DownloadTaskInfo.State.FINISH,
+            DownloadTaskInfo.State.CANCEL,
+            DownloadTaskInfo.State.FAILED
+    );
+    static final private Collection<DownloadTaskInfo.State> DOWNLOADING_TYPE = Collections.singleton(DownloadTaskInfo.State.DOWNLOADING);
     @Resource
     private DownloadTaskRepository downloadDao;
     @Resource
@@ -64,8 +74,16 @@ public class DownloadService {
      * 获取用户的所有下载任务
      * @param uid   要查询的用户ID
      */
-    public Page<DownloadTaskInfo> getTaskList(int uid, int page, int size) {
-        var tasks = downloadDao.findByUidOrderByCreatedAtDesc(uid, PageRequest.of(page, size));
+    public Page<DownloadTaskInfo> getTaskList(int uid, int page, int size, TaskType type) {
+        Page<DownloadTaskInfo> tasks;
+        var pageRequest = PageRequest.of(page, size);
+        if (type == null || type == TaskType.ALL) {
+            tasks = downloadDao.findByUidOrderByCreatedAtDesc(uid, pageRequest);
+        } else if (type == TaskType.DOWNLOADING) {
+            tasks = downloadDao.findByUidAndStateInOrderByCreatedAtDesc(uid, DOWNLOADING_TYPE, pageRequest);
+        } else {
+            tasks = downloadDao.findByUidAndStateInOrderByCreatedAtDesc(uid, FINISH_TYPE, pageRequest);
+        }
         tasks.forEach(e -> {
             if (e.state == DownloadTaskInfo.State.DOWNLOADING ) {
                 var context = taskManager.getContext(e.id, DownloadTask.class);
@@ -182,6 +200,7 @@ public class DownloadService {
             }
             info.loaded = task.getStatus().loaded;
             info.size = task.getStatus().total != -1 ? task.getStatus().total : task.getStatus().loaded;
+            info.finishAt = new Date();
             downloadDao.save(info);
         });
 
