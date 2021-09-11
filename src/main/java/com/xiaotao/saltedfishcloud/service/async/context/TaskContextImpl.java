@@ -4,15 +4,7 @@ import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 import lombok.Getter;
 
 import java.util.UUID;
-class DefaultCallback implements AsyncTackCallback {
-    private DefaultCallback() {}
-    public final static DefaultCallback instance = new DefaultCallback();
 
-    @Override
-    public void action() {
-
-    }
-}
 /**
  * 默认的任务上下文接口实现
  * @TODO 使用线程池
@@ -20,9 +12,9 @@ class DefaultCallback implements AsyncTackCallback {
 public class TaskContextImpl<T> implements TaskContext<T> {
     private final AsyncTask task;
     private final Thread thread;
-    private AsyncTackCallback success = DefaultCallback.instance;
-    private AsyncTackCallback failed = DefaultCallback.instance;
-    private AsyncTackCallback finish = DefaultCallback.instance;
+    private AsyncTackCallback success = EmptyCallback.get();
+    private AsyncTackCallback failed = EmptyCallback.get();
+    private AsyncTackCallback finish = EmptyCallback.get();
     @Getter
     private final String id = UUID.randomUUID().toString();
 

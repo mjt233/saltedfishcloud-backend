@@ -99,6 +99,9 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
                 if (interrupted) {
                     body.close();
                     localFileStream.close();
+                    if (Files.exists(savePath)) {
+                        Files.delete(savePath);
+                    }
                     log.debug("下载被中断");
                     return null;
                 }

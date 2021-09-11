@@ -67,6 +67,7 @@ public class DownloadService {
             throw new JsonException(404, id + "不存在");
         } else {
             context.interrupt();
+            taskManager.remove(context);
         }
     }
 
