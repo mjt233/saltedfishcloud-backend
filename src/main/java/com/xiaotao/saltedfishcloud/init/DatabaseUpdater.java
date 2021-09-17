@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 
 @Component
 @Order(3)
@@ -27,7 +28,13 @@ public class DatabaseUpdater implements ApplicationRunner {
 
     public DatabaseUpdater(DataSource dataSource, ConfigDao configDao) throws SQLException {
         conn = dataSource.getConnection();
-        lastVersion = Version.load(configDao.getConfigure(ConfigName.VERSION));
+        Version v;
+        try {
+            v = Version.load(configDao.getConfigure(ConfigName.VERSION));
+        } catch (Exception e) {
+            v = DiskConfig.VERSION;
+        }
+        lastVersion = v;
         this.configDao = configDao;
     }
 
