@@ -322,8 +322,8 @@ public class FileService {
             fileInfo.updateMd5();
         }
 
+        mkdirs(uid, requestPath);
         storeService.store(uid, file.getInputStream(), requestPath, fileInfo);
-
         int res = fileRecordService.addRecord(uid, file.getOriginalFilename(), fileInfo.getSize(), fileInfo.getMd5(), requestPath);
         if ( res == 0) {
             return fileRecordService.updateFileRecord(uid, file.getOriginalFilename(), requestPath, file.getSize(), fileInfo.getMd5());
