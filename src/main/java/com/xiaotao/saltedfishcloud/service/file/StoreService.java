@@ -28,16 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Service
 @Slf4j
-public class StoreService {
-    /**
-     * 通过文件移动的方式存储文件到网盘系统，相对于{@link #store}方法，避免了文件的重复写入操作。对本地文件操作后，原路径文件不再存在<br><br>
-     * 如果是UNIQUE存储模式，则会先将文件移动到存储仓库（若仓库已存在文件则忽略该操作），随后再在目标网盘目录创建文件链接<br><br>
-     * 如果是RAW存储模式，则会直接移动到目标位置。若本地文件路径与网盘路径对应的本地路径相同，操作将忽略。
-     * @param uid           用户ID
-     * @param nativePath    本地文件路径
-     * @param diskPath      网盘路径
-     * @param fileInfo      文件信息
-     */
+public class StoreService implements LocalStoreService {
+    @Override
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
         Path sourcePath = nativePath; // 本地源文件
         Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
@@ -69,81 +61,17 @@ public class StoreService {
         }
     }
 
-    /**
-     * 在本地存储中复制用户网盘文件
-     * @param uid     用户ID
-     * @param source  所在网盘路径
-     * @param target  目的地网盘路径
-     * @param sourceName    文件名
-     * @param overwrite 是否覆盖，若非true，则跳过该文件
-     */
+    @Override
     public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
         BasicFileInfo fileInfo = new BasicFileInfo(sourceName, null);
-        String localSource = DiskConfig.getPathHandler().getStorePath(uid, source, fileInfo);
+        String localSource = DiskConfig.getPathHandler().getStorePath(uid, source, null);
         String localTarget = DiskConfig.getPathHandler().getStorePath(targetId, target, null);
 
-        fileInfo = FileInfo.getLocal(localSource);
-        Path sourcePath = Paths.get(localSource);
-
-        //  判断源与目标是否存在
-        if (!Files.exists(sourcePath)) {
-            throw new NoSuchFileException("资源 \"" + source + "/" + sourceName + "\" 不存在");
-        }
-        if (!Files.exists(Paths.get(localTarget))) {
-            throw new NoSuchFileException("目标目录 " + target + " 不存在");
-        }
-
-        CopyOption[] option;
-        if (overwrite) {
-            option = new CopyOption[]{StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING};
-        } else  {
-            option = new CopyOption[]{StandardCopyOption.COPY_ATTRIBUTES};
-        }
-
-        if (fileInfo.isFile()) {
-            Files.copy(sourcePath, Paths.get(localTarget + "/" + targetName), option);
-        }
-
-        if (fileInfo.isDir()) {
-            DirCollection dirCollection = FileUtils.scanDir(Paths.get(localSource));
-            Path targetDir = Paths.get(localTarget + "/" + targetName);
-            if (!Files.exists(targetDir)) {
-                Files.createDirectory(targetDir);
-            }
-            //  先创建文件夹
-            for(File dir: dirCollection.getDirList()) {
-                String src = dir.getPath().substring(localSource.length());
-                String dest = targetDir + "/" + src;
-                log.debug("local filesystem mkdir: " + dest);
-                try { Files.createDirectory(Paths.get(dest)); } catch (FileAlreadyExistsException ignored) {}
-            }
-
-            //  复制文件
-            for(File file: dirCollection.getFileList()) {
-                String src = file.getPath().substring(localSource.length());
-                String dest = localTarget + "/" + targetName + src;
-                if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
-                    log.debug("create hard link: " + file + " ==> " + dest);
-                    Files.createLink(Paths.get(dest), Paths.get(file.getPath()));
-                } else {
-                    log.debug("local filesystem copy: " + file + " ==> " + dest);
-                    try { Files.copy(Paths.get(file.getPath()), Paths.get(dest), option); }
-                    catch (FileAlreadyExistsException ignored) {}
-                }
-            }
-        }
+        boolean useHardLink = DiskConfig.STORE_TYPE == StoreType.UNIQUE;
+        FileUtils.copy(Paths.get(localSource),Paths.get(localTarget), sourceName, targetName, useHardLink);
     }
 
-    /**
-     * 向用户网盘目录中保存一个文件
-     * @param uid   用户ID 0表示公共
-     * @param input 输入的文件
-     * @param targetDir    保存到的目标网盘目录位置（注意：不是本地真是路径）
-     * @param fileInfo 文件信息
-     * @throws JsonException 存储文件出错
-     * @throws DuplicateKeyException UNIQUE模式下两个不相同的文件发生MD5碰撞
-     * @throws UnableOverwriteException 保存位置存在同名的目录
-     */
+    @Override
     public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws JsonException, IOException {
         Path md5Target = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, targetDir, fileInfo));
         if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
@@ -173,14 +101,7 @@ public class StoreService {
         }
     }
 
-    /**
-     * 在本地存储中移动用户网盘文件
-     * @param uid     用户ID
-     * @param source  所在网盘路径
-     * @param target  目的地网盘路径
-     * @param name    文件名
-     * @param overwrite 是否覆盖原文件
-     */
+    @Override
     public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
         PathHandler pathHandler = DiskConfig.getPathHandler();
         BasicFileInfo fileInfo = new BasicFileInfo(name, null);
@@ -206,13 +127,7 @@ public class StoreService {
         }
     }
 
-    /**
-     * 文件重命名
-     * @param uid   用户ID 0表示公共
-     * @param path  文件所在路径
-     * @param oldName 旧文件名
-     * @param newName 新文件名
-     */
+    @Override
     public void rename(int uid, String path, String oldName, String newName) throws JsonException {
         String base = DiskConfig.getRawFileStoreRootPath(uid);
         File origin = new File(base + "/" + path + "/" + oldName);
@@ -229,14 +144,7 @@ public class StoreService {
 
     }
 
-    /**
-     * 在本地文件系统中创建文件夹
-     * @param uid   用户ID
-     * @param path  所在路径
-     * @param name  文件夹名
-     * @throws FileAlreadyExistsException 目标已存在时抛出
-     * @return 是否创建成功
-     */
+    @Override
     public boolean mkdir(int uid, String path, String name) throws FileAlreadyExistsException, DirectoryAlreadyExistsException {
         String localFilePath = DiskConfig.getRawFileStoreRootPath(uid) + "/" + path + "/" + name;
         File file = new File(localFilePath);
@@ -255,11 +163,7 @@ public class StoreService {
         }
     }
 
-    /**
-     * 删除一个唯一存储类型的文件
-     * @param md5   文件MD5
-     * @return      删除的文件和目录数
-     */
+    @Override
     public int delete(String md5) throws IOException {
         int res = 1;
         Path filePath = Paths.get(DiskConfig.getUniqueStoreRoot() + "/" + StringUtils.getUniquePath(md5));
@@ -288,13 +192,7 @@ public class StoreService {
         return res;
     }
 
-    /**
-     * 删除本地文件（文件夹会连同所有子文件和目录）
-     * @param uid 用户ID
-     * @param path 文件所在网盘目录的路径
-     * @param files 文件名
-     * @return 删除的文件和文件夹总数
-     */
+    @Override
     public long delete(int uid, String path, Collection<String> files) {
         AtomicLong cnt = new AtomicLong();
         // 本地物理基础路径

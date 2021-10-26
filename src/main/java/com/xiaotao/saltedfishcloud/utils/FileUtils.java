@@ -1,7 +1,11 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
+import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -172,5 +176,58 @@ public class FileUtils {
         Collections.reverse(sourceCollection.getDirList());
         sourceCollection.getDirList().forEach(File::delete);
         Files.delete(Paths.get(source));
+    }
+
+    /**
+     * 复制文件或目录
+     * @param source        被复制的目录/文件所在目录
+     * @param target        目的地目录
+     * @param sourceName    源文件名
+     * @param targetName    目标文件名
+     * @param useHardLink   文件是否使用硬链接
+     */
+    public static void copy(Path source, Path target, String sourceName, String targetName, boolean useHardLink) throws IOException {
+        //  判断源与目标是否存在
+        if (!Files.exists(source)) {
+            throw new NoSuchFileException("资源 \"" + source + "/" + sourceName + "\" 不存在");
+        }
+        if (!Files.exists(target) || !Files.isDirectory(target)) {
+            throw new NoSuchFileException("目标目录 " + target + " 不存在");
+        }
+        Path sourceFile = Paths.get(source + "/" + sourceName);
+        Path targetFile = Paths.get(target + "/" + targetName);
+        if (Files.isDirectory(sourceFile)) {
+            int sourceLen = sourceFile.toString().length();
+            DirCollection dirCollection = FileUtils.scanDir(sourceFile);
+            if (!Files.exists(targetFile)) {
+                Files.createDirectory(targetFile);
+            }
+            //  先创建文件夹
+            for(File dir: dirCollection.getDirList()) {
+                String src = dir.getPath().substring(sourceLen);
+                Path dest = Paths.get(target + "/" + targetName + "/" + src);
+                log.debug("local filesystem mkdir: " + dest);
+                try { Files.createDirectory(dest); } catch (FileAlreadyExistsException ignored) {}
+            }
+
+            //  复制文件
+            for(File file: dirCollection.getFileList()) {
+                String src = file.getPath().substring(sourceLen);
+                String dest = target + "/" + targetName + src;
+                if (useHardLink) {
+                    log.debug("create hard link: " + file + " ==> " + dest);
+                    Files.createLink(Paths.get(dest), Paths.get(file.getPath()));
+                } else {
+                    log.debug("local filesystem copy: " + file + " ==> " + dest);
+                    try { Files.copy(Paths.get(file.getPath()), Paths.get(dest), StandardCopyOption.REPLACE_EXISTING); }
+                    catch (FileAlreadyExistsException ignored) {}
+                }
+            }
+        } else if (useHardLink) {
+            Files.createLink(sourceFile, targetFile);
+        } else {
+            Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+
     }
 }
