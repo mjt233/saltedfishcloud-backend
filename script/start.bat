@@ -36,9 +36,10 @@ set db_username=root
 set db_password=mojintao233
 set db_params="useSSL=false&serverTimezone=UTC"
 
+@REM Redis¡¨Ω”…Ë÷√
 set redis_host=127.0.0.1
 set redis_port=6379
-
+set redis_password=""
 
 set jdbc_url=jdbc:mysql://%db_host%:%db_port%/%db_name%?%db_params%
 
@@ -50,7 +51,7 @@ java -jar ../target/%jar_name% ^
 --spring.datasource.druid.password=%db_password% ^
 --spring.datasource.redis.host=%redis_host% ^
 --spring.datasource.redis.part=%redis_port% ^
---spring.datasource.redis.password=% ^
+--spring.datasource.redis.password=%redis_password% ^
 --public-root=%public_root% ^
 --store-root=%store_root% ^
 --store-type=%store_type% ^

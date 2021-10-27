@@ -2,8 +2,42 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Random;
 
 public class StringUtils {
+    private final static String PATTERN = "qwertyuiopasdfghjklzxcvbnm";
+    private final static int PATTERN_LEN = PATTERN.length();
+
+    /**
+     * 生成一个纯字母随机字符串
+     * @param len           生成的字符串长度
+     * @param mixUpperCase  是否混入大写字母
+     * @return  随机字符串
+     */
+    public static String getRandomString(int len, boolean mixUpperCase) {
+        StringBuilder sb = new StringBuilder(len);
+        Random r = new Random();
+        if (mixUpperCase) {
+            for (int i = 0; i < len; i++) {
+                sb.append((char)(PATTERN.charAt(r.nextInt(PATTERN_LEN)) - (r.nextInt(2) == 0 ? 32 : 0)));
+            }
+        } else {
+            for (int i = 0; i < len; i++) {
+                sb.append(PATTERN.charAt(r.nextInt(PATTERN_LEN)));
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 生成一个纯字母随机字符串
+     * @param len           生成的字符串长度
+     * @return              随机字符串
+     */
+    public static String getRandomString(int len) {
+        return getRandomString(len, true);
+    }
+
     public static String getURLLastName(String url) throws MalformedURLException {
         return getURLLastName(new URL(url));
     }

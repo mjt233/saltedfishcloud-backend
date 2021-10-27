@@ -87,7 +87,7 @@ public class ResponseService {
     public ResponseEntity<org.springframework.core.io.Resource> getResourceByDC(String dc, boolean directDownload) throws MalformedURLException, UnsupportedEncodingException {
         FileDCInfo info;
         try {
-            String data = (String) JwtUtils.parse(dc);
+            String data = JwtUtils.parse(dc);
             info = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false).readValue(data, FileDCInfo.class);
         } catch (JsonProcessingException e) {
             throw new JsonException(400, "下载码无效");

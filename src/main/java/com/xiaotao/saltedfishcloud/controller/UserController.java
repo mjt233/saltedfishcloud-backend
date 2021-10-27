@@ -5,16 +5,18 @@ import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.po.User;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.UID;
+import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,8 +25,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
@@ -37,25 +39,24 @@ import java.util.List;
 @RequestMapping(UserController.PREFIX)
 @ResponseBody
 @Validated
+@RequiredArgsConstructor
 public class UserController {
     public static final String PREFIX = "/api/user";
-    @Resource
-    UserService userService;
 
-    @Resource
-    ResponseService responseService;
-
-    @Resource
-    UserDao userDao;
+    private final UserService userService;
+    private final ResponseService responseService;
+    private final UserDao userDao;
+    private final TokenDao tokenDao;
     /**
-     * 获取用户基本信息
+     * 获取用户基本信息，并刷新token有效期
      */
     @GetMapping
-    public JsonResult getUserInfo() throws UserNoExistException {
+    public JsonResult getUserInfo(HttpServletRequest request) throws UserNoExistException {
         var user =  SecureUtils.getSpringSecurityUser();
         if (user == null) {
             throw new JsonException(401, "未登录");
         }
+        tokenDao.setToken(user.getUsername(), request.getHeader(JwtUtils.AUTHORIZATION));
         return JsonResult.getInstance(user);
     }
 
@@ -133,14 +134,17 @@ public class UserController {
                                      @RequestParam("new") String newPasswd,
                                      @PathVariable("uid") @UID int uid,
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
+        User user = SecureUtils.getSpringSecurityUser();
         if (force) {
-            if ( SecureUtils.getSpringSecurityUser().getType() != User.TYPE_ADMIN) {
+            if ( user.getType() != User.TYPE_ADMIN) {
                 throw new AccessDeniedException("非管理员不允许使用force参数");
             } else {
                 userDao.modifyPassword(uid, SecureUtils.getPassswd(newPasswd));
+                tokenDao.cleanUserToken(user.getUsername());
                 return JsonResult.getInstance(200, null, "force reset");
             }
         } else {
+            tokenDao.cleanUserToken(user.getUsername());
             int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
             return JsonResult.getInstance(200, i, "ok");
         }
@@ -155,6 +159,10 @@ public class UserController {
     @RolesAllowed({"ADMIN"})
     public JsonResult grant(@PathVariable("uid") int uid,
                             @PathVariable("typeCode") int type) {
+        User user = userDao.getUserById(uid);
+        if (user == null) {
+            throw new UserNoExistException();
+        }
         userService.grant(uid, type);
         return JsonResult.getInstance();
     }

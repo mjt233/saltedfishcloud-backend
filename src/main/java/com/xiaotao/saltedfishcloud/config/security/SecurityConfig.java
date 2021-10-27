@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
 import com.xiaotao.saltedfishcloud.config.security.service.UserDetailsServiceImpl;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.context.annotation.Bean;
@@ -37,7 +38,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private SecureUtils secureUtils;
 
     @Resource
-    PasswordEncoder myPasswordEncoder;
+    private PasswordEncoder myPasswordEncoder;
+
+    @Resource
+    private TokenDao tokenDao;
 
     @Bean
     @Override
@@ -60,8 +64,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 
         //  添加Jwt登录和验证过滤器
-        http.addFilterBefore(new JwtLoginFilter(LOGIN_URI, authenticationManagerBean()), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new JwtValidateFilter(), UsernamePasswordAuthenticationFilter.class)
+        http.addFilterBefore(new JwtLoginFilter(LOGIN_URI, authenticationManagerBean(), tokenDao), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtValidateFilter(tokenDao), UsernamePasswordAuthenticationFilter.class)
                 .csrf().disable();
 
         //  处理过滤器链中出现的异常
@@ -92,7 +96,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Override
-    public void configure(WebSecurity web) throws Exception {
+    public void configure(WebSecurity web) {
         web.ignoring().antMatchers("/src/**");
     }
 }
