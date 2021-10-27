@@ -9,11 +9,11 @@ import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -68,7 +68,10 @@ public class FileUtils {
      * @param path  路径
      */
     static public void createParentDirectory(Path path) throws IOException {
-        createParentDirectory(path.toString());
+        Path parent = path.getParent();
+        if (!Files.exists(parent)) {
+            Files.createDirectories(parent);
+        }
     }
 
     /**
@@ -86,13 +89,25 @@ public class FileUtils {
      * 删除一个文件或一个目录及其子目录与文件
      * @param local 本地存储路径
      */
-    public static void delete(Path local) throws IOException {
-        log.info(local.toString());
+    public static int delete(Path local) throws IOException {
+        log.debug("删除资源：" + local.toString());
         DirCollection dirCollection = scanDir(local);
         Collections.reverse(dirCollection.getDirList());
-        dirCollection.getFileList().forEach(File::delete);
-        dirCollection.getDirList().forEach(File::delete);
-        Files.delete(local);
+        int cnt = 0;
+        for (File file1 : dirCollection.getFileList()) {
+            log.debug("文件删除：" + file1.getAbsolutePath());
+            file1.delete();
+            cnt++;
+        }
+        for (File file : dirCollection.getDirList()) {
+            log.debug("目录删除：" + file.getAbsolutePath());
+            file.delete();
+            cnt++;
+        }
+        if (Files.isDirectory(local)) {
+            Files.delete(local);
+        }
+        return cnt;
     }
 
     /**
@@ -230,4 +245,133 @@ public class FileUtils {
         }
 
     }
+
+    /**
+     * 将本地文件系统指定目录下的文件或目录移动到另一个指定目录下，若对文件夹进行操作，且目标位置是已存在文件夹，将对文件夹进行合并
+     * @param source        被移动的资源
+     * @param target        移动后的目标资源路径
+     * @throws UnsupportedOperationException source和target不是同为文件夹或文件
+     */
+    public static void move(Path source, Path target) throws IOException {
+
+        if (Files.exists(target)) {
+            if (Files.isDirectory(source) != Files.isDirectory(target)) {
+                throw new UnsupportedOperationException("文件类型不一致，无法移动");
+            }
+
+            if (Files.isDirectory(source)) {
+                // 目录则合并
+                FileUtils.mergeDir(source.toString(), target.toString(), true);
+            } else {
+                // 文件则替换移动（仅当overwrite为true时）
+                Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } else {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    /**
+     * 依据文件MD5，从存储仓库中删除对应的文件（仅Unique模式下有效）
+     * @param md5   文件MD5
+     * @return 删除的文件数+目录数
+     */
+    public static int delete(String md5) throws IOException {
+        int res = 1;
+        Path filePath = Paths.get(DiskConfig.getUniqueStoreRoot() + "/" + StringUtils.getUniquePath(md5));
+        Files.delete(filePath);
+        log.debug("删除本地文件：" + filePath);
+        DirectoryStream<Path> paths = Files.newDirectoryStream(filePath.getParent());
+        // 最里层目录
+        if (  !paths.iterator().hasNext() ) {
+            log.debug("删除本地目录：" + filePath.getParent());
+            res++;
+            paths.close();
+            Files.delete(filePath.getParent());
+            paths = Files.newDirectoryStream(filePath.getParent().getParent());
+
+            // 外层目录
+            if ( !paths.iterator().hasNext()) {
+                log.debug("删除本地目录：" + filePath.getParent().getParent());
+                res++;
+                Files.delete(filePath.getParent().getParent());
+                paths.close();
+            }
+            paths.close();
+        } else {
+            paths.close();
+        }
+        return res;
+    }
+
+    /**
+     * 对某个目录下的文件进行重命名
+     * @param path      文件所在目录
+     * @param oldName   原名称
+     * @param newName   新名称
+     * @throws IOException 文件不存在或冲突
+     */
+    public static void rename(String path, String oldName, String newName) throws IOException {
+        File origin = new File(path + "/" + oldName);
+        File dist = new File(path + "/" + newName);
+        if (!origin.exists()) {
+            throw new IOException("原文件不存在");
+        }
+        if (dist.exists()) {
+            throw new IOException("文件名" + newName + "冲突");
+        }
+        if (!origin.renameTo(dist)) {
+            throw new IOException("移动失败");
+        }
+    }
+
+
+
+    /**
+     * 通过一个本地路径获取获取该路径下的所有文件列表并区分文件与目录
+     * 若路径不存在则抛出异常
+     * 若路径指向一个文件则返回null
+     * 若路径指向一个目录则返回一个集合，数组下标0为目录，1为文件
+     * @param localPath 本地文件夹路径
+     * @return 一个List数组，数组下标0为目录，1为文件，或null
+     * @throws FileNotFoundException 路径不存在
+     */
+    public Collection<? extends FileInfo>[] getFileList(String localPath) throws FileNotFoundException {
+        File file = new File(localPath);
+        return getFileList(file);
+    }
+    /**
+     * 通过一个本地路径获取获取该路径下的所有文件列表并区分文件与目录
+     * 若路径不存在则抛出异常
+     * 若路径指向一个文件则返回null
+     * 若路径指向一个目录则返回一个List数组，数组下标0为目录，1为文件
+     * @throws FileNotFoundException 路径不存在
+     * @param file 本地文件夹路径
+     * @return 一个List数组，数组下标0为目录，1为文件，或null
+     */
+    @SuppressWarnings("unchecked")
+    public Collection<? extends FileInfo>[] getFileList(File file) throws FileNotFoundException {
+        if (!file.exists()) {
+            throw new FileNotFoundException();
+        }
+        if (file.isFile()) {
+            return null;
+        }
+        List<FileInfo> dirs = new LinkedList<>();
+        List<FileInfo> files = new LinkedList<>();
+        try {
+            for (File listFile : Objects.requireNonNull(file.listFiles())) {
+                if (listFile.isDirectory()) {
+                    dirs.add(new FileInfo(listFile));
+                } else {
+                    files.add(new FileInfo(listFile));
+                }
+            }
+        } catch (NullPointerException e) {
+            // do nothing
+        }
+        return new List[]{dirs, files};
+    }
+
+
 }

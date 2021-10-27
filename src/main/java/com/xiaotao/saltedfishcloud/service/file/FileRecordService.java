@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -18,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -35,9 +37,6 @@ public class FileRecordService {
 
     @Resource
     private NodeDao nodeDao;
-
-    @Resource
-    private FileService fileService;
 
     /**
      * 操作数据库复制网盘文件或目录到指定目录下
@@ -178,7 +177,7 @@ public class FileRecordService {
      * @param newMd5 新的文件MD5
      * @return 影响行数
      */
-    int updateFileRecord(int uid, String name, String path, Long newSize, String newMd5) throws NoSuchFileException {
+    public int updateFileRecord(int uid, String name, String path, Long newSize, String newMd5) throws NoSuchFileException {
         NodeInfo node = nodeService.getLastNodeInfoByPath(uid, path);
         return fileDao.updateRecord(uid, name, node.getId(), newSize, newMd5);
     }

@@ -6,8 +6,8 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
-import com.xiaotao.saltedfishcloud.service.file.StoreService;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.localstore.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -22,11 +22,11 @@ import java.util.*;
 @Slf4j
 public class SyncDiffHandlerImpl implements SyncDiffHandler{
     @Resource
-    private FileService fileService;
+    private DiskFileSystemFactory fileService;
     @Resource
     private FileRecordService fileRecordService;
     @Resource
-    private StoreService storeService;
+    private StoreServiceFactory storeServiceFactory;
     @Resource
     private FileDao fileDao;
     @Resource
@@ -37,7 +37,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
         int uid = user.getId();
         for (FileInfo fileInfo : files) {
             fileInfo.updateMd5();
-            storeService.moveToSave(uid, fileInfo.getOriginFile().toPath(), fileInfo.getPath(), fileInfo);
+            storeServiceFactory.getService().moveToSave(uid, fileInfo.getOriginFile().toPath(), fileInfo.getPath(), fileInfo);
             if (fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), fileInfo.getPath()) <= 0) {
                 log.error("信息添加失败：" + fileInfo.getPath() + "/" + fileInfo.getName() + " MD5:" + fileInfo.getMd5());
             }
@@ -45,7 +45,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
     }
 
     @Override
-    public void handleFileDel(User user, Collection<FileInfo> files) throws Exception {
+    public void handleFileDel(User user, Collection<FileInfo> files) {
         int uid = user.getId();
         for (FileInfo file : files) {
             fileDao.deleteRecord(uid, file.getNode(), file.getName());
@@ -59,7 +59,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
             FileInfo newFile = changeInfo.newFile;
             newFile.updateMd5();
             if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
-                fileService.moveToSaveFile(
+                fileService.getFileSystem().moveToSaveFile(
                         uid,
                         newFile.getOriginFile().toPath(),
                         newFile.getPath(),
@@ -70,7 +70,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
                 if (list.size() == 0) {
                     log.debug("File no longer referenced: {}", oldFile.getMd5());
                     try {
-                        storeService.delete(oldFile.getMd5());
+                        storeServiceFactory.getService().delete(oldFile.getMd5());
                     } catch (NoSuchFileException e) {
                         log.warn("Not found md5 file : {}", e.getMessage());
                     }

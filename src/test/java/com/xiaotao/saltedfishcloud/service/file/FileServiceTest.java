@@ -4,6 +4,8 @@ import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -15,7 +17,7 @@ import java.nio.file.NoSuchFileException;
 @SpringBootTest
 public class FileServiceTest {
     @Resource
-    FileService fileService;
+    DiskFileSystemFactory fileService;
     @Resource
     ConfigService configService;
 
@@ -25,6 +27,7 @@ public class FileServiceTest {
     @Test
     public void move() {
         try {
+            DiskFileSystem fileService = this.fileService.getFileSystem();
             int uid = userDao.getUserByUser("xiaotao").getId();
             fileService.mkdir(uid, "/", "test");
             fileService.mkdir(uid, "/", "test2");
@@ -39,7 +42,7 @@ public class FileServiceTest {
     public void copy() {
         int uid = userDao.getUserByUser("xiaotao").getId();
         try {
-            fileService.copy(uid, "/", "/", uid, "f1", "f2", true);
+            fileService.getFileSystem().copy(uid, "/", "/", uid, "f1", "f2", true);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -48,6 +51,7 @@ public class FileServiceTest {
     @Test
     public void getLocalFilePathByMD5() throws IOException {
         configService.setStoreType(StoreType.RAW);
+        DiskFileSystem fileService = this.fileService.getFileSystem();
         FileInfo f1 = fileService.getFileByMD5("b83294df4d6c5643853e3148132f2af5");
         configService.setStoreType(StoreType.UNIQUE);
         FileInfo f2 = fileService.getFileByMD5("b83294df4d6c5643853e3148132f2af5");
@@ -68,7 +72,8 @@ public class FileServiceTest {
     }
 
     @Test
-    public void mkdirs() throws FileAlreadyExistsException, NoSuchFileException {
+    public void mkdirs() throws IOException {
+        DiskFileSystem fileService = this.fileService.getFileSystem();
         fileService.mkdirs(1, "/a/b/c/d/e/f/g/h/j/k/l");
     }
 }

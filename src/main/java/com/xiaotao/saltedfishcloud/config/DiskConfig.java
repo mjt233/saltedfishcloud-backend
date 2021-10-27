@@ -175,6 +175,11 @@ public class DiskConfig {
         return getUserPrivateDiskRoot(Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getUsername());
     }
 
+    /**
+     * 获取RAW存储下用户私人网盘根目录
+     * @TODO 使用uid替代username
+     * @param username  用户名
+     */
     public static String getUserPrivateDiskRoot(String username) {
         return getRawStoreRoot() + username;
     }
@@ -207,6 +212,12 @@ public class DiskConfig {
         return getUserProfileRoot(Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getUsername());
     }
 
+    /**
+     * 获取用户profile根
+     * @TODO 使用uid替代username
+     * @param username  用户名
+     * @return  本次文件系统路径
+     */
     public static String getUserProfileRoot(String username) {
         return DiskConfig.USER_PROFILE_ROOT + "/" + username;
     }

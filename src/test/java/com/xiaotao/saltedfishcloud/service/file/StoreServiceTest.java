@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.service.file.localstore.StoreServiceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,7 +16,7 @@ import java.io.IOException;
 @RunWith(SpringRunner.class)
 class StoreServiceTest {
     @Resource
-    private StoreService storeService;
+    private StoreServiceFactory storeService;
     @Resource
     private UserDao userDao;
 
@@ -23,6 +24,6 @@ class StoreServiceTest {
     @Test
     void copy() throws IOException {
         int uid = userDao.getUserByUser("xiaotao").getId();
-        storeService.copy(uid, "/f1", "/", uid, "233", "f2", true);
+        storeService.getService().copy(uid, "/f1", "/", uid, "233", "f2", true);
     }
 }

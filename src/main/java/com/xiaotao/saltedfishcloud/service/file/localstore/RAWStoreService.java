@@ -1,21 +1,25 @@
-package com.xiaotao.saltedfishcloud.service.file;
+package com.xiaotao.saltedfishcloud.service.file.localstore;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
-import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 
 @Slf4j
-public class RAWLocalStoreService implements LocalStoreService {
+@Component
+public class RAWStoreService implements StoreService {
     @Override
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
         Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
@@ -35,31 +39,50 @@ public class RAWLocalStoreService implements LocalStoreService {
 
     @Override
     public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
-
+        Path rawTarget = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, targetDir, fileInfo));
+        if (Files.exists(rawTarget) && Files.isDirectory(rawTarget)) {
+            throw new UnableOverwriteException(409, "已存在同名目录: " + targetDir + "/" + fileInfo.getName());
+        }
+        FileUtils.createParentDirectory(rawTarget);
+        log.info("save file:" + rawTarget);
+        Files.copy(input, rawTarget, StandardCopyOption.REPLACE_EXISTING);
     }
 
     @Override
     public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
-
+        PathHandler pathHandler = DiskConfig.rawPathHandler;
+        BasicFileInfo fileInfo = new BasicFileInfo(name, null);
+        Path sourcePath = Paths.get(pathHandler.getStorePath(uid, source, fileInfo));
+        Path targetPath = Paths.get(pathHandler.getStorePath(uid, target, fileInfo));
+        FileUtils.move(sourcePath, targetPath);
     }
 
     @Override
     public void rename(int uid, String path, String oldName, String newName) throws IOException {
-
+        String base = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
+        FileUtils.rename(base, oldName, newName);
     }
 
     @Override
     public boolean mkdir(int uid, String path, String name) throws IOException {
-        return false;
+        Path localFilePath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, path, null) + "/" + name);
+        Files.createDirectory(localFilePath);
+        return true;
     }
 
     @Override
     public int delete(String md5) throws IOException {
-        return 0;
+        return FileUtils.delete(md5);
     }
 
     @Override
     public long delete(int uid, String path, Collection<String> files) throws IOException {
-        return 0;
+        String base = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
+        int cnt = 0;
+        for (String file : files) {
+            Path fullPath = Paths.get(base + "/" + file);
+            cnt += FileUtils.delete(fullPath);
+        }
+        return cnt;
     }
 }

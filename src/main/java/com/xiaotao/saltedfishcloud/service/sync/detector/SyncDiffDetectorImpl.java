@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.sync.detector;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 import com.xiaotao.saltedfishcloud.service.sync.model.SyncDiffResultDefaultImpl;
@@ -28,7 +28,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
     @Resource
     private NodeService nodeService;
     @Resource
-    private FileService fileService;
+    private DiskFileSystemFactory fileService;
 
 
     /**
@@ -38,8 +38,9 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
     private Map<String, Collection<? extends FileInfo>> fetchDbFiles(int uid) {
         Map<String, Collection<? extends FileInfo>> dbFile = new HashMap<>();
         var tree = nodeService.getFullTree(uid);
+        DiskFileSystem fileSystem = fileService.getFileSystem();
         tree.forEach(n -> {
-            Collection<? extends FileInfo>[] fileList = fileService.getUserFileListByNodeId(uid, n.getId());
+            Collection<? extends FileInfo>[] fileList = fileSystem.getUserFileListByNodeId(uid, n.getId());
             String path = tree.getPath(n.getId());
             dbFile.put(path, fileList[1]);
         });

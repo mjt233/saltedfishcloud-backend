@@ -1,20 +1,26 @@
-package com.xiaotao.saltedfishcloud.service.file;
+package com.xiaotao.saltedfishcloud.service.file.filesystem;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExistsException;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+/**
+ * @TODO 增加基于节点ID操作的方法以避免通过路径查询节点ID
+ */
 public interface DiskFileSystem {
     /**
      * 在网盘中连同所有父级目录，创建一个目录
@@ -22,7 +28,7 @@ public interface DiskFileSystem {
      * @param path  网盘目录完整路径
      * @throws JsonException 目录树中某个部分与文件名冲突时抛出
      */
-    void mkdirs(int uid, String path) throws FileAlreadyExistsException, NoSuchFileException;
+    void mkdirs(int uid, String path) throws IOException;
 
     /**
      * 通过文件MD5获取一个存储在系统中的文件<br>
@@ -30,7 +36,7 @@ public interface DiskFileSystem {
      * @return      文件信息，path为本地文件系统中的实际存储文件路径，文件名将被重命名为md5+原文件拓展名
      * @throws NoSuchFileException  没有文件时抛出
      */
-    FileInfo getFileByMD5(String md5) throws NoSuchFileException;
+    FileInfo getFileByMD5(String md5) throws IOException;
 
     /**
      * 复制指定用户的文件或目录到指定用户的某个目录下
@@ -59,7 +65,7 @@ public interface DiskFileSystem {
      * @param name      文件名
      * @param overwrite 是否覆盖原文件
      */
-    void move(int uid, String source, String target, String name, boolean overwrite);
+    void move(int uid, String source, String target, String name, boolean overwrite) throws IOException;
 
     /**
      * 获取某个用户网盘目录下的所有文件信息
@@ -87,7 +93,6 @@ public interface DiskFileSystem {
      * @param nodeId    节点ID
      * @return          一个List数组，数组下标0为目录，1为文件，或null
      */
-    @SuppressWarnings("unchecked")
     List<FileInfo>[] getUserFileListByNodeId(int uid, String nodeId);
 
     List<FileInfo> search(int uid, String key);
@@ -128,7 +133,7 @@ public interface DiskFileSystem {
     int saveFile(int uid,
                  MultipartFile file,
                  String requestPath,
-                 String md5) throws IOException, JsonException;
+                 String md5) throws IOException;
 
     /**
      * 创建文件夹
@@ -137,7 +142,7 @@ public interface DiskFileSystem {
      * @param name 文件夹名称
      * @throws NoSuchFileException 当目标目录不存在时抛出
      */
-    void mkdir(int uid, String path, String name) throws JsonException, NoSuchFileException, FileAlreadyExistsException, DirectoryAlreadyExistsException;
+    void mkdir(int uid, String path, String name) throws IOException;
 
     /**
      * 删除文件
@@ -157,7 +162,7 @@ public interface DiskFileSystem {
      * @throws NoSuchFileException 当目标路径不存在时抛出
      * @param newName 新文件名
      */
-    void rename(int uid, String path, String name, String newName) throws JsonException, NoSuchFileException;
+    void rename(int uid, String path, String name, String newName) throws IOException;
 
     /**
      * 获取网盘中文件的下载码
@@ -166,5 +171,18 @@ public interface DiskFileSystem {
      * @param fileInfo 文件信息
      * @param expr  下载码有效时长（单位：天），若小于0，则无限制
      */
-    String getFileDC(int uid, String path, BasicFileInfo fileInfo, int expr) throws JsonProcessingException;
+    @SuppressWarnings("all")
+    default String getFileDC(int uid, String path, BasicFileInfo fileInfo, int expr) throws IOException {
+        Path localPath = Paths.get(DiskConfig.getPathHandler().getStorePath(uid, path, fileInfo));
+        if ( !Files.exists(localPath) ){
+            throw new JsonException(404, "文件不存在");
+        }
+        FileDCInfo info = new FileDCInfo();
+        info.setDir(path);
+        info.setMd5(fileInfo.getMd5());
+        info.setName(fileInfo.getName());
+        info.setUid(uid);
+        String token = JwtUtils.generateToken(new ObjectMapper().writeValueAsString(info), expr < 0 ? expr : expr*60*60*24);
+        return token;
+    }
 }

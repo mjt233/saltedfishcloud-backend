@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.file;
+package com.xiaotao.saltedfishcloud.service.file.localstore;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
@@ -13,7 +13,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.util.Collection;
 
-public interface LocalStoreService {
+public interface StoreService {
     /**
      * 通过文件移动的方式存储文件到网盘系统，相对于{@link #store}方法，避免了文件的重复写入操作。对本地文件操作后，原路径文件不再存在<br><br>
      * 如果是UNIQUE存储模式，则会先将文件移动到存储仓库（若仓库已存在文件则忽略该操作），随后再在目标网盘目录创建文件链接<br><br>
@@ -23,7 +23,9 @@ public interface LocalStoreService {
      * @param diskPath      网盘路径
      * @param fileInfo      文件信息
      */
-    void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException;
+    default void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * 在本地存储中复制用户网盘文件
@@ -33,7 +35,9 @@ public interface LocalStoreService {
      * @param sourceName    文件名
      * @param overwrite 是否覆盖，若非true，则跳过该文件
      */
-    void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException;
+    default void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * 向用户网盘目录中保存一个文件
@@ -45,7 +49,9 @@ public interface LocalStoreService {
      * @throws DuplicateKeyException UNIQUE模式下两个不相同的文件发生MD5碰撞
      * @throws UnableOverwriteException 保存位置存在同名的目录
      */
-    void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException;
+    default void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * 在本地存储中移动用户网盘文件
@@ -55,7 +61,9 @@ public interface LocalStoreService {
      * @param name    文件名
      * @param overwrite 是否覆盖原文件
      */
-    void move(int uid, String source, String target, String name, boolean overwrite) throws IOException;
+    default void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * 文件重命名
@@ -64,7 +72,9 @@ public interface LocalStoreService {
      * @param oldName 旧文件名
      * @param newName 新文件名
      */
-    void rename(int uid, String path, String oldName, String newName) throws IOException;
+    default void rename(int uid, String path, String oldName, String newName) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * 在本地文件系统中创建文件夹
@@ -74,14 +84,18 @@ public interface LocalStoreService {
      * @throws FileAlreadyExistsException 目标已存在时抛出
      * @return 是否创建成功
      */
-    boolean mkdir(int uid, String path, String name) throws IOException;
+    default boolean mkdir(int uid, String path, String name) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * 删除一个唯一存储类型的文件
      * @param md5   文件MD5
      * @return      删除的文件和目录数
      */
-    int delete(String md5) throws IOException;
+    default int delete(String md5) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * 删除本地文件（文件夹会连同所有子文件和目录）
@@ -90,5 +104,7 @@ public interface LocalStoreService {
      * @param files 文件名
      * @return 删除的文件和文件夹总数
      */
-    long delete(int uid, String path, Collection<String> files) throws IOException;
+    default long delete(int uid, String path, Collection<String> files) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

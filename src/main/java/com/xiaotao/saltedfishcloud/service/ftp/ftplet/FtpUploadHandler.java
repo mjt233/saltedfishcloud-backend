@@ -2,10 +2,11 @@ package com.xiaotao.saltedfishcloud.service.ftp.ftplet;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.DiskFtpUser;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.*;
 import org.springframework.stereotype.Component;
@@ -17,20 +18,16 @@ import java.nio.file.Paths;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class FtpUploadHandler extends DefaultFtplet {
-    private final FileService fileService;
+    private final DiskFileSystemFactory fileService;
     private final UserDao userDao;
-
-    public FtpUploadHandler(FileService fileService, UserDao userDao) {
-        this.fileService = fileService;
-        this.userDao = userDao;
-    }
 
     /**
      * 开始文件上传时获取好用户id与路径信息
      */
     @Override
-    public FtpletResult onUploadStart(FtpSession session, FtpRequest request) throws FtpException, IOException {
+    public FtpletResult onUploadStart(FtpSession session, FtpRequest request) throws FtpException {
         FtpPathInfo pathInfo = new FtpPathInfo(session.getFileSystemView().getWorkingDirectory().getAbsolutePath() + "/" + request.getArgument());
         User user = session.getUser();
         int uid = 0;
@@ -51,7 +48,7 @@ public class FtpUploadHandler extends DefaultFtplet {
      * 完成上传时更新文件表信息
      */
     @Override
-    public FtpletResult onUploadEnd(FtpSession session, FtpRequest request) throws FtpException, IOException {
+    public FtpletResult onUploadEnd(FtpSession session, FtpRequest request) throws IOException {
         log.debug("upload end");
 
         FtpPathInfo pathInfo = (FtpPathInfo) session.getAttribute("pathInfo");
@@ -66,7 +63,7 @@ public class FtpUploadHandler extends DefaultFtplet {
 
         FileInfo fileInfo = FileInfo.getLocal(nativePath.toString());
         fileInfo.setName(pathInfo.getName());
-        fileService.moveToSaveFile(uid, nativePath, pathInfo.getResourceParent(), fileInfo);
+        fileService.getFileSystem().moveToSaveFile(uid, nativePath, pathInfo.getResourceParent(), fileInfo);
         return FtpletResult.DEFAULT;
     }
 }

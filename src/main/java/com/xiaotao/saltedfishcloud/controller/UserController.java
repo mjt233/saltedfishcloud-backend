@@ -10,7 +10,7 @@ import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.po.User;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -41,9 +41,6 @@ public class UserController {
     public static final String PREFIX = "/api/user";
     @Resource
     UserService userService;
-
-    @Resource
-    FileService fileService;
 
     @Resource
     ResponseService responseService;

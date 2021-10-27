@@ -8,19 +8,17 @@ import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.po.JsonResult;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.FileName;
 import com.xiaotao.saltedfishcloud.validator.UID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
@@ -35,18 +33,12 @@ import java.nio.file.NoSuchFileException;
 @RequestMapping(ResourceController.PREFIX + "{uid}")
 @Validated
 @ReadOnlyBlock
+@RequiredArgsConstructor
 public class ResourceController {
     public static final String PREFIX = "/api/resource/";
-    private final FileService fileService;
+    private final DiskFileSystemFactory fileService;
     private final NodeService nodeService;
     private final ResponseService responseService;
-
-    public ResourceController(FileService fileService, NodeService nodeService, ResponseService responseService) {
-        this.fileService = fileService;
-        this.nodeService = nodeService;
-        this.responseService = responseService;
-    }
-
     /**
      * 解析节点ID，获取节点ID对应的文件夹路径
      * @param uid   用户ID
@@ -70,10 +62,10 @@ public class ResourceController {
                              HttpServletRequest request,
                              @RequestParam("md5") String md5,
                              @RequestParam("name") @Valid @FileName String name,
-                             @RequestParam(value = "expr", defaultValue = "1") int expr) throws JsonProcessingException {
+                             @RequestParam(value = "expr", defaultValue = "1") int expr) throws IOException {
         String filePath = URLUtils.getRequestFilePath(PREFIX + uid + "/FDC", request);
         BasicFileInfo fileInfo = new BasicFileInfo(name, md5);
-        String dc = fileService.getFileDC(uid, filePath, fileInfo, expr);
+        String dc = fileService.getFileSystem().getFileDC(uid, filePath, fileInfo, expr);
         return JsonResult.getInstance(dc);
     }
 
@@ -104,8 +96,8 @@ public class ResourceController {
             @PathVariable("uid") int uid,
             HttpServletRequest request
     )
-            throws NoSuchFileException, MalformedURLException, UnsupportedEncodingException {
-        FileInfo file = fileService.getFileByMD5(md5);
+            throws IOException {
+        FileInfo file = fileService.getFileSystem().getFileByMD5(md5);
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/fileContentByMD5/" + md5, request);
         String name;
         if (path.length() > 1) {
