@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.Interceptor;
+package com.xiaotao.saltedfishcloud.interceptor;
 
 import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
