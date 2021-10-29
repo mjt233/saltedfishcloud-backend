@@ -8,6 +8,7 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
@@ -22,7 +23,7 @@ import java.util.Set;
 @Slf4j
 public class CacheClearAspect {
     @Resource
-    private RedisConfig redisConfig;
+    private RedisTemplate<String, Object> redisTemplate;
 
 
     @AfterReturning("@annotation(com.xiaotao.saltedfishcloud.annotations.ClearCachePath)")
@@ -34,9 +35,9 @@ public class CacheClearAspect {
             if (key.contains("#"))
                 key = parseKey(key, method, point.getArgs());
             key = key.replaceAll("\\\\+|/+", "/");
-            Set<String> deleteKeys = redisConfig.getRedisTemplate().keys(key + "/*");
+            Set<String> deleteKeys = redisTemplate.keys(key + "/*");
             deleteKeys.add(key);
-            redisConfig.getRedisTemplate().delete(deleteKeys);
+            redisTemplate.delete(deleteKeys);
             log.debug("cache key: " + key + " deleted");
         }
     }
