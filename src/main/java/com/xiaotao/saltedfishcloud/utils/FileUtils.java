@@ -229,7 +229,7 @@ public class FileUtils {
             throw new IllegalStateException("不可原地复制");
         }
         if (Files.isDirectory(sourceFile)) {
-            if (sourceName.equals(targetName) && PathUtils.isSubDir(source.toString(), target.toString())) {
+            if (sourceName.equals(targetName) && PathUtils.isSubDir(source + "/" + sourceName, target + "/" + targetName)) {
                 throw new IllegalArgumentException("目标目录不能是源目录的子目录");
             }
 

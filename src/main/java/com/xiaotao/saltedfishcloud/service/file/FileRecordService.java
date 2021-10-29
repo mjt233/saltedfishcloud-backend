@@ -57,9 +57,6 @@ public class FileRecordService {
         pathBuilder.setForcePrefix(true);
         int prefixLength = source.length() + 1 + sourceName.length();
 
-        if (targetId == uid && sourceName.equals(targetName) && PathUtils.isSubDir(source, target)) {
-            throw new IllegalArgumentException("目标目录不能是源目录的子目录");
-        }
 
         FileInfo sourceInfo = fileDao.getFileInfo(uid, sourceName, nodeService.getLastNodeInfoByPath(uid, source).getId());
         if (sourceInfo == null) throw new NoSuchFileException("文件 " + source + "/" + sourceName + " 不存在");
@@ -67,6 +64,10 @@ public class FileRecordService {
         if (sourceInfo.isFile()) {
             addRecord(targetId, targetName, sourceInfo.getSize(), sourceInfo.getMd5(), target);
             return ;
+        }
+
+        if (targetId == uid && sourceName.equals(targetName) && PathUtils.isSubDir(source + "/" + sourceName, target + "/" + targetName)) {
+            throw new IllegalArgumentException("目标目录不能是源目录的子目录");
         }
 
         //  需要遍历的目录列表
