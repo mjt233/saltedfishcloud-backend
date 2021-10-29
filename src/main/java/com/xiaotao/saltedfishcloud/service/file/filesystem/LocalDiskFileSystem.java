@@ -4,19 +4,15 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
-import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExistsException;
 import com.xiaotao.saltedfishcloud.service.file.localstore.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,15 +39,8 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void mkdirs(int uid, String path) throws IOException {
-        var pb = new PathBuilder();
-        pb.append(path);
-        var p = new StringBuilder("/");
-        for (String node : pb.getPath()) {
-            try {
-                mkdir(uid, p.toString(), node);
-            } catch (DirectoryAlreadyExistsException | DuplicateKeyException ignored) {}
-            p.append("/").append(node);
-        }
+        fileRecordService.mkdirs(uid, path);
+        storeServiceFactory.getService().mkdir(uid, path, "");
     }
 
     @Override

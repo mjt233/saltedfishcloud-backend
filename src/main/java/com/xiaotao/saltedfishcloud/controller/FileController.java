@@ -73,8 +73,7 @@ public class FileController {
                             @RequestParam("name") @FileName String name) throws JsonException, IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/dir", request);
         DiskFileSystem fileSystem = fileService.getFileSystem();
-        fileSystem.mkdirs(uid, requestPath);
-        fileSystem.mkdir(uid, requestPath, name);
+        fileSystem.mkdirs(uid, requestPath + "/" + name);
         return JsonResult.getInstance();
     }
 

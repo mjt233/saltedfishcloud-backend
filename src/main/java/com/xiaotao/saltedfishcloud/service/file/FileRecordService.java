@@ -27,7 +27,6 @@ import java.util.List;
  */
 @Service
 @Slf4j
-@Transactional(rollbackFor = Exception.class)
 public class FileRecordService {
     @Resource
     private FileDao fileDao;
@@ -52,6 +51,7 @@ public class FileRecordService {
      * @param sourceName      要复制的文件或目录名
      * @param overwrite 是否覆盖已存在的文件
      */
+    @Transactional(rollbackFor = Exception.class)
     public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException {
         PathBuilder pathBuilder = new PathBuilder();
         pathBuilder.setForcePrefix(true);
@@ -117,6 +117,7 @@ public class FileRecordService {
      * @param overwrite 是否覆盖原文件信息
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
+    @Transactional(rollbackFor = Exception.class)
     public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
         NodeInfo sourceInfo = nodeService.getLastNodeInfoByPath(uid, source);
         NodeInfo targetInfo = nodeService.getLastNodeInfoByPath(uid, target);
@@ -174,6 +175,7 @@ public class FileRecordService {
      * @param path  文件所在路径
      * @return 添加数量
      */
+    @Transactional(rollbackFor = Exception.class)
     public int addRecord(int uid, String name, Long size, String md5, String path) throws NoSuchFileException {
         NodeInfo node = nodeService.getLastNodeInfoByPath(uid, path);
         return fileDao.addRecord(uid, name, size, md5, node.getId());
@@ -188,6 +190,7 @@ public class FileRecordService {
      * @param newMd5 新的文件MD5
      * @return 影响行数
      */
+    @Transactional(rollbackFor = Exception.class)
     public int updateFileRecord(int uid, String name, String path, Long newSize, String newMd5) throws NoSuchFileException {
         NodeInfo node = nodeService.getLastNodeInfoByPath(uid, path);
         return fileDao.updateRecord(uid, name, node.getId(), newSize, newMd5);
@@ -200,6 +203,7 @@ public class FileRecordService {
      * @param name  文件名列表
      * @return 删除的文件个数
      */
+    @Transactional(rollbackFor = Exception.class)
     public List<FileInfo> deleteRecords(int uid, String path, Collection<String> name) throws NoSuchFileException {
         NodeInfo node = nodeService.getLastNodeInfoByPath(uid, path);
         List<FileInfo> infos = fileDao.getFilesInfo(uid, name, node.getId());
@@ -234,6 +238,7 @@ public class FileRecordService {
      * @throws NoSuchFileException
      *      当父级目录不存在时抛出
      */
+    @Transactional(rollbackFor = Exception.class)
     public String mkdir(int uid, String name, String path) throws NoSuchFileException {
         log.debug("mkdir " + name + " at " + path);
         NodeInfo node = nodeService.getLastNodeInfoByPath(uid, path);
@@ -246,6 +251,24 @@ public class FileRecordService {
         return nodeId;
     }
 
+
+    @Transactional(rollbackFor = Exception.class)
+    public void mkdirs(int uid, String path) {
+        PathBuilder pb = new PathBuilder();
+        pb.append(path);
+        String id = "root";
+        for (String s : pb.getPath()) {
+            NodeInfo nodeInfo = nodeDao.getNodeByParentId(uid, id, s);
+            if (nodeInfo == null) {
+                String nid = nodeService.addNode(uid, s, id);
+                fileDao.addRecord(uid, s, -1L, nid, id);
+                id = nid;
+            } else {
+                id = nodeInfo.getId();
+            }
+        }
+    }
+
     /**
      * 对文件或文件夹进行重命名
      * @param uid   用户ID
@@ -253,6 +276,7 @@ public class FileRecordService {
      * @param oldName  旧文件名
      * @param newName 新文件名
      */
+    @Transactional(rollbackFor = Exception.class)
     public void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException {
         NodeInfo pathNodeInfo = nodeService.getLastNodeInfoByPath(uid, path);
         FileInfo fileInfo = fileDao.getFileInfo(uid, oldName, pathNodeInfo.getId());

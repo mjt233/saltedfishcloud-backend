@@ -1,11 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.file.localstore;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -103,7 +101,7 @@ public class HardLinkStoreService implements StoreService {
         if (Files.exists(localFilePath)) {
             return Files.isDirectory(localFilePath);
         }
-        Files.createDirectory(localFilePath);
+        Files.createDirectories(localFilePath);
         return true;
     }
 
