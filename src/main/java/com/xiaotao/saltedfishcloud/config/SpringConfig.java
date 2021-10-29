@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.xiaotao.saltedfishcloud.Interceptor.ReadOnlyBlocker;
+import com.xiaotao.saltedfishcloud.interceptor.ReadOnlyBlocker;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
