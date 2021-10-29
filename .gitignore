@@ -33,3 +33,5 @@ build/
 .vscode/
 
 src/main/resources/application.yml
+/script/start.sh
+/script/start.bat

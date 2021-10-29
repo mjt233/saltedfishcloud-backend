@@ -11,4 +11,8 @@ fi
 
 cd ..
 mvn package
-echo "构建完成，下一步可以修改start.sh脚本配置项目启动参数来启动项目了"
+if [ $? == 0 ]; then
+	echo "构建完成，下一步可以参考start.sh.template文件配置项目启动脚本来启动项目了"
+else
+	echo "构建失败"
+fi

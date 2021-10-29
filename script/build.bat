@@ -10,4 +10,8 @@ if exist ..\target\*.jar (
 )
 cd ..
 call mvn package
-echo 构建完成，下一步可以修改start.bat脚本配置项目启动参数来启动项目了
+if errorlevel 1 (
+    echo 构建失败
+) else (
+    echo 构建完成，下一步可以参考start.bat.template文件配置项目启动脚本来启动项目了
+)
