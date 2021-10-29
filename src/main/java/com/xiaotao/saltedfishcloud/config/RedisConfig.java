@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -15,26 +16,23 @@ import java.time.Duration;
 import java.util.Objects;
 
 @Configuration
+@RequiredArgsConstructor
 public class RedisConfig {
-    @Resource
-    private RedisTemplate<String, Object> redisTemplate;
-
-    public RedisTemplate<String, Object> getRedisTemplate() {
-        return redisTemplate;
-    }
+    private final LettuceConnectionFactory factory;
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(LettuceConnectionFactory connectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate() {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-        template.setConnectionFactory(connectionFactory);
+        template.setConnectionFactory(factory);
         return template;
     }
 
     @Bean
-    public RedisCacheManager cacheManager() {
-        return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(Objects.requireNonNull(redisTemplate.getConnectionFactory()))
+    public RedisCacheManager cacheManager(LettuceConnectionFactory factory) {
+        return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(
+                Objects.requireNonNull(redisTemplate().getConnectionFactory()))
                 .cacheDefaults(getCacheConfigWitTtl(Duration.ofHours(3)))
                 .build();
     }
@@ -47,7 +45,7 @@ public class RedisConfig {
     private RedisCacheConfiguration getCacheConfigWitTtl(Duration time) {
         return RedisCacheConfiguration.defaultCacheConfig()
                 .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(redisTemplate.getValueSerializer())
+                        RedisSerializationContext.SerializationPair.fromSerializer(redisTemplate().getValueSerializer())
                 ).disableCachingNullValues()
                 .entryTtl(time);
     }
