@@ -9,9 +9,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class JwtUtils {
-    private final static int EXPIRATION_TIME = 60*60*24;
-    private final static String SECRET = "1145141919810";
+    private final static int EXPIRATION_TIME = 60*60*24*31;
+    private static String SECRET = "1145141919810";
     public static final String AUTHORIZATION = "Token";
+
+    public static void setSecret(String secret) {
+        JwtUtils.SECRET = secret;
+    }
 
     /**
      * 生成一个包含了data作为负载信息的token
@@ -31,13 +35,12 @@ public class JwtUtils {
 
         Map<String, Object> map = new HashMap<>();
         map.put("data", data);
-        String res = Jwts.builder().
+        return Jwts.builder().
                 setClaims(map)
                 .setIssuedAt(now)
                 .setExpiration(expiration)
                 .signWith(SignatureAlgorithm.HS256, SECRET)
                 .compact();
-        return res;
     }
 
     /**
@@ -50,17 +53,17 @@ public class JwtUtils {
     }
 
     /**
-     * 解析一个token中的负载数据
+     * 解析一个token中的负载数据的json
      * @param token 输入的token
-     * @return
+     * @return json字符串
      */
-    public static Object parse(String token) {
+    public static String parse(String token) {
         try {
             Claims body = Jwts.parser()
                     .setSigningKey(SECRET)
                     .parseClaimsJws(token)
                     .getBody();
-            return body.get("data");
+            return (String)body.get("data");
         } catch (ExpiredJwtException e) {
             throw new JsonException("token已过期");
         } catch (Exception e) {

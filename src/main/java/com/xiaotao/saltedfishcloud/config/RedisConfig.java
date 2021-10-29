@@ -35,12 +35,16 @@ public class RedisConfig {
     @Bean
     public RedisCacheManager cacheManager() {
         return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(Objects.requireNonNull(redisTemplate.getConnectionFactory()))
-                .cacheDefaults(getRedisCacheConfigurationWithTtl(Duration.ofHours(3)))
-                .withCacheConfiguration("token", getRedisCacheConfigurationWithTtl(Duration.ofDays(1)))
+                .cacheDefaults(getCacheConfigWitTtl(Duration.ofHours(3)))
                 .build();
     }
 
-    private RedisCacheConfiguration getRedisCacheConfigurationWithTtl(Duration time) {
+    /**
+     * 获取一个带过期时间的Redis缓存配置
+     * @param time  过期时间
+     * @return  Redis缓存配置
+     */
+    private RedisCacheConfiguration getCacheConfigWitTtl(Duration time) {
         return RedisCacheConfiguration.defaultCacheConfig()
                 .serializeValuesWith(
                         RedisSerializationContext.SerializationPair.fromSerializer(redisTemplate.getValueSerializer())

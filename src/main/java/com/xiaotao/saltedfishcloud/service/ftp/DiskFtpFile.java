@@ -4,8 +4,7 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.User;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
-import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExistsException;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -14,8 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FtpFile;
 
 import java.io.*;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -27,7 +24,7 @@ public class DiskFtpFile implements FtpFile {
     private final FtpPathInfo pathInfo;
     private final DiskFtpUser user;
     private File nativeFile;
-    private final FileService fileService = SpringContextHolder.getContext().getBean(FileService.class);
+    private final DiskFileSystemFactory fileService = SpringContextHolder.getContext().getBean(DiskFileSystemFactory.class);
 
     /**
      * 构造一个网盘FTP文件
@@ -143,12 +140,12 @@ public class DiskFtpFile implements FtpFile {
         PathBuilder pb = new PathBuilder();
         pb.append(pathInfo.getResourcePath());
         try {
-            fileService.mkdir(
+            fileService.getFileSystem().mkdir(
                     pathInfo.isPublicArea() ? 0 : user.getId(),
                     new PathBuilder().append(pathInfo.getResourcePath()).range(-1),
                     pathInfo.getName()
             );
-        } catch (NoSuchFileException | FileAlreadyExistsException | DirectoryAlreadyExistsException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
@@ -157,9 +154,8 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean delete() {
-        FileService fileService = SpringContextHolder.getContext().getBean(FileService.class);
         try {
-            fileService.deleteFile(
+            fileService.getFileSystem().deleteFile(
                     pathInfo.isPublicArea() ? 0 : user.getId(),
                     (new PathBuilder()).append(pathInfo.getResourcePath()).range(-1),
                     Collections.singletonList(pathInfo.getName())
@@ -188,13 +184,13 @@ public class DiskFtpFile implements FtpFile {
         try {
             // 资源路径相同表示重命名
             if (pathInfo.getResourceParent().equals(this.pathInfo.getResourceParent()) ) {
-                fileService.rename(uid, pathInfo.getResourceParent(), this.pathInfo.getName(), destination.getName());
+                fileService.getFileSystem().rename(uid, pathInfo.getResourceParent(), this.pathInfo.getName(), destination.getName());
                 return true;
             } else {
-                fileService.move(uid, this.pathInfo.getResourceParent(), pathInfo.getResourceParent(), destination.getName(), true);
+                fileService.getFileSystem().move(uid, this.pathInfo.getResourceParent(), pathInfo.getResourceParent(), destination.getName(), true);
                 return true;
             }
-        } catch (NoSuchFileException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
@@ -228,7 +224,7 @@ public class DiskFtpFile implements FtpFile {
         log.debug("create output stream");
         int uid = pathInfo.isPublicArea() ? 0 : user.getId();
         if (doesExist()) {
-            fileService.deleteFile(
+            fileService.getFileSystem().deleteFile(
                     uid,
                     pathInfo.getResourceParent(),
                     Collections.singletonList(pathInfo.getName())

@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import lombok.var;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -20,12 +21,13 @@ class NodeTreeTest {
     @Resource
     private NodeService nodeService;
     @Resource
-    private FileService fileService;
+    private DiskFileSystemFactory fileService;
 
     @Test
     public void testGetNode() throws IOException {
         String targetPath = "/nodetest/folder2/deepfolder";
 
+        DiskFileSystem fileService = this.fileService.getFileSystem();
         // 初始化环境
         fileService.mkdir(0, "/", "nodetest");
         fileService.mkdir(0, "/nodetest", "folder2");

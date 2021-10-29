@@ -2,8 +2,8 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
+import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -15,8 +15,8 @@ import com.xiaotao.saltedfishcloud.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.po.param.NamePair;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
-import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExistsException;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.FileName;
@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.List;
@@ -49,7 +48,7 @@ public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
     @Resource
-    private FileService fileService;
+    private DiskFileSystemFactory fileService;
     @Resource
     private ResponseService responseService;
 
@@ -71,10 +70,10 @@ public class FileController {
     @PutMapping("dir/**")
     public JsonResult mkdir(@PathVariable @UID(true) int uid,
                             HttpServletRequest request,
-                            @RequestParam("name") @FileName String name) throws JsonException, NoSuchFileException, FileAlreadyExistsException, DirectoryAlreadyExistsException {
+                            @RequestParam("name") @FileName String name) throws JsonException, IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/dir", request);
-        fileService.mkdirs(uid, requestPath);
-        fileService.mkdir(uid, requestPath, name);
+        DiskFileSystem fileSystem = fileService.getFileSystem();
+        fileSystem.mkdirs(uid, requestPath + "/" + name);
         return JsonResult.getInstance();
     }
 
@@ -94,7 +93,7 @@ public class FileController {
             throw new JsonException(400, "文件为空");
         }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
-        int i = fileService.saveFile(uid, file, requestPath, md5);
+        int i = fileService.getFileSystem().saveFile(uid, file, requestPath, md5);
         return JsonResult.getInstance(i);
     }
 
@@ -113,7 +112,7 @@ public class FileController {
     @NotBlock
     public JsonResult getFileList(HttpServletRequest request, @PathVariable @UID int uid) throws IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fileList/byPath", request);
-        Collection<? extends FileInfo>[] fileList = fileService.getUserFileList(uid, requestPath);
+        Collection<? extends FileInfo>[] fileList = fileService.getFileSystem().getUserFileList(uid, requestPath);
         return JsonResult.getInstance(fileList);
 
     }
@@ -130,7 +129,7 @@ public class FileController {
                              @PathVariable @UID int uid,
                              @RequestParam(value = "page", defaultValue = "1") Integer page) {
         PageHelper.startPage(page, 10);
-        List<FileInfo> res = fileService.search(uid, key);
+        List<FileInfo> res = fileService.getFileSystem().search(uid, key);
         PageInfo<FileInfo> pageInfo = new PageInfo<>(res);
         return JsonResult.getInstance(pageInfo);
     }
@@ -168,24 +167,25 @@ public class FileController {
         String source = URLDecoder.decode(requestPath, "UTF-8");
         String target = URLDecoder.decode(info.getTarget(), "UTF-8");
         for (NamePair file : info.getFiles()) {
-            fileService.copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
+            fileService.getFileSystem().copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
         }
         return JsonResult.getInstance();
     }
 
     /**
      * 移动文件或目录到指定目录下
+     * @TODO 允许空参数target
      * @param uid    用户ID
      */
     @PutMapping("/fromPath/**")
     public JsonResult move(HttpServletRequest request,
                            @PathVariable("uid") @UID(true) int uid,
                            @RequestBody @Valid FileCopyOrMoveInfo info)
-            throws UnsupportedEncodingException {
+            throws IOException {
         String source = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
         String target = URLDecoder.decode(info.getTarget(), "UTF-8");
         for (NamePair file : info.getFiles()) {
-            fileService.move(uid, source, target, file.getSource(), info.isOverwrite());
+            fileService.getFileSystem().move(uid, source, target, file.getSource(), info.isOverwrite());
         }
         return JsonResult.getInstance();
     }
@@ -197,12 +197,12 @@ public class FileController {
     public JsonResult rename(HttpServletRequest request,
                              @PathVariable @UID(true) int uid,
                              @RequestParam("oldName") @Valid @FileName String oldName,
-                             @RequestParam("newName") @Valid @FileName String newName) throws JsonException, NoSuchFileException {
+                             @RequestParam("newName") @Valid @FileName String newName) throws IOException {
         String from = URLUtils.getRequestFilePath(PREFIX + uid + "/name", request);
         if (newName.length() < 1) {
             throw new JsonException(400, "文件名不能为空");
         }
-        fileService.rename(uid, from, oldName, newName);
+        fileService.getFileSystem().rename(uid, from, oldName, newName);
         return JsonResult.getInstance();
     }
 
@@ -223,7 +223,7 @@ public class FileController {
                              @PathVariable @UID(true) int uid,
                              @RequestBody @Validated FileNameList fileName) throws IOException {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/content", request);
-        long res = fileService.deleteFile(uid, path, fileName.getFileName());
+        long res = fileService.getFileSystem().deleteFile(uid, path, fileName.getFileName());
         return JsonResult.getInstance(res);
     }
 }

@@ -8,6 +8,9 @@ import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -16,14 +19,18 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
+/**
+ * 配置信息初始化器
+ * @TODO 优化代码，封装每个配置项的配置和初始化流程
+ */
 @Component
 @Slf4j
 @Order(2)
+@RequiredArgsConstructor
 public class ConfigureInitializer implements ApplicationRunner {
-    @Resource
-    private ConfigDao configDao;
-    @Resource
-    private ConfigService configService;
+    private final ConfigDao configDao;
+    private final ConfigService configService;
+    private final CommandLineOption commandLineOption;
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
@@ -44,7 +51,7 @@ public class ConfigureInitializer implements ApplicationRunner {
 
             storeType = DiskConfig.STORE_TYPE.toString();
         } else {
-            String modeSwitch = CommandLineOption.getValue(CommandLineOption.SWITCH);
+            String modeSwitch = commandLineOption.getValue(CommandLineOption.SWITCH);
             if (modeSwitch != null) {
                 if (!configService.setStoreType(StoreType.valueOf(modeSwitch))) {
                     log.warn("系统当前已处于" + modeSwitch + "存储模式下，切换行为已忽略");
@@ -62,6 +69,14 @@ public class ConfigureInitializer implements ApplicationRunner {
             }
         }
 
+        String secret = configDao.getConfigure(ConfigName.TOKEN_SECRET);
+        if (secret == null) {
+            secret = StringUtils.getRandomString(32, true);
+            log.info("[初始化]生成token密钥");
+            configDao.setConfigure(ConfigName.TOKEN_SECRET, secret);
+        }
+        JwtUtils.setSecret(secret);
+
         // 服务器配置记录覆盖默认的开局配置记录
         DiskConfig.STORE_TYPE = StoreType.valueOf(storeType);
         DiskConfig.REG_CODE = regCode;
@@ -74,5 +89,7 @@ public class ConfigureInitializer implements ApplicationRunner {
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
         }
+
+
     }
 }

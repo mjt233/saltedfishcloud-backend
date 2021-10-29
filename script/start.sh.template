@@ -35,8 +35,10 @@ db_username="root"
 db_password=""
 db_params="useSSL=false&serverTimezone=UTC"
 
+# Redis连接设置
 redis_host="127.0.0.1"
 redis_port="6379"
+redis_password=""
 
 
 jdbc_url="jdbc:mysql://${db_host}:${db_port}/${db_name}?${db_params}"
@@ -49,6 +51,7 @@ java -Dfile.encoding=utf-8 -jar $jar_name \
 --spring.datasource.druid.password="$db_password" \
 --spring.datasource.redis.host="$redis_host" \
 --spring.datasource.redis.part="$redis_port" \
+--spring.datasource.redis.password="$redis_password" \
 --spring.datasource.redis.password="" \
 --public-root="$public_root" \
 --store-root="$store_root" \

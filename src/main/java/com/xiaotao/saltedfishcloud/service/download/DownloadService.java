@@ -11,7 +11,8 @@ import com.xiaotao.saltedfishcloud.po.param.TaskType;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
@@ -47,7 +48,7 @@ public class DownloadService {
     @Resource
     private NodeService nodeService;
     @Resource
-    private FileService fileService;
+    private DiskFileSystemFactory fileService;
     private final TaskManager taskManager;
 
     /**
@@ -147,6 +148,7 @@ public class DownloadService {
             downloadDao.save(info);
             log.debug("Task ON Ready");
         });
+        DiskFileSystem fileService = this.fileService.getFileSystem();
 
         context.onSuccess(() -> {
             info.state = DownloadTaskInfo.State.FINISH;

@@ -6,8 +6,8 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.po.User;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.FileService;
-import com.xiaotao.saltedfishcloud.service.file.StoreService;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.localstore.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -26,11 +28,11 @@ public class StoreTypeSwitch {
     @Resource
     private UserDao userDao;
     @Resource
-    private StoreService storeService;
+    private StoreServiceFactory storeServiceFactory;
     @Resource
     private ConfigDao configDao;
     @Resource
-    private FileService fileService;
+    private DiskFileSystemFactory fileService;
 
     public void switchTo(StoreType targetType) throws IOException {
         if (targetType == StoreType.RAW) switchToRaw();
@@ -50,7 +52,7 @@ public class StoreTypeSwitch {
         for (User user : users) {
             int uid = user.getId();
             log.info("Processing user data: " + user.getUsername());
-            Map<String, List<FileInfo>> allFile = fileService.collectFiles(uid, false);
+            Map<String, List<FileInfo>> allFile = fileService.getFileSystem().collectFiles(uid, false);
             for (Map.Entry<String, List<FileInfo>> entry : allFile.entrySet()) {
                 String p = entry.getKey();
                 List<FileInfo> files = entry.getValue();
@@ -84,7 +86,7 @@ public class StoreTypeSwitch {
         users.add(User.getPublicUser());
         for (User user : users) {
             log.info("Processing user data: " + user.getUsername());
-            LinkedHashMap<String, List<FileInfo>> allFile = fileService.collectFiles(user.getId(), false);
+            LinkedHashMap<String, List<FileInfo>> allFile = fileService.getFileSystem().collectFiles(user.getId(), false);
             //  创建本地文件
             for (Map.Entry<String, List<FileInfo>> entry : allFile.entrySet()) {
                 String path = entry.getKey();
@@ -98,7 +100,7 @@ public class StoreTypeSwitch {
                         continue;
                     }
                     log.info("Copy file: " + source + " -> " + target);
-                    storeService.store(user.getId(), Files.newInputStream(source), path, fileInfo);
+                    storeServiceFactory.getService().store(user.getId(), Files.newInputStream(source), path, fileInfo);
                 }
             }
         }

@@ -14,11 +14,11 @@ public class CommandLineOption {
         ARGS = applicationArguments;
     }
 
-    public static String getValue(String key) {
+    public String getValue(String key) {
         return getValue(key, null);
     }
 
-    public static String getValue(String key, String defaultValue) {
+    public String getValue(String key, String defaultValue) {
         List<String> val = ARGS.getOptionValues(key);
         if (val == null || val.isEmpty()) {
             return defaultValue;

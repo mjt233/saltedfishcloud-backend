@@ -53,6 +53,9 @@ public class ControllerAdvice {
 
     @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class})
     public JsonResult paramsError(Exception e) {
+        if (log.isDebugEnabled()) {
+            e.printStackTrace();
+        }
         return responseError(422, e.getMessage());
     }
 
@@ -60,6 +63,9 @@ public class ControllerAdvice {
 
     @ExceptionHandler(JsonException.class)
     public JsonResult handle(JsonException e) {
+        if (log.isDebugEnabled()) {
+            e.printStackTrace();
+        }
         response.setStatus(e.getRes().getCode());
         return e.getRes();
     }

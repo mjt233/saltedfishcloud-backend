@@ -18,4 +18,10 @@ class StringUtilsTest {
             e.printStackTrace();
         }
     }
+
+    @Test
+    void getRandomString() {
+        System.out.println(StringUtils.getRandomString(32, false));
+        System.out.println(StringUtils.getRandomString(32, true));
+    }
 }
