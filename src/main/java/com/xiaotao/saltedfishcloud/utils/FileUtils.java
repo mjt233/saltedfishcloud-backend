@@ -89,6 +89,7 @@ public class FileUtils {
      * 删除一个文件或一个目录及其子目录与文件
      * @param local 本地存储路径
      */
+    @SuppressWarnings("returnignore")
     public static int delete(Path local) throws IOException {
         log.debug("删除资源：" + local.toString());
         DirCollection dirCollection = scanDir(local);
@@ -96,13 +97,19 @@ public class FileUtils {
         int cnt = 0;
         for (File file1 : dirCollection.getFileList()) {
             log.debug("文件删除：" + file1.getAbsolutePath());
-            file1.delete();
-            cnt++;
+            if(file1.delete()) {
+                cnt++;
+            } else {
+                log.debug("删除失败：" + file1.getPath());
+            }
         }
         for (File file : dirCollection.getDirList()) {
             log.debug("目录删除：" + file.getAbsolutePath());
-            file.delete();
-            cnt++;
+            if(file.delete()) {
+                cnt++;
+            } else {
+                log.debug("删除失败：" + file.getPath());
+            }
         }
         if (Files.isDirectory(local)) {
             Files.delete(local);
@@ -182,14 +189,21 @@ public class FileUtils {
 
         for (File file : sourceCollection.getFileList()) {
             Path p = Paths.get(target + "/" + StringUtils.removePrefix(source, file.getPath()));
-            if (overwrite) Files.move(Paths.get(file.getPath()), p, StandardCopyOption.REPLACE_EXISTING);
-            else file.delete();
+
+            // 若两个文件为同一份文件的链接，则原文件不会被删除。
+            // 将目的地同名文件删除以避免该情况
+            if (Files.exists(p)) Files.delete(p);
+            Files.move(Paths.get(file.getPath()), p, StandardCopyOption.REPLACE_EXISTING);
             log.debug("move " + file.getPath() + " -> " + p);
         }
 
         //  删除源文件夹
         Collections.reverse(sourceCollection.getDirList());
-        sourceCollection.getDirList().forEach(File::delete);
+        sourceCollection.getDirList().forEach(e -> {
+            if (!e.delete()) {
+                log.debug("删除失败：" + e.getPath());
+            }
+        });
         Files.delete(Paths.get(source));
     }
 
@@ -211,7 +225,14 @@ public class FileUtils {
         }
         Path sourceFile = Paths.get(source + "/" + sourceName);
         Path targetFile = Paths.get(target + "/" + targetName);
+        if (sourceFile.equals(targetFile)) {
+            throw new IllegalStateException("不可原地复制");
+        }
         if (Files.isDirectory(sourceFile)) {
+            if (sourceName.equals(targetName) && PathUtils.isSubDir(source.toString(), target.toString())) {
+                throw new IllegalArgumentException("目标目录不能是源目录的子目录");
+            }
+
             int sourceLen = sourceFile.toString().length();
             DirCollection dirCollection = FileUtils.scanDir(sourceFile);
             if (!Files.exists(targetFile)) {
@@ -231,7 +252,7 @@ public class FileUtils {
                 String dest = target + "/" + targetName + src;
                 if (useHardLink) {
                     log.debug("create hard link: " + file + " ==> " + dest);
-                    Files.createLink(Paths.get(dest), Paths.get(file.getPath()));
+                    linkFile(Paths.get(dest), Paths.get(file.getPath()));
                 } else {
                     log.debug("local filesystem copy: " + file + " ==> " + dest);
                     try { Files.copy(Paths.get(file.getPath()), Paths.get(dest), StandardCopyOption.REPLACE_EXISTING); }
@@ -239,11 +260,27 @@ public class FileUtils {
                 }
             }
         } else if (useHardLink) {
-            Files.createLink(sourceFile, targetFile);
+            log.debug("create hard link: " + sourceFile + " ==> " + targetFile);
+            linkFile(targetFile, sourceFile);
         } else {
+            log.debug("copy file: " + sourceFile + " ==> " + targetFile);
             Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
         }
 
+    }
+
+    /**
+     * 安全地创建文件硬链接，若目标链接已存在，则会先对其进行删除后再创建链接
+     * @param link          要创建的链接
+     * @param existing      被链接的源文件
+     * @throws IOException  出错
+     */
+    public static void linkFile(Path link, Path existing) throws IOException {
+        if (link.equals(existing)) {
+            return;
+        }
+        if (Files.exists(link)) Files.delete(link);
+        Files.createLink(link, existing);
     }
 
     /**
@@ -254,6 +291,9 @@ public class FileUtils {
      */
     public static void move(Path source, Path target) throws IOException {
 
+        if (PathUtils.isSubDir(source.toString(), target.toString())) {
+            throw new IllegalArgumentException("目标目录不能为源目录的子目录");
+        }
         if (Files.exists(target)) {
             if (Files.isDirectory(source) != Files.isDirectory(target)) {
                 throw new UnsupportedOperationException("文件类型不一致，无法移动");
@@ -263,11 +303,11 @@ public class FileUtils {
                 // 目录则合并
                 FileUtils.mergeDir(source.toString(), target.toString(), true);
             } else {
-                // 文件则替换移动（仅当overwrite为true时）
+                Files.delete(target);
                 Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
             }
         } else {
-            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(source, target);
         }
     }
 

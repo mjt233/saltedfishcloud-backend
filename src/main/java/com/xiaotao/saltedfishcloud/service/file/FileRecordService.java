@@ -6,8 +6,8 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -15,11 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 
 /**
@@ -38,6 +38,11 @@ public class FileRecordService {
     @Resource
     private NodeDao nodeDao;
 
+    static class PathIdPair {
+        public String path;
+        public String nid;
+        public PathIdPair(String path, String nid) {this.path = path;this.nid = nid;}
+    }
     /**
      * 操作数据库复制网盘文件或目录到指定目录下
      * @param uid       用户ID
@@ -48,14 +53,13 @@ public class FileRecordService {
      * @param overwrite 是否覆盖已存在的文件
      */
     public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException {
-        class PathIdPair {
-            public String path;
-            public String nid;
-            public PathIdPair(String path, String nid) {this.path = path;this.nid = nid;}
-        }
         PathBuilder pathBuilder = new PathBuilder();
         pathBuilder.setForcePrefix(true);
         int prefixLength = source.length() + 1 + sourceName.length();
+
+        if (targetId == uid && sourceName.equals(targetName) && PathUtils.isSubDir(source, target)) {
+            throw new IllegalArgumentException("目标目录不能是源目录的子目录");
+        }
 
         FileInfo sourceInfo = fileDao.getFileInfo(uid, sourceName, nodeService.getLastNodeInfoByPath(uid, source).getId());
         if (sourceInfo == null) throw new NoSuchFileException("文件 " + source + "/" + sourceName + " 不存在");
@@ -116,9 +120,15 @@ public class FileRecordService {
         NodeInfo sourceInfo = nodeService.getLastNodeInfoByPath(uid, source);
         NodeInfo targetInfo = nodeService.getLastNodeInfoByPath(uid, target);
         FileInfo sourceFileInfo = fileDao.getFileInfo(uid, name, sourceInfo.getId());
+        if (sourceFileInfo == null) {
+            throw new NoSuchFileException("资源不存在，目录" + source + " 文件名：" + name);
+        }
         FileInfo targetFileInfo = fileDao.getFileInfo(uid, name, targetInfo.getId());
 
         if (sourceFileInfo.isDir()) {
+            if (PathUtils.isSubDir(source + "/" + name, target + "/" + name)) {
+                throw new IllegalArgumentException("目标目录不能为源目录的子目录");
+            }
             if (targetFileInfo != null) {
                 // 当移动目录时存在同名文件或目录
                 if (targetFileInfo.isDir()) {

@@ -13,6 +13,7 @@ import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExists
 import com.xiaotao.saltedfishcloud.service.file.localstore.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
@@ -75,23 +76,15 @@ public class LocalDiskFileSystem implements DiskFileSystem {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void move(int uid, String source, String target, String name, boolean overwrite) {
+    public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
         try {
             target = URLDecoder.decode(target, "UTF-8");
-            if (PathBuilder.formatPath(target).equals(PathBuilder.formatPath(source))) {
-                throw new IllegalArgumentException("无法原地移动");
-            }
             fileRecordService.move(uid, source, target, name, overwrite);
             storeServiceFactory.getService().move(uid, source, target, name, overwrite);
         } catch (DuplicateKeyException e) {
             throw new JsonException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
         } catch (UnsupportedEncodingException e) {
             throw new JsonException(400, "不支持的编码（请使用UTF-8）");
-        } catch (IllegalArgumentException e) {
-            throw new JsonException(422, e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new JsonException(404, "资源不存在");
         }
     }
 
