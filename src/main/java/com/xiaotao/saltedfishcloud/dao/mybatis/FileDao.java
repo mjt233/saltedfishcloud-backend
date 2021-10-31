@@ -41,7 +41,7 @@ public interface FileDao {
      * @param name  文件名
      * @return  受影响的行数
      */
-    @Update("UPDATE file_table SET node=#{targetNodeId} WHERE uid=#{uid} AND node=#{nid} AND name=#{name}")
+    @Update("UPDATE file_table SET node=#{targetNodeId} WHERE node=#{nid} AND name=#{name} AND uid=#{uid}")
     int move(@Param("uid") Integer uid,
                 @Param("nid") String nid,
                 @Param("targetNodeId") String targetNodeId,
@@ -53,7 +53,7 @@ public interface FileDao {
      * @param nodeId    节点ID
      * @return 文件信息列表
      */
-    @Select("SELECT uid, name, node, size, md5, created_at, updated_at FROM file_table WHERE uid = #{uid} AND node = #{nid}")
+    @Select("SELECT uid, name, node, size, md5, created_at, updated_at FROM file_table WHERE node = #{nid} AND uid = #{uid}")
     List<FileInfo> getFileListByNodeId(@Param("uid") Integer uid, @Param("nid") String nodeId);
 
     /**
@@ -96,10 +96,11 @@ public interface FileDao {
      */
     @Delete({
             "<script>",
-                "DELETE FROM file_table WHERE uid=#{uid} AND node = #{node} AND name in ",
+                "DELETE FROM file_table WHERE node = #{node} AND name in ",
                 "<foreach collection='name' item='item' open='(' separator=',' close=')'>",
                     "#{item}",
                 "</foreach>",
+            " uid=#{uid}",
             "</script>"
     })
     int deleteRecords(@Param("uid") Integer uid,
@@ -113,7 +114,7 @@ public interface FileDao {
      * @param name 文件名
      * @return 受影响的行数
      */
-    @Delete("DELETE FROM file_table WHERE uid=#{uid} AND node = #{node} AND name = #{name}")
+    @Delete("DELETE FROM file_table WHERE node = #{node} AND name = #{name} AND uid=#{uid}")
     int deleteRecord(@Param("uid") Integer uid,
                      @Param("node") String node,
                      @Param("name") String name);
@@ -127,10 +128,11 @@ public interface FileDao {
      */
     @Delete({
             "<script>",
-            "DELETE FROM file_table WHERE uid=#{uid} AND node in ",
+            "DELETE FROM file_table WHERE node in ",
                 "<foreach collection='nodes' item='node' open='(' separator=',' close=')'>",
                     "#{node}",
                 "</foreach>",
+            " AND uid=#{uid} ",
             "</script>"
     })
     int deleteDirsRecord(@Param("uid") Integer uid,
@@ -145,7 +147,7 @@ public interface FileDao {
      * @param newMd5 新文件MD5
      * @return 受影响行数
      */
-    @Update("UPDATE file_table SET md5=#{newMd5}, size=#{newSize}, updated_at=NOW() WHERE uid=#{uid} AND name=#{name} AND node=#{node}")
+    @Update("UPDATE file_table SET md5=#{newMd5}, size=#{newSize}, updated_at=NOW() WHERE node=#{node} AND uid=#{uid} AND name=#{name}")
     int updateRecord(@Param("uid") Integer uid,
                      @Param("name") String name,
                      @Param("node") String nodeId,
@@ -159,7 +161,7 @@ public interface FileDao {
      * @param nodeId 文件所在节点ID
      * @return 文件信息
      */
-    @Select("SELECT name, size, md5, node FROM file_table WHERE uid=#{uid} AND node=#{nodeId} AND name=#{name}")
+    @Select("SELECT name, size, md5, node FROM file_table WHERE node=#{nodeId} AND name=#{name} AND uid=#{uid} ")
     FileInfo getFileInfo(@Param("uid") Integer uid, @Param("name") String name, @Param("nodeId") String nodeId);
 
     /**
@@ -171,10 +173,11 @@ public interface FileDao {
      */
     @Select({
             "<script>",
-            "SELECT name, size, md5, node AS parent FROM file_table WHERE uid=#{uid} AND node=#{nodeId} AND name in ",
+            "SELECT name, size, md5, node AS parent FROM file_table WHERE node=#{nodeId} AND name in ",
                 "<foreach collection='names' item='name' open='(' separator=',' close=')'>",
                     "#{name}",
                 "</foreach>",
+            " AND  uid=#{uid}",
             "</script>"
     })
     List<FileInfo> getFilesInfo(@Param("uid") Integer uid, @Param("names") Collection<String> name, @Param("nodeId") String nodeId);
@@ -187,7 +190,7 @@ public interface FileDao {
      * @param newName   新文件名
      * @return  受影响的行数
      */
-    @Update("UPDATE file_table SET name=#{newName} WHERE uid=#{uid} AND node=#{nid} AND name=#{oldName}")
+    @Update("UPDATE file_table SET name=#{newName} WHERE node=#{nid} AND name=#{oldName} AND uid=#{uid}")
     int rename(@Param("uid") Integer uid,
                @Param("nid") String nid,
                @Param("oldName") String oldName,

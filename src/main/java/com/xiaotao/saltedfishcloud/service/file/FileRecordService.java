@@ -256,7 +256,7 @@ public class FileRecordService {
     public void mkdirs(int uid, String path) {
         PathBuilder pb = new PathBuilder();
         pb.append(path);
-        String id = "root";
+        String id = "" + uid;
         for (String s : pb.getPath()) {
             NodeInfo nodeInfo = nodeDao.getNodeByParentId(uid, id, s);
             if (nodeInfo == null) {

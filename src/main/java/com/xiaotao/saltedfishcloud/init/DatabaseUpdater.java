@@ -42,6 +42,7 @@ public class DatabaseUpdater implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         tryExecute("1.3.0-SNAPSHOT");
         tryExecute("1.3.0.1-SNAPSHOT");
+        tryExecute("1.3.4-SNAPSHOT");
         conn.close();
         configDao.setConfigure(ConfigName.VERSION, DiskConfig.VERSION.toString());
     }

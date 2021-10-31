@@ -37,13 +37,13 @@ public class NodeTree implements Iterable<NodeInfo> {
      * @return      路径
      */
     public String getPath(String id) {
-        if ("root".equals(id)) {
+        if (id.length() < 32) {
             return "/";
         }
         LinkedList<String> paths = new LinkedList<>();
         StringBuilder sb = new StringBuilder();
         NodeInfo t;
-        while ( !id.equals("root") && (t = payload.get(id)) != null ) {
+        while ( !(id.length() < 32) && (t = payload.get(id)) != null ) {
             paths.addFirst(t.getName());
             id = t.getParent();
         }

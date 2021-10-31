@@ -99,8 +99,9 @@ public class LocalDiskFileSystem implements DiskFileSystem {
         LinkedHashMap<String, List<FileInfo>> res = new LinkedHashMap<>();
         List<NodeInfo> nodes = new LinkedList<>();
         //  获取目录结构
-        nodes.add(new NodeInfo(null, uid, "root", null));
-        nodes.addAll(nodeService.getChildNodes(uid, "root"));
+        String strId = "" + uid;
+        nodes.add(new NodeInfo(null, uid, strId, null));
+        nodes.addAll(nodeService.getChildNodes(uid, strId));
 
         if (reverse) Collections.reverse(nodes);
         for (NodeInfo node : nodes) {

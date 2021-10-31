@@ -16,13 +16,13 @@ public class NodeInfo {
     private String parent;
 
     public boolean isRootNode() {
-        return "root".equals(id);
+        return parent.equals("" + id);
     }
 
     public static NodeInfo getRootNode(int uid) {
         var info = new NodeInfo();
         info.setName("");
-        info.setId("root");
+        info.setId("" + uid);
         info.setUid(uid);
         return info;
     }
