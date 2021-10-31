@@ -29,7 +29,7 @@ public class DatabaseUpdater implements ApplicationRunner {
         conn = dataSource.getConnection();
         Version v;
         try {
-            v = Version.load(configDao.getConfigure(ConfigName.VERSION));
+            v = Version.valueOf(configDao.getConfigure(ConfigName.VERSION));
         } catch (Exception e) {
             v = DiskConfig.VERSION;
         }
@@ -51,7 +51,7 @@ public class DatabaseUpdater implements ApplicationRunner {
      * @param version 数据表更新脚本版本
      */
     private void tryExecute(String version) {
-        var targetVersion = Version.load(version);
+        var targetVersion = Version.valueOf(version);
         if (lastVersion.isLessThen(targetVersion)) {
             log.info("[数据表更新]版本：" + targetVersion.toString());
             execute(version);

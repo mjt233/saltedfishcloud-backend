@@ -37,7 +37,7 @@ public class ConfigureInitializer implements ApplicationRunner {
         String storeType = configDao.getConfigure(ConfigName.STORE_TYPE);
         String regCode = configDao.getConfigure(ConfigName.REG_CODE, DiskConfig.REG_CODE);
         String syncDelay = configDao.getConfigure(ConfigName.SYNC_DELAY, DiskConfig.SYNC_DELAY + "");
-        Version version = Version.load(configDao.getConfigure(ConfigName.VERSION, "1.0.0-SNAPSHOT"));
+        Version version = Version.valueOf(configDao.getConfigure(ConfigName.VERSION, "1.0.0-SNAPSHOT"));
 
         boolean firstRun = storeType == null;
         if (firstRun) {

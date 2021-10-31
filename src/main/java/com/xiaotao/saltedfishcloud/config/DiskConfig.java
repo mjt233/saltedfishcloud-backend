@@ -116,7 +116,7 @@ public class DiskConfig {
 
     @Value("${app.version}")
     public void setVersion(String v) {
-        VERSION = Version.load(v);
+        VERSION = Version.valueOf(v);
     }
 
     @Value("${reg-code}")

@@ -1,25 +1,29 @@
 package com.xiaotao.saltedfishcloud.service.config.version;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter; 
 
 /**
  * 版本信息
  */
-@Data
-@NoArgsConstructor
-public class Version implements Comparable<Version>{
+public final class Version implements Comparable<Version>{
+    @Getter
     private int bigVer = 1;
+    @Getter
     private int mdVer = 0;
+    @Getter
     private int smVer = 0;
+    @Getter
     private int bugFixVer = 0;
+    @Getter
     private VersionTag tag = VersionTag.SNAPSHOT;
+
+    private String stringCache;
 
     /**
      * 获取有史以来最早的版本信息
      */
     public static Version getEarliestVersion() {
-        return load("1.0.0.0-SNAPSHOT");
+        return valueOf("1.0.0.0-SNAPSHOT");
     }
 
     public Version(int bigVer, int mdVer, int smVer, int bugFixVer, VersionTag tag) {
@@ -30,13 +34,13 @@ public class Version implements Comparable<Version>{
         this.tag = tag;
     }
 
-    public static Version load(String version) {
+    public static Version valueOf(String version) {
         try {
             String[] s = version.split("[.\\-]", 5);
-            int bufFixVer = 0;
+            int fixVer = 0;
             VersionTag vt;
             if (s.length == 5) {
-                bufFixVer = Integer.parseInt(s[3]);
+                fixVer = Integer.parseInt(s[3]);
                 vt = VersionTag.valueOf(s[4]);
             } else {
                 vt = VersionTag.valueOf(s[3]);
@@ -45,7 +49,7 @@ public class Version implements Comparable<Version>{
                     Integer.parseInt(s[0]),
                     Integer.parseInt(s[1]),
                     Integer.parseInt(s[2]),
-                    bufFixVer,
+                    fixVer,
                     vt
             );
         } catch (RuntimeException e) {
@@ -87,7 +91,10 @@ public class Version implements Comparable<Version>{
 
     @Override
     public String toString() {
-        return bigVer + "." + mdVer + "." + smVer + "." + bugFixVer + "-" + tag;
+        if (this.stringCache == null) {
+            this.stringCache = bigVer + "." + mdVer + "." + smVer + "." + bugFixVer + "-" + tag;
+        }
+        return this.stringCache;
     }
 
     /**
@@ -112,6 +119,11 @@ public class Version implements Comparable<Version>{
                 mdVer == version.mdVer &&
                 smVer == version.smVer &&
                 bugFixVer == version.bugFixVer;
+    }
+
+    @Override
+    public int hashCode() {
+        return this.toString().hashCode();
     }
 
 }
