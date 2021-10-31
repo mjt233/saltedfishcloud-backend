@@ -55,9 +55,11 @@ public class NodeService {
         pb.append(path);
         Collection<String> paths = pb.getPath();
         Set<String> visited = new HashSet<>();
+
+        String strId = "" + uid;
         try {
             for (String node : paths) {
-                String parent = link.isEmpty() ? "root" : link.getLast().getId();
+                String parent = link.isEmpty() ? strId : link.getLast().getId();
                 NodeInfo info = nodeDao.getNodeByParentId(uid, parent, node);
                 if (info == null) {
                     throw new NoSuchFileException("路径 " + path + " 不存在，或目标节点信息已丢失");
@@ -74,7 +76,7 @@ public class NodeService {
             }
         } catch (NullPointerException e) {
             NodeInfo info = new NodeInfo();
-            info.setId("root");
+            info.setId(strId);
             link.add(info);
         }
         if (log.isDebugEnabled()) {
@@ -150,7 +152,7 @@ public class NodeService {
      * @return          完整路径
      */
     public String getPathByNode(int uid, String nodeId) {
-        if (nodeId.equals("root")) {
+        if (nodeId.length() < 32) {
             return "/";
         }
         LinkedList<String> link = new LinkedList<>();
@@ -166,7 +168,7 @@ public class NodeService {
             if (visited.contains(lastId)) {
                 throw new JsonException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + info.getId() + " => " + lastId);
             }
-            if (info.getParent().equals("root")) {
+            if (info.getParent().length() < 32) {
                 break;
             }
         }

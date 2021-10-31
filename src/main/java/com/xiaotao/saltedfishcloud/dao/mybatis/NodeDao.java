@@ -23,7 +23,7 @@ public interface NodeDao {
      * @param parentId  移动目的地节点ID
      * @return  受影响行数
      */
-    @Update("UPDATE node_list SET parent=#{pid} WHERE uid=#{uid} AND id=#{nid}")
+    @Update("UPDATE node_list SET parent=#{pid} WHERE id=#{nid} AND uid=#{uid}")
     int move(@Param("uid") Integer uid, @Param("nid") String nodeId, @Param("pid") String parentId);
 
     /**
@@ -32,7 +32,7 @@ public interface NodeDao {
      * @param nodeId    节点ID
      * @return  节点信息或null
      */
-    @Select("SELECT name,id,parent,uid FROM node_list WHERE uid=#{uid} AND id=#{nodeId}")
+    @Select("SELECT name,id,parent,uid FROM node_list WHERE id=#{nodeId} AND uid=#{uid}")
     NodeInfo getNodeById(@Param("uid") Integer uid,
                          @Param("nodeId") String nodeId);
 
@@ -59,10 +59,11 @@ public interface NodeDao {
     @Select({
             "<script>",
             "SELECT name, id, parent, uid FROM node_list ",
-            "WHERE uid = #{uid} AND parent in ",
+            "WHERE parent in ",
                 "<foreach collection='nid' item='id' open='(' separator=',' close=')'>",
                 "#{id}",
                 "</foreach>",
+            " AND uid = #{uid}",
             "</script>"
     })
     List<NodeInfo> getChildNodes(@Param("uid") Integer uid, @Param("nid") Collection<String> nid );
@@ -74,15 +75,16 @@ public interface NodeDao {
      * @param name  目标节点名称
      * @return  节点信息
      */
-    @Select("SELECT name, id, parent, uid, parent FROM node_list WHERE uid = #{uid} AND parent = #{pid} AND name = #{name}")
+    @Select("SELECT name, id, parent, uid, parent FROM node_list WHERE parent = #{pid} AND name = #{name} AND  uid = #{uid}")
     NodeInfo getNodeByParentId(@Param("uid") Integer uid, @Param("pid") String pid, @Param("name") String name);
 
     @Delete({
             "<script>",
-            "DELETE FROM node_list WHERE uid=#{uid} AND id IN ",
+            "DELETE FROM node_list WHERE id IN ",
                 "<foreach collection='nodes' item='node' open='(' separator=',' close=')'>",
                 "#{node}",
                 "</foreach>",
+            " AND uid = #{uid}",
             "</script>"
     })
     int deleteNodes(@Param("uid") Integer uid, @Param("nodes") Collection<String> nodes);
