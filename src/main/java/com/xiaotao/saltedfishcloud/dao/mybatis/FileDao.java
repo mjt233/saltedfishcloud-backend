@@ -100,7 +100,7 @@ public interface FileDao {
                 "<foreach collection='name' item='item' open='(' separator=',' close=')'>",
                     "#{item}",
                 "</foreach>",
-            " uid=#{uid}",
+            "AND uid=#{uid}",
             "</script>"
     })
     int deleteRecords(@Param("uid") Integer uid,
