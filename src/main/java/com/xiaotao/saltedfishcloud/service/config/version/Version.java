@@ -26,6 +26,14 @@ public final class Version implements Comparable<Version>{
         return valueOf("1.0.0.0-SNAPSHOT");
     }
 
+    /**
+     * 创建一个版本信息对象
+     * @param bigVer    大版本号
+     * @param mdVer     中版本号
+     * @param smVer     小版本号
+     * @param bugFixVer 修订号
+     * @param tag       版本类型标签
+     */
     public Version(int bigVer, int mdVer, int smVer, int bugFixVer, VersionTag tag) {
         this.bigVer = bigVer;
         this.mdVer = mdVer;
@@ -34,6 +42,20 @@ public final class Version implements Comparable<Version>{
         this.tag = tag;
     }
 
+    /**
+     * 从字符串解析为Version版本信息<br>
+     * 例子：1.2.3.4-SNAPSHOT,依次为{大版本号}.{中版本号}.{小版本号}.{修正号}-{版本标签}<br>
+     * 其中修正号和版本标签是可选的，修正号默认为0，版本标签默认为SNAPSHOT，以下均为合法的版本字符串<br>
+     * <ul>
+     *  <li>1.2.3.4-SNAPSHOT</li>
+     *  <li>1.2.3.4-RELEASE</li>
+     *  <li>1.2.3-SNAPSHOT</li>
+     *  <li>1.2.3.4</li>
+     *  <li>1.2.3</li>
+     * </ul>
+     * @param version   版本信息字符串
+     * @return  Version对象
+     */
     public static Version valueOf(String version) {
         try {
             String[] s = version.split("[.\\-]", 5);
@@ -43,7 +65,16 @@ public final class Version implements Comparable<Version>{
                 fixVer = Integer.parseInt(s[3]);
                 vt = VersionTag.valueOf(s[4]);
             } else {
-                vt = VersionTag.valueOf(s[3]);
+                char c = s[s.length - 1].charAt(0);
+                if (c < '0' || c > '9' ) {
+                    vt = VersionTag.valueOf(s[3]);
+                } else {
+                    // 缺少版本标签类型，默认SNAPSHOT
+                    vt = VersionTag.SNAPSHOT;
+                    if (s.length == 4) {
+                        fixVer = Integer.parseInt(s[s.length - 1]);
+                    }
+                }
             }
             return new Version(
                     Integer.parseInt(s[0]),
@@ -58,6 +89,10 @@ public final class Version implements Comparable<Version>{
         }
     }
 
+    /**
+     * 将版本信息转换为有序整数，版本越高数字越大
+     * @return
+     */
     public int toInteger() {
         return bigVer * 1000000 + mdVer * 100000 + smVer * 100 + bugFixVer;
     }
