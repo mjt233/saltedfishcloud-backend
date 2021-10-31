@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.ftp;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.*;
 import org.apache.ftpserver.usermanager.AnonymousAuthentication;
 import org.apache.ftpserver.usermanager.UsernamePasswordAuthentication;
@@ -16,7 +15,6 @@ import static com.xiaotao.saltedfishcloud.po.User.SYS_NAME_PUBLIC;
 import java.util.LinkedList;
 import java.util.List;
 
-@Slf4j
 @Component
 public class DiskFtpUserManager implements UserManager {
     private final UserDao userDao;

@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.aspect;
 
 import com.xiaotao.saltedfishcloud.annotations.ClearCachePath;
-import com.xiaotao.saltedfishcloud.config.RedisConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;

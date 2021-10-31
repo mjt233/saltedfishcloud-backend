@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class TaskManagerImpl implements TaskManager {
 
     private final Map<String, TaskContext<? extends AsyncTask>> tasks = new HashMap<>();

@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -13,7 +12,6 @@ import java.util.LinkedList;
  * 用于构建URL
  */
 @Data
-@Slf4j
 public class PathBuilder {
     private LinkedList<String> path;
     private boolean forcePrefix = false;
@@ -63,7 +61,6 @@ public class PathBuilder {
      * @return 咸鱼云网盘标准格式化路径
      */
     public String range(int length, int index) {
-        int absLength = Math.abs(length);
         int finalIndex = index < 0 ? this.path.size() + index : index;
         int finalLength = length < 0 ? this.path.size() + length : length;
 

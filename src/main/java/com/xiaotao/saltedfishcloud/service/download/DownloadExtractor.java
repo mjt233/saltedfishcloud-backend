@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,7 +87,6 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
         OutputStream localFileStream = Files.newOutputStream(savePath);
         byte[] buffer = new byte[8192];
         int cnt;
-        int lastProc = 0;
         long lastLoad = 0;
         long lastRecordTime = System.currentTimeMillis();
 

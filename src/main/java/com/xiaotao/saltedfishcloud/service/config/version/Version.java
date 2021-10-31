@@ -3,8 +3,6 @@ package com.xiaotao.saltedfishcloud.service.config.version;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Objects;
-
 /**
  * 版本信息
  */

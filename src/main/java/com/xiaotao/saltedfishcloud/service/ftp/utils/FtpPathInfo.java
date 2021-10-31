@@ -6,14 +6,12 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 网盘系统的FTP路径信息<br>
  * 系统的FTP路径包含两部分：/{资源区()}/资源路径
  */
 @Data
-@Slf4j
 public class FtpPathInfo {
     //  资源区
     private String resourceArea = "";

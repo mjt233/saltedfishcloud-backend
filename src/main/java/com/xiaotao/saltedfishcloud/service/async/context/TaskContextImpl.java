@@ -9,6 +9,7 @@ import java.util.UUID;
  * 默认的任务上下文接口实现
  * @TODO 使用线程池
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class TaskContextImpl<T> implements TaskContext<T> {
     private final AsyncTask task;
     private final Thread thread;
@@ -45,6 +46,12 @@ public class TaskContextImpl<T> implements TaskContext<T> {
                 this.failed.action();
                 manager.remove(id);
                 return;
+            } finally {
+                try {
+                    this.finish.action();
+                } catch( Throwable e) {
+                    e.printStackTrace();
+                }
             }
             if (r) {
                 this.success.action();

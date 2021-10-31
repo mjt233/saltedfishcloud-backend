@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.exception.DirectoryAlreadyExistsException;
 import org.springframework.dao.DuplicateKeyException;
 
 import java.io.IOException;
