@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.23, for Win64 (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.25, for Linux (x86_64)
 --
--- Host: localhost    Database: xyy
+-- Host: 127.0.0.1    Database: xyy
 -- ------------------------------------------------------
--- Server version	8.0.23
+-- Server version       8.0.23
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -37,11 +37,19 @@ DROP TABLE IF EXISTS `download_task`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `download_task` (
-                                 `id` int unsigned NOT NULL AUTO_INCREMENT,
+                                 `id` varchar(128) NOT NULL,
                                  `uid` int unsigned DEFAULT NULL,
                                  `url` varchar(2048) DEFAULT NULL,
                                  `proxy` varchar(128) DEFAULT NULL,
                                  `state` varchar(128) DEFAULT 'waiting',
+                                 `name` varchar(1024) DEFAULT NULL,
+                                 `size` bigint DEFAULT NULL,
+                                 `message` text,
+                                 `created_at` datetime DEFAULT NULL,
+                                 `finish_at` datetime DEFAULT NULL,
+                                 `save_path` varchar(2048) DEFAULT NULL,
+                                 `created_by` int unsigned DEFAULT NULL,
+                                 `loaded` bigint unsigned DEFAULT '0',
                                  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -61,7 +69,7 @@ CREATE TABLE `file_table` (
                               `md5` char(32) DEFAULT NULL,
                               `created_at` timestamp NULL DEFAULT NULL,
                               `updated_at` timestamp NULL DEFAULT NULL,
-                              UNIQUE KEY `file_index` (`uid`,`name`,`node`),
+                              UNIQUE KEY `file_index` (`node`,`name`,`uid`),
                               KEY `md5_index` (`md5`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -78,7 +86,7 @@ CREATE TABLE `node_list` (
                              `id` char(32) DEFAULT NULL,
                              `parent` char(32) DEFAULT NULL,
                              `uid` int unsigned DEFAULT NULL,
-                             UNIQUE KEY `node_name_index` (`id`,`parent`,`name`),
+                             UNIQUE KEY `node_name_index` (`parent`,`name`),
                              KEY `id_index` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -128,4 +136,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-09-04 19:07:22
+-- Dump completed on 2021-10-31 17:03:31
