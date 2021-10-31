@@ -7,10 +7,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class VersionTest {
     @Test
     public void testVersion() {
-        Version v1 = Version.load("1.1.0-SNAPSHOT");
-        Version v2 = Version.load("1.0.0-SNAPSHOT");
-        Version v3 = Version.load("2.1.0-SNAPSHOT");
-        Version v4 = Version.load("1.1.0.0-SNAPSHOT");
+        Version v1 = Version.valueOf("1.1.0-SNAPSHOT");
+        Version v2 = Version.valueOf("1.0.0-SNAPSHOT");
+        Version v3 = Version.valueOf("2.1.0-SNAPSHOT");
+        Version v4 = Version.valueOf("1.1.0.0-SNAPSHOT");
         assertEquals(1, v1.getBigVer());
         assertEquals(1, v1.getMdVer());
         assertEquals(0, v1.getSmVer());

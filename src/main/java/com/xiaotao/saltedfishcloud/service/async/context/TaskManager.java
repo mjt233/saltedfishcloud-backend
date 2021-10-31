@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.async.context;
 
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 
+@SuppressWarnings("rawtypes")
 public interface TaskManager {
     void submit(TaskContext<? extends AsyncTask> task);
 

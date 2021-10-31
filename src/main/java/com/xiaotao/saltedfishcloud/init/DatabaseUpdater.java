@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.SQLSyntaxErrorException;
 
 @Component
 @Order(3)
@@ -30,7 +29,7 @@ public class DatabaseUpdater implements ApplicationRunner {
         conn = dataSource.getConnection();
         Version v;
         try {
-            v = Version.load(configDao.getConfigure(ConfigName.VERSION));
+            v = Version.valueOf(configDao.getConfigure(ConfigName.VERSION));
         } catch (Exception e) {
             v = DiskConfig.VERSION;
         }
@@ -40,9 +39,10 @@ public class DatabaseUpdater implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        tryExecute("1.3.0-SNAPSHOT");
-        tryExecute("1.3.0.1-SNAPSHOT");
-        tryExecute("1.3.4-SNAPSHOT");
+        tryExecute("1.3.0");
+        tryExecute("1.3.0.1");
+        tryExecute("1.3.4");
+        tryExecute("1.3.4.2");
         conn.close();
         configDao.setConfigure(ConfigName.VERSION, DiskConfig.VERSION.toString());
     }
@@ -52,7 +52,7 @@ public class DatabaseUpdater implements ApplicationRunner {
      * @param version 数据表更新脚本版本
      */
     private void tryExecute(String version) {
-        var targetVersion = Version.load(version);
+        var targetVersion = Version.valueOf(version);
         if (lastVersion.isLessThen(targetVersion)) {
             log.info("[数据表更新]版本：" + targetVersion.toString());
             execute(version);

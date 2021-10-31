@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -117,7 +116,7 @@ public class DiskConfig {
 
     @Value("${app.version}")
     public void setVersion(String v) {
-        VERSION = Version.load(v);
+        VERSION = Version.valueOf(v);
     }
 
     @Value("${reg-code}")

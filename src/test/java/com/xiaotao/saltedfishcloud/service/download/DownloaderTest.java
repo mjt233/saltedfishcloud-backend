@@ -81,7 +81,6 @@ class DownloaderTest {
         factory.getManager().submit(context);
 
         DownloadTaskStatus status = null;
-        int speed = 0;
         long lastRecord = 0;
         double prog = -1;
         while (!context.isFinish()) {

@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.redis;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +8,6 @@ import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class TokenDao {
     private final RedisTemplate<String, String> redisTemplate;
     private final RedisDao redisDao;
