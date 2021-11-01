@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.po.file;
+package com.xiaotao.saltedfishcloud.entity.po.file;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

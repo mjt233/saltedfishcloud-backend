@@ -1,6 +1,6 @@
-package com.xiaotao.saltedfishcloud.po.param;
+package com.xiaotao.saltedfishcloud.entity.po.param;
 
-import com.xiaotao.saltedfishcloud.validator.UID;
+import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.http.HttpMethod;
 

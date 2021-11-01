@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
-import com.xiaotao.saltedfishcloud.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.utils.ArrayUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;

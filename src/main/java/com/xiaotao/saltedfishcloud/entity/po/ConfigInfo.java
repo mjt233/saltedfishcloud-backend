@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.po;
+package com.xiaotao.saltedfishcloud.entity.po;
 
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import lombok.AllArgsConstructor;

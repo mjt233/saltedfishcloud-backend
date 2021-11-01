@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.config.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xiaotao.saltedfishcloud.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import org.springframework.security.core.Authentication;
 
 import javax.servlet.ServletException;

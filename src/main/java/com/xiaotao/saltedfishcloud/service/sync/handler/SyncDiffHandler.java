@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.sync.handler;
 
-import com.xiaotao.saltedfishcloud.po.User;
-import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 
 import java.util.Collection;

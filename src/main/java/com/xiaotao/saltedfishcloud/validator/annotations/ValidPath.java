@@ -1,4 +1,6 @@
-package com.xiaotao.saltedfishcloud.validator;
+package com.xiaotao.saltedfishcloud.validator.annotations;
+
+import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;

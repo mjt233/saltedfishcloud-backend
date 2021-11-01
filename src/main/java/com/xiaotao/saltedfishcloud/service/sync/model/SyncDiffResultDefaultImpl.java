@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.sync.model;
 
-import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;

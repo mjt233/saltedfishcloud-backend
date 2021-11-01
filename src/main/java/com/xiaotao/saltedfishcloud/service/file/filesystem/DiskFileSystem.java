@@ -3,9 +3,9 @@ package com.xiaotao.saltedfishcloud.service.file.filesystem;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
-import com.xiaotao.saltedfishcloud.po.file.FileDCInfo;
-import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileDCInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import org.springframework.web.multipart.MultipartFile;
 

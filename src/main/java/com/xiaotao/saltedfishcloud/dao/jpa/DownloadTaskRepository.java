@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
-import com.xiaotao.saltedfishcloud.po.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -8,7 +8,7 @@ import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.ftpserver.ftplet.User;
 import org.springframework.stereotype.Component;
 
-import static com.xiaotao.saltedfishcloud.po.User.SYS_NAME_PUBLIC;
+import static com.xiaotao.saltedfishcloud.entity.po.User.SYS_NAME_PUBLIC;
 import java.io.IOException;
 
 @Component
@@ -23,7 +23,7 @@ public class DiskFtpFileSystemFactory implements FileSystemFactory {
             if (user.getName().equals(SYS_NAME_PUBLIC)) {
                 return new DiskFtpFileSystemView(DiskFtpUser.getAnonymousUser());
             }
-            com.xiaotao.saltedfishcloud.po.User dbUser = userDao.getUserByUser(user.getName());
+            com.xiaotao.saltedfishcloud.entity.po.User dbUser = userDao.getUserByUser(user.getName());
             if (dbUser == null) {
                 throw new UserNoExistException("用户" + user + "不存在");
             }

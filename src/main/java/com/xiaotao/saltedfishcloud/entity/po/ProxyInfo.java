@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.po;
+package com.xiaotao.saltedfishcloud.entity.po;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;

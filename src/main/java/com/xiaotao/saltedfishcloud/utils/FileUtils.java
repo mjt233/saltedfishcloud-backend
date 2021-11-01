@@ -2,8 +2,8 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.po.file.DirCollection;
-import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.DirCollection;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;

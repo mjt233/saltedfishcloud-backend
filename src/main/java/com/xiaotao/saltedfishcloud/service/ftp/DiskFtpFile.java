@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.ftp;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;

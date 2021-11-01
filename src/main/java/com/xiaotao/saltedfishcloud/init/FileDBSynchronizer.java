@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.service.sync.SyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;

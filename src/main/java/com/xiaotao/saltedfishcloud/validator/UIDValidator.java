@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.validator;
 
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;

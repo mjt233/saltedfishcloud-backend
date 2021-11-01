@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.validator;
 
+import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
+
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.util.List;

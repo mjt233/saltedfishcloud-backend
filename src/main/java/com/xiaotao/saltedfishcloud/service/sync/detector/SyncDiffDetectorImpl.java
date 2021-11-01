@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.sync.detector;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.po.User;
-import com.xiaotao.saltedfishcloud.po.file.DirCollection;
-import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.file.DirCollection;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;

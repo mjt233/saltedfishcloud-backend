@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.sync;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.service.sync.detector.SyncDiffDetector;
 import com.xiaotao.saltedfishcloud.service.sync.handler.SyncDiffHandler;
 import lombok.extern.slf4j.Slf4j;

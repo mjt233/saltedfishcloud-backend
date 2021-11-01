@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
-import com.xiaotao.saltedfishcloud.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import lombok.var;

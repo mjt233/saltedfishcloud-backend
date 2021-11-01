@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.manager;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
-import com.xiaotao.saltedfishcloud.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;

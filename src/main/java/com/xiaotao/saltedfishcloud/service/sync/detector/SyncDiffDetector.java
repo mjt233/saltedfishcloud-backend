@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.sync.detector;
 
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.service.sync.model.SyncDiffDetectResult;
 
 /**

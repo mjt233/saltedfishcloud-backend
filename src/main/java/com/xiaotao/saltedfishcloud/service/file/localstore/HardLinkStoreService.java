@@ -2,8 +2,8 @@ package com.xiaotao.saltedfishcloud.service.file.localstore;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
-import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
-import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;

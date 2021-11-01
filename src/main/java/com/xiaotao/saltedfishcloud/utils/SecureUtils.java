@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;

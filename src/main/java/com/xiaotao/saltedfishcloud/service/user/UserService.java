@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {

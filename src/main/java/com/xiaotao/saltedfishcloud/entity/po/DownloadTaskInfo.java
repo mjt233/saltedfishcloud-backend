@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.po;
+package com.xiaotao.saltedfishcloud.entity.po;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 

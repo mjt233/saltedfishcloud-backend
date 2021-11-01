@@ -11,7 +11,7 @@ import org.apache.ftpserver.usermanager.impl.ConcurrentLoginPermission;
 import org.apache.ftpserver.usermanager.impl.TransferRatePermission;
 import org.springframework.stereotype.Component;
 
-import static com.xiaotao.saltedfishcloud.po.User.SYS_NAME_PUBLIC;
+import static com.xiaotao.saltedfishcloud.entity.po.User.SYS_NAME_PUBLIC;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -40,7 +40,7 @@ public class DiskFtpUserManager implements UserManager {
     public String[] getAllUserNames() throws FtpException {
         String[] users = (String[]) userDao.getUserList()
                 .stream()
-                .map(com.xiaotao.saltedfishcloud.po.User::getUsername)
+                .map(com.xiaotao.saltedfishcloud.entity.po.User::getUsername)
                 .toArray();
         return users;
     }
@@ -67,7 +67,7 @@ public class DiskFtpUserManager implements UserManager {
         }
         if (authentication instanceof UsernamePasswordAuthentication) {
             UsernamePasswordAuthentication auth = (UsernamePasswordAuthentication) authentication;
-            com.xiaotao.saltedfishcloud.po.User user = userDao.getUserByUser(auth.getUsername());
+            com.xiaotao.saltedfishcloud.entity.po.User user = userDao.getUserByUser(auth.getUsername());
             if (user == null) return null;
             if (user.getPassword().equals(SecureUtils.getPassswd(auth.getPassword()))) {
                 return getUserByName(auth.getUsername());
@@ -83,7 +83,7 @@ public class DiskFtpUserManager implements UserManager {
 
     @Override
     public boolean isAdmin(String username) throws FtpException {
-        return userDao.getUserByUser(username).getType() == com.xiaotao.saltedfishcloud.po.User.TYPE_ADMIN;
+        return userDao.getUserByUser(username).getType() == com.xiaotao.saltedfishcloud.entity.po.User.TYPE_ADMIN;
     }
 }
 

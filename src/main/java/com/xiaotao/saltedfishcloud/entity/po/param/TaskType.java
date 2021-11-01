@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.po.param;
+package com.xiaotao.saltedfishcloud.entity.po.param;
 
 /**
  * 下载任务的筛选类型

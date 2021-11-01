@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.dao.mybatis;
 
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
-import com.xiaotao.saltedfishcloud.po.ConfigInfo;
+import com.xiaotao.saltedfishcloud.entity.po.ConfigInfo;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
 

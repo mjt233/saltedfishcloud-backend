@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.validator;
 
 
+import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
+
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.util.regex.Pattern;

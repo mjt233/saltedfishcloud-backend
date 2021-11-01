@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
-import com.xiaotao.saltedfishcloud.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;

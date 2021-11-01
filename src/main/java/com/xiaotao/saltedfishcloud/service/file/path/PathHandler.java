@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.path;
 
-import com.xiaotao.saltedfishcloud.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 
 public interface PathHandler {
     /**

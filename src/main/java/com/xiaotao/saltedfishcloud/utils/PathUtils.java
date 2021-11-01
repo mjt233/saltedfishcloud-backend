@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 
 import java.util.ArrayList;
 import java.util.List;

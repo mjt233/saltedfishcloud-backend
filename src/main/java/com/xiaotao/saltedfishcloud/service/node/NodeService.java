@@ -1,24 +1,40 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
+import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.Resource;
 import java.nio.file.NoSuchFileException;
 import java.util.*;
 
 @Service
 @Slf4j
 @Transactional(rollbackFor = Exception.class)
+@RequiredArgsConstructor
 public class NodeService {
-    @Resource
-    NodeDao nodeDao;
+    private final NodeDao nodeDao;
+
+    /**
+     * 根据用户ID和节点ID获取对应的节点信息，可识别到根ID
+     * @param uid   用户ID
+     * @param nid   节点ID，可以是根ID
+     * @return      节点ID，若无结果则为null
+     */
+    public NodeInfo getNodeById(Integer uid, String nid) {
+        if (nid.length() == 32) {
+            return nodeDao.getNodeById(uid, nid);
+        }
+        NodeInfo node = new NodeInfo();
+        node.setId(uid + "");
+        node.setUid(uid);
+        return node;
+    }
 
     public NodeTree getFullTree(int uid) {
         NodeTree tree = new NodeTree();

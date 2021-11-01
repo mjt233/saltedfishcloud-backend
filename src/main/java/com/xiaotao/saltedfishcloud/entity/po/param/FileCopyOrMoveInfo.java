@@ -1,6 +1,6 @@
-package com.xiaotao.saltedfishcloud.po.param;
+package com.xiaotao.saltedfishcloud.entity.po.param;
 
-import com.xiaotao.saltedfishcloud.validator.ValidPath;
+import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 import lombok.Data;
 
 import javax.validation.Valid;

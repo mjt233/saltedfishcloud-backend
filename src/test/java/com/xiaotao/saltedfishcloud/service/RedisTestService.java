@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service;
 
-import com.xiaotao.saltedfishcloud.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
