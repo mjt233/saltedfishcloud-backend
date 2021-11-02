@@ -22,7 +22,7 @@ class CollectionInfoRepositoryTest {
     public void testAdd() {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.HOUR, 24);
-        CollectionInfo info = new CollectionInfo(2, "admin", "测试收集", "啦啦啦", "root", calendar.getTime());
+        CollectionInfo info = new CollectionInfo(2, "admin", "测试收集", "啦啦啦", "root", calendar.getTime(), null);
         info.setMaxSize(ByteSize._1MiB * 512L);
         repository.save(info);
         assertTrue(repository.findAll().size() > 0);
@@ -30,6 +30,7 @@ class CollectionInfoRepositoryTest {
         Collection<CollectionField> fields = new ArrayList<>();
         fields.add(new CollectionField()
                 .setName("姓名").setDescribe("你的姓名").setType(CollectionField.Type.TEXT));
+
         fields.add(new CollectionField()
                 .setName("班级").setType(CollectionField.Type.OPTION).addOption("1班").addOption("2班").addOption("3班"));
 
