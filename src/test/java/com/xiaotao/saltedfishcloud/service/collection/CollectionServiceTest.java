@@ -6,17 +6,21 @@ import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.json.GsonTester;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.DigestUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Calendar;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,6 +34,21 @@ class CollectionServiceTest {
     private NodeService nodeService;
     @Autowired
     private DiskFileSystemFactory diskFileSystem;
+
+    @Test
+    void testGet() {
+        CollectionDTO nodeInfo = new CollectionDTO("t", StringUtils.getRandomString(32), new Date(), "adminTest");
+        User admin = userDao.getUserByUser("admin");
+        try {
+            cs.createCollection(admin.getId(), nodeInfo);
+            fail();
+        } catch (JsonException e) {
+            System.out.println(e.toString());
+        }
+        nodeInfo.setSaveNode("" + admin.getId());
+        String cid = cs.createCollection(admin.getId(), nodeInfo);
+        assertNotNull(cs.getCollection(cid));
+    }
 
     @Test
     void collectFile() throws IOException {
@@ -63,6 +82,16 @@ class CollectionServiceTest {
         SubmitFile file = new SubmitFile("full.sql", resource.contentLength(), null);
 
         // 保存文件到收集任务
+        try {
+            // 文件名不匹配正则
+            cs.collectFile(cid, u.getId(), resource.getInputStream(), fileInfo, file);
+            fail();
+        } catch (JsonException e) {
+            System.out.println(e.toString());
+        }
+        file.setFilename("full.docx");
+
+        // OK
         cs.collectFile(cid, u.getId(), resource.getInputStream(), fileInfo, file);
     }
 }

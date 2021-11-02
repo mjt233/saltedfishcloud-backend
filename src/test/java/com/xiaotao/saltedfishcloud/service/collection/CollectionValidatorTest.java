@@ -49,10 +49,13 @@ class CollectionValidatorTest {
     @Test
     void validateSubmit() {
         CollectionInfo info = new CollectionInfo(0, "测试", "测试", "测试", "测试", new Date(), "doc");
-        info.setPattern("233$");
         SubmitFile submitFile = new SubmitFile("test.doc", 1024L, null);
 
+        // 无约束
+        assertTrue(CollectionValidator.validateSubmit(info, submitFile));
+
         // 文件名不匹配正则
+        info.setPattern("233$");
         assertFalse(CollectionValidator.validateSubmit(info, submitFile));
 
         // 匹配正则

@@ -13,6 +13,7 @@ import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,6 +54,7 @@ public class CollectionService {
         return r.orElse(null);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void collectFile(String cid, int uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile) throws IOException {
         CollectionInfo ci = collectionDao.findById(cid).orElse(null);
         // 校验收集存在
