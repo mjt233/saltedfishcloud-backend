@@ -3,14 +3,19 @@ package com.xiaotao.saltedfishcloud.service.collection;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepository;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
+import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
 
 
@@ -19,6 +24,7 @@ import java.util.Optional;
 public class CollectionService {
     private final CollectionInfoRepository collectionDao;
     private final NodeService nodeService;
+    private final DiskFileSystemFactory fileSystem;
 
     /**
      * 创建收集任务
@@ -47,7 +53,19 @@ public class CollectionService {
         return r.orElse(null);
     }
 
-    public void collectFile() {
+    public void collectFile(String cid, int uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile) throws IOException {
+        CollectionInfo ci = collectionDao.findById(cid).orElse(null);
+        // 校验收集存在
+        if (ci == null) { throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND); }
 
+        // 校验匿名状态
+        if (!ci.getAllowAnonymous() && uid == 0) { throw new JsonException(ErrorInfo.COLLECTION_REQUIRE_LOGIN); }
+
+        // 校验约束
+        if (!CollectionValidator.validateSubmit(ci, submitFile)) { throw new JsonException(ErrorInfo.COLLECTION_CHECK_FAILED); }
+
+        // 存入文件
+        String path = nodeService.getPathByNode(ci.getUid(), ci.getSaveNode());
+        fileSystem.getFileSystem().saveFile(ci.getUid(), is, path, fileInfo);
     }
 }

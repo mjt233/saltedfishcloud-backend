@@ -92,6 +92,9 @@ public class FileInfo extends BasicFileInfo{
         return localDateTime.toLocalDate() + " " + localDateTime.toLocalTime();
     }
 
+    /**
+     * 更新MD5值，仅当对象通过有参构造方法创建才有效
+     */
     public void updateMd5() {
         if (isDir()) return;
         if (md5 == null) {

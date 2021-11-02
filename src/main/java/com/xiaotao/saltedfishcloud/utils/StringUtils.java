@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.utils;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Random;
+import java.util.regex.Pattern;
 
 public class StringUtils {
     private final static String PATTERN = "qwertyuiopasdfghjklzxcvbnm";
@@ -27,6 +28,18 @@ public class StringUtils {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * 判断一个字符串是否与给定的正则表达式匹配
+     * @param regex 正则表达式
+     * @param input 输入的字符串
+     * @return  匹配结果
+     */
+    public static boolean matchRegex(String regex, CharSequence input) {
+        if (input == null) return false;
+        Pattern pattern = Pattern.compile(regex);
+        return pattern.matcher(input).find();
     }
 
     /**

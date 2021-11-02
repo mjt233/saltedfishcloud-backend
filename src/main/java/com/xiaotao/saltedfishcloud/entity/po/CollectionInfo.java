@@ -36,6 +36,7 @@ public class CollectionInfo {
     private Boolean allowAnonymous = true;
     private Integer allowMax = 100;
     private String pattern;
+    private String extPattern;
     private String field;
     private String saveNode;
     private Date expiredAt;
@@ -61,7 +62,7 @@ public class CollectionInfo {
     @Enumerated(EnumType.STRING)
     private State state;
 
-    public CollectionInfo(Integer uid,String nickname, String title, String describe, String saveNode, Date expiredAt) {
+    public CollectionInfo(Integer uid,String nickname, String title, String describe, String saveNode, Date expiredAt, String extPattern) {
         this.uid = uid;
         this.title = title;
         this.describe = describe;
@@ -69,10 +70,11 @@ public class CollectionInfo {
         this.expiredAt = expiredAt;
         this.nickname = nickname;
         this.state = State.OPEN;
+        this.extPattern = extPattern;
     }
 
     public CollectionInfo(Integer uid, CollectionDTO info) {
-        this(uid, info.getNickname(), info.getTitle(), info.getDescribe(), info.getSaveNode(), info.getExpiredAt());
+        this(uid, info.getNickname(), info.getTitle(), info.getDescribe(), info.getSaveNode(), info.getExpiredAt(), info.getExtPattern());
         this.allowAnonymous = info.getAllowAnonymous();
         this.maxSize = info.getMaxSize();
         this.pattern = info.getPattern();

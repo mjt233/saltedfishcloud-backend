@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.List;
 
 @Data
 @Accessors(chain = true)
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CollectionField {
     public enum Type {
@@ -23,6 +25,11 @@ public class CollectionField {
     private String describe;
     private String pattern;
     private List<String> options;
+
+    public CollectionField(String name, Type type) {
+        this.name = name;
+        this.type = type;
+    }
 
     public CollectionField addOption(String option) {
         if (options == null) {
