@@ -81,6 +81,21 @@ class CollectionValidatorTest {
         // 符合约束
         assertTrue(CollectionValidator.validateSubmit(info, submitFile));
 
+
+        // 字段不符合约束
+        submitFields.getFirst().setValue("田所浩三");
+        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+
+        // 取消字段正则约束(null)
+        fields.get(0).setPattern(null);
+        info.setField(fields);
+        assertTrue(CollectionValidator.validateSubmit(info, submitFile));
+
+        // 取消字段正则约束(空字符串)
+        fields.get(0).setPattern("");
+        info.setField(fields);
+        assertTrue(CollectionValidator.validateSubmit(info, submitFile));
+
         // 缺少字段
         submitFields.removeLast();
         assertFalse(CollectionValidator.validateSubmit(info, submitFile));
