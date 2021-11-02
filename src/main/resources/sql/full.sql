@@ -1,6 +1,6 @@
--- MySQL dump 10.13  Distrib 8.0.25, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.23, for Win64 (x86_64)
 --
--- Host: 127.0.0.1    Database: xyy
+-- Host: localhost    Database: xyy
 -- ------------------------------------------------------
 -- Server version       8.0.23
 
@@ -14,6 +14,33 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `collection`
+--
+
+DROP TABLE IF EXISTS `collection`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `collection` (
+                              `id` char(32) NOT NULL,
+                              `uid` int unsigned NOT NULL COMMENT '创建者ID',
+                              `nickname` varchar(128) NOT NULL COMMENT '接收者署名',
+                              `describe` text COMMENT '收集任务描述',
+                              `title` varchar(128) NOT NULL COMMENT '标题',
+                              `max_size` bigint NOT NULL COMMENT '允许的文件最大大小（Byte），-1为无限制',
+                              `allow_anonymous` tinyint(1) NOT NULL COMMENT '是否允许匿名上传',
+                              `allow_max` int NOT NULL COMMENT '允许的最大收集文件数量，-1为无限制',
+                              `pattern` varchar(1024) DEFAULT NULL COMMENT '文件名匹配表达式，可以是正则或字段拼接',
+                              `field` varchar(1024) DEFAULT NULL COMMENT 'JSON类型数组，每个元素应包含name - 字段名称，pattern - 匹配正则，describe - 字段描述，type - 类型',
+                              `save_node` char(32) NOT NULL COMMENT '收集到文件后保存到的网盘数据节点',
+                              `expired_at` datetime NOT NULL COMMENT '收集任务过期时间',
+                              `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收集任务创建日期',
+                              `state` enum('OPEN','CLOSED') NOT NULL,
+                              PRIMARY KEY (`id`),
+                              KEY `uid_index` (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `config`
@@ -70,7 +97,8 @@ CREATE TABLE `file_table` (
                               `created_at` timestamp NULL DEFAULT NULL,
                               `updated_at` timestamp NULL DEFAULT NULL,
                               UNIQUE KEY `file_index` (`node`,`name`,`uid`),
-                              KEY `md5_index` (`md5`)
+                              KEY `md5_index` (`md5`),
+                              KEY `uid_index` (`uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -86,6 +114,8 @@ CREATE TABLE `node_list` (
                              `id` char(32) DEFAULT NULL,
                              `parent` char(32) DEFAULT NULL,
                              `uid` int unsigned DEFAULT NULL,
+                             `collecting` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于收集文件中',
+                             `sharing` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于分享状态',
                              UNIQUE KEY `node_name_index` (`parent`,`name`),
                              KEY `id_index` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -135,24 +165,5 @@ CREATE TABLE `user` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-CREATE TABLE `collection` (
-                              `id` CHAR(32) PRIMARY KEY COMMENT '收集任务ID',
-                              `uid` INT UNSIGNED NOT NULL COMMENT '创建者ID',
-                              `nickname` VARCHAR(128) NOT NULL COMMENT '接收者署名',
-                              `describe` TEXT COMMENT '收集任务描述',
-                              `title` VARCHAR(128) NOT NULL COMMENT '标题',
-                              `max_size` BIGINT NOT NULL COMMENT '允许的文件最大大小（Byte），-1为无限制',
-                              `allow_anonymous` BOOLEAN NOT NULL COMMENT '是否允许匿名上传',
-                              `allow_max` INT NOT NULL COMMENT '允许的最大收集文件数量，-1为无限制',
-                              `pattern` VARCHAR(1024) COMMENT '文件名匹配表达式，可以是正则或字段拼接',
-                              `field` VARCHAR(1024) COMMENT 'JSON类型数组，每个元素应包含name - 字段名称，pattern - 匹配正则，describe - 字段描述，type - 类型',
-                              `save_node` CHAR(32) NOT NULL COMMENT '收集到文件后保存到的网盘数据节点',
-                              `expired_at` DATETIME NOT NULL COMMENT '收集任务过期时间',
-                              `created_at` DATETIME NOT NULL DEFAULT NOW() COMMENT '收集任务创建日期',
-                              `state` ENUM('OPEN', 'CLOSED') NOT NULL COMMENT '状态，开放或关闭'
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-CREATE INDEX uid_index ON collection(uid);
-ALTER TABLE node_list ADD `collecting` BOOLEAN COMMENT '该节点是否处于收集文件中';
-ALTER TABLE node_list ADD `sharing` BOOLEAN COMMENT '该节点是否处于分享状态';
 
--- Dump completed on 2021-10-31 17:03:31
+-- Dump completed on 2021-11-02 16:06:10
