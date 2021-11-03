@@ -31,17 +31,15 @@ public class CollectionValidator {
 
         // 当使用字段时，确保表达式有使用字段变量且变量名不与内置变量名冲突
         if (field != null && field.size() > 0) {
-            if (!StringUtils.hasText(pattern)) return false;
+            if (!StringUtils.hasText(pattern)) throw new CollectionCheckedException("文件名表达式不得为空字符串");
             int originLen = pattern.length();
             for (CollectionField f : field) {
-                if ("__ext__".equals(f.getName())) return false;
+                if ("__ext__".equals(f.getName())) throw new CollectionCheckedException("字段名不得使用内置预设字段__ext__");
                 pattern = pattern.replaceAll("\\$\\{" + f.getName() + "}", "");
             }
             if (originLen == pattern.length()) {
-                return false;
+                throw new CollectionCheckedException("文件名表达式未使用字段变量");
             }
-            String extPattern = collectionDTO.getExtPattern();
-            return extPattern == null || StringUtils.hasText(extPattern);
         }
         return true;
     }
@@ -53,10 +51,14 @@ public class CollectionValidator {
     public static boolean validateSubmit(CollectionInfo info, SubmitFile submitFile) {
         // 校验非法文件名
         String n = submitFile.getFilename();
-        if (!FileNameValidator.valid(n)) { return false; }
+        if (!FileNameValidator.valid(n)) {
+            throw new CollectionCheckedException("非法文件名");
+        }
 
         // 校验文件大小
-        if (info.getMaxSize() > -1 && info.getMaxSize() < submitFile.getSize()) { return false; }
+        if (info.getMaxSize() > -1 && info.getMaxSize() < submitFile.getSize()) {
+            throw new CollectionCheckedException("文件大于" + info.getMaxSize() + "字节");
+        }
 
         String rawField = info.getField();
         if (StringUtils.hasLength(rawField)) {
@@ -87,7 +89,7 @@ public class CollectionValidator {
             String ext = FileUtils.getSuffix(name);
             String extP = info.getExtPattern();
             if (extP != null && !matchRegex(extP, ext)) {
-                return false;
+                throw new CollectionCheckedException("文件拓展名" + ext + "不满足正则表达式:" + extP);
             }
 
 
@@ -95,21 +97,24 @@ public class CollectionValidator {
             List<CollectionField> fields = MapperHolder.mapper.readValue(info.getField(), CollectionParser.FIELD_LIST_TYPE_REFERENCE);
             Map<String, String> fieldMap = submitFile.getFieldMap();
             for (CollectionField field : fields) {
+                String fieldName = field.getName();
+                String fieldValue = fieldMap.get(fieldName);
+                if (fieldValue == null) throw new CollectionCheckedException("字段" + fieldName + "丢失");
                 if(StringUtils.hasLength(field.getPattern())) {
                     // 检查TEXT正则表达式约束
-                    if (!matchRegex(field.getPattern(), fieldMap.get(field.getName()))) {
-                        return false;
+                    if (!matchRegex(field.getPattern(), fieldValue)) {
+                        throw new CollectionCheckedException("字段" + fieldName + "的值不满足正则表达式约束：" + field.getPattern());
                     }
                 } else if (field.getType() == CollectionField.Type.OPTION) {
                     // 检查输入值是否为候选选项中的值
                     boolean flag = false;
                     for (String option : field.getOptions()) {
-                        if (option.equals(fieldMap.get(field.getName()))) {
+                        if (option.equals(fieldValue)) {
                             flag = true;
                             break;
                         }
                     }
-                    if (!flag) return false;
+                    if (!flag) throw new CollectionCheckedException("字段" + fieldName + " 不满足候选约束");
                 }
             }
             // 存入数据库中的字段信息json必定合法，忽略
