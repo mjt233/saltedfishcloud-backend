@@ -21,14 +21,24 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
     @Resource
     private SyncService syncService;
 
+    private Thread thread;
+
     @Override
-    public void run(ApplicationArguments args) throws Exception {
+    public void run(ApplicationArguments args) {
         Thread thread = new Thread(this);
         thread.start();
+        this.thread = thread;
     }
 
     public void doAction() throws Exception {
         syncService.syncLocal(User.getPublicUser());
+    }
+
+    /**
+     * 关闭同步
+     */
+    public void stop() {
+        this.thread.interrupt();
     }
 
     @Override
@@ -45,7 +55,9 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
                 doAction();
                 log.info("同步完成，任务耗时：" + (System.currentTimeMillis() - start)/1000 + "s");
                 Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
-            } catch (Exception e) {
+            } catch (InterruptedException i) {
+                break;
+            }catch (Exception e) {
                 log.warn("同步出错：" + e.getMessage() + " 本轮同步任务跳过，等待下一轮");
                 try {
                     Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
@@ -54,5 +66,6 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
                 }
             }
         }
+        log.info("[文件系统同步器]同步线程退出");
     }
 }
