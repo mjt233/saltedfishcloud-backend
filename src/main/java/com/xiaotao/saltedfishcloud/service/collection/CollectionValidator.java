@@ -41,8 +41,9 @@ public class CollectionValidator {
                 throw new CollectionCheckedException("文件名表达式未使用字段变量");
             }
         }
-        if (!StringUtils.hasLength(collectionDTO.getExtPattern())) {
-            throw new CollectionCheckedException("缺少extPattern");
+        String extPattern = collectionDTO.getExtPattern();
+        if (extPattern != null && !StringUtils.hasText(extPattern)) {
+            throw new CollectionCheckedException("extPattern不能为无有效字符的字符串");
         }
         return true;
     }
@@ -78,7 +79,11 @@ public class CollectionValidator {
      */
     private static boolean validatePattern(CollectionInfo info, SubmitFile submitFile) {
         String pattern = info.getPattern();
-        return matchRegex(pattern, submitFile.getFilename());
+        if (matchRegex(pattern, submitFile.getFilename())) {
+            return true;
+        } else {
+            throw new CollectionCheckedException("文件名不符合正则约束：" + info.getPattern());
+        }
     }
 
     /**

@@ -11,8 +11,8 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 class CollectionValidatorTest {
 
     @Test
@@ -25,7 +25,10 @@ class CollectionValidatorTest {
 
         // 使用字段但表达式未使用字段变量，校验不通过
         col.setField(fields);
-        assertFalse(CollectionValidator.validateCreate(col));
+        try {
+            assertTrue(CollectionValidator.validateCreate(col));
+            fail();
+        } catch (CollectionCheckedException ignore) {}
 
         // 使用字段变量，校验通过
         col.setPattern("${name}.doc");
@@ -33,7 +36,10 @@ class CollectionValidatorTest {
 
         // 字段使用保留关键字变量，校验不通过
         fields.add(new CollectionField("__ext__", CollectionField.Type.TEXT));
-        assertFalse(CollectionValidator.validateCreate(col));
+        try {
+            assertTrue(CollectionValidator.validateCreate(col));
+            fail();
+        } catch (CollectionCheckedException ignore) {}
 
         // 移除非法字段，校验通过
         fields.removeLast();
@@ -41,7 +47,10 @@ class CollectionValidatorTest {
 
         // 使用字段但不使用字段表达式，校验不通过
         col.setPattern(null);
-        assertFalse(CollectionValidator.validateCreate(col));
+        try {
+            assertTrue(CollectionValidator.validateCreate(col));
+            fail();
+        } catch (CollectionCheckedException ignore) {}
 
         col.setField(null);
     }
@@ -56,7 +65,10 @@ class CollectionValidatorTest {
 
         // 文件名不匹配正则
         info.setPattern("233$");
-        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+        try {
+            CollectionValidator.validateSubmit(info, submitFile);
+            fail();
+        } catch (CollectionCheckedException ignore) {}
 
         // 匹配正则
         info.setPattern("doc$");
@@ -72,7 +84,10 @@ class CollectionValidatorTest {
         info.setExtPattern("(doc|docx)$");
 
         // 字段不匹配约束
-        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+        try {
+            CollectionValidator.validateSubmit(info, submitFile);
+            fail();
+        } catch (CollectionCheckedException ignore) {}
 
 
         LinkedList<SimpleField> submitFields = new LinkedList<>();
@@ -87,7 +102,10 @@ class CollectionValidatorTest {
 
         // 字段不符合约束
         submitFields.getFirst().setValue("田所浩三");
-        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+        try {
+            CollectionValidator.validateSubmit(info, submitFile);
+            fail();
+        } catch (CollectionCheckedException ignore) {}
 
         // 取消字段正则约束(null)
         fields.get(0).setPattern(null);
@@ -101,18 +119,27 @@ class CollectionValidatorTest {
 
         // 缺少字段
         submitFields.removeLast();
-        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+        try {
+            CollectionValidator.validateSubmit(info, submitFile);
+            fail();
+        } catch (CollectionCheckedException ignore) {}
         submitFields.add(new SimpleField("age", "24"));
 
         // 文件拓展名不符合
         submitFile.setFilename("koko.pdf");
-        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+        try {
+            CollectionValidator.validateSubmit(info, submitFile);
+            fail();
+        } catch (CollectionCheckedException ignore) {}
 
         // 文件过大
         submitFile.setFilename("koko.doc");
         submitFile.setSize(114514L);
         info.setMaxSize(1024L);
-        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+        try {
+            CollectionValidator.validateSubmit(info, submitFile);
+            fail();
+        } catch (CollectionCheckedException ignore) {}
 
         // 取消文件大小限制
         info.setMaxSize(-1L);
@@ -122,7 +149,10 @@ class CollectionValidatorTest {
         info.setField(fields);
 
         // 缺少字段class
-        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+        try {
+            CollectionValidator.validateSubmit(info, submitFile);
+            fail();
+        } catch (CollectionCheckedException ignore) {}
 
         // 添加字段class
         submitFields.add(new SimpleField("class", "制茶工艺1班"));
@@ -130,6 +160,9 @@ class CollectionValidatorTest {
 
         // 字段值不在候选值内
         submitFields.getLast().setName("制茶工艺3班");
-        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+        try {
+            CollectionValidator.validateSubmit(info, submitFile);
+            fail();
+        } catch (CollectionCheckedException ignore) {}
     }
 }
