@@ -41,6 +41,9 @@ public class CollectionValidator {
                 throw new CollectionCheckedException("文件名表达式未使用字段变量");
             }
         }
+        if (!StringUtils.hasLength(collectionDTO.getExtPattern())) {
+            throw new CollectionCheckedException("缺少extPattern");
+        }
         return true;
     }
     /**
