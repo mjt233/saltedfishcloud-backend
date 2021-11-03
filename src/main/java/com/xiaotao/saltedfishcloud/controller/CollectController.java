@@ -4,17 +4,24 @@ import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepository;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
+import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
+import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -31,6 +38,21 @@ public class CollectController {
         assert u != null;
         if (data.getNickname() == null) data.setNickname(u.getUsername());
         return JsonResult.getInstance(collectionService.createCollection(u.getId(), data));
+    }
+
+    @PostMapping("{cid}")
+    @BreakPoint
+    @AllowAnonymous
+    public JsonResult submitCollection(@PathVariable String cid,
+                                       @MergeFile @RequestPart("file") MultipartFile file,
+                                       @RequestPart("submitInfo") @Valid SubmitFile submitFile) throws IOException {
+        User u = SecureUtils.getSpringSecurityUser();
+        int uid = u == null ? 0 : u.getId();
+        if (submitFile.getSize() == null) {
+            submitFile.setSize(file.getSize());
+        }
+        collectionService.collectFile(cid, uid, file.getInputStream(), new FileInfo(file), submitFile);
+        return JsonResult.getInstance();
     }
 
     @GetMapping("{cid}")

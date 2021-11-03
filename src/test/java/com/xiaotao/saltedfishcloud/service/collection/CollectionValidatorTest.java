@@ -114,8 +114,22 @@ class CollectionValidatorTest {
         info.setMaxSize(1024L);
         assertFalse(CollectionValidator.validateSubmit(info, submitFile));
 
-        // 取消限制
+        // 取消文件大小限制
         info.setMaxSize(-1L);
         assertTrue(CollectionValidator.validateSubmit(info, submitFile));
+
+        fields.add(new CollectionField("class", CollectionField.Type.OPTION){{addOption("制茶工艺1班").addOption("制茶工艺2班");}});
+        info.setField(fields);
+
+        // 缺少字段class
+        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
+
+        // 添加字段class
+        submitFields.add(new SimpleField("class", "制茶工艺1班"));
+        assertTrue(CollectionValidator.validateSubmit(info, submitFile));
+
+        // 字段值不在候选值内
+        submitFields.getLast().setName("制茶工艺3班");
+        assertFalse(CollectionValidator.validateSubmit(info, submitFile));
     }
 }

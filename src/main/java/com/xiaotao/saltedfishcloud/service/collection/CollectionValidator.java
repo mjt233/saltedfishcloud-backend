@@ -1,26 +1,24 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionField;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import org.springframework.util.StringUtils;
-import static com.xiaotao.saltedfishcloud.utils.StringUtils.*;
 
 import java.util.List;
+import java.util.Map;
+
+import static com.xiaotao.saltedfishcloud.utils.StringUtils.matchRegex;
 
 /**
  * 文件收集信息校验器，用于校验创建的收集任务或提交的文件是否符合对应约束
  */
 public class CollectionValidator {
-    private static final TypeReference<List<CollectionField>> FIELD_LIST_TYPE_REFERENCE =  new TypeReference<List<CollectionField>>() {};
     /**
      * 校验创建的任务是否符合约束<br>
      * 存在field时，pattern不可为空
@@ -94,14 +92,27 @@ public class CollectionValidator {
 
 
             // 逐字段校验
-            List<CollectionField> fields = MapperHolder.mapper.readValue(info.getField(), FIELD_LIST_TYPE_REFERENCE);
+            List<CollectionField> fields = MapperHolder.mapper.readValue(info.getField(), CollectionParser.FIELD_LIST_TYPE_REFERENCE);
+            Map<String, String> fieldMap = submitFile.getFieldMap();
             for (CollectionField field : fields) {
                 if(StringUtils.hasLength(field.getPattern())) {
-                    if (!matchRegex(field.getPattern(), submitFile.getFieldMap().get(field.getName()))) {
+                    // 检查TEXT正则表达式约束
+                    if (!matchRegex(field.getPattern(), fieldMap.get(field.getName()))) {
                         return false;
                     }
+                } else if (field.getType() == CollectionField.Type.OPTION) {
+                    // 检查输入值是否为候选选项中的值
+                    boolean flag = false;
+                    for (String option : field.getOptions()) {
+                        if (option.equals(fieldMap.get(field.getName()))) {
+                            flag = true;
+                            break;
+                        }
+                    }
+                    if (!flag) return false;
                 }
             }
+            // 存入数据库中的字段信息json必定合法，忽略
         } catch (JsonProcessingException ignore) { }
         return true;
     }

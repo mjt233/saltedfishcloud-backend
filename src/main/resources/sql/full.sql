@@ -1,6 +1,6 @@
--- MySQL dump 10.13  Distrib 8.0.23, for Win64 (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.25, for Linux (x86_64)
 --
--- Host: localhost    Database: xyy
+-- Host: 127.0.0.1    Database: xyy
 -- ------------------------------------------------------
 -- Server version       8.0.23
 
@@ -31,7 +31,9 @@ CREATE TABLE `collection` (
                               `max_size` bigint NOT NULL COMMENT '允许的文件最大大小（Byte），-1为无限制',
                               `allow_anonymous` tinyint(1) NOT NULL COMMENT '是否允许匿名上传',
                               `allow_max` int NOT NULL COMMENT '允许的最大收集文件数量，-1为无限制',
+                              `available` int NOT NULL COMMENT '该收集可用容量（还可以接受的文件数）',
                               `pattern` varchar(1024) DEFAULT NULL COMMENT '文件名匹配表达式，可以是正则或字段拼接',
+                              `ext_pattern` varchar(1024) DEFAULT NULL COMMENT '允许的文件后缀名正则表达式，被测试的后缀名不带.',
                               `field` varchar(1024) DEFAULT NULL COMMENT 'JSON类型数组，每个元素应包含name - 字段名称，pattern - 匹配正则，describe - 字段描述，type - 类型',
                               `save_node` char(32) NOT NULL COMMENT '收集到文件后保存到的网盘数据节点',
                               `expired_at` datetime NOT NULL COMMENT '收集任务过期时间',
@@ -39,6 +41,24 @@ CREATE TABLE `collection` (
                               `state` enum('OPEN','CLOSED') NOT NULL,
                               PRIMARY KEY (`id`),
                               KEY `uid_index` (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `collection_rec`
+--
+
+DROP TABLE IF EXISTS `collection_rec`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `collection_rec` (
+                                  `cid` char(32) NOT NULL COMMENT '收集任务ID',
+                                  `uid` int unsigned NOT NULL COMMENT '上传者ID，匿名用户为0',
+                                  `filename` varchar(1024) NOT NULL COMMENT '文件名',
+                                  `size` bigint NOT NULL COMMENT '文件大小',
+                                  `md5` char(32) NOT NULL COMMENT '文件MD5校验码',
+                                  `created_at` datetime NOT NULL COMMENT '文件上传日期',
+                                  PRIMARY KEY (`cid`,`uid`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -154,7 +174,7 @@ CREATE TABLE `user` (
                         `quota` int unsigned DEFAULT '10',
                         PRIMARY KEY (`id`),
                         UNIQUE KEY `user_index` (`user`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -166,4 +186,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-11-02 16:06:10
+-- Dump completed on 2021-11-03 23:26:28

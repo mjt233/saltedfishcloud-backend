@@ -7,6 +7,7 @@ CREATE TABLE `collection` (
     `max_size` BIGINT NOT NULL COMMENT '允许的文件最大大小（Byte），-1为无限制',
     `allow_anonymous` BOOLEAN NOT NULL COMMENT '是否允许匿名上传',
     `allow_max` INT NOT NULL COMMENT '允许的最大收集文件数量，-1为无限制',
+    `available` INT NOT NULL COMMENT '该收集可用容量（还可以接受的文件数）',
     `pattern` VARCHAR(1024) COMMENT '文件名匹配表达式，可以是正则或字段拼接',
     `ext_pattern` VARCHAR(1024) COMMENT '允许的文件后缀名正则表达式，被测试的后缀名不带.',
     `field` VARCHAR(1024) COMMENT 'JSON类型数组，每个元素应包含name - 字段名称，pattern - 匹配正则，describe - 字段描述，type - 类型',
