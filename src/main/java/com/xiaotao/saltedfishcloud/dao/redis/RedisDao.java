@@ -34,10 +34,10 @@ public class RedisDao {
 
     /**
      * 在限定范围内进行原子安全自减操作，自减成功时返回自减后的值，自减失败返回null
-     * @param key
-     * @param step
-     * @param min
-     * @return
+     * @param key   要操作的key
+     * @param step  自减不长
+     * @param min   允许自建后的最小值
+     * @return      自减结果或失败后的null
      */
     public Long decrementAndGet(String key, int step, int min) {
 //        String lua = "local o = tonumber(redis.call('get','" + key + "'))\n" +
