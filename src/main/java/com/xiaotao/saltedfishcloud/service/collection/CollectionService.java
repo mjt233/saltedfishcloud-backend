@@ -5,10 +5,7 @@ import com.xiaotao.saltedfishcloud.dao.jpa.CollectionRecordRepo;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionInfoId;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionRecord;
-import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.entity.po.*;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
@@ -32,6 +29,17 @@ public class CollectionService {
     private final NodeService nodeService;
     private final DiskFileSystemFactory fileSystem;
 
+
+    public CollectionInfo closeCollection(int uid, Long cid) {
+        CollectionInfo info = collectionDao.findById(cid).orElse(null);
+        if (info == null) throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND);
+        if (!info.getUid().equals(uid)) {
+            throw new JsonException(ErrorInfo.SYSTEM_FORBIDDEN);
+        }
+        info.setState(CollectionInfo.State.CLOSED);
+        collectionDao.save(info);
+        return info;
+    }
     /**
      * 创建收集任务
      * @param uid   创建者ID

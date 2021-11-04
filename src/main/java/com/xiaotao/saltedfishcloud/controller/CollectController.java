@@ -32,6 +32,13 @@ public class CollectController {
     private final CollectionInfoRepository colDao;
     private final CollectionService collectionService;
 
+    @DeleteMapping("{cid}")
+    public JsonResult closeCollection(@PathVariable("cid") Long cid) {
+        User user = SecureUtils.getSpringSecurityUser();
+        assert user != null;
+        return JsonResult.getInstance(collectionService.closeCollection(user.getId(), cid));
+    }
+
     @PostMapping
     public JsonResult createCollection(@Valid @RequestBody CollectionDTO data) {
         User u = SecureUtils.getSpringSecurityUser();

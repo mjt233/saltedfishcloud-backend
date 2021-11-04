@@ -24,7 +24,8 @@ public enum ErrorInfo {
     COLLECTION_CLOSED(3003, 406, "文件收集已关闭"),
     COLLECTION_FULL(3004, 406, "文件收集数已满"),
     COLLECTION_EXPIRED(3005, 400, "文件收集已过期"),
-    SYSTEM_BUSY(4000, 500, "系统繁忙");
+    SYSTEM_BUSY(4000, 500, "系统繁忙"),
+    SYSTEM_FORBIDDEN(4001, 403, "权限不足");
     int code;
     int status;
     String message;
