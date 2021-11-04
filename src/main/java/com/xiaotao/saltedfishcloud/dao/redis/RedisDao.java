@@ -1,11 +1,16 @@
 package com.xiaotao.saltedfishcloud.dao.redis;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,7 +18,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RedisDao {
     private final RedisTemplate<String, Object> redisTemplate;
-
     /**
      * 通过表达式使用scan方法扫描匹配的key（而不是keys）
      * @param pattern   key匹配表达式
@@ -26,5 +30,21 @@ public class RedisDao {
             e.scan(opts).forEachRemaining(r -> res.add(new String(r)));
             return res;
         });
+    }
+
+    /**
+     * 在限定范围内进行原子安全自减操作，自减成功时返回自减后的值，自减失败返回null
+     * @param key
+     * @param step
+     * @param min
+     * @return
+     */
+    public Long decrementAndGet(String key, int step, int min) {
+//        String lua = "local o = tonumber(redis.call('get','" + key + "'))\n" +
+//                "local target = o -" + step + "\n" +
+//                "if(o >= " + (min + step) + ") then redis.call('set','" + key + "', target)\n return target end\n";
+//        RedisScript<Long> script = RedisScript.of(lua, Long.class);
+        RedisScript<Long> script = RedisScript.of(new ClassPathResource("/lua/decrementAndGet.lua"), Long.class);
+        return redisTemplate.execute(script, Collections.singletonList(key), step, min);
     }
 }
