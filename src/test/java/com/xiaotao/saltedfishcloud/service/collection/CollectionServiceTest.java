@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.collection;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
+import com.xiaotao.saltedfishcloud.entity.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
@@ -13,6 +14,7 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.json.GsonTester;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.DigestUtils;
 
@@ -21,8 +23,7 @@ import java.io.InputStream;
 import java.util.Calendar;
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class CollectionServiceTest {
@@ -46,7 +47,7 @@ class CollectionServiceTest {
             System.out.println(e.toString());
         }
         nodeInfo.setSaveNode("" + admin.getId());
-        String cid = cs.createCollection(admin.getId(), nodeInfo);
+        CollectionInfoId cid = cs.createCollection(admin.getId(), nodeInfo);
         assertNotNull(cs.getCollection(cid));
     }
 
@@ -64,7 +65,7 @@ class CollectionServiceTest {
         // 创建收集任务
         CollectionDTO colI = new CollectionDTO("测试收集样例", node.getId(), calender.getTime(), u.getUsername());
         colI.setPattern("\\.(doc|docx)$");
-        String cid = cs.createCollection(u.getId(), colI);
+        CollectionInfoId cid = cs.createCollection(u.getId(), colI);
 
         ClassPathResource resource = new ClassPathResource("/sql/full.sql");
 

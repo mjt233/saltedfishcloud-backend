@@ -23,7 +23,8 @@ DROP TABLE IF EXISTS `collection`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `collection` (
-                              `id` char(32) NOT NULL,
+                              `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '收集任务ID',
+                              `verification` char(32) NOT NULL COMMENT '校验码',
                               `uid` int unsigned NOT NULL COMMENT '创建者ID',
                               `nickname` varchar(128) NOT NULL COMMENT '接收者署名',
                               `describe` text COMMENT '收集任务描述',
@@ -38,7 +39,7 @@ CREATE TABLE `collection` (
                               `save_node` char(32) NOT NULL COMMENT '收集到文件后保存到的网盘数据节点',
                               `expired_at` datetime NOT NULL COMMENT '收集任务过期时间',
                               `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收集任务创建日期',
-                              `state` enum('OPEN','CLOSED') NOT NULL,
+                              `state` enum('OPEN','CLOSED') NOT NULL COMMENT '状态，开放或关闭',
                               PRIMARY KEY (`id`),
                               KEY `uid_index` (`uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -52,13 +53,14 @@ DROP TABLE IF EXISTS `collection_rec`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `collection_rec` (
+                                  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '记录ID',
                                   `cid` char(32) NOT NULL COMMENT '收集任务ID',
                                   `uid` int unsigned NOT NULL COMMENT '上传者ID，匿名用户为0',
                                   `filename` varchar(1024) NOT NULL COMMENT '文件名',
                                   `size` bigint NOT NULL COMMENT '文件大小',
                                   `md5` char(32) NOT NULL COMMENT '文件MD5校验码',
                                   `created_at` datetime NOT NULL COMMENT '文件上传日期',
-                                  PRIMARY KEY (`cid`,`uid`,`created_at`)
+                                  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -186,4 +188,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-11-03 23:26:28
+-- Dump completed on 2021-11-04 16:46:48

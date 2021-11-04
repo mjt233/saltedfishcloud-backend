@@ -30,7 +30,6 @@ class CollectionInfoRepositoryTest {
         CollectionInfo info = new CollectionInfo(1, "admin", "测试高并发安全", "1", "1", new Date(), null);
         info.setExpiredAt(calendar.getTime());
         info.setAllowMax(10000);
-        info.setId(SecureUtils.getUUID());
         info.setAvailable(10000);
         repository.save(info);
         AtomicInteger integer = new AtomicInteger();

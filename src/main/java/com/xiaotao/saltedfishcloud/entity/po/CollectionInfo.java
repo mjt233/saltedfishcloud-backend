@@ -10,6 +10,7 @@ import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.util.StringUtils;
@@ -30,7 +31,9 @@ public class CollectionInfo {
         OPEN, CLOSED
     }
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String verification;
     private Integer uid;
     private String nickname;
 
@@ -42,6 +45,7 @@ public class CollectionInfo {
     private Integer allowMax = 100;
     private String pattern;
     private String extPattern;
+
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String field;
     private String saveNode;

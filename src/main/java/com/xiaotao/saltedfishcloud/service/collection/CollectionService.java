@@ -6,8 +6,8 @@ import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
+import com.xiaotao.saltedfishcloud.entity.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionRecord;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionRecordId;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.Optional;
 
 
@@ -37,7 +38,7 @@ public class CollectionService {
      * @param info  收集任务信息
      * @return      收集任务ID
      */
-    public String createCollection(int uid, CollectionDTO info) {
+    public CollectionInfoId createCollection(int uid, CollectionDTO info) {
         if(!CollectionValidator.validateCreate(info)) {
             throw new JsonException(ErrorInfo.COLLECTION_CHECK_FAILED);
         }
@@ -46,9 +47,9 @@ public class CollectionService {
             throw new JsonException(ErrorInfo.NODE_NOT_FOUND);
         }
         CollectionInfo ci = new CollectionInfo(uid, info);
-        ci.setId(SecureUtils.getUUID());
+        ci.setVerification(SecureUtils.getUUID());
         collectionDao.save(ci);
-        return ci.getId();
+        return new CollectionInfoId(ci.getId(), ci.getVerification());
     }
 
     /**
@@ -56,9 +57,16 @@ public class CollectionService {
      * @param cid   收集ID
      * @return      收集信息，若收集id不存在，则返回null
      */
-    public CollectionInfo getCollection(String cid) {
-        Optional<CollectionInfo> r = collectionDao.findById(cid);
-        return r.orElse(null);
+    public CollectionInfo getCollection(CollectionInfoId cid) {
+        Optional<CollectionInfo> r = collectionDao.findById(cid.getId());
+
+        CollectionInfo info = r.orElse(null);
+        if (info == null) return null;
+        if (info.getVerification().equals(cid.getVerification())) {
+            return info;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -70,14 +78,20 @@ public class CollectionService {
      * @param submitFile    提交的文件信息
      */
     @Transactional(rollbackFor = Throwable.class)
-    public void collectFile(String cid, int uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile) throws IOException {
-        CollectionInfo ci = collectionDao.findById(cid).orElse(null);
+    public void collectFile(CollectionInfoId cid, int uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile) throws IOException {
+        CollectionInfo ci = collectionDao.findById(cid.getId()).orElse(null);
+
         // 校验收集存在
         if (ci == null) { throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND); }
 
         // 校验开关状态
         if (ci.getState() == CollectionInfo.State.CLOSED) {
             throw new JsonException(ErrorInfo.COLLECTION_CLOSED);
+        }
+
+        // 校验过期
+        if (ci.getExpiredAt().compareTo(new Date()) < 0) {
+            throw new CollectionCheckedException("收集已于" + ci.getExpiredAt() + "过期");
         }
 
         // 校验匿名状态
@@ -94,19 +108,25 @@ public class CollectionService {
                 throw new JsonException(ErrorInfo.COLLECTION_FULL);
             }
 
-            int res = collectionDao.consumeCount(cid, ci.getAvailable());
+            int res = collectionDao.consumeCount(cid.getId(), ci.getAvailable());
 
             // 乐观锁操作失败
             if (res == 0) {
                 throw new JsonException(ErrorInfo.SYSTEM_BUSY);
             }
-            collectionDao.save(ci);
+
+            // 收集完最后一个，状态设为已关闭
+            if (ci.getAvailable() == 1) {
+                ci.setState(CollectionInfo.State.CLOSED);
+                collectionDao.save(ci);
+            }
         }
 
         if (fileInfo.getMd5() == null) fileInfo.updateMd5();
 
+
         String filename = CollectionParser.parseFilename(ci, submitFile);
-        CollectionRecord record = new CollectionRecord(new CollectionRecordId(cid, uid), filename, submitFile.getSize(), fileInfo.getMd5());
+        CollectionRecord record = new CollectionRecord(cid.getId(), uid, filename, submitFile.getSize(), fileInfo.getMd5());
         recordDao.save(record);
         fileInfo.setName(filename);
         // 存入文件

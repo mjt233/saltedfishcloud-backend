@@ -1686,7 +1686,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"title\": \"测试收集233\",\r\n    \"expiredAt\": 1636033051000,\r\n    \"saveNode\": \"1\",\r\n    \"pattern\": \"[${__ext__}]${name}-${class}.${__ext__}\",\r\n    \"extPattern\": \"^pdf$\",\r\n    \"allowMax\": -1,\r\n    \"maxSize\": -1,\r\n    \"nickname\": \"啦啦啦\",\r\n    \"field\": [\r\n    {\r\n      \"name\": \"name\",\r\n      \"type\": \"TEXT\",\r\n      \"value\": \"田所浩二先辈\",\r\n      \"describe\": \"这里输入你的姓名\",\r\n      \"pattern\": \"先辈$\"\r\n    },\r\n    {\r\n      \"name\": \"class\",\r\n      \"type\": \"OPTION\",\r\n      \"value\": \"红茶工艺1班\",\r\n      \"describe\": \"请选择你的班级\",\r\n      \"options\": [\"红茶工艺1班\", \"红茶工艺2班\"]\r\n    }\r\n  ]\r\n}",
+							"raw": "{\r\n    \"title\": \"测试收集233\",\r\n    \"expiredAt\": 1636033051000,\r\n    \"saveNode\": \"1\",\r\n    \"pattern\": \"[${__ext__}]${name}-${class}.${__ext__}\",\r\n    \"extPattern\": \"^pdf$\",\r\n    \"allowMax\": 5,\r\n    \"maxSize\": -1,\r\n    \"nickname\": \"啦啦啦\",\r\n    \"field\": [\r\n    {\r\n      \"name\": \"name\",\r\n      \"type\": \"TEXT\",\r\n      \"value\": \"田所浩二先辈\",\r\n      \"describe\": \"这里输入你的姓名\",\r\n      \"pattern\": \"先辈$\"\r\n    },\r\n    {\r\n      \"name\": \"class\",\r\n      \"type\": \"OPTION\",\r\n      \"value\": \"红茶工艺1班\",\r\n      \"describe\": \"请选择你的班级\",\r\n      \"options\": [\"红茶工艺1班\", \"红茶工艺2班\"]\r\n    }\r\n  ]\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1703,7 +1703,7 @@
 								"collection"
 							]
 						},
-						"description": "# 创建一个收集任务\n- 请求方法：POST\n- URL:`/api/collection`\n\n## JSON请求体：  \n```JSON\n{\n  \"title\": \"测试收集233\", // 收集标题，必填\n  \"expiredAt\": 1635856841000, // 收集任务到期时间，必填\n  \"saveNode\": \"1\", // 收集到的文件保存节点，必填。注意：是文件夹对应的节点ID，不是保存路径\n  \"nickname\": \"啦啦啦\", // 接收者署名，必填，可以自行使用用户名作为默认值\n  ”extPattern\": \"^(doc|docx)$\", // 文件拓展名正则表达式，只有符合该表达式的文件后缀名才可被接受。必填。\n  \"pattern\": \"asdasd\", // 匹配文件的表达式，可以是正则或字段拼接语法。默认为空\n  \"allowMax\": 233, // 允许接收的最大文件数，默认为100\n  \"maxSize\": 114514, // 文件最大大小，单位Byte，默认为128MiB\n  \"allowAnonymous\": true // 是否允许匿名游客上传，默认为true,\n  \"field\": [ // 参数字段数组，可为空\n    {\n      \"name\": \"姓名\", // 字段名，必填\n      \"type\": \"TEXT\", // 类型，可选TEXT或OPTION，大小写敏感，必填\n      \"value\": \"田所浩二\", // 默认值，可为空\n      \"describe\": \"这里输入你的姓名\", // 额外描述，可为空\n      \"pattern\": \"\", // 字段值需要匹配的正则表达式，可为空\n    },\n    {\n      \"name\": \"class\",\n      \"type\": \"OPTION\",\n      \"value\": \"红茶工艺1班\",\n      \"describe\": \"请选择你的班级\",\n      \"pattern\": \"\",\n      \"options\": [\"红茶工艺1班\", \"红茶工艺2班\"] // 候选项，仅当type为OPTION时有效\n    },\n  ]\n}\n```\n\n## JSON响应体\n```JSON\n{\n    \"code\": 200, // 状态码\n    \"data\": \"99d15046df774fccad7b2aee16aaffd3\", // 新建的收集任务id\n    \"msg\": \"OK\"\n}\n```\n\n## 表达式pattern说明\n收集任务文件名的表达式只支持正则表达式和字段拼接表达式二选其一，不可混用。  \n当请求体参数中pattern和field均不为空时视为使用字段拼接表达式。  \n当pattern不为空，field为空时，表示用户自主进行文件命名，且命名需要符合pattern正则表达式  \n当field不为空，pattern必须也不为空。  \n\n### 字段拼接表达式\n在表达式中可使用字段变量，如存在字段name，class，使用以下表达式：  \n`${name}-${class}-第1周作业.${__ext__}`  \n最终可拼接为：田所浩二-红茶工艺1班-第1周作业.docx  \n其中`__ext__`是特殊的的变量，表示用户上传的文件拓展名"
+						"description": "# 创建一个收集任务\n- 请求方法：POST\n- URL:`/api/collection`\n\n## JSON请求体：  \n```JSON\n{\n  \"title\": \"测试收集233\", // 收集标题，必填\n  \"expiredAt\": 1635856841000, // 收集任务到期时间，必填\n  \"saveNode\": \"1\", // 收集到的文件保存节点，必填。注意：是文件夹对应的节点ID，不是保存路径\n  \"nickname\": \"啦啦啦\", // 接收者署名，必填，可以自行使用用户名作为默认值\n  ”extPattern\": \"^(doc|docx)$\", // 文件拓展名正则表达式，只有符合该表达式的文件后缀名才可被接受。必填。\n  \"pattern\": \"asdasd\", // 匹配文件的表达式，可以是正则或字段拼接语法。默认为空\n  \"allowMax\": 233, // 允许接收的最大文件数，默认为100\n  \"maxSize\": 114514, // 文件最大大小，单位Byte，默认为128MiB\n  \"allowAnonymous\": true // 是否允许匿名游客上传，默认为true,\n  \"field\": [ // 参数字段数组，可为空\n    {\n      \"name\": \"姓名\", // 字段名，必填\n      \"type\": \"TEXT\", // 类型，可选TEXT或OPTION，大小写敏感，必填\n      \"value\": \"田所浩二\", // 默认值，可为空\n      \"describe\": \"这里输入你的姓名\", // 额外描述，可为空\n      \"pattern\": \"\", // 字段值需要匹配的正则表达式，可为空\n    },\n    {\n      \"name\": \"class\",\n      \"type\": \"OPTION\",\n      \"value\": \"红茶工艺1班\",\n      \"describe\": \"请选择你的班级\",\n      \"pattern\": \"\",\n      \"options\": [\"红茶工艺1班\", \"红茶工艺2班\"] // 候选项，仅当type为OPTION时有效\n    },\n  ]\n}\n```\n\n## JSON响应体\n```JSON\n{\n    \"code\": 200, // 状态码\n    \"data\": {\n        \"id\": 1, // 收集ID\n        \"verification\":\" 99d15046df774fccad7b2aee16aaffd3\", // 校验码\n    \"msg\": \"OK\"\n}\n```\n\n## 表达式pattern说明\n收集任务文件名的表达式只支持正则表达式和字段拼接表达式二选其一，不可混用。  \n当请求体参数中pattern和field均不为空时视为使用字段拼接表达式。  \n当pattern不为空，field为空时，表示用户自主进行文件命名，且命名需要符合pattern正则表达式  \n当field不为空，pattern必须也不为空。  \n\n### 字段拼接表达式\n在表达式中可使用字段变量，如存在字段name，class，使用以下表达式：  \n`${name}-${class}-第1周作业.${__ext__}`  \n最终可拼接为：田所浩二-红茶工艺1班-第1周作业.docx  \n其中`__ext__`是特殊的的变量，表示用户上传的文件拓展名"
 					},
 					"response": [
 						{
@@ -1713,7 +1713,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"title\": \"测试收集233\",\r\n    \"expiredAt\": 1635856841000,\r\n    \"saveNode\": \"1\",\r\n    \"pattern\": \"asdasd\",\r\n    \"allowMax\": 233,\r\n    \"maxSize\": 114514,\r\n    \"nickname\": \"啦啦啦\"\r\n}",
+									"raw": "{\r\n    \"title\": \"测试收集233\",\r\n    \"expiredAt\": 1636033051000,\r\n    \"saveNode\": \"1\",\r\n    \"pattern\": \"[${__ext__}]${name}-${class}.${__ext__}\",\r\n    \"extPattern\": \"^pdf$\",\r\n    \"allowMax\": 5,\r\n    \"maxSize\": -1,\r\n    \"nickname\": \"啦啦啦\",\r\n    \"field\": [\r\n    {\r\n      \"name\": \"name\",\r\n      \"type\": \"TEXT\",\r\n      \"value\": \"田所浩二先辈\",\r\n      \"describe\": \"这里输入你的姓名\",\r\n      \"pattern\": \"先辈$\"\r\n    },\r\n    {\r\n      \"name\": \"class\",\r\n      \"type\": \"OPTION\",\r\n      \"value\": \"红茶工艺1班\",\r\n      \"describe\": \"请选择你的班级\",\r\n      \"options\": [\"红茶工艺1班\", \"红茶工艺2班\"]\r\n    }\r\n  ]\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1781,7 +1781,7 @@
 								},
 								{
 									"key": "Date",
-									"value": "Mon, 01 Nov 2021 15:52:21 GMT"
+									"value": "Thu, 04 Nov 2021 08:41:41 GMT"
 								},
 								{
 									"key": "Keep-Alive",
@@ -1793,12 +1793,12 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": \"99d15046df774fccad7b2aee16aaffd3\",\n    \"msg\": \"OK\"\n}"
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 3,\n        \"verification\": \"fa808622494f40908d70650bac760080\"\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
 				{
-					"name": "取当前用户创建的收集",
+					"name": "取当前登录用户创建的收集",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -1821,17 +1821,18 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{addr}}/api/collection/734cb20df55a429eababff45f97baa62",
+							"raw": "{{addr}}/api/collection/3/fa808622494f40908d70650bac760080",
 							"host": [
 								"{{addr}}"
 							],
 							"path": [
 								"api",
 								"collection",
-								"734cb20df55a429eababff45f97baa62"
+								"3",
+								"fa808622494f40908d70650bac760080"
 							]
 						},
-						"description": "# 查询收集任务信息\n若任务的allowAnonymous为false，未登录用户请求则会响应401错误\n## 请求说明\n- 请求方法：GET\n- URL:`/api/collection/{cid}`\n\n### URL参数  \n- cid: 收集任务ID，必填"
+						"description": "# 查询收集任务信息\n若任务的allowAnonymous为false，未登录用户请求则会响应401错误\n## 请求说明\n- 请求方法：GET\n- URL:`/api/collection/{cid}/{verification}`\n\n### URL参数  \n- cid: 收集任务ID，必填\n- verification: 收集任务校验码，必填"
 					},
 					"response": [
 						{
@@ -1840,14 +1841,15 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/collection/734cb20df55a429eababff45f97baa62",
+									"raw": "{{addr}}/api/collection/3/fa808622494f40908d70650bac760080",
 									"host": [
 										"{{addr}}"
 									],
 									"path": [
 										"api",
 										"collection",
-										"734cb20df55a429eababff45f97baa62"
+										"3",
+										"fa808622494f40908d70650bac760080"
 									]
 								}
 							},
@@ -1901,7 +1903,7 @@
 								},
 								{
 									"key": "Date",
-									"value": "Wed, 03 Nov 2021 15:13:34 GMT"
+									"value": "Thu, 04 Nov 2021 08:44:49 GMT"
 								},
 								{
 									"key": "Keep-Alive",
@@ -1913,7 +1915,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"id\": \"734cb20df55a429eababff45f97baa62\",\n    \"uid\": 1,\n    \"nickname\": \"啦啦啦\",\n    \"describe\": null,\n    \"title\": \"测试收集233\",\n    \"maxSize\": 114514,\n    \"allowAnonymous\": true,\n    \"allowMax\": 2,\n    \"pattern\": \"\\\\.pdf$\",\n    \"extPattern\": null,\n    \"field\": [\n        {\n            \"name\": \"姓名\",\n            \"type\": \"TEXT\",\n            \"value\": \"田所浩二先辈\",\n            \"describe\": \"这里输入你的姓名\",\n            \"pattern\": \"先辈$\"\n        },\n        {\n            \"name\": \"class\",\n            \"type\": \"OPTION\",\n            \"value\": \"红茶工艺1班\",\n            \"describe\": \"请选择你的班级\",\n            \"options\": [\n                \"红茶工艺1班\",\n                \"红茶工艺2班\"\n            ]\n        }\n    ],\n    \"saveNode\": \"1\",\n    \"expiredAt\": \"2021-11-04T13:37:31.000+00:00\",\n    \"available\": 2,\n    \"createdAt\": \"2021-11-03T15:01:21.000+00:00\",\n    \"state\": \"OPEN\"\n}"
+							"body": "{\n    \"id\": 3,\n    \"verification\": \"fa808622494f40908d70650bac760080\",\n    \"uid\": 1,\n    \"nickname\": \"啦啦啦\",\n    \"describe\": null,\n    \"title\": \"测试收集233\",\n    \"maxSize\": -1,\n    \"allowAnonymous\": true,\n    \"allowMax\": 5,\n    \"pattern\": \"[${__ext__}]${name}-${class}.${__ext__}\",\n    \"extPattern\": \"^pdf$\",\n    \"field\": [\n        {\n            \"name\": \"name\",\n            \"type\": \"TEXT\",\n            \"value\": \"田所浩二先辈\",\n            \"describe\": \"这里输入你的姓名\",\n            \"pattern\": \"先辈$\"\n        },\n        {\n            \"name\": \"class\",\n            \"type\": \"OPTION\",\n            \"value\": \"红茶工艺1班\",\n            \"describe\": \"请选择你的班级\",\n            \"options\": [\n                \"红茶工艺1班\",\n                \"红茶工艺2班\"\n            ]\n        }\n    ],\n    \"saveNode\": \"1\",\n    \"expiredAt\": \"2021-11-04T13:37:31.000+00:00\",\n    \"available\": 1,\n    \"createdAt\": \"2021-11-04T08:41:41.000+00:00\",\n    \"state\": \"CLOSED\"\n}"
 						}
 					]
 				},
@@ -1927,14 +1929,14 @@
 							"formdata": [
 								{
 									"key": "submitInfo",
-									"value": "{\n\"filename\":\"a.pdf\",\n\"field\": [\n        {\n            \"name\": \"name\",\n            \"value\": \"李田所先辈123\"\n        },\n        {\n            \"name\": \"class\",\n            \"value\": \"红茶工艺2班\"\n        }\n    ]\n}",
+									"value": "{\n\"filename\":\"a.pdf\",\n\"field\": [\n        {\n            \"name\": \"name\",\n            \"value\": \"李田所先辈\"\n        },\n        {\n            \"name\": \"class\",\n            \"value\": \"红茶工艺2班\"\n        }\n    ]\n}",
 									"contentType": "application/json",
 									"type": "text"
 								},
 								{
 									"key": "file",
 									"type": "file",
-									"src": "/D:/data/xiaotao/吉他谱/cry for the moon.pdf"
+									"src": []
 								}
 							],
 							"options": {
@@ -1944,121 +1946,20 @@
 							}
 						},
 						"url": {
-							"raw": "{{addr}}/api/collection/8921d0d81c0f459584f4c50856874906",
+							"raw": "{{addr}}/api/collection/4/00a753981004459599a13ae718df7612",
 							"host": [
 								"{{addr}}"
 							],
 							"path": [
 								"api",
 								"collection",
-								"8921d0d81c0f459584f4c50856874906"
+								"4",
+								"00a753981004459599a13ae718df7612"
 							]
 						},
-						"description": "# 提交一个文件到收集\n- URL:/api/collection/{collectionId}\n- 方法：POST\n\n## URL参数\n- collectionId: 收集ID\n\n## 表单参数\n- submitInfo: 提交信息，json格式，详见[submitInfo对象](#submitInfo)\n- file: 文件本体\n\n\n### submitInfo对象\n<span id=\"submitInfo\"></span>\n```JSON\n{\n\"filename\": \"a.pdf\", // 提供的文件名，必填\n\"field\": [ // 提供的字段信息（如果有的话）\n        {\n            \"name\": \"name\", // 字段名\n            \"value\": \"李田所先辈\" // 字段值\n        },\n        {\n            \"name\": \"class\",\n            \"value\": \"红茶工艺2班\"\n        }\n    ]\n}\n```"
+						"description": "# 提交一个文件到收集\n- URL:/api/collection/{cid}/{verification}\n- 方法：POST\n\n## URL参数\n- cid: 收集ID\n- verification: 收集任务校验码\n\n## 表单参数\n- submitInfo: 提交信息，json格式，详见[submitInfo对象](#submitInfo)\n- file: 文件本体\n\n\n### submitInfo对象\n<span id=\"submitInfo\"></span>\n```JSON\n{\n\"filename\": \"a.pdf\", // 提供的文件名，必填\n\"field\": [ // 提供的字段信息（如果有的话）\n        {\n            \"name\": \"name\", // 字段名\n            \"value\": \"李田所先辈\" // 字段值\n        },\n        {\n            \"name\": \"class\",\n            \"value\": \"红茶工艺2班\"\n        }\n    ]\n}\n```"
 					},
 					"response": [
-						{
-							"name": "提交成功",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{
-											"key": "submitInfo",
-											"value": "{\n\"filename\":\"a.pdf\",\n\"field\": [\n        {\n            \"name\": \"name\",\n            \"value\": \"李田所先辈\"\n        },\n        {\n            \"name\": \"class\",\n            \"value\": \"红茶工艺2班\"\n        }\n    ]\n}",
-											"contentType": "application/json",
-											"type": "text"
-										},
-										{
-											"key": "file",
-											"type": "file",
-											"src": "/D:/data/xiaotao/吉他谱/cry for the moon.pdf"
-										}
-									],
-									"options": {
-										"raw": {
-											"language": "text"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{addr}}/api/collection/8921d0d81c0f459584f4c50856874906",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"collection",
-										"8921d0d81c0f459584f4c50856874906"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "DENY"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Wed, 03 Nov 2021 16:30:57 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
-						},
 						{
 							"name": "字段不符合约束",
 							"originalRequest": {
@@ -2086,13 +1987,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{addr}}/api/collection/8921d0d81c0f459584f4c50856874906",
+									"raw": "{{addr}}/api/collection/3/8921d0d81c0f459584f4c50856874906",
 									"host": [
 										"{{addr}}"
 									],
 									"path": [
 										"api",
 										"collection",
+										"3",
 										"8921d0d81c0f459584f4c50856874906"
 									]
 								}
@@ -2156,6 +2058,109 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 400,\n    \"data\": null,\n    \"msg\": \"不满足约束条件:字段name的值不满足正则表达式约束：先辈$\"\n}"
+						},
+						{
+							"name": "提交文件",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "submitInfo",
+											"value": "{\n\"filename\":\"a.pdf\",\n\"field\": [\n        {\n            \"name\": \"name\",\n            \"value\": \"李田所先辈\"\n        },\n        {\n            \"name\": \"class\",\n            \"value\": \"红茶工艺2班\"\n        }\n    ]\n}",
+											"contentType": "application/json",
+											"type": "text"
+										},
+										{
+											"key": "file",
+											"type": "file",
+											"src": []
+										}
+									],
+									"options": {
+										"raw": {
+											"language": "text"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/collection/4/00a753981004459599a13ae718df7612",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"collection",
+										"4",
+										"00a753981004459599a13ae718df7612"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 04 Nov 2021 08:45:12 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				}
