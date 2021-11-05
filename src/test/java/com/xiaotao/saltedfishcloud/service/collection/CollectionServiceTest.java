@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfoId;
+import com.xiaotao.saltedfishcloud.entity.po.CollectionRecord;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
@@ -14,8 +15,8 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.json.GsonTester;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.Page;
 import org.springframework.util.DigestUtils;
 
 import java.io.IOException;
@@ -48,7 +49,7 @@ class CollectionServiceTest {
         }
         nodeInfo.setSaveNode("" + admin.getId());
         CollectionInfoId cid = cs.createCollection(admin.getId(), nodeInfo);
-        assertNotNull(cs.getCollection(cid));
+        assertNotNull(cs.getCollectionWitchVerification(cid));
     }
 
     @Test
@@ -94,5 +95,17 @@ class CollectionServiceTest {
 
         // OK
         cs.collectFile(cid, u.getId(), resource.getInputStream(), fileInfo, file);
+    }
+
+    @Test
+    void getSubmits() {
+        int page = 0, size = 2;
+        Page<CollectionRecord> submits = cs.getSubmits(5L, page, size);
+        while (submits.getNumberOfElements() > 0) {
+            for (CollectionRecord record : submits.getContent()) {
+                System.out.println(record);
+            }
+            submits = cs.getSubmits(5L, ++page, size);
+        }
     }
 }

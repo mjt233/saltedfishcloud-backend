@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import java.io.IOException;
 import java.util.List;
 
@@ -31,6 +32,19 @@ import java.util.List;
 public class CollectController {
     private final CollectionInfoRepository colDao;
     private final CollectionService collectionService;
+
+    @GetMapping("/record/{cid}")
+    public JsonResult getRecords(@PathVariable("cid") Long cid,
+                                 @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
+                                 @RequestParam(value = "size", defaultValue = "10") @Min(5) @Valid Integer size) {
+        CollectionInfo info = collectionService.getCollection(cid);
+        User u = SecureUtils.getSpringSecurityUser();
+        assert u != null;
+        if (!info.getUid().equals(u.getId())) {
+            throw new JsonException(ErrorInfo.FORMAT_ERROR);
+        }
+        return JsonResult.getInstanceWithPage(collectionService.getSubmits(cid, page - 1, size));
+    }
 
     @DeleteMapping("{cid}")
     public JsonResult closeCollection(@PathVariable("cid") Long cid) {
@@ -67,7 +81,7 @@ public class CollectController {
     @AllowAnonymous
     public CollectionInfo getCollection(@PathVariable Long cid,
                                         @PathVariable String verification) {
-        CollectionInfo i = collectionService.getCollection(new CollectionInfoId(cid, verification));
+        CollectionInfo i = collectionService.getCollectionWitchVerification(new CollectionInfoId(cid, verification));
         if (i == null) {
             throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND);
         }

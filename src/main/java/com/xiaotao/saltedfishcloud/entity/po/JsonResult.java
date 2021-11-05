@@ -1,6 +1,10 @@
 package com.xiaotao.saltedfishcloud.entity.po;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.pagehelper.PageInfo;
+import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
+import org.springframework.data.domain.Page;
+
 import java.util.LinkedHashMap;
 
 /**
@@ -33,6 +37,14 @@ public class JsonResult extends LinkedHashMap<String, Object>{
     }
     public static JsonResult getInstance() {
         return getInstance(200, null, "OK");
+    }
+
+    public static JsonResult getInstanceWithPage(Page<?> page) {
+        return JsonResult.getInstance(CommonPageInfo.of(page));
+    }
+
+    public static JsonResult getInstanceWithPage(PageInfo<?> page) {
+        return JsonResult.getInstance(CommonPageInfo.of(page));
     }
 
     /**
