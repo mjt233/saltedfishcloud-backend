@@ -23,10 +23,11 @@ ALTER TABLE node_list ADD `sharing` BOOLEAN COMMENT '该节点是否处于分享
 
 CREATE TABLE collection_rec (
     `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT COMMENT '记录ID',
-    `cid` CHAR(32) NOT NULL COMMENT '收集任务ID',
+    `cid` BIGINT NOT NULL COMMENT '收集任务ID',
     `uid` INT UNSIGNED NOT NULL COMMENT '上传者ID，匿名用户为0',
     `filename` VARCHAR(1024) NOT NULL COMMENT '文件名',
     `size` BIGINT NOT NULL COMMENT '文件大小',
     `md5` CHAR(32) NOT NULL COMMENT '文件MD5校验码',
-    `created_at` DATETIME NOT NULL COMMENT '文件上传日期'
+    `created_at` DATETIME NOT NULL COMMENT '文件上传日期',
+    INDEX cid_index(cid)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
