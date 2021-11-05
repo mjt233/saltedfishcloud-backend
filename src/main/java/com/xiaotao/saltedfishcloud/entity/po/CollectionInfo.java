@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.entity.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
@@ -26,6 +27,7 @@ import java.util.List;
 @Accessors(chain = true)
 @Table(name = "collection")
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CollectionInfo {
     public enum State {
         OPEN, CLOSED

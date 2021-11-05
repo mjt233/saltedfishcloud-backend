@@ -88,6 +88,8 @@ public class CollectController {
         User user = SecureUtils.getSpringSecurityUser();
         if (user == null && !i.getAllowAnonymous()) {
             throw new JsonException(ErrorInfo.COLLECTION_REQUIRE_LOGIN);
+        } else if (user == null || !user.getId().equals(i.getUid())) {
+            i.setUid(null);
         }
         return i;
     }
