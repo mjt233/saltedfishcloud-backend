@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionInfoId;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 public interface CollectionInfoRepository extends JpaRepository<CollectionInfo, Long> {
-    List<CollectionInfo> findByUidEquals(Integer uid);
+    @Transactional
+    @Query("UPDATE CollectionInfo C SET C.state = 'CLOSED' WHERE C.expiredAt <= function('NOW') ")
+    @Modifying
+    int updateState();
+
+    @Query("FROM CollectionInfo ")
+    List<CollectionInfo> findByUidEquals(Integer uid, Sort sort);
 
     @Modifying
     @Transactional

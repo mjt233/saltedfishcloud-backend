@@ -16,6 +16,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +33,7 @@ import java.util.List;
 public class CollectController {
     private final CollectionInfoRepository colDao;
     private final CollectionService collectionService;
+    private final Sort SORT_BY_EXPIRED_AT_DESC = Sort.by("expiredAt").descending();
 
     @GetMapping("/record/{cid}")
     public JsonResult getRecords(@PathVariable("cid") Long cid,
@@ -98,7 +100,7 @@ public class CollectController {
     public List<CollectionInfo> getCollection() {
         User u = SecureUtils.getSpringSecurityUser();
         assert u != null;
-        return colDao.findByUidEquals(u.getId());
+        return colDao.findByUidEquals(u.getId(), SORT_BY_EXPIRED_AT_DESC);
     }
 
 

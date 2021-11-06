@@ -24,6 +24,12 @@ class CollectionInfoRepositoryTest {
     private CollectionInfoRepository repository;
 
     @Test
+    public void testUpdateState() {
+
+        System.out.println(repository.updateState());
+    }
+
+    @Test
     public void testHighConcurrent() throws BrokenBarrierException, InterruptedException {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DATE, 2);
