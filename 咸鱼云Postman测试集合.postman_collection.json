@@ -561,6 +561,116 @@
 						"description": "通过文件MD5下载网盘中的文件而无需关注文件位置和所属用户\r\n\r\n- URI：`/api/resource/{uid}/fileContentByMD5/{md5}/{name}`\r\n- 动作：GET\r\n\r\nURI参数：\r\n- uid 用户id，任意int型整数均可，此为占位参数，不起作用但必须传入\r\n- md5 文件md5值\r\n- name 文件名，可选参数，不影响服务器响应。可用于wget等工具方便识别文件名\r\n\r\n### 响应\r\n直接响应文件"
 					},
 					"response": []
+				},
+				{
+					"name": "取路径对应节点ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/1/node/我的收集/新建文件夹/新建文件夹133",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"1",
+								"node",
+								"我的收集",
+								"新建文件夹",
+								"新建文件夹133"
+							]
+						},
+						"description": "# 获取路径途径的所有节点信息\n\n- URL: /api/resource/{uid}/node/{path}\n- 方法: GET\n\n## URL参数\n- uid:用户ID\n- path: 请求的完整路径\n\n## 响应\n```json\n{\n    \"code\": 200,\n    \"data\": [\n        {\n            \"name\": \"我的收集\",  // 根节点\n            \"uid\": 1,\n            \"id\": \"84148bb27433475fa86dc5c6df776cba\",\n            \"parent\": \"1\",\n            \"rootNode\": true\n        },\n        {\n            \"name\": \"新建文件夹\",\n            \"uid\": 1,\n            \"id\": \"36436ff784c4408a9a1571aeed12456b\",\n            \"parent\": \"84148bb27433475fa86dc5c6df776cba\",\n            \"rootNode\": false\n        },\n        {\n            \"name\": \"新建文件夹133\",  // 最后一级\n            \"uid\": 1,\n            \"id\": \"e6cfaa1b1c42435a91b5c82bea74c4ee\",\n            \"parent\": \"36436ff784c4408a9a1571aeed12456b\",\n            \"rootNode\": false\n        }\n    ],\n    \"msg\": \"OK\"\n}\n```"
+					},
+					"response": [
+						{
+							"name": "取路径对应ID",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/resource/1/node/我的收集/新建文件夹/新建文件夹133",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"resource",
+										"1",
+										"node",
+										"我的收集",
+										"新建文件夹",
+										"新建文件夹133"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 06 Nov 2021 16:54:58 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": [\n        {\n            \"name\": \"我的收集\",\n            \"uid\": 1,\n            \"id\": \"84148bb27433475fa86dc5c6df776cba\",\n            \"parent\": \"1\",\n            \"rootNode\": true\n        },\n        {\n            \"name\": \"新建文件夹\",\n            \"uid\": 1,\n            \"id\": \"36436ff784c4408a9a1571aeed12456b\",\n            \"parent\": \"84148bb27433475fa86dc5c6df776cba\",\n            \"rootNode\": false\n        },\n        {\n            \"name\": \"新建文件夹133\",\n            \"uid\": 1,\n            \"id\": \"e6cfaa1b1c42435a91b5c82bea74c4ee\",\n            \"parent\": \"36436ff784c4408a9a1571aeed12456b\",\n            \"rootNode\": false\n        }\n    ],\n    \"msg\": \"OK\"\n}"
+						}
+					]
 				}
 			]
 		},
@@ -1938,12 +2048,7 @@
 									"type": "file",
 									"src": []
 								}
-							],
-							"options": {
-								"raw": {
-									"language": "text"
-								}
-							}
+							]
 						},
 						"url": {
 							"raw": "{{addr}}/api/collection/4/00a753981004459599a13ae718df7612",
@@ -2161,6 +2266,150 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
+						}
+					]
+				},
+				{
+					"name": "关闭收集",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/collection/2",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"collection",
+								"2"
+							]
+						},
+						"description": "# 关闭收集\n- URL:/api/collection/{cid}\n- 方法：DELETE\n- 权限：只允许创建者关闭\n## URL参数\n- cid: 收集ID"
+					},
+					"response": []
+				},
+				{
+					"name": "查询收集记录",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/collection/record/5?page=1&size=5",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"collection",
+								"record",
+								"5"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "5"
+								}
+							]
+						},
+						"description": "# 查询收集提交记录\n- URL:/api/collection/record/{uid}\n- 方法: GET\n- 权限：只允许创建者查询\n\n## QueryString参数\n- page：查询的页码，默认为1，最小为1\n- size：每页的大小，默认为10，最小为5\n\n## 响应样例：\n```json\n{\n    \"code\": 200,\n    \"data\": {\n        \"content\": [\n            {\n                \"id\": 3,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 0,\n                \"md5\": \"d41d8cd98f00b204e9800998ecf8427e\",\n                \"createdAt\": \"2021-11-05T03:33:57.000+00:00\"\n            },\n            {\n                \"id\": 4,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 0,\n                \"md5\": \"d41d8cd98f00b204e9800998ecf8427e\",\n                \"createdAt\": \"2021-11-05T03:34:26.000+00:00\"\n            },\n            {\n                \"id\": 5,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 427258,\n                \"md5\": \"bfb58b9b75035569b8a0b7c23023e569\",\n                \"createdAt\": \"2021-11-05T03:35:05.000+00:00\"\n            },\n            {\n                \"id\": 6,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 427258,\n                \"md5\": \"bfb58b9b75035569b8a0b7c23023e569\",\n                \"createdAt\": \"2021-11-05T03:35:39.000+00:00\"\n            },\n            {\n                \"id\": 7,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 427258,\n                \"md5\": \"bfb58b9b75035569b8a0b7c23023e569\",\n                \"createdAt\": \"2021-11-05T03:35:40.000+00:00\"\n            }\n        ],\n        \"totalCount\": 5,\n        \"totalPage\": 1\n    },\n    \"msg\": \"OK\"\n}\n```"
+					},
+					"response": [
+						{
+							"name": "查询收集记录",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/collection/record/5?page=1&size=5",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"collection",
+										"record",
+										"5"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "size",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Fri, 05 Nov 2021 06:27:20 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"content\": [\n            {\n                \"id\": 3,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 0,\n                \"md5\": \"d41d8cd98f00b204e9800998ecf8427e\",\n                \"createdAt\": \"2021-11-05T03:33:57.000+00:00\"\n            },\n            {\n                \"id\": 4,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 0,\n                \"md5\": \"d41d8cd98f00b204e9800998ecf8427e\",\n                \"createdAt\": \"2021-11-05T03:34:26.000+00:00\"\n            },\n            {\n                \"id\": 5,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 427258,\n                \"md5\": \"bfb58b9b75035569b8a0b7c23023e569\",\n                \"createdAt\": \"2021-11-05T03:35:05.000+00:00\"\n            },\n            {\n                \"id\": 6,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 427258,\n                \"md5\": \"bfb58b9b75035569b8a0b7c23023e569\",\n                \"createdAt\": \"2021-11-05T03:35:39.000+00:00\"\n            },\n            {\n                \"id\": 7,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 427258,\n                \"md5\": \"bfb58b9b75035569b8a0b7c23023e569\",\n                \"createdAt\": \"2021-11-05T03:35:40.000+00:00\"\n            }\n        ],\n        \"totalCount\": 5,\n        \"totalPage\": 1\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				}

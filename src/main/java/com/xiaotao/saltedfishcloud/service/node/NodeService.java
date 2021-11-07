@@ -93,6 +93,7 @@ public class NodeService {
         } catch (NullPointerException e) {
             NodeInfo info = new NodeInfo();
             info.setId(strId);
+            info.setUid(uid);
             link.add(info);
         }
         if (log.isDebugEnabled()) {

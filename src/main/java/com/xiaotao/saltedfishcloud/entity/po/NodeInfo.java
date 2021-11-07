@@ -16,7 +16,7 @@ public class NodeInfo {
     private String parent;
 
     public boolean isRootNode() {
-        return parent.equals("" + id);
+        return id.length() < 32;
     }
 
     public static NodeInfo getRootNode(int uid) {

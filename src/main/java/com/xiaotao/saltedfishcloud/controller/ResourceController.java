@@ -23,6 +23,7 @@ import javax.validation.Valid;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.nio.file.NoSuchFileException;
 
 /**
  * 系统资源管理控制器
@@ -37,6 +38,15 @@ public class ResourceController {
     private final DiskFileSystemFactory fileService;
     private final NodeService nodeService;
     private final ResponseService responseService;
+
+    @GetMapping({"node/**", "node"})
+    @AllowAnonymous
+    @NotBlock
+    public JsonResult pathToNodeList(@PathVariable("uid") @UID int uid, HttpServletRequest request) throws NoSuchFileException {
+        String path = URLUtils.getRequestFilePath(PREFIX + "/" + uid + "/node", request);
+        return JsonResult.getInstance(nodeService.getPathNodeByPath(uid, "/" + path));
+    }
+
     /**
      * 解析节点ID，获取节点ID对应的文件夹路径
      * @param uid   用户ID
