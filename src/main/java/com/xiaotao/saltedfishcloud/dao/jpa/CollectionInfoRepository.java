@@ -15,7 +15,6 @@ public interface CollectionInfoRepository extends JpaRepository<CollectionInfo, 
     @Modifying
     int updateState();
 
-    @Query("FROM CollectionInfo ")
     List<CollectionInfo> findByUidEquals(Integer uid, Sort sort);
 
     @Modifying
