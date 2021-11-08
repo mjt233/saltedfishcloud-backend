@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -18,6 +18,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.ConstraintViolationException;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 
@@ -96,6 +97,16 @@ public class ControllerAdvice {
     @ExceptionHandler(DuplicateKeyException.class)
     public JsonResult handle(DuplicateKeyException e) {
         return responseError(400, e.getMessage());
+    }
+
+    @ExceptionHandler(IOException.class)
+    public Object ioError(HttpServletResponse response) {
+        String h = response.getHeader("Content-Type");
+        if (h != null) {
+            return null;
+        } else {
+            return JsonResult.getInstance(500, null, "Server Error");
+        }
     }
 
     private JsonResult responseError(int code, String message) {
