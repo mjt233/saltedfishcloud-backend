@@ -100,12 +100,12 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(IOException.class)
-    public Object ioError(HttpServletResponse response) {
+    public Object ioError(HttpServletResponse response, IOException e) {
         String h = response.getHeader("Content-Type");
         if (h != null) {
             return null;
         } else {
-            return JsonResult.getInstance(500, null, "Server Error");
+            return JsonResult.getInstance(500, null, "Server Error：" + e.getMessage());
         }
     }
 
