@@ -16,7 +16,8 @@ CREATE TABLE `collection` (
     `expired_at` DATETIME NOT NULL COMMENT '收集任务过期时间',
     `created_at` DATETIME NOT NULL DEFAULT NOW() COMMENT '收集任务创建日期',
     `state` ENUM('OPEN', 'CLOSED') NOT NULL COMMENT '状态，开放或关闭',
-    INDEX uid_index(uid)
+    INDEX uid_index(uid),
+    INDEX expired_index(expired_at)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ALTER TABLE node_list ADD `collecting` BOOLEAN COMMENT '该节点是否处于收集文件中';
 ALTER TABLE node_list ADD `sharing` BOOLEAN COMMENT '该节点是否处于分享状态';
@@ -29,5 +30,6 @@ CREATE TABLE collection_rec (
     `size` BIGINT NOT NULL COMMENT '文件大小',
     `md5` CHAR(32) NOT NULL COMMENT '文件MD5校验码',
     `created_at` DATETIME NOT NULL COMMENT '文件上传日期',
+    `ip` CHAR(16) NOT NULL COMMENT '上传时的IP地址',
     INDEX cid_index(cid)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

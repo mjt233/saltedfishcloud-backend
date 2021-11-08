@@ -5,14 +5,15 @@ import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.entity.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.entity.po.param.NamePair;
+import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
@@ -21,19 +22,17 @@ import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URLDecoder;
-import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.List;
 
@@ -44,13 +43,12 @@ import java.util.List;
 @RequestMapping( FileController.PREFIX + "{uid}")
 @Validated
 @ReadOnlyBlock()
+@RequiredArgsConstructor
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
-    @Resource
-    private DiskFileSystemFactory fileService;
-    @Resource
-    private ResponseService responseService;
+    private final DiskFileSystemFactory fileService;
+    private final ResponseService responseService;
 
 
     /*
@@ -142,11 +140,15 @@ public class FileController {
     @NotBlock(level = ReadOnlyLevel.DATA_CHECKING)
     public ResponseEntity<org.springframework.core.io.Resource> download(HttpServletRequest request,
                                                                          @PathVariable @UID int uid)
-            throws MalformedURLException, UnsupportedEncodingException, NoSuchFileException {
+            throws UnsupportedEncodingException {
         String prefix = PREFIX + uid + "/content";
         String requestPath = URLUtils.getRequestFilePath(prefix, request);
-
-        return responseService.getUserFileResponse(uid, requestPath);
+        org.springframework.core.io.Resource resource = fileService.getFileSystem().getResource(uid, requestPath, "");
+        if (resource != null) {
+            return responseService.wrapResource(resource);
+        } else {
+            throw new JsonException(ErrorInfo.FILE_NOT_FOUND);
+        }
     }
 
     /*

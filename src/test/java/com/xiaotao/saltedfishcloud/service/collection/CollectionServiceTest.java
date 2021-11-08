@@ -83,10 +83,11 @@ class CollectionServiceTest {
 
         SubmitFile file = new SubmitFile("full.sql", resource.contentLength(), null);
 
+        String ip = "127.0.0.1";
         // 保存文件到收集任务
         try {
             // 文件名不匹配正则
-            cs.collectFile(cid, u.getId(), resource.getInputStream(), fileInfo, file);
+            cs.collectFile(cid, u.getId(), resource.getInputStream(), fileInfo, file, ip);
             fail();
         } catch (JsonException e) {
             System.out.println(e.toString());
@@ -94,7 +95,7 @@ class CollectionServiceTest {
         file.setFilename("full.docx");
 
         // OK
-        cs.collectFile(cid, u.getId(), resource.getInputStream(), fileInfo, file);
+        cs.collectFile(cid, u.getId(), resource.getInputStream(), fileInfo, file, ip);
     }
 
     @Test

@@ -41,8 +41,9 @@ CREATE TABLE `collection` (
                               `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收集任务创建日期',
                               `state` enum('OPEN','CLOSED') NOT NULL COMMENT '状态，开放或关闭',
                               PRIMARY KEY (`id`),
-                              KEY `uid_index` (`uid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                              KEY `uid_index` (`uid`),
+                              KEY `expired_index` (`expired_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -54,14 +55,16 @@ DROP TABLE IF EXISTS `collection_rec`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `collection_rec` (
                                   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '记录ID',
-                                  `cid` char(32) NOT NULL COMMENT '收集任务ID',
+                                  `cid` bigint NOT NULL COMMENT '收集任务ID',
                                   `uid` int unsigned NOT NULL COMMENT '上传者ID，匿名用户为0',
                                   `filename` varchar(1024) NOT NULL COMMENT '文件名',
                                   `size` bigint NOT NULL COMMENT '文件大小',
                                   `md5` char(32) NOT NULL COMMENT '文件MD5校验码',
                                   `created_at` datetime NOT NULL COMMENT '文件上传日期',
-                                  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                                  `ip` char(16) NOT NULL COMMENT '上传时的IP地址',
+                                  PRIMARY KEY (`id`),
+                                  KEY `cid_index` (`cid`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -176,7 +179,7 @@ CREATE TABLE `user` (
                         `quota` int unsigned DEFAULT '10',
                         PRIMARY KEY (`id`),
                         UNIQUE KEY `user_index` (`user`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -188,4 +191,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-11-04 16:46:48
+-- Dump completed on 2021-11-09  3:00:28

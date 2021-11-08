@@ -24,13 +24,15 @@ public class CollectionRecord {
     private String filename;
     private Long size;
     private String md5;
+    private String ip;
 
-    public CollectionRecord(Long cid, Integer uid, String filename, Long size, String md5) {
+    public CollectionRecord(Long cid, Integer uid, String filename, Long size, String md5, String ip) {
         this.cid = cid;
         this.uid = uid;
         this.filename = filename;
         this.size = size;
         this.md5 = md5;
+        this.ip = ip;
     }
 
     @CreatedDate

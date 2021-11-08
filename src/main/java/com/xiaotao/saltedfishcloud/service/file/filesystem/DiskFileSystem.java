@@ -8,6 +8,8 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -24,6 +26,15 @@ import java.util.List;
  */
 public interface DiskFileSystem {
     boolean exist(int uid, String path);
+
+    /**
+     * 从文件系统获取文件资源
+     * @param uid   用户ID
+     * @param path  文件所在路径
+     * @param name  文件名
+     * @return      文件资源，若不存在则为null
+     */
+    Resource getResource(int uid, String path,String name);
     /**
      * 在网盘中连同所有父级目录，创建一个目录
      * @param uid   用户ID

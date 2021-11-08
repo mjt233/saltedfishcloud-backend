@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 
 import java.io.IOException;
@@ -15,12 +16,21 @@ import java.util.Collection;
 public interface StoreService {
 
     /**
+     * 获取文件资源，若文件不存在则为null
+     * @param uid   用户ID
+     * @param path  文件所在路径
+     * @param name  文件名
+     * @return      文件资源
+     */
+    Resource getResource(int uid, String path, String name);
+
+    /**
      * 判断给定的文件路径是否存在
      * @param uid   用户ID
      * @param path  文件或目录路径
      * @return  存在为true，否则为false
      */
-    boolean exist(int uid, String path );
+    boolean exist(int uid, String path);
 
     /**
      * 通过文件移动的方式存储文件到网盘系统，相对于{@link #store}方法，避免了文件的重复写入操作。对本地文件操作后，原路径文件不再存在<br><br>

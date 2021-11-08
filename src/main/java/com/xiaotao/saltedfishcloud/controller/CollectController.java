@@ -21,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import java.io.IOException;
@@ -69,13 +70,22 @@ public class CollectController {
     public JsonResult submitCollection(@PathVariable Long cid,
                                        @PathVariable String verification,
                                        @MergeFile @RequestPart("file") MultipartFile file,
-                                       @RequestPart("submitInfo") @Valid SubmitFile submitFile) throws IOException {
+                                       @RequestPart("submitInfo") @Valid SubmitFile submitFile,
+                                       HttpServletRequest request) throws IOException {
         User u = SecureUtils.getSpringSecurityUser();
         int uid = u == null ? 0 : u.getId();
         if (submitFile.getSize() == null) {
             submitFile.setSize(file.getSize());
         }
-        collectionService.collectFile(new CollectionInfoId(cid, verification), uid, file.getInputStream(), new FileInfo(file), submitFile);
+        String ip = request.getRemoteAddr();
+        collectionService.collectFile(
+                new CollectionInfoId(cid, verification),
+                uid,
+                file.getInputStream(),
+                new FileInfo(file),
+                submitFile,
+                ip
+        );
         return JsonResult.getInstance();
     }
 

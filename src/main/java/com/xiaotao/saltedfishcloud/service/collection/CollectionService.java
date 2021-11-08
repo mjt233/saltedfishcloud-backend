@@ -120,10 +120,11 @@ public class CollectionService {
      * @param uid   提供者ID，游客使用0
      * @param is    文件输入流
      * @param fileInfo      基础文件信息（至少应包含文件名，大小，md5）
+     * @param ip            提交者的IP地址
      * @param submitFile    提交的文件信息
      */
     @Transactional(rollbackFor = Throwable.class)
-    public void collectFile(CollectionInfoId cid, int uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile) throws IOException {
+    public void collectFile(CollectionInfoId cid, int uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile, String ip) throws IOException {
         CollectionInfo ci = collectionDao.findById(cid.getId()).orElse(null);
 
         // 校验收集存在
@@ -171,7 +172,7 @@ public class CollectionService {
 
 
         String filename = CollectionParser.parseFilename(ci, submitFile);
-        CollectionRecord record = new CollectionRecord(cid.getId(), uid, filename, submitFile.getSize(), fileInfo.getMd5());
+        CollectionRecord record = new CollectionRecord(cid.getId(), uid, filename, submitFile.getSize(), fileInfo.getMd5(), ip);
 
         DiskFileSystem fileSystem = this.fileSystem.getFileSystem();
         String path = nodeService.getPathByNode(ci.getUid(), ci.getSaveNode());

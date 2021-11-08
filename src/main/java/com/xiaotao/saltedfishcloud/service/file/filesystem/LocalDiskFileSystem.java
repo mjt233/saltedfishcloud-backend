@@ -14,6 +14,7 @@ import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,11 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     @Override
     public boolean exist(int uid, String path) {
         return storeServiceFactory.getService().exist(uid, path);
+    }
+
+    @Override
+    public Resource getResource(int uid, String path, String name) {
+        return storeServiceFactory.getService().getResource(uid, path, name);
     }
 
     @Override

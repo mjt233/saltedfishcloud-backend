@@ -7,10 +7,13 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +23,17 @@ import java.util.Collection;
 @Slf4j
 @Component
 public class RAWStoreService implements StoreService {
+    @Override
+    public Resource getResource(int uid, String path, String name) {
+        String storePath = DiskConfig.rawPathHandler.getStorePath(uid, path + "/" + name, null);
+        try {
+            return new UrlResource(Paths.get(storePath).toUri());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     @Override
     public boolean exist(int uid, String path) {
         String p = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
