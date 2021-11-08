@@ -11,10 +11,14 @@ import com.xiaotao.saltedfishcloud.entity.po.CollectionRecord;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.aspectj.util.FileUtil;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -168,10 +172,19 @@ public class CollectionService {
 
         String filename = CollectionParser.parseFilename(ci, submitFile);
         CollectionRecord record = new CollectionRecord(cid.getId(), uid, filename, submitFile.getSize(), fileInfo.getMd5());
+
+        DiskFileSystem fileSystem = this.fileSystem.getFileSystem();
+        String path = nodeService.getPathByNode(ci.getUid(), ci.getSaveNode());
+        String[] pair = FileUtils.parseName(filename);
+
+        int cnt = 1;
+        while (fileSystem.exist(ci.getUid(), path + "/" + filename)) {
+            filename = pair[0] + "_" + cnt + (pair[1] == null ? "" : ("." + pair[1]));
+            cnt++;
+        }
         recordDao.save(record);
         fileInfo.setName(filename);
         // 存入文件
-        String path = nodeService.getPathByNode(ci.getUid(), ci.getSaveNode());
-        fileSystem.getFileSystem().saveFile(ci.getUid(), is, path, fileInfo);
+        fileSystem.saveFile(ci.getUid(), is, path, fileInfo);
     }
 }

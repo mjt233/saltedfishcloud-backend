@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.localstore.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -35,6 +36,11 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     private final FileDao fileDao;
     private final FileRecordService fileRecordService;
     private final NodeService nodeService;
+
+    @Override
+    public boolean exist(int uid, String path) {
+        return storeServiceFactory.getService().exist(uid, path);
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)

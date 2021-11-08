@@ -21,6 +21,12 @@ import java.util.Collection;
 @Component
 public class RAWStoreService implements StoreService {
     @Override
+    public boolean exist(int uid, String path) {
+        String p = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
+        return Files.exists(Paths.get(p));
+    }
+
+    @Override
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
         Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
         // 非唯一模式，直接将文件移动到目标位置

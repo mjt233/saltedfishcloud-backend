@@ -48,6 +48,20 @@ public class FileUtils {
     }
 
     /**
+     * 解析文件名，拆分主文件名和拓展名两部分
+     * @param name  文件名
+     * @return  文件名数组，0为文件名，1为拓展名，若无拓展名，1为null
+     */
+    static public String[] parseName(String name) {
+        int pos = name.lastIndexOf('.');
+        if (pos == -1) {
+            return new String[]{name, null};
+        } else {
+            return new String[]{ name.substring(0, pos), name.substring(pos + 1) };
+        }
+    }
+
+    /**
      * 若路径path所在父目录不存在，则创建该path的父目录
      * @param path  路径
      */

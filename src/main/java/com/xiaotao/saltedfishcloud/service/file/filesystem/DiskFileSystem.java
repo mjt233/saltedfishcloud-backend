@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -22,6 +23,7 @@ import java.util.List;
  * @TODO 增加基于节点ID操作的方法以避免通过路径查询节点ID
  */
 public interface DiskFileSystem {
+    boolean exist(int uid, String path);
     /**
      * 在网盘中连同所有父级目录，创建一个目录
      * @param uid   用户ID
@@ -182,7 +184,7 @@ public interface DiskFileSystem {
         info.setMd5(fileInfo.getMd5());
         info.setName(fileInfo.getName());
         info.setUid(uid);
-        String token = JwtUtils.generateToken(new ObjectMapper().writeValueAsString(info), expr < 0 ? expr : expr*60*60*24);
+        String token = JwtUtils.generateToken(MapperHolder.mapper.writeValueAsString(info), expr < 0 ? expr : expr*60*60*24);
         return token;
     }
 }
