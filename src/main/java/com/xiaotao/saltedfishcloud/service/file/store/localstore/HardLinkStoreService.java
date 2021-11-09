@@ -1,44 +1,28 @@
-package com.xiaotao.saltedfishcloud.service.file.localstore;
+package com.xiaotao.saltedfishcloud.service.file.store.localstore;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Collection;
 
 @Slf4j
 @Component
-public class HardLinkStoreService implements StoreService {
+public class HardLinkStoreService extends RAWStoreService {
 
-    @Override
-    public Resource getResource(int uid, String path, String name) {
-        String storePath = DiskConfig.rawPathHandler.getStorePath(uid, path + "/" + name, null);
-        try {
-            return new UrlResource(Paths.get(storePath).toUri());
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    @Override
-    public boolean exist(int uid, String path) {
-        String p = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
-        return Files.exists(Paths.get(p));
+    public HardLinkStoreService(UserDao userDao) {
+        super(userDao);
     }
 
     @Override
@@ -108,36 +92,5 @@ public class HardLinkStoreService implements StoreService {
         Path sourcePath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, source, fileInfo));
         Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, target, fileInfo));
         FileUtils.move(sourcePath, targetPath);
-    }
-
-    @Override
-    public void rename(int uid, String path, String oldName, String newName) throws IOException {
-        String base = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
-        FileUtils.rename(base, oldName, newName);
-    }
-
-    @Override
-    public boolean mkdir(int uid, String path, String name) throws IOException {
-        Path localFilePath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, path, null) + "/" + name);
-        if (Files.exists(localFilePath)) {
-            return Files.isDirectory(localFilePath);
-        }
-        Files.createDirectories(localFilePath);
-        return true;
-    }
-
-    @Override
-    public int delete(String md5) throws IOException {
-        return FileUtils.delete(md5);
-    }
-
-    @Override
-    public long delete(int uid, String path, Collection<String> files) throws IOException {
-        String basePath = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
-        int res = 0;
-        for (String file : files) {
-            res += FileUtils.delete(Paths.get(basePath + "/" + file));
-        }
-        return res;
     }
 }

@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.localstore.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;

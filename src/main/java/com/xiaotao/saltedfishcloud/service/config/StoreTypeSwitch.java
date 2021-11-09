@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.localstore.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

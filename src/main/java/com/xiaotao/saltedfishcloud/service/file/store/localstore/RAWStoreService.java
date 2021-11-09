@@ -1,11 +1,17 @@
-package com.xiaotao.saltedfishcloud.service.file.localstore;
+package com.xiaotao.saltedfishcloud.service.file.store.localstore;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.StoreService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -18,11 +24,35 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class RAWStoreService implements StoreService {
+    private final UserDao userDao;
+
+    @Override
+    public List<FileInfo> lists(int uid, String path) throws IOException {
+        String p = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
+        Path p2 = Paths.get(p);
+        if (!Files.exists(p2) || !Files.isDirectory(p2)) {
+            return null;
+        }
+        List<FileInfo> res = new ArrayList<>();
+        User user = userDao.getUserById(uid);
+        if (user == null) throw new UserNoExistException(uid + "");
+        Files.list(p2).forEach(e -> {
+            FileInfo fi = FileInfo.getLocal(e.toString(), false);
+            fi.setPath(PathUtils.getRelativePath(user, e.toString()));
+            res.add(fi);
+        });
+
+        return res;
+    }
+
     @Override
     public Resource getResource(int uid, String path, String name) {
         String storePath = DiskConfig.rawPathHandler.getStorePath(uid, path + "/" + name, null);
@@ -86,7 +116,10 @@ public class RAWStoreService implements StoreService {
     @Override
     public boolean mkdir(int uid, String path, String name) throws IOException {
         Path localFilePath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, path, null) + "/" + name);
-        Files.createDirectory(localFilePath);
+        if (Files.exists(localFilePath)) {
+            return Files.isDirectory(localFilePath);
+        }
+        Files.createDirectories(localFilePath);
         return true;
     }
 

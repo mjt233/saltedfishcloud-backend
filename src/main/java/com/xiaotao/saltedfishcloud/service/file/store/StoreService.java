@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.file.localstore;
+package com.xiaotao.saltedfishcloud.service.file.store;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
@@ -12,8 +12,16 @@ import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 
 public interface StoreService {
+    /**
+     * 获取指定目录的文件信息列表
+     * @param uid   用户ID
+     * @param path  请求目录路径
+     * @return  文件信息列表，若目录路径不存在或路径为文件则返回null，空目录返回空列表
+     */
+    List<FileInfo> lists(int uid, String path) throws IOException;
 
     /**
      * 获取文件资源，若文件不存在则为null

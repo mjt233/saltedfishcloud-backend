@@ -1,7 +1,10 @@
-package com.xiaotao.saltedfishcloud.service.file.localstore;
+package com.xiaotao.saltedfishcloud.service.file.store.localstore;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.service.file.store.StoreService;
+import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -9,7 +12,8 @@ public class StoreServiceFactoryImpl implements StoreServiceFactory {
     private final RAWStoreService rawLocalStoreService;
     private final HardLinkStoreService hardLinkLocalStoreService;
 
-    public StoreServiceFactoryImpl(RAWStoreService rawLocalStoreService, HardLinkStoreService hardLinkLocalStoreService) {
+    public StoreServiceFactoryImpl(@Qualifier("RAWStoreService") RAWStoreService rawLocalStoreService,
+                                   HardLinkStoreService hardLinkLocalStoreService) {
         this.rawLocalStoreService = rawLocalStoreService;
         this.hardLinkLocalStoreService = hardLinkLocalStoreService;
     }
