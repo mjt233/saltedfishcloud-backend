@@ -1,15 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.file.filesystem;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -25,6 +23,13 @@ import java.util.List;
  * @TODO 增加基于节点ID操作的方法以避免通过路径查询节点ID
  */
 public interface DiskFileSystem {
+
+    /**
+     * 判断给定的路径是否存在
+     * @param uid   用户ID
+     * @param path  要判断的文件路径
+     * @return      结果，存在则返回true，否则为false
+     */
     boolean exist(int uid, String path);
 
     /**
