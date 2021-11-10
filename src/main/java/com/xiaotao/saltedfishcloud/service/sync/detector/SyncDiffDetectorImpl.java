@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
+@Deprecated
 public class SyncDiffDetectorImpl implements SyncDiffDetector {
     @Resource
     private NodeService nodeService;

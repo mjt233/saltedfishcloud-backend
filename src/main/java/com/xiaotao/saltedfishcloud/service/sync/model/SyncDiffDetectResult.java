@@ -7,6 +7,7 @@ import java.util.List;
 /**
  * 同步检测后的数据差异结果集合
  */
+@Deprecated
 public interface SyncDiffDetectResult {
 
     /**

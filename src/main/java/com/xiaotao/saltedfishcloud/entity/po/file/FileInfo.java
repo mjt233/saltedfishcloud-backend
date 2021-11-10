@@ -13,9 +13,13 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
 
+/**
+ * @TODO 本地文件，网盘文件，临时文件，数据库文件记录混合使用，需单独拆分
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
+@Deprecated
 public class FileInfo extends BasicFileInfo{
     /**
      * 文件所属用户ID

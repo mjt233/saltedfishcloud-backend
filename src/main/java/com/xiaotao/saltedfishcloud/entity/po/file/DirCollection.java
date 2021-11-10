@@ -10,6 +10,7 @@ import java.util.LinkedList;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Deprecated
 public class DirCollection {
     private long itemCount = 0L;
     private long size = 0L;

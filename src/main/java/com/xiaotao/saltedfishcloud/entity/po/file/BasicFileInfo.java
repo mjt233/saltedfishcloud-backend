@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Deprecated
 public class BasicFileInfo {
     public final static int TYPE_DIR = 1;
     public final static int TYPE_FILE = 2;
