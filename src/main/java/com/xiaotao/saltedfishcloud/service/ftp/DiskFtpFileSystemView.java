@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.ftp;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FileSystemView;
@@ -17,7 +18,8 @@ import java.nio.file.Paths;
 public class DiskFtpFileSystemView implements FileSystemView {
     private final PathBuilder pathBuilder = new PathBuilder();
     private final DiskFtpUser user;
-    public DiskFtpFileSystemView(DiskFtpUser user) throws IOException {
+    private final DiskFileSystemFactory fileSystemFactory;
+    public DiskFtpFileSystemView(DiskFtpUser user, DiskFileSystemFactory fileSystemFactory) throws IOException {
         this.user = user;
         pathBuilder.setForcePrefix(true);
         if (!user.isAnonymousUser()) {
@@ -26,28 +28,29 @@ public class DiskFtpFileSystemView implements FileSystemView {
                 Files.createDirectory(up);
             }
         }
+        this.fileSystemFactory = fileSystemFactory;
     }
 
     @Override
-    public FtpFile getHomeDirectory() throws FtpException {
-        return new DiskFtpFile("/", user);
+    public FtpFile getHomeDirectory() {
+        return new DiskFtpFile("/", user, fileSystemFactory);
     }
 
     @Override
-    public FtpFile getWorkingDirectory() throws FtpException {
+    public FtpFile getWorkingDirectory() {
         log.debug("取cwd:" + pathBuilder.toString());
         DiskFtpFile file;
         try {
-            file = new DiskFtpFile(pathBuilder.toString(), user);
+            file = new DiskFtpFile(pathBuilder.toString(), user, fileSystemFactory);
         } catch (IllegalArgumentException e) {
             changeWorkingDirectory("/");
-            return new DiskFtpFile("/", user);
+            return new DiskFtpFile("/", user, fileSystemFactory);
         }
         return file;
     }
 
     @Override
-    public boolean changeWorkingDirectory(String dir) throws FtpException {
+    public boolean changeWorkingDirectory(String dir) {
         String originalPath = pathBuilder.toString();
         try {
             if (dir.startsWith("/")) {
@@ -79,18 +82,18 @@ public class DiskFtpFileSystemView implements FileSystemView {
     }
 
     @Override
-    public FtpFile getFile(String file) throws FtpException {
+    public FtpFile getFile(String file) {
         String path;
         if (file.startsWith("/")) {
             path = file;
         } else {
             path = pathBuilder.toString() + "/" +file;
         }
-        return new DiskFtpFile(path, user);
+        return new DiskFtpFile(path, user, fileSystemFactory);
     }
 
     @Override
-    public boolean isRandomAccessible() throws FtpException {
+    public boolean isRandomAccessible() {
         return false;
     }
 

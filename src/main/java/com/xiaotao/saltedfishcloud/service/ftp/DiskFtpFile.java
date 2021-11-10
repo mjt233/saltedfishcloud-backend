@@ -8,7 +8,6 @@ import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.SpringContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FtpFile;
 
@@ -24,19 +23,20 @@ public class DiskFtpFile implements FtpFile {
     private final FtpPathInfo pathInfo;
     private final DiskFtpUser user;
     private File nativeFile;
-    private final DiskFileSystemFactory fileService = SpringContextHolder.getContext().getBean(DiskFileSystemFactory.class);
+    private final DiskFileSystemFactory fileService;
 
     /**
      * 构造一个网盘FTP文件
      * @param path  请求的FTP路径
      * @param user  FTP用户
      */
-    public DiskFtpFile(String path, DiskFtpUser user) {
+    public DiskFtpFile(String path, DiskFtpUser user, DiskFileSystemFactory fileService) {
         this.user = user;
         pathInfo = new FtpPathInfo(path);
         if (!pathInfo.isFtpRoot()) {
             nativeFile = new File(pathInfo.toNativePath(user.getName()));
         }
+        this.fileService = fileService;
     }
     @Override
     public String getAbsolutePath() {
@@ -200,9 +200,9 @@ public class DiskFtpFile implements FtpFile {
     public List<? extends FtpFile> listFiles() {
         if (pathInfo.isFtpRoot()) {
             List<DiskFtpFile> res = new LinkedList<>();
-            res.add(new DiskFtpFile(FtpDiskType.PUBLIC, user));
+            res.add(new DiskFtpFile(FtpDiskType.PUBLIC, user, fileService));
             if (!user.isAnonymousUser()) {
-                res.add(new DiskFtpFile(FtpDiskType.PRIVATE, user));
+                res.add(new DiskFtpFile(FtpDiskType.PRIVATE, user, fileService));
             }
             return res;
         }
@@ -212,7 +212,7 @@ public class DiskFtpFile implements FtpFile {
         if (files == null) {
             return new LinkedList<>();
         }
-        return Arrays.stream(files).map(f -> new DiskFtpFile(path + "/" + f.getName(), user)).collect(Collectors.toList());
+        return Arrays.stream(files).map(f -> new DiskFtpFile(path + "/" + f.getName(), user, fileService)).collect(Collectors.toList());
     }
 
     /**
