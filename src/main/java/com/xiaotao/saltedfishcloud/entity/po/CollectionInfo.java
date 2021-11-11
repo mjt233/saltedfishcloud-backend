@@ -51,6 +51,7 @@ public class CollectionInfo {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String field;
     private String saveNode;
+    private String savePathSnapshot;
     private Date expiredAt;
     private Integer available = 100;
 

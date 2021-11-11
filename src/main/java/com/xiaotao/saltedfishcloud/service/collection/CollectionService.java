@@ -82,8 +82,11 @@ public class CollectionService {
         if (node == null) {
             throw new JsonException(ErrorInfo.NODE_NOT_FOUND);
         }
+        String savePath = nodeService.getPathByNode(uid, node.getId());
         CollectionInfo ci = new CollectionInfo(uid, info);
         ci.setVerification(SecureUtils.getUUID());
+
+        ci.setSavePathSnapshot(savePath);
         collectionDao.save(ci);
         return new CollectionInfoId(ci.getId(), ci.getVerification());
     }

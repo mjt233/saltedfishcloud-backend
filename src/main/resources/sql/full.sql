@@ -37,6 +37,7 @@ CREATE TABLE `collection` (
                               `ext_pattern` varchar(1024) DEFAULT NULL COMMENT '允许的文件后缀名正则表达式，被测试的后缀名不带.',
                               `field` varchar(1024) DEFAULT NULL COMMENT 'JSON类型数组，每个元素应包含name - 字段名称，pattern - 匹配正则，describe - 字段描述，type - 类型',
                               `save_node` char(32) NOT NULL COMMENT '收集到文件后保存到的网盘数据节点',
+                              `save_path_snapshot` VARCHAR(1024) NOT NULL COMMENT '收集到文件后保存到的网盘位置快照（仅记录创建时的设定）',
                               `expired_at` datetime NOT NULL COMMENT '收集任务过期时间',
                               `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收集任务创建日期',
                               `state` enum('OPEN','CLOSED') NOT NULL COMMENT '状态，开放或关闭',
