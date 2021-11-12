@@ -22,6 +22,7 @@ import org.aspectj.util.FileUtil;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,7 +50,7 @@ public class CollectionService {
     public Page<CollectionRecord> getSubmits(Long cid, int page, int size) {
         CollectionRecord record = new CollectionRecord();
         record.setCid(cid);
-        return recordDao.findAll(Example.of(record), PageRequest.of(page, size));
+        return recordDao.findAll(Example.of(record), PageRequest.of(page, size, Sort.by(Sort.Order.desc("id"))));
     }
 
     /**
