@@ -94,7 +94,7 @@ public class RAWStoreService implements StoreService {
             throw new UnableOverwriteException(409, "已存在同名目录: " + targetDir + "/" + fileInfo.getName());
         }
         FileUtils.createParentDirectory(rawTarget);
-        log.info("save file:" + rawTarget);
+        log.debug("save file:" + rawTarget);
         Files.copy(input, rawTarget, StandardCopyOption.REPLACE_EXISTING);
     }
 

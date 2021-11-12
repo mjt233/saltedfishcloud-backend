@@ -22,6 +22,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @TODO 使存储模式切换时的迁移动作由StoreService或DiskFileSystem提供
+ */
+@Deprecated
 @Component
 @Slf4j
 public class StoreTypeSwitch {
@@ -51,7 +55,7 @@ public class StoreTypeSwitch {
         }
         for (User user : users) {
             int uid = user.getId();
-            log.info("Processing user data: " + user.getUsername());
+            log.debug("Processing user data: " + user.getUsername());
             Map<String, List<FileInfo>> allFile = fileService.getFileSystem().collectFiles(uid, false);
             for (Map.Entry<String, List<FileInfo>> entry : allFile.entrySet()) {
                 String p = entry.getKey();
@@ -60,7 +64,7 @@ public class StoreTypeSwitch {
                 Path dirPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, p, null));
                 if (Files.exists(dirPath)) FileUtils.delete(dirPath);
                 Files.createDirectory(dirPath);
-                log.info("Create Dir " + dirPath);
+                log.debug("Create Dir " + dirPath);
                 for (FileInfo file : files) {
                     if (file.isDir()) continue;
                     Path source = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, p, file));
@@ -69,7 +73,7 @@ public class StoreTypeSwitch {
                         log.warn("存储库文件丢失：" + file.getName() + " MD5:" + file.getMd5());
                         continue;
                     }
-                    log.info("Copy file: " + source + " -> " + target);
+                    log.debug("Copy file: " + source + " -> " + target);
                     Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
                 }
             }
@@ -85,7 +89,7 @@ public class StoreTypeSwitch {
         List<User> users = userDao.getUserList();
         users.add(User.getPublicUser());
         for (User user : users) {
-            log.info("Processing user data: " + user.getUsername());
+            log.debug("Processing user data: " + user.getUsername());
             LinkedHashMap<String, List<FileInfo>> allFile = fileService.getFileSystem().collectFiles(user.getId(), false);
             //  创建本地文件
             for (Map.Entry<String, List<FileInfo>> entry : allFile.entrySet()) {
@@ -99,7 +103,7 @@ public class StoreTypeSwitch {
                         log.warn("未同步的文件：" + path + "/" + fileInfo.getName());
                         continue;
                     }
-                    log.info("Copy file: " + source + " -> " + target);
+                    log.debug("Copy file: " + source + " -> " + target);
                     storeServiceFactory.getService().store(user.getId(), Files.newInputStream(source), path, fileInfo);
                 }
             }

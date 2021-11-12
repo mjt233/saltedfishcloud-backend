@@ -81,7 +81,7 @@ public class HardLinkStoreService extends RAWStoreService {
             throw new UnableOverwriteException(409, "已存在同名目录: " + targetDir + "/" + fileInfo.getName());
         }
         FileUtils.createParentDirectory(rawTarget);
-        log.info("create hard link:" + md5Target + " <==> "  + rawTarget);
+        log.debug("create hard link:" + md5Target + " <==> "  + rawTarget);
         if (Files.exists(rawTarget)) Files.delete(rawTarget);
         Files.createLink(rawTarget, md5Target);
     }

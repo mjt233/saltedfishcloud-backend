@@ -78,9 +78,9 @@ public class DiskConfig {
             throw new IllegalStateException("当前已处于：" + READ_ONLY_LEVEL);
         }
         if (level != null) {
-            log.info("只读级别切换到" + level);
+            log.debug("只读级别切换到" + level);
         } else {
-            log.info("关闭只读模式");
+            log.debug("关闭只读模式");
         }
         READ_ONLY_LEVEL = level;
     }
