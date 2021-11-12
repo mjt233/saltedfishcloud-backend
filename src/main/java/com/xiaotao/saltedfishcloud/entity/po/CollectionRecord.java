@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.entity.po;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -25,6 +24,9 @@ public class CollectionRecord {
     private Long size;
     private String md5;
     private String ip;
+
+    @Column(insertable = false, updatable = false)
+    private String username;
 
     public CollectionRecord(Long cid, Integer uid, String filename, Long size, String md5, String ip) {
         this.cid = cid;
