@@ -187,6 +187,7 @@ public class CollectionService {
             filename = pair[0] + "_" + cnt + (pair[1] == null ? "" : ("." + pair[1]));
             cnt++;
         }
+        record.setFilename(filename);
         recordDao.save(record);
         fileInfo.setName(filename);
         // 存入文件
