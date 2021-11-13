@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ExpiredChecker {
     private final CollectionInfoRepository cir;
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 60000, initialDelay = 10000)
     public void loopCheck() {
         try {
             cir.updateState();
