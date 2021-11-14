@@ -8,6 +8,7 @@ server:
 spring:
   jpa:
     database: mysql
+    open-in-view: false
     hibernate:
       ddl-auto: none
   datasource:
