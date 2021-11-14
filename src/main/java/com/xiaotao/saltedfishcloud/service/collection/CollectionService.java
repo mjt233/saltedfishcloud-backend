@@ -168,6 +168,7 @@ public class CollectionService {
 
             // 收集完最后一个，状态设为已关闭
             if (ci.getAvailable() == 1) {
+                ci.setAvailable(0);
                 ci.setState(CollectionInfo.State.CLOSED);
                 collectionDao.save(ci);
             }
