@@ -1,13 +1,5 @@
-if [ -f ../src/main/resources/application.yml ]; then
-	echo application.xml已存在
-else 
-	echo 生成application.xml
-	cp ../src/main/resources/application.simple.yml ../src/main/resources/application.yml
-fi
-
-if [ -f ../target/*.jar ]; then
-	rm ../target/*.jar
-fi
+cp ../src/main/resources/application.sample.yml ../src/main/resources/application.yml
+rm ../target/*.jar 2>&1 > /dev/null
 
 cd ..
 mvn package

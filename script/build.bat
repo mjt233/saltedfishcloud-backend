@@ -1,10 +1,5 @@
 @echo off
-if exist ..\src\main\resources\application.yml (
-	echo application.xml已存在
-) else (
-	echo 生成application.xml
-	copy ..\src\main\resources\application.simple.yml ..\src\main\resources\application.yml
-)
+copy ..\src\main\resources\application.sample.yml ..\src\main\resources\application.yml
 if exist ..\target\*.jar (
 	del ..\target\*.jar
 )
