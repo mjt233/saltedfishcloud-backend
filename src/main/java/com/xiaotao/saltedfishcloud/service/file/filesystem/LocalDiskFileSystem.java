@@ -49,9 +49,10 @@ public class LocalDiskFileSystem implements DiskFileSystem {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void mkdirs(int uid, String path) throws IOException {
-        fileRecordService.mkdirs(uid, path);
+    public String mkdirs(int uid, String path) throws IOException {
+        String nid = fileRecordService.mkdirs(uid, path);
         storeServiceFactory.getService().mkdir(uid, path, "");
+        return nid;
     }
 
     @Override
@@ -162,14 +163,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
         if (fileInfo.getMd5() == null) {
             fileInfo.updateMd5();
         }
-        storeServiceFactory.getService().store(uid, stream, path, fileInfo);
-
-        int res = fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), path);
-        if ( res == 0) {
-            return fileRecordService.updateFileRecord(uid, fileInfo.getName(), path, fileInfo.getSize(), fileInfo.getMd5());
-        } else {
-            return res;
-        }
+        return saveFileWithDelete(uid, stream, path, fileInfo);
     }
 
     @Override
@@ -182,19 +176,38 @@ public class LocalDiskFileSystem implements DiskFileSystem {
         } else {
             fileInfo.updateMd5();
         }
+        return saveFileWithDelete(uid, file.getInputStream(), requestPath, fileInfo);
+    }
 
+    private int saveFileWithDelete(int uid, InputStream file, String path, FileInfo fileInfo) throws IOException {
+        String nid;
+        // 判断目录是否存在，若不存在则尝试创建
         try {
-            nodeService.getLastNodeInfoByPath(uid, requestPath);
+            nid = nodeService.getLastNodeInfoByPath(uid, path).getId();
         } catch (NoSuchFileException e) {
-            mkdirs(uid, requestPath);
+            nid = mkdirs(uid, path);
         }
-        storeServiceFactory.getService().store(uid, file.getInputStream(), requestPath, fileInfo);
-        int res = fileRecordService.addRecord(uid, file.getOriginalFilename(), fileInfo.getSize(), fileInfo.getMd5(), requestPath);
-        if ( res == 0) {
-            return fileRecordService.updateFileRecord(uid, file.getOriginalFilename(), requestPath, file.getSize(), fileInfo.getMd5());
+
+        // 判断是否存在同名文件，若存在则依据md5判断文件内容是否相同
+        // 如果文件内容相同，则不做任何处理
+        // 若文件相同，则执行一次删除同名文件
+        FileInfo originInfo = fileDao.getFileInfo(uid, fileInfo.getName(), nid);
+        boolean exist = false;
+        if (originInfo != null) {
+            if (originInfo.getMd5().equals(fileInfo.getMd5())) {
+                return SAVE_NOT_CHANGE;
+            } else {
+                deleteFile(uid, path, Collections.singletonList(fileInfo.getName()));
+            }
+            exist = true;
+        }
+        storeServiceFactory.getService().store(uid, file, path, fileInfo);
+        if (exist) {
+            fileDao.updateRecord(uid, fileInfo.getName(), nid, fileInfo.getSize(), fileInfo.getMd5());
         } else {
-            return res;
+            fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid);
         }
+        return exist ? SAVE_COVER : SAVE_NEW_FILE;
     }
 
     @Override

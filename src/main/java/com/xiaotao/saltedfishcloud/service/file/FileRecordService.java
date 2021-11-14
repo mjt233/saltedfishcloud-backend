@@ -251,21 +251,29 @@ public class FileRecordService {
     }
 
 
+    /**
+     * 创建一个文件夹，若文件夹的祖先目录不存在，则一并创建
+     * @param uid   用户ID
+     * @param path  要创建的文件夹完整网盘路径
+     * @return      文件夹创建后的节点ID，若无文件夹成功创建则返回null
+     */
     @Transactional(rollbackFor = Exception.class)
-    public void mkdirs(int uid, String path) {
+    public String mkdirs(int uid, String path) {
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         String id = "" + uid;
+        String nid = null;
         for (String s : pb.getPath()) {
             NodeInfo nodeInfo = nodeDao.getNodeByParentId(uid, id, s);
             if (nodeInfo == null) {
-                String nid = nodeService.addNode(uid, s, id);
+                nid = nodeService.addNode(uid, s, id);
                 fileDao.addRecord(uid, s, -1L, nid, id);
                 id = nid;
             } else {
                 id = nodeInfo.getId();
             }
         }
+        return nid;
     }
 
     /**

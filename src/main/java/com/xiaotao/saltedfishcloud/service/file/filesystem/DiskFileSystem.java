@@ -23,6 +23,9 @@ import java.util.List;
  * @TODO 增加基于节点ID操作的方法以避免通过路径查询节点ID
  */
 public interface DiskFileSystem {
+    int SAVE_COVER = 0;
+    int SAVE_NEW_FILE = 1;
+    int SAVE_NOT_CHANGE = 2;
 
     /**
      * 判断给定的路径是否存在
@@ -44,9 +47,10 @@ public interface DiskFileSystem {
      * 在网盘中连同所有父级目录，创建一个目录
      * @param uid   用户ID
      * @param path  网盘目录完整路径
+     * @return 目录创建后，该目录的节点ID
      * @throws JsonException 目录树中某个部分与文件名冲突时抛出
      */
-    void mkdirs(int uid, String path) throws IOException;
+    String mkdirs(int uid, String path) throws IOException;
 
     /**
      * 通过文件MD5获取一个存储在系统中的文件<br>

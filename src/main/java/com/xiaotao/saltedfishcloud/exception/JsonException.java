@@ -30,4 +30,9 @@ public class JsonException extends RuntimeException {
     public JsonException(ErrorInfo error) {
         res = JsonResult.getInstance(error.getStatus(), null, error.getMessage());
     }
+
+    @Override
+    public String getMessage() {
+        return res.getMsg();
+    }
 }
