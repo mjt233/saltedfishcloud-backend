@@ -2270,7 +2270,7 @@
 					]
 				},
 				{
-					"name": "关闭收集",
+					"name": "删除收集",
 					"request": {
 						"method": "DELETE",
 						"header": [],
@@ -2285,7 +2285,7 @@
 								"2"
 							]
 						},
-						"description": "# 关闭收集\n- URL:/api/collection/{cid}\n- 方法：DELETE\n- 权限：只允许创建者关闭\n## URL参数\n- cid: 收集ID"
+						"description": "# 删除收集\n- URL:/api/collection/{cid}\n- 方法：DELETE\n- 权限：只允许创建者删除\n## URL参数\n- cid: 收集ID"
 					},
 					"response": []
 				},
@@ -2412,6 +2412,28 @@
 							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"content\": [\n            {\n                \"id\": 3,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 0,\n                \"md5\": \"d41d8cd98f00b204e9800998ecf8427e\",\n                \"createdAt\": \"2021-11-05T03:33:57.000+00:00\"\n            },\n            {\n                \"id\": 4,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 0,\n                \"md5\": \"d41d8cd98f00b204e9800998ecf8427e\",\n                \"createdAt\": \"2021-11-05T03:34:26.000+00:00\"\n            },\n            {\n                \"id\": 5,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 427258,\n                \"md5\": \"bfb58b9b75035569b8a0b7c23023e569\",\n                \"createdAt\": \"2021-11-05T03:35:05.000+00:00\"\n            },\n            {\n                \"id\": 6,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 427258,\n                \"md5\": \"bfb58b9b75035569b8a0b7c23023e569\",\n                \"createdAt\": \"2021-11-05T03:35:39.000+00:00\"\n            },\n            {\n                \"id\": 7,\n                \"cid\": 5,\n                \"uid\": 1,\n                \"filename\": \"[pdf]李田所先辈-红茶工艺2班.pdf\",\n                \"size\": 427258,\n                \"md5\": \"bfb58b9b75035569b8a0b7c23023e569\",\n                \"createdAt\": \"2021-11-05T03:35:40.000+00:00\"\n            }\n        ],\n        \"totalCount\": 5,\n        \"totalPage\": 1\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
+				},
+				{
+					"name": "设置收集状态",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/collection/2/state/OPEN",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"collection",
+								"2",
+								"state",
+								"OPEN"
+							]
+						},
+						"description": "# 设置收集状态\n- URL: /api/collection/{cid}/state/{state}\n- 方法：DELETE\n\n## URL参数\n- cid - 要操作的收集ID\n- state - 设置的状态，可选OPEN或CLOSED\n\n## 注意事项\n- 因时间过期导致的收集自动关闭时，会在一分钟内被自动关闭，且在开启期间提交的文件也会无法通过时间约束校验\n- 因收集数量限制满导致的关闭时，再对其进行开启操作后，提交的文件仍无法通过数量约束校验"
+					},
+					"response": []
 				}
 			]
 		}

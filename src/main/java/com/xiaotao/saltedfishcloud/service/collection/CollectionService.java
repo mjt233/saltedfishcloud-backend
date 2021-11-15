@@ -16,13 +16,9 @@ import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
-import org.aspectj.util.FileUtil;
-import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,7 +47,18 @@ public class CollectionService {
         CollectionRecord record = new CollectionRecord();
         record.setCid(cid);
         return recordDao.findByCid(cid, PageRequest.of(page, size));
-//        return recordDao.findAll(Example.of(record), PageRequest.of(page, size, Sort.by(Sort.Order.desc("id"))));
+    }
+
+    /**
+     * 删除一个文件收集
+     * @param uid   调用者用户ID，用于验证权限
+     * @param cid   文件收集ID
+     */
+    public void deleteCollection(int uid, long cid) {
+        CollectionInfo collection = collectionDao.findById(cid).orElse(null);
+        if (collection == null) throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND);
+        if (!collection.getUid().equals(uid)) throw new JsonException(ErrorInfo.FORMAT_ERROR);
+        collectionDao.deleteById(cid);
     }
 
     /**
@@ -60,13 +67,11 @@ public class CollectionService {
      * @param cid   收集ID
      * @return  关闭后的收集任务信息
      */
-    public CollectionInfo closeCollection(int uid, Long cid) {
+    public CollectionInfo setState(int uid, Long cid, CollectionInfo.State state) {
         CollectionInfo info = collectionDao.findById(cid).orElse(null);
         if (info == null) throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND);
-        if (!info.getUid().equals(uid)) {
-            throw new JsonException(ErrorInfo.SYSTEM_FORBIDDEN);
-        }
-        info.setState(CollectionInfo.State.CLOSED);
+        if (!info.getUid().equals(uid)) throw new JsonException(ErrorInfo.SYSTEM_FORBIDDEN);
+        info.setState(state);
         collectionDao.save(info);
         return info;
     }

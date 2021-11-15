@@ -50,10 +50,19 @@ public class CollectController {
     }
 
     @DeleteMapping("{cid}")
-    public JsonResult closeCollection(@PathVariable("cid") Long cid) {
+    public JsonResult delete(@PathVariable("cid") Long cid) {
         User user = SecureUtils.getSpringSecurityUser();
         assert user != null;
-        return JsonResult.getInstance(collectionService.closeCollection(user.getId(), cid));
+        collectionService.deleteCollection(user.getId(), cid);
+        return JsonResult.getInstance();
+    }
+
+    @PutMapping("{cid}/state/{state}")
+    public JsonResult setState(@PathVariable("cid") Long cid,
+                               @PathVariable("state") CollectionInfo.State state) {
+        User user = SecureUtils.getSpringSecurityUser();
+        assert user != null;
+        return JsonResult.getInstance(collectionService.setState(user.getId(), cid, state));
     }
 
     @PostMapping
