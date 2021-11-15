@@ -31,6 +31,7 @@ public class DatabaseUpdater implements ApplicationRunner {
     private final Connection conn;
     private final ConfigDao configDao;
     private final Version lastVersion;
+    private final Version currentVersion;
     private final ResourceLoader resourceLoader;
 
     /**
@@ -75,6 +76,7 @@ public class DatabaseUpdater implements ApplicationRunner {
             v = DiskConfig.VERSION;
         }
         lastVersion = v;
+        currentVersion = DiskConfig.VERSION;
         this.configDao = configDao;
         this.resourceLoader = resourceLoader;
     }

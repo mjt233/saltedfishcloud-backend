@@ -39,11 +39,11 @@ public class JsonResult extends LinkedHashMap<String, Object>{
         return getInstance(200, null, "OK");
     }
 
-    public static JsonResult getInstanceWithPage(Page<?> page) {
+    public static <T> JsonResult getInstanceWithPage(Page<T> page) {
         return JsonResult.getInstance(CommonPageInfo.of(page));
     }
 
-    public static JsonResult getInstanceWithPage(PageInfo<?> page) {
+    public static <T> JsonResult getInstanceWithPage(PageInfo<T> page) {
         return JsonResult.getInstance(CommonPageInfo.of(page));
     }
 
