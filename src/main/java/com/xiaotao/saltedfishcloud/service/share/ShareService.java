@@ -15,6 +15,7 @@ import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -76,9 +77,11 @@ public class ShareService {
             SharePO sharePO = SharePO.valueOf(
                     shareDTO,
                     fileInfo.isFile() ? ShareType.FILE : ShareType.DIR,
-                    fileInfo.isFile()? fileInfo.getMd5() : nid,
+                    fileInfo.isFile()? null : nid,
                     uid
             );
+            sharePO.setParentId(nid);
+            sharePO.setSize(fileInfo.getSize());
             shareDao.save(sharePO);
             return sharePO;
         } catch (NoSuchFileException e) {
@@ -93,8 +96,17 @@ public class ShareService {
      * @param size  每页大小
      * @return  分页信息
      */
-    public CommonPageInfo<SharePO> getUserShare(int uid, int page, int size) {
-        return CommonPageInfo.of(shareDao.findAllByUidEquals(uid, PageRequest.of(page, size)));
+    public CommonPageInfo<SharePO> getUserShare(int uid, int page, int size, boolean hideKeyAttr) {
+        CommonPageInfo<SharePO> res = CommonPageInfo.of(shareDao.findAllByUidEquals(
+                uid,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+        ));
+        if (hideKeyAttr) {
+            for (SharePO share : res.getContent()) {
+                share.hideKeyAttr();
+            }
+        }
+        return res;
     }
 
     /**

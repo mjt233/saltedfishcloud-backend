@@ -34,12 +34,10 @@ public class ShareCollection {
                                @PathVariable("verification") String verification,
                                @RequestParam(value = "code", required = false) String extractCode) {
         SharePO share = shareService.getShare(sid, verification);
-        if(!share.validateExtractCode(extractCode)) {
-            share.setName(null);
-            share.setExtractCode(null);
-            share.setType(null);
-            share.setNid(null);
+        if(share.validateExtractCode(extractCode)) {
+            share.setValidateSuccess(true);
         }
+        share.hideKeyAttr();
         return JsonResult.getInstance(share);
     }
 
@@ -85,12 +83,7 @@ public class ShareCollection {
             uid = user.getId();
         }
         page--;
-        CommonPageInfo<SharePO> userShare = shareService.getUserShare(uid, page, size);
-        if (!emptyUid) {
-            for (SharePO po : userShare.getContent()) {
-                po.setVerification(null);
-            }
-        }
+        CommonPageInfo<SharePO> userShare = shareService.getUserShare(uid, page, size, !emptyUid);
         return JsonResult.getInstance(userShare);
     }
 }

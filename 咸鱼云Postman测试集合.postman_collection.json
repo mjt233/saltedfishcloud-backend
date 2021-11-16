@@ -2447,7 +2447,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": 1637072638000,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
+							"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -2464,17 +2464,17 @@
 								"share"
 							]
 						},
-						"description": "# 创建分享\n- URL: /api/share\n- 方法：POST\n\n## 请求示例\n```json\n{\n    \"path\": \"/\", // 资源所在的目录\n    \"expiredAt\": 1637072638000, // 分享到期时间，可以为null或缺少该字段表示永不过期\n    \"name\": \"我的收集\", // 文件或目录的名称\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"// 资源提取码，最大16个字符，可以为null或缺少该字段表示不需要提取码\n}\n```\n\n## 响应字段含义\n|字段名|含义|\n|-|-|\n|id|分享id|\n|uid|创建者ID|\n|nid|资源所在节点id|\n|verification|分享校验码，一般与分享id一同使用用于定位一个具体的分享|\n|type|分享类型，可为DIR或FILE|\n|extractCode|提取码|\n|name|分享的资源名称|\n|created_at|创建日期|\n|expired_at|过期日期|"
+						"description": "# 创建分享\n- URL: /api/share\n- 方法：POST\n\n## 请求示例\n```json\n{\n    \"path\": \"/\", // 资源所在的目录\n    \"expiredAt\": 1637072638000, // 分享到期时间，可以为null或缺少该字段表示永不过期\n    \"name\": \"我的收集\", // 文件或目录的名称\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"// 资源提取码，最大16个字符，可以为null或缺少该字段表示不需要提取码\n}\n```\n\n## 响应字段含义\n|字段名|含义|\n|-|-|\n|id|分享id|\n|uid|创建者ID|\n|nid|资源所在节点id|\n|parentId|资源所在的节点的父节点ID|\n|verification|分享校验码，一般与分享id一同使用用于定位一个具体的分享|\n|type|分享类型，可为DIR或FILE|\n|extractCode|提取码|\n|name|分享的资源名称|\n|created_at|创建日期|\n|expired_at|过期日期|"
 					},
 					"response": [
 						{
-							"name": "创建分享",
+							"name": "有效期无限制的分享",
 							"originalRequest": {
 								"method": "POST",
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": 1637072638000,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
+									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -2542,7 +2542,7 @@
 								},
 								{
 									"key": "Date",
-									"value": "Mon, 15 Nov 2021 16:04:25 GMT"
+									"value": "Tue, 16 Nov 2021 02:09:16 GMT"
 								},
 								{
 									"key": "Keep-Alive",
@@ -2554,7 +2554,96 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 14,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"verification\": \"a5b179613257496287b7926422e7f1b7\",\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-15T16:04:24.988+00:00\",\n        \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n    },\n    \"msg\": \"OK\"\n}"
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 4,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"35e869d34b204517add5e3fcfa6debc8\",\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T02:09:16.200+00:00\"\n    },\n    \"msg\": \"OK\"\n}"
+						},
+						{
+							"name": "创建分享",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/share",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 16 Nov 2021 02:37:26 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 1,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"a9eebb9506cc44648a80ab5c549c1f1c\",\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T02:37:26.086+00:00\",\n        \"expired\": false\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
@@ -2585,11 +2674,102 @@
 								}
 							]
 						},
-						"description": "# 获取创建的分享列表\n- URL: /api/share/user/{uid}\n- 方法：GET\n\n## URL参数\n- uid 请求的用户ID（可选，留空则表示使用当前登录的用户id）当未指定uid时，可获取所有分享的verification验证码"
+						"description": "# 获取创建的分享列表\n- URL: /api/share/user/{uid}\n- 方法：GET\n\n## URL参数\n- uid 请求的用户ID（可选，留空则表示使用当前登录的用户id）当未指定uid时，可获取所有分享的verification验证码\n\n## 响应\n当查看指定用户的分享列表时，verification和extractCode字段会被隐藏"
 					},
 					"response": [
 						{
-							"name": "获取创建的分享列表",
+							"name": "获取已登录用户的分享列表",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/share/user?page=1&size=10",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share",
+										"user"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Nov 2021 16:04:40 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"content\": [\n            {\n                \"id\": 2,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"parentId\": \"1\",\n                \"verification\": \"c98616cf9af94a06b8cfea60d4f4470a\",\n                \"size\": -1,\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n                \"validateSuccess\": false,\n                \"expired\": false,\n                \"needExtractCode\": true\n            },\n            {\n                \"id\": 1,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"parentId\": \"1\",\n                \"verification\": \"d431b88954fc4763b57d0937ed272ac7\",\n                \"size\": -1,\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-16T03:00:55.000+00:00\",\n                \"validateSuccess\": false,\n                \"expired\": false,\n                \"needExtractCode\": true\n            }\n        ],\n        \"totalCount\": 2,\n        \"totalPage\": 1\n    },\n    \"msg\": \"OK\"\n}"
+						},
+						{
+							"name": "获取指定用户的分享列表",
 							"originalRequest": {
 								"method": "GET",
 								"header": [],
@@ -2666,7 +2846,7 @@
 								},
 								{
 									"key": "Date",
-									"value": "Mon, 15 Nov 2021 16:04:40 GMT"
+									"value": "Tue, 16 Nov 2021 03:16:55 GMT"
 								},
 								{
 									"key": "Keep-Alive",
@@ -2678,7 +2858,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"content\": [\n            {\n                \"id\": 1,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"60bebe70597c49a0800c81e4c9bf16a6\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:54:58.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            },\n            {\n                \"id\": 2,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"32df05e90b1040ec8dd2506a2a9ef62a\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:55:10.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            },\n            {\n                \"id\": 3,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"5e2be43d7f7a47ebb39aaed64b3efd7f\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:55:10.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            },\n            {\n                \"id\": 4,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"f24af4cc1a204df1b0fc45f38eebe0a0\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:55:10.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            },\n            {\n                \"id\": 5,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"edd658250a5745fa9a1e322fd8c05322\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:55:11.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            },\n            {\n                \"id\": 6,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"55f432fc287247fc8fc77c2728d851e4\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:55:11.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            },\n            {\n                \"id\": 7,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"c8857c5203c04e4b9f5a0f707b7a2118\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:55:12.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            },\n            {\n                \"id\": 8,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"aacfbcdf8d9f49eb8ec06d9636650c63\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:55:12.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            },\n            {\n                \"id\": 9,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"4171b7f49ff443b4942d5530b742a35d\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:55:12.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            },\n            {\n                \"id\": 10,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"verification\": \"8a9f696daba949feae2a64f962ab707b\",\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-15T15:55:13.000+00:00\",\n                \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n            }\n        ],\n        \"totalCount\": 14,\n        \"totalPage\": 2\n    },\n    \"msg\": \"OK\"\n}"
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"content\": [\n            {\n                \"id\": 2,\n                \"uid\": 1,\n                \"size\": -1,\n                \"type\": \"DIR\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n                \"validateSuccess\": false,\n                \"expired\": false,\n                \"needExtractCode\": true\n            },\n            {\n                \"id\": 1,\n                \"uid\": 1,\n                \"size\": -1,\n                \"type\": \"DIR\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-16T03:00:55.000+00:00\",\n                \"validateSuccess\": false,\n                \"expired\": false,\n                \"needExtractCode\": true\n            }\n        ],\n        \"totalCount\": 2,\n        \"totalPage\": 1\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
@@ -2688,7 +2868,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{addr}}/api/share/1/60bebe70597c49a0800c81e4c9bf16a6",
+							"raw": "{{addr}}/api/share/1/9391bb58cc9447fe81ef563eaa45629e?code=啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦",
 							"host": [
 								"{{addr}}"
 							],
@@ -2696,19 +2876,25 @@
 								"api",
 								"share",
 								"1",
-								"60bebe70597c49a0800c81e4c9bf16a6"
+								"9391bb58cc9447fe81ef563eaa45629e"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦"
+								}
 							]
 						},
-						"description": "# 获取分享资源的基本信息\n- URL: /api/share/{sid}/{verification}\n- 方法：GET\n\n## URL参数\n- sid 分享ID\n- verification 分享校验码"
+						"description": "# 获取分享资源的基本信息\n- URL: /api/share/{sid}/{verification}\n- 方法：GET\n\n## URL参数\n- sid 分享ID\n- verification 分享校验码\n\n## QueryString参数\n- code 提取码（可选）\n\n## 响应\n- 若分享已过期，则HTTP响应码为非200，且在msg字段提供错误内容\n- 若分享需要使用提取码，提取码不正确或未提供时，validateSuccess字段为false"
 					},
 					"response": [
 						{
-							"name": "获取分享资源的基本信息",
+							"name": "提供提取码",
 							"originalRequest": {
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/share/1/60bebe70597c49a0800c81e4c9bf16a6",
+									"raw": "{{addr}}/api/share/1/9391bb58cc9447fe81ef563eaa45629e?code=啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦",
 									"host": [
 										"{{addr}}"
 									],
@@ -2716,7 +2902,13 @@
 										"api",
 										"share",
 										"1",
-										"60bebe70597c49a0800c81e4c9bf16a6"
+										"9391bb58cc9447fe81ef563eaa45629e"
+									],
+									"query": [
+										{
+											"key": "code",
+											"value": "啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦"
+										}
 									]
 								}
 							},
@@ -2770,7 +2962,7 @@
 								},
 								{
 									"key": "Date",
-									"value": "Mon, 15 Nov 2021 16:21:07 GMT"
+									"value": "Tue, 16 Nov 2021 01:54:47 GMT"
 								},
 								{
 									"key": "Keep-Alive",
@@ -2782,7 +2974,96 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 1,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"verification\": \"60bebe70597c49a0800c81e4c9bf16a6\",\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-15T15:54:58.000+00:00\",\n        \"expiredAt\": \"2021-11-16T14:23:58.000+00:00\"\n    },\n    \"msg\": \"OK\"\n}"
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 2,\n        \"uid\": 1,\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n        \"validateSuccess\": true,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
+						},
+						{
+							"name": "未提供提取码",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/share/1/9391bb58cc9447fe81ef563eaa45629e",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share",
+										"1",
+										"9391bb58cc9447fe81ef563eaa45629e"
+									],
+									"query": [
+										{
+											"key": "code",
+											"value": "啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 16 Nov 2021 01:57:06 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n\n        \"id\": 2,\n        \"uid\": 1,\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},

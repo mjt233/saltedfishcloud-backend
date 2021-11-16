@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.share.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -7,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.util.StringUtils;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -23,7 +25,9 @@ public class SharePO {
     private Integer id;
     private Integer uid;
     private String nid;
+    private String parentId;
     private String verification;
+    private Long size;
 
     @Enumerated(EnumType.STRING)
     private ShareType type;
@@ -33,6 +37,13 @@ public class SharePO {
     @CreatedDate
     private Date createdAt;
     private Date expiredAt;
+
+    @Transient
+    private boolean validateSuccess = false;
+
+    @Transient
+    @JsonIgnore
+    private boolean hide = false;
 
     public SharePO(Integer uid, String nid, ShareType type, Date expiredAt) {
         this.uid = uid;
@@ -53,11 +64,45 @@ public class SharePO {
         return sharePO;
     }
 
+    /**
+     * 验证提取码是否有效
+     * @param code  提取码
+     * @return  有效true，否则false
+     */
     public boolean validateExtractCode(String code) {
         return extractCode == null || extractCode.equals(code);
     }
 
     public boolean isExpired() {
         return expiredAt != null && expiredAt.getTime() < System.currentTimeMillis();
+    }
+
+    public SharePO hideKeyAttr() {
+        hide = true;
+        return this;
+    }
+
+    public String getNid() {
+        if (hide) return null;
+        return nid;
+    }
+
+    public String getParentId() {
+        if (hide) return null;
+        return parentId;
+    }
+
+    public String getVerification() {
+        if (hide) return null;
+        return verification;
+    }
+
+    public String getExtractCode() {
+        if (hide) return null;
+        return extractCode;
+    }
+
+    public boolean isNeedExtractCode() {
+        return StringUtils.hasLength(extractCode);
     }
 }
