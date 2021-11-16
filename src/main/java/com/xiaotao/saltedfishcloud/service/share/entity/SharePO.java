@@ -52,4 +52,12 @@ public class SharePO {
         sharePO.setName(shareDTO.getName());
         return sharePO;
     }
+
+    public boolean validateExtractCode(String code) {
+        return extractCode == null || extractCode.equals(code);
+    }
+
+    public boolean isExpired() {
+        return expiredAt != null && expiredAt.getTime() < System.currentTimeMillis();
+    }
 }

@@ -107,6 +107,7 @@ public class ShareService {
         SharePO po = shareDao.findById(sid).orElse(null);
         if (po == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
         if (!po.getVerification().equals(verification)) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        if (po.isExpired()) throw new JsonException(ErrorInfo.SHARE_EXTRACT_ERROR);
         return po;
     }
 

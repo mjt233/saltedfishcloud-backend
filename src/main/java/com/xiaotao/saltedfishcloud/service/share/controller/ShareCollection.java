@@ -10,11 +10,9 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import lombok.RequiredArgsConstructor;
-import org.apache.tomcat.util.http.RequestUtil;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -33,8 +31,16 @@ public class ShareCollection {
     @GetMapping("/{sid}/{verification}")
     @AllowAnonymous
     public JsonResult getShare(@PathVariable("sid") Integer sid,
-                               @PathVariable("verification") String verification) {
-        return JsonResult.getInstance(shareService.getShare(sid, verification));
+                               @PathVariable("verification") String verification,
+                               @RequestParam(value = "code", required = false) String extractCode) {
+        SharePO share = shareService.getShare(sid, verification);
+        if(!share.validateExtractCode(extractCode)) {
+            share.setName(null);
+            share.setExtractCode(null);
+            share.setType(null);
+            share.setNid(null);
+        }
+        return JsonResult.getInstance(share);
     }
 
     @GetMapping({

@@ -7,6 +7,6 @@ CREATE TABLE share (
     `extract_code` VARCHAR(16) COMMENT '资源提取码，为null则表示不需要提取码',
     `name` VARCHAR(1024) NOT NULL COMMENT '分享的资源名称，即为文件名或目录名',
     `created_at` DATETIME NOT NULL COMMENT '分享创建日期',
-    `expired_at` DATETIME NOT NULL COMMENT '分享过期日期',
+    `expired_at` DATETIME COMMENT '分享过期日期',
     INDEX uid_index(uid)
 )ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;

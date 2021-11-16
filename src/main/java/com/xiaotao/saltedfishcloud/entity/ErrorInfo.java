@@ -27,7 +27,8 @@ public enum ErrorInfo {
     SYSTEM_BUSY(4000, 500, "系统繁忙"),
     SYSTEM_FORBIDDEN(4001, 403, "权限不足"),
     SHARE_NOT_FOUND(5000, 404, "分享不存在"),
-    SHARE_EXTRACT_ERROR(5001, 400, "提取码错误");
+    SHARE_EXTRACT_ERROR(5001, 400, "提取码错误"),
+    SHARE_EXPIRED(5002, 404, "分享已过期");
     int code;
     int status;
     String message;

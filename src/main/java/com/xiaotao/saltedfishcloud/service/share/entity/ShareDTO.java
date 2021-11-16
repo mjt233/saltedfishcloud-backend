@@ -26,7 +26,6 @@ public class ShareDTO {
     /**
      * 过期时间
      */
-    @NotNull
     private Date expiredAt;
 
     /**
