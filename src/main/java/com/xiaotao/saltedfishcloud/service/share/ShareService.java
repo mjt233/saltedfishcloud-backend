@@ -36,6 +36,17 @@ public class ShareService {
     private final DiskFileSystemFactory fileSystemFactory;
 
     /**
+     * 取消分享
+     * @param sid 分享ID
+     */
+    public void deleteShare(Integer sid, Integer uid) {
+        SharePO share = shareDao.findById(sid).orElse(null);
+        if (share == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        if (!share.getUid().equals(uid)) throw new JsonException(ErrorInfo.SYSTEM_FORBIDDEN);
+        shareDao.deleteById(sid);
+    }
+
+    /**
      * 获取分享文件或目录的具体文件内容资源
      * @param extractor 资源提取信息类
      * @return  文件资源

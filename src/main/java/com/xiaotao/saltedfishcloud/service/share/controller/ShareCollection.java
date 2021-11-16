@@ -11,7 +11,6 @@ import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
@@ -34,6 +33,15 @@ import java.util.List;
 public class ShareCollection {
     private final ShareService shareService;
 
+    @DeleteMapping("{sid}")
+    public JsonResult deleteShare(@PathVariable("sid") Integer sid) {
+        User user = SecureUtils.getSpringSecurityUser();
+
+        assert user != null;
+        shareService.deleteShare(sid, user.getId());
+
+        return JsonResult.getInstance();
+    }
 
     @GetMapping("/resource")
     @AllowAnonymous
