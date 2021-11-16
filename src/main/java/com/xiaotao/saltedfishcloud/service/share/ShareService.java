@@ -11,9 +11,12 @@ import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.dao.ShareDao;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
+import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
+import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,36 @@ public class ShareService {
     private final FileDao fileDao;
     private final ShareDao shareDao;
     private final DiskFileSystemFactory fileSystemFactory;
+
+    /**
+     * 获取分享文件或目录的具体文件内容资源
+     * @param extractor 资源提取信息类
+     * @return  文件资源
+     */
+    public Resource getFileResource(ShareExtractorDTO extractor) {
+        SharePO share = shareDao.findById(extractor.getSid()).orElse(null);
+        if (share == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        if (!share.getVerification().equals(extractor.getVerification())) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        if (!share.validateExtractCode(extractor.getCode())) throw new JsonException(ErrorInfo.SHARE_EXTRACT_ERROR);
+
+        // 文件直接获取Resource
+        String basePath = nodeService.getPathByNode(share.getUid(), share.getParentId());
+        if (share.getType() == ShareType.FILE) {
+            return fileSystemFactory.getFileSystem().getResource(
+                    share.getUid(),
+                    basePath,
+                    share.getName()
+                );
+        }
+        String fullPath = PathBuilder.formatPath(basePath + "/" + extractor.getPath(), true);
+        if (!FileNameValidator.valid(extractor.getName())) throw new IllegalArgumentException("无效文件名");
+        if (!fullPath.startsWith(basePath)) throw new IllegalArgumentException("无效路径");
+        return fileSystemFactory.getFileSystem().getResource(
+                share.getUid(),
+                fullPath,
+                extractor.getName()
+        );
+    }
 
     public List<FileInfo>[] browse(int sid, String verification, String path, String extractCode) throws IOException {
         SharePO share = shareDao.findById(sid).orElse(null);
@@ -77,7 +110,7 @@ public class ShareService {
             SharePO sharePO = SharePO.valueOf(
                     shareDTO,
                     fileInfo.isFile() ? ShareType.FILE : ShareType.DIR,
-                    fileInfo.isFile()? null : nid,
+                    nid,
                     uid
             );
             sharePO.setParentId(nid);

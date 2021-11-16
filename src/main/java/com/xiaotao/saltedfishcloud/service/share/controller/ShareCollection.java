@@ -9,16 +9,22 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
+import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.security.Principal;
 import java.util.List;
 
@@ -27,6 +33,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ShareCollection {
     private final ShareService shareService;
+
+
+    @GetMapping("/resource")
+    @AllowAnonymous
+    public HttpEntity<Resource> getShareFile(@Valid ShareExtractorDTO extractor) throws UnsupportedEncodingException {
+        return ResourceUtils.wrapResource(shareService.getFileResource(extractor));
+    }
 
     @GetMapping("/{sid}/{verification}")
     @AllowAnonymous

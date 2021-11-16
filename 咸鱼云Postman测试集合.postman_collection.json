@@ -3188,6 +3188,52 @@
 							"body": "{\n    \"code\": 200,\n    \"data\": [\n        [],\n        [\n            {\n                \"name\": \"Vegas_Pro_13.0-64bit(Build453)特别版汉化包_2.zip\",\n                \"md5\": \"a9365e3bb386d26d2e71511dcf06279a\",\n                \"type\": 2,\n                \"size\": 39233182,\n                \"uid\": 1,\n                \"node\": \"a7b752307ce247adb3b5481a242cc2da\",\n                \"created_at\": \"2021-11-15T02:31:15.000+00:00\",\n                \"formatModified\": \"2021-11-15 10:31:15\",\n                \"suffix\": \"zip\",\n                \"dir\": false\n            },\n            {\n                \"name\": \"package-lock.json\",\n                \"md5\": \"a9c39ca9ce7e935100cc62fb5cd1a431\",\n                \"type\": 2,\n                \"size\": 157858,\n                \"uid\": 1,\n                \"node\": \"a7b752307ce247adb3b5481a242cc2da\",\n                \"created_at\": \"2021-11-15T02:32:01.000+00:00\",\n                \"formatModified\": \"2021-11-15 10:32:01\",\n                \"suffix\": \"json\",\n                \"dir\": false\n            }\n        ]\n    ],\n    \"msg\": \"OK\"\n}"
 						}
 					]
+				},
+				{
+					"name": "获取分享的文件内容",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/share/resource?sid=4&verification=24f72153403c4fff9cec8e6cd7f6658a&code=114514&path=/我的收集/123&name=1.jpg",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"share",
+								"resource"
+							],
+							"query": [
+								{
+									"key": "sid",
+									"value": "4",
+									"description": "分享ID"
+								},
+								{
+									"key": "verification",
+									"value": "24f72153403c4fff9cec8e6cd7f6658a",
+									"description": "分享校验码"
+								},
+								{
+									"key": "code",
+									"value": "114514",
+									"description": "提取码（如果有则需要提供）"
+								},
+								{
+									"key": "path",
+									"value": "/我的收集/123",
+									"description": "要获取的目标文件所在的目录路径（该参数仅当分享类型为DIR时有意义）"
+								},
+								{
+									"key": "name",
+									"value": "1.jpg",
+									"description": "文件名（该参数仅当分享类型为DIR时有意义）"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}
