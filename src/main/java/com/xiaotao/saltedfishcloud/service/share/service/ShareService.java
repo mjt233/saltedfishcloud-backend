@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.share;
+package com.xiaotao.saltedfishcloud.service.share.service;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
@@ -71,7 +71,7 @@ public class ShareService {
                     share.getName()
                 );
         }
-        String fullPath = PathBuilder.formatPath(basePath + "/" + extractor.getPath(), true);
+        String fullPath = PathBuilder.formatPath(basePath + "/" + share.getName() + "/" + extractor.getPath(), true);
         if (!FileNameValidator.valid(extractor.getName())) throw new IllegalArgumentException("无效文件名");
         if (!fullPath.startsWith(basePath)) throw new IllegalArgumentException("无效路径");
         return fileSystemFactory.getFileSystem().getResource(
@@ -105,7 +105,6 @@ public class ShareService {
 
 
         try {
-            nodeService.getPathNodeByPath(share.getUid(), path);
             return fileSystemFactory.getFileSystem().getUserFileList(share.getUid(), fullPath);
         } catch (NoSuchFileException e) { throw new JsonException(ErrorInfo.NODE_NOT_FOUND); }
     }
