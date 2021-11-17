@@ -43,12 +43,18 @@ public class ShareCollection {
         return JsonResult.getInstance();
     }
 
+    /**
+     * 获取分享的资源文件内容
+     */
     @GetMapping("/resource")
     @AllowAnonymous
     public HttpEntity<Resource> getShareFile(@Valid ShareExtractorDTO extractor) throws UnsupportedEncodingException {
         return ResourceUtils.wrapResource(shareService.getFileResource(extractor));
     }
 
+    /**
+     * 获取一个分享信息
+     */
     @GetMapping("/{sid}/{verification}")
     @AllowAnonymous
     public JsonResult getShare(@PathVariable("sid") Integer sid,
@@ -62,6 +68,9 @@ public class ShareCollection {
         return JsonResult.getInstance(share);
     }
 
+    /**
+     * 浏览分享的目录内容
+     */
     @GetMapping({
             "/view/{sid}/{verification}/**",
             "/view/{sid}/{verification}",
@@ -76,6 +85,9 @@ public class ShareCollection {
         return JsonResult.getInstance(files);
     }
 
+    /**
+     * 创建分享
+     */
     @PostMapping
     public JsonResult createShare(@RequestBody @Valid ShareDTO shareDTO, Principal principal) {
         System.out.println(principal);
@@ -85,6 +97,9 @@ public class ShareCollection {
         return JsonResult.getInstance(share);
     }
 
+    /**
+     * 获取用户创建的分享列表
+     */
     @GetMapping({
             "/user/{uid}",
             "/user"

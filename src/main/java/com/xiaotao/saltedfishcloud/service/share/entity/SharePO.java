@@ -39,6 +39,9 @@ public class SharePO {
     private Date expiredAt;
 
     @Transient
+    private String username;
+
+    @Transient
     private boolean validateSuccess = false;
 
     @Transient

@@ -1,9 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.share;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
+import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
@@ -17,6 +19,8 @@ import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -33,6 +37,7 @@ public class ShareService {
     private final NodeService nodeService;
     private final FileDao fileDao;
     private final ShareDao shareDao;
+    private final UserDao userDao;
     private final DiskFileSystemFactory fileSystemFactory;
 
     /**
@@ -121,7 +126,7 @@ public class ShareService {
             SharePO sharePO = SharePO.valueOf(
                     shareDTO,
                     fileInfo.isFile() ? ShareType.FILE : ShareType.DIR,
-                    nid,
+                    fileInfo.getMd5(),
                     uid
             );
             sharePO.setParentId(nid);
@@ -141,10 +146,22 @@ public class ShareService {
      * @return  分页信息
      */
     public CommonPageInfo<SharePO> getUserShare(int uid, int page, int size, boolean hideKeyAttr) {
-        CommonPageInfo<SharePO> res = CommonPageInfo.of(shareDao.findAllByUidEquals(
-                uid,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-        ));
+        SharePO po = new SharePO();
+        po.setUid(uid);
+        CommonPageInfo<SharePO> res = CommonPageInfo.of(
+                shareDao.findAll(
+                        Example.of(po, ExampleMatcher.matching()),
+                        PageRequest.of(
+                                page,
+                                size,
+                                Sort.by(Sort.Direction.DESC, "createdAt")
+                        )
+                )
+        );
+//        CommonPageInfo<SharePO> res = CommonPageInfo.of(shareDao.findAllByUidEquals(
+//                uid,
+//                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+//        ));
         if (hideKeyAttr) {
             for (SharePO share : res.getContent()) {
                 share.hideKeyAttr();
@@ -164,6 +181,9 @@ public class ShareService {
         if (po == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
         if (!po.getVerification().equals(verification)) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
         if (po.isExpired()) throw new JsonException(ErrorInfo.SHARE_EXTRACT_ERROR);
+
+        User user = userDao.getUserById(po.getUid());
+        if (user != null) po.setUsername(user.getUsername());
         return po;
     }
 
