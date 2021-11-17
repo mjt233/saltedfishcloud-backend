@@ -27,6 +27,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.LinkedList;
 import java.util.List;
@@ -56,7 +59,7 @@ public class ShareService {
      * @param extractor 资源提取信息类
      * @return  文件资源
      */
-    public Resource getFileResource(ShareExtractorDTO extractor) {
+    public Resource getFileResource(ShareExtractorDTO extractor) throws UnsupportedEncodingException {
         SharePO share = shareDao.findById(extractor.getSid()).orElse(null);
         if (share == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
         if (!share.getVerification().equals(extractor.getVerification())) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
@@ -77,7 +80,7 @@ public class ShareService {
         return fileSystemFactory.getFileSystem().getResource(
                 share.getUid(),
                 fullPath,
-                extractor.getName()
+                URLDecoder.decode(extractor.getName(), "UTF-8")
         );
     }
 
