@@ -120,6 +120,11 @@ public class ShareCollection {
         }
         page--;
         CommonPageInfo<SharePO> userShare = shareService.getUserShare(uid, page, size, !emptyUid);
+        if (emptyUid) {
+            for (SharePO share : userShare.getContent()) {
+                share.setValidateSuccess(true);
+            }
+        }
         return JsonResult.getInstance(userShare);
     }
 }

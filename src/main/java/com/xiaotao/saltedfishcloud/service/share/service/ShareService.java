@@ -142,6 +142,7 @@ public class ShareService {
      * @param uid   用户ID
      * @param page  页码，从1开始
      * @param size  每页大小
+     * @param hideKeyAttr 隐藏关键信息
      * @return  分页信息
      */
     public CommonPageInfo<SharePO> getUserShare(int uid, int page, int size, boolean hideKeyAttr) {
