@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.redis;
 
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -19,7 +20,7 @@ public class TokenDao {
      * @return key
      */
     public static String getTokenKey(String username, String token) {
-        return "xyy::token::" + username + "::" + token;
+        return "xyy::token::" + username + "::" + SecureUtils.getMd5(token);
     }
 
     /**
@@ -36,7 +37,7 @@ public class TokenDao {
      * @param username  用户名
      */
     public void cleanUserToken(String username) {
-        redisTemplate.delete(redisDao.scanKeys("xyy::token::" + username));
+        redisTemplate.delete(redisDao.scanKeys("xyy::token::" + username + "::*"));
     }
 
     /**
