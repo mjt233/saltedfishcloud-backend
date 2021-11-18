@@ -43,6 +43,8 @@ public interface DiskFileSystem {
      * @return      文件资源，若不存在则为null
      */
     Resource getResource(int uid, String path,String name);
+
+
     /**
      * 在网盘中连同所有父级目录，创建一个目录
      * @param uid   用户ID

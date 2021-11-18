@@ -12,6 +12,7 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -104,13 +105,6 @@ public class ResponseService {
     }
 
     public ResponseEntity<Resource> wrapResource(Resource resource) throws UnsupportedEncodingException {
-        String name = resource.getFilename();
-        assert name != null;
-        String disposition = "inline;filename*=UTF-8''"+ URLEncoder.encode(name, "utf-8");
-        String ct = FileUtils.getContentType(name);
-        return ResponseEntity.ok()
-                .header("Content-Type", ct)
-                .header("Content-Disposition", disposition)
-                .body(resource);
+        return ResourceUtils.wrapResource(resource);
     }
 }
