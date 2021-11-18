@@ -2,6 +2,11 @@ package com.xiaotao.saltedfishcloud.entity.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,6 +15,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import javax.validation.Valid;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,6 +25,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Valid
 public class User implements UserDetails {
     public static final String SYS_NAME_PUBLIC = "__SYSTEM_PUBLIC";
     public static final String SYS_NAME_ADMIN = "ADMIN";
@@ -28,9 +35,11 @@ public class User implements UserDetails {
     public static final int TYPE_ADMIN = 1;
     public static final int TYPE_COMMON = 0;
     private Integer id;
+    @Username
     private String user;
+
+    @JsonIgnore
     private String pwd;
-    private String token;
     private Integer lastLogin;
     private Integer type = User.TYPE_COMMON;
     private int quota;
@@ -54,6 +63,16 @@ public class User implements UserDetails {
         user.setId(0);
         user.setUser(SYS_NAME_PUBLIC);
         return user;
+    }
+
+    @JsonIgnore
+    public String getToken() {
+        try {
+            String json = MapperHolder.mapper.writeValueAsString(this);
+            return JwtUtils.generateToken(json);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
     @JsonIgnore

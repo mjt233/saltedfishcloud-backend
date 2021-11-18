@@ -16,6 +16,7 @@ import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.springframework.http.ResponseEntity;

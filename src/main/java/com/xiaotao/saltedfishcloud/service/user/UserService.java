@@ -2,8 +2,13 @@ package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.validator.annotations.Username;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.Valid;
+
+@Validated
 public interface UserService {
 
     /**
@@ -38,7 +43,7 @@ public interface UserService {
      * @param type      类型(可用UserType.COMMON或UserType.ADMIN)
      * @return          数据库操作影响的行数
      */
-    int addUser(String user, String passwd, Integer type);
+    int addUser(@Username @Valid String user, String passwd, Integer type);
 
     /**
      * 更新用户的上次登录日期
