@@ -2554,7 +2554,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 4,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"35e869d34b204517add5e3fcfa6debc8\",\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T02:09:16.200+00:00\"\n    },\n    \"msg\": \"OK\"\n}"
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 6,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"f9dd9fdd8a0d490f8ea7b6f21ed63fb3\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:05:32.842+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
 						},
 						{
 							"name": "创建分享",
@@ -2563,7 +2563,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
+									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": 1639647653000,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -2643,7 +2643,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 1,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"a9eebb9506cc44648a80ab5c549c1f1c\",\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T02:37:26.086+00:00\",\n        \"expired\": false\n    },\n    \"msg\": \"OK\"\n}"
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 7,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"03e53fcba25546e1ae1da180e13d0263\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:06:16.619+00:00\",\n        \"expiredAt\": \"2021-12-16T09:40:53.000+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
@@ -2766,7 +2766,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"content\": [\n            {\n                \"id\": 2,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"parentId\": \"1\",\n                \"verification\": \"c98616cf9af94a06b8cfea60d4f4470a\",\n                \"size\": -1,\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n                \"validateSuccess\": false,\n                \"expired\": false,\n                \"needExtractCode\": true\n            },\n            {\n                \"id\": 1,\n                \"uid\": 1,\n                \"nid\": \"1\",\n                \"parentId\": \"1\",\n                \"verification\": \"d431b88954fc4763b57d0937ed272ac7\",\n                \"size\": -1,\n                \"type\": \"DIR\",\n                \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n                \"name\": \"我的收集\",\n                \"createdAt\": \"2021-11-16T03:00:55.000+00:00\",\n                \"validateSuccess\": false,\n                \"expired\": false,\n                \"needExtractCode\": true\n            }\n        ],\n        \"totalCount\": 2,\n        \"totalPage\": 1\n    },\n    \"msg\": \"OK\"\n}"
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"content\": [\n            {\n                \"id\": 7,\n                \"uid\": 1,\n                \"nid\": \"28e9694a3133f1b421ce5d420290fdc1\",\n                \"parentId\": \"1\",\n                \"verification\": \"78add3df39634e17af3ccc7e7dfee13b\",\n                \"size\": 463922,\n                \"type\": \"FILE\",\n                \"name\": \"0065tQdely1fz45l6q9m0j31ao0t6h01.jpg\",\n                \"createdAt\": \"2021-11-18T05:30:24.000+00:00\",\n                \"expiredAt\": \"2021-11-19T05:30:24.000+00:00\",\n                \"validateSuccess\": true,\n                \"expired\": false,\n                \"needExtractCode\": false\n            },\n            {\n                \"id\": 8,\n                \"uid\": 1,\n                \"nid\": \"1hzcp014kc33tgxs21cezk6u82xcasd\",\n                \"parentId\": \"1\",\n                \"verification\": \"78add3df39634e17af3ccc7e7dfee13b\",\n                \"size\": 463922,\n                \"type\": \"FILE\",\n                \"name\": \"0065tQdely1fz45l6q9m0j31ao0t6h01.jpg\",\n                \"createdAt\": \"2021-11-18T05:30:24.000+00:00\",\n                \"expiredAt\": \"2021-11-19T05:30:24.000+00:00\",\n                \"validateSuccess\": true,\n                \"expired\": false,\n                \"needExtractCode\": false\n            }\n        ],\n        \"totalCount\": 2,\n        \"totalPage\": 1\n    },\n    \"msg\": \"OK\"\n}"
 						},
 						{
 							"name": "获取指定用户的分享列表",
@@ -2974,7 +2974,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 2,\n        \"uid\": 1,\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n        \"validateSuccess\": true,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 2,\n        \"uid\": 1,\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n        \"validateSuccess\": true,\n        \"username\": \"admin\",\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
 						},
 						{
 							"name": "未提供提取码",
@@ -3063,7 +3063,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n\n        \"id\": 2,\n        \"uid\": 1,\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n\n        \"id\": 2,\n        \"uid\": 1,\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n        \"validateSuccess\": false,\n        \"username\": \"admin\",\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
@@ -3231,7 +3231,8 @@
 									"description": "文件名（该参数仅当分享类型为DIR时有意义）"
 								}
 							]
-						}
+						},
+						"description": "# 获取分享的文件内容\n调用成功后将直接响应文件本体\n\n- URL: /api/share/resource/\n\n## QueryString参数\n- sid 分享ID\n- verification 分享校验码\n- code 提取码（如果有需要）\n- path 要获取的目标文件所在路径\n- name 文件名\n\n注意：path与name仅当分享类型为目录时有意义"
 					},
 					"response": []
 				},
