@@ -2,18 +2,19 @@ package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,23 +26,23 @@ import static com.xiaotao.saltedfishcloud.config.DiskConfig.ACCEPT_AVATAR_TYPE;
 
 @Service
 @Transactional(rollbackFor = Exception.class)
+@RequiredArgsConstructor
 public class UserServiceImp implements UserService{
+    private final TokenDao tokenDao;
+    private final UserDao userDao;
 
     @Override
     public void grant(int uid, int type) {
         if (type > 1 || type < 0) throw new IllegalArgumentException("不合法的用户类型");
-        User admin = userDao.getUserById(uid);
-        if (admin != null && type == User.TYPE_COMMON && "admin".equals(admin.getUsername())) {
+        User user = userDao.getUserById(uid);
+        if (user == null) throw new UserNoExistException(404, "用户不存在");
+        if (type == User.TYPE_COMMON && "admin".equals(user.getUsername())) {
             throw new IllegalArgumentException("不允许撤销admin用户的管理员权限");
         }
-        int res = userDao.grant(uid, type);
-        if (res == 0) {
-            throw new UserNoExistException(404, "用户不存在");
-        }
+        userDao.grant(uid, type);
+        tokenDao.cleanUserToken(user.getUsername());
     }
 
-    @Resource
-    private UserDao userDao;
 
     @Override
     public User getUserByUser(String user) throws UserNoExistException {
@@ -59,6 +60,7 @@ public class UserServiceImp implements UserService{
         if (!SecureUtils.getPassswd(oldPassword).equals(user.getPwd())) {
             throw new JsonException(403, "原密码错误");
         }
+        tokenDao.cleanUserToken(user.getUsername());
         return userDao.modifyPassword(uid, SecureUtils.getPassswd(newPassword));
     }
 
@@ -76,14 +78,9 @@ public class UserServiceImp implements UserService{
         }
         String pwd = SecureUtils.getPassswd(passwd);
         try {
-            var res = userDao.addUser(user, pwd, type);
-            Files.createDirectory(Paths.get(DiskConfig.getUserPrivateDiskRoot(user)));
-            return res;
+            return userDao.addUser(user, pwd, type);
         } catch (DuplicateKeyException e) {
             throw new JsonException(400, "用户" + user + "已被注册");
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new JsonException(500, "空间初始化失败");
         }
     }
 

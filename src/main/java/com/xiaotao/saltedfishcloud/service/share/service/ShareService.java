@@ -182,8 +182,20 @@ public class ShareService {
     public SharePO getShare(int sid, String verification) {
         SharePO po = shareDao.findById(sid).orElse(null);
         if (po == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+
+        if (po.getType() == ShareType.DIR) {
+            // 判断原分享目录是否失效
+            String nid = po.getNid();
+            NodeInfo nodeInfo = nodeService.getNodeById(po.getUid(), nid);
+            if (nodeInfo == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        } else {
+            // 判断分享的原文件是否失效
+            FileInfo fi = fileDao.getFileInfo(po.getUid(), po.getName(), po.getParentId());
+            if (fi == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        }
+
         if (!po.getVerification().equals(verification)) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
-        if (po.isExpired()) throw new JsonException(ErrorInfo.SHARE_EXTRACT_ERROR);
+        if (po.isExpired()) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
 
         User user = userDao.getUserById(po.getUid());
         if (user != null) po.setUsername(user.getUsername());
