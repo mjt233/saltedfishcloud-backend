@@ -79,7 +79,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
                 fileDao.updateRecord(
                         uid,
                         newFile.getName(),
-                        nodeService.getLastNodeInfoByPath(uid, newFile.getPath()).getId(),
+                        nodeService.getNodeIdByPath(uid, newFile.getPath()),
                         newFile.getSize(),
                         newFile.getMd5()
                 );

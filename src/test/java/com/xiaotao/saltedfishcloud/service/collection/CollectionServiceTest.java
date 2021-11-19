@@ -62,9 +62,9 @@ class CollectionServiceTest {
         Calendar calender = Calendar.getInstance();
         calender.add(Calendar.DATE, 7);
 
-        NodeInfo node = nodeService.getLastNodeInfoByPath(u.getId(), savePath);
+        String node = nodeService.getNodeIdByPath(u.getId(), savePath);
         // 创建收集任务
-        CollectionDTO colI = new CollectionDTO("测试收集样例", node.getId(), calender.getTime(), u.getUsername());
+        CollectionDTO colI = new CollectionDTO("测试收集样例", node, calender.getTime(), u.getUsername());
         colI.setPattern("\\.(doc|docx)$");
         CollectionInfoId cid = cs.createCollection(u.getId(), colI);
 

@@ -23,7 +23,7 @@ class NodeServiceTest {
     @Test
     void getLastNodeInfoByPath() throws NoSuchFileException {
         int nid = userService.getUserByUser("xiaotao").getId();
-        NodeInfo node = nodeService.getLastNodeInfoByPath(nid, "/f1");
-        log.info(node.toString());
+        String node = nodeService.getNodeIdByPath(nid, "/f1");
+        log.info(node);
     }
 }

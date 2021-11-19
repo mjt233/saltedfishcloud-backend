@@ -1,12 +1,14 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.node.cache.NodeCacheService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -35,6 +37,8 @@ public class FileRecordService {
 
     @Resource
     private NodeDao nodeDao;
+    @Resource
+    private NodeCacheService cacheService;
 
     static class PathIdPair {
         public String path;
@@ -57,7 +61,7 @@ public class FileRecordService {
         int prefixLength = source.length() + 1 + sourceName.length();
 
 
-        FileInfo sourceInfo = fileDao.getFileInfo(uid, sourceName, nodeService.getLastNodeInfoByPath(uid, source).getId());
+        FileInfo sourceInfo = fileDao.getFileInfo(uid, sourceName, nodeService.getNodeIdByPath(uid, source));
         if (sourceInfo == null) throw new NoSuchFileException("文件 " + source + "/" + sourceName + " 不存在");
         // 文件直接添加单条记录
         if (sourceInfo.isFile()) {
@@ -72,7 +76,7 @@ public class FileRecordService {
         //  需要遍历的目录列表
         LinkedList<PathIdPair> t = new LinkedList<>();
         String sourceRoot = source + "/" + sourceName;
-        t.add(new PathIdPair(sourceRoot, nodeService.getLastNodeInfoByPath(uid, sourceRoot).getId()));
+        t.add(new PathIdPair(sourceRoot, nodeService.getNodeIdByPath(uid, sourceRoot)));
 
         do {
             //  更新目录列表
@@ -84,7 +88,7 @@ public class FileRecordService {
             try {
                 newPathInfo = new PathIdPair(newDirPath, mkdir(targetId, pathBuilder.getPath().getLast(), pathBuilder.range(-1)));
             } catch (DuplicateKeyException e) {
-                newPathInfo = new PathIdPair(newDirPath, nodeService.getLastNodeInfoByPath(targetId, newDirPath).getId());
+                newPathInfo = new PathIdPair(newDirPath, nodeService.getNodeIdByPath(targetId, newDirPath));
             }
 
 
@@ -118,13 +122,13 @@ public class FileRecordService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
-        NodeInfo sourceInfo = nodeService.getLastNodeInfoByPath(uid, source);
-        NodeInfo targetInfo = nodeService.getLastNodeInfoByPath(uid, target);
-        FileInfo sourceFileInfo = fileDao.getFileInfo(uid, name, sourceInfo.getId());
+        String sourceId = nodeService.getNodeIdByPath(uid, source);
+        String targetId = nodeService.getNodeIdByPath(uid, target);
+        FileInfo sourceFileInfo = fileDao.getFileInfo(uid, name, sourceId);
         if (sourceFileInfo == null) {
             throw new NoSuchFileException("资源不存在，目录" + source + " 文件名：" + name);
         }
-        FileInfo targetFileInfo = fileDao.getFileInfo(uid, name, targetInfo.getId());
+        FileInfo targetFileInfo = fileDao.getFileInfo(uid, name, targetId);
 
         if (sourceFileInfo.isDir()) {
             if (PathUtils.isSubDir(source + "/" + name, target + "/" + name)) {
@@ -142,8 +146,9 @@ public class FileRecordService {
                 }
             } else {
                 // 不存在同名目录，直接修改节点ID
-                fileDao.move(uid, sourceInfo.getId(), targetInfo.getId(), name);
-                nodeDao.move(uid, sourceFileInfo.getMd5(), targetInfo.getId());
+                cacheService.deleteNodeCache(uid, Collections.singleton(sourceFileInfo.getMd5()));
+                fileDao.move(uid, sourceId, targetId, name);
+                nodeDao.move(uid, sourceFileInfo.getMd5(), targetId);
             }
         } else {
             if (targetFileInfo != null) {
@@ -160,7 +165,7 @@ public class FileRecordService {
                 }
             } else {
                 // 不存在同名文件，直接修改文件所属节点ID
-                fileDao.move(uid, sourceFileInfo.getNode(), targetInfo.getId(), name);
+                fileDao.move(uid, sourceFileInfo.getNode(), targetId, name);
             }
         }
     }
@@ -176,8 +181,8 @@ public class FileRecordService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int addRecord(int uid, String name, Long size, String md5, String path) throws NoSuchFileException {
-        NodeInfo node = nodeService.getLastNodeInfoByPath(uid, path);
-        return fileDao.addRecord(uid, name, size, md5, node.getId());
+        String nodeId = nodeService.getNodeIdByPath(uid, path);
+        return fileDao.addRecord(uid, name, size, md5, nodeId);
     }
 
     /**
@@ -191,8 +196,8 @@ public class FileRecordService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int updateFileRecord(int uid, String name, String path, Long newSize, String newMd5) throws NoSuchFileException {
-        NodeInfo node = nodeService.getLastNodeInfoByPath(uid, path);
-        return fileDao.updateRecord(uid, name, node.getId(), newSize, newMd5);
+        String nodeId = nodeService.getNodeIdByPath(uid, path);
+        return fileDao.updateRecord(uid, name, nodeId, newSize, newMd5);
     }
 
     /**
@@ -204,8 +209,8 @@ public class FileRecordService {
      */
     @Transactional(rollbackFor = Exception.class)
     public List<FileInfo> deleteRecords(int uid, String path, Collection<String> name) throws NoSuchFileException {
-        NodeInfo node = nodeService.getLastNodeInfoByPath(uid, path);
-        List<FileInfo> infos = fileDao.getFilesInfo(uid, name, node.getId());
+        String nodeId = nodeService.getNodeIdByPath(uid, path);
+        List<FileInfo> infos = fileDao.getFilesInfo(uid, name, nodeId);
         List<FileInfo> res = new LinkedList<>();
 
                 // 先将文件和文件夹分开并单独提取其文件名
@@ -222,7 +227,7 @@ public class FileRecordService {
 
         dirs.forEach(dir -> res.addAll(deleteDirRecord(uid, dir)));
         if (files.size() != 0) {
-            fileDao.deleteRecords(uid, node.getId(), files);
+            fileDao.deleteRecords(uid, nodeId, files);
         }
         return res;
     }
@@ -240,14 +245,14 @@ public class FileRecordService {
     @Transactional(rollbackFor = Exception.class)
     public String mkdir(int uid, String name, String path) throws NoSuchFileException {
         log.debug("mkdir " + name + " at " + path);
-        NodeInfo node = nodeService.getLastNodeInfoByPath(uid, path);
-        String nodeId = nodeService.addNode(uid, name, node.getId());
-        if (fileDao.addRecord(uid, name, -1L, nodeId, node.getId()) < 1) {
+        String nodeId = nodeService.getNodeIdByPath(uid, path);
+        String newNodeId = nodeService.addNode(uid, name, nodeId);
+        if (fileDao.addRecord(uid, name, -1L, newNodeId, nodeId) < 1) {
             throw new DuplicateKeyException("目录已存在");
         }
-        fileDao.addRecord(uid, name, -1L, nodeId, node.getId());
-        log.debug("mkdir finish: " + nodeId);
-        return nodeId;
+        fileDao.addRecord(uid, name, -1L, newNodeId, nodeId);
+        log.debug("mkdir finish: " + newNodeId);
+        return newNodeId;
     }
 
 
@@ -284,16 +289,17 @@ public class FileRecordService {
      * @param newName 新文件名
      */
     @Transactional(rollbackFor = Exception.class)
-    public void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException {
-        NodeInfo pathNodeInfo = nodeService.getLastNodeInfoByPath(uid, path);
-        FileInfo fileInfo = fileDao.getFileInfo(uid, oldName, pathNodeInfo.getId());
+    public void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException, JsonProcessingException {
+        String nodeId = nodeService.getNodeIdByPath(uid, path);
+        FileInfo fileInfo = fileDao.getFileInfo(uid, oldName, nodeId);
         if (fileInfo == null) {
             throw new JsonException(404, "文件不存在");
         }
+        cacheService.deleteNodeCache(uid, Collections.singleton(nodeId));
         if (fileInfo.isDir()) {
-            nodeDao.changeName(uid, nodeDao.getNodeByParentId(uid, pathNodeInfo.getId(), oldName).getId(), newName);
+            nodeDao.changeName(uid, nodeDao.getNodeByParentId(uid, nodeId, oldName).getId(), newName);
         }
-        fileDao.rename(uid, pathNodeInfo.getId(), oldName, newName);
+        fileDao.rename(uid, nodeId, oldName, newName);
     }
 
     /**

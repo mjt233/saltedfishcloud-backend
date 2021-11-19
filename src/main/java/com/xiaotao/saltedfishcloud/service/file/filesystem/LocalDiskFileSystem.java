@@ -102,8 +102,8 @@ public class LocalDiskFileSystem implements DiskFileSystem {
             }
         }
 
-        NodeInfo nodeId = nodeService.getLastNodeInfoByPath(uid, path);
-        return getUserFileListByNodeId(uid, nodeId.getId());
+        String nodeId = nodeService.getNodeIdByPath(uid, path);
+        return getUserFileListByNodeId(uid, nodeId);
     }
 
     @Override
@@ -183,7 +183,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
         String nid;
         // 判断目录是否存在，若不存在则尝试创建
         try {
-            nid = nodeService.getLastNodeInfoByPath(uid, path).getId();
+            nid = nodeService.getNodeIdByPath(uid, path);
         } catch (NoSuchFileException e) {
             nid = mkdirs(uid, path);
         }

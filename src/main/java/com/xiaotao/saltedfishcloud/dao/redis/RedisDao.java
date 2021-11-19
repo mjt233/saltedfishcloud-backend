@@ -40,10 +40,6 @@ public class RedisDao {
      * @return      自减结果或失败后的null
      */
     public Long decrementAndGet(String key, int step, int min) {
-//        String lua = "local o = tonumber(redis.call('get','" + key + "'))\n" +
-//                "local target = o -" + step + "\n" +
-//                "if(o >= " + (min + step) + ") then redis.call('set','" + key + "', target)\n return target end\n";
-//        RedisScript<Long> script = RedisScript.of(lua, Long.class);
         RedisScript<Long> script = RedisScript.of(new ClassPathResource("/lua/decrementAndGet.lua"), Long.class);
         return redisTemplate.execute(script, Collections.singletonList(key), step, min);
     }
