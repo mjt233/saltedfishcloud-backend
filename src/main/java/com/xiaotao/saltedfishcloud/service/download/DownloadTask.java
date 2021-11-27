@@ -10,7 +10,6 @@ import lombok.var;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.MalformedURLException;
@@ -38,6 +37,17 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
         return extractor.isInterrupted();
     }
 
+    /**
+     * 创建下载任务
+     * @param url               文件URL
+     * @param method            请求方法
+     * @param headers           额外标头
+     * @param savePath          在本地文件系统上的保存路径
+     * @param proxy             代理配置
+     * @param connectTimeout    连接超时（毫秒）
+     * @param readTimeout       读取超时（毫秒）
+     * @param readyCallback     就绪回调
+     */
     public DownloadTask(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy,
                         int connectTimeout, int readTimeout, AsyncTackCallback readyCallback) {
         this.url = url;
@@ -45,9 +55,10 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
         this.headers = headers;
         this.savePath = savePath;
         extractor = new DownloadExtractor(this.savePath);
-        var factory = new SimpleClientHttpRequestFactory();
+        var factory = new IgnoreSSLHttpRequestFactory();
         factory.setConnectTimeout(connectTimeout);
         factory.setReadTimeout(readTimeout);
+
         if (proxy != null) {
             factory.setProxy(proxy);
         }

@@ -22,7 +22,7 @@ public class SaltedfishcloudApplication {
     public static void main(String[] args) {
         SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
         sa.run(args);
-
+        System.out.println("=========咸鱼云已启动(oﾟvﾟ)ノ==========");
     }
 
 }
