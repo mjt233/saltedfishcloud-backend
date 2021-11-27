@@ -34,9 +34,9 @@ class NodeTreeTest {
         fileService.mkdir(0, "/nodetest/folder2", "deepfolder");
 
         // 获取目标路径的节点ID
-        var node = nodeService.getLastNodeInfoByPath(0, targetPath);
+        var node = nodeService.getNodeIdByPath(0, targetPath);
         var fullTree = nodeService.getFullTree(0);
-        var res = fullTree.getPath(node.getId());
+        var res = fullTree.getPath(node);
 
         // 清理环境
         fileService.deleteFile(0, "/", Collections.singletonList("nodetest"));

@@ -1,6 +1,9 @@
 package com.xiaotao.saltedfishcloud.config;
 
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.interceptor.KeyGenerator;
+import org.springframework.cache.interceptor.SimpleKeyGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -11,6 +14,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -32,20 +36,19 @@ public class RedisConfig {
     public RedisCacheManager cacheManager(LettuceConnectionFactory factory) {
         return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(
                 Objects.requireNonNull(redisTemplate().getConnectionFactory()))
-                .cacheDefaults(getCacheConfigWitTtl(Duration.ofHours(3)))
+                .cacheDefaults(getCacheConfig())
+                .withCacheConfiguration("path", getCacheConfig().entryTtl(Duration.ofHours(12)))
                 .build();
     }
 
     /**
-     * 获取一个带过期时间的Redis缓存配置
-     * @param time  过期时间
+     * 获取一个Redis缓存配置
      * @return  Redis缓存配置
      */
-    private RedisCacheConfiguration getCacheConfigWitTtl(Duration time) {
+    private RedisCacheConfiguration getCacheConfig() {
         return RedisCacheConfiguration.defaultCacheConfig()
                 .serializeValuesWith(
                         RedisSerializationContext.SerializationPair.fromSerializer(redisTemplate().getValueSerializer())
-                ).disableCachingNullValues()
-                .entryTtl(time);
+                );
     }
 }

@@ -4,21 +4,33 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.service.node.cache.annotation.RemoveNodeCache;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.NoSuchFileException;
 import java.util.*;
 
+/**
+ * 节点服务，用于管理目录存储节点相关信息
+ * 缓存key：
+ * path::{uid}:node:{nid}                   通过节点ID查询节点信息（NodeInfo）的缓存
+ * path::{uid}:pnid:{parentId}:{nodeName}   通过父节点ID和节点名称查询节点信息（NodeInfo）的缓存
+ * path::{uid}:path:{nodeId}                通过节点ID查询路径
+ */
 @Service
 @Slf4j
 @Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class NodeService {
     private final NodeDao nodeDao;
+    @Autowired
+    private NodeService self;
 
     /**
      * 根据用户ID和节点ID获取对应的节点信息，可识别到根ID
@@ -26,6 +38,7 @@ public class NodeService {
      * @param nid   节点ID，可以是根ID
      * @return      节点ID，若无结果则为null
      */
+    @Cacheable(cacheNames = "path", key = "#uid+':node:'+#nid")
     public NodeInfo getNodeById(Integer uid, String nid) {
         if (nid.length() == 32) {
             return nodeDao.getNodeById(uid, nid);
@@ -46,15 +59,9 @@ public class NodeService {
         return tree;
     }
 
-    /**
-     * 使用路径取最后一个节点的信息
-     * @TODO 使用缓存加快查询速度
-     * @param path 完整路径
-     * @throws NoSuchFileException 请求的路径不存在时抛出此异常
-     * @return 路径ID
-     */
-    public NodeInfo getLastNodeInfoByPath(int uid, String path) throws NoSuchFileException {
-        return getPathNodeByPath(uid, path).getLast();
+    @Cacheable(cacheNames = "path", key = "#uid+':pnid:'+#parentId+':'+#nodeName")
+    public NodeInfo getNodeByParentId(int uid, String parentId, String nodeName) {
+        return nodeDao.getNodeByParentId(uid, parentId, nodeName);
     }
 
     /**
@@ -76,7 +83,7 @@ public class NodeService {
         try {
             for (String node : paths) {
                 String parent = link.isEmpty() ? strId : link.getLast().getId();
-                NodeInfo info = nodeDao.getNodeByParentId(uid, parent, node);
+                NodeInfo info = self.getNodeByParentId(uid, parent, node);
                 if (info == null) {
                     throw new NoSuchFileException("路径 " + path + " 不存在，或目标节点信息已丢失");
                 }
@@ -153,6 +160,14 @@ public class NodeService {
         return res;
     }
 
+
+    /**
+     * 移除节点
+     * @param uid   用户ID
+     * @param ids   节点ID集合
+     * @return  删除数
+     */
+    @RemoveNodeCache(uid = 0, nid = 1)
     public int deleteNodes(int uid, Collection<String> ids) {
         if (!ids.isEmpty()) {
             return nodeDao.deleteNodes(uid, ids);
@@ -162,12 +177,23 @@ public class NodeService {
     }
 
     /**
+     * 获取路径对应的节点ID
+     * @param uid   用户ID
+     * @param path  请求的路径
+     * @return  节点ID
+     * @throws NoSuchFileException  路径不存在
+     */
+    public String getNodeIdByPath(int uid, String path) throws NoSuchFileException {
+        return self.getPathNodeByPath(uid, path).getLast().getId();
+    }
+
+    /**
      * 通过节点ID 获取节点所在的完整路径位置
-     * @TODO 使用缓存优化查询速度
      * @param uid       用户ID
      * @param nodeId    节点ID
      * @return          完整路径
      */
+    @Cacheable(cacheNames = "path", key = "#uid+':path:'+#nodeId")
     public String getPathByNode(int uid, String nodeId) {
         if (nodeId.length() < 32) {
             return "/";
@@ -178,8 +204,8 @@ public class NodeService {
         NodeInfo info;
         visited.add(nodeId);
 
-        // 递归查询
-        while ( (info = nodeDao.getNodeById(uid, lastId)) != null) {
+        // 迭代查询
+        while ( (info =  self.getNodeById(uid, lastId)) != null) {
             link.addFirst(info.getName());
             lastId = info.getParent();
             if (visited.contains(lastId)) {
@@ -195,9 +221,5 @@ public class NodeService {
         StringBuilder stringBuilder = new StringBuilder();
         link.forEach(name -> stringBuilder.append("/").append(name));
         return stringBuilder.toString();
-    }
-
-    public void test() {
-        nodeDao.addNode(233, "test", "test", "test");
     }
 }
