@@ -13,8 +13,9 @@ public interface CompressFileSystem {
     /**
      * 访问压缩包内的文件
      * @param visitor  访问器
+     * @return 压缩包输入流，需要手动关闭
      */
-    void walk(CompressFileSystemVisitor visitor) throws IOException;
+    ArchiveInputStream walk(CompressFileSystemVisitor visitor) throws IOException;
 
     /**
      * 获取压缩包指定目录下的文件列表

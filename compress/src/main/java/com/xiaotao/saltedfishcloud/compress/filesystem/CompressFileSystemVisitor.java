@@ -7,7 +7,7 @@ package com.xiaotao.saltedfishcloud.compress.filesystem;
 @FunctionalInterface
 public interface CompressFileSystemVisitor {
     enum Result {
-        CONTINUE, STOP
+        CONTINUE, STOP, SKIP
     }
 
     /**

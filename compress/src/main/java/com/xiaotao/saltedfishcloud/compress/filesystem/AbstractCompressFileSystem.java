@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class AbstractCompressFileSystem implements CompressFileSystem {
 
     @Override
-    public void walk(CompressFileSystemVisitor visitor) throws IOException {
+    public ArchiveInputStream walk(CompressFileSystemVisitor visitor) throws IOException {
         ArchiveInputStream stream = getArchiveInputStream();
         ArchiveEntry entry = stream.getNextEntry();
         CompressFileSystemVisitor.Result result;
@@ -40,17 +40,22 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
             if (result == CompressFileSystemVisitor.Result.STOP) {
                 break;
             }
+            if (result == CompressFileSystemVisitor.Result.SKIP) {
+                entryInputStream.skipThisEntry();
+            }
             entry = stream.getNextEntry();
         } while (entry != null);
+        return stream;
     }
+
 
     @Override
     public List<? extends CompressFile> listFiles(String path) throws IOException {
         List<CompressFile> res = new LinkedList<>();
         walk(((file, stream) -> {
             res.add(file);
-            return CompressFileSystemVisitor.Result.CONTINUE;
-        }));
+            return CompressFileSystemVisitor.Result.SKIP;
+        })).close();
         return res;
     }
 
@@ -59,7 +64,7 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
     @Override
     public InputStream getInputStream(String name) throws IOException {
         AtomicReference<InputStream> res = new AtomicReference<>();
-        walk(((file, stream) -> {
+        ArchiveInputStream walkStream = walk(((file, stream) -> {
             if (file.getName().equals(name)) {
                 res.set(stream);
                 return CompressFileSystemVisitor.Result.STOP;
@@ -70,7 +75,10 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
             }
             return CompressFileSystemVisitor.Result.CONTINUE;
         }));
-        if (res.get() == null) throw new NoSuchFileException(name);
+        if (res.get() == null) {
+            walkStream.close();
+            throw new NoSuchFileException(name);
+        }
         return res.get();
     }
 
@@ -85,6 +93,6 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
                 StreamUtils.copy(stream, Files.newOutputStream(target));
             }
             return CompressFileSystemVisitor.Result.CONTINUE;
-        }));
+        })).close();
     }
 }

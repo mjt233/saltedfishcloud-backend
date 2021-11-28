@@ -10,7 +10,7 @@ import java.io.InputStream;
 public class ArchiveEntryInputStream extends InputStream {
     private final ArchiveInputStream inputStream;
     private long readCnt = 0;
-    private long targetSize;
+    private final long targetSize;
     @Getter
     private final ArchiveEntry entry;
 
@@ -55,6 +55,15 @@ public class ArchiveEntryInputStream extends InputStream {
         if (targetSize < 0 || readCnt == targetSize) return 0;
         int s = Math.toIntExact(targetSize - readCnt);
         return Math.min(inputStream.available(), s);
+    }
+
+    /**
+     * 关闭压缩包的读取流。
+     * 注意，此关闭操作会关闭整个压缩包的读取流，而不是仅针对当前压缩文件实体
+     */
+    @Override
+    public void close() throws IOException {
+        inputStream.close();
     }
 
     public long canReadSize() {
