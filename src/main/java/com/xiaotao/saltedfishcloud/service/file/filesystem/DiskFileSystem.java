@@ -28,6 +28,14 @@ public interface DiskFileSystem {
     int SAVE_NOT_CHANGE = 2;
 
     /**
+     * 解压一个压缩包到指定目录下
+     * @param uid   用户ID
+     * @param path  压缩包所在路径
+     * @param name  压缩包名称
+     * @param dest  解压目的地
+     */
+    void extractArchive(int uid, String path, String name, String dest) throws IOException;
+    /**
      * 判断给定的路径是否存在
      * @param uid   用户ID
      * @param path  要判断的文件路径
@@ -136,8 +144,7 @@ public interface DiskFileSystem {
      * @param stream      要保存的数据流
      * @param path        文件要保存到的网盘目录
      * @param fileInfo    文件信息
-     * @throws IOException 本地文件写入失败时抛出
-     * @throws JsonException 文件夹同名时抛出
+     * @throws IOException 文件写入失败时抛出
      */
     int saveFile(int uid,
                  InputStream stream,
@@ -151,8 +158,7 @@ public interface DiskFileSystem {
      * @param requestPath 请求的文件路径
      * @param md5         请求时传入的文件md5
      * @return 1
-     * @throws IOException 本地文件写入失败时抛出
-     * @throws JsonException 文件夹同名时抛出
+     * @throws IOException 文件写入失败时抛出
      */
     int saveFile(int uid,
                  MultipartFile file,

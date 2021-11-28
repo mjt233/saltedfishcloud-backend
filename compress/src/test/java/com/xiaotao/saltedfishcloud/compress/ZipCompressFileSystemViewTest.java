@@ -26,5 +26,6 @@ class ZipCompressFileSystemViewTest {
         ZipCompressFileSystem view = new ZipCompressFileSystem(resource);
         InputStream inputStream = view.getInputStream("avatar.jpg");
         Files.copy(inputStream, Paths.get("D:\\avatar.jpg"), StandardCopyOption.REPLACE_EXISTING);
+
     }
 }

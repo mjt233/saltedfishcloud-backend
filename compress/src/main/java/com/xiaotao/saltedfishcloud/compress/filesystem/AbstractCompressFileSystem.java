@@ -83,9 +83,9 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
     }
 
     @Override
-    public void extractAll(Path dist) throws IOException {
+    public void extractAll(Path dest) throws IOException {
         walk(((file, stream) -> {
-            Path target = Paths.get(dist + "/" + file.getPath());
+            Path target = Paths.get(dest + "/" + file.getPath());
             if (file.isDirectory()) {
                 Files.createDirectories(target);
             } else {
