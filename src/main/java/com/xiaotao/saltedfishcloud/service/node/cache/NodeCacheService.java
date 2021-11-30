@@ -40,6 +40,16 @@ public class NodeCacheService {
     }
 
     /**
+     * 删除一个由父节点ID和节点名称指向节点信息的缓存
+     * @param uid       用户ID
+     * @param parentId  父节点ID
+     * @param nodeName  节点名称
+     */
+    public void deletePnidCache(int uid, String parentId, String nodeName) {
+        redisTemplate.delete(generatePnidKey(uid, parentId, nodeName));
+    }
+
+    /**
      * 删除节点缓存
      * @param uid       用户ID
      * @param nodeIds   要被删除的节点ID列表

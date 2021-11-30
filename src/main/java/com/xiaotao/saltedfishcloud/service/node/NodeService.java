@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.service.node.cache.NodeCacheService;
 import com.xiaotao.saltedfishcloud.service.node.cache.annotation.RemoveNodeCache;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class NodeService {
     private final NodeDao nodeDao;
+    @Autowired
+    private NodeCacheService cacheService;
     @Autowired
     private NodeService self;
 
@@ -116,6 +119,7 @@ public class NodeService {
 
     /**
      * 添加一个节点
+     * @param uid 用户ID
      * @param name 名称
      * @param parent 父节点ID
      * @return 新节点ID
@@ -123,6 +127,7 @@ public class NodeService {
     public String addNode(int uid, String name, String parent) {
         int i;
         String id;
+        cacheService.deletePnidCache(uid, parent, name);
         NodeInfo node = nodeDao.getNodeByParentId(uid, parent, name);
         if (node != null) {
             return node.getId();
