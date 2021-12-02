@@ -10,12 +10,16 @@ import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.service.file.path.UniquePathHandler;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -136,13 +140,36 @@ public class DiskConfig {
     }
 
     @Value("${public-root}")
-    public void setPublicRoot(String root) {
+    public void setPublicRoot(String root) throws IOException {
         if (!OSInfo.isWindows() && !root.startsWith("/"))  {
             throw new IllegalArgumentException("public-root must be start with \"/\" in Linux");
         }
         log.info("[公共网盘路径]" + root);
         File file = new File(root);
         DiskConfig.PUBLIC_ROOT =file.getPath();
+        this.checkPathConflict();
+    }
+
+    /**
+     * 检查公共网盘路径和私人存储路径是否存在冲突。<br>
+     * 以下情况会被认为冲突：<br>
+     * <ul>
+     *  <li>当公共网盘路径或私人网盘路径为父子目录关系</li>
+     *  <li>公共网盘路径与私人网盘路径为相同的目录</li>
+     * </ul>
+     * @throws IOException
+     */
+    private void checkPathConflict() {
+        if (STORE_ROOT == null || PUBLIC_ROOT == null) return;
+        Path pub = Paths.get(PUBLIC_ROOT);
+        Path sto = Paths.get(STORE_ROOT);
+        if (
+            PathUtils.isSubDir(PUBLIC_ROOT, STORE_ROOT) || 
+            PathUtils.isSubDir(STORE_ROOT, PUBLIC_ROOT) || 
+            pub.equals(sto)
+        ) {
+            throw new IllegalArgumentException("公共网盘路径与私人网盘路径冲突（父子关系或相等）");
+        }
     }
 
     @Value("${store-root}")
@@ -154,6 +181,7 @@ public class DiskConfig {
         File file = new File(root);
         DiskConfig.STORE_ROOT =file.getPath();
         DiskConfig.USER_PROFILE_ROOT = STORE_ROOT + "/user_profile/";
+        this.checkPathConflict();
     }
 
     @Value("${store-type}")

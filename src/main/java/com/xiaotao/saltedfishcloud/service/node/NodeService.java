@@ -52,6 +52,11 @@ public class NodeService {
         return node;
     }
 
+    /**
+     * 获取用户的完整目录树
+     * @param uid   用户ID
+     * @return      节点目录树
+     */
     public NodeTree getFullTree(int uid) {
         NodeTree tree = new NodeTree();
         List<NodeInfo> allNode = nodeDao.getAllNode(uid);

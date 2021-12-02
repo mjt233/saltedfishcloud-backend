@@ -60,8 +60,10 @@ public class SyncService {
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
-            DiskConfig.setReadOnlyLevel(null);
+            e.printStackTrace();
             throw e;
+        } finally {
+            DiskConfig.setReadOnlyLevel(null);
         }
     }
 }
