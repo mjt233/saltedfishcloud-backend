@@ -4,8 +4,6 @@ import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collection;
 
 public class PathTest {
     @Test

@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.share.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;

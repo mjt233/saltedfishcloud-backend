@@ -6,7 +6,6 @@ import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FileSystemView;
-import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.ftpserver.ftplet.FtpFile;
 
 import java.io.IOException;

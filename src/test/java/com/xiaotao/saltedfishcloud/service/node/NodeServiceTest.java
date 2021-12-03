@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
-import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
