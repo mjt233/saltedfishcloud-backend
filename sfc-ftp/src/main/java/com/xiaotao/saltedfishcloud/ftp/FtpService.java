@@ -1,6 +1,6 @@
-package com.xiaotao.saltedfishcloud.service.ftp;
+package com.xiaotao.saltedfishcloud.ftp;
 
-import com.xiaotao.saltedfishcloud.service.ftp.ftplet.FtpUploadHandler;
+import com.xiaotao.saltedfishcloud.ftp.ftplet.FtpUploadHandler;
 import com.xiaotao.saltedfishcloud.config.FtpConfig;
 import org.apache.ftpserver.ConnectionConfigFactory;
 import org.apache.ftpserver.DataConnectionConfigurationFactory;

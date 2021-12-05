@@ -1,7 +1,7 @@
-package com.xiaotao.saltedfishcloud.service.ftp;
+package com.xiaotao.saltedfishcloud.ftp;
 
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
+import com.xiaotao.saltedfishcloud.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import lombok.extern.slf4j.Slf4j;
