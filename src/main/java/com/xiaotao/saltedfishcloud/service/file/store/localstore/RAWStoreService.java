@@ -57,7 +57,11 @@ public class RAWStoreService implements StoreService {
     public Resource getResource(int uid, String path, String name) {
         String storePath = DiskConfig.rawPathHandler.getStorePath(uid, path + "/" + name, null);
         try {
-            return new UrlResource(Paths.get(storePath).toUri());
+            Path p = Paths.get(storePath);
+            if (!Files.exists(p) || Files.isDirectory(p)) {
+                return null;
+            }
+            return new UrlResource(p.toUri());
         } catch (MalformedURLException e) {
             e.printStackTrace();
             return null;
