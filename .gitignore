@@ -32,6 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 
-src/main/resources/application.yml
+sfc-web/src/main/resources/application.yml
 /script/start.sh
 /script/start.bat
