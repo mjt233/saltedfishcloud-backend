@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud;
 
-import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
+import com.xiaotao.saltedfishcloud.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.junit.Test;
 

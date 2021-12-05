@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.ftp;
+package com.xiaotao.saltedfishcloud.ftp;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
@@ -23,7 +23,7 @@ public class DiskFtpFileSystemFactory implements FileSystemFactory {
     @Override
     public FileSystemView createFileSystemView(User user) throws FtpException {
         try {
-            if (user.getName().equals(SYS_NAME_PUBLIC)) {
+            if (user.getName().equals(User.SYS_NAME_PUBLIC)) {
                 return new DiskFtpFileSystemView(DiskFtpUser.getAnonymousUser(), fileSystemFactory);
             }
             com.xiaotao.saltedfishcloud.entity.po.User dbUser = userDao.getUserByUser(user.getName());

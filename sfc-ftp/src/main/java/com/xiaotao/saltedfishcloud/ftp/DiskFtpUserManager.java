@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.ftp;
+package com.xiaotao.saltedfishcloud.ftp;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
@@ -63,7 +63,7 @@ public class DiskFtpUserManager implements UserManager {
     @Override
     public User authenticate(Authentication authentication) throws AuthenticationFailedException {
         if (authentication instanceof AnonymousAuthentication) {
-            return getUserByName(SYS_NAME_PUBLIC);
+            return getUserByName(User.SYS_NAME_PUBLIC);
         }
         if (authentication instanceof UsernamePasswordAuthentication) {
             UsernamePasswordAuthentication auth = (UsernamePasswordAuthentication) authentication;

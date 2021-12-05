@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.init;
+package com.xiaotao.saltedfishcloud.ftp.init;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.FtpServer;
