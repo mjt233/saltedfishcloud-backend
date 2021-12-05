@@ -1,8 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file.filesystem;
 
+import com.xiaotao.saltedfishcloud.compress.filesystem.CompressFileSystemVisitor;
+import com.xiaotao.saltedfishcloud.compress.impl.ZipCompressFileSystem;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
+import com.xiaotao.saltedfishcloud.entity.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
@@ -24,8 +27,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -36,6 +39,46 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     private final FileDao fileDao;
     private final FileRecordService fileRecordService;
     private final NodeService nodeService;
+
+    /**
+     * @TODO 使用任务队列控制同时进行解压缩的数量
+     */
+    @Override
+    public void extractArchive(int uid, String path, String name, String dest) throws IOException {
+        if (!name.endsWith(".zip")) {
+            throw new UnsupportedOperationException("仅支持zip解压缩");
+        }
+        Resource resource = getResource(uid, path, name);
+        if (resource == null) throw new NoSuchFileException(path + "/" + name);
+        ZipCompressFileSystem fileSystem = new ZipCompressFileSystem(resource);
+
+        // 创建临时目录用于存放临时解压的文件
+        Path tempBasePath = Paths.get(DiskConfig.STORE_ROOT + "/temp/" + System.currentTimeMillis());
+        Files.createDirectories(tempBasePath);
+
+        // 先解压文件到本地，并在网盘中先创建好文件夹
+        fileSystem.walk(((file, stream) -> {
+            Path localTemp = Paths.get(tempBasePath + "/" + file.getPath());
+            if (file.isDirectory()) {
+                Files.createDirectories(localTemp);
+                mkdirs(uid, dest + "/" + file.getPath());
+            } else {
+                Files.copy(stream, localTemp);
+            }
+            return CompressFileSystemVisitor.Result.CONTINUE;
+        })).close();
+
+        Files.walkFileTree(tempBasePath, new SimpleFileVisitor<Path>() {
+            final int tempLen = tempBasePath.toString().length();
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                String diskPath = dest + "/" + file.getParent().toString().substring(tempLen);
+                moveToSaveFile(uid, file, diskPath, FileInfo.getLocal(file.toString()));
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        FileUtils.delete(tempBasePath);
+    }
 
     @Override
     public boolean exist(int uid, String path) {

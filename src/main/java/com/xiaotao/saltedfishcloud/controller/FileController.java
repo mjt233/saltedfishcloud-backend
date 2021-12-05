@@ -57,6 +57,10 @@ public class FileController {
         =======================================
      */
 
+    /**
+     * 这啥？为什么会出现在文件相关的控制器里？QAQ
+     * @TODO 挪个位
+     */
     @GetMapping("info")
     public User getUserInfo(@SessionAttribute User loginUser) {
         return loginUser;
@@ -93,6 +97,17 @@ public class FileController {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
         int i = fileService.getFileSystem().saveFile(uid, file, requestPath, md5);
         return JsonResult.getInstance(i);
+    }
+
+    @PostMapping("extractArchive/**")
+    public JsonResult extractArchive(@PathVariable @UID int uid,
+                                     @RequestParam("name") String name,
+                                     @RequestParam("dest") String dest,
+                                     HttpServletRequest request) throws IOException {
+        String path = URLUtils.getRequestFilePath(PREFIX + uid + "/extractArchive", request);
+
+        fileService.getFileSystem().extractArchive(uid, path, name, dest);
+        return JsonResult.getInstance();
     }
 
     /*

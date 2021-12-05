@@ -8,6 +8,9 @@
         <version>2.4.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
+    <modules>
+        <module>compress</module>
+    </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
     <version>1.3.7.4-SNAPSHOT</version>
@@ -20,6 +23,16 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.xiaotao.saltedfishcloud</groupId>
+            <artifactId>compress</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.21</version>
+        </dependency>
         <!--  JPA  -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
