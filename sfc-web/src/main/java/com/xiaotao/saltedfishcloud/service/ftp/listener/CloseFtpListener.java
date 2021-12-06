@@ -1,7 +1,6 @@
-package com.xiaotao.saltedfishcloud.ftp.listener;
+package com.xiaotao.saltedfishcloud.service.ftp.listener;
 
 
-import com.xiaotao.saltedfishcloud.init.FileDBSynchronizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.FtpServer;

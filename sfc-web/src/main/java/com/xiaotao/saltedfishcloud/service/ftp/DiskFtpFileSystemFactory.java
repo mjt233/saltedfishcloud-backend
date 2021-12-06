@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.ftp;
+package com.xiaotao.saltedfishcloud.service.ftp;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;

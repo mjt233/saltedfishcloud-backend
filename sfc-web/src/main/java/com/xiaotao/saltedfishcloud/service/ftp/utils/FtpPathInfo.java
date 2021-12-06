@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.ftp.utils;
+package com.xiaotao.saltedfishcloud.service.ftp.utils;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;

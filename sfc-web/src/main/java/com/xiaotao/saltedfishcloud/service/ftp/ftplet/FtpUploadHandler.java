@@ -1,10 +1,10 @@
-package com.xiaotao.saltedfishcloud.ftp.ftplet;
+package com.xiaotao.saltedfishcloud.service.ftp.ftplet;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.ftp.DiskFtpUser;
-import com.xiaotao.saltedfishcloud.ftp.utils.FtpPathInfo;
+import com.xiaotao.saltedfishcloud.service.ftp.DiskFtpUser;
+import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
