@@ -1,6 +1,12 @@
-cp ../src/main/resources/application.sample.yml ../src/main/resources/application.yml
-rm ../target/*.jar 2>&1 > /dev/null
+cp ../sfc-web/src/main/resources/application.sample.yml ../sfc-web/src/main/resources/application.yml
+rm ../sfc-web/target/*.jar 2>&1 > /dev/null
 
+cd ../sfc-compress
+mvn clean
+mvn install
+cd ../sfc-web
+mvn clean
+mvn install
 cd ..
 mvn package
 if [ $? == 0 ]; then
