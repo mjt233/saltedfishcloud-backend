@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.filesystem;
 
+import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.compress.filesystem.CompressFileSystemVisitor;
 import com.xiaotao.saltedfishcloud.compress.impl.SequenceCompressFileSystem;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
@@ -43,6 +44,11 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     private final FileDao fileDao;
     private final FileRecordService fileRecordService;
     private final NodeService nodeService;
+
+    @Override
+    public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) {
+
+    }
 
     /**
      * @TODO 使用任务队列控制同时进行解压缩的数量

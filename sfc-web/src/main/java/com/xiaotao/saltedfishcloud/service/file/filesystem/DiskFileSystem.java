@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.filesystem;
 
+import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileDCInfo;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -26,6 +28,16 @@ public interface DiskFileSystem {
     int SAVE_COVER = 0;
     int SAVE_NEW_FILE = 1;
     int SAVE_NOT_CHANGE = 2;
+
+    /**
+     * 创建一个压缩文件
+     * @param uid   用户ID
+     * @param path  输入的文件所在的网盘目录
+     * @param names 要被压缩的文件名集合
+     * @param dest  输出文件网盘路径
+     * @param type  压缩类型
+     */
+    void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type);
 
     /**
      * 解压一个压缩包到指定目录下

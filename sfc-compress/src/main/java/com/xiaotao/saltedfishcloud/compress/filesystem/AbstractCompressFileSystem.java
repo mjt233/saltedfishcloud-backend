@@ -26,7 +26,13 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
     @Override
     public ArchiveInputStream walk(CompressFileSystemVisitor visitor) throws IOException, ArchiveException {
         ArchiveInputStream stream = getArchiveInputStream();
-        ArchiveEntry entry = stream.getNextEntry();
+        ArchiveEntry entry;
+        try {
+            entry = stream.getNextEntry();
+        } catch (IOException e) {
+            stream.close();
+            throw e;
+        }
         CompressFileSystemVisitor.Result result;
         do {
             ArchiveEntryInputStream entryInputStream = new ArchiveEntryInputStream(entry, stream);
@@ -35,6 +41,7 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
                 result = visitor.walk(compressFile, entryInputStream);
             } catch (Throwable throwable) {
                 throwable.printStackTrace();
+                stream.close();
                 result = CompressFileSystemVisitor.Result.STOP;
             }
 
