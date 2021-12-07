@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.compress;
 
-import com.xiaotao.saltedfishcloud.compress.impl.ZipCompressFileSystem;
+import com.xiaotao.saltedfishcloud.compress.impl.SequenceCompressFileSystem;
+import org.apache.commons.compress.archivers.ArchiveException;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -13,17 +14,17 @@ import java.nio.file.StandardCopyOption;
 
 class ZipCompressFileSystemViewTest {
     @Test
-    void extractAll() throws IOException {
+    void extractAll() throws IOException, ArchiveException {
         ClassPathResource resource = new ClassPathResource("/testResources/test.zip");
-        ZipCompressFileSystem view = new ZipCompressFileSystem(resource);
+        SequenceCompressFileSystem view = new SequenceCompressFileSystem(resource);
         Path basePath = Paths.get("D:\\test\\");
         view.extractAll(basePath);
     }
 
     @Test
-    void extractOne() throws IOException {
+    void extractOne() throws IOException, ArchiveException {
         ClassPathResource resource = new ClassPathResource("/testResources/test.zip");
-        ZipCompressFileSystem view = new ZipCompressFileSystem(resource);
+        SequenceCompressFileSystem view = new SequenceCompressFileSystem(resource);
         InputStream inputStream = view.getInputStream("avatar.jpg");
         Files.copy(inputStream, Paths.get("D:\\avatar.jpg"), StandardCopyOption.REPLACE_EXISTING);
 

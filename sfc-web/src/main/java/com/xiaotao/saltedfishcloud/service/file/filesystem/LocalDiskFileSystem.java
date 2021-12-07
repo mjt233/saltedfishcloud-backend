@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.filesystem;
 
 import com.xiaotao.saltedfishcloud.compress.filesystem.CompressFileSystemVisitor;
-import com.xiaotao.saltedfishcloud.compress.impl.ZipCompressFileSystem;
+import com.xiaotao.saltedfishcloud.compress.impl.SequenceCompressFileSystem;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -17,6 +17,7 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.archivers.ArchiveException;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
@@ -49,12 +50,9 @@ public class LocalDiskFileSystem implements DiskFileSystem {
      */
     @Override
     public void extractArchive(int uid, String path, String name, String dest) throws IOException {
-        if (!name.endsWith(".zip")) {
-            throw new UnsupportedOperationException("仅支持zip解压缩");
-        }
         Resource resource = getResource(uid, path, name);
         if (resource == null) throw new NoSuchFileException(path + "/" + name);
-        ZipCompressFileSystem fileSystem = new ZipCompressFileSystem(resource);
+        SequenceCompressFileSystem fileSystem = new SequenceCompressFileSystem(resource);
 
         Path tempBasePath = Paths.get(DiskConfig.STORE_ROOT + "/temp/" + System.currentTimeMillis());
         // 创建临时目录用于存放临时解压的文件
@@ -85,7 +83,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch (ZipException e) {
+        } catch (ZipException | ArchiveException e) {
             JsonException exception = new JsonException(ErrorInfo.ARCHIVE_FORMAT_UNSUPPORTED);
             exception.initCause(e);
             exception.setStackTrace(e.getStackTrace());

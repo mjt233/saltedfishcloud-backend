@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.compress.filesystem;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.springframework.util.StreamUtils;
 
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class AbstractCompressFileSystem implements CompressFileSystem {
 
     @Override
-    public ArchiveInputStream walk(CompressFileSystemVisitor visitor) throws IOException {
+    public ArchiveInputStream walk(CompressFileSystemVisitor visitor) throws IOException, ArchiveException {
         ArchiveInputStream stream = getArchiveInputStream();
         ArchiveEntry entry = stream.getNextEntry();
         CompressFileSystemVisitor.Result result;
@@ -50,7 +51,7 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
 
 
     @Override
-    public List<? extends CompressFile> listFiles(String path) throws IOException {
+    public List<? extends CompressFile> listFiles(String path) throws IOException, ArchiveException {
         List<CompressFile> res = new LinkedList<>();
         walk(((file, stream) -> {
             res.add(file);
@@ -62,7 +63,7 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
 
 
     @Override
-    public InputStream getInputStream(String name) throws IOException {
+    public InputStream getInputStream(String name) throws IOException, ArchiveException {
         AtomicReference<InputStream> res = new AtomicReference<>();
         ArchiveInputStream walkStream = walk(((file, stream) -> {
             if (file.getName().equals(name)) {
@@ -83,7 +84,7 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
     }
 
     @Override
-    public void extractAll(Path dest) throws IOException {
+    public void extractAll(Path dest) throws IOException, ArchiveException {
         walk(((file, stream) -> {
             Path target = Paths.get(dest + "/" + file.getPath());
             if (file.isDirectory()) {
