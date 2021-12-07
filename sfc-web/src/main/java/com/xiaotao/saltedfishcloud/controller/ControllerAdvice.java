@@ -101,6 +101,9 @@ public class ControllerAdvice {
 
     @ExceptionHandler(IOException.class)
     public Object ioError(HttpServletResponse response, IOException e) {
+        if (log.isDebugEnabled()) {
+            e.printStackTrace();
+        }
         String h = response.getHeader("Content-Type");
         if (h != null) {
             return null;

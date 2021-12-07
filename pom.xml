@@ -15,12 +15,11 @@
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
-    <version>${project.version}</version>
+    <version>1.3.7.5-SNAPSHOT</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
     <properties>
-        <project.version>1.3.7.5-SNAPSHOT</project.version>
         <java.version>1.8</java.version>
         <skipTests>true</skipTests>
     </properties>
