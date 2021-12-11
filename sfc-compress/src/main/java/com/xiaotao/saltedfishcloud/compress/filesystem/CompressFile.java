@@ -7,6 +7,7 @@ public interface CompressFile {
 
     /**
      * 获取文件名
+     * @TODO 识别编码不一致导致的文件名乱码还原
      */
     String getName();
 

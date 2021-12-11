@@ -8,15 +8,18 @@ import org.springframework.core.io.InputStreamSource;
 
 import java.io.IOException;
 
-public class SequenceCompressFileSystem extends AbstractCompressFileSystem {
+public class SequenceZipCompressFileSystem extends AbstractCompressFileSystem {
     private final InputStreamSource source;
 
-    public SequenceCompressFileSystem(InputStreamSource source) {
+    public SequenceZipCompressFileSystem(InputStreamSource source) {
         this.source = source;
     }
 
     @Override
     public ArchiveInputStream getArchiveInputStream() throws IOException, ArchiveException {
-        return new ArchiveStreamFactory().createArchiveInputStream(source.getInputStream());
+        return new ArchiveStreamFactory().createArchiveInputStream(
+                ArchiveStreamFactory.ZIP,
+                source.getInputStream(),
+                "GBK");
     }
 }
