@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.compress.filesystem;
+package com.xiaotao.saltedfishcloud.compress.reader;
 
 import java.io.IOException;
 import java.io.InputStream;

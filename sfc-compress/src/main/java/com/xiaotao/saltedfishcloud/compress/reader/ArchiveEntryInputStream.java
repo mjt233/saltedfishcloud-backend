@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.compress.filesystem;
+package com.xiaotao.saltedfishcloud.compress.reader;
 
 import lombok.Getter;
 import org.apache.commons.compress.archivers.ArchiveEntry;

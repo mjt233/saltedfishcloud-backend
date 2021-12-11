@@ -1,6 +1,6 @@
-package com.xiaotao.saltedfishcloud.compress.impl;
+package com.xiaotao.saltedfishcloud.compress.reader.impl;
 
-import com.xiaotao.saltedfishcloud.compress.filesystem.AbstractCompressFileSystem;
+import com.xiaotao.saltedfishcloud.compress.reader.AbstractArchiveFileSystem;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
@@ -11,10 +11,10 @@ import java.io.IOException;
 /**
  * @TODO 兼容多种编码（或用户指定）
  */
-public class SequenceZipCompressFileSystem extends AbstractCompressFileSystem {
+public class SequenceZipArchiveFileSystem extends AbstractArchiveFileSystem {
     private final InputStreamSource source;
 
-    public SequenceZipCompressFileSystem(InputStreamSource source) {
+    public SequenceZipArchiveFileSystem(InputStreamSource source) {
         this.source = source;
     }
 

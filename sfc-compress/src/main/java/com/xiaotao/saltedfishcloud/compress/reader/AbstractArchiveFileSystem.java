@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.compress.filesystem;
+package com.xiaotao.saltedfishcloud.compress.reader;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * 默认采取顺序读取的方式访问压缩包
  */
 @Slf4j
-public abstract class AbstractCompressFileSystem implements CompressFileSystem {
+public abstract class AbstractArchiveFileSystem implements ArchiveReader {
 
     @Override
-    public ArchiveInputStream walk(CompressFileSystemVisitor visitor) throws IOException, ArchiveException {
+    public ArchiveInputStream walk(ArchiveReaderVisitor visitor) throws IOException, ArchiveException {
         ArchiveInputStream stream = getArchiveInputStream();
         ArchiveEntry entry;
         try {
@@ -33,7 +33,7 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
             stream.close();
             throw e;
         }
-        CompressFileSystemVisitor.Result result;
+        ArchiveReaderVisitor.Result result;
         do {
             ArchiveEntryInputStream entryInputStream = new ArchiveEntryInputStream(entry, stream);
             CompressFile compressFile = CompressFile.formArchiveEntry(entry);
@@ -47,10 +47,10 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
                 throw new ArchiveException("visitor error ", exception);
             }
 
-            if (result == CompressFileSystemVisitor.Result.STOP) {
+            if (result == ArchiveReaderVisitor.Result.STOP) {
                 break;
             }
-            if (result == CompressFileSystemVisitor.Result.SKIP) {
+            if (result == ArchiveReaderVisitor.Result.SKIP) {
                 entryInputStream.skipThisEntry();
             }
             entry = stream.getNextEntry();
@@ -64,7 +64,7 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
         List<CompressFile> res = new LinkedList<>();
         walk(((file, stream) -> {
             res.add(file);
-            return CompressFileSystemVisitor.Result.SKIP;
+            return ArchiveReaderVisitor.Result.SKIP;
         })).close();
         return res;
     }
@@ -77,13 +77,13 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
         ArchiveInputStream walkStream = walk(((file, stream) -> {
             if (file.getName().equals(name)) {
                 res.set(stream);
-                return CompressFileSystemVisitor.Result.STOP;
+                return ArchiveReaderVisitor.Result.STOP;
             }
             if (!file.isDirectory()) {
                 long skip = stream.skipThisEntry();
                 log.debug("skip: " + skip);
             }
-            return CompressFileSystemVisitor.Result.CONTINUE;
+            return ArchiveReaderVisitor.Result.CONTINUE;
         }));
         if (res.get() == null) {
             walkStream.close();
@@ -102,7 +102,7 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
                 if (!Files.exists(target.getParent())) Files.createDirectories(target.getParent());
                 StreamUtils.copy(stream, Files.newOutputStream(target));
             }
-            return CompressFileSystemVisitor.Result.CONTINUE;
+            return ArchiveReaderVisitor.Result.CONTINUE;
         })).close();
     }
 }

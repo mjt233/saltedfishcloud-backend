@@ -1,6 +1,6 @@
-package com.xiaotao.saltedfishcloud.compress.impl;
+package com.xiaotao.saltedfishcloud.compress.reader.impl;
 
-import com.xiaotao.saltedfishcloud.compress.filesystem.CompressFile;
+import com.xiaotao.saltedfishcloud.compress.reader.CompressFile;
 import com.xiaotao.saltedfishcloud.compress.utils.CharacterUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;

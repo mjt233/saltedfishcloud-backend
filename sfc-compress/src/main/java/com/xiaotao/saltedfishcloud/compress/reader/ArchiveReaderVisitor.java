@@ -1,11 +1,11 @@
-package com.xiaotao.saltedfishcloud.compress.filesystem;
+package com.xiaotao.saltedfishcloud.compress.reader;
 
 
 /**
  * 压缩包文件访问器
  */
 @FunctionalInterface
-public interface CompressFileSystemVisitor {
+public interface ArchiveReaderVisitor {
     enum Result {
         CONTINUE, STOP, SKIP
     }

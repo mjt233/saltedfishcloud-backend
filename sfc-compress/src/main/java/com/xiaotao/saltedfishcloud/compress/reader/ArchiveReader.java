@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.compress.filesystem;
+package com.xiaotao.saltedfishcloud.compress.reader;
 
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 
-public interface CompressFileSystem {
+public interface ArchiveReader {
     ArchiveInputStream getArchiveInputStream() throws IOException, ArchiveException;
 
     /**
@@ -16,7 +16,7 @@ public interface CompressFileSystem {
      * @param visitor  访问器
      * @return 压缩包输入流，需要手动关闭
      */
-    ArchiveInputStream walk(CompressFileSystemVisitor visitor) throws IOException, ArchiveException;
+    ArchiveInputStream walk(ArchiveReaderVisitor visitor) throws IOException, ArchiveException;
 
     /**
      * 获取压缩包指定目录下的文件列表

@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file.filesystem;
 
 import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
-import com.xiaotao.saltedfishcloud.compress.filesystem.CompressFileSystemVisitor;
-import com.xiaotao.saltedfishcloud.compress.impl.SequenceZipCompressFileSystem;
+import com.xiaotao.saltedfishcloud.compress.reader.ArchiveReaderVisitor;
+import com.xiaotao.saltedfishcloud.compress.reader.impl.SequenceZipArchiveFileSystem;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -61,7 +61,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
         }
         Resource resource = getResource(uid, path, name);
         if (resource == null) throw new NoSuchFileException(path + "/" + name);
-        SequenceZipCompressFileSystem fileSystem = new SequenceZipCompressFileSystem(resource);
+        SequenceZipArchiveFileSystem fileSystem = new SequenceZipArchiveFileSystem(resource);
 
         Path tempBasePath = Paths.get(DiskConfig.STORE_ROOT + "/temp/" + System.currentTimeMillis());
         // 创建临时目录用于存放临时解压的文件
@@ -79,7 +79,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
                     log.debug("解压文件：{}", localTemp);
                     Files.copy(stream, localTemp);
                 }
-                return CompressFileSystemVisitor.Result.CONTINUE;
+                return ArchiveReaderVisitor.Result.CONTINUE;
             })).close();
 
             Files.walkFileTree(tempBasePath, new SimpleFileVisitor<Path>() {
