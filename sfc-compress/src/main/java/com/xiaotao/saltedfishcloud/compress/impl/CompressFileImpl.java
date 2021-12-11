@@ -1,9 +1,11 @@
 package com.xiaotao.saltedfishcloud.compress.impl;
 
 import com.xiaotao.saltedfishcloud.compress.filesystem.CompressFile;
+import com.xiaotao.saltedfishcloud.compress.utils.CharacterUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
-
+@Slf4j
 public class CompressFileImpl implements CompressFile {
     private final ArchiveEntry zipEntry;
     private String path;
@@ -57,6 +59,9 @@ public class CompressFileImpl implements CompressFile {
     public String getPath() {
         if (this.path != null) return this.path;
         this.path = zipEntry.getName();
+        if (CharacterUtils.isMessyCode(this.path)) {
+            throw new UnsupportedOperationException("Just support GBK charset because I don't how to compatible with different charset :( ");
+        }
         return this.path;
     }
 

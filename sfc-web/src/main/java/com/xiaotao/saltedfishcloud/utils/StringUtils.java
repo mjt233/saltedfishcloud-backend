@@ -6,8 +6,16 @@ import java.util.Random;
 import java.util.regex.Pattern;
 
 public class StringUtils {
+    /**
+     * 随机字符串采用的字符序列
+     */
     private final static String PATTERN = "qwertyuiopasdfghjklzxcvbnm";
+
+    /**
+     * 随机字符串采用的字符序列长度
+     */
     private final static int PATTERN_LEN = PATTERN.length();
+
 
     /**
      * 生成一个纯字母随机字符串

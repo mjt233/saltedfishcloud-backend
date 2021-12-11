@@ -7,6 +7,9 @@ import org.apache.commons.compress.archivers.ArchiveInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * 压缩实体输入流，从输入流中读取对应压缩实体长度的字节
+ */
 public class ArchiveEntryInputStream extends InputStream {
     private final ArchiveInputStream inputStream;
     private long readCnt = 0;
@@ -14,6 +17,10 @@ public class ArchiveEntryInputStream extends InputStream {
     @Getter
     private final ArchiveEntry entry;
 
+    /**
+     * @param entry 压缩实体信息
+     * @param inputStream   输入流
+     */
     public ArchiveEntryInputStream(ArchiveEntry entry, ArchiveInputStream inputStream) {
         this.inputStream = inputStream;
         targetSize = entry.getSize();
@@ -52,7 +59,7 @@ public class ArchiveEntryInputStream extends InputStream {
 
     @Override
     public int available() throws IOException {
-        if (targetSize < 0 || readCnt == targetSize) return 0;
+        if (targetSize < 0 || readCnt == targetSize || atEnd()) return 0;
         int s = Math.toIntExact(targetSize - readCnt);
         return Math.min(inputStream.available(), s);
     }
@@ -72,6 +79,6 @@ public class ArchiveEntryInputStream extends InputStream {
     }
 
     public boolean atEnd() {
-        return targetSize == -1 || targetSize == readCnt;
+        return targetSize == -1 || targetSize == readCnt || entry.isDirectory();
     }
 }

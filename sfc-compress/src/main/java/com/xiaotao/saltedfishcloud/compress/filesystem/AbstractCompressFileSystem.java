@@ -37,12 +37,14 @@ public abstract class AbstractCompressFileSystem implements CompressFileSystem {
         do {
             ArchiveEntryInputStream entryInputStream = new ArchiveEntryInputStream(entry, stream);
             CompressFile compressFile = CompressFile.formArchiveEntry(entry);
+
+            // 开始执行访问器
             try {
                 result = visitor.walk(compressFile, entryInputStream);
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
+            } catch (Exception exception) {
+                exception.printStackTrace();
                 stream.close();
-                result = CompressFileSystemVisitor.Result.STOP;
+                throw new ArchiveException("visitor error ", exception);
             }
 
             if (result == CompressFileSystemVisitor.Result.STOP) {

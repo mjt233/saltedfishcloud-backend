@@ -16,5 +16,5 @@ public interface CompressFileSystemVisitor {
      * @param stream    该文件的流
      * @return          当返回值为CONTINUE时，表示继续遍历，否则停止遍历
      */
-    Result walk(CompressFile file, ArchiveEntryInputStream stream) throws Throwable;
+    Result walk(CompressFile file, ArchiveEntryInputStream stream) throws Exception;
 }
