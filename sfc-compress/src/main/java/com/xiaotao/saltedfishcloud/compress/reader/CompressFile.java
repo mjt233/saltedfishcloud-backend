@@ -1,32 +1,40 @@
 package com.xiaotao.saltedfishcloud.compress.reader;
 
 import com.xiaotao.saltedfishcloud.compress.reader.impl.CompressFileImpl;
+import com.xiaotao.saltedfishcloud.compress.utils.ArchiveUtils;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
-public interface CompressFile {
-
+public abstract class CompressFile {
+    private String name;
     /**
      * 获取文件名（而不是完整路径+文件名）
      */
-    String getName();
+    public String getName() {
+        // 缓存的文件名，存在则直接返回（因为文件名需要从完整路径中解析，需要避免重复运算和不必要的运算，懒加载思想）
+        if (this.name != null) return this.name;
+        this.name = ArchiveUtils.getFilename(this.getPath());
+        return this.name;
+    }
 
     /**
      * 判断是否为目录
      */
-    boolean isDirectory();
+    public boolean isDirectory() {
+        return getName().endsWith("/");
+    }
 
     /**
      * 获取文件大小
      */
-    long getSize();
+    public abstract long getSize();
 
     /**
      * 获取文件在压缩文件中的完整路径+文件名
      * @TODO 识别编码不一致导致的文件名乱码还原
      */
-    String getPath();
+    public abstract String getPath();
 
-    static CompressFile formArchiveEntry(ArchiveEntry entry) {
+    public static CompressFile formArchiveEntry(ArchiveEntry entry) {
         if (entry == null) throw new NullPointerException();
         return new CompressFileImpl(entry);
     }
