@@ -13,6 +13,7 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Component;
@@ -56,16 +57,11 @@ public class RAWStoreService implements StoreService {
     @Override
     public Resource getResource(int uid, String path, String name) {
         String storePath = DiskConfig.rawPathHandler.getStorePath(uid, path + "/" + name, null);
-        try {
-            Path p = Paths.get(storePath);
-            if (!Files.exists(p) || Files.isDirectory(p)) {
-                return null;
-            }
-            return new UrlResource(p.toUri());
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
+        Path p = Paths.get(storePath);
+        if (!Files.exists(p) || Files.isDirectory(p)) {
             return null;
         }
+        return new PathResource(p);
     }
 
     @Override
@@ -77,6 +73,9 @@ public class RAWStoreService implements StoreService {
     @Override
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
         Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
+        if (Files.exists(targetPath) && Files.isDirectory(targetPath)) {
+            throw new IllegalArgumentException("被覆盖的目标 " + fileInfo.getName() + " 是个目录");
+        }
         // 非唯一模式，直接将文件移动到目标位置
         if (!nativePath.equals(targetPath)) {
             log.debug("File move {} => {}", nativePath, targetPath);

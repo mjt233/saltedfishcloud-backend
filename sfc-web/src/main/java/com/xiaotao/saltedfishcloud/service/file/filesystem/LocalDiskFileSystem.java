@@ -2,20 +2,22 @@ package com.xiaotao.saltedfishcloud.service.file.filesystem;
 
 import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.compress.reader.ArchiveReaderVisitor;
-import com.xiaotao.saltedfishcloud.compress.reader.impl.SequenceZipArchiveFileSystem;
-import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.compress.reader.impl.ZipArchiveReader;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
+import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
@@ -61,11 +63,14 @@ public class LocalDiskFileSystem implements DiskFileSystem {
         }
         Resource resource = getResource(uid, path, name);
         if (resource == null) throw new NoSuchFileException(path + "/" + name);
-        SequenceZipArchiveFileSystem fileSystem = new SequenceZipArchiveFileSystem(resource);
 
-        Path tempBasePath = Paths.get(DiskConfig.STORE_ROOT + "/temp/" + System.currentTimeMillis());
+
         // 创建临时目录用于存放临时解压的文件
-        try {
+        Path tempBasePath = Paths.get(DiskConfig.STORE_ROOT + "/temp/" + System.currentTimeMillis());
+
+
+        try(ZipArchiveReader fileSystem = new ZipArchiveReader(resource.getFile())) {
+
             Files.createDirectories(tempBasePath);
 
             // 先解压文件到本地，并在网盘中先创建好文件夹
@@ -80,7 +85,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
                     Files.copy(stream, localTemp);
                 }
                 return ArchiveReaderVisitor.Result.CONTINUE;
-            })).close();
+            }));
 
             Files.walkFileTree(tempBasePath, new SimpleFileVisitor<Path>() {
                 final int tempLen = tempBasePath.toString().length();
@@ -96,8 +101,15 @@ public class LocalDiskFileSystem implements DiskFileSystem {
             JsonException exception = new JsonException(ErrorInfo.ARCHIVE_FORMAT_UNSUPPORTED);
             exception.initCause(e);
             exception.setStackTrace(e.getStackTrace());
+            e.printStackTrace();
             throw exception;
-        } finally {
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new JsonException(500, "存储出错或可能存在冲突的文件与文件夹名");
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new JsonException(e.getMessage());
+        }finally {
             FileUtils.delete(tempBasePath);
         }
     }
@@ -115,6 +127,11 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String mkdirs(int uid, String path) throws IOException {
+        String parent = PathUtils.getParentPath(path);
+        String name = PathUtils.getLastNode(path);
+        if (getResource(uid, parent, name) != null) {
+            throw new UnsupportedOperationException("已存在同名文件：" + path);
+        }
         String nid = fileRecordService.mkdirs(uid, path);
         storeServiceFactory.getService().mkdir(uid, path, "");
         return nid;

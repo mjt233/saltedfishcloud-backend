@@ -24,7 +24,7 @@ public interface StoreService {
     List<FileInfo> lists(int uid, String path) throws IOException;
 
     /**
-     * 获取文件资源，若文件不存在则为null
+     * 获取文件资源，若文件不存在或目标为文件夹则为null
      * @param uid   用户ID
      * @param path  文件所在路径
      * @param name  文件名

@@ -7,24 +7,21 @@ import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 默认的压缩包文件系统，子类只需实现getArchiveInputStream()方法。
  * 默认采取顺序读取的方式访问压缩包
  */
 @Slf4j
-public abstract class AbstractArchiveFileSystem implements ArchiveReader {
+public abstract class AbstractArchiveReader implements ArchiveReader {
 
     @Override
-    public ArchiveInputStream walk(ArchiveReaderVisitor visitor) throws IOException, ArchiveException {
+    public ArchiveInputStream walk(ArchiveReaderVisitor visitor) throws Exception {
         ArchiveInputStream stream = getArchiveInputStream();
         ArchiveEntry entry;
         try {
@@ -58,51 +55,40 @@ public abstract class AbstractArchiveFileSystem implements ArchiveReader {
         return stream;
     }
 
+    protected abstract ArchiveInputStream getArchiveInputStream() throws IOException, ArchiveException;
 
     @Override
-    public List<? extends CompressFile> listFiles(String path) throws IOException, ArchiveException {
+    public List<? extends CompressFile> listFiles() {
         List<CompressFile> res = new LinkedList<>();
-        walk(((file, stream) -> {
-            res.add(file);
-            return ArchiveReaderVisitor.Result.SKIP;
-        })).close();
+        try {
+            walk(((file, stream) -> {
+                res.add(file);
+                return ArchiveReaderVisitor.Result.SKIP;
+            })).close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return res;
     }
 
-
-
     @Override
-    public InputStream getInputStream(String name) throws IOException, ArchiveException {
-        AtomicReference<InputStream> res = new AtomicReference<>();
-        ArchiveInputStream walkStream = walk(((file, stream) -> {
-            if (file.getName().equals(name)) {
-                res.set(stream);
-                return ArchiveReaderVisitor.Result.STOP;
-            }
-            if (!file.isDirectory()) {
-                long skip = stream.skipThisEntry();
-                log.debug("skip: " + skip);
-            }
-            return ArchiveReaderVisitor.Result.CONTINUE;
-        }));
-        if (res.get() == null) {
-            walkStream.close();
-            throw new NoSuchFileException(name);
+    public void extractAll(Path dest) throws IOException {
+        try {
+            walk(((file, stream) -> {
+                Path target = Paths.get(dest + "/" + file.getPath());
+                if (file.isDirectory()) {
+                    Files.createDirectories(target);
+                } else {
+                    if (!Files.exists(target.getParent())) Files.createDirectories(target.getParent());
+                    StreamUtils.copy(stream, Files.newOutputStream(target));
+                }
+                return ArchiveReaderVisitor.Result.CONTINUE;
+            }));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new IOException(e.getCause());
         }
-        return res.get();
     }
 
-    @Override
-    public void extractAll(Path dest) throws IOException, ArchiveException {
-        walk(((file, stream) -> {
-            Path target = Paths.get(dest + "/" + file.getPath());
-            if (file.isDirectory()) {
-                Files.createDirectories(target);
-            } else {
-                if (!Files.exists(target.getParent())) Files.createDirectories(target.getParent());
-                StreamUtils.copy(stream, Files.newOutputStream(target));
-            }
-            return ArchiveReaderVisitor.Result.CONTINUE;
-        })).close();
-    }
+
 }

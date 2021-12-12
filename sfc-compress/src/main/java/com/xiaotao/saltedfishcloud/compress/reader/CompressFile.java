@@ -20,7 +20,7 @@ public abstract class CompressFile {
      * 判断是否为目录
      */
     public boolean isDirectory() {
-        return getName().endsWith("/");
+        return getPath().endsWith("/");
     }
 
     /**

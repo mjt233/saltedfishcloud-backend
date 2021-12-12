@@ -28,6 +28,9 @@ public class HardLinkStoreService extends RAWStoreService {
     @Override
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
         Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
+        if (Files.exists(targetPath) && Files.isDirectory(targetPath)) {
+            throw new IllegalArgumentException("被覆盖的目标 " + fileInfo.getName() + " 是个目录");
+        }
         // 唯一文件仓库中的路径
         Path sourcePath = Paths.get(DiskConfig.uniquePathHandler.getStorePath(uid, diskPath, fileInfo)); // 文件仓库源文件路径
         if (Files.exists(sourcePath)) {

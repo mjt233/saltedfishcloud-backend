@@ -16,6 +16,18 @@ public class PathUtils {
         return System.getProperty("java.io.tmpdir");
     }
 
+    public static String getParentPath(String path) {
+        PathBuilder pb = new PathBuilder();
+        pb.append(path);
+        return pb.range(-1);
+    }
+
+    public static String getLastNode(String path) {
+        PathBuilder pb = new PathBuilder();
+        pb.append(path);
+        return pb.range(1, -1);
+    }
+
     /**
      * 提取一个文件的完整本地路径中 相对网盘的路径<br>
      * 如 本地文件D:/data/xiaotao/a.jpg <br>
