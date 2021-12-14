@@ -4,8 +4,10 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
+import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
+import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
@@ -107,6 +109,18 @@ public class FileController {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/extractArchive", request);
 
         fileService.getFileSystem().extractArchive(uid, path, name, dest);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 从网盘创建压缩文件
+     * @param uid   用户ID
+     * @param files 文件传输信息
+     */
+    @PostMapping("compress")
+    public JsonResult compress(@PathVariable @UID int uid,
+                               @RequestBody FileTransferInfo files) throws IOException {
+        fileService.getFileSystem().compress(uid, files.getSource(), files.getFilenames(), files.getDest(), ArchiveType.ZIP);
         return JsonResult.getInstance();
     }
 

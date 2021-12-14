@@ -52,7 +52,7 @@ public class PathBuilder {
      *        如节点长度为5，参数length为-2时，则返回前3个节点的咸鱼云网盘标准格式化路径 <br>
      *
      * @param index
-     *        起始索引，若为负数，则表示从末尾开始往前计数
+     *        起始索引，若为负数，则表示从末尾开始往前计数（末尾索引为-1）
      *
      * @throws IndexOutOfBoundsException
      *     当传入的length大于从指定的index到末尾的长度时抛出此异常

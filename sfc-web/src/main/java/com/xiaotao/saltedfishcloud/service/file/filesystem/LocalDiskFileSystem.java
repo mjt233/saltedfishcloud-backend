@@ -1,5 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file.filesystem;
 
+import com.xiaotao.saltedfishcloud.compress.creator.ArchiveCompressor;
+import com.xiaotao.saltedfishcloud.compress.creator.ArchiveResourceEntry;
+import com.xiaotao.saltedfishcloud.compress.creator.ZipCompressor;
 import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.compress.reader.ArchiveReaderVisitor;
 import com.xiaotao.saltedfishcloud.compress.reader.impl.ZipArchiveReader;
@@ -11,6 +14,7 @@ import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -27,10 +31,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -48,13 +49,84 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     private final NodeService nodeService;
 
     @Override
-    public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) {
+    public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {
+        try(ZipCompressor compressor = new ZipCompressor(outputStream)) {
+            compress(uid, path, path, names, compressor);
+        }
+    }
+
+    /**
+     * 压缩目录下指定的文件
+     * @param uid       用户ID
+     * @param root      压缩根
+     * @param path      路径
+     * @param names     文件名集合
+     * @param compressor    压缩器
+     */
+    private void compress(int uid, String root, String path, Collection<String> names, ArchiveCompressor compressor) throws IOException {
+        String curDir = StringUtils.removePrefix(root, path).replaceAll("//+", "").replaceAll("^/+", "");
+        for (String name : names) {
+            Resource resource = getResource(uid, path, name);
+            if (resource == null) {
+                compressDir(uid, root, path + "/" + name, compressor, 1);
+            } else {
+                compressor.addFile(new ArchiveResourceEntry(
+                        curDir.length() == 0 ? name : curDir + "/" + name,
+                        resource.contentLength(),
+                        resource
+                ));
+            }
+        }
+    }
+
+    /**
+     * 压缩目标文件夹内的所有内容
+     * @param uid   用户ID
+     * @param root  压缩根路径
+     * @param path  要压缩的完整目录路径
+     * @param compressor    压缩器
+     * @param depth         当前压缩深度
+     */
+    private void compressDir(int uid, String root, String path, ArchiveCompressor compressor, int depth) throws IOException {
+        List<FileInfo>[] list = getUserFileList(uid, path);
+        String curPath = StringUtils.removePrefix(root, path).replaceAll("//+", "/").replaceAll("^/+", "");
+        for (FileInfo file : list[1]) {
+            compressor.addFile(new ArchiveResourceEntry(
+                    curPath + "/" + file.getName(), file.getSize(), getResource(uid, path, file.getName()))
+            );
+        }
+
+        for (FileInfo file : list[0]) {
+            compressor.addFile(new ArchiveResourceEntry(curPath + "/" + file.getName() + "/", 0, null));
+            compressDir(uid, root, path + "/" + file.getName(), compressor, depth + 1);
+        }
+    }
+
+    @Override
+    public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException {
+        boolean exist = exist(uid, dest);
+        if (exist && getResource(uid, path, "") == null) {
+            throw new JsonException(ErrorInfo.RESOURCE_TYPE_NOT_MATCH);
+        }
+        Path temp = Paths.get(PathUtils.getTempDirectory() + "/temp_zip" + System.currentTimeMillis());
+        try(OutputStream output = Files.newOutputStream(temp)) {
+            PathBuilder pb = new PathBuilder();
+            pb.append(dest);
+            compressAndWriteOut(uid, path, names, ArchiveType.ZIP, output);
+            final FileInfo fileInfo = FileInfo.getLocal(temp.toString());
+            fileInfo.setName(pb.range(1, -1));
+            moveToSaveFile(uid, temp, pb.range(-1), fileInfo);
+        } finally {
+            Files.deleteIfExists(temp);
+        }
+
 
     }
 
     /**
      * @TODO 使用任务队列控制同时进行解压缩的数量
      * @TODO 边解压边计算MD5
+     * @TODO 实现实时计算MD5的IO流
      */
     @Override
     public void extractArchive(int uid, String path, String name, String dest) throws IOException {

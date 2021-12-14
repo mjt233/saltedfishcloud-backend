@@ -15,7 +15,8 @@ import lombok.Getter;
 public enum ErrorInfo {
     NODE_NOT_FOUND(1000, 404, "无效的节点ID"),
     FILE_NOT_FOUND(1001, 404, "找不到文件"),
-    FILE_TOO_LARGE(2000, 413, "文件过大"),
+    FILE_TOO_LARGE(1002, 413, "文件过大"),
+    RESOURCE_TYPE_NOT_MATCH(1003, 400, "文件资源无法覆盖目录资源（或相反）"),
     FORMAT_ERROR(2001, 400, "格式错误"),
     INVALID_FILE_NAME(2002, 400, "无效的文件名"),
     COLLECTION_NOT_FOUND(3000, 404, "无效的收集任务ID"),
