@@ -18,21 +18,24 @@ import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
-import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Collection;
@@ -51,6 +54,7 @@ public class FileController {
 
     private final DiskFileSystemFactory fileService;
     private final ResponseService responseService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
 
     /*
@@ -124,11 +128,44 @@ public class FileController {
         return JsonResult.getInstance();
     }
 
+    @PostMapping("wrap")
+    @AllowAnonymous
+    public JsonResult createWrap(@PathVariable @UID int uid,
+                                 @RequestBody FileTransferInfo files) {
+        String uuid = SecureUtils.getUUID();
+        redisTemplate.opsForValue().set("xyy:wrap:" + uid + ":" + uuid, files);
+        return JsonResult.getInstance(uuid);
+    }
+
     /*
         =======================================
         =                 Read                =
         =======================================
      */
+    @GetMapping({
+            "wrap/{wid}",
+            "wrap/{wid}/{alias}"
+    })
+    @AllowAnonymous
+    public void wrapDownload(@PathVariable("uid") int uid,
+                             @PathVariable("wid") String wid,
+                             @PathVariable(required = false, value = "alias") String alias,
+                             HttpServletResponse response) throws IOException {
+        FileTransferInfo files = (FileTransferInfo)redisTemplate.opsForValue().get("xyy:wrap:" + uid + ":" + wid);
+        if (files == null) {
+            throw new JsonException(ErrorInfo.FILE_NOT_FOUND);
+        }
+        if (alias == null) {
+            alias = "打包下载" + System.currentTimeMillis() + ".zip";
+        }
+        response.setHeader(
+                ResourceUtils.Header.ContentDisposition,
+                ResourceUtils.generateContentDisposition(alias)
+        );
+        response.setContentType(FileUtils.getContentType("a.ab123c"));
+        OutputStream output = response.getOutputStream();
+        fileService.getFileSystem().compressAndWriteOut(uid, files.getSource(), files.getFilenames(), ArchiveType.ZIP, output);
+    }
 
     /**
      * 取网盘中某个目录的文件列表
