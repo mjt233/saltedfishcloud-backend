@@ -4,11 +4,13 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
+import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.dao.ShareDao;
@@ -16,6 +18,7 @@ import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -23,6 +26,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -30,6 +34,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.file.NoSuchFileException;
+import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -41,6 +46,33 @@ public class ShareService {
     private final ShareDao shareDao;
     private final UserDao userDao;
     private final DiskFileSystemFactory fileSystemFactory;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    /**
+     * 创建分享资源的打包码
+     * @param sid                   分享ID
+     * @param verification          分享校验码
+     * @param code                  分享提取码
+     * @param fileTransferInfo      打包信息，dest字段忽略
+     * @return                      打包码
+     */
+    public String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo) {
+        SharePO share = getShare(sid, verification);
+        if (code != null && !code.equals(share.getExtractCode())) {
+            throw new JsonException(ErrorInfo.SHARE_EXTRACT_ERROR);
+        }
+        if (share.getType() != ShareType.DIR) throw new JsonException(400, "只能对文件夹分享进行打包");
+
+        String path = nodeService.getPathByNode(share.getUid(), share.getNid());
+        fileTransferInfo.setSource(path + fileTransferInfo.getSource());
+
+        String wid = SecureUtils.getUUID();
+        redisTemplate.opsForValue().set(
+                RedisKeyGenerator.getWrapKey(share.getUid(), wid),
+                fileTransferInfo,Duration.ofMinutes(15)
+        );
+        return wid;
+    }
 
     /**
      * 取消分享

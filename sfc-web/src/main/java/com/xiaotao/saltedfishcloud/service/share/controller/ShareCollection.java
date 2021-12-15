@@ -3,14 +3,15 @@ package com.xiaotao.saltedfishcloud.service.share.controller;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
+import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.share.service.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
+import com.xiaotao.saltedfishcloud.service.share.service.ShareService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
@@ -41,6 +42,16 @@ public class ShareCollection {
         shareService.deleteShare(sid, user.getId());
 
         return JsonResult.getInstance();
+    }
+
+    @PostMapping("/warp/{sid}/{verification}")
+    @AllowAnonymous
+    public JsonResult createWarp(@PathVariable("sid") Integer sid,
+                                 @PathVariable("verification") String verification,
+                                 @RequestParam(value = "code", required = false) String code,
+                                 @RequestBody FileTransferInfo fileTransferInfo) {
+        String wid = shareService.createwrap(sid, verification, code, fileTransferInfo);
+        return JsonResult.getInstance(wid);
     }
 
     /**

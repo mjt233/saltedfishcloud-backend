@@ -15,6 +15,7 @@ import com.xiaotao.saltedfishcloud.entity.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.entity.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.entity.po.param.NamePair;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
@@ -132,9 +133,9 @@ public class FileController {
     @AllowAnonymous
     public JsonResult createWrap(@PathVariable @UID int uid,
                                  @RequestBody FileTransferInfo files) {
-        String uuid = SecureUtils.getUUID();
-        redisTemplate.opsForValue().set("xyy:wrap:" + uid + ":" + uuid, files);
-        return JsonResult.getInstance(uuid);
+        String wid = SecureUtils.getUUID();
+        redisTemplate.opsForValue().set(RedisKeyGenerator.getWrapKey(uid, wid), files);
+        return JsonResult.getInstance(wid);
     }
 
     /*
@@ -151,7 +152,7 @@ public class FileController {
                              @PathVariable("wid") String wid,
                              @PathVariable(required = false, value = "alias") String alias,
                              HttpServletResponse response) throws IOException {
-        FileTransferInfo files = (FileTransferInfo)redisTemplate.opsForValue().get("xyy:wrap:" + uid + ":" + wid);
+        FileTransferInfo files = (FileTransferInfo)redisTemplate.opsForValue().get(RedisKeyGenerator.getWrapKey(uid, wid));
         if (files == null) {
             throw new JsonException(ErrorInfo.FILE_NOT_FOUND);
         }
