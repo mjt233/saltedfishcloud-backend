@@ -15,7 +15,7 @@
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
-    <version>1.3.7.5-SNAPSHOT</version>
+    <version>1.3.7.6-SNAPSHOT</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
