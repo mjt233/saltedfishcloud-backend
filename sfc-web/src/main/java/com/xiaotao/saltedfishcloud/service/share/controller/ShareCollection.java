@@ -44,7 +44,7 @@ public class ShareCollection {
         return JsonResult.getInstance();
     }
 
-    @PostMapping("/warp/{sid}/{verification}")
+    @PostMapping("/wrap/{sid}/{verification}")
     @AllowAnonymous
     public JsonResult createWarp(@PathVariable("sid") Integer sid,
                                  @PathVariable("verification") String verification,
