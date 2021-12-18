@@ -18,6 +18,7 @@ import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
+import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,7 @@ public class ShareService {
     private final UserDao userDao;
     private final DiskFileSystemFactory fileSystemFactory;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final WrapService wrapService;
 
     /**
      * 创建分享资源的打包码
@@ -58,7 +60,7 @@ public class ShareService {
      */
     public String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo) {
         SharePO share = getShare(sid, verification);
-        if (code != null && !code.equals(share.getExtractCode())) {
+        if (share.getExtractCode() != null && !code.equals(share.getExtractCode())) {
             throw new JsonException(ErrorInfo.SHARE_EXTRACT_ERROR);
         }
         if (share.getType() != ShareType.DIR) throw new JsonException(400, "只能对文件夹分享进行打包");
@@ -66,12 +68,7 @@ public class ShareService {
         String path = nodeService.getPathByNode(share.getUid(), share.getNid());
         fileTransferInfo.setSource(path + fileTransferInfo.getSource());
 
-        String wid = SecureUtils.getUUID();
-        redisTemplate.opsForValue().set(
-                RedisKeyGenerator.getWrapKey(share.getUid(), wid),
-                fileTransferInfo,Duration.ofMinutes(15)
-        );
-        return wid;
+        return wrapService.registerWrap(share.getUid(), fileTransferInfo);
     }
 
     /**

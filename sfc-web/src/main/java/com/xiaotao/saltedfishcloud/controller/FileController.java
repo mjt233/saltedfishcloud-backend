@@ -19,6 +19,8 @@ import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
+import com.xiaotao.saltedfishcloud.service.wrap.WrapInfo;
+import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
@@ -56,6 +58,7 @@ public class FileController {
     private final DiskFileSystemFactory fileService;
     private final ResponseService responseService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final WrapService wrapService;
 
 
     /*
@@ -133,8 +136,7 @@ public class FileController {
     @AllowAnonymous
     public JsonResult createWrap(@PathVariable @UID int uid,
                                  @RequestBody FileTransferInfo files) {
-        String wid = SecureUtils.getUUID();
-        redisTemplate.opsForValue().set(RedisKeyGenerator.getWrapKey(uid, wid), files);
+        String wid = wrapService.registerWrap(uid, files);
         return JsonResult.getInstance(wid);
     }
 
@@ -148,24 +150,24 @@ public class FileController {
             "wrap/{wid}/{alias}"
     })
     @AllowAnonymous
-    public void wrapDownload(@PathVariable("uid") int uid,
-                             @PathVariable("wid") String wid,
+    public void wrapDownload(@PathVariable("wid") String wid,
                              @PathVariable(required = false, value = "alias") String alias,
                              HttpServletResponse response) throws IOException {
-        FileTransferInfo files = (FileTransferInfo)redisTemplate.opsForValue().get(RedisKeyGenerator.getWrapKey(uid, wid));
-        if (files == null) {
+        WrapInfo wrapInfo = wrapService.getWrapInfo(wid);
+        if (wrapInfo == null) {
             throw new JsonException(ErrorInfo.FILE_NOT_FOUND);
         }
         if (alias == null) {
             alias = "打包下载" + System.currentTimeMillis() + ".zip";
         }
+        FileTransferInfo files = wrapInfo.getFiles();
         response.setHeader(
                 ResourceUtils.Header.ContentDisposition,
                 ResourceUtils.generateContentDisposition(alias)
         );
         response.setContentType(FileUtils.getContentType("a.ab123c"));
         OutputStream output = response.getOutputStream();
-        fileService.getFileSystem().compressAndWriteOut(uid, files.getSource(), files.getFilenames(), ArchiveType.ZIP, output);
+        fileService.getFileSystem().compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), ArchiveType.ZIP, output);
     }
 
     /**
