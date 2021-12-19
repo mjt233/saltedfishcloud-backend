@@ -90,6 +90,11 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     private void compressDir(int uid, String root, String path, ArchiveCompressor compressor, int depth) throws IOException {
         List<FileInfo>[] list = getUserFileList(uid, path);
         String curPath = StringUtils.removePrefix(root, path).replaceAll("//+", "/").replaceAll("^/+", "");
+        compressor.addFile(new ArchiveResourceEntry(
+                curPath + "/",
+                0,
+                null
+        ));
         for (FileInfo file : list[1]) {
             compressor.addFile(new ArchiveResourceEntry(
                     curPath + "/" + file.getName(), file.getSize(), getResource(uid, path, file.getName()))

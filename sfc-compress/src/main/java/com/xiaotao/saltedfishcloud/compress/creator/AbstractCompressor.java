@@ -48,7 +48,9 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
     }
 
     public void close() throws IOException {
-        out.finish();
-        out.close();
+        if (out != null) {
+            out.finish();
+            out.close();
+        }
     }
 }

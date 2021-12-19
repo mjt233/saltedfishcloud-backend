@@ -34,6 +34,8 @@ public class ZipCompressor extends AbstractCompressor {
     @Override
     public void close() throws IOException {
         super.close();
-        outputStream.close();
+        if (outputStream != null) {
+            outputStream.close();
+        }
     }
 }
