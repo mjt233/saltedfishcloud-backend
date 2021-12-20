@@ -119,7 +119,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
             pb.append(dest);
             compressAndWriteOut(uid, path, names, ArchiveType.ZIP, output);
             final FileInfo fileInfo = FileInfo.getLocal(temp.toString());
-            fileInfo.setName(pb.range(1, -1));
+            fileInfo.setName(pb.range(1, -1).replace("/", ""));
             moveToSaveFile(uid, temp, pb.range(-1), fileInfo);
         } finally {
             Files.deleteIfExists(temp);
