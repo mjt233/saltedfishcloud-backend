@@ -187,7 +187,11 @@ public class LocalDiskFileSystem implements DiskFileSystem {
             e.printStackTrace();
             throw new JsonException(e.getMessage());
         }finally {
-            FileUtils.delete(tempBasePath);
+            // 清理临时解压目录
+            // 创建压缩读取器时可能会抛出异常导致临时目录并未创建
+            if (Files.exists(tempBasePath)) {
+                FileUtils.delete(tempBasePath);
+            }
         }
     }
 

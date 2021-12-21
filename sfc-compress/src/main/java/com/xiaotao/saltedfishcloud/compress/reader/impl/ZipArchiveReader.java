@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.zip.ZipException;
 
 /**
  * @TODO 兼容多种编码（或用户指定）
@@ -24,7 +25,15 @@ public class ZipArchiveReader extends AbstractArchiveReader {
 
     public ZipArchiveReader(File file) throws IOException {
         this.file = file;
-        this.zip = new ZipFile(file, "GBK");
+        try {
+            this.zip = new ZipFile(file, "GBK");
+        } catch (IOException e) {
+            if (e.getCause() instanceof ZipException) {
+                throw (ZipException)e.getCause();
+            } else {
+                throw e;
+            }
+        }
     }
 
     @Override
