@@ -678,178 +678,174 @@
 			"name": "网盘文件操作",
 			"item": [
 				{
-					"name": "取文件列表",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/diskFile/0/fileList/byPath/软件工具/网络工具",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"diskFile",
-								"0",
-								"fileList",
-								"byPath",
-								"软件工具",
-								"网络工具"
-							]
-						},
-						"description": "获取网盘中的文件列表  \r\n- URI：`/api/diskFile/{用户id}/fileList/byPath/{请求的路径} ` \r\n- 动作：GET \r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": [\r\n        [\r\n            {\r\n                \"name\": \"网络分析与抓包\",\r\n                \"md5\": \"334ca18030b781d171b5b65cf5f42388\",\r\n                \"type\": 1,\r\n                \"size\": -1,\r\n                \"node\": \"ed71dfc52b1cbf4237e69e6333bde461\",\r\n                \"created_at\": \"2021-05-08T17:06:01.000+00:00\",\r\n                \"formatModified\": \"2021-05-09 01:06:01\",\r\n                \"suffix\": \"网络分析与抓包\",\r\n                \"dir\": true\r\n            }\r\n        ],\r\n        [\r\n            {\r\n                \"name\": \"Postman-win64-7.26.0-Setup.exe\",\r\n                \"md5\": \"6ad1d3fdfd37f78284ac6a111eaddac2\",\r\n                \"type\": 2,\r\n                \"size\": 90929760,\r\n                \"node\": \"ed71dfc52b1cbf4237e69e6333bde461\",\r\n                \"created_at\": \"2021-05-08T17:06:01.000+00:00\",\r\n                \"formatModified\": \"2021-05-09 01:06:01\",\r\n                \"suffix\": \"exe\",\r\n                \"dir\": false\r\n            }\r\n        ]\r\n    ],\r\n    \"msg\": \"OK\"\r\n}\r\n```"
-					},
-					"response": [
+					"name": "基本操作",
+					"item": [
 						{
-							"name": "取文件列表",
-							"originalRequest": {
+							"name": "直接下载网盘文件",
+							"request": {
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/fileList/0",
+									"raw": "{{addr}}/api/diskFile/42/content/folder1/photo1.png",
 									"host": [
 										"{{addr}}"
 									],
 									"path": [
 										"api",
-										"fileList",
-										"0"
+										"diskFile",
+										"42",
+										"content",
+										"folder1",
+										"photo1.png"
 									]
-								}
+								},
+								"description": "## 从网盘中获取一个文件内容  \r\n- URI：`/api/diskFile/{uid}/{文件路径}`\r\n- 动作：GET/POST\r\n\r\n要注意的是，使用该接口下载文件需要在header或表单中传递Token，在浏览器中可使用POST提交带Token的表单实现下载\r\n\r\n### 响应\r\n直接响应文件"
 							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 15 Feb 2021 15:16:03 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 1,\n    \"data\": [\n        [\n            {\n                \"name\": \"其他\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601457910295,\n                \"file\": false,\n                \"suffix\": \"其他\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 17:25:10\"\n            },\n            {\n                \"name\": \"图片资源\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1605077251788,\n                \"file\": false,\n                \"suffix\": \"图片资源\",\n                \"dir\": true,\n                \"formatModified\": \"2020-11-11 14:47:31\"\n            },\n            {\n                \"name\": \"安卓APP\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463156268,\n                \"file\": false,\n                \"suffix\": \"安卓app\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:52:36\"\n            },\n            {\n                \"name\": \"工具软件\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463281242,\n                \"file\": false,\n                \"suffix\": \"工具软件\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:54:41\"\n            },\n            {\n                \"name\": \"驱动\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601468904893,\n                \"file\": false,\n                \"suffix\": \"驱动\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 20:28:24\"\n            }\n        ],\n        [\n            {\n                \"name\": \"autoindex.html\",\n                \"size\": 11795,\n                \"type\": 2,\n                \"lastModified\": 1595249972503,\n                \"file\": true,\n                \"suffix\": \"html\",\n                \"dir\": false,\n                \"formatModified\": \"2020-07-20 20:59:32\"\n            },\n            {\n                \"name\": \"web.config\",\n                \"size\": 168,\n                \"type\": 2,\n                \"lastModified\": 1602303497178,\n                \"file\": true,\n                \"suffix\": \"config\",\n                \"dir\": false,\n                \"formatModified\": \"2020-10-10 12:18:17\"\n            }\n        ]\n    ],\n    \"msg\": \"OK\"\n}"
-						}
-					]
-				},
-				{
-					"name": "新建文件夹",
-					"request": {
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "name",
-									"value": "新建文件夹233",
-									"description": "文件夹名称",
-									"type": "text"
-								}
-							]
+							"response": []
 						},
-						"url": {
-							"raw": "{{addr}}/api/diskFile/42/dir/",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"diskFile",
-								"42",
-								"dir",
-								""
-							]
-						},
-						"description": "在请求的路径下创建文件夹  \r\n- URI: `/api/diskFile/{用户id}/dir/{目标所在路径}`\r\n- 动作：PUT\r\n\r\n\r\n### 参数：\r\n- name 文件夹名称"
-					},
-					"response": []
-				},
-				{
-					"name": "删除文件",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"fileName\": [\r\n        \"avatar.jpg\"\r\n    ]\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{addr}}/api/diskFile/42/content/",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"diskFile",
-								"42",
-								"content",
-								""
-							]
-						},
-						"description": "对某个目录下的多个文件进行删除  \r\n- URI:`/api/diskFile/{uid}/content/{目标所在路径}`  \r\n- 动作：DELETE  \r\n\r\n#### 请求体\r\n```json\r\n{\r\n    \"fileName\": [\r\n        \"avatar.jpg\",\r\n        \"otherfile\"\r\n    ]\r\n}\r\n```\r\n\r\n#### 响应体\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": 3,          //  删除的文件和文件夹总数，若为0则表示没有删除任何数据\r\n    \"msg\": \"OK\"\r\n}\r\n```"
-					},
-					"response": [
 						{
-							"name": "删除2个文件",
-							"originalRequest": {
+							"name": "取文件列表",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/diskFile/0/fileList/byPath/软件工具/网络工具",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"0",
+										"fileList",
+										"byPath",
+										"软件工具",
+										"网络工具"
+									]
+								},
+								"description": "获取网盘中的文件列表  \r\n- URI：`/api/diskFile/{用户id}/fileList/byPath/{请求的路径} ` \r\n- 动作：GET \r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": [\r\n        [\r\n            {\r\n                \"name\": \"网络分析与抓包\",\r\n                \"md5\": \"334ca18030b781d171b5b65cf5f42388\",\r\n                \"type\": 1,\r\n                \"size\": -1,\r\n                \"node\": \"ed71dfc52b1cbf4237e69e6333bde461\",\r\n                \"created_at\": \"2021-05-08T17:06:01.000+00:00\",\r\n                \"formatModified\": \"2021-05-09 01:06:01\",\r\n                \"suffix\": \"网络分析与抓包\",\r\n                \"dir\": true\r\n            }\r\n        ],\r\n        [\r\n            {\r\n                \"name\": \"Postman-win64-7.26.0-Setup.exe\",\r\n                \"md5\": \"6ad1d3fdfd37f78284ac6a111eaddac2\",\r\n                \"type\": 2,\r\n                \"size\": 90929760,\r\n                \"node\": \"ed71dfc52b1cbf4237e69e6333bde461\",\r\n                \"created_at\": \"2021-05-08T17:06:01.000+00:00\",\r\n                \"formatModified\": \"2021-05-09 01:06:01\",\r\n                \"suffix\": \"exe\",\r\n                \"dir\": false\r\n            }\r\n        ]\r\n    ],\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+							},
+							"response": [
+								{
+									"name": "取文件列表",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{addr}}/api/fileList/0",
+											"host": [
+												"{{addr}}"
+											],
+											"path": [
+												"api",
+												"fileList",
+												"0"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Vary",
+											"value": "Access-Control-Request-Method"
+										},
+										{
+											"key": "Vary",
+											"value": "Access-Control-Request-Headers"
+										},
+										{
+											"key": "X-Content-Type-Options",
+											"value": "nosniff"
+										},
+										{
+											"key": "X-XSS-Protection",
+											"value": "1; mode=block"
+										},
+										{
+											"key": "Cache-Control",
+											"value": "no-cache, no-store, max-age=0, must-revalidate"
+										},
+										{
+											"key": "Pragma",
+											"value": "no-cache"
+										},
+										{
+											"key": "Expires",
+											"value": "0"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json;charset=UTF-8"
+										},
+										{
+											"key": "Transfer-Encoding",
+											"value": "chunked"
+										},
+										{
+											"key": "Date",
+											"value": "Mon, 15 Feb 2021 15:16:03 GMT"
+										},
+										{
+											"key": "Keep-Alive",
+											"value": "timeout=60"
+										},
+										{
+											"key": "Connection",
+											"value": "keep-alive"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": 1,\n    \"data\": [\n        [\n            {\n                \"name\": \"其他\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601457910295,\n                \"file\": false,\n                \"suffix\": \"其他\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 17:25:10\"\n            },\n            {\n                \"name\": \"图片资源\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1605077251788,\n                \"file\": false,\n                \"suffix\": \"图片资源\",\n                \"dir\": true,\n                \"formatModified\": \"2020-11-11 14:47:31\"\n            },\n            {\n                \"name\": \"安卓APP\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463156268,\n                \"file\": false,\n                \"suffix\": \"安卓app\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:52:36\"\n            },\n            {\n                \"name\": \"工具软件\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601463281242,\n                \"file\": false,\n                \"suffix\": \"工具软件\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 18:54:41\"\n            },\n            {\n                \"name\": \"驱动\",\n                \"size\": -1,\n                \"type\": 1,\n                \"lastModified\": 1601468904893,\n                \"file\": false,\n                \"suffix\": \"驱动\",\n                \"dir\": true,\n                \"formatModified\": \"2020-09-30 20:28:24\"\n            }\n        ],\n        [\n            {\n                \"name\": \"autoindex.html\",\n                \"size\": 11795,\n                \"type\": 2,\n                \"lastModified\": 1595249972503,\n                \"file\": true,\n                \"suffix\": \"html\",\n                \"dir\": false,\n                \"formatModified\": \"2020-07-20 20:59:32\"\n            },\n            {\n                \"name\": \"web.config\",\n                \"size\": 168,\n                \"type\": 2,\n                \"lastModified\": 1602303497178,\n                \"file\": true,\n                \"suffix\": \"config\",\n                \"dir\": false,\n                \"formatModified\": \"2020-10-10 12:18:17\"\n            }\n        ]\n    ],\n    \"msg\": \"OK\"\n}"
+								}
+							]
+						},
+						{
+							"name": "新建文件夹",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "name",
+											"value": "新建文件夹233",
+											"description": "文件夹名称",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/diskFile/42/dir/",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"42",
+										"dir",
+										""
+									]
+								},
+								"description": "在请求的路径下创建文件夹  \r\n- URI: `/api/diskFile/{用户id}/dir/{目标所在路径}`\r\n- 动作：PUT\r\n\r\n\r\n### 参数：\r\n- name 文件夹名称"
+							},
+							"response": []
+						},
+						{
+							"name": "删除文件",
+							"request": {
 								"method": "DELETE",
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"fileName\": [\r\n        \"cb85a661e0074edfc2260057807ba16d.jpg\",\r\n        \"IMG_20210131_205153_1.jpg\"\r\n    ]\r\n}",
+									"raw": "{\r\n    \"fileName\": [\r\n        \"avatar.jpg\"\r\n    ]\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -857,271 +853,499 @@
 									}
 								},
 								"url": {
-									"raw": "{{addr}}/api/resource/1/我的图片",
+									"raw": "{{addr}}/api/diskFile/42/content/",
 									"host": [
 										"{{addr}}"
 									],
 									"path": [
 										"api",
-										"resource",
-										"1",
-										"我的图片"
+										"diskFile",
+										"42",
+										"content",
+										""
 									]
-								}
+								},
+								"description": "对某个目录下的多个文件进行删除  \r\n- URI:`/api/diskFile/{uid}/content/{目标所在路径}`  \r\n- 动作：DELETE  \r\n\r\n#### 请求体\r\n```json\r\n{\r\n    \"fileName\": [\r\n        \"avatar.jpg\",\r\n        \"otherfile\"\r\n    ]\r\n}\r\n```\r\n\r\n#### 响应体\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": 3,          //  删除的文件和文件夹总数，若为0则表示没有删除任何数据\r\n    \"msg\": \"OK\"\r\n}\r\n```"
 							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
+							"response": [
 								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 15 Feb 2021 15:09:37 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
+									"name": "删除2个文件",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"fileName\": [\r\n        \"cb85a661e0074edfc2260057807ba16d.jpg\",\r\n        \"IMG_20210131_205153_1.jpg\"\r\n    ]\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{addr}}/api/resource/1/我的图片",
+											"host": [
+												"{{addr}}"
+											],
+											"path": [
+												"api",
+												"resource",
+												"1",
+												"我的图片"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Vary",
+											"value": "Access-Control-Request-Method"
+										},
+										{
+											"key": "Vary",
+											"value": "Access-Control-Request-Headers"
+										},
+										{
+											"key": "X-Content-Type-Options",
+											"value": "nosniff"
+										},
+										{
+											"key": "X-XSS-Protection",
+											"value": "1; mode=block"
+										},
+										{
+											"key": "Cache-Control",
+											"value": "no-cache, no-store, max-age=0, must-revalidate"
+										},
+										{
+											"key": "Pragma",
+											"value": "no-cache"
+										},
+										{
+											"key": "Expires",
+											"value": "0"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json;charset=UTF-8"
+										},
+										{
+											"key": "Transfer-Encoding",
+											"value": "chunked"
+										},
+										{
+											"key": "Date",
+											"value": "Mon, 15 Feb 2021 15:09:37 GMT"
+										},
+										{
+											"key": "Keep-Alive",
+											"value": "timeout=60"
+										},
+										{
+											"key": "Connection",
+											"value": "keep-alive"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": 1,\n    \"data\": 2,\n    \"msg\": \"OK\"\n}"
 								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 1,\n    \"data\": 2,\n    \"msg\": \"OK\"\n}"
+							]
+						},
+						{
+							"name": "搜索文件",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/diskFile/42/fileList/byName/photo?page=1",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"42",
+										"fileList",
+										"byName",
+										"photo"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								},
+								"description": "搜索网盘中的文件\r\n- URI：`/api/diskFile/{uid}/fileList/byName/{文件名关键字}`  \r\n- 动作：GET\r\n\r\n#### 响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"total\": 2,     //  文件总数\r\n        \"list\": [\r\n            {\r\n                \"name\": \"photo1.png\",                           //  文件名\r\n                \"md5\": \"ff9c198e3cd1d6e948698355992f2fc3\",      //  文件MD5\r\n                \"size\": 889946,                                 //  文件大小（Byte）,文件夹为-1\r\n                \"parent\": \"folder2\",                            //  所在文件夹名称\r\n                \"node\": \"de1e955ec96bd60c089d60bc05931032\",     //  所在文件夹节点ID\r\n                \"created_at\": \"2021-05-10T00:17:10.000+00:00\",  //  创建日期\r\n                \"formatModified\": \"2021-05-10 08:17:10\",        //  修改日期\r\n                \"suffix\": \"png\",                                //  后缀名\r\n                \"dir\": false                                    //  是否为文件夹\r\n            }\r\n        ],\r\n        \"pageNum\": 1,\r\n        \"pageSize\": 10,\r\n        \"size\": 2,\r\n        \"startRow\": 1,\r\n        \"endRow\": 2,\r\n        \"pages\": 1,\r\n        \"prePage\": 0,\r\n        \"nextPage\": 0,\r\n        \"isFirstPage\": true,\r\n        \"isLastPage\": true,\r\n        \"hasPreviousPage\": false,\r\n        \"hasNextPage\": false,\r\n        \"navigatePages\": 8,\r\n        \"navigatepageNums\": [\r\n            1\r\n        ],\r\n        \"navigateFirstPage\": 1,\r\n        \"navigateLastPage\": 1\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "上传文件",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"description": "文件[当使用断点续传时可为空或不使用]",
+											"type": "file",
+											"src": [],
+											"disabled": true
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/diskFile/1/file?breakpoint_id=4f681cb5-1cfc-4210-869c-63222535718f",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"1",
+										"file"
+									],
+									"query": [
+										{
+											"key": "breakpoint_id",
+											"value": "4f681cb5-1cfc-4210-869c-63222535718f"
+										}
+									]
+								},
+								"description": "将文件上传到网盘，若文件已存在则会覆盖  \n- URI: `/api/diskFile/{用户id}/file/{要上传到的路径}`\n- 动作：PUT  \n\n#### QueryString参数\n- breakpoint_id 断点任务ID，当断点续传任务完成后，使用任务ID请求该接口，表示保存\"使用断点续传任务上传文件\"到用户网盘。保存成功后断点续传任务将被销毁\n\n#### body参数:\n- file 类型：文件 当使用断点续传时，可不需要\n注意：请求的路径必须是存在的路径，若不存在需要手动提前创建，否则文件会保存失败\n\n#### 响应data含义\n- 0 - 文件覆盖（同一目录下的同名文件上传导致覆盖）\n- 1 - 新文件上传（上传的文件为新文件）\n- 2 - 文件无修改（同一目录下的同名文件与上传的文件内容相同）"
+							},
+							"response": []
+						},
+						{
+							"name": "移动文件",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"target\": \"/folder1\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"folder2\",\r\n            \"target\": \"wow\"\r\n        }\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/diskFile/42/fromPath/",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"42",
+										"fromPath",
+										""
+									]
+								},
+								"description": "移动多个文件或目录到指定目录下  \r\n- API：`/api/file/move/{用户ID}/{原文件所在路径}`  \r\n- 动作：POST\r\n\r\n\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  粘贴到的目标目录下\r\n    \"files\":[                       \r\n        {\r\n            \"source\":\"文件名\",      //  要移动的文件名\r\n            \"target\":\"文件名\"        //  暂时无用\r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file1\"\r\n        }\r\n    ]\r\n}\r\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "复制文件或目录",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"target\": \"/\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"folder1\",\r\n            \"target\": \"folder2\"\r\n        }\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/diskFile/42/fromPath/",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"42",
+										"fromPath",
+										""
+									]
+								},
+								"description": "- URI：`/api/diskFile/{用户ID}/fromPath/{原文件所在路径}`  \r\n- 动作：POST\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  粘贴目录\r\n    \"files\":[                       //  要操作的文件列表\r\n        {\r\n            \"source\":\"旧文件名\",    //  被复制的文件名\r\n            \"target\":\"新文件名\"     //  粘贴后的文件名（可重命名）\r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file2\"\r\n        }\r\n    ]\r\n}\r\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "重命名文件或目录",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "oldName",
+											"value": "photo1.png",
+											"description": "旧文件名",
+											"type": "text"
+										},
+										{
+											"key": "newName",
+											"value": "photo2.png",
+											"description": "重命名后新文件名",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/diskFile/42/name/folder1",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"42",
+										"name",
+										"folder1"
+									]
+								},
+								"description": "- API：`/api/file/rename/{用户ID}/{原文件所在路径}`  \r\n- 方法：POST\r\n\r\n### 参数\r\n- oldName 原文件名\r\n- newName 新文件名"
+							},
+							"response": []
 						}
 					]
 				},
 				{
-					"name": "搜索文件",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/diskFile/42/fileList/byName/photo?page=1",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"diskFile",
-								"42",
-								"fileList",
-								"byName",
-								"photo"
-							],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								}
-							]
-						},
-						"description": "搜索网盘中的文件\r\n- URI：`/api/diskFile/{uid}/fileList/byName/{文件名关键字}`  \r\n- 动作：GET\r\n\r\n#### 响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"total\": 2,     //  文件总数\r\n        \"list\": [\r\n            {\r\n                \"name\": \"photo1.png\",                           //  文件名\r\n                \"md5\": \"ff9c198e3cd1d6e948698355992f2fc3\",      //  文件MD5\r\n                \"size\": 889946,                                 //  文件大小（Byte）,文件夹为-1\r\n                \"parent\": \"folder2\",                            //  所在文件夹名称\r\n                \"node\": \"de1e955ec96bd60c089d60bc05931032\",     //  所在文件夹节点ID\r\n                \"created_at\": \"2021-05-10T00:17:10.000+00:00\",  //  创建日期\r\n                \"formatModified\": \"2021-05-10 08:17:10\",        //  修改日期\r\n                \"suffix\": \"png\",                                //  后缀名\r\n                \"dir\": false                                    //  是否为文件夹\r\n            }\r\n        ],\r\n        \"pageNum\": 1,\r\n        \"pageSize\": 10,\r\n        \"size\": 2,\r\n        \"startRow\": 1,\r\n        \"endRow\": 2,\r\n        \"pages\": 1,\r\n        \"prePage\": 0,\r\n        \"nextPage\": 0,\r\n        \"isFirstPage\": true,\r\n        \"isLastPage\": true,\r\n        \"hasPreviousPage\": false,\r\n        \"hasNextPage\": false,\r\n        \"navigatePages\": 8,\r\n        \"navigatepageNums\": [\r\n            1\r\n        ],\r\n        \"navigateFirstPage\": 1,\r\n        \"navigateLastPage\": 1\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
-					},
-					"response": []
-				},
-				{
-					"name": "上传文件",
-					"request": {
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "file",
-									"description": "文件[当使用断点续传时可为空或不使用]",
-									"type": "file",
-									"src": [],
-									"disabled": true
-								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/diskFile/1/file?breakpoint_id=4f681cb5-1cfc-4210-869c-63222535718f",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"diskFile",
-								"1",
-								"file"
-							],
-							"query": [
-								{
-									"key": "breakpoint_id",
-									"value": "4f681cb5-1cfc-4210-869c-63222535718f"
-								}
-							]
-						},
-						"description": "将文件上传到网盘，若文件已存在则会覆盖  \n- URI: `/api/diskFile/{用户id}/file/{要上传到的路径}`\n- 动作：PUT  \n\n#### QueryString参数\n- breakpoint_id 断点任务ID，当断点续传任务完成后，使用任务ID请求该接口，表示保存\"使用断点续传任务上传文件\"到用户网盘。保存成功后断点续传任务将被销毁\n\n#### body参数:\n- file 类型：文件 当使用断点续传时，可不需要\n注意：请求的路径必须是存在的路径，若不存在需要手动提前创建，否则文件会保存失败\n\n#### 响应data含义\n- 0 - 文件覆盖（同一目录下的同名文件上传导致覆盖）\n- 1 - 新文件上传（上传的文件为新文件）\n- 2 - 文件无修改（同一目录下的同名文件与上传的文件内容相同）"
-					},
-					"response": []
-				},
-				{
-					"name": "移动文件",
-					"request": {
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"target\": \"/folder1\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"folder2\",\r\n            \"target\": \"wow\"\r\n        }\r\n    ]\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{addr}}/api/diskFile/42/fromPath/",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"diskFile",
-								"42",
-								"fromPath",
-								""
-							]
-						},
-						"description": "移动多个文件或目录到指定目录下  \r\n- API：`/api/file/move/{用户ID}/{原文件所在路径}`  \r\n- 动作：POST\r\n\r\n\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  粘贴到的目标目录下\r\n    \"files\":[                       \r\n        {\r\n            \"source\":\"文件名\",      //  要移动的文件名\r\n            \"target\":\"文件名\"        //  暂时无用\r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file1\"\r\n        }\r\n    ]\r\n}\r\n```"
-					},
-					"response": []
-				},
-				{
-					"name": "复制文件或目录",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"target\": \"/\",\r\n    \"files\":[\r\n        {\r\n            \"source\": \"folder1\",\r\n            \"target\": \"folder2\"\r\n        }\r\n    ]\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{addr}}/api/diskFile/42/fromPath/",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"diskFile",
-								"42",
-								"fromPath",
-								""
-							]
-						},
-						"description": "- URI：`/api/diskFile/{用户ID}/fromPath/{原文件所在路径}`  \r\n- 动作：POST\r\n\r\n#### 请求体结构\r\n```json\r\n{\r\n    \"target\":\"/abcd/\",              //  粘贴目录\r\n    \"files\":[                       //  要操作的文件列表\r\n        {\r\n            \"source\":\"旧文件名\",    //  被复制的文件名\r\n            \"target\":\"新文件名\"     //  粘贴后的文件名（可重命名）\r\n        },\r\n        {\r\n            \"source\":\"file1\",\r\n            \"target\":\"file2\"\r\n        }\r\n    ]\r\n}\r\n```"
-					},
-					"response": []
-				},
-				{
-					"name": "重命名文件或目录",
-					"request": {
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "oldName",
-									"value": "photo1.png",
-									"description": "旧文件名",
-									"type": "text"
+					"name": "压缩文件与打包下载",
+					"item": [
+						{
+							"name": "解压压缩包",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "name",
+											"value": "1.zip",
+											"description": "压缩文件名称",
+											"type": "text"
+										},
+										{
+											"key": "dest",
+											"value": "/unzip",
+											"description": "要解压到的目标目录",
+											"type": "text"
+										}
+									]
 								},
+								"url": {
+									"raw": "{{addr}}/api/diskFile/1/extractArchive/",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"1",
+										"extractArchive",
+										""
+									]
+								},
+								"description": "# 解压压缩包\r\n- 描述：将压缩包解压到指定目录（目前只支持不带密码的ZIP）  \r\n- URL: `/api/diskFile/{uid}/extracArchive/{path}`\r\n- 方法：`POST`\r\n\r\n## URL参数\r\n- uid: 用户ID\r\n- path： 压缩包所在的目录路径，空则表示在根目录\r\n\r\n## body参数（x-www-form-urlencoded或multipart）\r\n- name 压缩包名称\r\n- dest 解压到的目标目录"
+							},
+							"response": []
+						},
+						{
+							"name": "创建多文件打包",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"source\": \"/要下载的文件所在目录\",\r\n    \"filenames\": [\r\n        \"文件1\",\r\n        \"文件2\",\r\n        \"文件3\",\r\n        \"目录或文件都可以\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/diskFile/1/wrap",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"1",
+										"wrap"
+									]
+								},
+								"description": "# 创建多文件打包下载任务\n创建一个用于打包下载多个文件的标识符\n- URL:`/api/diskFile/{uid}/wrap`\n- 方法：POST\n\n## URL参数\n- uid - 用户ID\n\n## JSON请求体\n```json\n{\n    \"source\": \"/要下载的文件所在目录\",\n    \"filenames\": [\n        \"文件1\",\n        \"文件2\",\n        \"文件3\",\n        \"目录或文件都可以\"\n    ]\n}\n```"
+							},
+							"response": [
 								{
-									"key": "newName",
-									"value": "photo2.png",
-									"description": "重命名后新文件名",
-									"type": "text"
+									"name": "创建多文件打包",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"source\": \"/要下载的文件所在目录\",\r\n    \"filenames\": [\r\n        \"文件1\",\r\n        \"文件2\",\r\n        \"文件3\",\r\n        \"目录或文件都可以\"\r\n    ]\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{addr}}/api/diskFile/1/wrap",
+											"host": [
+												"{{addr}}"
+											],
+											"path": [
+												"api",
+												"diskFile",
+												"1",
+												"wrap"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Vary",
+											"value": "Access-Control-Request-Method"
+										},
+										{
+											"key": "Vary",
+											"value": "Access-Control-Request-Headers"
+										},
+										{
+											"key": "X-Content-Type-Options",
+											"value": "nosniff"
+										},
+										{
+											"key": "X-XSS-Protection",
+											"value": "1; mode=block"
+										},
+										{
+											"key": "Cache-Control",
+											"value": "no-cache, no-store, max-age=0, must-revalidate"
+										},
+										{
+											"key": "Pragma",
+											"value": "no-cache"
+										},
+										{
+											"key": "Expires",
+											"value": "0"
+										},
+										{
+											"key": "X-Frame-Options",
+											"value": "DENY"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json;charset=UTF-8"
+										},
+										{
+											"key": "Transfer-Encoding",
+											"value": "chunked"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 14 Dec 2021 15:46:30 GMT"
+										},
+										{
+											"key": "Keep-Alive",
+											"value": "timeout=60"
+										},
+										{
+											"key": "Connection",
+											"value": "keep-alive"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": 200,\n    \"data\": \"3aac256772834bc7893d04c537d668e2\",\n    \"msg\": \"OK\"\n}"
 								}
 							]
 						},
-						"url": {
-							"raw": "{{addr}}/api/diskFile/42/name/folder1",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"diskFile",
-								"42",
-								"name",
-								"folder1"
-							]
+						{
+							"name": "下载多文件打包",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/diskFile/1/wrap/3aac256772834bc7893d04c537d668e2/123.zip",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"1",
+										"wrap",
+										"3aac256772834bc7893d04c537d668e2",
+										"123.zip"
+									]
+								},
+								"description": "# 打包下载多个文件\n服务器响应一个未知长度的压缩文件的下载流，打包的内容取决于文件打包码\n\n- URL：`/api/diskFile/0/wrap/{wid}/{alias}`\n- 方法：GET\n\n## URL参数\n- wid 打包码，可通过创建多文件打包接口获取\n- alias 文件资源响应别名（可选，默认“打包下载”+时间戳.zip）"
+							},
+							"response": []
 						},
-						"description": "- API：`/api/file/rename/{用户ID}/{原文件所在路径}`  \r\n- 方法：POST\r\n\r\n### 参数\r\n- oldName 原文件名\r\n- newName 新文件名"
-					},
-					"response": []
-				},
-				{
-					"name": "直接下载网盘文件",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/diskFile/42/content/folder1/photo1.png",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"diskFile",
-								"42",
-								"content",
-								"folder1",
-								"photo1.png"
-							]
-						},
-						"description": "## 从网盘中获取一个文件内容  \r\n- URI：`/api/diskFile/{uid}/{文件路径}`\r\n- 动作：GET/POST\r\n\r\n要注意的是，使用该接口下载文件需要在header或表单中传递Token，在浏览器中可使用POST提交带Token的表单实现下载\r\n\r\n### 响应\r\n直接响应文件"
-					},
-					"response": []
+						{
+							"name": "创建压缩文件",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"source\": \"/被压缩的/文件所在/的目录\",\r\n    \"filenames\": [\r\n        \"文件1\",\r\n        \"文件2\",\r\n        \"文件或目录都可以\",\r\n        \"数组加加加\"\r\n    ],\r\n    \"dest\": \"/压缩文件/在/网盘里/保存的/位置.zip\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/diskFile/1/compress",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"1",
+										"compress"
+									]
+								},
+								"description": "# 直接在网盘上创建一个压缩包\n- URL: `/api/diskFile/{uid}/compress`\n- 方法：POST\n\n## URL参数\n- uid - 资源所属用户ID\n\n## 注意\n接口产生的任务不是异步任务，响应会一直等待到压缩完成\n\n## JSON请求体\n```json\n{\n    \"source\": \"/被压缩的/文件所在/的目录\",\n    \"filenames\": [\n        \"文件1\",\n        \"文件2\",\n        \"文件或目录都可以\",\n        \"数组加加加\"\n    ],\n    \"dest\": \"/压缩文件/在/网盘里/保存的/位置.zip\"\n}\n```"
+							},
+							"response": []
+						}
+					]
 				}
 			]
 		},
@@ -2066,105 +2290,6 @@
 					},
 					"response": [
 						{
-							"name": "字段不符合约束",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{
-											"key": "submitInfo",
-											"value": "{\n\"filename\":\"a.pdf\",\n\"field\": [\n        {\n            \"name\": \"name\",\n            \"value\": \"李田所先辈123\"\n        },\n        {\n            \"name\": \"class\",\n            \"value\": \"红茶工艺2班\"\n        }\n    ]\n}",
-											"contentType": "application/json",
-											"type": "text"
-										},
-										{
-											"key": "file",
-											"type": "file",
-											"src": "/D:/data/xiaotao/吉他谱/cry for the moon.pdf"
-										}
-									],
-									"options": {
-										"raw": {
-											"language": "text"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{addr}}/api/collection/3/8921d0d81c0f459584f4c50856874906",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"collection",
-										"3",
-										"8921d0d81c0f459584f4c50856874906"
-									]
-								}
-							},
-							"status": "Bad Request",
-							"code": 400,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "DENY"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Wed, 03 Nov 2021 16:31:22 GMT"
-								},
-								{
-									"key": "Connection",
-									"value": "close"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 400,\n    \"data\": null,\n    \"msg\": \"不满足约束条件:字段name的值不满足正则表达式约束：先辈$\"\n}"
-						},
-						{
 							"name": "提交文件",
 							"originalRequest": {
 								"method": "POST",
@@ -2266,6 +2391,105 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
+						},
+						{
+							"name": "字段不符合约束",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "submitInfo",
+											"value": "{\n\"filename\":\"a.pdf\",\n\"field\": [\n        {\n            \"name\": \"name\",\n            \"value\": \"李田所先辈123\"\n        },\n        {\n            \"name\": \"class\",\n            \"value\": \"红茶工艺2班\"\n        }\n    ]\n}",
+											"contentType": "application/json",
+											"type": "text"
+										},
+										{
+											"key": "file",
+											"type": "file",
+											"src": "/D:/data/xiaotao/吉他谱/cry for the moon.pdf"
+										}
+									],
+									"options": {
+										"raw": {
+											"language": "text"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/collection/3/8921d0d81c0f459584f4c50856874906",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"collection",
+										"3",
+										"8921d0d81c0f459584f4c50856874906"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 03 Nov 2021 16:31:22 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "close"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 400,\n    \"data\": null,\n    \"msg\": \"不满足约束条件:字段name的值不满足正则表达式约束：先辈$\"\n}"
 						}
 					]
 				},
@@ -2468,95 +2692,6 @@
 					},
 					"response": [
 						{
-							"name": "有效期无限制的分享",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{addr}}/api/share",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"share"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "DENY"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Tue, 16 Nov 2021 02:09:16 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 6,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"f9dd9fdd8a0d490f8ea7b6f21ed63fb3\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:05:32.842+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
-						},
-						{
 							"name": "创建分享",
 							"originalRequest": {
 								"method": "POST",
@@ -2644,6 +2779,95 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 7,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"03e53fcba25546e1ae1da180e13d0263\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:06:16.619+00:00\",\n        \"expiredAt\": \"2021-12-16T09:40:53.000+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
+						},
+						{
+							"name": "有效期无限制的分享",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/share",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 16 Nov 2021 02:09:16 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 6,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"f9dd9fdd8a0d490f8ea7b6f21ed63fb3\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:05:32.842+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
@@ -2889,94 +3113,6 @@
 					},
 					"response": [
 						{
-							"name": "提供提取码",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/api/share/1/9391bb58cc9447fe81ef563eaa45629e?code=啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"share",
-										"1",
-										"9391bb58cc9447fe81ef563eaa45629e"
-									],
-									"query": [
-										{
-											"key": "code",
-											"value": "啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦"
-										}
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "DENY"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Tue, 16 Nov 2021 01:54:47 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 2,\n        \"uid\": 1,\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n        \"validateSuccess\": true,\n        \"username\": \"admin\",\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
-						},
-						{
 							"name": "未提供提取码",
 							"originalRequest": {
 								"method": "GET",
@@ -3064,6 +3200,94 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 200,\n    \"data\": {\n\n        \"id\": 2,\n        \"uid\": 1,\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n        \"validateSuccess\": false,\n        \"username\": \"admin\",\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
+						},
+						{
+							"name": "提供提取码",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/share/1/9391bb58cc9447fe81ef563eaa45629e?code=啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share",
+										"1",
+										"9391bb58cc9447fe81ef563eaa45629e"
+									],
+									"query": [
+										{
+											"key": "code",
+											"value": "啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 16 Nov 2021 01:54:47 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 2,\n        \"uid\": 1,\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T03:00:57.000+00:00\",\n        \"validateSuccess\": true,\n        \"username\": \"admin\",\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
@@ -3256,87 +3480,6 @@
 					},
 					"response": [
 						{
-							"name": "取消分享",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/api/share/2",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"share",
-										"2"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "DENY"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Tue, 16 Nov 2021 04:23:59 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
-						},
-						{
 							"name": "分享不存在",
 							"originalRequest": {
 								"method": "DELETE",
@@ -3416,6 +3559,225 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 404,\n    \"data\": null,\n    \"msg\": \"分享不存在\"\n}"
+						},
+						{
+							"name": "取消分享",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/share/2",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share",
+										"2"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 16 Nov 2021 04:23:59 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
+						}
+					]
+				},
+				{
+					"name": "创建多文件打包",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"source\": \"/\",\r\n    \"filenames\": [\r\n        \"子目录\",\r\n        \"文件1.xlsx\",\r\n        \"文件2.xlsx\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/share/wrap/2/4d9c801dd01145a3a4a9c55d0b30b74f?code",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"share",
+								"wrap",
+								"2",
+								"4d9c801dd01145a3a4a9c55d0b30b74f"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": null,
+									"description": "提取码，没有则留空"
+								}
+							]
+						},
+						"description": "# 创建多文件打包\r\n创建一个来自目录分享的打包码，在文件模块的打包下载中使用这个打包码即可下载分享打包的内容\r\n\r\n- URL: `/api/share/wrap/{wid}/{verification}`\r\n- 方法：`POST`\r\n\r\n### url参数\r\n- wid - 分享ID\r\n- verification - 分享校验码\r\n\r\n### QueryString参数\r\n- code - 提取码，没有可留空留\r\n\r\n### Body\r\n```json\r\n{\r\n    \"source\": \"/文件/所在/的目录\",\r\n    \"filenames\": [\r\n        \"文件名数组\",  // 注意：创建打包时不会对文件名是否存在进行校验，若传递了不存在的文件名，下载时会报错\r\n        \"子目录1\",\r\n        \"文件1.xlsx\",\r\n        \"文件2.xlsx\"\r\n    ]\r\n}\r\n```\r\n\r\n### 响应\r\n```json\r\n{\r\n    \"code\": 200,\r\n    \"data\": \"546bcea5900140a4bc56acdde1cd5bd7\", // 打包码\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+					},
+					"response": [
+						{
+							"name": "创建多文件打包",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"source\": \"/\",\r\n    \"filenames\": [\r\n        \"子目录\",\r\n        \"文件1.xlsx\",\r\n        \"文件2.xlsx\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/share/wrap/2/4d9c801dd01145a3a4a9c55d0b30b74f?code",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share",
+										"wrap",
+										"2",
+										"4d9c801dd01145a3a4a9c55d0b30b74f"
+									],
+									"query": [
+										{
+											"key": "code",
+											"value": null,
+											"description": "提取码，没有则留空"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 18 Dec 2021 16:32:37 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": \"546bcea5900140a4bc56acdde1cd5bd7\",\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				}

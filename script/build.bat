@@ -1,9 +1,12 @@
 @echo off
-copy ..\src\main\resources\application.sample.yml ..\src\main\resources\application.yml
+copy ..\sfc-web\src\main\resources\application.sample.yml ..\sfc-web\src\main\resources\application.yml
 if exist ..\target\*.jar (
 	del ..\target\*.jar
 )
 cd ..
+echo ================清理上次打包数据================
+call mvn clean
+echo ================   开始打包    ================
 call mvn package
 if errorlevel 1 (
     echo 构建失败

@@ -24,7 +24,7 @@ set store_type=unique
 set reg_code=10241024
 set sync_delay=5
 set sync_launch=false
-set ftp_port=21
+set ftp_port=2121
 set ftp_passive_addr=localhost
 set ftp_passive_port=1140-5140
 
@@ -43,8 +43,8 @@ set redis_password=""
 
 set jdbc_url=jdbc:mysql://%db_host%:%db_port%/%db_name%?%db_params%
 
-for /F %%i in ('cmd /r dir "../target" /b ^| findstr "saltedfishcloud-.*.jar$"') do ( set jar_name=%%i )
-java -jar ../target/%jar_name% ^
+for /F %%i in ('cmd /r dir "../sfc-web/target" /b ^| findstr "sfc-web-.*.jar$"') do ( set jar_name=%%i )
+java -jar ../sfc-web/target/%jar_name% ^
 --server.port=%server_port% ^
 --spring.datasource.druid.url=%jdbc_url% ^
 --spring.datasource.druid.username=%db_username% ^
