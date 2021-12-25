@@ -3,20 +3,29 @@ package com.xiaotao.saltedfishcloud.service.user;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
+import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
+import com.xiaotao.saltedfishcloud.service.mail.MailMessageGenerator;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.mail.MailSender;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.mail.MessagingException;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +39,29 @@ import static com.xiaotao.saltedfishcloud.config.DiskConfig.ACCEPT_AVATAR_TYPE;
 public class UserServiceImp implements UserService{
     private final TokenDao tokenDao;
     private final UserDao userDao;
+    private final JavaMailSender mailSender;
+    private final MailMessageGenerator mailMessageGenerator;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    @Override
+    public String sendRegEmail(String email) {
+
+        // 先判断邮箱是否已被使用
+        User user = userDao.getByEmail(email);
+        if (user != null) { throw new JsonException(ErrorInfo.EMAIL_EXIST); }
+
+
+        String code = StringUtils.getRandomString(5, false);
+        redisTemplate.opsForValue().set(RedisKeyGenerator.getRegCodeKey(email), code);
+        try {
+            mailSender.send(mailMessageGenerator.getRegCodeMessage(email, code));
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+            throw new JsonException(ErrorInfo.SYSTEM_ERROR);
+        }
+
+        return code;
+    }
 
     @Override
     public void grant(int uid, int type) {

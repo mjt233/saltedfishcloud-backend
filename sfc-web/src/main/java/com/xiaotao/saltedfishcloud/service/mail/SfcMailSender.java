@@ -6,7 +6,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import javax.mail.internet.MimeMessage;
 
 /**
- * 咸鱼云邮件发送器
+ * 咸鱼云邮件发送器(Salted fish cloud mail sender)
  * 继承自JavaMailSenderImpl，重写了doSend方法实现支持动态设置发信服务器配置参数功能
  */
 public class SfcMailSender extends JavaMailSenderImpl {

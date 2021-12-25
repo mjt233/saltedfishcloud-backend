@@ -10,4 +10,12 @@ public class RedisKeyGenerator {
     public static String getWrapKey(String wid) {
         return PREFIX + "wrap:" +wid;
     }
+
+    /**
+     * 获取邮件注册码key
+     * @param email 邮箱
+     */
+    public static String getRegCodeKey(String email) {
+        return PREFIX + "regMail:" + email;
+    }
 }

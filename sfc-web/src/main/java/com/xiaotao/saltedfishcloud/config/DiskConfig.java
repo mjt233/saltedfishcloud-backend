@@ -26,6 +26,7 @@ import java.util.Objects;
 
 /**
  * 全局配置信息类，用于读取配置文件中的参数
+ * @TODO 抽离依赖其他数据的操作方法到其他类，按单一职责原则重构
  */
 @Component
 @Slf4j
@@ -164,8 +165,8 @@ public class DiskConfig {
         Path pub = Paths.get(PUBLIC_ROOT);
         Path sto = Paths.get(STORE_ROOT);
         if (
-            PathUtils.isSubDir(PUBLIC_ROOT, STORE_ROOT) || 
-            PathUtils.isSubDir(STORE_ROOT, PUBLIC_ROOT) || 
+            PathUtils.isSubDir(PUBLIC_ROOT, STORE_ROOT) ||
+            PathUtils.isSubDir(STORE_ROOT, PUBLIC_ROOT) ||
             pub.equals(sto)
         ) {
             throw new IllegalArgumentException("公共网盘路径与私人网盘路径冲突（父子关系或相等）");

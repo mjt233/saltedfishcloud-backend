@@ -10,6 +10,8 @@ import org.apache.ibatis.annotations.Update;
 import java.util.List;
 
 public interface UserDao {
+    @Select("SELECT * FROM user WHERE email = #{email}")
+    User getByEmail(String email);
 
     /**
      * 修改用户权限类型

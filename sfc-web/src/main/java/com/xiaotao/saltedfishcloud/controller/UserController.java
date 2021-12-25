@@ -60,6 +60,16 @@ public class UserController {
         return JsonResult.getInstance(user);
     }
 
+
+    /**
+     * 发送注册验证码
+     * @param email 邮件
+     */
+    @PostMapping("/regcode")
+    public JsonResult sendRegCode(@RequestParam("email") String email) {
+        return JsonResult.getInstance(userService.sendRegEmail(email));
+    }
+
     /**
      * 注册新账号，管理员可直接添加无需邀请码
      * @param user  用户名

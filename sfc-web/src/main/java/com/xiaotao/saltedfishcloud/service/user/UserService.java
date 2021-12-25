@@ -12,6 +12,13 @@ import javax.validation.Valid;
 public interface UserService {
 
     /**
+     * 发送注册验证码到邮箱中
+     * @param email 邮箱
+     * @return 发送的验证码内容
+     */
+    String sendRegEmail(String email);
+
+    /**
      * 设置用户权限类型
      * @param uid 用户ID
      * @param type 用户类型，1管理员，0普通用户

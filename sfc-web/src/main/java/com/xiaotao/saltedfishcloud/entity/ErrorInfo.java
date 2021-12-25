@@ -10,9 +10,12 @@ import lombok.Getter;
  *     <li>3xxx 文件收集错误</li>
  *     <li>4xxx 系统错误</li>
  * </ul>
+ * @TODO 抽象出接口，让枚举类实现，解决报错信息配置过于集中
  */
 @Getter
 public enum ErrorInfo {
+    EMAIL_EXIST(0, 400, "邮箱已被使用"),
+    USER_EXIST(0, 400, "用户已注册"),
     NODE_NOT_FOUND(1000, 404, "无效的节点ID"),
     FILE_NOT_FOUND(1001, 404, "找不到文件"),
     FILE_TOO_LARGE(1002, 413, "文件过大"),
@@ -27,6 +30,7 @@ public enum ErrorInfo {
     COLLECTION_EXPIRED(3005, 400, "文件收集已过期"),
     SYSTEM_BUSY(4000, 500, "系统繁忙"),
     SYSTEM_FORBIDDEN(4001, 403, "权限不足"),
+    SYSTEM_ERROR(4002, 500, "系统错误"),
     SHARE_NOT_FOUND(5000, 404, "分享不存在"),
     SHARE_EXTRACT_ERROR(5001, 400, "提取码错误"),
     SHARE_EXPIRED(5002, 404, "分享已过期"),
