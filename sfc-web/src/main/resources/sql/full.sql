@@ -37,14 +37,14 @@ CREATE TABLE `collection` (
                               `ext_pattern` varchar(1024) DEFAULT NULL COMMENT '允许的文件后缀名正则表达式，被测试的后缀名不带.',
                               `field` varchar(1024) DEFAULT NULL COMMENT 'JSON类型数组，每个元素应包含name - 字段名称，pattern - 匹配正则，describe - 字段描述，type - 类型',
                               `save_node` char(32) NOT NULL COMMENT '收集到文件后保存到的网盘数据节点',
-                              `save_path_snapshot` VARCHAR(1024) NOT NULL COMMENT '收集到文件后保存到的网盘位置快照（仅记录创建时的设定）',
+                              `save_path_snapshot` varchar(1024) NOT NULL COMMENT '收集到文件后保存到的网盘位置快照（仅记录创建时的设定）',
                               `expired_at` datetime NOT NULL COMMENT '收集任务过期时间',
                               `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收集任务创建日期',
                               `state` enum('OPEN','CLOSED') NOT NULL COMMENT '状态，开放或关闭',
                               PRIMARY KEY (`id`),
                               KEY `uid_index` (`uid`),
                               KEY `expired_index` (`expired_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -65,7 +65,7 @@ CREATE TABLE `collection_rec` (
                                   `ip` char(16) NOT NULL COMMENT '上传时的IP地址',
                                   PRIMARY KEY (`id`),
                                   KEY `cid_index` (`cid`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -164,6 +164,30 @@ CREATE TABLE `proxy` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `share`
+--
+
+DROP TABLE IF EXISTS `share`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `share` (
+                         `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '分享ID',
+                         `verification` char(32) NOT NULL COMMENT '分享校验码',
+                         `uid` int unsigned NOT NULL COMMENT '分享者ID',
+                         `nid` char(32) NOT NULL COMMENT '资源ID，分享目录则为目录节点ID，文件则为文件MD5',
+                         `parent_id` char(32) NOT NULL COMMENT '资源所处目录的节点ID',
+                         `type` enum('FILE','DIR') NOT NULL COMMENT '分享类型，可为文件或目录',
+                         `size` bigint NOT NULL COMMENT '文件大小，目录时为-1',
+                         `extract_code` varchar(16) DEFAULT NULL COMMENT '资源提取码，为null则表示不需要提取码',
+                         `name` varchar(1024) NOT NULL COMMENT '分享的资源名称，即为文件名或目录名',
+                         `created_at` datetime NOT NULL COMMENT '分享创建日期',
+                         `expired_at` datetime DEFAULT NULL COMMENT '分享过期日期',
+                         PRIMARY KEY (`id`),
+                         KEY `uid_index` (`uid`)
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `user`
 --
 
@@ -174,12 +198,14 @@ CREATE TABLE `user` (
                         `id` int unsigned NOT NULL AUTO_INCREMENT,
                         `user` varchar(32) DEFAULT NULL,
                         `pwd` varchar(32) DEFAULT NULL,
+                        `email` varchar(256) NOT NULL,
                         `last_login` int unsigned DEFAULT NULL,
                         `type` int unsigned DEFAULT '0',
                         `role` varchar(32) DEFAULT NULL,
                         `quota` int unsigned DEFAULT '10',
                         PRIMARY KEY (`id`),
-                        UNIQUE KEY `user_index` (`user`)
+                        UNIQUE KEY `user_index` (`user`),
+                        KEY `mail_index` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -192,18 +218,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-11-09  3:00:28
-CREATE TABLE share (
-                       `id` INT UNSIGNED PRIMARY KEY AUTO_INCREMENT COMMENT '分享ID',
-                       `verification` CHAR(32) NOT NULL COMMENT '分享校验码',
-                       `uid` INT UNSIGNED NOT NULL COMMENT '分享者ID',
-                       `nid` CHAR(32) NOT NULL COMMENT '资源ID，分享目录则为目录本身的节点ID，文件则为文件MD5',
-                       `parent_id` CHAR(32) NOT NULL COMMENT '资源所处目录的节点ID',
-                       `type` ENUM('FILE', 'DIR') NOT NULL COMMENT '分享类型，可为文件或目录',
-                       `size` BIGINT NOT NULL COMMENT '文件大小，目录时为-1',
-                       `extract_code` VARCHAR(16) COMMENT '资源提取码，为null则表示不需要提取码',
-                       `name` VARCHAR(1024) NOT NULL COMMENT '分享的资源名称，即为文件名或目录名',
-                       `created_at` DATETIME NOT NULL COMMENT '分享创建日期',
-                       `expired_at` DATETIME COMMENT '分享过期日期',
-                       INDEX uid_index(uid)
-)ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+-- Dump completed on 2021-12-25 16:16:14

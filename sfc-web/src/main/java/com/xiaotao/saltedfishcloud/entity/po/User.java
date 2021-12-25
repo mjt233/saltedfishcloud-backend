@@ -42,6 +42,7 @@ public class User implements UserDetails {
     private Integer lastLogin;
     private Integer type = User.TYPE_COMMON;
     private int quota;
+    private String email;
 
     @lombok.Setter(AccessLevel.NONE)
     protected List<SimpleGrantedAuthority> authorities = new LinkedList<>();

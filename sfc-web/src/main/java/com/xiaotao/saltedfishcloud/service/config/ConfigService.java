@@ -1,10 +1,14 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.service.mail.MailProperties;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +24,8 @@ public class ConfigService {
     private StoreTypeSwitch storeTypeSwitch;
     @Resource
     private DiskConfig diskConfig;
+    @Resource
+    private MailProperties mailProperties;
 
     /**
      * 从配置表读取一个配置项的值
@@ -28,6 +34,32 @@ public class ConfigService {
      */
     public String getConfig(ConfigName key) {
         return configDao.getConfigure(key);
+    }
+
+
+    public boolean setMailProperties(MailProperties properties) {
+        boolean res = false;
+        try {
+            res = setConfig(ConfigName.MAIL_PROPERTIES, MapperHolder.mapper.writeValueAsString(properties));
+            BeanUtils.copyProperties(properties, mailProperties);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    public MailProperties getMailProperties() {
+        String config = getConfig(ConfigName.MAIL_PROPERTIES);
+        if (config == null) {
+            return null;
+        } else {
+            try {
+                return MapperHolder.mapper.readValue(config, MailProperties.class);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
     }
 
     /**
