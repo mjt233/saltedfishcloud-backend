@@ -103,24 +103,24 @@ public class FileUtils {
      */
     @SuppressWarnings("returnignore")
     public static int delete(Path local) throws IOException {
-        log.debug("删除资源：" + local.toString());
+        log.debug("删除资源：{}", local.toString());
         DirCollection dirCollection = scanDir(local);
         Collections.reverse(dirCollection.getDirList());
         int cnt = 0;
         for (File file1 : dirCollection.getFileList()) {
-            log.debug("文件删除：" + file1.getAbsolutePath());
+            log.debug("文件删除：{}", file1.getAbsolutePath());
             if(file1.delete()) {
                 cnt++;
             } else {
-                log.debug("删除失败：" + file1.getPath());
+                log.debug("删除失败：{}", file1.getPath());
             }
         }
         for (File file : dirCollection.getDirList()) {
-            log.debug("目录删除：" + file.getAbsolutePath());
+            log.debug("目录删除：{}", file.getAbsolutePath());
             if(file.delete()) {
                 cnt++;
             } else {
-                log.debug("删除失败：" + file.getPath());
+                log.debug("删除失败：{}", file.getPath());
             }
         }
         if (Files.isDirectory(local)) {
@@ -206,14 +206,14 @@ public class FileUtils {
             // 将目的地同名文件删除以避免该情况
             if (Files.exists(p)) Files.delete(p);
             Files.move(Paths.get(file.getPath()), p, StandardCopyOption.REPLACE_EXISTING);
-            log.debug("move " + file.getPath() + " -> " + p);
+            log.debug("move {} -> {}", file.getPath(), p);
         }
 
         //  删除源文件夹
         Collections.reverse(sourceCollection.getDirList());
         sourceCollection.getDirList().forEach(e -> {
             if (!e.delete()) {
-                log.debug("删除失败：" + e.getPath());
+                log.debug("删除失败：{}", e.getPath());
             }
         });
         Files.delete(Paths.get(source));
@@ -254,7 +254,7 @@ public class FileUtils {
             for(File dir: dirCollection.getDirList()) {
                 String src = dir.getPath().substring(sourceLen);
                 Path dest = Paths.get(target + "/" + targetName + "/" + src);
-                log.debug("local filesystem mkdir: " + dest);
+                log.debug("local filesystem mkdir: {}", dest);
                 try { Files.createDirectory(dest); } catch (FileAlreadyExistsException ignored) {}
             }
 
@@ -263,19 +263,19 @@ public class FileUtils {
                 String src = file.getPath().substring(sourceLen);
                 String dest = target + "/" + targetName + src;
                 if (useHardLink) {
-                    log.debug("create hard link: " + file + " ==> " + dest);
+                    log.debug("create hard link: {} ===> {}",file, dest);
                     linkFile(Paths.get(dest), Paths.get(file.getPath()));
                 } else {
-                    log.debug("local filesystem copy: " + file + " ==> " + dest);
+                    log.debug("local filesystem copy: {} ==> {}", file, dest);
                     try { Files.copy(Paths.get(file.getPath()), Paths.get(dest), StandardCopyOption.REPLACE_EXISTING); }
                     catch (FileAlreadyExistsException ignored) {}
                 }
             }
         } else if (useHardLink) {
-            log.debug("create hard link: " + sourceFile + " ==> " + targetFile);
+            log.debug("create hard link: {} ==> {}", sourceFile, targetFile);
             linkFile(targetFile, sourceFile);
         } else {
-            log.debug("copy file: " + sourceFile + " ==> " + targetFile);
+            log.debug("copy file: {} ==> {}", sourceFile, targetFile);
             Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
         }
 
@@ -332,11 +332,11 @@ public class FileUtils {
         int res = 1;
         Path filePath = Paths.get(DiskConfig.getUniqueStoreRoot() + "/" + StringUtils.getUniquePath(md5));
         Files.delete(filePath);
-        log.debug("删除本地文件：" + filePath);
+        log.debug("删除本地文件：{}", filePath);
         DirectoryStream<Path> paths = Files.newDirectoryStream(filePath.getParent());
         // 最里层目录
         if (  !paths.iterator().hasNext() ) {
-            log.debug("删除本地目录：" + filePath.getParent());
+            log.debug("删除本地目录：{}", filePath.getParent());
             res++;
             paths.close();
             Files.delete(filePath.getParent());
@@ -344,7 +344,7 @@ public class FileUtils {
 
             // 外层目录
             if ( !paths.iterator().hasNext()) {
-                log.debug("删除本地目录：" + filePath.getParent().getParent());
+                log.debug("删除本地目录：{}", filePath.getParent().getParent());
                 res++;
                 Files.delete(filePath.getParent().getParent());
                 paths.close();
