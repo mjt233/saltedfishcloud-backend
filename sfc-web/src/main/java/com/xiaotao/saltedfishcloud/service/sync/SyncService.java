@@ -48,13 +48,13 @@ public class SyncService {
             handler.handleFileAdd(user, newFiles);
             handler.handleFileChange(user, changeFiles);
 
-            log.info("==== 任务统计 ====");
-            log.info("被删除的目录数：" + deletedDir.size());
-            log.info("新增的目录数：" + newDir.size());
-            log.info("新增的文件数：" + newFiles.size());
-            log.info("被更改的文件数：" + changeFiles.size());
-            log.info("被删除的文件数：" + deletedFiles.size());
-            log.info("==== 任务完成 ====");
+            log.debug("==== 任务统计 ====");
+            log.debug("被删除的目录数：{}", deletedDir.size());
+            log.debug("新增的目录数：{}", newDir.size());
+            log.debug("新增的文件数：{}", newFiles.size());
+            log.debug("被更改的文件数：{}" , changeFiles.size());
+            log.debug("被删除的文件数：{}" , deletedFiles.size());
+            log.debug("==== 任务完成 ====");
 
             DiskConfig.setReadOnlyLevel(null);
         } catch (IllegalStateException e) {
