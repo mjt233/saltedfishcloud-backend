@@ -38,9 +38,9 @@ public class SysRuntimeConfig {
         configService.addConfigChangeListener(e -> {
             ConfigName key = e.getKey();
             if (key == ConfigName.ENABLE_EMAIL_REG) {
-                enableEmailReg = "TRUE".equals(e.getValue());
+                enableEmailReg = "true".equals(e.getValue().toLowerCase());
             } else if (key == ConfigName.REG_CODE) {
-                enableRegCode = "TRUE".equals(e.getValue());
+                enableRegCode = "true".equals(e.getValue().toLowerCase());
             }
         });
     }
@@ -53,14 +53,14 @@ public class SysRuntimeConfig {
         String enableRegCode = configCache.get(ConfigName.ENABLE_REG_CODE);
         String enableEmailReg = configCache.get(ConfigName.ENABLE_EMAIL_REG);
         if (enableRegCode == null && enableEmailReg == null) {
-            enableRegCode = "TRUE";
+            enableRegCode = "true";
             try {
-                configService.setConfig(ConfigName.ENABLE_REG_CODE, "TRUE");
-                configService.setConfig(ConfigName.ENABLE_EMAIL_REG, "FALSE");
+                configService.setConfig(ConfigName.ENABLE_REG_CODE, "true");
+                configService.setConfig(ConfigName.ENABLE_EMAIL_REG, "false");
                 log.info("[注册规则初始化]未检测到注册规则配置，默认开启邀请码注册");
             } catch (IOException ignore) { }
         }
-        this.enableRegCode = "TRUE".equals(enableRegCode);
-        this.enableEmailReg = "TRUE".equals(enableEmailReg);
+        this.enableRegCode = "true".equals(enableRegCode == null ? null : enableRegCode.toLowerCase());
+        this.enableEmailReg = "true".equals(enableEmailReg == null ? null : enableEmailReg.toLowerCase());
     }
 }
