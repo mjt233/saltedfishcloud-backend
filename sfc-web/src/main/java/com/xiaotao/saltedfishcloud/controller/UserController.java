@@ -31,10 +31,12 @@ import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 @Controller
@@ -49,6 +51,19 @@ public class UserController {
     private final ResponseService responseService;
     private final UserDao userDao;
     private final TokenDao tokenDao;
+    private final SysRuntimeConfig runtimeConfig;
+
+    /**
+     * 获取允许的注册类型
+     */
+    @GetMapping("/regType")
+    @AllowAnonymous
+    public JsonResult getRegType() {
+        return JsonResult.getInstance(new HashMap<String, Boolean>(){{
+            put("email", runtimeConfig.isEnableEmailReg());
+            put("regcode", runtimeConfig.isEnableRegCode());
+        }});
+    }
 
     /**
      * 获取用户基本信息，并刷新token有效期
@@ -70,7 +85,7 @@ public class UserController {
      */
     @PostMapping("/regcode")
     @AllowAnonymous
-    public JsonResult sendRegCode(@RequestParam("email") String email) {
+    public JsonResult sendRegCode(@RequestParam("email") @Email String email) {
         return JsonResult.getInstance(userService.sendRegEmail(email));
     }
 
@@ -85,7 +100,7 @@ public class UserController {
     public JsonResult regUser(@RequestParam("user") String user,
                               @RequestParam("passwd") String rawPassword,
                               @RequestParam(value = "regcode", defaultValue = "") String regCode,
-                              @RequestParam("email") String email,
+                              @RequestParam("email") @Email String email,
                               @RequestParam(value = "type", defaultValue = "0") int type,
                               @RequestParam(value = "validEmail", defaultValue = "false") Boolean validEmail
                               ) throws JsonException {

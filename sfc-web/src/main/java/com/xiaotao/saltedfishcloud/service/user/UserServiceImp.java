@@ -48,6 +48,8 @@ public class UserServiceImp implements UserService{
 
     @Override
     public String sendRegEmail(String email) {
+        // 判断邮件注册开关
+        if (!sysRuntimeConfig.isEnableEmailReg()) throw new JsonException(ErrorInfo.EMAIL_REG_DISABLE);
 
         // 先判断邮箱是否已被使用
         User user = userDao.getByEmail(email);
