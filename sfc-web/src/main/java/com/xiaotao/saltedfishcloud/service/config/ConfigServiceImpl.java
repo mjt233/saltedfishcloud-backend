@@ -93,11 +93,13 @@ public class ConfigServiceImpl implements ConfigService {
 
     /**
      * 设置一个配置项
+     * @TODO 将写死的配置响应事件使用监听器功能重构
      * @param key       配置项
      * @param value     配置值
      */
     @Override
     public boolean setConfig(ConfigName key, String value) throws IOException {
+        // 未采用订阅者/发布者设计模式的代码，耦合度高，代码侵害度高
         switch (key) {
             case STORE_TYPE: return setStoreType(StoreType.valueOf(value));
             case REG_CODE: setInviteRegCode(value); return true;
@@ -107,6 +109,8 @@ public class ConfigServiceImpl implements ConfigService {
             default:
                 configDao.setConfigure(key, value);
         }
+
+        // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
         for (Consumer<Pair<ConfigName, String>> listener : listeners) {
             listener.accept(new Pair<>(key, value));
         }
