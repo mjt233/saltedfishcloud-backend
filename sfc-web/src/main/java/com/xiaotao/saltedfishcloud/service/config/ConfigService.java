@@ -33,5 +33,9 @@ public interface ConfigService {
      */
     boolean setConfig(String key, String value) throws IOException;
 
+    /**
+     * 添加一个配置发生改变时触发的监听器
+     * @param listener  监听器，key为发生改变的配置名，value为新的配置值
+     */
     void addConfigChangeListener(Consumer<Pair<ConfigName, String>> listener);
 }
