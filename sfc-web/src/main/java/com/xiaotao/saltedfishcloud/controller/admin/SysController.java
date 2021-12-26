@@ -9,7 +9,7 @@ import com.xiaotao.saltedfishcloud.entity.po.ConfigInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
-import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.config.ConfigServiceImpl;
 import com.xiaotao.saltedfishcloud.service.mail.MailProperties;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -31,7 +31,7 @@ import java.util.List;
 public class SysController {
     public static final String prefix = "/api/admin/sys/";
     @Resource
-    private ConfigService configService;
+    private ConfigServiceImpl configService;
     @Resource
     private ConfigDao configDao;
     @Resource

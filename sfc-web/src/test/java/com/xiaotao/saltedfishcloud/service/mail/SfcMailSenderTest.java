@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.mail;
 
-import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.config.ConfigServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest
 class SfcMailSenderTest {
     @Autowired
-    private ConfigService configService;
+    private ConfigServiceImpl configService;
     @Autowired
     private JavaMailSender mailSender;
 

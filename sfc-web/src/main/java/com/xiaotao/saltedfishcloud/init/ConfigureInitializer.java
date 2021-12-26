@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
-import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.config.ConfigServiceImpl;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ConfigureInitializer implements ApplicationRunner {
     private final ConfigDao configDao;
-    private final ConfigService configService;
+    private final ConfigServiceImpl configService;
     private final CommandLineOption commandLineOption;
     private final SysRuntimeConfig sysRuntimeConfig;
     @Override
