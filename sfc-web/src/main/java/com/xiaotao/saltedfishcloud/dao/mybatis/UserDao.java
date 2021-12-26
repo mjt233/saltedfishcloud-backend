@@ -68,12 +68,14 @@ public interface UserDao {
      * 添加一个用户
      * @param user  用户名
      * @param pwd   安全编码后的密码
+     * @param email 用户注册邮箱
      * @param type  用户类型，1为管理员，0为普通用户
      * @return      受影响的表行数
      */
-    @Insert("INSERT INTO user (user,pwd,type) VALUE (#{user},#{pwd},#{type})")
+    @Insert("INSERT INTO user (user,pwd, email, type) VALUE (#{user},#{pwd}, #{email}, #{type})")
     int addUser(@Param("user") String user,
                 @Param("pwd") String pwd,
+                @Param("email") String email,
                 @Param("type") Integer type);
 
     /**

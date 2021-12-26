@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.init;
 import com.xiaotao.saltedfishcloud.config.CommandLineOption;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
@@ -30,6 +31,7 @@ public class ConfigureInitializer implements ApplicationRunner {
     private final ConfigDao configDao;
     private final ConfigService configService;
     private final CommandLineOption commandLineOption;
+    private final SysRuntimeConfig sysRuntimeConfig;
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
@@ -89,6 +91,8 @@ public class ConfigureInitializer implements ApplicationRunner {
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
         }
 
-
+        if (!sysRuntimeConfig.isEnableEmailReg() && !sysRuntimeConfig.isEnableRegCode()) {
+            log.warn("[注册关闭]系统未开启任何用户注册方式");
+        }
     }
 }

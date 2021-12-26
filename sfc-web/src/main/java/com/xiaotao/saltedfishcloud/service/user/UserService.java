@@ -44,13 +44,25 @@ public interface UserService {
     int modifyPasswd(Integer uid, String oldPassword, String newPassword);
 
     /**
-     * 添加用户
+     * 直接添加用户
      * @param user      用户名
      * @param passwd    密码原文（即密码原文）
+     * @param email     用户邮箱
      * @param type      类型(可用UserType.COMMON或UserType.ADMIN)
      * @return          数据库操作影响的行数
      */
-    int addUser(@Username @Valid String user, String passwd, Integer type);
+    int addUser(@Username @Valid String user, String passwd, String email, Integer type);
+
+    /**
+     * 通过邀请码或邮箱注册用户的形式添加用户
+     * @param user          用户名
+     * @param passwd        密码
+     * @param email         注册邮箱
+     * @param code          邀请码或邮箱注册码
+     * @param isEmailCode   code是否为邮箱注册码
+     * @return              数据库操作影响的行数
+     */
+    int addUser(@Username @Valid String user, String passwd, String email, String code, boolean isEmailCode);
 
     /**
      * 更新用户的上次登录日期

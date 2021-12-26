@@ -1,102 +1,59 @@
 {
 	"info": {
-		"_postman_id": "58f6811e-4f63-46f5-b6c3-1366457f77d6",
+		"_postman_id": "b8e56f77-b8f8-40ea-8288-d2f5a7e6987a",
 		"name": "咸鱼云Java版",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "用户",
+			"name": "账号模块",
 			"item": [
 				{
-					"name": "登录",
-					"event": [
+					"name": "注册与找回",
+					"item": [
 						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"let res = JSON.parse(responseBody)\r",
-									"if (pm.response.code === 200) {\r",
-									"    pm.environment.set(\"token\", res.data)\r",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": []
-						},
-						"url": {
-							"raw": "{{addr}}/api/user/token?user=admin&passwd=admin666",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"token"
-							],
-							"query": [
-								{
-									"key": "user",
-									"value": "admin"
-								},
-								{
-									"key": "passwd",
-									"value": "admin666"
-								}
-							]
-						},
-						"description": "获取token以登录，在后续请求中将此token放于名为`Token`的header字段中实现身份鉴权\r\n- URI: `/api/user/token`\r\n- 动作：POST\r\n\r\n### 参数\r\n- user 用户名\r\n- passwd 密码"
-					},
-					"response": []
-				},
-				{
-					"name": "取用户信息",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
-					"request": {
-						"method": "GET",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "passwd",
-									"value": "mojintao233",
-									"type": "text"
-								},
-								{
-									"key": "user",
-									"value": "xiaotao",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/user",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"user"
-							]
-						},
-						"description": "获取用户信息\r\n- URI: `/api/user/`\r\n- 动作：GET\r\n\r\n### 响应\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"id\": 42,\r\n        \"user\": \"xiaotao\",\r\n        \"type\": 1,          //  1为管理员，0为普通用户\r\n        \"quota\": 10         //  私人空间配额（GiB）\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
-					},
-					"response": [
-						{
-							"name": "取用户信息",
-							"originalRequest": {
-								"method": "GET",
+							"name": "注册用户",
+							"request": {
+								"method": "POST",
 								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "user",
+											"value": "xiaotao233666",
+											"contentType": "用户名",
+											"description": "用户名",
+											"type": "text"
+										},
+										{
+											"key": "passwd",
+											"value": "123123123",
+											"contentType": "密码",
+											"description": "密码",
+											"type": "text"
+										},
+										{
+											"key": "regcode",
+											"value": "cjqec",
+											"contentType": "注册码或邮箱验证码",
+											"description": "注册邀请码",
+											"type": "text"
+										},
+										{
+											"key": "email",
+											"value": "mjt233@qq.com",
+											"contentType": "邮箱",
+											"type": "text"
+										},
+										{
+											"key": "validEmail",
+											"value": "1",
+											"contentType": "验证邮箱（即通过邮箱验证码方式注册）",
+											"type": "text"
+										}
+									]
+								},
 								"url": {
 									"raw": "{{addr}}/api/user",
 									"host": [
@@ -106,226 +63,343 @@
 										"api",
 										"user"
 									]
+								},
+								"description": "用户自主注册接口\r\n- URI: `/api/user/`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- user  用户名\r\n- passwd    登录密码\r\n- regcode   注册邀请码，如果是管理员用户请求该接口，则不需要填写邀请码"
+							},
+							"response": []
+						},
+						{
+							"name": "发送注册验证码",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "email",
+											"value": "mjt233@qq.com",
+											"description": "接收邮件的地址",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/user/regcode",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"regcode"
+									]
 								}
 							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 15 Feb 2021 15:14:05 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 1,\n    \"data\": {\n        \"id\": 3,\n        \"user\": \"xiaoxi\",\n        \"type\": 0,\n        \"username\": \"xiaoxi\",\n        \"accountNonExpired\": true,\n        \"accountNonLocked\": true,\n        \"credentialsNonExpired\": true,\n        \"enabled\": true\n    },\n    \"msg\": \"OK\"\n}"
+							"response": []
 						}
 					]
 				},
 				{
-					"name": "注册用户",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "user",
-									"value": "wodiu",
-									"description": "用户名",
-									"type": "text"
+					"name": "基本操作与基本信息",
+					"item": [
+						{
+							"name": "取用户信息",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "passwd",
+											"value": "mojintao233",
+											"type": "text"
+										},
+										{
+											"key": "user",
+											"value": "xiaotao",
+											"type": "text"
+										}
+									]
 								},
-								{
-									"key": "passwd",
-									"value": "wodiu",
-									"description": "密码",
-									"type": "text"
+								"url": {
+									"raw": "{{addr}}/api/user",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user"
+									]
 								},
+								"description": "获取用户信息\r\n- URI: `/api/user/`\r\n- 动作：GET\r\n\r\n### 响应\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"id\": 42,\r\n        \"user\": \"xiaotao\",\r\n        \"type\": 1,          //  1为管理员，0为普通用户\r\n        \"quota\": 10         //  私人空间配额（GiB）\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+							},
+							"response": [
 								{
-									"key": "regcode",
-									"value": "123456",
-									"description": "注册邀请码",
-									"type": "text"
+									"name": "取用户信息",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "formdata",
+											"formdata": [
+												{
+													"key": "passwd",
+													"value": "mojintao233",
+													"type": "text"
+												},
+												{
+													"key": "user",
+													"value": "xiaotao",
+													"type": "text"
+												}
+											]
+										},
+										"url": {
+											"raw": "{{addr}}/api/user",
+											"host": [
+												"{{addr}}"
+											],
+											"path": [
+												"api",
+												"user"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Vary",
+											"value": "Access-Control-Request-Method"
+										},
+										{
+											"key": "Vary",
+											"value": "Access-Control-Request-Headers"
+										},
+										{
+											"key": "X-Content-Type-Options",
+											"value": "nosniff"
+										},
+										{
+											"key": "X-XSS-Protection",
+											"value": "1; mode=block"
+										},
+										{
+											"key": "Cache-Control",
+											"value": "no-cache, no-store, max-age=0, must-revalidate"
+										},
+										{
+											"key": "Pragma",
+											"value": "no-cache"
+										},
+										{
+											"key": "Expires",
+											"value": "0"
+										},
+										{
+											"key": "X-Frame-Options",
+											"value": "DENY"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json;charset=UTF-8"
+										},
+										{
+											"key": "Transfer-Encoding",
+											"value": "chunked"
+										},
+										{
+											"key": "Date",
+											"value": "Sat, 25 Dec 2021 13:58:11 GMT"
+										},
+										{
+											"key": "Keep-Alive",
+											"value": "timeout=60"
+										},
+										{
+											"key": "Connection",
+											"value": "keep-alive"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 1,\n        \"user\": \"admin\",\n        \"type\": 1,\n        \"quota\": 10,\n        \"email\": \"\"\n    },\n    \"msg\": \"OK\"\n}"
 								}
 							]
 						},
-						"url": {
-							"raw": "{{addr}}/api/user",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"user"
-							]
-						},
-						"description": "用户自主注册接口\r\n- URI: `/api/user/`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- user  用户名\r\n- passwd    登录密码\r\n- regcode   注册邀请码，如果是管理员用户请求该接口，则不需要填写邀请码"
-					},
-					"response": []
-				},
-				{
-					"name": "上传用户头像",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "file",
-									"type": "file",
-									"src": "/C:/Users/12079/Desktop/avatar.jpg"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/user/avatar",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"avatar"
-							]
-						},
-						"description": "上传用户头像\r\n- URI: `/api/user/avatar`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- file 头像文件"
-					},
-					"response": []
-				},
-				{
-					"name": "获取用户头像",
-					"protocolProfileBehavior": {
-						"followRedirects": true
-					},
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/user/avatar/xiaotao",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"avatar",
-								"xiaotao"
-							]
-						},
-						"description": "获取用户头像\r\n- URI: `/api/user/avatar`或`/api/user/avater/{用户名}`\r\n- 动作：GET\r\n\r\n### 响应\r\n直接响应文件"
-					},
-					"response": []
-				},
-				{
-					"name": "获取空间配额使用情况",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/user/quota",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"quota"
-							]
-						},
-						"description": "描述：查询已登录用户的空间配额使用情况  \r\n- URI: `/api/user/quota`  \r\n- 动作：GET\r\n\r\n#### 响应data样例  \r\n```json\r\n{\r\n    // 单位均为字节（Byte）\r\n    \"used\": 114514,         // 已用空间\r\n    \"quota\": 10737418240    // 总配额\r\n}\r\n```"
-					},
-					"response": []
-				},
-				{
-					"name": "修改密码",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "old",
-									"value": "233333",
-									"type": "text"
+						{
+							"name": "上传用户头像",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": "/C:/Users/12079/Desktop/avatar.jpg"
+										}
+									]
 								},
-								{
-									"key": "new",
-									"value": "123123123",
-									"type": "text"
+								"url": {
+									"raw": "{{addr}}/api/user/avatar",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"avatar"
+									]
 								},
+								"description": "上传用户头像\r\n- URI: `/api/user/avatar`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- file 头像文件"
+							},
+							"response": []
+						},
+						{
+							"name": "获取用户头像",
+							"protocolProfileBehavior": {
+								"followRedirects": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/user/avatar/xiaotao",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"avatar",
+										"xiaotao"
+									]
+								},
+								"description": "获取用户头像\r\n- URI: `/api/user/avatar`或`/api/user/avater/{用户名}`\r\n- 动作：GET\r\n\r\n### 响应\r\n直接响应文件"
+							},
+							"response": []
+						},
+						{
+							"name": "获取空间配额使用情况",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/user/quota",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"quota"
+									]
+								},
+								"description": "描述：查询已登录用户的空间配额使用情况  \r\n- URI: `/api/user/quota`  \r\n- 动作：GET\r\n\r\n#### 响应data样例  \r\n```json\r\n{\r\n    // 单位均为字节（Byte）\r\n    \"used\": 114514,         // 已用空间\r\n    \"quota\": 10737418240    // 总配额\r\n}\r\n```"
+							},
+							"response": []
+						},
+						{
+							"name": "修改密码",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "old",
+											"value": "233333",
+											"type": "text"
+										},
+										{
+											"key": "new",
+											"value": "123123123",
+											"type": "text"
+										},
+										{
+											"key": "force",
+											"value": "true",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/user/51/passwd",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"51",
+										"passwd"
+									]
+								},
+								"description": "修改用户的密码\r\n- URI: `/api/user/{uid}/passwd`\r\n- 动作：POST\r\n\r\n### URI参数\r\n- uid 被操作的用户ID（非管理员用户只允许操作自己）\r\n\r\n### 表单参数\r\n- old 旧密码\r\n- new 新密码\r\n- force 强制重置，只允许管理员使用，可无视旧密码直接重置密码"
+							},
+							"response": []
+						},
+						{
+							"name": "登录",
+							"event": [
 								{
-									"key": "force",
-									"value": "true",
-									"type": "text"
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let res = JSON.parse(responseBody)\r",
+											"if (pm.response.code === 200) {\r",
+											"    pm.environment.set(\"token\", res.data)\r",
+											"}"
+										],
+										"type": "text/javascript"
+									}
 								}
-							]
-						},
-						"url": {
-							"raw": "{{addr}}/api/user/51/passwd",
-							"host": [
-								"{{addr}}"
 							],
-							"path": [
-								"api",
-								"user",
-								"51",
-								"passwd"
-							]
-						},
-						"description": "修改用户的密码\r\n- URI: `/api/user/{uid}/passwd`\r\n- 动作：POST\r\n\r\n### URI参数\r\n- uid 被操作的用户ID（非管理员用户只允许操作自己）\r\n\r\n### 表单参数\r\n- old 旧密码\r\n- new 新密码\r\n- force 强制重置，只允许管理员使用，可无视旧密码直接重置密码"
-					},
-					"response": []
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": []
+								},
+								"url": {
+									"raw": "{{addr}}/api/user/token?user=admin&passwd=admin666",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"token"
+									],
+									"query": [
+										{
+											"key": "user",
+											"value": "admin"
+										},
+										{
+											"key": "passwd",
+											"value": "admin666"
+										}
+									]
+								},
+								"description": "获取token以登录，在后续请求中将此token放于名为`Token`的header字段中实现身份鉴权\r\n- URI: `/api/user/token`\r\n- 动作：POST\r\n\r\n### 参数\r\n- user 用户名\r\n- passwd 密码"
+							},
+							"response": []
+						}
+					]
 				}
 			]
 		},
@@ -1753,6 +1827,36 @@
 											]
 										},
 										"description": "取所有可用的配置项名\r\n- URI：`/api/admin/sys/configKeys` \r\n- 动作：GET\r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": [\r\n        \"REG_CODE\",\r\n        \"STORE_TYPE\",\r\n        \"SYNC_DELAY\"\r\n    ],\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+									},
+									"response": []
+								},
+								{
+									"name": "设置邮件发信配置",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"host\": \"your smtp host\",\r\n    \"username\": \"your stmp user name\",\r\n    \"password\": \"your stmp password\",\r\n    \"port\": 25,\r\n    \"from\": \"sender from address\",\r\n    \"alias\": \"your nick\",\r\n    \"reply\": \"reply address\",\r\n    \"protocol\": \"smtp\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{addr}}/api/admin/sys/mailConfig",
+											"host": [
+												"{{addr}}"
+											],
+											"path": [
+												"api",
+												"admin",
+												"sys",
+												"mailConfig"
+											]
+										},
+										"description": "# 设置系统邮件发信配置\n- API: /api/admin/sys/mailConfig\n- 方法：PUT\n\n## JSON请求体\n```json\n{\n    \"host\": \"发信服务器主机名,\n    \"username\": \"发信用户名\",\n    \"password\": \"发信密码\",\n    \"port\": 发信端口,\n    \"from\": \"发信人地址\",\n    \"alias\": \"发信人别名\",\n    \"reply\": \"回信地址\",\n    \"protocol\": \"协议，目前只测试过smtp（小写）\"\n}\n```"
 									},
 									"response": []
 								}

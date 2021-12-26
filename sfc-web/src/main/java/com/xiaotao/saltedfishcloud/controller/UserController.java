@@ -3,9 +3,11 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
+import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
@@ -47,6 +49,7 @@ public class UserController {
     private final ResponseService responseService;
     private final UserDao userDao;
     private final TokenDao tokenDao;
+
     /**
      * 获取用户基本信息，并刷新token有效期
      */
@@ -66,6 +69,7 @@ public class UserController {
      * @param email 邮件
      */
     @PostMapping("/regcode")
+    @AllowAnonymous
     public JsonResult sendRegCode(@RequestParam("email") String email) {
         return JsonResult.getInstance(userService.sendRegEmail(email));
     }
@@ -81,14 +85,18 @@ public class UserController {
     public JsonResult regUser(@RequestParam("user") String user,
                               @RequestParam("passwd") String rawPassword,
                               @RequestParam(value = "regcode", defaultValue = "") String regCode,
-                              @RequestParam(value = "type", defaultValue = "0") int type
+                              @RequestParam("email") String email,
+                              @RequestParam(value = "type", defaultValue = "0") int type,
+                              @RequestParam(value = "validEmail", defaultValue = "false") Boolean validEmail
                               ) throws JsonException {
+
+
+
+        // 管理员直接添加，不受任何约束
         if (SecureUtils.getSpringSecurityUser() != null && SecureUtils.getSpringSecurityUser().getType() == User.TYPE_ADMIN) {
-            userService.addUser(user, rawPassword, type == User.TYPE_ADMIN ? User.TYPE_ADMIN : User.TYPE_COMMON);
-        } else if (!regCode.equals(DiskConfig.REG_CODE)) {
-            throw new JsonException(400, "注册码不正确");
+            userService.addUser(user, rawPassword, email, type == User.TYPE_ADMIN ? User.TYPE_ADMIN : User.TYPE_COMMON);
         } else {
-            userService.addUser(user, rawPassword, User.TYPE_COMMON);
+            userService.addUser(user, rawPassword, email, regCode, validEmail);
         }
         return JsonResult.getInstance();
     }

@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
+import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
@@ -12,17 +13,18 @@ import com.xiaotao.saltedfishcloud.service.mail.MailMessageGenerator;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.mail.MailSender;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.mail.MessagingException;
+import javax.validation.Valid;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -42,6 +44,7 @@ public class UserServiceImp implements UserService{
     private final JavaMailSender mailSender;
     private final MailMessageGenerator mailMessageGenerator;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SysRuntimeConfig sysRuntimeConfig;
 
     @Override
     public String sendRegEmail(String email) {
@@ -103,16 +106,48 @@ public class UserServiceImp implements UserService{
     }
 
     @Override
-    public int addUser(String user, String passwd, Integer type) {
+    public int addUser(@Username @Valid String user, String passwd, String email, String code, boolean isEmailCode) {
+
+        if (isEmailCode && !sysRuntimeConfig.isEnableEmailReg()) {
+
+            // 请求邮箱验证，判断是否开启
+            throw new JsonException(ErrorInfo.EMAIL_REG_DISABLE);
+        } else if (!isEmailCode && !sysRuntimeConfig.isEnableRegCode()) {
+
+            // 请求注册邀请码验证，判断是否开启
+            throw new JsonException(ErrorInfo.REG_CODE_DISABLE);
+        } else if (isEmailCode) {
+
+            // 通过邮箱验证码注册
+            String recordCode = (String)redisTemplate.opsForValue().get(RedisKeyGenerator.getRegCodeKey(email));
+            if (!code.equals(recordCode)) {
+                throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR);
+            }
+            return addUser(user, passwd, email, User.TYPE_COMMON);
+        } else {
+
+            // 通过注册邀请码注册
+            if (!code.equals(DiskConfig.REG_CODE)) {
+                throw new JsonException(ErrorInfo.REG_CODE_ERROR);
+            }
+            return addUser(user, passwd, email, User.TYPE_COMMON);
+        }
+    }
+
+    @Override
+    public int addUser(String user, String passwd, String email, Integer type) {
         var upperName = user.toUpperCase();
         if (User.SYS_NAME_PUBLIC.equals(upperName) || User.SYS_NAME_ADMIN.equals(upperName)) {
             throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
         }
+        if (userDao.getByEmail(email) != null) throw new JsonException(ErrorInfo.EMAIL_EXIST);
         String pwd = SecureUtils.getPassswd(passwd);
         try {
-            return userDao.addUser(user, pwd, type);
+            int res = userDao.addUser(user, pwd, email, type);
+            redisTemplate.delete(RedisKeyGenerator.getRegCodeKey(email));
+            return res;
         } catch (DuplicateKeyException e) {
-            throw new JsonException(400, "用户" + user + "已被注册");
+            throw new JsonException(ErrorInfo.USER_EXIST);
         }
     }
 
