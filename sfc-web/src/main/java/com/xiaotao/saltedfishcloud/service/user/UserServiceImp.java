@@ -101,10 +101,12 @@ public class UserServiceImp implements UserService {
     public void resetPassword(String email, String code, String password) {
         final User user = userDao.getByEmail(email);
         if (user == null) { throw new JsonException(ErrorInfo.USER_NOT_EXIST); }
-        String record = (String) redisTemplate.opsForValue().get(RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD));
+        String key = RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD);
+        String record = (String) redisTemplate.opsForValue().get(key);
         if (code == null || !code.equals(record)) { throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR); }
 
         userDao.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
+        redisTemplate.delete(key);
     }
 
 
@@ -113,10 +115,13 @@ public class UserServiceImp implements UserService {
     public void setEmail(Integer uid, String email, String code) {
         final User user = userDao.getUserById(uid);
         if (user == null) { throw new JsonException(ErrorInfo.USER_NOT_EXIST); }
-        String record = (String) redisTemplate.opsForValue().get(RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL));
+        String key = RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL);
+        String record = (String) redisTemplate.opsForValue().get(key);
         if (code == null || !code.equals(record)) { throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR); }
 
+
         userDao.updateEmail(uid, email);
+        redisTemplate.delete(key);
     }
 
 
@@ -194,12 +199,15 @@ public class UserServiceImp implements UserService {
             throw new JsonException(ErrorInfo.REG_CODE_DISABLE);
         } else if (isEmailCode) {
 
+            String key = RedisKeyGenerator.getRegCodeKey(email);
             // 通过邮箱验证码注册
-            String recordCode = (String)redisTemplate.opsForValue().get(RedisKeyGenerator.getRegCodeKey(email));
+            String recordCode = (String)redisTemplate.opsForValue().get(key);
             if (!code.equals(recordCode)) {
                 throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR);
             }
-            return addUser(user, passwd, email, User.TYPE_COMMON);
+            int ret = addUser(user, passwd, email, User.TYPE_COMMON);
+            redisTemplate.delete(key);
+            return ret;
         } else {
 
             // 通过注册邀请码注册
