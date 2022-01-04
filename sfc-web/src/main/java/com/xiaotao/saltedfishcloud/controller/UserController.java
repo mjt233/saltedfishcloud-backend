@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.security.RolesAllowed;
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -36,6 +37,7 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
 
@@ -52,6 +54,54 @@ public class UserController {
     private final UserDao userDao;
     private final TokenDao tokenDao;
     private final SysRuntimeConfig runtimeConfig;
+
+    /**
+     * 重置用户密码
+     * @param account   用户用户名或用户邮箱
+     * @param code      邮箱验证码
+     * @param password  新密码
+     */
+    @PostMapping("/resetPassword")
+    public JsonResult resetPassword(@RequestParam("account") String account,
+                                    @RequestParam("code") String code,
+                                    @RequestParam("password") String password) {
+        userService.resetPassword(account, code, password);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 用户绑定新邮箱
+     * @param email 新邮箱
+     * @param code  邮箱验证码
+     */
+    @PostMapping("/newMail")
+    public JsonResult setEmail(@RequestParam("email") String email,
+                               @RequestParam("code") String code) {
+        Integer uid = SecureUtils.getSpringSecurityUser().getId();
+        userService.setEmail(uid, email, code);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 发送新邮箱绑定验证码
+     * @param email 新邮箱
+     */
+    @PostMapping("/sendBindEmail")
+    public JsonResult sendBindEmail(@RequestParam("email") String email) throws MessagingException, UnsupportedEncodingException {
+        Integer uid = SecureUtils.getSpringSecurityUser().getId();
+        userService.sendBindEmail(uid, email);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 发送重置密码验证邮件
+     */
+    @PostMapping("/sendResetPasswordEmail")
+    @AllowAnonymous
+    public JsonResult sendResetPasswordEmail(@RequestParam(value = "account") String account) throws MessagingException, UnsupportedEncodingException {
+        userService.sendResetPasswordEmail(account);
+        return JsonResult.getInstance();
+    }
 
     /**
      * 获取允许的注册类型
@@ -86,7 +136,8 @@ public class UserController {
     @PostMapping("/regcode")
     @AllowAnonymous
     public JsonResult sendRegCode(@RequestParam("email") @Email String email) {
-        return JsonResult.getInstance(userService.sendRegEmail(email));
+        userService.sendRegEmail(email);
+        return JsonResult.getInstance();
     }
 
     /**

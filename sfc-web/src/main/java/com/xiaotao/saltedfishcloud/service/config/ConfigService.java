@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import javafx.util.Pair;
+
+import com.xiaotao.saltedfishcloud.utils.Pair;
 
 import java.io.IOException;
 import java.util.Map;

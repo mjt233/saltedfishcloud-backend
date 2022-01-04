@@ -38,7 +38,6 @@ class SfcMailSenderTest {
         mailProperties.setPort(25);
         mailProperties.setUsername("sfc@xiaotao233.top");
         mailProperties.setPassword("MOjintao233");
-        assertTrue(configService.setMailProperties(mailProperties));
 
         mailSender.send(message.getMimeMessage());
     }

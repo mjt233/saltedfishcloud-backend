@@ -23,4 +23,6 @@ public interface MailMessageGenerator {
      */
     MimeMessage getFindPasswordCodeMessage(String to, String code) throws MessagingException, UnsupportedEncodingException;
 
+    MimeMessage getBindNewMailCodeMessage(String to, String code) throws MessagingException, UnsupportedEncodingException;
+
 }

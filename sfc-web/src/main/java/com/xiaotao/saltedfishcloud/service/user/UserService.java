@@ -6,10 +6,55 @@ import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.mail.MessagingException;
 import javax.validation.Valid;
+import java.io.UnsupportedEncodingException;
 
 @Validated
 public interface UserService {
+    /**
+     * 通过账号标识字段获取用户
+     * @param account   邮箱或用户名
+     * @return  用户
+     */
+    User getUserByAccount(String account);
+
+    User getUserByEmail(String email);
+
+    User getUserById(Integer id);
+
+    /**
+     * 通过邮箱验证方式重置用户密码
+     * @param account   邮箱或用户名
+     * @param code      验证码
+     * @param password  新密码
+     */
+    void resetPassword(String account, String code, String password);
+
+    /**
+     * 设置新的邮箱
+     * @param uid   用户ID
+     * @param email 新邮箱
+     * @param code  验证码
+     */
+    void setEmail(Integer uid, String email, String code);
+
+    /**
+     * 发送用户新邮箱绑定用的邮箱验证码。
+     * 新邮箱不能在系统中被使用，否则抛出异常
+     * @param uid   待绑定新邮箱的用户ID
+     * @param email 新邮箱
+     * @return      验证码，注意不要暴露到响应
+     */
+    String sendBindEmail(Integer uid, String email) throws MessagingException, UnsupportedEncodingException;
+
+    /**
+     * 发送用户重置密码用的邮箱验证码。
+     * 若用户未绑定邮箱，则抛出异常
+     * @param account   邮箱或用户名或ID
+     * @return  验证码，注意不要暴露到响应
+     */
+    String sendResetPasswordEmail(String account) throws MessagingException, UnsupportedEncodingException;
 
     /**
      * 发送注册验证码到邮箱中

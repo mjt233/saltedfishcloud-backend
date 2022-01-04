@@ -39,11 +39,6 @@ public class SysController {
     @Resource
     private ProxyDao proxyDao;
 
-    @PutMapping("mailConfig")
-    public JsonResult setMailProperties(@RequestBody MailProperties mailProperties) {
-        configService.setMailProperties(mailProperties);
-        return JsonResult.getInstance();
-    }
 
     @GetMapping("overview")
     public JsonResult getOverview() {

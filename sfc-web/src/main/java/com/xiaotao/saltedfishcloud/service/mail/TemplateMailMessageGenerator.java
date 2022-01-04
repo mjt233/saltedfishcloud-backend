@@ -61,6 +61,11 @@ public class TemplateMailMessageGenerator implements MailMessageGenerator {
     }
 
     @Override
+    public MimeMessage getBindNewMailCodeMessage(String to, String code) throws MessagingException, UnsupportedEncodingException {
+        return createMessage(to, "咸鱼云绑定新邮箱", processTemplate(code, "咸鱼云绑定新邮箱"));
+    }
+
+    @Override
     public MimeMessage getRegCodeMessage(String to, String code) throws MessagingException, UnsupportedEncodingException {
         return createMessage(to, "咸鱼云账号注册", processTemplate(code, "咸鱼云账号注册"));
     }

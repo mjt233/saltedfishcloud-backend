@@ -10,6 +10,16 @@ import org.apache.ibatis.annotations.Update;
 import java.util.List;
 
 public interface UserDao {
+
+    /**
+     * 修改用户的邮箱
+     * @param id        用户ID
+     * @param email     新邮箱
+     * @return          受影响的行数
+     */
+    @Update("UPDATE user SET email = #{email} WHERE id = #{id}")
+    int updateEmail(Integer id, String email);
+
     @Select("SELECT * FROM user WHERE email = #{email}")
     User getByEmail(String email);
 

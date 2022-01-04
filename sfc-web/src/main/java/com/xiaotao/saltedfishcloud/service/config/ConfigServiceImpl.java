@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.entity.po.ConfigInfo;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.service.mail.MailProperties;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import javafx.util.Pair;
+import com.xiaotao.saltedfishcloud.utils.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -30,8 +30,6 @@ public class ConfigServiceImpl implements ConfigService {
     private StoreTypeSwitch storeTypeSwitch;
     @Resource
     private DiskConfig diskConfig;
-    @Resource
-    private MailProperties mailProperties;
     private final ArrayList<Consumer<Pair<ConfigName, String>>> listeners = new ArrayList<>();
 
     @Override
@@ -65,17 +63,6 @@ public class ConfigServiceImpl implements ConfigService {
         return configDao.getConfigure(key);
     }
 
-
-    public boolean setMailProperties(MailProperties properties) {
-        boolean res = false;
-        try {
-            res = setConfig(ConfigName.MAIL_PROPERTIES, MapperHolder.mapper.writeValueAsString(properties));
-            BeanUtils.copyProperties(properties, mailProperties);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return res;
-    }
 
     public MailProperties getMailProperties() {
         String config = getConfig(ConfigName.MAIL_PROPERTIES);

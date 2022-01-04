@@ -31,6 +31,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Date;
 
 import static com.xiaotao.saltedfishcloud.config.DiskConfig.ACCEPT_AVATAR_TYPE;
@@ -38,13 +39,86 @@ import static com.xiaotao.saltedfishcloud.config.DiskConfig.ACCEPT_AVATAR_TYPE;
 @Service
 @Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
-public class UserServiceImp implements UserService{
+public class UserServiceImp implements UserService {
     private final TokenDao tokenDao;
     private final UserDao userDao;
     private final JavaMailSender mailSender;
     private final MailMessageGenerator mailMessageGenerator;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SysRuntimeConfig sysRuntimeConfig;
+
+    @Override
+    public User getUserByAccount(String account) {
+        User user;
+        if (account.indexOf('@') != -1) {
+            user = userDao.getByEmail(account);
+        } else {
+            user = userDao.getUserByUser(account);
+        }
+        return user;
+    }
+
+    @Override
+    public User getUserByEmail(String email) {
+        return userDao.getByEmail(email);
+    }
+
+    @Override
+    public User getUserById(Integer id) {
+        return userDao.getUserById(id);
+    }
+
+    @Override
+    public String sendBindEmail(Integer uid, String email) throws MessagingException, UnsupportedEncodingException {
+        if (userDao.getByEmail(email) != null) throw new JsonException(ErrorInfo.EMAIL_EXIST);
+        String code = StringUtils.getRandomString(6, false);
+        redisTemplate.opsForValue().set(
+                RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL),
+                code,
+                Duration.ofMinutes(15)
+        );
+        mailSender.send(mailMessageGenerator.getBindNewMailCodeMessage(email, code));
+        return code;
+    }
+
+    @Override
+    public String sendResetPasswordEmail(String account) throws MessagingException, UnsupportedEncodingException {
+        final User user = getUserByAccount(account);
+        if (user == null) throw new JsonException(ErrorInfo.USER_NOT_EXIST);
+        if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(ErrorInfo.EMAIL_NOT_SET);
+
+        String code = StringUtils.getRandomString(6, false);
+        redisTemplate.opsForValue().set(
+                RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD),
+                code,
+                Duration.ofMinutes(15)
+        );
+        mailSender.send(mailMessageGenerator.getFindPasswordCodeMessage(user.getEmail(), code));
+        return code;
+    }
+
+    @Override
+    public void resetPassword(String email, String code, String password) {
+        final User user = userDao.getByEmail(email);
+        if (user == null) { throw new JsonException(ErrorInfo.USER_NOT_EXIST); }
+        String record = (String) redisTemplate.opsForValue().get(RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD));
+        if (code == null || !code.equals(record)) { throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR); }
+
+        userDao.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
+    }
+
+
+
+    @Override
+    public void setEmail(Integer uid, String email, String code) {
+        final User user = userDao.getUserById(uid);
+        if (user == null) { throw new JsonException(ErrorInfo.USER_NOT_EXIST); }
+        String record = (String) redisTemplate.opsForValue().get(RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL));
+        if (code == null || !code.equals(record)) { throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR); }
+
+        userDao.updateEmail(uid, email);
+    }
+
 
     @Override
     public String sendRegEmail(String email) {
