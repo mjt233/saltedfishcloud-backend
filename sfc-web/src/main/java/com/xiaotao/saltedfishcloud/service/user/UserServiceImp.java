@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.user;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
 import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
@@ -107,6 +108,7 @@ public class UserServiceImp implements UserService {
 
         userDao.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
         redisTemplate.delete(key);
+        tokenDao.cleanUserToken(user.getUsername());
     }
 
 

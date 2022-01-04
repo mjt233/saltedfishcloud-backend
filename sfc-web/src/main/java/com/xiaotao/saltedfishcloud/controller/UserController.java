@@ -210,8 +210,10 @@ public class UserController {
     }
 
     /**
+     * 修改用户密码
      * @param oldPasswd 旧密码
      * @param newPasswd 新密码
+     * @param force 管理员使用无视旧密码强制修改
      */
     @PostMapping("{uid}/passwd")
     public JsonResult modifyPassword(@RequestParam("old") String oldPasswd,
