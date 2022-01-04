@@ -62,9 +62,10 @@ public class UserController {
      * @param password  新密码
      */
     @PostMapping("/resetPassword")
+    @AllowAnonymous
     public JsonResult resetPassword(@RequestParam("account") String account,
                                     @RequestParam("code") String code,
-                                    @RequestParam("password") String password) {
+                                    @RequestParam("password") @Min(6) String password) {
         userService.resetPassword(account, code, password);
         return JsonResult.getInstance();
     }
@@ -217,7 +218,7 @@ public class UserController {
      */
     @PostMapping("{uid}/passwd")
     public JsonResult modifyPassword(@RequestParam("old") String oldPasswd,
-                                     @RequestParam("new") String newPasswd,
+                                     @RequestParam("new") @Min(6) String newPasswd,
                                      @PathVariable("uid") @UID int uid,
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
         User user = SecureUtils.getSpringSecurityUser();
