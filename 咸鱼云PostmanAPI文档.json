@@ -575,6 +575,37 @@
 								"description": "# 绑定新邮箱之前，先验证旧邮箱是否有效\r\n- URL: `/api/user/sendVerifyEmail`\r\n- 方法：post\r\n\r\n调用成功后会向用户的邮箱发送验证码。\r\n若用户未设置邮箱则无需调用。"
 							},
 							"response": []
+						},
+						{
+							"name": "验证旧邮箱验证码是否正确",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "code",
+											"value": "123123",
+											"description": "验证码",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/user/verifyEmail",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"verifyEmail"
+									]
+								},
+								"description": "# 用于校验旧邮箱验证码是否正确\n正确响应200，否则400，该API通常用于在设置绑定新邮箱之前提前对旧邮箱验证码继续校验。\n\n通过后再进行下一步的新邮箱验证\n\n- URL: `/api/user/sendVerifyEmail`\n- 方法：post\n\n调用成功后会向用户的邮箱发送验证码。\n若用户未设置邮箱则无需调用。"
+							},
+							"response": []
 						}
 					]
 				}
@@ -2973,95 +3004,6 @@
 					},
 					"response": [
 						{
-							"name": "有效期无限制的分享",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{addr}}/api/share",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"share"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "DENY"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Tue, 16 Nov 2021 02:09:16 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 6,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"f9dd9fdd8a0d490f8ea7b6f21ed63fb3\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:05:32.842+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
-						},
-						{
 							"name": "创建分享",
 							"originalRequest": {
 								"method": "POST",
@@ -3149,6 +3091,95 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 7,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"03e53fcba25546e1ae1da180e13d0263\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:06:16.619+00:00\",\n        \"expiredAt\": \"2021-12-16T09:40:53.000+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
+						},
+						{
+							"name": "有效期无限制的分享",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/share",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 16 Nov 2021 02:09:16 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 6,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"f9dd9fdd8a0d490f8ea7b6f21ed63fb3\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:05:32.842+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
@@ -3761,87 +3792,6 @@
 					},
 					"response": [
 						{
-							"name": "取消分享",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/api/share/2",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"share",
-										"2"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "DENY"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Tue, 16 Nov 2021 04:23:59 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
-						},
-						{
 							"name": "分享不存在",
 							"originalRequest": {
 								"method": "DELETE",
@@ -3921,6 +3871,87 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 404,\n    \"data\": null,\n    \"msg\": \"分享不存在\"\n}"
+						},
+						{
+							"name": "取消分享",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/share/2",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share",
+										"2"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 16 Nov 2021 04:23:59 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
