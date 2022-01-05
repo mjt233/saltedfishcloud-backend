@@ -112,18 +112,66 @@ public class UserServiceImp implements UserService {
     }
 
 
+    @Override
+    public String sendVerifyEmail(Integer uid) throws MessagingException, UnsupportedEncodingException {
+        final User user = getUserById(uid);
+        if (user == null) throw new JsonException(ErrorInfo.USER_NOT_EXIST);
+        if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(ErrorInfo.EMAIL_NOT_SET);
+
+        String code = StringUtils.getRandomString(6, false);
+        mailSender.send(mailMessageGenerator.getVerifyMailCodeMessage(user.getEmail(), code));
+        redisTemplate.opsForValue().set(
+                RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL),
+                code,
+                Duration.ofMinutes(15)
+        );
+        return code;
+    }
 
     @Override
-    public void setEmail(Integer uid, String email, String code) {
+    public void verifyEmail(Integer uid, String code) throws MessagingException, UnsupportedEncodingException {
+        final User user = getUserById(uid);
+        if (user == null) throw new JsonException(ErrorInfo.USER_NOT_EXIST);
+        if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(ErrorInfo.EMAIL_NOT_SET);
+
+        final Object record = redisTemplate.opsForValue().get(RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL));
+        if (!code.equals(record)) {
+            throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR);
+        }
+    }
+
+    @Override
+    public void setEmail(Integer uid, String email) {
         final User user = userDao.getUserById(uid);
         if (user == null) { throw new JsonException(ErrorInfo.USER_NOT_EXIST); }
-        String key = RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL);
-        String record = (String) redisTemplate.opsForValue().get(key);
-        if (code == null || !code.equals(record)) { throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR); }
+        userDao.updateEmail(uid, email);
+    }
+
+
+    @Override
+    public void bindEmail(Integer uid, String email, String originCode, String newCode) {
+        final User user = userDao.getUserById(uid);
+        if (user == null) { throw new JsonException(ErrorInfo.USER_NOT_EXIST); }
+        String originKey = null, originRecord = null, newKey = null, newRecord = null;
+
+        // 验证原邮箱
+        if (user.getEmail() != null) {
+            originKey = RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL);
+            originRecord = (String) redisTemplate.opsForValue().get(originKey);
+            if (originCode == null || !originCode.equals(originRecord)) { throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR); }
+        }
+
+        // 验证新邮箱
+        newKey = RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.VERIFY_MAIL);
+        newRecord = (String) redisTemplate.opsForValue().get(newKey);
+        if (newCode == null || !newCode.equals(newRecord)) { throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR); }
+
+
 
 
         userDao.updateEmail(uid, email);
-        redisTemplate.delete(key);
+        if (originKey != null) redisTemplate.delete(originKey);
+        redisTemplate.delete(newKey);
     }
 
 

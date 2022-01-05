@@ -73,13 +73,15 @@ public class UserController {
     /**
      * 用户绑定新邮箱
      * @param email 新邮箱
-     * @param code  邮箱验证码
+     * @param originCode 旧邮箱验证码，可空
+     * @param newCode  新邮箱验证码
      */
     @PostMapping("/newMail")
     public JsonResult setEmail(@RequestParam("email") String email,
-                               @RequestParam("code") String code) {
+                               @RequestParam(value = "originCode", required = false) String originCode,
+                               @RequestParam("newCode") String newCode) {
         Integer uid = SecureUtils.getSpringSecurityUser().getId();
-        userService.setEmail(uid, email, code);
+        userService.bindEmail(uid, email, originCode, newCode);
         return JsonResult.getInstance();
     }
 
@@ -91,6 +93,25 @@ public class UserController {
     public JsonResult sendBindEmail(@RequestParam("email") String email) throws MessagingException, UnsupportedEncodingException {
         Integer uid = SecureUtils.getSpringSecurityUser().getId();
         userService.sendBindEmail(uid, email);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 发送用于验证旧邮箱的邮箱验证码
+     */
+    @PostMapping("/sendVerifyEmail")
+    public JsonResult sendVerifyEmail() throws MessagingException, UnsupportedEncodingException {
+        userService.sendVerifyEmail(SecureUtils.getSpringSecurityUser().getId());
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 验证旧邮箱
+     * @param code 验证码
+     */
+    @PostMapping("/verifyEmail")
+    public JsonResult verifyEmail(@RequestParam("code") String code) throws MessagingException, UnsupportedEncodingException {
+        userService.verifyEmail(SecureUtils.getSpringSecurityUser().getId(), code);
         return JsonResult.getInstance();
     }
 

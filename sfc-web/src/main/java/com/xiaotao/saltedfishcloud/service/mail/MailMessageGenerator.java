@@ -25,4 +25,10 @@ public interface MailMessageGenerator {
 
     MimeMessage getBindNewMailCodeMessage(String to, String code) throws MessagingException, UnsupportedEncodingException;
 
+    /**
+     * 生成旧邮箱验证邮件
+     * @param to    接收邮箱
+     * @param code  邮箱验证码
+     */
+    MimeMessage getVerifyMailCodeMessage(String to, String code) throws MessagingException, UnsupportedEncodingException;
 }

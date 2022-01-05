@@ -472,6 +472,54 @@
 								"description": "获取token以登录，在后续请求中将此token放于名为`Token`的header字段中实现身份鉴权\r\n- URI: `/api/user/token`\r\n- 动作：POST\r\n\r\n### 参数\r\n- user 用户名\r\n- passwd 密码"
 							},
 							"response": []
+						}
+					]
+				},
+				{
+					"name": "邮箱改绑",
+					"item": [
+						{
+							"name": "设置绑定新邮箱",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "email",
+											"value": "mjt233@qq.com",
+											"description": "要绑定的新邮箱",
+											"type": "text"
+										},
+										{
+											"key": "originCode",
+											"value": "axjsz",
+											"description": "旧邮箱验证码",
+											"type": "text"
+										},
+										{
+											"key": "newCode",
+											"value": "asdasd",
+											"description": "新邮箱验证码",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{addr}}/api/user/newMail",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"newMail"
+									]
+								},
+								"description": "# 绑定新邮箱之前，\r\n- URL: `/api/user/newMail`\r\n- 方法：post\r\n\r\n## 表单参数\r\n- email 要绑定的新邮箱\r\n- originCode 旧邮箱验证码，若先前未绑定则不需要该参数\r\n- newCode 新邮箱验证码"
+							},
+							"response": []
 						},
 						{
 							"name": "发送新邮箱验证码",
@@ -500,44 +548,31 @@
 										"sendBindEmail"
 									]
 								},
-								"description": "# 绑定新邮箱之前，先验证新邮箱是否有效\r\n- URL: `/api/user/sendBindEmail`\r\n- 方法：post\r\n\r\n## 表单参数\r\n- email 要绑定的新邮箱"
+								"description": "# 验证旧邮箱之后，继续验证新邮箱是否有效\r\n- URL: `/api/user/sendBindEmail`\r\n- 方法：post\r\n\r\n## 表单参数\r\n- email 要绑定的新邮箱\r\n\r\n方法调用后会向新邮箱发送验证码。\r\n若新邮箱已在系统中被使用则调用失败。"
 							},
 							"response": []
 						},
 						{
-							"name": "设置绑定新邮箱",
+							"name": "发送旧邮箱验证码",
 							"request": {
 								"method": "POST",
 								"header": [],
 								"body": {
 									"mode": "urlencoded",
-									"urlencoded": [
-										{
-											"key": "email",
-											"value": "mjt233@qq.com",
-											"description": "要绑定的新邮箱",
-											"type": "text"
-										},
-										{
-											"key": "code",
-											"value": "axjsz",
-											"description": "邮箱验证码",
-											"type": "text"
-										}
-									]
+									"urlencoded": []
 								},
 								"url": {
-									"raw": "{{addr}}/api/user/newMail",
+									"raw": "{{addr}}/api/user/sendVerifyEmail",
 									"host": [
 										"{{addr}}"
 									],
 									"path": [
 										"api",
 										"user",
-										"newMail"
+										"sendVerifyEmail"
 									]
 								},
-								"description": "# 绑定新邮箱之前，先验证新邮箱是否有效\r\n- URL: `/api/user/newMail`\r\n- 方法：post\r\n\r\n## 表单参数\r\n- email 要绑定的新邮箱\r\n- code 邮箱验证码"
+								"description": "# 绑定新邮箱之前，先验证旧邮箱是否有效\r\n- URL: `/api/user/sendVerifyEmail`\r\n- 方法：post\r\n\r\n调用成功后会向用户的邮箱发送验证码。\r\n若用户未设置邮箱则无需调用。"
 							},
 							"response": []
 						}

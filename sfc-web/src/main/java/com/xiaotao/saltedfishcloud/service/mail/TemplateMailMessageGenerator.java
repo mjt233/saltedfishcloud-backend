@@ -74,4 +74,9 @@ public class TemplateMailMessageGenerator implements MailMessageGenerator {
     public MimeMessage getFindPasswordCodeMessage(String to, String code) throws MessagingException, UnsupportedEncodingException {
         return createMessage(to, "咸鱼云找回密码", processTemplate(code, "咸鱼云找回密码"));
     }
+
+    @Override
+    public MimeMessage getVerifyMailCodeMessage(String to, String code) throws MessagingException, UnsupportedEncodingException {
+        return createMessage(to, "咸鱼云邮箱改绑验证", processTemplate(code, "咸鱼云邮箱改绑验证"));
+    }
 }

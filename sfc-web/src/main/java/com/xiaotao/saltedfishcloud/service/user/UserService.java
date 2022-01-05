@@ -35,9 +35,17 @@ public interface UserService {
      * 设置新的邮箱
      * @param uid   用户ID
      * @param email 新邮箱
-     * @param code  验证码
      */
-    void setEmail(Integer uid, String email, String code);
+    void setEmail(Integer uid, String email);
+
+    /**
+     * 绑定新邮箱
+     * @param uid           用户ID
+     * @param newEmail      新邮件地址
+     * @param originCode    旧邮箱的验证码，若用户原本没有邮箱则可为空
+     * @param newCode       新邮箱的验证码
+     */
+    void bindEmail(Integer uid, String newEmail, String originCode, String newCode);
 
     /**
      * 发送用户新邮箱绑定用的邮箱验证码。
@@ -47,6 +55,21 @@ public interface UserService {
      * @return      验证码，注意不要暴露到响应
      */
     String sendBindEmail(Integer uid, String email) throws MessagingException, UnsupportedEncodingException;
+
+    /**
+     * 发送旧邮箱验证码，用于验证用户拥有该邮箱地址
+     * @param uid   用户ID
+     * @return 验证码，注意不要暴露到响应
+     */
+    String sendVerifyEmail(Integer uid) throws MessagingException, UnsupportedEncodingException;
+
+    /**
+     * 验证用户的邮箱验证码是否正确。验证码来源见{@link UserService#sendVerifyEmail(Integer)}
+     * 若验证失败则抛异常
+     * @param uid   用户ID
+     * @param code  邮箱验证码
+     */
+    void verifyEmail(Integer uid, String code) throws MessagingException, UnsupportedEncodingException;
 
     /**
      * 发送用户重置密码用的邮箱验证码。
