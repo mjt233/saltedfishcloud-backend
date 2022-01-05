@@ -155,14 +155,14 @@ public class UserServiceImp implements UserService {
         String originKey = null, originRecord = null, newKey = null, newRecord = null;
 
         // 验证原邮箱
-        if (user.getEmail() != null) {
+        if (user.getEmail() != null && user.getEmail().length() != 0) {
             originKey = RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL);
             originRecord = (String) redisTemplate.opsForValue().get(originKey);
             if (originCode == null || !originCode.equals(originRecord)) { throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR); }
         }
 
         // 验证新邮箱
-        newKey = RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.VERIFY_MAIL);
+        newKey = RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL);
         newRecord = (String) redisTemplate.opsForValue().get(newKey);
         if (newCode == null || !newCode.equals(newRecord)) { throw new JsonException(ErrorInfo.EMAIL_CODE_ERROR); }
 
