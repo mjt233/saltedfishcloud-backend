@@ -108,7 +108,7 @@ public class UserServiceImp implements UserService {
 
         userDao.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
         redisTemplate.delete(key);
-        tokenDao.cleanUserToken(user.getUsername());
+        tokenDao.cleanUserToken(user.getId());
     }
 
 
@@ -206,7 +206,7 @@ public class UserServiceImp implements UserService {
             throw new IllegalArgumentException("不允许撤销admin用户的管理员权限");
         }
         userDao.grant(uid, type);
-        tokenDao.cleanUserToken(user.getUsername());
+        tokenDao.cleanUserToken(user.getId());
     }
 
 
@@ -226,7 +226,7 @@ public class UserServiceImp implements UserService {
         if (!SecureUtils.getPassswd(oldPassword).equals(user.getPwd())) {
             throw new JsonException(403, "原密码错误");
         }
-        tokenDao.cleanUserToken(user.getUsername());
+        tokenDao.cleanUserToken(user.getId());
         return userDao.modifyPassword(uid, SecureUtils.getPassswd(newPassword));
     }
 

@@ -56,6 +56,20 @@ public class UserController {
     private final SysRuntimeConfig runtimeConfig;
 
     /**
+     * 获取新token
+     * @param kick 是否使旧token失效（踢下线）
+     */
+    @PostMapping("/updateToken")
+    public JsonResult updateToken(@RequestParam(value = "kick", defaultValue = "true") boolean kick) {
+        final User user = userService.getUserById(SecureUtils.getSpringSecurityUser().getId());
+        if (kick) {
+            tokenDao.cleanUserToken(user.getId());
+        }
+        String token = tokenDao.generateUserToken(user.getId());
+        return JsonResult.getInstance(token);
+    }
+
+    /**
      * 重置用户密码
      * @param account   用户用户名或用户邮箱
      * @param code      邮箱验证码
@@ -146,7 +160,7 @@ public class UserController {
         if (user == null) {
             throw new JsonException(401, "未登录");
         }
-        tokenDao.setToken(user.getUsername(), request.getHeader(JwtUtils.AUTHORIZATION));
+        tokenDao.setToken(user.getId(), request.getHeader(JwtUtils.AUTHORIZATION));
         return JsonResult.getInstance(user);
     }
 
@@ -248,11 +262,11 @@ public class UserController {
                 throw new AccessDeniedException("非管理员不允许使用force参数");
             } else {
                 userDao.modifyPassword(uid, SecureUtils.getPassswd(newPasswd));
-                tokenDao.cleanUserToken(user.getUsername());
+                tokenDao.cleanUserToken(user.getId());
                 return JsonResult.getInstance(200, null, "force reset");
             }
         } else {
-            tokenDao.cleanUserToken(user.getUsername());
+            tokenDao.cleanUserToken(user.getId());
             int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
             return JsonResult.getInstance(200, i, "ok");
         }
