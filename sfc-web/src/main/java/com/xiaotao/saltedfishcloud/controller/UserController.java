@@ -91,7 +91,7 @@ public class UserController {
      * @param newCode  新邮箱验证码
      */
     @PostMapping("/newMail")
-    public JsonResult setEmail(@RequestParam("email") String email,
+    public JsonResult setEmail(@RequestParam("email") @Email String email,
                                @RequestParam(value = "originCode", required = false) String originCode,
                                @RequestParam("newCode") String newCode) {
         Integer uid = SecureUtils.getSpringSecurityUser().getId();
@@ -104,7 +104,7 @@ public class UserController {
      * @param email 新邮箱
      */
     @PostMapping("/sendBindEmail")
-    public JsonResult sendBindEmail(@RequestParam("email") String email) throws MessagingException, UnsupportedEncodingException {
+    public JsonResult sendBindEmail(@RequestParam("email") @Email String email) throws MessagingException, UnsupportedEncodingException {
         Integer uid = SecureUtils.getSpringSecurityUser().getId();
         userService.sendBindEmail(uid, email);
         return JsonResult.getInstance();
