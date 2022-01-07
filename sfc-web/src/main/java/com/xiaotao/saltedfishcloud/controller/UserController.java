@@ -80,7 +80,7 @@ public class UserController {
     @AllowAnonymous
     public JsonResult resetPassword(@RequestParam("account") String account,
                                     @RequestParam("code") String code,
-                                    @RequestParam("password") @Min(6) String password) {
+                                    @RequestParam("password") @Length(min = 6) String password) {
         userService.resetPassword(account, code, password);
         return JsonResult.getInstance();
     }

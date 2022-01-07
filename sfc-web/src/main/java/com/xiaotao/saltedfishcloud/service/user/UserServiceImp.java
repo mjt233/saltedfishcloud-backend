@@ -99,8 +99,8 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public void resetPassword(String email, String code, String password) {
-        final User user = userDao.getByEmail(email);
+    public void resetPassword(String account, String code, String password) {
+        final User user = getUserByAccount(account);
         if (user == null) { throw new JsonException(ErrorInfo.USER_NOT_EXIST); }
         String key = RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD);
         String record = (String) redisTemplate.opsForValue().get(key);
