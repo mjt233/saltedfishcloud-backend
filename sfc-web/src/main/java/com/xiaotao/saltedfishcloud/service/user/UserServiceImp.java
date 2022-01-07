@@ -274,7 +274,7 @@ public class UserServiceImp implements UserService {
         if (User.SYS_NAME_PUBLIC.equals(upperName) || User.SYS_NAME_ADMIN.equals(upperName)) {
             throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
         }
-        if (userDao.getByEmail(email) != null) throw new JsonException(ErrorInfo.EMAIL_EXIST);
+        if (email != null && email.length() != 0 && userDao.getByEmail(email) != null) throw new JsonException(ErrorInfo.EMAIL_EXIST);
         String pwd = SecureUtils.getPassswd(passwd);
         try {
             int res = userDao.addUser(user, pwd, email, type);
