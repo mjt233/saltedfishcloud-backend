@@ -20,6 +20,7 @@ import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
+import org.hibernate.validator.constraints.Length;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
@@ -185,7 +186,7 @@ public class UserController {
     @PostMapping
     @AllowAnonymous
     public JsonResult regUser(@RequestParam("user") String user,
-                              @RequestParam("passwd") String rawPassword,
+                              @RequestParam("passwd") @Length(min = 6) String rawPassword,
                               @RequestParam(value = "regcode", defaultValue = "") String regCode,
                               @RequestParam("email") @Email String email,
                               @RequestParam(value = "type", defaultValue = "0") int type,
@@ -253,7 +254,7 @@ public class UserController {
      */
     @PostMapping("{uid}/passwd")
     public JsonResult modifyPassword(@RequestParam("old") String oldPasswd,
-                                     @RequestParam("new") @Min(6) String newPasswd,
+                                     @RequestParam("new") @Length(min = 6) String newPasswd,
                                      @PathVariable("uid") @UID int uid,
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
         User user = SecureUtils.getSpringSecurityUser();

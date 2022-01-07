@@ -39,7 +39,7 @@ public class SysRuntimeConfig {
             ConfigName key = e.getKey();
             if (key == ConfigName.ENABLE_EMAIL_REG) {
                 enableEmailReg = "true".equals(e.getValue().toLowerCase());
-            } else if (key == ConfigName.REG_CODE) {
+            } else if (key == ConfigName.ENABLE_REG_CODE) {
                 enableRegCode = "true".equals(e.getValue().toLowerCase());
             }
         });
