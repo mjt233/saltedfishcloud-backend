@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.xiaotao</groupId>
         <artifactId>saltedfishcloud</artifactId>
-        <version>1.3.8.1-SNAPSHOT</version>
+        <version>1.8.3.2-RELEASE</version>
     </parent>
     <groupId>com.xiaotao.saltedfishcloud</groupId>
     <artifactId>sfc-compress</artifactId>
@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.xiaotao.saltedfishcloud</groupId>
             <artifactId>sfc-common</artifactId>
-            <version>1.3.8.1-SNAPSHOT</version>
+            <version>1.8.3.2-RELEASE</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
