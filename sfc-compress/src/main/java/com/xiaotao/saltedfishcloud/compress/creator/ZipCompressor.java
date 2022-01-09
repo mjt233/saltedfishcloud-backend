@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.compress.creator;
 
 import com.xiaotao.saltedfishcloud.compress.reader.CompressFile;
+import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.zip.Zip64Mode;
@@ -20,13 +21,16 @@ public class ZipCompressor extends AbstractCompressor {
     protected ArchiveOutputStream initArchiveOutputStream() {
         ZipArchiveOutputStream output = new ZipArchiveOutputStream(outputStream);
         output.setUseZip64(Zip64Mode.AsNeeded);
+        output.setEncoding(OSInfo.getOSDefaultEncoding());
         return output;
     }
 
     @Override
     protected ArchiveEntry wrapEntry(CompressFile file) {
         ZipArchiveEntry ze = new ZipArchiveEntry(file.getPath());
-        ze.setSize(file.getSize());
+        if (!ze.isDirectory()) {
+            ze.setSize(file.getSize());
+        }
         ze.setTime(System.currentTimeMillis());
         return ze;
     }

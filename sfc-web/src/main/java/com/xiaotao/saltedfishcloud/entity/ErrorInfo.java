@@ -39,6 +39,7 @@ public enum ErrorInfo {
 
     // 压缩模块
     ARCHIVE_FORMAT_UNSUPPORTED(6000, 400, "未知或不支持的压缩包格式"),
+    ARCHIVE_EMPTY_DIRECTORY(6001, 400, "选定的目录不存在文件"),
 
     // 账号系统
     EMAIL_EXIST(10000, 400, "邮箱已被使用"),

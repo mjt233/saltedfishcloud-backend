@@ -11,6 +11,12 @@ public interface ArchiveCompressor extends Closeable {
     void addFile(ArchiveResourceEntry entry) throws IOException;
 
     /**
+     * 获取压缩器中已添加的文件数（目录不会被计入）
+     * @return 文件数量
+     */
+    long getFileCount();
+
+    /**
      * 标记压缩已完成，注意输出流不会在该步骤中关闭
      */
     void finish() throws IOException;

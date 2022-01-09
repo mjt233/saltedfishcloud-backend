@@ -12,6 +12,7 @@
     <modules>
         <module>sfc-compress</module>
         <module>sfc-web</module>
+        <module>sfc-common</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
