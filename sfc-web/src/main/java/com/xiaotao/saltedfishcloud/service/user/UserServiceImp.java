@@ -186,7 +186,7 @@ public class UserServiceImp implements UserService {
 
 
         String code = StringUtils.getRandomString(5, false);
-        redisTemplate.opsForValue().set(RedisKeyGenerator.getRegCodeKey(email), code);
+        redisTemplate.opsForValue().set(RedisKeyGenerator.getRegCodeKey(email), code, Duration.ofMinutes(15));
         try {
             mailSender.send(mailMessageGenerator.getRegCodeMessage(email, code));
         } catch (MessagingException | UnsupportedEncodingException e) {
