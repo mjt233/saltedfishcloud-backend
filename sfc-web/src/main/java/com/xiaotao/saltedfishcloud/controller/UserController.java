@@ -3,9 +3,11 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
+import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
@@ -18,6 +20,7 @@ import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
+import org.hibernate.validator.constraints.Length;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
@@ -26,13 +29,17 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.security.RolesAllowed;
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.List;
 
 @Controller
@@ -47,6 +54,104 @@ public class UserController {
     private final ResponseService responseService;
     private final UserDao userDao;
     private final TokenDao tokenDao;
+    private final SysRuntimeConfig runtimeConfig;
+
+    /**
+     * 获取新token
+     * @param kick 是否使旧token失效（踢下线）
+     */
+    @PostMapping("/updateToken")
+    public JsonResult updateToken(@RequestParam(value = "kick", defaultValue = "true") boolean kick) {
+        final User user = userService.getUserById(SecureUtils.getSpringSecurityUser().getId());
+        if (kick) {
+            tokenDao.cleanUserToken(user.getId());
+        }
+        String token = tokenDao.generateUserToken(user.getId());
+        return JsonResult.getInstance(token);
+    }
+
+    /**
+     * 重置用户密码
+     * @param account   用户用户名或用户邮箱
+     * @param code      邮箱验证码
+     * @param password  新密码
+     */
+    @PostMapping("/resetPassword")
+    @AllowAnonymous
+    public JsonResult resetPassword(@RequestParam("account") String account,
+                                    @RequestParam("code") String code,
+                                    @RequestParam("password") @Length(min = 6) String password) {
+        userService.resetPassword(account, code, password);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 用户绑定新邮箱
+     * @param email 新邮箱
+     * @param originCode 旧邮箱验证码，可空
+     * @param newCode  新邮箱验证码
+     */
+    @PostMapping("/newMail")
+    public JsonResult setEmail(@RequestParam("email") @Email String email,
+                               @RequestParam(value = "originCode", required = false) String originCode,
+                               @RequestParam("newCode") String newCode) {
+        Integer uid = SecureUtils.getSpringSecurityUser().getId();
+        userService.bindEmail(uid, email, originCode, newCode);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 发送新邮箱绑定验证码
+     * @param email 新邮箱
+     */
+    @PostMapping("/sendBindEmail")
+    public JsonResult sendBindEmail(@RequestParam("email") @Email String email) throws MessagingException, UnsupportedEncodingException {
+        Integer uid = SecureUtils.getSpringSecurityUser().getId();
+        userService.sendBindEmail(uid, email);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 发送用于验证旧邮箱的邮箱验证码
+     */
+    @PostMapping("/sendVerifyEmail")
+    public JsonResult sendVerifyEmail() throws MessagingException, UnsupportedEncodingException {
+        userService.sendVerifyEmail(SecureUtils.getSpringSecurityUser().getId());
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 验证旧邮箱
+     * @param code 验证码
+     */
+    @PostMapping("/verifyEmail")
+    public JsonResult verifyEmail(@RequestParam("code") String code) throws MessagingException, UnsupportedEncodingException {
+        userService.verifyEmail(SecureUtils.getSpringSecurityUser().getId(), code);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 发送重置密码验证邮件
+     */
+    @PostMapping("/sendResetPasswordEmail")
+    @AllowAnonymous
+    public JsonResult sendResetPasswordEmail(@RequestParam(value = "account") String account) throws MessagingException, UnsupportedEncodingException {
+        userService.sendResetPasswordEmail(account);
+        return JsonResult.getInstance();
+    }
+
+    /**
+     * 获取允许的注册类型
+     */
+    @GetMapping("/regType")
+    @AllowAnonymous
+    public JsonResult getRegType() {
+        return JsonResult.getInstance(new HashMap<String, Boolean>(){{
+            put("email", runtimeConfig.isEnableEmailReg());
+            put("regcode", runtimeConfig.isEnableRegCode());
+        }});
+    }
+
     /**
      * 获取用户基本信息，并刷新token有效期
      */
@@ -56,8 +161,20 @@ public class UserController {
         if (user == null) {
             throw new JsonException(401, "未登录");
         }
-        tokenDao.setToken(user.getUsername(), request.getHeader(JwtUtils.AUTHORIZATION));
+        tokenDao.setToken(user.getId(), request.getHeader(JwtUtils.AUTHORIZATION));
         return JsonResult.getInstance(user);
+    }
+
+
+    /**
+     * 发送注册验证码
+     * @param email 邮件
+     */
+    @PostMapping("/regcode")
+    @AllowAnonymous
+    public JsonResult sendRegCode(@RequestParam("email") @Email String email) {
+        userService.sendRegEmail(email);
+        return JsonResult.getInstance();
     }
 
     /**
@@ -69,16 +186,20 @@ public class UserController {
     @PostMapping
     @AllowAnonymous
     public JsonResult regUser(@RequestParam("user") String user,
-                              @RequestParam("passwd") String rawPassword,
+                              @RequestParam("passwd") @Length(min = 6) String rawPassword,
                               @RequestParam(value = "regcode", defaultValue = "") String regCode,
-                              @RequestParam(value = "type", defaultValue = "0") int type
+                              @RequestParam("email") @Email String email,
+                              @RequestParam(value = "type", defaultValue = "0") int type,
+                              @RequestParam(value = "validEmail", defaultValue = "false") Boolean validEmail
                               ) throws JsonException {
+
+
+
+        // 管理员直接添加，不受任何约束
         if (SecureUtils.getSpringSecurityUser() != null && SecureUtils.getSpringSecurityUser().getType() == User.TYPE_ADMIN) {
-            userService.addUser(user, rawPassword, type == User.TYPE_ADMIN ? User.TYPE_ADMIN : User.TYPE_COMMON);
-        } else if (!regCode.equals(DiskConfig.REG_CODE)) {
-            throw new JsonException(400, "注册码不正确");
+            userService.addUser(user, rawPassword, email, type == User.TYPE_ADMIN ? User.TYPE_ADMIN : User.TYPE_COMMON);
         } else {
-            userService.addUser(user, rawPassword, User.TYPE_COMMON);
+            userService.addUser(user, rawPassword, email, regCode, validEmail);
         }
         return JsonResult.getInstance();
     }
@@ -126,12 +247,14 @@ public class UserController {
     }
 
     /**
+     * 修改用户密码
      * @param oldPasswd 旧密码
      * @param newPasswd 新密码
+     * @param force 管理员使用无视旧密码强制修改
      */
     @PostMapping("{uid}/passwd")
     public JsonResult modifyPassword(@RequestParam("old") String oldPasswd,
-                                     @RequestParam("new") String newPasswd,
+                                     @RequestParam("new") @Length(min = 6) String newPasswd,
                                      @PathVariable("uid") @UID int uid,
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
         User user = SecureUtils.getSpringSecurityUser();
@@ -140,11 +263,11 @@ public class UserController {
                 throw new AccessDeniedException("非管理员不允许使用force参数");
             } else {
                 userDao.modifyPassword(uid, SecureUtils.getPassswd(newPasswd));
-                tokenDao.cleanUserToken(user.getUsername());
+                tokenDao.cleanUserToken(user.getId());
                 return JsonResult.getInstance(200, null, "force reset");
             }
         } else {
-            tokenDao.cleanUserToken(user.getUsername());
+            tokenDao.cleanUserToken(user.getId());
             int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
             return JsonResult.getInstance(200, i, "ok");
         }

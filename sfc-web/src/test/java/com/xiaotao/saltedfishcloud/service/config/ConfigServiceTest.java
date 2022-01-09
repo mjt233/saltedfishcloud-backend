@@ -15,7 +15,7 @@ import java.io.IOException;
 @RunWith(SpringRunner.class)
 class ConfigServiceTest {
     @Resource
-    private ConfigService configService;
+    private ConfigServiceImpl configService;
     @Resource
     private ConfigDao configDao;
 

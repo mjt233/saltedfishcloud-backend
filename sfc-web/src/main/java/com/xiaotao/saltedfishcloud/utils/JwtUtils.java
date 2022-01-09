@@ -44,7 +44,7 @@ public class JwtUtils {
     }
 
     /**
-     * 生成一个包含了data作为负载信息的token，默认有效时间为一天
+     * 生成一个包含了data作为负载信息的token，默认有效时间为31天
      * @param data  要附加的数据
      * @return  token字符串
      */

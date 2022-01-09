@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.config.ConfigServiceImpl;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ public class FileServiceTest {
     @Resource
     DiskFileSystemFactory fileService;
     @Resource
-    ConfigService configService;
+    ConfigServiceImpl configService;
 
     @Resource
     UserDao userDao;

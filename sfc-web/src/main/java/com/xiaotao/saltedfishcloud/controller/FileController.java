@@ -132,6 +132,12 @@ public class FileController {
         return JsonResult.getInstance();
     }
 
+    /**
+     * 创建多文件打包下载
+     * @param uid   资源所属用户ID
+     * @param files 打包的文件信息
+     * @return 打包码
+     */
     @PostMapping("wrap")
     @AllowAnonymous
     public JsonResult createWrap(@PathVariable @UID int uid,

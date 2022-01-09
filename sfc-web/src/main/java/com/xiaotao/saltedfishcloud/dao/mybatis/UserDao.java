@@ -12,6 +12,18 @@ import java.util.List;
 public interface UserDao {
 
     /**
+     * 修改用户的邮箱
+     * @param id        用户ID
+     * @param email     新邮箱
+     * @return          受影响的行数
+     */
+    @Update("UPDATE user SET email = #{email} WHERE id = #{id}")
+    int updateEmail(Integer id, String email);
+
+    @Select("SELECT * FROM user WHERE email = #{email}")
+    User getByEmail(String email);
+
+    /**
      * 修改用户权限类型
      * @param uid       用户ID
      * @param type      用户类型，1为管理员，0为普通人
@@ -66,12 +78,14 @@ public interface UserDao {
      * 添加一个用户
      * @param user  用户名
      * @param pwd   安全编码后的密码
+     * @param email 用户注册邮箱
      * @param type  用户类型，1为管理员，0为普通用户
      * @return      受影响的表行数
      */
-    @Insert("INSERT INTO user (user,pwd,type) VALUE (#{user},#{pwd},#{type})")
+    @Insert("INSERT INTO user (user,pwd, email, type) VALUE (#{user},#{pwd}, #{email}, #{type})")
     int addUser(@Param("user") String user,
                 @Param("pwd") String pwd,
+                @Param("email") String email,
                 @Param("type") Integer type);
 
     /**

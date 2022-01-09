@@ -110,7 +110,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     @Override
     public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException {
         boolean exist = exist(uid, dest);
-        if (exist && getResource(uid, path, "") == null) {
+        if (exist && getResource(uid, dest, "") == null) {
             throw new JsonException(ErrorInfo.RESOURCE_TYPE_NOT_MATCH);
         }
         Path temp = Paths.get(PathUtils.getTempDirectory() + "/temp_zip" + System.currentTimeMillis());
@@ -120,6 +120,10 @@ public class LocalDiskFileSystem implements DiskFileSystem {
             compressAndWriteOut(uid, path, names, ArchiveType.ZIP, output);
             final FileInfo fileInfo = FileInfo.getLocal(temp.toString());
             fileInfo.setName(pb.range(1, -1).replace("/", ""));
+
+            if (exist) {
+                deleteFile(uid, PathUtils.getParentPath(dest), Collections.singletonList(PathUtils.getLastNode(dest)));
+            }
             moveToSaveFile(uid, temp, pb.range(-1), fileInfo);
         } finally {
             Files.deleteIfExists(temp);

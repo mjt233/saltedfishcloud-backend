@@ -10,6 +10,7 @@ import java.io.InputStream;
 
 public abstract class AbstractCompressor implements ArchiveCompressor {
     private ArchiveOutputStream out;
+    private long count = 0;
 
     /**
      * 初始化压缩输出流
@@ -40,6 +41,14 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
             }
         }
         out.closeArchiveEntry();
+        if (!entry.isDirectory()) {
+            count++;
+        }
+    }
+
+    @Override
+    public long getFileCount() {
+        return count;
     }
 
     @Override
@@ -48,6 +57,9 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
     }
 
     public void close() throws IOException {
+        try {
+            out.closeArchiveEntry();
+        } catch (IOException ignore) { }
         if (out != null) {
             out.finish();
             out.close();

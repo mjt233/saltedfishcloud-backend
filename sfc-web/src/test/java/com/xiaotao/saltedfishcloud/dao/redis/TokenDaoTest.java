@@ -24,10 +24,10 @@ class TokenDaoTest {
     public void test() {
         User user = userDao.getUserByUser("admin");
         String token = user.getToken();
-        tokenDao.setToken(user.getUser(), token);
-        assertTrue(tokenDao.isTokenValid(user.getUser(), token));
+        tokenDao.setToken(user.getId(), token);
+        assertTrue(tokenDao.isTokenValid(user.getId(), token));
         userService.modifyPasswd(user.getId(), "admin233", "admin666");
-        assertFalse(tokenDao.isTokenValid(user.getUser(), token));
+        assertFalse(tokenDao.isTokenValid(user.getId(), token));
         userService.modifyPasswd(user.getId(), "admin666", "admin233");
     }
 }

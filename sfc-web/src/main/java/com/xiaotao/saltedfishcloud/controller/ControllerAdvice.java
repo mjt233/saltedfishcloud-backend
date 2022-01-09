@@ -108,6 +108,7 @@ public class ControllerAdvice {
         if (h != null) {
             return null;
         } else {
+            response.setStatus(500);
             return JsonResult.getInstance(500, null, "Server Error：" + e.getMessage());
         }
     }

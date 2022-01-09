@@ -39,7 +39,9 @@ public class StoreController {
             var users = userDao.getUserList();
             users.add(User.getPublicUser());
             for (User user : users) {
-                syncService.syncLocal(user);
+                try {
+                    syncService.syncLocal(user);
+                } catch (Exception e) { e.printStackTrace(); }
             }
         } else {
             syncService.syncLocal(User.getPublicUser());

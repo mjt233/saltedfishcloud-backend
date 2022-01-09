@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>咸鱼云验证码</title>
+</head>
+<body>
+    <h3>咸鱼云验证码</h3>
+    <p>您的验证码为：<span style="color: red;font-size: 21px; font-weight: bold" th:text="${code}">asd</span></p>
+    <p>该验证码用于：<span style="font-size: 16px;font-weight: bold" th:text="${usage}">账号注册</span></p>
+    <p>验证码有效期为十五分钟，请不要向其他人透露该验证码。</p>
+    <p>如果您没有进行相关操作，可能是他人误输入了您的邮箱地址。但如果是非本人操作的找回密码验证邮件，请绝对不要将验证码透露给他人并注意账号安全</p>
+</body>
+</html>
