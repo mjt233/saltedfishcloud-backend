@@ -1,8 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
+import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepository;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionRecordRepo;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
@@ -56,8 +58,8 @@ public class CollectionService {
      */
     public void deleteCollection(int uid, long cid) {
         CollectionInfo collection = collectionDao.findById(cid).orElse(null);
-        if (collection == null) throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND);
-        if (!collection.getUid().equals(uid)) throw new JsonException(ErrorInfo.FORMAT_ERROR);
+        if (collection == null) throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
+        if (!collection.getUid().equals(uid)) throw new JsonException(CommonError.FORMAT_ERROR);
         collectionDao.deleteById(cid);
     }
 
@@ -69,8 +71,8 @@ public class CollectionService {
      */
     public CollectionInfo setState(int uid, Long cid, CollectionInfo.State state) {
         CollectionInfo info = collectionDao.findById(cid).orElse(null);
-        if (info == null) throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND);
-        if (!info.getUid().equals(uid)) throw new JsonException(ErrorInfo.SYSTEM_FORBIDDEN);
+        if (info == null) throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
+        if (!info.getUid().equals(uid)) throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
         info.setState(state);
         collectionDao.save(info);
         return info;
@@ -83,11 +85,11 @@ public class CollectionService {
      */
     public CollectionInfoId createCollection(int uid, CollectionDTO info) {
         if(!CollectionValidator.validateCreate(info)) {
-            throw new JsonException(ErrorInfo.COLLECTION_CHECK_FAILED);
+            throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED);
         }
         NodeInfo node = nodeService.getNodeById(uid, info.getSaveNode());
         if (node == null) {
-            throw new JsonException(ErrorInfo.NODE_NOT_FOUND);
+            throw new JsonException(FileSystemError.NODE_NOT_FOUND);
         }
         String savePath = nodeService.getPathByNode(uid, node.getId());
         CollectionInfo ci = new CollectionInfo(uid, info);
@@ -138,11 +140,11 @@ public class CollectionService {
         CollectionInfo ci = collectionDao.findById(cid.getId()).orElse(null);
 
         // 校验收集存在
-        if (ci == null) { throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND); }
+        if (ci == null) { throw new JsonException(CollectionError.COLLECTION_NOT_FOUND); }
 
         // 校验开关状态
         if (ci.getState() == CollectionInfo.State.CLOSED) {
-            throw new JsonException(ErrorInfo.COLLECTION_CLOSED);
+            throw new JsonException(CollectionError.COLLECTION_CLOSED);
         }
 
         // 校验过期
@@ -151,24 +153,24 @@ public class CollectionService {
         }
 
         // 校验匿名状态
-        if (!ci.getAllowAnonymous() && uid == 0) { throw new JsonException(ErrorInfo.COLLECTION_REQUIRE_LOGIN); }
+        if (!ci.getAllowAnonymous() && uid == 0) { throw new JsonException(CollectionError.COLLECTION_REQUIRE_LOGIN); }
 
         // 校验约束
-        if (!CollectionValidator.validateSubmit(ci, submitFile)) { throw new JsonException(ErrorInfo.COLLECTION_CHECK_FAILED); }
+        if (!CollectionValidator.validateSubmit(ci, submitFile)) { throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED); }
 
         // 校验收集数
         Integer allowMax = ci.getAllowMax();
         if (allowMax != null && allowMax > -1) {
             // 收集满
             if (ci.getAvailable() == 0) {
-                throw new JsonException(ErrorInfo.COLLECTION_FULL);
+                throw new JsonException(CollectionError.COLLECTION_FULL);
             }
 
             int res = collectionDao.consumeCount(cid.getId(), ci.getAvailable());
 
             // 乐观锁操作失败
             if (res == 0) {
-                throw new JsonException(ErrorInfo.SYSTEM_BUSY);
+                throw new JsonException(CommonError.SYSTEM_BUSY);
             }
 
             // 收集完最后一个，状态设为已关闭

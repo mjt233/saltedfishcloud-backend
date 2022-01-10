@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.share.controller;
 
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.User;
@@ -125,7 +125,7 @@ public class ShareCollection {
             emptyUid = true;
             User user = SecureUtils.getSpringSecurityUser();
             if (user == null) {
-                throw new JsonException(ErrorInfo.SYSTEM_FORBIDDEN);
+                throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
             }
             uid = user.getId();
         }

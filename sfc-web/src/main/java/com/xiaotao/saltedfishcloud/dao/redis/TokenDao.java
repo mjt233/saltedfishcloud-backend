@@ -1,11 +1,10 @@
 package com.xiaotao.saltedfishcloud.dao.redis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -29,7 +28,7 @@ public class TokenDao {
      */
     public String generateUserToken(Integer uid) {
         final User user = userDao.getUserById(uid);
-        if (user == null) { throw new JsonException(ErrorInfo.USER_NOT_EXIST); }
+        if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
         return generateUserToken(user);
     }
 

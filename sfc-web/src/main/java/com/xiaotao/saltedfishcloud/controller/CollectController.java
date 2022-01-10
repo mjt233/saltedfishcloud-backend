@@ -1,8 +1,9 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepository;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
@@ -10,11 +11,11 @@ import com.xiaotao.saltedfishcloud.entity.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionService;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
@@ -44,7 +45,7 @@ public class CollectController {
         User u = SecureUtils.getSpringSecurityUser();
         assert u != null;
         if (!info.getUid().equals(u.getId())) {
-            throw new JsonException(ErrorInfo.FORMAT_ERROR);
+            throw new JsonException(CommonError.FORMAT_ERROR);
         }
         return JsonResult.getInstanceWithPage(collectionService.getSubmits(cid, page - 1, size));
     }
@@ -104,11 +105,11 @@ public class CollectController {
                                         @PathVariable String verification) {
         CollectionInfo i = collectionService.getCollectionWitchVerification(new CollectionInfoId(cid, verification));
         if (i == null) {
-            throw new JsonException(ErrorInfo.COLLECTION_NOT_FOUND);
+            throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
         }
         User user = SecureUtils.getSpringSecurityUser();
         if (user == null && !i.getAllowAnonymous()) {
-            throw new JsonException(ErrorInfo.COLLECTION_REQUIRE_LOGIN);
+            throw new JsonException(CollectionError.COLLECTION_REQUIRE_LOGIN);
         } else if (user == null || !user.getId().equals(i.getUid())) {
             i.setUid(null);
         }

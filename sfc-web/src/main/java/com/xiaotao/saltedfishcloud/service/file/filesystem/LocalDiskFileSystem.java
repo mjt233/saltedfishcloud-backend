@@ -3,13 +3,14 @@ package com.xiaotao.saltedfishcloud.service.file.filesystem;
 import com.xiaotao.saltedfishcloud.compress.creator.ArchiveCompressor;
 import com.xiaotao.saltedfishcloud.compress.creator.ArchiveResourceEntry;
 import com.xiaotao.saltedfishcloud.compress.creator.ZipCompressor;
+import com.xiaotao.saltedfishcloud.compress.enums.ArchiveError;
 import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.compress.reader.ArchiveReaderVisitor;
 import com.xiaotao.saltedfishcloud.compress.reader.impl.ZipArchiveReader;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
@@ -111,7 +112,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException {
         boolean exist = exist(uid, dest);
         if (exist && getResource(uid, dest, "") == null) {
-            throw new JsonException(ErrorInfo.RESOURCE_TYPE_NOT_MATCH);
+            throw new JsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
         }
         Path temp = Paths.get(PathUtils.getTempDirectory() + "/temp_zip" + System.currentTimeMillis());
         try(OutputStream output = Files.newOutputStream(temp)) {
@@ -140,7 +141,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     @Override
     public void extractArchive(int uid, String path, String name, String dest) throws IOException {
         if (!name.endsWith(".zip")) {
-            throw new JsonException(ErrorInfo.ARCHIVE_FORMAT_UNSUPPORTED);
+            throw new JsonException(ArchiveError.ARCHIVE_FORMAT_UNSUPPORTED);
         }
         Resource resource = getResource(uid, path, name);
         if (resource == null) throw new NoSuchFileException(path + "/" + name);
@@ -179,7 +180,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
                 }
             });
         } catch (ZipException | ArchiveException e) {
-            JsonException exception = new JsonException(ErrorInfo.ARCHIVE_FORMAT_UNSUPPORTED);
+            JsonException exception = new JsonException(ArchiveError.ARCHIVE_FORMAT_UNSUPPORTED);
             exception.initCause(e);
             exception.setStackTrace(e.getStackTrace());
             e.printStackTrace();

@@ -7,7 +7,6 @@ import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;

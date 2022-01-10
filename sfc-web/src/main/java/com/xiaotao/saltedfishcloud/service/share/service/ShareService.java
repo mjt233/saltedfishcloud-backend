@@ -1,16 +1,17 @@
 package com.xiaotao.saltedfishcloud.service.share.service;
 
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
 import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.dao.ShareDao;
@@ -19,7 +20,6 @@ import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.file.NoSuchFileException;
-import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -61,7 +60,7 @@ public class ShareService {
     public String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo) {
         SharePO share = getShare(sid, verification);
         if (share.getExtractCode() != null && !code.equals(share.getExtractCode())) {
-            throw new JsonException(ErrorInfo.SHARE_EXTRACT_ERROR);
+            throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
         }
         if (share.getType() != ShareType.DIR) throw new JsonException(400, "只能对文件夹分享进行打包");
 
@@ -77,8 +76,8 @@ public class ShareService {
      */
     public void deleteShare(Integer sid, Integer uid) {
         SharePO share = shareDao.findById(sid).orElse(null);
-        if (share == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
-        if (!share.getUid().equals(uid)) throw new JsonException(ErrorInfo.SYSTEM_FORBIDDEN);
+        if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
+        if (!share.getUid().equals(uid)) throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
         shareDao.deleteById(sid);
     }
 
@@ -89,9 +88,9 @@ public class ShareService {
      */
     public Resource getFileResource(ShareExtractorDTO extractor) throws UnsupportedEncodingException {
         SharePO share = shareDao.findById(extractor.getSid()).orElse(null);
-        if (share == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
-        if (!share.getVerification().equals(extractor.getVerification())) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
-        if (!share.validateExtractCode(extractor.getCode())) throw new JsonException(ErrorInfo.SHARE_EXTRACT_ERROR);
+        if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
+        if (!share.getVerification().equals(extractor.getVerification())) throw new JsonException(ShareError.SHARE_NOT_FOUND);
+        if (!share.validateExtractCode(extractor.getCode())) throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
 
         // 文件直接获取Resource
         String basePath = nodeService.getPathByNode(share.getUid(), share.getParentId());
@@ -116,17 +115,17 @@ public class ShareService {
         SharePO share = shareDao.findById(sid).orElse(null);
 
         // 校验存在
-        if (share == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
 
         // 校验校验码
-        if (!share.getVerification().equals(verification)) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        if (!share.getVerification().equals(verification)) throw new JsonException(ShareError.SHARE_NOT_FOUND);
 
         // 校验类型
         if (share.getType() == ShareType.FILE) throw new IllegalArgumentException("仅接受文件类型的分享");
 
         // 校验提取码
         if (StringUtils.hasLength(share.getExtractCode()) && !share.getExtractCode().equals(extractCode)) {
-            throw new JsonException(ErrorInfo.SHARE_EXTRACT_ERROR);
+            throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
         }
 
         String basePath = nodeService.getPathByNode(share.getUid(), share.getNid());
@@ -137,7 +136,7 @@ public class ShareService {
 
         try {
             return fileSystemFactory.getFileSystem().getUserFileList(share.getUid(), fullPath);
-        } catch (NoSuchFileException e) { throw new JsonException(ErrorInfo.NODE_NOT_FOUND); }
+        } catch (NoSuchFileException e) { throw new JsonException(FileSystemError.NODE_NOT_FOUND); }
     }
 
     /**
@@ -152,7 +151,7 @@ public class ShareService {
             String nid = nodes.getLast().getId();
             FileInfo fileInfo = fileDao.getFileInfo(uid, shareDTO.getName(), nid);
 
-            if (fileInfo == null) throw new JsonException(ErrorInfo.FILE_NOT_FOUND);
+            if (fileInfo == null) throw new JsonException(FileSystemError.FILE_NOT_FOUND);
             SharePO sharePO = SharePO.valueOf(
                     shareDTO,
                     fileInfo.isFile() ? ShareType.FILE : ShareType.DIR,
@@ -164,7 +163,7 @@ public class ShareService {
             shareDao.save(sharePO);
             return sharePO;
         } catch (NoSuchFileException e) {
-            throw new JsonException(ErrorInfo.NODE_NOT_FOUND);
+            throw new JsonException(FileSystemError.NODE_NOT_FOUND);
         }
     }
 
@@ -209,21 +208,21 @@ public class ShareService {
      */
     public SharePO getShare(int sid, String verification) {
         SharePO po = shareDao.findById(sid).orElse(null);
-        if (po == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        if (po == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
 
         if (po.getType() == ShareType.DIR) {
             // 判断原分享目录是否失效
             String nid = po.getNid();
             NodeInfo nodeInfo = nodeService.getNodeById(po.getUid(), nid);
-            if (nodeInfo == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+            if (nodeInfo == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         } else {
             // 判断分享的原文件是否失效
             FileInfo fi = fileDao.getFileInfo(po.getUid(), po.getName(), po.getParentId());
-            if (fi == null) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+            if (fi == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         }
 
-        if (!po.getVerification().equals(verification)) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
-        if (po.isExpired()) throw new JsonException(ErrorInfo.SHARE_NOT_FOUND);
+        if (!po.getVerification().equals(verification)) throw new JsonException(ShareError.SHARE_NOT_FOUND);
+        if (po.isExpired()) throw new JsonException(ShareError.SHARE_NOT_FOUND);
 
         User user = userDao.getUserById(po.getUid());
         if (user != null) po.setUsername(user.getUsername());

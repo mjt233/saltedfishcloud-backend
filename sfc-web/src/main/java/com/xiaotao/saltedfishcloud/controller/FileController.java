@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.entity.ErrorInfo;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.User;
@@ -15,7 +15,6 @@ import com.xiaotao.saltedfishcloud.entity.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.entity.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.entity.po.param.NamePair;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
-import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
@@ -161,7 +160,7 @@ public class FileController {
                              HttpServletResponse response) throws IOException {
         WrapInfo wrapInfo = wrapService.getWrapInfo(wid);
         if (wrapInfo == null) {
-            throw new JsonException(ErrorInfo.FILE_NOT_FOUND);
+            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
         if (alias == null) {
             alias = "打包下载" + System.currentTimeMillis() + ".zip";
@@ -222,7 +221,7 @@ public class FileController {
         if (resource != null) {
             return responseService.wrapResource(resource);
         } else {
-            throw new JsonException(ErrorInfo.FILE_NOT_FOUND);
+            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
     }
 
