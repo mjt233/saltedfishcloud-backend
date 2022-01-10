@@ -1,8 +1,5 @@
 package com.xiaotao.saltedfishcloud.entity;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -48,7 +45,7 @@ public class JsonResultImpl extends AbstractJsonResult {
         return (int)map.get("code");
     }
 
-    public JsonResult setCode(int code) {
+    public JsonResultImpl setCode(int code) {
         this.put("code", code);
         return this;
     }
