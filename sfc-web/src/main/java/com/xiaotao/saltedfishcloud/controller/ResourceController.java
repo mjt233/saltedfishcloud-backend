@@ -3,7 +3,8 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
@@ -44,7 +45,7 @@ public class ResourceController {
     @NotBlock
     public JsonResult pathToNodeList(@PathVariable("uid") @UID int uid, HttpServletRequest request) throws NoSuchFileException {
         String path = URLUtils.getRequestFilePath(PREFIX + "/" + uid + "/node", request);
-        return JsonResult.getInstance(nodeService.getPathNodeByPath(uid, "/" + path));
+        return JsonResultImpl.getInstance(nodeService.getPathNodeByPath(uid, "/" + path));
     }
 
     /**
@@ -57,7 +58,7 @@ public class ResourceController {
     @NotBlock
     public JsonResult getPath(@PathVariable("uid") @UID int uid,
                               @PathVariable("node") String node) {
-        return JsonResult.getInstance(nodeService.getPathByNode(uid, node));
+        return JsonResultImpl.getInstance(nodeService.getPathByNode(uid, node));
     }
 
     /**
@@ -74,7 +75,7 @@ public class ResourceController {
         String filePath = URLUtils.getRequestFilePath(PREFIX + uid + "/FDC", request);
         BasicFileInfo fileInfo = new BasicFileInfo(name, md5);
         String dc = fileService.getFileSystem().getFileDC(uid, filePath, fileInfo, expr);
-        return JsonResult.getInstance(dc);
+        return JsonResultImpl.getInstance(dc);
     }
 
 

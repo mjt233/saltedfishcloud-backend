@@ -1,10 +1,8 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -42,13 +40,13 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
         response.setContentType("application/json;charset=utf-8");
         User user = (User)authResult.getPrincipal();
         String token = tokenDao.generateUserToken(user);
-        response.getWriter().print(JsonResult.getInstance(token));
+        response.getWriter().print(JsonResultImpl.getInstance(token));
     }
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException {
         response.setContentType("application/json;charset=utf-8");
         response.setStatus(400);
-        response.getWriter().print(JsonResult.getInstance(400, null, "用户名或密码错误"));
+        response.getWriter().print(JsonResultImpl.getInstance(400, null, "用户名或密码错误"));
     }
 }

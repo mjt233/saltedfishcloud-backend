@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,7 @@ public class ControllerAdvice {
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public JsonResult requestParamsError(MissingServletRequestParameterException e) {
-        return JsonResult.getInstance(422, null, e.getMessage());
+        return JsonResultImpl.getInstance(422, null, e.getMessage());
     }
 
     @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class})
@@ -109,13 +110,13 @@ public class ControllerAdvice {
             return null;
         } else {
             response.setStatus(500);
-            return JsonResult.getInstance(500, null, "Server Error：" + e.getMessage());
+            return JsonResultImpl.getInstance(500, null, "Server Error：" + e.getMessage());
         }
     }
 
     private JsonResult responseError(int code, String message) {
         response.setStatus(code);
-        return JsonResult.getInstance(code, null, message);
+        return JsonResultImpl.getInstance(code, null, message);
     }
 
 }

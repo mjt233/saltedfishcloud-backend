@@ -5,12 +5,12 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.ConfigInfo;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigServiceImpl;
-import com.xiaotao.saltedfishcloud.service.mail.MailProperties;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.springframework.dao.DuplicateKeyException;
@@ -42,30 +42,30 @@ public class SysController {
 
     @GetMapping("overview")
     public JsonResult getOverview() {
-        LinkedHashMap<String, Object> res = JsonResult.getDataMap();
+        LinkedHashMap<String, Object> res = JsonResultImpl.getDataMap();
         res.put("store", adminService.getStoreState());
         res.put("invite_reg_code", DiskConfig.REG_CODE);
-        return JsonResult.getInstance(res);
+        return JsonResultImpl.getInstance(res);
     }
 
 
     @GetMapping({"settings", "config"})
     public JsonResult getSysSettings() {
         List<ConfigInfo> res = configDao.getAllConfig();
-        LinkedHashMap<String, Object> data = JsonResult.getDataMap();
+        LinkedHashMap<String, Object> data = JsonResultImpl.getDataMap();
         res.forEach(e -> data.put(e.getKey().toString(), e.getValue()));
-        return JsonResult.getInstance(data);
+        return JsonResultImpl.getInstance(data);
     }
 
     @GetMapping("configKeys")
     public JsonResult getConfigKeys() {
-        return JsonResult.getInstance(ConfigName.values());
+        return JsonResultImpl.getInstance(ConfigName.values());
     }
 
     @GetMapping("config/{key}")
     public JsonResult getConfig(@PathVariable String key) {
         String res = configService.getConfig(ConfigName.valueOf(key));
-        return JsonResult.getInstance(res);
+        return JsonResultImpl.getInstance(res);
     }
 
 
@@ -79,9 +79,9 @@ public class SysController {
         try {
             StoreType storeType = StoreType.valueOf(type.toUpperCase());
             if (configService.setStoreType(storeType)) {
-                return JsonResult.getInstance();
+                return JsonResultImpl.getInstance();
             } else {
-                return JsonResult.getInstance(202, DiskConfig.STORE_TYPE.toString(), "请求被忽略，模式无变化");
+                return JsonResultImpl.getInstance(202, DiskConfig.STORE_TYPE.toString(), "请求被忽略，模式无变化");
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("无效的类型，可选RAW或UNIQUE");
@@ -96,7 +96,7 @@ public class SysController {
     @PutMapping("config/{key}/{value}")
     public JsonResult setConfig(@PathVariable String key, @PathVariable String  value) throws IOException {
         configService.setConfig(key, value);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     @PostMapping("proxy")
@@ -106,12 +106,12 @@ public class SysController {
         } catch (DuplicateKeyException e) {
             throw new JsonException(400, "名称已存在");
         }
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     @GetMapping("proxy")
     public JsonResult getAllProxy() {
-        return JsonResult.getInstance(proxyDao.getAllProxy());
+        return JsonResultImpl.getInstance(proxyDao.getAllProxy());
     }
 
     @PutMapping("proxy")
@@ -119,7 +119,7 @@ public class SysController {
         if (proxyDao.modifyProxy(proxyName, info) == 0) {
             throw new JsonException(400, "代理" + proxyName + "不存在");
         }
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     @DeleteMapping("proxy")
@@ -127,7 +127,7 @@ public class SysController {
         if (proxyDao.removeProxy(proxyName) == 0) {
             throw new JsonException(400, "代理" + proxyName + "不存在");
         }
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
 

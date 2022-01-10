@@ -7,7 +7,8 @@ import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
@@ -66,7 +67,7 @@ public class UserController {
             tokenDao.cleanUserToken(user.getId());
         }
         String token = tokenDao.generateUserToken(user.getId());
-        return JsonResult.getInstance(token);
+        return JsonResultImpl.getInstance(token);
     }
 
     /**
@@ -81,7 +82,7 @@ public class UserController {
                                     @RequestParam("code") String code,
                                     @RequestParam("password") @Length(min = 6) String password) {
         userService.resetPassword(account, code, password);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -96,7 +97,7 @@ public class UserController {
                                @RequestParam("newCode") String newCode) {
         Integer uid = SecureUtils.getSpringSecurityUser().getId();
         userService.bindEmail(uid, email, originCode, newCode);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -107,7 +108,7 @@ public class UserController {
     public JsonResult sendBindEmail(@RequestParam("email") @Email String email) throws MessagingException, UnsupportedEncodingException {
         Integer uid = SecureUtils.getSpringSecurityUser().getId();
         userService.sendBindEmail(uid, email);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -116,7 +117,7 @@ public class UserController {
     @PostMapping("/sendVerifyEmail")
     public JsonResult sendVerifyEmail() throws MessagingException, UnsupportedEncodingException {
         userService.sendVerifyEmail(SecureUtils.getSpringSecurityUser().getId());
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -126,7 +127,7 @@ public class UserController {
     @PostMapping("/verifyEmail")
     public JsonResult verifyEmail(@RequestParam("code") String code) throws MessagingException, UnsupportedEncodingException {
         userService.verifyEmail(SecureUtils.getSpringSecurityUser().getId(), code);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -136,7 +137,7 @@ public class UserController {
     @AllowAnonymous
     public JsonResult sendResetPasswordEmail(@RequestParam(value = "account") String account) throws MessagingException, UnsupportedEncodingException {
         userService.sendResetPasswordEmail(account);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -145,7 +146,7 @@ public class UserController {
     @GetMapping("/regType")
     @AllowAnonymous
     public JsonResult getRegType() {
-        return JsonResult.getInstance(new HashMap<String, Boolean>(){{
+        return JsonResultImpl.getInstance(new HashMap<String, Boolean>(){{
             put("email", runtimeConfig.isEnableEmailReg());
             put("regcode", runtimeConfig.isEnableRegCode());
         }});
@@ -161,7 +162,7 @@ public class UserController {
             throw new JsonException(401, "未登录");
         }
         tokenDao.setToken(user.getId(), request.getHeader(JwtUtils.AUTHORIZATION));
-        return JsonResult.getInstance(user);
+        return JsonResultImpl.getInstance(user);
     }
 
 
@@ -173,7 +174,7 @@ public class UserController {
     @AllowAnonymous
     public JsonResult sendRegCode(@RequestParam("email") @Email String email) {
         userService.sendRegEmail(email);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -200,7 +201,7 @@ public class UserController {
         } else {
             userService.addUser(user, rawPassword, email, regCode, validEmail);
         }
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -210,7 +211,7 @@ public class UserController {
     @PostMapping("avatar")
     public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file) {
         userService.setAvatar(SecureUtils.getSpringSecurityUser().getUsername(), file);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -242,7 +243,7 @@ public class UserController {
     @GetMapping("quota")
     public JsonResult getQuotaUsed() {
         QuotaInfo used = userDao.getUserQuotaUsed(SecureUtils.getSpringSecurityUser().getId());
-        return JsonResult.getInstance(used);
+        return JsonResultImpl.getInstance(used);
     }
 
     /**
@@ -263,12 +264,12 @@ public class UserController {
             } else {
                 userDao.modifyPassword(uid, SecureUtils.getPassswd(newPasswd));
                 tokenDao.cleanUserToken(user.getId());
-                return JsonResult.getInstance(200, null, "force reset");
+                return JsonResultImpl.getInstance(200, null, "force reset");
             }
         } else {
             tokenDao.cleanUserToken(user.getId());
             int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
-            return JsonResult.getInstance(200, i, "ok");
+            return JsonResultImpl.getInstance(200, i, "ok");
         }
     }
 
@@ -286,7 +287,7 @@ public class UserController {
             throw new UserNoExistException();
         }
         userService.grant(uid, type);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -302,7 +303,7 @@ public class UserController {
         List<User> userList = userDao.getUserList();
         userList.forEach(e -> e.setPwd(null));
         PageInfo<User> pageInfo = new PageInfo<>(userList);
-        return JsonResult.getInstance(pageInfo);
+        return JsonResultImpl.getInstance(pageInfo);
     }
 
 }

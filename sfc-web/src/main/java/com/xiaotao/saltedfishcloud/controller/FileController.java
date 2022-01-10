@@ -8,7 +8,8 @@ import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.param.FileCopyOrMoveInfo;
@@ -85,7 +86,7 @@ public class FileController {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/dir", request);
         DiskFileSystem fileSystem = fileService.getFileSystem();
         fileSystem.mkdirs(uid, requestPath + "/" + name);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -105,7 +106,7 @@ public class FileController {
         }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
         int i = fileService.getFileSystem().saveFile(uid, file, requestPath, md5);
-        return JsonResult.getInstance(i);
+        return JsonResultImpl.getInstance(i);
     }
 
     @PostMapping("extractArchive/**")
@@ -116,7 +117,7 @@ public class FileController {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/extractArchive", request);
 
         fileService.getFileSystem().extractArchive(uid, path, name, dest);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -128,7 +129,7 @@ public class FileController {
     public JsonResult compress(@PathVariable @UID int uid,
                                @RequestBody FileTransferInfo files) throws IOException {
         fileService.getFileSystem().compress(uid, files.getSource(), files.getFilenames(), files.getDest(), ArchiveType.ZIP);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -142,7 +143,7 @@ public class FileController {
     public JsonResult createWrap(@PathVariable @UID int uid,
                                  @RequestBody FileTransferInfo files) {
         String wid = wrapService.registerWrap(uid, files);
-        return JsonResult.getInstance(wid);
+        return JsonResultImpl.getInstance(wid);
     }
 
     /*
@@ -185,7 +186,7 @@ public class FileController {
     public JsonResult getFileList(HttpServletRequest request, @PathVariable @UID int uid) throws IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fileList/byPath", request);
         Collection<? extends FileInfo>[] fileList = fileService.getFileSystem().getUserFileList(uid, requestPath);
-        return JsonResult.getInstance(fileList);
+        return JsonResultImpl.getInstance(fileList);
 
     }
 
@@ -203,7 +204,7 @@ public class FileController {
         PageHelper.startPage(page, 10);
         List<FileInfo> res = fileService.getFileSystem().search(uid, key);
         PageInfo<FileInfo> pageInfo = new PageInfo<>(res);
-        return JsonResult.getInstance(pageInfo);
+        return JsonResultImpl.getInstance(pageInfo);
     }
 
     /**
@@ -245,7 +246,7 @@ public class FileController {
         for (NamePair file : info.getFiles()) {
             fileService.getFileSystem().copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
         }
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -263,7 +264,7 @@ public class FileController {
         for (NamePair file : info.getFiles()) {
             fileService.getFileSystem().move(uid, source, target, file.getSource(), info.isOverwrite());
         }
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     /**
@@ -279,7 +280,7 @@ public class FileController {
             throw new JsonException(400, "文件名不能为空");
         }
         fileService.getFileSystem().rename(uid, from, oldName, newName);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
 
@@ -300,6 +301,6 @@ public class FileController {
                              @RequestBody @Validated FileNameList fileName) throws IOException {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/content", request);
         long res = fileService.getFileSystem().deleteFile(uid, path, fileName.getFileName());
-        return JsonResult.getInstance(res);
+        return JsonResultImpl.getInstance(res);
     }
 }

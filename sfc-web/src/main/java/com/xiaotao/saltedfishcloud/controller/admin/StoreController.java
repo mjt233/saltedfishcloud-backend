@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
 import com.xiaotao.saltedfishcloud.service.sync.SyncService;
@@ -27,7 +28,7 @@ public class StoreController {
      */
     @GetMapping("state")
     public JsonResult getStoreState() {
-        return JsonResult.getInstance(adminService.getStoreState());
+        return JsonResultImpl.getInstance(adminService.getStoreState());
     }
 
     /**
@@ -46,6 +47,6 @@ public class StoreController {
         } else {
             syncService.syncLocal(User.getPublicUser());
         }
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 }

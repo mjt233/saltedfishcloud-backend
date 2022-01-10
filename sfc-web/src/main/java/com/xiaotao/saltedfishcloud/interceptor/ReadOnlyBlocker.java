@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.interceptor;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.utils.ArrayUtils;
 import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
@@ -35,7 +35,7 @@ public class ReadOnlyBlocker implements HandlerInterceptor {
 
             if ( block != null && ArrayUtils.contain(block.level(), level) && (notBlock == null || !ArrayUtils.contain(notBlock.level(), level)) ) {
                 response.setContentType("application/json;charset=utf-8");
-                response.getWriter().print(JsonResult.getInstance(501, null, "系统处于只读状态，暂时无法响应该API的请求，稍后将解除，请过段时间再试").toString());
+                response.getWriter().print(JsonResultImpl.getInstance(501, null, "系统处于只读状态，暂时无法响应该API的请求，稍后将解除，请过段时间再试").toString());
                 return false;
             }
         }

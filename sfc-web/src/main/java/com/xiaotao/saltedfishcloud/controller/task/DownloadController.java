@@ -1,8 +1,9 @@
 package com.xiaotao.saltedfishcloud.controller.task;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.param.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.entity.po.param.TaskType;
@@ -37,7 +38,7 @@ public class DownloadController {
             e.setPort(null);
             e.setType(null);
         });
-        return JsonResult.getInstance(res);
+        return JsonResultImpl.getInstance(res);
     }
 
     @DeleteMapping
@@ -50,12 +51,12 @@ public class DownloadController {
         } else {
             context.interrupt();
         }
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     @PostMapping
     public JsonResult createTask(@RequestBody @Validated DownloadTaskParams info) throws NoSuchFileException {
-        return JsonResult.getInstance(downloadService.createTask(info, SecureUtils.getSpringSecurityUser().getId()));
+        return JsonResultImpl.getInstance(downloadService.createTask(info, SecureUtils.getSpringSecurityUser().getId()));
     }
 
     @GetMapping
@@ -66,7 +67,7 @@ public class DownloadController {
             @RequestParam(defaultValue = "ALL") TaskType type
     ) {
         Page<DownloadTaskInfo> res = downloadService.getTaskList(uid, page - 1, size, type);
-        return JsonResult
+        return JsonResultImpl
                 .getInstance(res.getContent())
                 .put("totalItem", res.getTotalElements())
                 .put("totalPage", res.getTotalPages());

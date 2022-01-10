@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.config.security;
 
 import com.xiaotao.saltedfishcloud.config.security.service.UserDetailsServiceImpl;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDao;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -72,7 +72,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.exceptionHandling().authenticationEntryPoint((request, response, authException) -> {
             response.setContentType("application/json;charset=utf-8");
             response.setStatus(403);
-            response.getWriter().print(JsonResult.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
+            response.getWriter().print(JsonResultImpl.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
         });
 
         //  放行公共API和登录API

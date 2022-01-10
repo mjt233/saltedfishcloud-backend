@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint;
 
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
@@ -22,7 +22,7 @@ public class BreakPointControllerImpl implements BreakPointController {
     @Override
     public Object uploadPart(MultipartFile file, String id, String part) throws Exception {
         manager.save(id, part, file.getInputStream());
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     @Override
@@ -48,6 +48,6 @@ public class BreakPointControllerImpl implements BreakPointController {
         } catch (NoSuchFileException e) {
             throw new TaskNotFoundException(id);
         }
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 }

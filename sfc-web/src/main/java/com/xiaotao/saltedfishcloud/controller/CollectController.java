@@ -4,17 +4,19 @@ import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepository;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.entity.po.CollectionInfoId;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionService;
+import com.xiaotao.saltedfishcloud.utils.PageUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -47,7 +49,7 @@ public class CollectController {
         if (!info.getUid().equals(u.getId())) {
             throw new JsonException(CommonError.FORMAT_ERROR);
         }
-        return JsonResult.getInstanceWithPage(collectionService.getSubmits(cid, page - 1, size));
+        return PageUtils.getInstanceWithPage(collectionService.getSubmits(cid, page - 1, size));
     }
 
     @DeleteMapping("{cid}")
@@ -55,7 +57,7 @@ public class CollectController {
         User user = SecureUtils.getSpringSecurityUser();
         assert user != null;
         collectionService.deleteCollection(user.getId(), cid);
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     @PutMapping("{cid}/state/{state}")
@@ -63,7 +65,7 @@ public class CollectController {
                                @PathVariable("state") CollectionInfo.State state) {
         User user = SecureUtils.getSpringSecurityUser();
         assert user != null;
-        return JsonResult.getInstance(collectionService.setState(user.getId(), cid, state));
+        return JsonResultImpl.getInstance(collectionService.setState(user.getId(), cid, state));
     }
 
     @PostMapping
@@ -71,7 +73,7 @@ public class CollectController {
         User u = SecureUtils.getSpringSecurityUser();
         assert u != null;
         if (data.getNickname() == null) data.setNickname(u.getUsername());
-        return JsonResult.getInstance(collectionService.createCollection(u.getId(), data));
+        return JsonResultImpl.getInstance(collectionService.createCollection(u.getId(), data));
     }
 
     @PostMapping("{cid}/{verification}")
@@ -96,7 +98,7 @@ public class CollectController {
                 submitFile,
                 ip
         );
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     @GetMapping("{cid}/{verification}")

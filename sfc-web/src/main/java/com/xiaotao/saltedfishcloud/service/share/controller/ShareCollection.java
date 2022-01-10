@@ -4,7 +4,8 @@ import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -41,7 +42,7 @@ public class ShareCollection {
         assert user != null;
         shareService.deleteShare(sid, user.getId());
 
-        return JsonResult.getInstance();
+        return JsonResultImpl.getInstance();
     }
 
     @PostMapping("/wrap/{sid}/{verification}")
@@ -51,7 +52,7 @@ public class ShareCollection {
                                  @RequestParam(value = "code", required = false) String code,
                                  @RequestBody FileTransferInfo fileTransferInfo) {
         String wid = shareService.createwrap(sid, verification, code, fileTransferInfo);
-        return JsonResult.getInstance(wid);
+        return JsonResultImpl.getInstance(wid);
     }
 
     /**
@@ -76,7 +77,7 @@ public class ShareCollection {
             share.setValidateSuccess(true);
         }
         share.hideKeyAttr();
-        return JsonResult.getInstance(share);
+        return JsonResultImpl.getInstance(share);
     }
 
     /**
@@ -93,7 +94,7 @@ public class ShareCollection {
                                     HttpServletRequest request) throws IOException {
         String path = URLUtils.getRequestFilePath("/api/share/view/" + sid + "/" + verification, request);
         List<FileInfo>[] files = shareService.browse(sid, verification, path, extractCode);
-        return JsonResult.getInstance(files);
+        return JsonResultImpl.getInstance(files);
     }
 
     /**
@@ -105,7 +106,7 @@ public class ShareCollection {
         User user = SecureUtils.getSpringSecurityUser();
         assert user != null;
         SharePO share = shareService.createShare(user.getId(), shareDTO);
-        return JsonResult.getInstance(share);
+        return JsonResultImpl.getInstance(share);
     }
 
     /**
@@ -136,6 +137,6 @@ public class ShareCollection {
                 share.setValidateSuccess(true);
             }
         }
-        return JsonResult.getInstance(userShare);
+        return JsonResultImpl.getInstance(userShare);
     }
 }

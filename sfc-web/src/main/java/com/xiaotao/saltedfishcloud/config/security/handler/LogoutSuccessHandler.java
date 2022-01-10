@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.config.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import org.springframework.security.core.Authentication;
 
 import javax.servlet.ServletException;
@@ -14,7 +14,7 @@ public class LogoutSuccessHandler implements org.springframework.security.web.au
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         ObjectMapper om = new ObjectMapper();
         try {
-            response.getWriter().print(om.writeValueAsString(JsonResult.getInstance()));
+            response.getWriter().print(om.writeValueAsString(JsonResultImpl.getInstance()));
         } catch (IOException e) {
             e.printStackTrace();
         }

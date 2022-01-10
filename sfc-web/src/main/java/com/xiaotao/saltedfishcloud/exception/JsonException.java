@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.exception;
 
 import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
-import com.xiaotao.saltedfishcloud.entity.po.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResult;
+import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
 import lombok.Getter;
 
 public class JsonException extends RuntimeException {
@@ -12,7 +13,7 @@ public class JsonException extends RuntimeException {
 
     public JsonException(String message) {
         super(message);
-        res = JsonResult.getInstance(500, null, message);
+        res = JsonResultImpl.getInstance(500, null, message);
     }
 
     public JsonException(JsonResult jsonResult) {
@@ -20,15 +21,15 @@ public class JsonException extends RuntimeException {
     }
 
     public JsonException(Integer code, String msg) {
-        res = JsonResult.getInstance(code, null, msg);
+        res = JsonResultImpl.getInstance(code, null, msg);
     }
 
     public JsonException() {
-        res = JsonResult.getInstance(500, null, "服务器其他错误");
+        res = JsonResultImpl.getInstance(500, null, "服务器其他错误");
     }
 
     public JsonException(ErrorInfo error) {
-        res = JsonResult.getInstance(error.getStatus(), null, error.getMessage());
+        res = JsonResultImpl.getInstance(error.getStatus(), null, error.getMessage());
     }
 
     @Override
