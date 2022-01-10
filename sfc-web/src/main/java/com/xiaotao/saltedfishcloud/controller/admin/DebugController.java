@@ -29,7 +29,7 @@ public class DebugController {
             r = null;
         }
         DiskConfig.setReadOnlyLevel(r);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     @GetMapping("readOnly")

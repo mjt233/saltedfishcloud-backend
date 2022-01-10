@@ -57,7 +57,7 @@ public class CollectController {
         User user = SecureUtils.getSpringSecurityUser();
         assert user != null;
         collectionService.deleteCollection(user.getId(), cid);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     @PutMapping("{cid}/state/{state}")
@@ -98,7 +98,7 @@ public class CollectController {
                 submitFile,
                 ip
         );
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     @GetMapping("{cid}/{verification}")

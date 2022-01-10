@@ -79,7 +79,7 @@ public class SysController {
         try {
             StoreType storeType = StoreType.valueOf(type.toUpperCase());
             if (configService.setStoreType(storeType)) {
-                return JsonResultImpl.getInstance();
+                return JsonResult.emptySuccess();
             } else {
                 return JsonResultImpl.getInstance(202, DiskConfig.STORE_TYPE.toString(), "请求被忽略，模式无变化");
             }
@@ -96,7 +96,7 @@ public class SysController {
     @PutMapping("config/{key}/{value}")
     public JsonResult setConfig(@PathVariable String key, @PathVariable String  value) throws IOException {
         configService.setConfig(key, value);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     @PostMapping("proxy")
@@ -106,7 +106,7 @@ public class SysController {
         } catch (DuplicateKeyException e) {
             throw new JsonException(400, "名称已存在");
         }
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     @GetMapping("proxy")
@@ -119,7 +119,7 @@ public class SysController {
         if (proxyDao.modifyProxy(proxyName, info) == 0) {
             throw new JsonException(400, "代理" + proxyName + "不存在");
         }
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     @DeleteMapping("proxy")
@@ -127,7 +127,7 @@ public class SysController {
         if (proxyDao.removeProxy(proxyName) == 0) {
             throw new JsonException(400, "代理" + proxyName + "不存在");
         }
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
 

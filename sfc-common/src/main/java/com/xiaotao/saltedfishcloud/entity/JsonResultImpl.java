@@ -1,14 +1,18 @@
 package com.xiaotao.saltedfishcloud.entity;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * @TODO 修改为可迭代的接口或抽象类，并编写一个默认的实现类和一个空数据的只读单例实现类
  */
-public class JsonResultImpl extends LinkedHashMap<String, Object> implements JsonResult {
+public class JsonResultImpl extends AbstractJsonResult {
     private static final long serialVersionUID = 1537580038140716422L;
+    private final Map<String, Object> map = new HashMap<>();
 
     public JsonResultImpl() {
         this(200, null, "OK");
@@ -20,9 +24,8 @@ public class JsonResultImpl extends LinkedHashMap<String, Object> implements Jso
         this.put("msg", msg);
     }
 
-    @Override
     public JsonResultImpl put(String key, Object obj) {
-        super.put(key, obj);
+        map.put(key, obj);
         return this;
     }
 
@@ -31,9 +34,6 @@ public class JsonResultImpl extends LinkedHashMap<String, Object> implements Jso
     }
     public static JsonResultImpl getInstance(Object data) {
         return getInstance(200, data, "OK");
-    }
-    public static JsonResultImpl getInstance() {
-        return getInstance(200, null, "OK");
     }
 
     /**
@@ -45,7 +45,7 @@ public class JsonResultImpl extends LinkedHashMap<String, Object> implements Jso
 
     @Override
     public int getCode() {
-        return (int)this.get("code");
+        return (int)map.get("code");
     }
 
     public JsonResult setCode(int code) {
@@ -55,7 +55,7 @@ public class JsonResultImpl extends LinkedHashMap<String, Object> implements Jso
 
     @Override
     public Object getData() {
-        return this.get("data");
+        return map.get("data");
     }
 
     public JsonResultImpl setData(Object data) {
@@ -65,7 +65,7 @@ public class JsonResultImpl extends LinkedHashMap<String, Object> implements Jso
 
     @Override
     public String getMsg() {
-        return (String)this.get("msg");
+        return (String)map.get("msg");
     }
 
     public JsonResultImpl setMsg(String msg) {
@@ -75,11 +75,7 @@ public class JsonResultImpl extends LinkedHashMap<String, Object> implements Jso
 
     @Override
     public String toString() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return objectMapper.writeValueAsString(this);
-        } catch (JsonProcessingException e) {
-            return "{}";
-        }
+        return getJsonStr();
     }
+
 }

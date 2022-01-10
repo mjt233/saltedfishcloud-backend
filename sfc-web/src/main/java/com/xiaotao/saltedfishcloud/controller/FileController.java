@@ -86,7 +86,7 @@ public class FileController {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/dir", request);
         DiskFileSystem fileSystem = fileService.getFileSystem();
         fileSystem.mkdirs(uid, requestPath + "/" + name);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -117,7 +117,7 @@ public class FileController {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/extractArchive", request);
 
         fileService.getFileSystem().extractArchive(uid, path, name, dest);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -129,7 +129,7 @@ public class FileController {
     public JsonResult compress(@PathVariable @UID int uid,
                                @RequestBody FileTransferInfo files) throws IOException {
         fileService.getFileSystem().compress(uid, files.getSource(), files.getFilenames(), files.getDest(), ArchiveType.ZIP);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -246,7 +246,7 @@ public class FileController {
         for (NamePair file : info.getFiles()) {
             fileService.getFileSystem().copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
         }
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -264,7 +264,7 @@ public class FileController {
         for (NamePair file : info.getFiles()) {
             fileService.getFileSystem().move(uid, source, target, file.getSource(), info.isOverwrite());
         }
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -280,7 +280,7 @@ public class FileController {
             throw new JsonException(400, "文件名不能为空");
         }
         fileService.getFileSystem().rename(uid, from, oldName, newName);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
 

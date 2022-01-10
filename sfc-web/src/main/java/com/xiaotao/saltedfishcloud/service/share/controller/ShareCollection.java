@@ -42,7 +42,7 @@ public class ShareCollection {
         assert user != null;
         shareService.deleteShare(sid, user.getId());
 
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     @PostMapping("/wrap/{sid}/{verification}")

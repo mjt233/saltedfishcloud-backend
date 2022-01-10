@@ -51,7 +51,7 @@ public class DownloadController {
         } else {
             context.interrupt();
         }
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     @PostMapping

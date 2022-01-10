@@ -82,7 +82,7 @@ public class UserController {
                                     @RequestParam("code") String code,
                                     @RequestParam("password") @Length(min = 6) String password) {
         userService.resetPassword(account, code, password);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -97,7 +97,7 @@ public class UserController {
                                @RequestParam("newCode") String newCode) {
         Integer uid = SecureUtils.getSpringSecurityUser().getId();
         userService.bindEmail(uid, email, originCode, newCode);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -108,7 +108,7 @@ public class UserController {
     public JsonResult sendBindEmail(@RequestParam("email") @Email String email) throws MessagingException, UnsupportedEncodingException {
         Integer uid = SecureUtils.getSpringSecurityUser().getId();
         userService.sendBindEmail(uid, email);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -117,7 +117,7 @@ public class UserController {
     @PostMapping("/sendVerifyEmail")
     public JsonResult sendVerifyEmail() throws MessagingException, UnsupportedEncodingException {
         userService.sendVerifyEmail(SecureUtils.getSpringSecurityUser().getId());
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -127,7 +127,7 @@ public class UserController {
     @PostMapping("/verifyEmail")
     public JsonResult verifyEmail(@RequestParam("code") String code) throws MessagingException, UnsupportedEncodingException {
         userService.verifyEmail(SecureUtils.getSpringSecurityUser().getId(), code);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -137,7 +137,7 @@ public class UserController {
     @AllowAnonymous
     public JsonResult sendResetPasswordEmail(@RequestParam(value = "account") String account) throws MessagingException, UnsupportedEncodingException {
         userService.sendResetPasswordEmail(account);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -174,7 +174,7 @@ public class UserController {
     @AllowAnonymous
     public JsonResult sendRegCode(@RequestParam("email") @Email String email) {
         userService.sendRegEmail(email);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -201,7 +201,7 @@ public class UserController {
         } else {
             userService.addUser(user, rawPassword, email, regCode, validEmail);
         }
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -211,7 +211,7 @@ public class UserController {
     @PostMapping("avatar")
     public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file) {
         userService.setAvatar(SecureUtils.getSpringSecurityUser().getUsername(), file);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**
@@ -287,7 +287,7 @@ public class UserController {
             throw new UserNoExistException();
         }
         userService.grant(uid, type);
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 
     /**

@@ -47,6 +47,6 @@ public class StoreController {
         } else {
             syncService.syncLocal(User.getPublicUser());
         }
-        return JsonResultImpl.getInstance();
+        return JsonResult.emptySuccess();
     }
 }

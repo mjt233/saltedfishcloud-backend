@@ -7,7 +7,9 @@ public interface JsonResult {
 
     String getMsg();
 
-    default JsonResult emptySuccess() {
+    String getJsonStr();
+
+    static JsonResult emptySuccess() {
         return EmptySuccessJsonResult.INST;
     }
 }

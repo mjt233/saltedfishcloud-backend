@@ -17,5 +17,10 @@ public enum EmptySuccessJsonResult implements JsonResult {
         return "ok";
     }
 
+    @Override
+    public String getJsonStr() {
+        return "{\"code\":200,\"data\":null,\"msg\":\"ok\"}";
+    }
+
 
 }
