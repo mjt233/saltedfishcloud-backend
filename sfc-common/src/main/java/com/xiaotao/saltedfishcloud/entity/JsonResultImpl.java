@@ -4,9 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * @TODO 修改为可迭代的接口或抽象类，并编写一个默认的实现类和一个空数据的只读单例实现类
- */
 public class JsonResultImpl extends AbstractJsonResult {
     private static final long serialVersionUID = 1537580038140716422L;
     private final Map<String, Object> map = new HashMap<>();
