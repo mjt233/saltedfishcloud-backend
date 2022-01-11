@@ -41,7 +41,7 @@ public class MailConfiguration {
         }
 
         // 监听发信服务器的配置信息修改，更新发信服务器配置bean信息
-        configService.addConfigChangeListener(e -> {
+        configService.addConfigSetListener(e -> {
             if (e.getKey() == ConfigName.MAIL_PROPERTIES) {
                 try {
                     MailProperties newVal = MapperHolder.mapper.readValue(e.getValue(), MailProperties.class);

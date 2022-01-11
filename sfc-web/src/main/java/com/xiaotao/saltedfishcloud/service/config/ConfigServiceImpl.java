@@ -1,23 +1,18 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.entity.po.ConfigInfo;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
-import com.xiaotao.saltedfishcloud.service.mail.MailProperties;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -31,10 +26,17 @@ public class ConfigServiceImpl implements ConfigService {
     @Resource
     private DiskConfig diskConfig;
     private final ArrayList<Consumer<Pair<ConfigName, String>>> listeners = new ArrayList<>();
+    private final Map<ConfigName, List<Consumer<String>>> configListeners = new HashMap<>();
 
     @Override
-    public void addConfigChangeListener(Consumer<Pair<ConfigName, String>> listener) {
+    public void addConfigSetListener(Consumer<Pair<ConfigName, String>> listener) {
         listeners.add(listener);
+    }
+
+    @Override
+    public void addConfigListener(ConfigName key, Consumer<String> listener) {
+        List<Consumer<String>> consumers = configListeners.computeIfAbsent(key, k -> new LinkedList<>());
+        consumers.add(listener);
     }
 
     /**
@@ -63,21 +65,6 @@ public class ConfigServiceImpl implements ConfigService {
         return configDao.getConfigure(key);
     }
 
-
-    public MailProperties getMailProperties() {
-        String config = getConfig(ConfigName.MAIL_PROPERTIES);
-        if (config == null) {
-            return null;
-        } else {
-            try {
-                return MapperHolder.mapper.readValue(config, MailProperties.class);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-    }
-
     /**
      * 设置一个配置项
      * @TODO 将写死的配置响应事件使用监听器功能重构
@@ -100,6 +87,9 @@ public class ConfigServiceImpl implements ConfigService {
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
         for (Consumer<Pair<ConfigName, String>> listener : listeners) {
             listener.accept(new Pair<>(key, value));
+        }
+        for (Consumer<String> c : configListeners.getOrDefault(key, Collections.emptyList())) {
+            c.accept(value);
         }
         return true;
     }
@@ -127,10 +117,10 @@ public class ConfigServiceImpl implements ConfigService {
         }
         StoreType storeType = StoreType.valueOf(origin);
         if (storeType == type) {
-            log.info("忽略的存储切换：" + storeType.toString() + " -> " + type.toString());
+            log.info("忽略的存储切换：{} -> {}", storeType, type);
             return false;
         }
-        log.info("存储切换：" + storeType.toString() + " -> " + type.toString());
+        log.info("存储切换：{} -> {}", storeType, type.toString());
         try {
             DiskConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_MOVING);
             configDao.setConfigure(StoreType.getConfigKey(), type.toString());

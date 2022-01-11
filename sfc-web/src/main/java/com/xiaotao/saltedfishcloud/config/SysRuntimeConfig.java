@@ -35,7 +35,7 @@ public class SysRuntimeConfig {
         log.info("[注册规则]当前注册规则配置： 注册邀请码 - {} 邮箱注册 - {}", enableRegCode ? '√': 'X', enableEmailReg ? '√': 'X');
 
         // 监听配置改变，实时更新状态缓存
-        configService.addConfigChangeListener(e -> {
+        configService.addConfigSetListener(e -> {
             ConfigName key = e.getKey();
             if (key == ConfigName.ENABLE_EMAIL_REG) {
                 enableEmailReg = "true".equals(e.getValue().toLowerCase());
