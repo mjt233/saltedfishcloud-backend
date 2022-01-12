@@ -12,4 +12,11 @@
     <groupId>com.xiaotao.saltedfishcloud</groupId>
     <artifactId>sfc-common</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.oopsguy.kaptcha</groupId>
+            <artifactId>kaptcha-spring-boot-autoconfigure</artifactId>
+            <version>1.0.0-beta-2</version>
+        </dependency>
+    </dependencies>
 </project>
