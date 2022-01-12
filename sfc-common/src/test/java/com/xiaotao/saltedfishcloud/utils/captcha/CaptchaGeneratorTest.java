@@ -18,7 +18,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class CaptchaGeneratorTest {
 
     @Test
+    void generateOne() throws IOException {
+        String saveDir = "C:\\Users\\12079\\test233\\";
+        CaptchaInfo info = CaptchaGenerator.generate();
+        OutputStream outputStream = Files.newOutputStream(Paths.get( saveDir + info.getCode() + ".png"));
+        ImageIO.write(info.getImage(), "png", outputStream);
+        outputStream.close();
+    }
 
+    @Test
     void generate() throws IOException, BrokenBarrierException, InterruptedException {
         long start = System.currentTimeMillis();
         int threadCnt = 8;
