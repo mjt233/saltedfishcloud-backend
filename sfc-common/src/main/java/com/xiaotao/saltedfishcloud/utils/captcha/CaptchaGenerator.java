@@ -26,6 +26,10 @@ public class CaptchaGenerator {
         KAPTCHA = dk;
     }
 
+    /**
+     * 生成一个验证码信息
+     * @return 验证码信息绑定对象
+     */
     public static CaptchaInfo generate() {
         String text = KAPTCHA.createText();
         BufferedImage image = KAPTCHA.createImage(text);
