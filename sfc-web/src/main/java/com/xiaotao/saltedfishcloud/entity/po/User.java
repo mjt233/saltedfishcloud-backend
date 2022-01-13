@@ -44,6 +44,51 @@ public class User implements UserDetails {
     private int quota;
     private String email;
 
+    private static final User PUBLIC_USER_INST;
+
+    static {
+        PUBLIC_USER_INST = new User(){
+            {
+                super.setId(0);
+                super.setUser(SYS_NAME_PUBLIC);
+            }
+            @Override
+            public void setEmail(String email) {
+                throw new UnsupportedOperationException("不支持设置公共用户属性");
+            }
+
+            @Override
+            public void setQuota(int quota) {
+                throw new UnsupportedOperationException("不支持设置公共用户属性");
+            }
+
+            @Override
+            public void setLastLogin(Integer lastLogin) {
+                throw new UnsupportedOperationException("不支持设置公共用户属性");
+            }
+
+            @Override
+            public void setPwd(String pwd) {
+                throw new UnsupportedOperationException("不支持设置公共用户属性");
+            }
+
+            @Override
+            public void setUser(String user) {
+                throw new UnsupportedOperationException("不支持设置公共用户属性");
+            }
+
+            @Override
+            public void setId(Integer id) {
+                throw new UnsupportedOperationException("不支持设置公共用户属性");
+            }
+
+            @Override
+            public void setType(Integer type) {
+                throw new UnsupportedOperationException("不支持设置公共用户属性");
+            }
+        };
+    }
+
     @lombok.Setter(AccessLevel.NONE)
     protected List<SimpleGrantedAuthority> authorities = new LinkedList<>();
 
@@ -59,10 +104,7 @@ public class User implements UserDetails {
      * 获取公共用户信息实例
      */
     public static User getPublicUser() {
-        User user = new User();
-        user.setId(0);
-        user.setUser(SYS_NAME_PUBLIC);
-        return user;
+        return PUBLIC_USER_INST;
     }
 
     @JsonIgnore
