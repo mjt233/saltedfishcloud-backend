@@ -18,6 +18,7 @@ import java.util.Map;
 
 /**
  * FTP服务类（实验性功能，目前仅支持公共网盘只读）
+ * @TODO 增加FTP服务器控制相关的方法
  */
 @Service
 public class FtpService {
@@ -36,6 +37,10 @@ public class FtpService {
         this.ftpUploadHandler = ftpUploadHandler;
     }
 
+    /**
+     * @TODO 抽离出配置类并移动该方法
+     * 装配FTP Server
+     */
     @Bean
     public FtpServer getServer() throws FtpException {
         ListenerFactory listenerFactory = new ListenerFactory();
