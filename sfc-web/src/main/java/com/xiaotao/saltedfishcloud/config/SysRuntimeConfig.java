@@ -24,6 +24,9 @@ public class SysRuntimeConfig {
     private boolean enableEmailReg;
 
     public static SysRuntimeConfig getInstance() {
+        if (GLOBAL_HOLD_INST == null) {
+            throw new IllegalStateException("SysRuntimeConfig 未实例化");
+        }
         return GLOBAL_HOLD_INST;
     }
 
