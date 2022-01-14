@@ -68,15 +68,6 @@ public class FileController {
      */
 
     /**
-     * 这啥？为什么会出现在文件相关的控制器里？QAQ
-     * @TODO 挪个位
-     */
-    @GetMapping("info")
-    public User getUserInfo(@SessionAttribute User loginUser) {
-        return loginUser;
-    }
-
-    /**
      * 创建文件夹
      */
     @PutMapping("dir/**")
