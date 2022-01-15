@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.ftp;
+package com.xiaotao.saltedfishcloud.service.ftp.core;
 
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;

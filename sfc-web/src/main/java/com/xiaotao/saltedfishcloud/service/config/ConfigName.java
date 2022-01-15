@@ -8,5 +8,6 @@ public enum ConfigName {
     TOKEN_SECRET,       //  token密钥
     MAIL_PROPERTIES,    //  邮件发件服务器配置
     ENABLE_REG_CODE,    //  启用注册邀请码机制
-    ENABLE_EMAIL_REG    //  启用邮件注册机制
+    ENABLE_EMAIL_REG,   //  启用邮件注册机制
+    FTP_CONFIG          //  FTP配置
 }

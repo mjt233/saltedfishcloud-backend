@@ -1,33 +1,48 @@
 package com.xiaotao.saltedfishcloud.config;
 
+import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
+/**
+ * FTP服务配置信息类
+ * @TODO 启动时优先从数据库加载配置
+ */
 @Slf4j
 @Component
+@Data
 public class FtpConfig {
-    public static int FTP_PORT = 21;
+    /**
+     * 是否启用FTP服务
+     */
+    @Value("${ftp-enable}")
+    private boolean ftpEnable;
 
-    public static String PASSIVE_ADDR = null;
+    /**
+     * FTP控制监听地址
+     */
+    @Value("${ftp-listen}")
+    private String listenAddr;
 
-    public static String PASSIVE_PORT = null;
-
-    @Value("${ftp-passive-port}")
-    public void setPassivePort(String port) {
-        log.info("[FTP]被动模式传输端口:" + port);
-        PASSIVE_PORT = port;
-    }
-
-    @Value("${ftp-passive-addr}")
-    public void setPassiveAddr(String addr) {
-        log.info("[FTP]被动模式地址:" + addr);
-        PASSIVE_ADDR = addr;
-    }
-
+    /**
+     * 主控制端口
+     */
     @Value("${ftp-port}")
-    public void setFtpPort(int port) {
-        log.info("[FTP]服务控制端口:" + port);
-        FTP_PORT = port;
-    }
+    private int controlPort = 21;
+
+    /**
+     * 被动传输地址
+     */
+    @Value("${ftp-passive-addr}")
+    private String passiveAddr = null;
+
+    /**
+     * 被动传输端口范围
+     */
+    @Value("${ftp-passive-port}")
+    private String passivePort = null;
 }

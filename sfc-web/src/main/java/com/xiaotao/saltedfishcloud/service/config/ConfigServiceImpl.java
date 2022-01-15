@@ -16,6 +16,10 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * 配置服务实现类
+ * @TODO 监听机制实现线程安全
+ */
 @Service
 @Slf4j
 public class ConfigServiceImpl implements ConfigService {
@@ -85,6 +89,7 @@ public class ConfigServiceImpl implements ConfigService {
         }
 
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
+        // @TODO 允许抛出异常中断执行
         for (Consumer<Pair<ConfigName, String>> listener : listeners) {
             listener.accept(new Pair<>(key, value));
         }

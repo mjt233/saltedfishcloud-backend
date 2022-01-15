@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.ftp;
+package com.xiaotao.saltedfishcloud.service.ftp.core;
 
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
