@@ -51,10 +51,7 @@ public class SysController {
 
     @GetMapping({"settings", "config"})
     public JsonResult getSysSettings() {
-        List<ConfigInfo> res = configDao.getAllConfig();
-        LinkedHashMap<String, Object> data = JsonResultImpl.getDataMap();
-        res.forEach(e -> data.put(e.getKey().toString(), e.getValue()));
-        return JsonResultImpl.getInstance(data);
+        return JsonResultImpl.getInstance(configService.getAllConfig());
     }
 
     @GetMapping("configKeys")

@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.dao.mybatis;
 
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.entity.po.ConfigInfo;
+import com.xiaotao.saltedfishcloud.utils.Pair;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
 
@@ -36,7 +37,7 @@ public interface ConfigDao {
      * @return
      */
     @Select("SELECT `key`,`value` FROM config")
-    List<ConfigInfo> getAllConfig();
+    List<Pair<String, String>> getAllConfig();
 
     /**
      * 设置一条配置信息

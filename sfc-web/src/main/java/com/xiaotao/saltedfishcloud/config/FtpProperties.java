@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @Data
-public class FtpConfig {
+public class FtpProperties {
     /**
      * 是否启用FTP服务
      */

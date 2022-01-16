@@ -51,10 +51,20 @@ public class ConfigServiceImpl implements ConfigService {
         return configDao
                 .getAllConfig()
                 .stream()
+                .map(e -> {
+                    String key = e.getKey();
+                    try {
+                        ConfigName configName = ConfigName.valueOf(key);
+                        return new Pair<>(configName, e.getValue());
+                    } catch (IllegalArgumentException ignore) {
+                        log.warn("[配置]未知的配置项：{}", key);
+                        return null;
+                    }
+                }).filter(Objects::nonNull)
                 .collect(
                         Collectors.toMap(
-                                ConfigInfo::getKey,
-                                ConfigInfo::getValue
+                                Pair::getKey,
+                                Pair::getValue
                         )
                 );
     }
