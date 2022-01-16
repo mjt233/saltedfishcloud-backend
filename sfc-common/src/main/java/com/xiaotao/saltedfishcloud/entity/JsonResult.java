@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public interface JsonResult {
     int getCode();
 
@@ -7,6 +9,7 @@ public interface JsonResult {
 
     String getMsg();
 
+    @JsonIgnore
     String getJsonStr();
 
     static JsonResult emptySuccess() {
