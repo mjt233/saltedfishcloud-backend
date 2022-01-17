@@ -10,10 +10,7 @@ import com.xiaotao.saltedfishcloud.service.ftp.ftplet.FtpUploadHandler;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ftpserver.ConnectionConfigFactory;
-import org.apache.ftpserver.DataConnectionConfigurationFactory;
-import org.apache.ftpserver.FtpServer;
-import org.apache.ftpserver.FtpServerFactory;
+import org.apache.ftpserver.*;
 import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.ftpserver.ftplet.Ftplet;
 import org.apache.ftpserver.listener.ListenerFactory;
@@ -131,7 +128,13 @@ public class FtpServiceImpl implements InitializingBean, FtpService {
             }
         });
         if (ftpProperties.isFtpEnable()) {
-            restart();
+            try {
+                restart();
+            } catch (FtpException | FtpServerConfigurationException e) {
+                e.printStackTrace();
+                this.ftpServer = null;
+                log.error("[FTP]服务启动失败，原因：{}", e.getMessage());
+            }
         } else {
             log.info("[FTP]FTP服务未启用");
         }
