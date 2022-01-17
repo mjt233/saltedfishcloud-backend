@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskSto
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskStatMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.springframework.util.StreamUtils;
@@ -70,14 +71,7 @@ public class DefaultTaskManager implements TaskManager {
         if (!Files.exists(taskPath)) {
             throw new TaskNotFoundException(id);
         }
-        Files.list(taskPath).forEach(path -> {
-            try {
-                Files.delete(path);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-        Files.delete(taskPath);
+        FileUtils.delete(taskPath);
     }
 
     /**

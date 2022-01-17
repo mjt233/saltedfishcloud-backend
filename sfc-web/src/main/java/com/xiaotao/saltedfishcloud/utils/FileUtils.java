@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.entity.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -12,9 +13,10 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-@Slf4j
+@Slf4j(topic = "sfc.FileUtils")
 public class FileUtils {
     private static final HashMap<String,String> map = new HashMap<>();
     static {
@@ -102,31 +104,34 @@ public class FileUtils {
      * @param local 本地存储路径
      */
     @SuppressWarnings("returnignore")
-    public static int delete(Path local) throws IOException {
-        log.debug("删除资源：{}", local.toString());
-        DirCollection dirCollection = scanDir(local);
-        Collections.reverse(dirCollection.getDirList());
-        int cnt = 0;
-        for (File file1 : dirCollection.getFileList()) {
-            log.debug("文件删除：{}", file1.getAbsolutePath());
-            if(file1.delete()) {
-                cnt++;
-            } else {
-                log.debug("删除失败：{}", file1.getPath());
-            }
-        }
-        for (File file : dirCollection.getDirList()) {
-            log.debug("目录删除：{}", file.getAbsolutePath());
-            if(file.delete()) {
-                cnt++;
-            } else {
-                log.debug("删除失败：{}", file.getPath());
-            }
-        }
+    public static int delete(@NonNull Path local) throws IOException {
+        log.debug("即将删除文件或目录：{}", local);
+        AtomicInteger cnt = new AtomicInteger();
         if (Files.isDirectory(local)) {
+            Files.walkFileTree(local, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    cnt.incrementAndGet();
+                    log.debug("删除文件：{}", file);
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    cnt.incrementAndGet();
+                    log.debug("删除目录：{}", dir);
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } else {
+            cnt.incrementAndGet();
+            log.debug("删除文件：{}", local);
             Files.delete(local);
         }
-        return cnt;
+        log.debug("{}：删除完成", local);
+        return cnt.get();
     }
 
     /**

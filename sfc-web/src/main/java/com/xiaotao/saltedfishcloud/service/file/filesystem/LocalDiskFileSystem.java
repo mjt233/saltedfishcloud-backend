@@ -370,11 +370,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
             exist = true;
         }
         storeServiceFactory.getService().store(uid, file, path, fileInfo);
-        if (exist) {
-            fileDao.updateRecord(uid, fileInfo.getName(), nid, fileInfo.getSize(), fileInfo.getMd5());
-        } else {
-            fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid);
-        }
+        fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid);
         return exist ? SAVE_COVER : SAVE_NEW_FILE;
     }
 
