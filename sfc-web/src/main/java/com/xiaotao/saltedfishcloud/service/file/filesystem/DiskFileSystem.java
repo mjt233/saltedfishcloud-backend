@@ -31,6 +31,16 @@ public interface DiskFileSystem {
     int SAVE_NOT_CHANGE = 2;
 
     /**
+     * 利用MD5通过文件系统中现有的资源直接存储到网盘
+     * @param uid   用户ID
+     * @param path 文件所在目录路径
+     * @param name 文件名
+     * @param md5 文件的MD5
+     * @return 成功为true，失败为false
+     */
+    boolean quickSave(int uid, String path, String name, String md5);
+
+    /**
      * 创建压缩文件并直接输出到输出流中，可用于多文件打包下载
      * @TODO 实现异步执行和通知机制
      * @param uid           用户ID

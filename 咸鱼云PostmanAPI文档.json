@@ -1437,6 +1437,44 @@
 								"description": "- API：`/api/file/rename/{用户ID}/{原文件所在路径}`  \r\n- 方法：POST\r\n\r\n### 参数\r\n- oldName 原文件名\r\n- newName 新文件名"
 							},
 							"response": []
+						},
+						{
+							"name": "快速保存（秒传）",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/diskFile/15/quickSave?path=/test233&name=啦啦啦.jpg&md5=0d73b405e53a03816376da287d995422",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"15",
+										"quickSave"
+									],
+									"query": [
+										{
+											"key": "path",
+											"value": "/test233",
+											"description": "文件要保存到的目录"
+										},
+										{
+											"key": "name",
+											"value": "啦啦啦.jpg",
+											"description": "文件名"
+										},
+										{
+											"key": "md5",
+											"value": "0d73b405e53a03816376da287d995422",
+											"description": "文件MD5"
+										}
+									]
+								},
+								"description": "# 快速保存（秒传）\n- url: `/api/diskFile/{uid}/quickSave`\n- 方法：POST\n\n## URL参数\n- uid 目标用户\n\n## 表单参数\n- path 文件要保存到的目录\n- name 文件名\n- md5 文件md5"
+							},
+							"response": []
 						}
 					]
 				},
@@ -2000,7 +2038,7 @@
 												"10241024"
 											]
 										},
-										"description": "设置配置项的值\n- URI：`/api/admin/sys/config/{key}/{value}` \n- 动作：PUT  \n\n### URI参数：\n- key 配置项名，可选值见配置表\n- value 要设置的值\n\n### 配置表：\n\n|配置名|说明|\n|-|-|\n|STORE_TYPE|存储类型，可选RAW和UNIQUE，RAW为原始存储，UNIQUE为利用硬链接实现的唯一存储|\n|REG_CODE|注册邀请码|\n|SYNC_DELAY |同步延迟，单位分钟，-1关闭同步功能|\n|ENABLE_EMAIL_REG|是否启用邮件注册功能，TRUE启用，FALSE关闭|\n|ENABLE_REG_CODE|是否启用注册邀请码注册功能，TRUE启用，FALSE关闭|\n|MAIL_PROPERTIES|邮件发信服务器配置，参考MAIL_PROPERTIES结构，注意转化URL编码|\n|TOKEN_SECRET|token安全密钥，修改后会导致所有token失效（影响范围：直链，用户登录状态）|\n|VERSION|系统版本，由系统内部维护，切勿手动手动修改|\n\n### MAIL_PROPERTIES结构（JSON格式）：\n\n|key|value|\n|-|-|\n|from|发信人地址|\n|alias|发信人别名称呼|\n|reply|发信人的回信地址|\n|protocol|发信协议，目前只测试过stmp|\n|username|发信服务器用户名|\n|password|发信服务器密码|\n|port|发信服务器端口|\n|host|发信服务器主机名|"
+										"description": "设置配置项的值\n- URI：`/api/admin/sys/config/{key}/{value}` \n- 动作：PUT  \n\n### URI参数：\n- key 配置项名，可选值见配置表\n- value 要设置的值\n\n### 配置表：\n\n|配置名|说明|\n|-|-|\n|STORE_TYPE|存储类型，可选RAW和UNIQUE，RAW为原始存储，UNIQUE为利用硬链接实现的唯一存储|\n|REG_CODE|注册邀请码|\n|SYNC_DELAY |同步延迟，单位分钟，-1关闭同步功能|\n|ENABLE_EMAIL_REG|是否启用邮件注册功能，TRUE启用，FALSE关闭|\n|ENABLE_REG_CODE|是否启用注册邀请码注册功能，TRUE启用，FALSE关闭|\n|MAIL_PROPERTIES|邮件发信服务器配置，参考MAIL_PROPERTIES结构，注意转化URL编码|\n|TOKEN_SECRET|token安全密钥，修改后会导致所有token失效（影响范围：直链，用户登录状态）|\n|FTP_PROPERTIES|FTP服务配置信息，参考FTP_PROPERTIES结构|\n|VERSION|系统版本，由系统内部维护，切勿手动手动修改|\n\n### MAIL_PROPERTIES结构（JSON格式）：\n\n|key|value|\n|-|-|\n|from|发信人地址|\n|alias|发信人别名称呼|\n|reply|发信人的回信地址|\n|protocol|发信协议，目前只测试过stmp|\n|username|发信服务器用户名|\n|password|发信服务器密码|\n|port|发信服务器端口|\n|host|发信服务器主机名|\n\n### FTP_PROPERTIE结构（JSON格式）：\n|key|value|\n|-|-|\n|ftpEnable|是否启用FTP|\n|listenAddr|服务监听地址|\n|controlPort|FTP主控制端口|\n|passiveAddr|被动传输地址|\n|passivePort|被动传输端口范围,示例：\"2300\":被动模式仅使用2300做数据端口\"2300-2399\": 指定闭区间端口范围\"2300-\" : 2300开始到往后的所有端口\"2300, 2305, 2400-\": 指定2300，2305和2400开始到往后的所有端口|"
 									},
 									"response": []
 								},
@@ -3034,95 +3072,6 @@
 					},
 					"response": [
 						{
-							"name": "有效期无限制的分享",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{addr}}/api/share",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"share"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "DENY"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Tue, 16 Nov 2021 02:09:16 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 6,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"f9dd9fdd8a0d490f8ea7b6f21ed63fb3\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:05:32.842+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
-						},
-						{
 							"name": "创建分享",
 							"originalRequest": {
 								"method": "POST",
@@ -3210,6 +3159,95 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 7,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"03e53fcba25546e1ae1da180e13d0263\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:06:16.619+00:00\",\n        \"expiredAt\": \"2021-12-16T09:40:53.000+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
+						},
+						{
+							"name": "有效期无限制的分享",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"path\": \"/\",\r\n    \"expiredAt\": null,\r\n    \"name\": \"我的收集\",\r\n    \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/share",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 16 Nov 2021 02:09:16 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": {\n        \"id\": 6,\n        \"uid\": 1,\n        \"nid\": \"1\",\n        \"parentId\": \"1\",\n        \"verification\": \"f9dd9fdd8a0d490f8ea7b6f21ed63fb3\",\n        \"size\": -1,\n        \"type\": \"DIR\",\n        \"extractCode\": \"啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦\",\n        \"name\": \"我的收集\",\n        \"createdAt\": \"2021-11-16T10:05:32.842+00:00\",\n        \"validateSuccess\": false,\n        \"expired\": false,\n        \"needExtractCode\": true\n    },\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},
@@ -3822,87 +3860,6 @@
 					},
 					"response": [
 						{
-							"name": "取消分享",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/api/share/2",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"share",
-										"2"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Vary",
-									"value": "Origin"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Method"
-								},
-								{
-									"key": "Vary",
-									"value": "Access-Control-Request-Headers"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-XSS-Protection",
-									"value": "1; mode=block"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, no-store, max-age=0, must-revalidate"
-								},
-								{
-									"key": "Pragma",
-									"value": "no-cache"
-								},
-								{
-									"key": "Expires",
-									"value": "0"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "DENY"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json;charset=UTF-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Date",
-									"value": "Tue, 16 Nov 2021 04:23:59 GMT"
-								},
-								{
-									"key": "Keep-Alive",
-									"value": "timeout=60"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
-						},
-						{
 							"name": "分享不存在",
 							"originalRequest": {
 								"method": "DELETE",
@@ -3982,6 +3939,87 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"code\": 404,\n    \"data\": null,\n    \"msg\": \"分享不存在\"\n}"
+						},
+						{
+							"name": "取消分享",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/share/2",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"share",
+										"2"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Method"
+								},
+								{
+									"key": "Vary",
+									"value": "Access-Control-Request-Headers"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store, max-age=0, must-revalidate"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache"
+								},
+								{
+									"key": "Expires",
+									"value": "0"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json;charset=UTF-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 16 Nov 2021 04:23:59 GMT"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=60"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 200,\n    \"data\": null,\n    \"msg\": \"OK\"\n}"
 						}
 					]
 				},

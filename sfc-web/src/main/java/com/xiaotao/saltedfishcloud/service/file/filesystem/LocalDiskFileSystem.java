@@ -42,12 +42,30 @@ import java.util.zip.ZipException;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
+@Slf4j(topic = "LocalDiskFileSystem")
 public class LocalDiskFileSystem implements DiskFileSystem {
     private final StoreServiceFactory storeServiceFactory;
     private final FileDao fileDao;
     private final FileRecordService fileRecordService;
     private final NodeService nodeService;
+
+    @Override
+    public boolean quickSave(int uid, String path, String name, String md5) {
+        List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
+        if (files.isEmpty()) {
+            return false;
+        }
+        FileInfo fileInfo = files.get(0);
+        String filePath = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
+        Resource resource = getResource(fileInfo.getUid(), filePath, fileInfo.getName());
+        try {
+            saveFile(uid, resource.getInputStream(), path, fileInfo);
+        } catch (IOException e) {
+            log.trace("错误：{}", e.getMessage());
+            return false;
+        }
+        return true;
+    }
 
     @Override
     public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {

@@ -10,21 +10,22 @@ import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.entity.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.entity.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.entity.po.param.NamePair;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
+import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResponseService;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapInfo;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
-import com.xiaotao.saltedfishcloud.utils.*;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
-import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
@@ -135,6 +136,26 @@ public class FileController {
                                  @RequestBody FileTransferInfo files) {
         String wid = wrapService.registerWrap(uid, files);
         return JsonResultImpl.getInstance(wid);
+    }
+
+    /**
+     * 通过MD5快速保存一份文件而不需要上传
+     * @param uid   用户ID
+     * @param md5   文件MD5
+     * @param name  文件名
+     * @param path  文件保存目录路径
+     */
+    @PostMapping("quickSave")
+    public JsonResult quickSave(@UID @PathVariable int uid,
+                                @RequestParam("path") String path,
+                                @RequestParam("name") String name,
+                                @RequestParam("md5") String md5) {
+        boolean b = fileService.getFileSystem().quickSave(uid, path, name, md5);
+        if (b) {
+            return JsonResult.emptySuccess();
+        } else {
+            return JsonResultImpl.getInstance(100, null, FileSystemError.QUICK_SAVE_NOT_HIT.getMessage());
+        }
     }
 
     /*
