@@ -11,8 +11,8 @@
     </parent>
     <modules>
         <module>sfc-compress</module>
-        <module>sfc-web</module>
-        <module>sfc-common</module>
+        <module>sfc-core</module>
+        <module>sfc-api</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
@@ -23,6 +23,8 @@
     <properties>
         <java.version>1.8</java.version>
         <skipTests>true</skipTests>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
     <dependencies>
         <!--    AOP    -->

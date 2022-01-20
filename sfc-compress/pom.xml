@@ -14,8 +14,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.xiaotao.saltedfishcloud</groupId>
-            <artifactId>sfc-common</artifactId>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-api</artifactId>
             <version>1.8.3.4-RELEASE</version>
         </dependency>
         <dependency>
