@@ -38,13 +38,21 @@ public class TaskMetadata {
 
     private long lastChunkSize = 0;
 
-
+    /**
+     * 创建断点续传任务基本信息
+     * @param taskId    任务ID
+     * @param fileName  文件名
+     * @param length    文件长度
+     */
     public TaskMetadata(String taskId, @NotBlank String fileName, long length) {
         this.taskId = taskId;
         this.fileName = fileName;
         this.length = length;
     }
 
+    /**
+     * 更新块信息缓存，计算最后一块的大小，每块大小，分的块数
+     */
     private void updateChunkInfo() {
         if (chunkCount == 0) {
             this.chunkCount = (int)Math.ceil((double)length / chunkSize);
@@ -53,11 +61,17 @@ public class TaskMetadata {
         }
     }
 
+    /**
+     * 获取分块总数量
+     */
     public int getChunkCount() {
         updateChunkInfo();
         return chunkCount;
     }
 
+    /**
+     * 获取最后一个分块的大小
+     */
     public long getLastChunkSize() {
         updateChunkInfo();
         return lastChunkSize;

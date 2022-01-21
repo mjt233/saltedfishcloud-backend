@@ -1,6 +1,7 @@
-package com.xiaotao.saltedfishcloud.service.breakpoint;
+package com.xiaotao.saltedfishcloud.service.breakpoint.merge;
 
-import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskStatMetadata;
+import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
+import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
 import lombok.var;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,10 +11,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
-public class MergeMultipartFile implements MultipartFile {
-    private final TaskStatMetadata taskData;
-    public MergeMultipartFile(TaskStatMetadata data) {
-        if (!data.isFinish()) {
+public class MergeBreakpointMultipartFile implements MultipartFile {
+    private final TaskMetadata taskData;
+    private final TaskManager taskManager;
+    public MergeBreakpointMultipartFile(TaskMetadata data, TaskManager manager) throws IOException {
+        taskManager = manager;
+        if(!manager.isFinish(data.getTaskId())) {
             throw new IllegalStateException("任务未完成，无法合并");
         }
         this.taskData = data;
@@ -57,7 +60,7 @@ public class MergeMultipartFile implements MultipartFile {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        return taskData.getMergeInputStream();
+        return taskManager.getMergeInputStream(taskData.getTaskId());
     }
 
     @Override

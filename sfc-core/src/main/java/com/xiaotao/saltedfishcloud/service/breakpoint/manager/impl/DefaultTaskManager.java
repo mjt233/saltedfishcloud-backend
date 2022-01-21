@@ -1,13 +1,14 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
-import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.PartParser;
-import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskStorePath;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
-import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskStatMetadata;
+import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
+import com.xiaotao.saltedfishcloud.service.breakpoint.PartParser;
+import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskStorePath;
+import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeInputStream;
+import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MultipleFileMergeInputStreamGenerator;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.springframework.util.StreamUtils;
@@ -15,14 +16,16 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 断点续传任务管理器，管理任务的创建，查询，删除和文件块的存储
  */
 @Slf4j
 public class DefaultTaskManager implements TaskManager {
-    private final ObjectMapper mapper = new ObjectMapper();
 
 
     /**
@@ -37,9 +40,8 @@ public class DefaultTaskManager implements TaskManager {
         info.setTaskId(id);
         var taskDir = TaskStorePath.getRoot(id);
         Files.createDirectories(taskDir);
-        Files.write(TaskStorePath.getMetadata(id),mapper.writeValueAsBytes(info));
+        Files.write(TaskStorePath.getMetadata(id), MapperHolder.mapper.writeValueAsBytes(info));
 
-        log.debug("Create Breakpoint Task：" + taskDir);
         return id;
     }
 
@@ -50,14 +52,13 @@ public class DefaultTaskManager implements TaskManager {
      * @throws IOException 目录读取出错
      */
     @Override
-    public TaskStatMetadata queryTask(String id) throws IOException {
+    public TaskMetadata queryTask(String id) throws IOException {
         var metadataPath = TaskStorePath.getMetadata(id);
         if (!Files.exists(metadataPath)) {
             throw new TaskNotFoundException(id);
         }
 
-        var basicInfo = mapper.readValue(Files.readAllBytes(metadataPath), TaskMetadata.class);
-        return new TaskStatMetadata(basicInfo);
+        return MapperHolder.mapper.readValue(Files.readAllBytes(metadataPath), TaskMetadata.class);
     }
 
     /**
@@ -95,5 +96,43 @@ public class DefaultTaskManager implements TaskManager {
             out.close();
         }
         stream.close();
+    }
+
+    @Override
+    public List<Integer> getFinishPart(String id) throws IOException {
+        return Files.list(TaskStorePath.getRoot(id))
+                .filter(e -> e.toString().endsWith(".part"))
+                .map(e -> Integer.parseInt(e.getFileName().toString().replaceAll(".part", "")))
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean isFinish(String id) throws IOException {
+        try {
+            TaskMetadata taskMetadata = queryTask(id);
+            return getFinishPart(id).size() == taskMetadata.getChunkCount();
+        } catch (IOException e) {
+            if (log.isDebugEnabled()) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+    }
+
+    @Override
+    public MergeInputStream getMergeInputStream(String id) throws IOException {
+        TaskMetadata taskMetadata = queryTask(id);
+        if (!this.isFinish(id)) {
+            throw new IllegalStateException("断点续传任务未完成,文件块不完整");
+        }
+
+
+        List<Integer> finishPart = getFinishPart(id);
+        Path[] paths = new Path[finishPart.size()];
+        for (Integer integer : finishPart) {
+            paths[integer - 1] = TaskStorePath.getPartFile(id, integer);
+        }
+        return new MergeInputStream(new MultipleFileMergeInputStreamGenerator(paths));
     }
 }

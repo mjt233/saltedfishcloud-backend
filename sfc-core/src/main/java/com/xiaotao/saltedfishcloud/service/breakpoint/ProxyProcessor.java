@@ -3,6 +3,8 @@ package com.xiaotao.saltedfishcloud.service.breakpoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
+import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeBreakpointFileProvider;
+import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -22,11 +24,10 @@ import java.lang.reflect.Parameter;
  * 控制器方法成功执行无异常后，将会释放对应的断点续传任务数据
  */
 @Aspect
+@RequiredArgsConstructor
 public class ProxyProcessor {
     private final TaskManager manager;
-    public ProxyProcessor(TaskManager taskManager) {
-        manager = taskManager;
-    }
+    private final MergeBreakpointFileProvider provider;
 
     @Around("@annotation(com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint)")
     public Object proxy(ProceedingJoinPoint pjp) throws Throwable {
@@ -51,7 +52,7 @@ public class ProxyProcessor {
             int index = 0;
             for (Parameter param : params) {
                 if (param.getAnnotation(MergeFile.class) != null) {
-                    args[index] = new MergeMultipartFile(manager.queryTask(id));
+                    args[index] = provider.getFile(taskInfo.getTaskId());
                 }
                 ++index;
             }

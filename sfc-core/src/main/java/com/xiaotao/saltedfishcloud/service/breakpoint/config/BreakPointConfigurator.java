@@ -5,6 +5,9 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.BreakPointControllerImpl;
 import com.xiaotao.saltedfishcloud.service.breakpoint.ProxyProcessor;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.DefaultTaskManager;
+import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeBreakpointFileProvider;
+import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeBreakpointFileProviderImpl;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -39,6 +42,7 @@ public class BreakPointConfigurator {
      * 任务管理器
      */
     @Bean
+    @ConditionalOnMissingBean(TaskManager.class)
     public TaskManager taskManager() {
         return new DefaultTaskManager();
     }
@@ -48,6 +52,12 @@ public class BreakPointConfigurator {
      */
     @Bean
     public ProxyProcessor proxyProcessor() {
-        return new ProxyProcessor(taskManager());
+        return new ProxyProcessor(taskManager(), mergeBreakpointMultipartFileProvider());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(MergeBreakpointFileProvider.class)
+    public MergeBreakpointFileProvider mergeBreakpointMultipartFileProvider() {
+        return new MergeBreakpointFileProviderImpl(taskManager());
     }
 }
