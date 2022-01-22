@@ -23,13 +23,12 @@ public class MappingInitializer {
     MappingInitializer(BreakPointController controller, RequestMappingHandlerMapping mappingHandler) throws NoSuchMethodException {
         this.controller = controller;
         this.mappingHandler = mappingHandler;
-        init();
     }
 
     /**
      * 执行初始化，注册创建、查询与删除任务的路由
      */
-    private void init() throws NoSuchMethodException {
+    public void init() throws NoSuchMethodException {
         var createMethod = controller.getClass().getMethod("createTask", TaskMetadata.class);
         var queryMethod = controller.getClass().getMethod("queryTask", String.class);
         var deleteMethod = controller.getClass().getMethod("clearTask", String.class);

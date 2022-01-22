@@ -7,6 +7,8 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.DefaultTaskManager;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeBreakpointFileProvider;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeBreakpointFileProviderImpl;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,14 +20,20 @@ import javax.annotation.Resource;
  * 断点续传相关Bean自动配置类
  */
 @Configuration
-public class BreakPointConfigurator {
-    @Resource
-    private RequestMappingHandlerMapping mapping;
+@RequiredArgsConstructor
+public class BreakPointConfigurator implements InitializingBean {
+    private final RequestMappingHandlerMapping mapping;
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        new MappingInitializer(controller(), mapping).init();
+    }
 
     /**
      * 控制路由注册
      */
     @Bean
+    @ConditionalOnMissingBean(MappingInitializer.class)
     public MappingInitializer mappingInitializer() throws NoSuchMethodException {
         return new MappingInitializer(controller(), mapping);
     }
@@ -33,7 +41,8 @@ public class BreakPointConfigurator {
     /**
      * 任务管理API控制器
      */
-    @Bean
+    @Bean(name = "breakPointController")
+    @ConditionalOnMissingBean(BreakPointController.class)
     public BreakPointController controller() {
         return new BreakPointControllerImpl(taskManager());
     }
