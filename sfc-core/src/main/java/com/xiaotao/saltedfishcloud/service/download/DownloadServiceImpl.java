@@ -16,6 +16,7 @@ import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -30,9 +31,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
-@Service
 @Slf4j
-public class DownloadService {
+public class DownloadServiceImpl implements DownloadService {
     static final private Collection<DownloadTaskInfo.State> FINISH_TYPE = Arrays.asList(
             DownloadTaskInfo.State.FINISH,
             DownloadTaskInfo.State.CANCEL,
@@ -54,16 +54,18 @@ public class DownloadService {
     /**
      * 构造器按类型注入
      */
-    public DownloadService(TaskManager taskManager) {
+    public DownloadServiceImpl(TaskManager taskManager) {
         this.taskManager = taskManager;
     }
 
-    public TaskContext<DownloadTask> getTaskContext(String taskId) {
-        return taskManager.getContext(taskId, DownloadTask.class);
+    @Override
+    public TaskContext<AsyncDownloadTask> getTaskContext(String taskId) {
+        return taskManager.getContext(taskId, AsyncDownloadTask.class);
     }
 
+    @Override
     public void interrupt(String id) {
-        var context = taskManager.getContext(id, DownloadTask.class);
+        var context = taskManager.getContext(id, AsyncDownloadTaskImpl.class);
         if (context == null) {
             throw new JsonException(404, id + "不存在");
         } else {
@@ -72,10 +74,7 @@ public class DownloadService {
         }
     }
 
-    /**
-     * 获取用户的所有下载任务
-     * @param uid   要查询的用户ID
-     */
+    @Override
     public Page<DownloadTaskInfo> getTaskList(int uid, int page, int size, TaskType type) {
         Page<DownloadTaskInfo> tasks;
         var pageRequest = PageRequest.of(page, size);
@@ -88,7 +87,7 @@ public class DownloadService {
         }
         tasks.forEach(e -> {
             if (e.state == DownloadTaskInfo.State.DOWNLOADING ) {
-                var context = taskManager.getContext(e.id, DownloadTask.class);
+                var context = taskManager.getContext(e.id, AsyncDownloadTaskImpl.class);
                 if (context == null) {
                     e.state = DownloadTaskInfo.State.FAILED;
                     e.message = "interrupt";
@@ -103,12 +102,7 @@ public class DownloadService {
         return tasks;
     }
 
-    /**
-     * 创建一个下载任务
-     * @param params 任务参数
-     * @TODO 使用队列限制同时下载的任务数
-     * @return 下载任务ID
-     */
+    @Override
     public String createTask(DownloadTaskParams params, int creator) throws NoSuchFileException {
         // 初始化下载任务和上下文
         var builder = DownloadTaskBuilder.create(params.url);
@@ -126,11 +120,11 @@ public class DownloadService {
         // 校验参数合法性
         nodeService.getPathNodeByPath(params.uid, params.savePath);
 
-        DownloadTask task = builder.build();
-        TaskContext<DownloadTask> context = factory.createContextFromAsyncTask(task);
         // 初始化下载任务信息和录入数据库
         var info = new DownloadTaskInfo();
-        task.bindingInfo = info;
+        builder.setBindingInfo(info);
+        AsyncDownloadTaskImpl task = builder.build();
+        TaskContext<AsyncDownloadTask> context = factory.createContextFromAsyncTask(task);
         info.id = context.getId();
         info.url = params.url;
         info.proxy = params.proxy;

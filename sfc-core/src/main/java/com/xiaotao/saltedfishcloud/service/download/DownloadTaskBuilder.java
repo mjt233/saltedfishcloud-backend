@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.service.async.context.EmptyCallback;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -23,6 +24,8 @@ public class DownloadTaskBuilder {
     private int readTimeout = 60000;
     @Setter
     private AsyncTackCallback onReadyCallback;
+    @Setter
+    private DownloadTaskInfo bindingInfo;
 
     public static DownloadTaskBuilder create() {
         return new DownloadTaskBuilder();
@@ -50,8 +53,8 @@ public class DownloadTaskBuilder {
         return this;
     }
 
-    public DownloadTask build() {
-        return new DownloadTask(url, method, headers, savePath,
+    public AsyncDownloadTaskImpl build() {
+        return new AsyncDownloadTaskImpl(url, method, headers, savePath,
                 proxy, connectTimeout, readTimeout,
                 onReadyCallback == null ? EmptyCallback.inst : onReadyCallback);
     }

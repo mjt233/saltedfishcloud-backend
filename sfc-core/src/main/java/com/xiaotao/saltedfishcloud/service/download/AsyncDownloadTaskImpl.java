@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.download;
 
 import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
-import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,7 @@ import java.util.Map;
  * @TODO 下载中途出错重试继续下载，出错一定次数后再设为任务失败
  */
 @Slf4j
-public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
+public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
     private final RestTemplate restTemplate;
     private final String url;
     private final HttpMethod method;
@@ -31,8 +30,11 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
     private final DownloadExtractor extractor;
     @Getter
     private final String savePath;
-    public DownloadTaskInfo bindingInfo;
 
+    @Getter
+    private DownloadTaskInfo bindingInfo;
+
+    @Override
     public boolean isInterrupted() {
         return extractor.isInterrupted();
     }
@@ -48,8 +50,8 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
      * @param readTimeout       读取超时（毫秒）
      * @param readyCallback     就绪回调
      */
-    public DownloadTask(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy,
-                        int connectTimeout, int readTimeout, AsyncTackCallback readyCallback) {
+    public AsyncDownloadTaskImpl(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy,
+                                 int connectTimeout, int readTimeout, AsyncTackCallback readyCallback) {
         this.url = url;
         this.method = method;
         this.headers = headers;
@@ -66,18 +68,12 @@ public class DownloadTask implements AsyncTask<String, DownloadTaskStatus> {
         extractor.setReadyCallback(readyCallback);
     }
 
-    /**
-     * 当成功建立连接，准备开始正式下载响应体时执行的回调，此时任务已获取完成文件名与大小
-     * @param callback 执行回调
-     */
+    @Override
     public void onReady(AsyncTackCallback callback) {
         extractor.setReadyCallback(callback);
     }
 
-    /**
-     * 下载进度发生变化时触发
-     * @param callback 回调
-     */
+    @Override
     public void onProgressCallback(AsyncTackCallback callback) {
         extractor.setProgressCallback(callback);
     }

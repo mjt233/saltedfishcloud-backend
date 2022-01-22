@@ -32,30 +32,20 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class CollectionService {
+public class CollectionServiceImpl implements CollectionService {
     private final CollectionInfoRepository collectionDao;
     private final CollectionRecordRepo recordDao;
     private final NodeService nodeService;
     private final DiskFileSystemFactory fileSystem;
 
-    /**
-     * 获取某个文件收集接收到的文件记录
-     * @param cid   收集ID
-     * @param page  页码，从0开始
-     * @param size  每页的大小
-     * @return      分页信息
-     */
+    @Override
     public Page<CollectionRecord> getSubmits(Long cid, int page, int size) {
         CollectionRecord record = new CollectionRecord();
         record.setCid(cid);
         return recordDao.findByCid(cid, PageRequest.of(page, size));
     }
 
-    /**
-     * 删除一个文件收集
-     * @param uid   调用者用户ID，用于验证权限
-     * @param cid   文件收集ID
-     */
+    @Override
     public void deleteCollection(int uid, long cid) {
         CollectionInfo collection = collectionDao.findById(cid).orElse(null);
         if (collection == null) throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
@@ -63,12 +53,7 @@ public class CollectionService {
         collectionDao.deleteById(cid);
     }
 
-    /**
-     * 关闭一个收集任务，停止收集
-     * @param uid   调用者用户ID
-     * @param cid   收集ID
-     * @return  关闭后的收集任务信息
-     */
+    @Override
     public CollectionInfo setState(int uid, Long cid, CollectionInfo.State state) {
         CollectionInfo info = collectionDao.findById(cid).orElse(null);
         if (info == null) throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
@@ -77,12 +62,7 @@ public class CollectionService {
         collectionDao.save(info);
         return info;
     }
-    /**
-     * 创建收集任务
-     * @param uid   创建者ID
-     * @param info  收集任务信息
-     * @return      收集任务ID
-     */
+    @Override
     public CollectionInfoId createCollection(int uid, CollectionDTO info) {
         if(!CollectionValidator.validateCreate(info)) {
             throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED);
@@ -100,20 +80,12 @@ public class CollectionService {
         return new CollectionInfoId(ci.getId(), ci.getVerification());
     }
 
-    /**
-     * 获取一个收集信息
-     * @param cid   收集ID
-     * @return      收集信息，若收集id不存在，则返回null
-     */
+    @Override
     public CollectionInfo getCollection(Long cid) {
         return collectionDao.findById(cid).orElse(null);
     }
 
-    /**
-     * 获取一个收集信息，此方法要求同时使用ID和验证码
-     * @param cid   收集ID
-     * @return      收集信息，若收集id不存在，则返回null
-     */
+    @Override
     public CollectionInfo getCollectionWitchVerification(CollectionInfoId cid) {
         Optional<CollectionInfo> r = collectionDao.findById(cid.getId());
 
@@ -126,15 +98,7 @@ public class CollectionService {
         }
     }
 
-    /**
-     * 接受一个文件存到集合中
-     * @param cid   收集ID
-     * @param uid   提供者ID，游客使用0
-     * @param is    文件输入流
-     * @param fileInfo      基础文件信息（至少应包含文件名，大小，md5）
-     * @param ip            提交者的IP地址
-     * @param submitFile    提交的文件信息
-     */
+    @Override
     @Transactional(rollbackFor = Throwable.class)
     public void collectFile(CollectionInfoId cid, int uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile, String ip) throws IOException {
         CollectionInfo ci = collectionDao.findById(cid.getId()).orElse(null);

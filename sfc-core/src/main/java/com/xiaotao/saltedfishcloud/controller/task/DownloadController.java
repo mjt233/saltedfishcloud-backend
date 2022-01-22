@@ -11,6 +11,7 @@ import com.xiaotao.saltedfishcloud.service.download.DownloadService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.springframework.data.domain.Page;
 import org.springframework.validation.annotation.Validated;
@@ -22,13 +23,12 @@ import javax.validation.constraints.Min;
 import java.nio.file.NoSuchFileException;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/task/download")
 @Validated
 public class DownloadController {
-    @Resource
-    private DownloadService downloadService;
-    @Resource
-    private ProxyDao proxyDao;
+    private final DownloadService downloadService;
+    private final ProxyDao proxyDao;
 
     @GetMapping("proxy")
     public JsonResult getProxy() {
@@ -46,7 +46,7 @@ public class DownloadController {
         var context = downloadService.getTaskContext(taskId);
         if (context == null) throw new JsonException(404, taskId + "不存在");
         var loginUser = SecureUtils.getSpringSecurityUser();
-        if (context.getTask().bindingInfo.uid != loginUser.getId() && loginUser.getType() != User.TYPE_ADMIN) {
+        if (context.getTask().getBindingInfo().uid != loginUser.getId() && loginUser.getType() != User.TYPE_ADMIN) {
             throw new JsonException(403, "无权操作");
         } else {
             context.interrupt();

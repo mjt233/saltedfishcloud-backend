@@ -231,6 +231,8 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String mkdirs(int uid, String path) throws IOException {
+        PathBuilder pb = new PathBuilder();
+        pb.append(path);
         String parent = PathUtils.getParentPath(path);
         String name = PathUtils.getLastNode(path);
         if (getResource(uid, parent, name) != null) {
