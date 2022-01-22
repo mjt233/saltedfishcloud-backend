@@ -233,8 +233,11 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     public String mkdirs(int uid, String path) throws IOException {
         PathBuilder pb = new PathBuilder();
         pb.append(path);
-        String parent = PathUtils.getParentPath(path);
-        String name = PathUtils.getLastNode(path);
+        if (pb.getPath().isEmpty()) {
+            return uid + "";
+        }
+        String parent = pb.range(-1);
+        String name = pb.range(1, -1);
         if (getResource(uid, parent, name) != null) {
             throw new UnsupportedOperationException("已存在同名文件：" + path);
         }
