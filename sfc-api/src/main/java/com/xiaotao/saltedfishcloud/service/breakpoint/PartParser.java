@@ -1,10 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 
 /**
  * 分块字符串解析器
  */
+@Slf4j
 public class PartParser {
     /**
      * 验证文件块格式是否正确
@@ -38,6 +40,7 @@ public class PartParser {
      */
     public static int[] parse(String part) {
 
+
         // 验证格式是否正确
         if (!validate(part)) {
             throw new IllegalArgumentException("无效的文件块描述：" + part);
@@ -53,6 +56,7 @@ public class PartParser {
         // 直接取分割后的第一个。若分割后长度为1，说明不是范围表达式，直接返回该值即可
         pair[0] = Integer.parseInt(t[0]);
         if (t.length == 1) {
+            log.debug("解析分块：{} 结果：{}", part, pair);
             return pair;
         }
 
@@ -63,6 +67,7 @@ public class PartParser {
         for (int i = 0; i < res.length; i++) {
             res[i] = pair[0] + i;
         }
+        log.debug("解析分块：{} 结果：{}", part, res);
         return res;
     }
 }

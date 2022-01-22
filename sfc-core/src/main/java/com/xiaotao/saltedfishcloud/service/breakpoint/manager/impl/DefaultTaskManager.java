@@ -92,7 +92,8 @@ public class DefaultTaskManager implements TaskManager {
         for (int i : parts) {
             var size = taskInfo.getPartSize(i);
             var out = Files.newOutputStream(TaskStorePath.getPartFile(id, i));
-            StreamUtils.copyRange(stream, out, 0, size - 1);
+            long l = StreamUtils.copyRange(stream, out, 0, size - 1);
+            log.debug("写入断点续传文件块，文件名：{} 编号：{}  大小：{}",taskInfo.getFileName() ,i, l);
             out.close();
         }
         stream.close();

@@ -42,7 +42,7 @@ import java.util.zip.ZipException;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j(topic = "LocalDiskFileSystem")
+@Slf4j
 public class LocalDiskFileSystem implements DiskFileSystem {
     private final StoreServiceFactory storeServiceFactory;
     private final FileDao fileDao;

@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-@Slf4j(topic = "sfc.FileUtils")
+@Slf4j
 public class FileUtils {
     private static final HashMap<String,String> map = new HashMap<>();
     static {
