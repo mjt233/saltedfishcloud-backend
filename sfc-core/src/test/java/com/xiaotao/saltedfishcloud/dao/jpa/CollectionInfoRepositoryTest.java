@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest
 class CollectionInfoRepositoryTest {
     @Autowired
-    private CollectionInfoRepository repository;
+    private CollectionInfoRepo repository;
 
     @Test
     public void testUpdateState() {

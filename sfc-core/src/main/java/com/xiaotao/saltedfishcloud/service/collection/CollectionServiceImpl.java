@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.collection;
 import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepository;
+import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionRecordRepo;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
@@ -33,7 +33,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class CollectionServiceImpl implements CollectionService {
-    private final CollectionInfoRepository collectionDao;
+    private final CollectionInfoRepo collectionDao;
     private final CollectionRecordRepo recordDao;
     private final NodeService nodeService;
     private final DiskFileSystemFactory fileSystem;

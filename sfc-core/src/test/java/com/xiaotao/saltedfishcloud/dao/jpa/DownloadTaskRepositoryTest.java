@@ -13,11 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
 class DownloadTaskRepositoryTest {
     @Resource
-    private DownloadTaskRepository downloadTaskRepository;
+    private DownloadTaskRepo downloadTaskRepo;
 
     @Test
     public void testMethod() {
-        var res = downloadTaskRepository.findByUidOrderByCreatedAtDesc(1, PageRequest.of(0, 10));
+        var res = downloadTaskRepo.findByUidOrderByCreatedAtDesc(1, PageRequest.of(0, 10));
         for (DownloadTaskInfo info : res) {
             System.out.println(info);
         }
@@ -29,11 +29,11 @@ class DownloadTaskRepositoryTest {
         info.proxy = "local";
         info.uid = 1;
         info.url = "abc";
-        downloadTaskRepository.saveAndFlush(info);
+        downloadTaskRepo.saveAndFlush(info);
         System.out.println(info.id);
         info.url = "2333";
-        downloadTaskRepository.saveAndFlush(info);
-        var dbInfo = downloadTaskRepository.findById(info.id).get();
+        downloadTaskRepo.saveAndFlush(info);
+        var dbInfo = downloadTaskRepo.findById(info.id).get();
         assertEquals("2333", dbInfo.url);
         System.out.println(dbInfo.createdAt);
     }

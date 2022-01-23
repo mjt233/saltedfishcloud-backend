@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepository;
+import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
@@ -35,7 +35,7 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 public class CollectController {
-    private final CollectionInfoRepository colDao;
+    private final CollectionInfoRepo colDao;
     private final CollectionService collectionService;
     private final Sort SORT_BY_EXPIRED_AT_DESC = Sort.by("expiredAt").descending();
 

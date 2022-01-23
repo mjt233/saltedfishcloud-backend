@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
-import com.xiaotao.saltedfishcloud.dao.jpa.DownloadTaskRepository;
+import com.xiaotao.saltedfishcloud.dao.jpa.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
@@ -16,10 +16,8 @@ import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.IOException;
@@ -40,7 +38,7 @@ public class DownloadServiceImpl implements DownloadService {
     );
     static final private Collection<DownloadTaskInfo.State> DOWNLOADING_TYPE = Collections.singleton(DownloadTaskInfo.State.DOWNLOADING);
     @Resource
-    private DownloadTaskRepository downloadDao;
+    private DownloadTaskRepo downloadDao;
     @Resource
     private ProxyDao proxyDao;
     @Resource

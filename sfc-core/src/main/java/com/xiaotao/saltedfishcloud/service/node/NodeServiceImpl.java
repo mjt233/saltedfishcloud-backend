@@ -28,19 +28,14 @@ import java.util.*;
 @Slf4j
 @Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
-public class NodeService {
+public class NodeServiceImpl implements NodeService {
     private final NodeDao nodeDao;
     @Autowired
     private NodeCacheService cacheService;
     @Autowired
     private NodeService self;
 
-    /**
-     * 根据用户ID和节点ID获取对应的节点信息，可识别到根ID
-     * @param uid   用户ID
-     * @param nid   节点ID，可以是根ID
-     * @return      节点ID，若无结果则为null
-     */
+    @Override
     @Cacheable(cacheNames = "path", key = "#uid+':node:'+#nid")
     public NodeInfo getNodeById(Integer uid, String nid) {
         if (nid.length() == 32) {
@@ -52,11 +47,7 @@ public class NodeService {
         return node;
     }
 
-    /**
-     * 获取用户的完整目录树
-     * @param uid   用户ID
-     * @return      节点目录树
-     */
+    @Override
     public NodeTree getFullTree(int uid) {
         NodeTree tree = new NodeTree();
         List<NodeInfo> allNode = nodeDao.getAllNode(uid);
@@ -67,18 +58,13 @@ public class NodeService {
         return tree;
     }
 
+    @Override
     @Cacheable(cacheNames = "path", key = "#uid+':pnid:'+#parentId+':'+#nodeName")
     public NodeInfo getNodeByParentId(int uid, String parentId, String nodeName) {
         return nodeDao.getNodeByParentId(uid, parentId, nodeName);
     }
 
-    /**
-     * 获取某个路径中途径的节点信息
-     * @param uid   用户ID
-     * @param path  路径
-     * @throws NoSuchFileException 请求的路径不存在时抛出此异常
-     * @return  节点信息列表
-     */
+    @Override
     public LinkedList<NodeInfo> getPathNodeByPath(int uid, String path) throws NoSuchFileException {
         log.debug("search path" + uid + ": " + path);
         LinkedList<NodeInfo> link = new LinkedList<>();
@@ -122,13 +108,7 @@ public class NodeService {
         return link;
     }
 
-    /**
-     * 添加一个节点
-     * @param uid 用户ID
-     * @param name 名称
-     * @param parent 父节点ID
-     * @return 新节点ID
-     */
+    @Override
     public String addNode(int uid, String name, String parent) {
         int i;
         String id;
@@ -145,12 +125,7 @@ public class NodeService {
         }
     }
 
-    /**
-     * 取某节点下的所有子节点
-     * @param uid 用户ID
-     * @param nid 目标节点ID
-     * @return 目标节点下的所有子节点（不包含自己）
-     */
+    @Override
     public List<NodeInfo> getChildNodes(int uid, String nid) {
         // 最终结果
         List<NodeInfo> res = new LinkedList<>();
@@ -171,12 +146,7 @@ public class NodeService {
     }
 
 
-    /**
-     * 移除节点
-     * @param uid   用户ID
-     * @param ids   节点ID集合
-     * @return  删除数
-     */
+    @Override
     @RemoveNodeCache(uid = 0, nid = 1)
     public int deleteNodes(int uid, Collection<String> ids) {
         if (!ids.isEmpty()) {
@@ -186,23 +156,12 @@ public class NodeService {
         }
     }
 
-    /**
-     * 获取路径对应的节点ID
-     * @param uid   用户ID
-     * @param path  请求的路径
-     * @return  节点ID
-     * @throws NoSuchFileException  路径不存在
-     */
+    @Override
     public String getNodeIdByPath(int uid, String path) throws NoSuchFileException {
         return self.getPathNodeByPath(uid, path).getLast().getId();
     }
 
-    /**
-     * 通过节点ID 获取节点所在的完整路径位置
-     * @param uid       用户ID
-     * @param nodeId    节点ID
-     * @return          完整路径
-     */
+    @Override
     @Cacheable(cacheNames = "path", key = "#uid+':path:'+#nodeId")
     public String getPathByNode(int uid, String nodeId) {
         if (nodeId.length() < 32) {

@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-public interface CollectionInfoRepository extends JpaRepository<CollectionInfo, Long> {
+public interface CollectionInfoRepo extends JpaRepository<CollectionInfo, Long> {
     @Transactional
     @Query("UPDATE CollectionInfo C SET C.state = 'CLOSED' WHERE C.expiredAt <= function('NOW') ")
     @Modifying
