@@ -19,7 +19,6 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-@Deprecated
 public class FileInfo extends BasicFileInfo{
     /**
      * 文件所属用户ID

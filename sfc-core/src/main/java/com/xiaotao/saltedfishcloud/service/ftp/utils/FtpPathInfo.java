@@ -89,33 +89,20 @@ public class FtpPathInfo {
         return isResourceRoot() ? "/" : pathBuilder.range(-2, 1);
     }
 
-    /**
-     * 获取该FTP路径对应的本地文件系统物理路径
-     * @param uid   用户ID
-     * @return      本地文件系统物理路径
-     */
-    public String toNativePath(int uid) {
-        if (resourceArea.equals(FtpDiskType.PUBLIC)) {
-            return DiskConfig.rawPathHandler.getStorePath(0, resourcePath, null);
-        } else {
-            return DiskConfig.rawPathHandler.getStorePath(uid, resourcePath, null);
-        }
-    }
-
-    /**
-     * 获取该FTP路径对应的本地文件系统物理路径<br>
-     * 如果路径是FTP根路径，则返回null
-     * @param username  用户名
-     * @return      本地文件系统物理路径
-     */
-    public String toNativePath(String username) {
-        if (isFtpRoot()) {
-            return null;
-        }
-        if (resourceArea.equals(FtpDiskType.PUBLIC)) {
-            return DiskConfig.rawPathHandler.getStorePath(0, resourcePath, null);
-        } else {
-            return DiskConfig.getUserPrivateDiskRoot(username) + resourcePath;
-        }
-    }
+//    /**
+//     * 获取该FTP路径对应的本地文件系统物理路径<br>
+//     * 如果路径是FTP根路径，则返回null
+//     * @param username  用户名
+//     * @return      本地文件系统物理路径
+//     */
+//    public String toNativePath(String username) {
+//        if (isFtpRoot()) {
+//            return null;
+//        }
+//        if (resourceArea.equals(FtpDiskType.PUBLIC)) {
+//            return DiskConfig.rawPathHandler.getStorePath(0, resourcePath, null);
+//        } else {
+//            return DiskConfig.getUserPrivateDiskRoot(username) + resourcePath;
+//        }
+//    }
 }

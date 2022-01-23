@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.ftp.core;
 
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
@@ -69,7 +70,9 @@ public class DiskFtpFileSystemView implements FileSystemView {
             }
 
             // cd到具体目录
-            if(!Files.exists(Paths.get(ftpPathInfo.toNativePath(user.getName())))) {
+            DiskFileSystem fileSystem = fileSystemFactory.getFileSystem();
+            if (fileSystem.exist(user.getId(), ftpPathInfo.getResourcePath()) ||
+                fileSystem.getResource(user.getId(), ftpPathInfo.getResourceParent(), ftpPathInfo.getName()) != null) {
                 throw new IllegalArgumentException("路径不存在，切换到：" + originalPath);
             }
 

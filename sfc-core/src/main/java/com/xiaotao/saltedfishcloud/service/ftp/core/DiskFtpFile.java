@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.ftp.core;
 
+import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
@@ -8,22 +9,27 @@ import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FtpFile;
+import org.springframework.core.io.Resource;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class DiskFtpFile implements FtpFile {
     private final FtpPathInfo pathInfo;
     private final DiskFtpUser user;
-    private File nativeFile;
     private final DiskFileSystemFactory fileService;
+    private Resource fileResource;
+
+    /**
+     * 处于FTP根或资源根
+     */
+    @Getter
+    private boolean isRoot;
 
     /**
      * 构造一个网盘FTP文件
@@ -33,10 +39,12 @@ public class DiskFtpFile implements FtpFile {
     public DiskFtpFile(String path, DiskFtpUser user, DiskFileSystemFactory fileService) {
         this.user = user;
         pathInfo = new FtpPathInfo(path);
-        if (!pathInfo.isFtpRoot()) {
-            nativeFile = new File(pathInfo.toNativePath(user.getName()));
-        }
         this.fileService = fileService;
+        if (pathInfo.isFtpRoot() || pathInfo.isResourceRoot()) {
+            isRoot = true;
+            return;
+        }
+        fileResource = fileService.getFileSystem().getResource(user.getId(), pathInfo.getResourceParent(), pathInfo.getName());
     }
     @Override
     public String getAbsolutePath() {
@@ -58,7 +66,7 @@ public class DiskFtpFile implements FtpFile {
         if (pathInfo.isFtpRoot() || pathInfo.isResourceRoot()) {
             return true;
         } else {
-            return nativeFile.isDirectory();
+            return fileService.getFileSystem().exist(user.getId(), pathInfo.getResourcePath()) && fileResource == null;
         }
     }
 
@@ -69,7 +77,7 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean doesExist() {
-        return pathInfo.isFtpRoot() || nativeFile.exists();
+        return isRoot || fileService.getFileSystem().exist(user.getId(), pathInfo.getResourcePath());
     }
 
     @Override
@@ -115,9 +123,21 @@ public class DiskFtpFile implements FtpFile {
         return 0;
     }
 
+    /**
+     * @TODO 针对目录进行日期处理
+     */
     @Override
     public long getLastModified() {
-        return nativeFile.lastModified();
+        if (isRoot() || fileResource == null) {
+            return System.currentTimeMillis();
+        } else {
+            try {
+                return fileResource.lastModified();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return System.currentTimeMillis();
+            }
+        }
     }
 
     @Override
@@ -127,7 +147,12 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public long getSize() {
-        return nativeFile.length();
+        try {
+            return isRoot() ? 0 : fileResource.contentLength();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return 0;
+        }
     }
 
     @Override
@@ -207,12 +232,20 @@ public class DiskFtpFile implements FtpFile {
             return res;
         }
 
-        File[] files = nativeFile.listFiles();
-        String path = getAbsolutePath();
-        if (files == null) {
-            return new LinkedList<>();
+        try {
+            List<FileInfo>[] userFileList = fileService.getFileSystem().getUserFileList(user.getId(), pathInfo.getResourcePath());
+            if (userFileList == null) {
+                return Collections.emptyList();
+            }
+            String path = getAbsolutePath();
+            List<FileInfo> res = new ArrayList<>();
+            res.addAll(userFileList[0]);
+            res.addAll(userFileList[1]);
+            return res.stream().map(f -> new DiskFtpFile(path + "/" + f.getName(), user, fileService)).collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Collections.emptyList();
         }
-        return Arrays.stream(files).map(f -> new DiskFtpFile(path + "/" + f.getName(), user, fileService)).collect(Collectors.toList());
     }
 
     /**
@@ -241,7 +274,7 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public InputStream createInputStream(long offset) throws IOException {
-        FileInputStream inputStream = new FileInputStream(nativeFile);
+        InputStream inputStream = fileResource.getInputStream();
         if (inputStream.skip(offset) != offset) {
             throw new IOException("Out of offset");
         }
