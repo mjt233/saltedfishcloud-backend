@@ -1,12 +1,19 @@
 package com.xiaotao.saltedfishcloud.service.sync;
 
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactoryImpl;
+import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.store.localstore.RAWStoreService;
+import com.xiaotao.saltedfishcloud.service.file.store.localstore.StoreServiceFactoryImpl;
 import com.xiaotao.saltedfishcloud.service.sync.detector.SyncDiffDetector;
 import com.xiaotao.saltedfishcloud.service.sync.handler.SyncDiffHandler;
 import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.entity.po.User;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
+import org.apache.ftpserver.ftplet.FileSystemFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,23 +23,27 @@ import java.io.IOException;
 @Service
 @Slf4j
 @Transactional(rollbackFor = Exception.class)
+@RequiredArgsConstructor
 public class SyncService {
     private final static ReadOnlyLevel WORKING_READ_ONLY_LEVEL = ReadOnlyLevel.DATA_CHECKING;
     private final SyncDiffHandler handler;
     private final SyncDiffDetector detector;
-
-    SyncService(SyncDiffHandler handler, SyncDiffDetector detector) {
-        this.handler = handler;
-        this.detector = detector;
-    }
+    private final StoreServiceFactory storeServiceFactory;
+    private final DiskFileSystemFactory diskFileSystemFactory;
 
     /**
      * 同步目标用户的数据库与本地文件信息
-     * @TODO 性能优化：找出被重命名的文件，目录和被移动的目录
      * @param user  用户对象信息
      * @throws IOException IO出错
      */
     public void syncLocal(User user) throws Exception {
+        if (!(diskFileSystemFactory.getFileSystem() instanceof DiskFileSystemFactoryImpl) ||
+                !(storeServiceFactory instanceof StoreServiceFactoryImpl) ||
+                !(storeServiceFactory.getService() instanceof RAWStoreService)
+        ) {
+            log.warn("当前文件系统服务不支持同步功能");
+            return;
+        }
         try {
             DiskConfig.setReadOnlyLevel(WORKING_READ_ONLY_LEVEL);
             var result = detector.detect(user);
