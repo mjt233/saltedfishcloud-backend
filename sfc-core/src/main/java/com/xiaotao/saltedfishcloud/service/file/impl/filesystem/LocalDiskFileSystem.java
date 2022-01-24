@@ -54,6 +54,16 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     private final RawPathHandler rawPathHandler;
 
     @Override
+    public void saveAvatar(int uid, Resource resource) throws IOException {
+        storeServiceFactory.getService().saveAvatar(uid, resource);
+    }
+
+    @Override
+    public Resource getAvatar(int uid) {
+        return storeServiceFactory.getService().getAvatar(uid);
+    }
+
+    @Override
     public boolean quickSave(int uid, String path, String name, String md5) {
         List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
         if (files.isEmpty()) {

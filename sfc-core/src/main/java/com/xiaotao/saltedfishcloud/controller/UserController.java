@@ -2,27 +2,28 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.service.http.ResourceService;
-import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.MultipartFileResource;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.hibernate.validator.constraints.Length;
-import org.springframework.core.io.PathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
@@ -38,7 +39,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -53,7 +53,7 @@ public class UserController {
     public static final String PREFIX = "/api/user";
 
     private final UserService userService;
-    private final ResourceService resourceService;
+    private final DiskFileSystemFactory fileSystemFactory;
     private final UserDao userDao;
     private final TokenDaoImpl tokenDao;
     private final SysRuntimeConfig runtimeConfig;
@@ -211,8 +211,11 @@ public class UserController {
      * @param file  头像文件
      */
     @PostMapping("avatar")
-    public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file) {
-        userService.setAvatar(SecureUtils.getSpringSecurityUser().getUsername(), file);
+    public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
+        fileSystemFactory.getFileSystem().saveAvatar(
+                SecureUtils.getSpringSecurityUser().getId(),
+                new MultipartFileResource(file)
+        );
         return JsonResult.emptySuccess();
     }
 
@@ -225,17 +228,22 @@ public class UserController {
             "avatar"
     })
     @AllowAnonymous
-    public ResponseEntity<org.springframework.core.io.Resource>
+    public ResponseEntity<Resource>
                 getAvatar(HttpServletResponse response, @PathVariable(required = false) String username) throws IOException {
-        try {
-            String profilePath = username == null ? LocalStoreConfig.getLoginUserProfileRoot() : LocalStoreConfig.getUserProfileRoot(username);
-            File[] avatars = new File(profilePath).listFiles(pathname -> pathname.getName().contains("avatar"));
-
-            // 数组越界，空指针操作均视为头像不存在
-            return ResourceUtils.wrapResource(new PathResource(avatars[0].getPath()));
-        } catch (Exception e) {
+        User currentUser = SecureUtils.getSpringSecurityUser();
+        if (currentUser == null && username == null) {
             response.sendRedirect("/api/static/static/defaultAvatar.png");
             return null;
+        }
+        if (username == null) {
+            return ResourceUtils.wrapResource(fileSystemFactory.getFileSystem().getAvatar(currentUser.getId()));
+        } else {
+            User user = userService.getUserByUser(username);
+            if (user == null) {
+                throw new JsonException(AccountError.USER_NOT_EXIST);
+            } else {
+                return ResourceUtils.wrapResource(fileSystemFactory.getFileSystem().getAvatar(user.getId()));
+            }
         }
     }
 

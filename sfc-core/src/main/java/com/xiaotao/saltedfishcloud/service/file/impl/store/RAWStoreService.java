@@ -1,21 +1,29 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
+import com.xiaotao.saltedfishcloud.constant.error.AccountError;
+import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.path.PathHandler;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.DiskFileUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -26,11 +34,60 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig.ACCEPT_AVATAR_TYPE;
+
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class RAWStoreService implements StoreService {
-    private final UserDao userDao;
+    @Autowired
+    private UserService userService;
+
+    private final static Resource DEFAULT_AVATAR_RESOURCE = new ClassPathResource("/static/static/defaultAvatar.png");
+
+    @Override
+    public Resource getAvatar(int uid) {
+        User user = userService.getUserById(uid);
+        if (user == null) {
+            throw new JsonException(AccountError.USER_NOT_EXIST);
+        }
+        String profilePath = LocalStoreConfig.getUserProfileRoot(user.getUsername());
+        File[] avatars = new File(profilePath).listFiles(pathname -> pathname.getName().contains("avatar"));
+        if (avatars == null || avatars.length == 0) {
+            return DEFAULT_AVATAR_RESOURCE;
+        } else {
+            return new PathResource(avatars[0].getPath());
+        }
+    }
+
+    @Override
+    public void saveAvatar(int uid, Resource resource) throws IOException {
+        //  文件属性约束：大小不得大于3MiB，限定文件类型
+        if (resource.contentLength() > 1024*1024*3) {
+            throw new JsonException(400, "文件过大");
+        }
+        String name = resource.getFilename();
+        if (name == null) {
+            throw new JsonException(400, "不支持的格式，只支持jpg, jpeg, gif, png");
+        }
+
+        String suffix = FileUtils.getSuffix(name);
+        if ( !ACCEPT_AVATAR_TYPE.contains(suffix)) {
+            throw new JsonException(400, "不支持的格式，只支持jpg, jpeg, gif, png");
+        }
+        String username = userService.getUserById(uid).getUsername();
+
+        try {
+            Path profileRoot = Paths.get(LocalStoreConfig.getUserProfileRoot(username));
+            Files.createDirectories(profileRoot);
+            File[] avatars = profileRoot.toFile().listFiles(pathname -> pathname.getName().contains("avatar"));
+            if (avatars != null && avatars.length != 0) {
+                avatars[0].delete();
+            }
+            Files.copy(resource.getInputStream(), Paths.get(profileRoot + "/avatar." + suffix), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new JsonException(500, e.getMessage());
+        }
+    }
 
     @Override
     public List<FileInfo> lists(int uid, String path) throws IOException {
@@ -40,7 +97,7 @@ public class RAWStoreService implements StoreService {
             return null;
         }
         List<FileInfo> res = new ArrayList<>();
-        User user = userDao.getUserById(uid);
+        User user = userService.getUserById(uid);
         if (user == null) throw new UserNoExistException(uid + "");
         Files.list(p2).forEach(e -> {
             FileInfo fi = FileInfo.getLocal(e.toString(), false);

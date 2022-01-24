@@ -52,12 +52,12 @@ java -jar ../sfc-web/target/%jar_name% ^
 --spring.redis.host=%redis_host% ^
 --spring.redis.port=%redis_port% ^
 --spring.redis.password=%redis_password% ^
---public-root=%public_root% ^
---store-root=%store_root% ^
---store-type=%store_type% ^
+--local.store.public-root=%public_root% ^
+--local.store.store-root=%store_root% ^
+--local.store.store-type=%store_type% ^
 --RegCode=%reg_code% ^
---sync-delay=%sync_delay% ^
---sync-launch=%sync_launch% ^
+--local.store.sync-delay=%sync_delay% ^
+--local.store.sync-launch=%sync_launch% ^
 --ftp-port=%ftp_port% ^
 --ftp-passive-addr=%ftp_passive_addr% ^
 --ftp-passive-port=%ftp_passive_port% %*

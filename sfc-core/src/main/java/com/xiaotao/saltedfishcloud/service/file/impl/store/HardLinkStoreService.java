@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -21,10 +22,6 @@ import java.nio.file.StandardCopyOption;
 @Slf4j
 @Component
 public class HardLinkStoreService extends RAWStoreService {
-
-    public HardLinkStoreService(UserDao userDao) {
-        super(userDao);
-    }
 
     @Override
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {

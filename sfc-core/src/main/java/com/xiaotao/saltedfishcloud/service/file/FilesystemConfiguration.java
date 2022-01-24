@@ -37,8 +37,6 @@ public class FilesystemConfiguration {
     @Resource
     private FileRecordService fileRecordService;
 
-    @Resource
-
     @Bean
     @ConditionalOnMissingBean(StoreServiceFactory.class)
     public StoreServiceFactory storeServiceFactory() {

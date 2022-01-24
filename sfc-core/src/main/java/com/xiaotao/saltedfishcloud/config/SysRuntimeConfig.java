@@ -4,8 +4,11 @@ import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.Map;
 
@@ -14,9 +17,11 @@ import java.util.Map;
  */
 @Component
 @Slf4j
-public class SysRuntimeConfig {
+public class SysRuntimeConfig implements InitializingBean {
     private static SysRuntimeConfig GLOBAL_HOLD_INST;
-    private final ConfigService configService;
+
+    @Autowired
+    private ConfigService configService;
 
     @Getter
     private boolean enableRegCode;
@@ -30,8 +35,8 @@ public class SysRuntimeConfig {
         return GLOBAL_HOLD_INST;
     }
 
-    public SysRuntimeConfig(ConfigService configService) {
-        this.configService = configService;
+    @Override
+    public void afterPropertiesSet() {
         fetchConfig();
         SysRuntimeConfig.GLOBAL_HOLD_INST = this;
 

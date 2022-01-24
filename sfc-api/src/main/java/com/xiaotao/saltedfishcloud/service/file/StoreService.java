@@ -14,7 +14,27 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * 存储服务，负责文件物理数据的存取
+ * @TODO 抽离出用户元数据存储服务（头像，自定义背景图等）
+ */
 public interface StoreService {
+
+
+    /**
+     * 获取用户头像资源
+     * @param uid   用户ID
+     * @return      用户未设置头像时，为null
+     */
+    Resource getAvatar(int uid);
+
+    /**
+     * 保存用户头像
+     * @param uid   用户ID
+     * @param resource 头像资源
+     */
+    void saveAvatar(int uid, Resource resource) throws IOException;
+
     /**
      * 获取指定目录的文件信息列表
      * @param uid   用户ID
