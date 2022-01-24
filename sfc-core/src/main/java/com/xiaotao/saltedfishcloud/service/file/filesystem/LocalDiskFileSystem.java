@@ -17,6 +17,7 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
+import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -26,6 +27,7 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
@@ -48,6 +50,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     private final FileDao fileDao;
     private final FileRecordService fileRecordService;
     private final NodeService nodeService;
+    private final RawPathHandler rawPathHandler;
 
     @Override
     public boolean quickSave(int uid, String path, String name, String md5) {
@@ -247,16 +250,19 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     }
 
     @Override
-    public FileInfo getFileByMD5(String md5) throws NoSuchFileException {
+    public Resource getResourceByMd5(String md5) throws NoSuchFileException {
         FileInfo fileInfo;
         List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
         if (files.size() == 0) throw new NoSuchFileException("文件不存在: " + md5);
         fileInfo = files.get(0);
         String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
         fileInfo.setPath(path + "/" + fileInfo.getName());
-        fileInfo.setPath(DiskConfig.getPathHandler().getStorePath(fileInfo.getUid(), path, fileInfo));
-        fileInfo.setName(md5 + "." + FileUtils.getSuffix(fileInfo.getName()));
-        return fileInfo;
+        return new PathResource(rawPathHandler.getStorePath(fileInfo.getUid(), path, fileInfo)){
+            @Override
+            public String getFilename() {
+                return md5 + "." + FileUtils.getSuffix(fileInfo.getName());
+            }
+        };
     }
 
     @Override

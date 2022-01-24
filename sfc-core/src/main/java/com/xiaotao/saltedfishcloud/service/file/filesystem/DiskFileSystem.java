@@ -105,7 +105,7 @@ public interface DiskFileSystem {
      * @return      文件信息，path为本地文件系统中的实际存储文件路径，文件名将被重命名为md5+原文件拓展名
      * @throws NoSuchFileException  没有文件时抛出
      */
-    FileInfo getFileByMD5(String md5) throws IOException;
+    Resource getResourceByMd5(String md5) throws IOException;
 
     /**
      * 复制指定用户的文件或目录到指定用户的某个目录下

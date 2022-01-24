@@ -11,9 +11,10 @@ import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.service.http.ResponseService;
+import com.xiaotao.saltedfishcloud.service.http.ResourceService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -21,6 +22,7 @@ import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.core.io.PathResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
@@ -51,7 +53,7 @@ public class UserController {
     public static final String PREFIX = "/api/user";
 
     private final UserService userService;
-    private final ResponseService responseService;
+    private final ResourceService resourceService;
     private final UserDao userDao;
     private final TokenDaoImpl tokenDao;
     private final SysRuntimeConfig runtimeConfig;
@@ -230,7 +232,7 @@ public class UserController {
             File[] avatars = new File(profilePath).listFiles(pathname -> pathname.getName().contains("avatar"));
 
             // 数组越界，空指针操作均视为头像不存在
-            return responseService.sendFile(avatars[0].getPath());
+            return ResourceUtils.wrapResource(new PathResource(avatars[0].getPath()));
         } catch (Exception e) {
             response.sendRedirect("/api/static/static/defaultAvatar.png");
             return null;

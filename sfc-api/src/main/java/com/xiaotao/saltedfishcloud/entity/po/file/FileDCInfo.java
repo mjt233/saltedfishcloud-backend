@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Deprecated
 public class FileDCInfo extends BasicFileInfo{
     private int uid;
     private String dir;

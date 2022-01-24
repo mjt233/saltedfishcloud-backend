@@ -20,7 +20,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.http.ResponseService;
+import com.xiaotao.saltedfishcloud.service.http.ResourceService;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapInfo;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -57,7 +57,7 @@ public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
     private final DiskFileSystemFactory fileService;
-    private final ResponseService responseService;
+    private final ResourceService resourceService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final WrapService wrapService;
 
@@ -232,7 +232,7 @@ public class FileController {
         String requestPath = URLUtils.getRequestFilePath(prefix, request);
         org.springframework.core.io.Resource resource = fileService.getFileSystem().getResource(uid, requestPath, "");
         if (resource != null) {
-            return responseService.wrapResource(resource);
+            return ResourceUtils.wrapResource(resource);
         } else {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }

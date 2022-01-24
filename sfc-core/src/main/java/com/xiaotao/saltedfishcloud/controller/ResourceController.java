@@ -6,15 +6,16 @@ import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.http.ResponseService;
+import com.xiaotao.saltedfishcloud.service.http.ResourceService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
+import lombok.var;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class ResourceController {
     public static final String PREFIX = "/api/resource/";
     private final DiskFileSystemFactory fileService;
     private final NodeService nodeService;
-    private final ResponseService responseService;
+    private final ResourceService resourceService;
 
     @GetMapping({"node/**", "node"})
     @AllowAnonymous
@@ -90,7 +91,7 @@ public class ResourceController {
     public ResponseEntity<org.springframework.core.io.Resource> downloadByFDC(@PathVariable String code,
                                                                               @RequestParam(required = false, defaultValue = "false") boolean download)
             throws MalformedURLException, UnsupportedEncodingException {
-        return responseService.getResourceByDC(code, download);
+        return resourceService.getResourceByDC(code, download);
     }
 
 
@@ -106,16 +107,16 @@ public class ResourceController {
             HttpServletRequest request
     )
             throws IOException {
-        FileInfo file = fileService.getFileSystem().getFileByMD5(md5);
+        var resource = fileService.getFileSystem().getResourceByMd5(md5);
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/fileContentByMD5/" + md5, request);
         String name;
         if (path.length() > 1) {
             name = path.substring(path.lastIndexOf('/') + 1);
-            if (name.length() == 0) name = file.getName();
+            if (name.length() == 0) name = resource.getFilename();
         } else {
-            name = file.getName();
+            name = resource.getFilename();
         }
-        return responseService.sendFile(file.getPath(), name);
+        return ResourceUtils.wrapResource(resource, name);
     }
 
 }

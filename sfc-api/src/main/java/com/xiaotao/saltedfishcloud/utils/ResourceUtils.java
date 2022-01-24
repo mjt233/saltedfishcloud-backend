@@ -11,15 +11,20 @@ public class ResourceUtils {
         public static final String ContentDisposition = "Content-Disposition";
     }
     public static ResponseEntity<Resource> wrapResource(Resource resource) throws UnsupportedEncodingException {
+        return ResourceUtils.wrapResource(resource, resource.getFilename());
+    }
+
+    public static ResponseEntity<Resource> wrapResource(Resource resource, String filename) throws UnsupportedEncodingException {
         String name = resource.getFilename();
         assert name != null;
-        String disposition = "inline;filename*=UTF-8''"+ URLEncoder.encode(name, "utf-8");
+        String disposition = generateContentDisposition(filename);
         String ct = FileUtils.getContentType(name);
         return ResponseEntity.ok()
                 .header("Content-Type", ct)
                 .header("Content-Disposition", disposition)
                 .body(resource);
     }
+
 
     public static String generateContentDisposition(String filename) throws UnsupportedEncodingException {
         return "inline;filename*=UTF-8''"+ URLEncoder.encode(filename, "utf-8");
