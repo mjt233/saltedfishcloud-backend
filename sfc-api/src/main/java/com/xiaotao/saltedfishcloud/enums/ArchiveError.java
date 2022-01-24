@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.compress.enums;
+package com.xiaotao.saltedfishcloud.enums;
 
 import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
 import lombok.Getter;

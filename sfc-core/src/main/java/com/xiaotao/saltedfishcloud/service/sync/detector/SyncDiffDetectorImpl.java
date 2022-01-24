@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.sync.detector;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.DirCollection;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 import com.xiaotao.saltedfishcloud.service.sync.model.SyncDiffResultDefaultImpl;
@@ -58,7 +58,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
         // 数据库中所有文件信息
         Map<String, Collection<? extends FileInfo>> dbFile = fetchDbFiles(uid);
         // 用户目录本地硬盘上的信息集合
-        DirCollection local = FileUtils.scanDir(Paths.get(DiskConfig.getPathHandler().getStorePath(user.getId(), "/", null)));
+        DirCollection local = FileUtils.scanDir(Paths.get(LocalStoreConfig.getPathHandler().getStorePath(user.getId(), "/", null)));
         // 本地硬盘上的目录集合
         Set<String> localDir = local.getDirList().stream().map(e -> DiskFileUtils.getRelativePath(user, e.getPath())).collect(Collectors.toSet());
         localDir.add("/");
@@ -78,7 +78,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
         LinkedList<FileInfo> deletedFiles = new LinkedList<>();
         dbFile.forEach((k,v) -> {
             v.forEach(fileInfo -> {
-                Path path = Paths.get(DiskConfig.getRawFileStoreRootPath(uid) + "/" + k + "/" + fileInfo.getName());
+                Path path = Paths.get(LocalStoreConfig.getRawFileStoreRootPath(uid) + "/" + k + "/" + fileInfo.getName());
                 if ( !Files.exists(path) || Files.isDirectory(path)) {
                     deletedFiles.add(fileInfo);
                 } else {

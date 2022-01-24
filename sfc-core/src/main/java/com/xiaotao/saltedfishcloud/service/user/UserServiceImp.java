@@ -1,10 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -36,7 +37,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Date;
 
-import static com.xiaotao.saltedfishcloud.config.DiskConfig.ACCEPT_AVATAR_TYPE;
+import static com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig.ACCEPT_AVATAR_TYPE;
 
 @Service
 @Transactional(rollbackFor = Exception.class)
@@ -48,6 +49,7 @@ public class UserServiceImp implements UserService {
     private final MailMessageGenerator mailMessageGenerator;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SysRuntimeConfig sysRuntimeConfig;
+    private final SysProperties sysProperties;
 
     @Override
     public User getUserByAccount(String account) {
@@ -262,7 +264,7 @@ public class UserServiceImp implements UserService {
         } else {
 
             // 通过注册邀请码注册
-            if (!code.equals(DiskConfig.REG_CODE)) {
+            if (!code.equals(sysProperties.getRegCode())) {
                 throw new JsonException(AccountError.REG_CODE_ERROR);
             }
             return addUser(user, passwd, email, User.TYPE_COMMON);
@@ -299,7 +301,7 @@ public class UserServiceImp implements UserService {
         }
 
         try {
-            Path profileRoot = Paths.get(DiskConfig.getUserProfileRoot(username));
+            Path profileRoot = Paths.get(LocalStoreConfig.getUserProfileRoot(username));
             Files.createDirectories(profileRoot);
             File[] avatars = profileRoot.toFile().listFiles(pathname -> pathname.getName().contains("avatar"));
             if (avatars != null && avatars.length != 0) {

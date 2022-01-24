@@ -1,13 +1,15 @@
-package com.xiaotao.saltedfishcloud.service.file.filesystem;
+package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.compress.creator.ArchiveCompressor;
 import com.xiaotao.saltedfishcloud.compress.creator.ArchiveResourceEntry;
 import com.xiaotao.saltedfishcloud.compress.creator.ZipCompressor;
-import com.xiaotao.saltedfishcloud.compress.enums.ArchiveError;
-import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
+import com.xiaotao.saltedfishcloud.enums.ArchiveError;
+import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.compress.reader.ArchiveReaderVisitor;
 import com.xiaotao.saltedfishcloud.compress.reader.impl.ZipArchiveReader;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
@@ -17,8 +19,8 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
-import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
-import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.path.RawPathHandler;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -27,6 +29,7 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
@@ -169,7 +172,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
 
 
         // 创建临时目录用于存放临时解压的文件
-        Path tempBasePath = Paths.get(DiskConfig.STORE_ROOT + "/temp/" + System.currentTimeMillis());
+        Path tempBasePath = Paths.get(LocalStoreConfig.STORE_ROOT + "/temp/" + System.currentTimeMillis());
 
 
         try(ZipArchiveReader fileSystem = new ZipArchiveReader(resource.getFile())) {
@@ -288,9 +291,9 @@ public class LocalDiskFileSystem implements DiskFileSystem {
 
     @Override
     public List<FileInfo>[] getUserFileList(int uid, String path) throws IOException {
-        if (uid == 0 || DiskConfig.STORE_TYPE == StoreType.RAW) {
+        if (uid == 0 || LocalStoreConfig.STORE_TYPE == StoreType.RAW) {
             // 初始化用户目录
-            String baseLocalPath = DiskConfig.getRawFileStoreRootPath(uid);
+            String baseLocalPath = LocalStoreConfig.getRawFileStoreRootPath(uid);
             File root = new File(baseLocalPath);
             if (!root.exists()) {
                 if (!root.mkdir()) {
@@ -421,7 +424,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
         res += storeServiceFactory.getService().delete(uid, path, name);
 
         // 唯一存储模式下删除文件后若文件不再被引用，则在存储仓库中删除
-        if (DiskConfig.STORE_TYPE == StoreType.UNIQUE && fileInfos.size() > 0) {
+        if (LocalStoreConfig.STORE_TYPE == StoreType.UNIQUE && fileInfos.size() > 0) {
             Set<String> all = fileInfos
                     .stream()
                     .filter(BasicFileInfo::isFile)

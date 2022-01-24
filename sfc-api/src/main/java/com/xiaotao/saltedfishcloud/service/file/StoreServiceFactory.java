@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.file.store;
+package com.xiaotao.saltedfishcloud.service.file;
 
 public interface StoreServiceFactory {
     StoreService getService();

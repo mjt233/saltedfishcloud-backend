@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.ftp.core;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import lombok.RequiredArgsConstructor;
 import org.apache.ftpserver.ftplet.FileSystemFactory;
 import org.apache.ftpserver.ftplet.FileSystemView;

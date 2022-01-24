@@ -1,19 +1,18 @@
 package com.xiaotao.saltedfishcloud.service.sync;
 
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactoryImpl;
-import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.store.localstore.RAWStoreService;
-import com.xiaotao.saltedfishcloud.service.file.store.localstore.StoreServiceFactoryImpl;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DiskFileSystemFactoryImpl;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.RAWStoreService;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.StoreServiceFactoryImpl;
 import com.xiaotao.saltedfishcloud.service.sync.detector.SyncDiffDetector;
 import com.xiaotao.saltedfishcloud.service.sync.handler.SyncDiffHandler;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
-import org.apache.ftpserver.ftplet.FileSystemFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +44,7 @@ public class SyncService {
             return;
         }
         try {
-            DiskConfig.setReadOnlyLevel(WORKING_READ_ONLY_LEVEL);
+            LocalStoreConfig.setReadOnlyLevel(WORKING_READ_ONLY_LEVEL);
             var result = detector.detect(user);
             var deletedFiles = result.getDeletedFiles();
             var changeFiles = result.getChangeFiles();
@@ -67,14 +66,14 @@ public class SyncService {
             log.debug("被删除的文件数：{}" , deletedFiles.size());
             log.debug("==== 任务完成 ====");
 
-            DiskConfig.setReadOnlyLevel(null);
+            LocalStoreConfig.setReadOnlyLevel(null);
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
         } finally {
-            DiskConfig.setReadOnlyLevel(null);
+            LocalStoreConfig.setReadOnlyLevel(null);
         }
     }
 }

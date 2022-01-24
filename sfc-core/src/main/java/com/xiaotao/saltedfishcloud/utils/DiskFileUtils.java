@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +28,9 @@ public class DiskFileUtils {
         String userBasePath;
         String res;
         if (user.getId() == 0) {
-            userBasePath = DiskConfig.getRawFileStoreRootPath(0);
+            userBasePath = LocalStoreConfig.getRawFileStoreRootPath(0);
         } else {
-            userBasePath = DiskConfig.getUserPrivateDiskRoot(user.getUser());
+            userBasePath = LocalStoreConfig.getUserPrivateDiskRoot(user.getUser());
         }
         res = local.substring(userBasePath.length());
         return res.length() == 0 ? "/" : res;
@@ -43,7 +43,7 @@ public class DiskFileUtils {
      */
     public static int delete(String md5) throws IOException {
         int res = 1;
-        Path filePath = Paths.get(DiskConfig.getUniqueStoreRoot() + "/" + StringUtils.getUniquePath(md5));
+        Path filePath = Paths.get(LocalStoreConfig.getUniqueStoreRoot() + "/" + StringUtils.getUniquePath(md5));
         Files.delete(filePath);
         log.debug("删除本地文件：{}", filePath);
         DirectoryStream<Path> paths = Files.newDirectoryStream(filePath.getParent());

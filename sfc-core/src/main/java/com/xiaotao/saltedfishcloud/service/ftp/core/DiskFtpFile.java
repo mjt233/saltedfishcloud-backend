@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.ftp.core;
 
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.entity.po.User;
@@ -87,7 +87,7 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean isWritable() {
-        if (DiskConfig.getReadOnlyLevel() == ReadOnlyLevel.DATA_MOVING) {
+        if (LocalStoreConfig.getReadOnlyLevel() == ReadOnlyLevel.DATA_MOVING) {
             return false;
         }
         // FTP根目录不可写

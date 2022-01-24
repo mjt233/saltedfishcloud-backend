@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
-import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
@@ -31,7 +31,7 @@ public class SysController {
     @Resource
     private ConfigServiceImpl configService;
     @Resource
-    private ConfigDao configDao;
+    private SysProperties sysProperties;
     @Resource
     private AdminService adminService;
     @Resource
@@ -42,7 +42,7 @@ public class SysController {
     public JsonResult getOverview() {
         LinkedHashMap<String, Object> res = JsonResultImpl.getDataMap();
         res.put("store", adminService.getStoreState());
-        res.put("invite_reg_code", DiskConfig.REG_CODE);
+        res.put("invite_reg_code", sysProperties.getRegCode());
         return JsonResultImpl.getInstance(res);
     }
 
@@ -76,7 +76,7 @@ public class SysController {
             if (configService.setStoreType(storeType)) {
                 return JsonResult.emptySuccess();
             } else {
-                return JsonResultImpl.getInstance(202, DiskConfig.STORE_TYPE.toString(), "请求被忽略，模式无变化");
+                return JsonResultImpl.getInstance(202, LocalStoreConfig.STORE_TYPE.toString(), "请求被忽略，模式无变化");
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("无效的类型，可选RAW或UNIQUE");

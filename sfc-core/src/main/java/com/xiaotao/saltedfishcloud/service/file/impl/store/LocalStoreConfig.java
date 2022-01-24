@@ -1,12 +1,12 @@
-package com.xiaotao.saltedfishcloud.config;
+package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
 
+import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.service.config.version.Version;
-import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
-import com.xiaotao.saltedfishcloud.service.file.path.RawPathHandler;
-import com.xiaotao.saltedfishcloud.service.file.path.UniquePathHandler;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.path.PathHandler;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.path.RawPathHandler;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.path.UniquePathHandler;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
@@ -14,6 +14,7 @@ import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -29,9 +30,9 @@ import java.util.Objects;
  * @TODO 抽离依赖其他数据的操作方法到其他类，按单一职责原则重构
  */
 @Component
+@PropertySource("classpath:config.properties")
 @Slf4j
-public class DiskConfig {
-    public static Version VERSION;
+public class LocalStoreConfig {
     public static RawPathHandler rawPathHandler;
     public static UniquePathHandler uniquePathHandler;
 
@@ -51,9 +52,6 @@ public class DiskConfig {
 
     // 个人用户数据路径（包括网盘文件，用户配置文件，用户头像等）
     public static String STORE_ROOT;
-
-    // 注册邀请码
-    public static String REG_CODE;
 
     // 用户个性化配置文件根目录
     public static String USER_PROFILE_ROOT;
@@ -90,10 +88,10 @@ public class DiskConfig {
         READ_ONLY_LEVEL = level;
     }
 
-    public DiskConfig(UserDao userDao, RawPathHandler rawPathHandler, UniquePathHandler uniquePathHandler) {
-        DiskConfig.userDao = userDao;
-        DiskConfig.rawPathHandler = rawPathHandler;
-        DiskConfig.uniquePathHandler = uniquePathHandler;
+    public LocalStoreConfig(UserDao userDao, RawPathHandler rawPathHandler, UniquePathHandler uniquePathHandler) {
+        LocalStoreConfig.userDao = userDao;
+        LocalStoreConfig.rawPathHandler = rawPathHandler;
+        LocalStoreConfig.uniquePathHandler = uniquePathHandler;
     }
 
     /**
@@ -119,35 +117,27 @@ public class DiskConfig {
         }
     }
 
-    @Value("${app.version}")
-    public void setVersion(String v) {
-        VERSION = Version.valueOf(v);
-    }
-
-    @Value("${reg-code}")
-    public void setRegCode(String v) {
-        REG_CODE = v;
-    }
 
 
-    @Value("${sync-delay}")
+
+    @Value("${local.store.sync-delay}")
     public void setSyncDelay(int v) {
         SYNC_DELAY = v;
     }
 
-    @Value("${sync-launch}")
+    @Value("${local.store.sync-launch}")
     public void setSyncLaunch(boolean a) {
         LAUNCH_SYNC = a;
     }
 
-    @Value("${public-root}")
+    @Value("${local.store.public-root}")
     public void setPublicRoot(String root) throws IOException {
         if (!OSInfo.isWindows() && !root.startsWith("/"))  {
             throw new IllegalArgumentException("public-root must be start with \"/\" in Linux");
         }
         log.info("[公共网盘路径]" + root);
         File file = new File(root);
-        DiskConfig.PUBLIC_ROOT =file.getPath();
+        LocalStoreConfig.PUBLIC_ROOT =file.getPath();
         this.checkPathConflict();
     }
 
@@ -173,19 +163,19 @@ public class DiskConfig {
         }
     }
 
-    @Value("${store-root}")
+    @Value("${local.store.store-root}")
     public void setStoreRoot(String root) {
         if (!OSInfo.isWindows() && !root.startsWith("/"))  {
             throw new IllegalArgumentException("store-root must be start with \"/\" in Linux");
         }
         log.info("[私人网盘根目录]" + root);
         File file = new File(root);
-        DiskConfig.STORE_ROOT =file.getPath();
-        DiskConfig.USER_PROFILE_ROOT = STORE_ROOT + "/user_profile/";
+        LocalStoreConfig.STORE_ROOT =file.getPath();
+        LocalStoreConfig.USER_PROFILE_ROOT = STORE_ROOT + "/user_profile/";
         this.checkPathConflict();
     }
 
-    @Value("${store-type}")
+    @Value("${local.store.store-type}")
     public void setStoreType(String type) {
         if (type.toLowerCase().equals("raw")) {
             STORE_TYPE = StoreType.RAW;
@@ -213,14 +203,14 @@ public class DiskConfig {
     }
 
     public static String getRawStoreRoot() {
-        return DiskConfig.STORE_ROOT + "/user_file/";
+        return LocalStoreConfig.STORE_ROOT + "/user_file/";
     }
 
     /**
      * 获取唯一文件存储路径
      */
     public static String getUniqueStoreRoot() {
-        return DiskConfig.STORE_ROOT + "/repo/";
+        return LocalStoreConfig.STORE_ROOT + "/repo/";
     }
 
     /**
@@ -247,7 +237,7 @@ public class DiskConfig {
      * @return  本次文件系统路径
      */
     public static String getUserProfileRoot(String username) {
-        return DiskConfig.USER_PROFILE_ROOT + "/" + username;
+        return LocalStoreConfig.USER_PROFILE_ROOT + "/" + username;
     }
 
 }

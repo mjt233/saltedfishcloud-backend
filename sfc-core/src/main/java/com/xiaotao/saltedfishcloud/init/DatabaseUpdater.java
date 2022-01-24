@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
@@ -29,6 +29,7 @@ public class DatabaseUpdater implements ApplicationRunner {
     private final Version lastVersion;
     private final Version currentVersion;
     private final ResourceLoader resourceLoader;
+    private final SysProperties sysProperties;
 
     /**
      * SQL版本更新脚本资源类，用于从一个SQL版本更新脚本文件Resource中解析版本信息
@@ -63,18 +64,23 @@ public class DatabaseUpdater implements ApplicationRunner {
         }
     }
 
-    public DatabaseUpdater(DataSource dataSource, ConfigDao configDao, ResourceLoader resourceLoader) throws SQLException {
+    public DatabaseUpdater(DataSource dataSource,
+                           ConfigDao configDao,
+                           ResourceLoader resourceLoader,
+                           SysProperties sysProperties
+    ) throws SQLException {
         conn = dataSource.getConnection();
         Version v;
         try {
             v = Version.valueOf(configDao.getConfigure(ConfigName.VERSION));
         } catch (Exception e) {
-            v = DiskConfig.VERSION;
+            v = sysProperties.getVersion();
         }
         lastVersion = v;
-        currentVersion = DiskConfig.VERSION;
+        currentVersion = sysProperties.getVersion();
         this.configDao = configDao;
         this.resourceLoader = resourceLoader;
+        this.sysProperties = sysProperties;
     }
 
     @Override
@@ -94,7 +100,7 @@ public class DatabaseUpdater implements ApplicationRunner {
             }
         }
         conn.close();
-        configDao.setConfigure(ConfigName.VERSION, DiskConfig.VERSION.toString());
+        configDao.setConfigure(ConfigName.VERSION, sysProperties.getVersion().toString());
     }
 
 }

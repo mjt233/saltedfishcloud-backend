@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.file.store;
+package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;

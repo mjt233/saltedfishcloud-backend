@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
@@ -28,13 +28,13 @@ public class DebugController {
         } catch (Exception e) {
             r = null;
         }
-        DiskConfig.setReadOnlyLevel(r);
+        LocalStoreConfig.setReadOnlyLevel(r);
         return JsonResult.emptySuccess();
     }
 
     @GetMapping("readOnly")
     public JsonResult getReadOnlyLevel() {
-        return JsonResultImpl.getInstance(DiskConfig.getReadOnlyLevel());
+        return JsonResultImpl.getInstance(LocalStoreConfig.getReadOnlyLevel());
     }
 
     @GetMapping("options")
@@ -46,9 +46,9 @@ public class DebugController {
                 data.put(e.getKey().toString(), e.getValue());
             });
         }
-        data.put("READ_ONLY_LEVEL", DiskConfig.getReadOnlyLevel());
-        data.put("read_only_level", DiskConfig.getReadOnlyLevel());
-        data.put("sync_delay", DiskConfig.SYNC_DELAY);
+        data.put("READ_ONLY_LEVEL", LocalStoreConfig.getReadOnlyLevel());
+        data.put("read_only_level", LocalStoreConfig.getReadOnlyLevel());
+        data.put("sync_delay", LocalStoreConfig.SYNC_DELAY);
 
         return JsonResultImpl.getInstance(200, data, "小写字段将在后续版本中废弃");
     }

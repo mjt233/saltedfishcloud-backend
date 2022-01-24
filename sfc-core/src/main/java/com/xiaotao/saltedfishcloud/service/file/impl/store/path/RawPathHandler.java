@@ -1,7 +1,7 @@
-package com.xiaotao.saltedfishcloud.service.file.path;
+package com.xiaotao.saltedfishcloud.service.file.impl.store.path;
 
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import org.springframework.stereotype.Component;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class RawPathHandler implements PathHandler{
     public String getStorePath(String username, String targetDir, BasicFileInfo fileInfo) {
         PathBuilder pb = new PathBuilder();
-        pb.append(DiskConfig.getUserPrivateDiskRoot(username))
+        pb.append(LocalStoreConfig.getUserPrivateDiskRoot(username))
                 .append("/")
                 .append(targetDir);
         if (fileInfo != null) {
@@ -32,11 +32,11 @@ public class RawPathHandler implements PathHandler{
     public String getStorePath(int uid, String targetDir, BasicFileInfo fileInfo) {
         PathBuilder pathBuilder = new PathBuilder();
         if (fileInfo != null) {
-            pathBuilder.append(DiskConfig.getRawFileStoreRootPath(uid))
+            pathBuilder.append(LocalStoreConfig.getRawFileStoreRootPath(uid))
                     .append(targetDir)
                     .append(fileInfo.getName());
         } else {
-            pathBuilder.append(DiskConfig.getRawFileStoreRootPath(uid)).append(targetDir);
+            pathBuilder.append(LocalStoreConfig.getRawFileStoreRootPath(uid)).append(targetDir);
         }
         return pathBuilder.toString();
     }

@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
@@ -228,7 +228,7 @@ public class UserController {
     public ResponseEntity<org.springframework.core.io.Resource>
                 getAvatar(HttpServletResponse response, @PathVariable(required = false) String username) throws IOException {
         try {
-            String profilePath = username == null ? DiskConfig.getLoginUserProfileRoot() : DiskConfig.getUserProfileRoot(username);
+            String profilePath = username == null ? LocalStoreConfig.getLoginUserProfileRoot() : LocalStoreConfig.getUserProfileRoot(username);
             File[] avatars = new File(profilePath).listFiles(pathname -> pathname.getName().contains("avatar"));
 
             // 数组越界，空指针操作均视为头像不存在

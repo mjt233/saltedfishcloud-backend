@@ -1,11 +1,11 @@
-package com.xiaotao.saltedfishcloud.service.file.filesystem;
+package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.compress.enums.ArchiveType;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import org.springframework.core.io.Resource;
@@ -240,8 +240,10 @@ public interface DiskFileSystem {
      */
     @SuppressWarnings("all")
     default String getFileDC(int uid, String path, BasicFileInfo fileInfo, int expr) throws IOException {
-        Path localPath = Paths.get(DiskConfig.getPathHandler().getStorePath(uid, path, fileInfo));
-        if ( !Files.exists(localPath) ){
+        if (
+                !exist(uid, PathBuilder.formatPath(path + "/" + fileInfo.getName(), true))
+                || getResource(uid, path, fileInfo.getName()) == null
+        ) {
             throw new JsonException(404, "文件不存在");
         }
         FileDCInfo info = new FileDCInfo();

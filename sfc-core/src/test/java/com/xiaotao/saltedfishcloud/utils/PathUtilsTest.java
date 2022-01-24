@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import org.junit.jupiter.api.Test;
@@ -20,9 +20,9 @@ class PathUtilsTest {
     @Test
     void getRelativePath() {
         User user = userDao.getUserByUser("xiaotao");
-        String path = DiskFileUtils.getRelativePath(User.getPublicUser(), DiskConfig.PUBLIC_ROOT + "/asdasd/asd/asd/zxv/z/asd");
+        String path = DiskFileUtils.getRelativePath(User.getPublicUser(), LocalStoreConfig.PUBLIC_ROOT + "/asdasd/asd/asd/zxv/z/asd");
         assertEquals("/asdasd/asd/asd/zxv/z/asd", path);
-        String local = DiskConfig.rawPathHandler.getStorePath(user.getId(), "/a/b/c/aweq", null);
+        String local = LocalStoreConfig.rawPathHandler.getStorePath(user.getId(), "/a/b/c/aweq", null);
         System.out.println(local);
         path = DiskFileUtils.getRelativePath(user, local);
         assertEquals("/a/b/c/aweq", path);

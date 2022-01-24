@@ -1,13 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.sync.handler;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.store.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -58,7 +58,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
         for (FileChangeInfo changeInfo : files) {
             FileInfo newFile = changeInfo.newFile;
             newFile.updateMd5();
-            if (DiskConfig.STORE_TYPE == StoreType.UNIQUE) {
+            if (LocalStoreConfig.STORE_TYPE == StoreType.UNIQUE) {
                 fileService.getFileSystem().moveToSaveFile(
                         uid,
                         newFile.getOriginFile().toPath(),

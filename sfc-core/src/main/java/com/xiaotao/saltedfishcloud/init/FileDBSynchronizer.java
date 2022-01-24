@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.service.sync.SyncService;
 import lombok.extern.slf4j.Slf4j;
@@ -44,23 +44,23 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
     @Override
     public void run() {
         boolean first = true;
-        while (DiskConfig.SYNC_DELAY > 0) {
+        while (LocalStoreConfig.SYNC_DELAY > 0) {
             try {
-                if (first && !DiskConfig.LAUNCH_SYNC) {
+                if (first && !LocalStoreConfig.LAUNCH_SYNC) {
                     first = false;
-                    Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
+                    Thread.sleep(LocalStoreConfig.SYNC_DELAY*1000*60);
                 }
                 log.debug("开始同步文件信息");
                 long start = System.currentTimeMillis();
                 doAction();
                 log.debug("同步完成，任务耗时：{} s", (System.currentTimeMillis() - start)/1000);
-                Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
+                Thread.sleep(LocalStoreConfig.SYNC_DELAY*1000*60);
             } catch (InterruptedException i) {
                 break;
             }catch (Exception e) {
                 log.warn("同步出错：{} 本轮同步任务跳过，等待下一轮 ", e.getMessage());
                 try {
-                    Thread.sleep(DiskConfig.SYNC_DELAY*1000*60);
+                    Thread.sleep(LocalStoreConfig.SYNC_DELAY*1000*60);
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                 }

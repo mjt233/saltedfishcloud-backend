@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -20,10 +20,10 @@ public class DirInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         File[] files = {
-                new File(DiskConfig.PUBLIC_ROOT),
-                new File(DiskConfig.STORE_ROOT),
-                new File(DiskConfig.getRawStoreRoot()),
-                new File(DiskConfig.STORE_ROOT + "/user_profile")
+                new File(LocalStoreConfig.PUBLIC_ROOT),
+                new File(LocalStoreConfig.STORE_ROOT),
+                new File(LocalStoreConfig.getRawStoreRoot()),
+                new File(LocalStoreConfig.STORE_ROOT + "/user_profile")
         };
         Arrays.stream(files).forEach(file -> {
             if (!file.exists()) {

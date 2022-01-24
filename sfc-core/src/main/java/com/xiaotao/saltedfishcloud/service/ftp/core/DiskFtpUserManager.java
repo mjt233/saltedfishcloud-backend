@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.ftp.core;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class DiskFtpUserManager implements UserManager {
         authorities.add(new TransferRatePermission(0, 0));
         ftpUser.setAuthorities(authorities);
         ftpUser.setName(username);
-        ftpUser.setHomeDirectory(DiskConfig.PUBLIC_ROOT);
+        ftpUser.setHomeDirectory(LocalStoreConfig.PUBLIC_ROOT);
         return ftpUser;
     }
 

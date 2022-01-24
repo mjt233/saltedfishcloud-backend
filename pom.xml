@@ -27,6 +27,11 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
     <dependencies>
+        <!--    参数配置    -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+        </dependency>
         <!--    AOP    -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

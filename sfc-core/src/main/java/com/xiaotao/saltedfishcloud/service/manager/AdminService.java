@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.manager;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
@@ -17,12 +17,12 @@ public class AdminService {
     private FileAnalyseDao fileAnalyseDao;
     public Map<String, Object> getStoreState() {
         LinkedHashMap<String, Object> data = JsonResultImpl.getDataMap();
-        File storeRoot = new File(DiskConfig.STORE_ROOT);
-        File publicRoot = new File(DiskConfig.PUBLIC_ROOT);
+        File storeRoot = new File(LocalStoreConfig.STORE_ROOT);
+        File publicRoot = new File(LocalStoreConfig.PUBLIC_ROOT);
         long userTotalSize = fileAnalyseDao.getUserTotalSize();
-        long realTotalUserSize = DiskConfig.STORE_TYPE == StoreType.UNIQUE ? fileAnalyseDao.getRealTotalUserSize() : userTotalSize;
+        long realTotalUserSize = LocalStoreConfig.STORE_TYPE == StoreType.UNIQUE ? fileAnalyseDao.getRealTotalUserSize() : userTotalSize;
         long publicTotalSize = fileAnalyseDao.getPublicTotalSize();
-        data.put("store_type", DiskConfig.STORE_TYPE);
+        data.put("store_type", LocalStoreConfig.STORE_TYPE);
         data.put("file_count", fileAnalyseDao.getFileCount());
         data.put("dir_count", fileAnalyseDao.getDirCount());
         data.put("real_user_size", realTotalUserSize);
@@ -34,7 +34,7 @@ public class AdminService {
         data.put("public_free_space", publicRoot.getFreeSpace());
         data.put("store_root", storeRoot.getPath());
         data.put("public_root", publicRoot.getPath());
-        data.put("read_only", DiskConfig.getReadOnlyLevel());
+        data.put("read_only", LocalStoreConfig.getReadOnlyLevel());
         return data;
     }
 }

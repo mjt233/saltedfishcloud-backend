@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
@@ -27,7 +28,9 @@ public class ConfigServiceImpl implements ConfigService {
     @Resource
     private StoreTypeSwitch storeTypeSwitch;
     @Resource
-    private DiskConfig diskConfig;
+    private LocalStoreConfig localStoreConfig;
+    @Resource
+    private SysProperties sysProperties;
     private final ArrayList<Consumer<Pair<ConfigName, String>>> listeners = new ArrayList<>();
     private final Map<ConfigName, List<Consumer<String>>> configListeners = new HashMap<>();
 
@@ -91,7 +94,7 @@ public class ConfigServiceImpl implements ConfigService {
             case STORE_TYPE: return setStoreType(StoreType.valueOf(value));
             case REG_CODE: setInviteRegCode(value); return true;
             case SYNC_DELAY:
-                DiskConfig.SYNC_DELAY = Integer.parseInt(value);
+                LocalStoreConfig.SYNC_DELAY = Integer.parseInt(value);
                 configDao.setConfigure(key, value);
             default:
                 configDao.setConfigure(key, value);
@@ -136,13 +139,13 @@ public class ConfigServiceImpl implements ConfigService {
         }
         log.info("存储切换：{} -> {}", storeType, type.toString());
         try {
-            DiskConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_MOVING);
+            LocalStoreConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_MOVING);
             configDao.setConfigure(StoreType.getConfigKey(), type.toString());
-            diskConfig.setStoreType(type.toString());
+            localStoreConfig.setStoreType(type.toString());
             storeTypeSwitch.switchTo(type);
-            DiskConfig.setReadOnlyLevel(null);
+            LocalStoreConfig.setReadOnlyLevel(null);
         } catch (IOException | RuntimeException e) {
-            DiskConfig.setReadOnlyLevel(null);
+            LocalStoreConfig.setReadOnlyLevel(null);
             throw e;
         }
         return true;
@@ -154,6 +157,6 @@ public class ConfigServiceImpl implements ConfigService {
      */
     public void setInviteRegCode(String code) {
         configDao.setConfigure(ConfigName.REG_CODE, code);
-        DiskConfig.REG_CODE = code;
+        sysProperties.setRegCode(code);
     }
 }

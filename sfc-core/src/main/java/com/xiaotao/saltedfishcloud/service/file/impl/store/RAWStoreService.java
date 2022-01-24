@@ -1,14 +1,13 @@
-package com.xiaotao.saltedfishcloud.service.file.store.localstore;
+package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
 import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.service.file.path.PathHandler;
-import com.xiaotao.saltedfishcloud.service.file.store.StoreService;
+import com.xiaotao.saltedfishcloud.service.file.StoreService;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.path.PathHandler;
 import com.xiaotao.saltedfishcloud.utils.DiskFileUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ public class RAWStoreService implements StoreService {
 
     @Override
     public List<FileInfo> lists(int uid, String path) throws IOException {
-        String p = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
+        String p = LocalStoreConfig.rawPathHandler.getStorePath(uid, path, null);
         Path p2 = Paths.get(p);
         if (!Files.exists(p2) || !Files.isDirectory(p2)) {
             return null;
@@ -54,7 +53,7 @@ public class RAWStoreService implements StoreService {
 
     @Override
     public Resource getResource(int uid, String path, String name) {
-        String storePath = DiskConfig.rawPathHandler.getStorePath(uid, path + "/" + name, null);
+        String storePath = LocalStoreConfig.rawPathHandler.getStorePath(uid, path + "/" + name, null);
         Path p = Paths.get(storePath);
         if (!Files.exists(p) || Files.isDirectory(p)) {
             return null;
@@ -64,13 +63,13 @@ public class RAWStoreService implements StoreService {
 
     @Override
     public boolean exist(int uid, String path) {
-        String p = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
+        String p = LocalStoreConfig.rawPathHandler.getStorePath(uid, path, null);
         return Files.exists(Paths.get(p));
     }
 
     @Override
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
-        Path targetPath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
+        Path targetPath = Paths.get(LocalStoreConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
         if (Files.exists(targetPath) && Files.isDirectory(targetPath)) {
             throw new IllegalArgumentException("被覆盖的目标 " + fileInfo.getName() + " 是个目录");
         }
@@ -83,14 +82,14 @@ public class RAWStoreService implements StoreService {
 
     @Override
     public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        String localSource = DiskConfig.getPathHandler().getStorePath(uid, source, null);
-        String localTarget = DiskConfig.getPathHandler().getStorePath(targetId, target, null);
+        String localSource = LocalStoreConfig.getPathHandler().getStorePath(uid, source, null);
+        String localTarget = LocalStoreConfig.getPathHandler().getStorePath(targetId, target, null);
         FileUtils.copy(Paths.get(localSource),Paths.get(localTarget), sourceName, targetName, false);
     }
 
     @Override
     public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
-        Path rawTarget = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, targetDir, fileInfo));
+        Path rawTarget = Paths.get(LocalStoreConfig.rawPathHandler.getStorePath(uid, targetDir, fileInfo));
         if (Files.exists(rawTarget) && Files.isDirectory(rawTarget)) {
             throw new UnableOverwriteException(409, "已存在同名目录: " + targetDir + "/" + fileInfo.getName());
         }
@@ -101,7 +100,7 @@ public class RAWStoreService implements StoreService {
 
     @Override
     public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
-        PathHandler pathHandler = DiskConfig.rawPathHandler;
+        PathHandler pathHandler = LocalStoreConfig.rawPathHandler;
         BasicFileInfo fileInfo = new BasicFileInfo(name, null);
         Path sourcePath = Paths.get(pathHandler.getStorePath(uid, source, fileInfo));
         Path targetPath = Paths.get(pathHandler.getStorePath(uid, target, fileInfo));
@@ -110,13 +109,13 @@ public class RAWStoreService implements StoreService {
 
     @Override
     public void rename(int uid, String path, String oldName, String newName) throws IOException {
-        String base = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
+        String base = LocalStoreConfig.rawPathHandler.getStorePath(uid, path, null);
         FileUtils.rename(base, oldName, newName);
     }
 
     @Override
     public boolean mkdir(int uid, String path, String name) throws IOException {
-        Path localFilePath = Paths.get(DiskConfig.rawPathHandler.getStorePath(uid, path, null) + "/" + name);
+        Path localFilePath = Paths.get(LocalStoreConfig.rawPathHandler.getStorePath(uid, path, null) + "/" + name);
         if (Files.exists(localFilePath)) {
             return Files.isDirectory(localFilePath);
         }
@@ -131,7 +130,7 @@ public class RAWStoreService implements StoreService {
 
     @Override
     public long delete(int uid, String path, Collection<String> files) throws IOException {
-        String base = DiskConfig.rawPathHandler.getStorePath(uid, path, null);
+        String base = LocalStoreConfig.rawPathHandler.getStorePath(uid, path, null);
         int cnt = 0;
         for (String file : files) {
             Path fullPath = Paths.get(base + "/" + file);

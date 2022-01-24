@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.file.path;
+package com.xiaotao.saltedfishcloud.service.file.impl.store.path;
 
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 

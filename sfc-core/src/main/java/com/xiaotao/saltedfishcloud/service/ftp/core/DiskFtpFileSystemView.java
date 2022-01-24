@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.ftp.core;
 
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FileSystemView;
@@ -23,7 +23,7 @@ public class DiskFtpFileSystemView implements FileSystemView {
         this.user = user;
         pathBuilder.setForcePrefix(true);
         if (!user.isAnonymousUser()) {
-            Path up = Paths.get(DiskConfig.getUserPrivateDiskRoot(user.getName()));
+            Path up = Paths.get(LocalStoreConfig.getUserPrivateDiskRoot(user.getName()));
             if (!Files.exists(up)) {
                 Files.createDirectory(up);
             }

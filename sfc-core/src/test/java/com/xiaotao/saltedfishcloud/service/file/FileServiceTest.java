@@ -1,8 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.filesystem.DiskFileSystemFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 

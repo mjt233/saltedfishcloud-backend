@@ -1,6 +1,6 @@
-package com.xiaotao.saltedfishcloud.service.file.path;
+package com.xiaotao.saltedfishcloud.service.file.impl.store.path;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import org.springframework.stereotype.Component;
@@ -26,7 +26,7 @@ public class UniquePathHandler implements PathHandler {
                 throw new JsonException(500, "无效MD5");
             }
             String md5 = fileInfo.getMd5();
-            return DiskConfig.getUniqueStoreRoot()
+            return LocalStoreConfig.getUniqueStoreRoot()
                     + "/"
                     + md5.substring(0,2)
                     + "/"

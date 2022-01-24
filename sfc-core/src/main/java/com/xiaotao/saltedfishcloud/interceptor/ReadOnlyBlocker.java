@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.interceptor;
 
-import com.xiaotao.saltedfishcloud.config.DiskConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.utils.ArrayUtils;
@@ -22,7 +22,7 @@ public class ReadOnlyBlocker implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws IOException {
-        ReadOnlyLevel level = DiskConfig.getReadOnlyLevel();
+        ReadOnlyLevel level = LocalStoreConfig.getReadOnlyLevel();
         if (level == null) {
             return true;
         }
