@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DiskFileSystemFactoryImpl;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.LocalDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.HardLinkStoreService;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.RAWStoreService;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.StoreServiceFactoryImpl;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.path.RawPathHandler;

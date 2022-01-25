@@ -135,7 +135,6 @@ public class LocalStoreConfig {
         if (!OSInfo.isWindows() && !root.startsWith("/"))  {
             throw new IllegalArgumentException("public-root must be start with \"/\" in Linux");
         }
-        log.info("[公共网盘路径]" + root);
         File file = new File(root);
         LocalStoreConfig.PUBLIC_ROOT =file.getPath();
         this.checkPathConflict();
@@ -168,7 +167,6 @@ public class LocalStoreConfig {
         if (!OSInfo.isWindows() && !root.startsWith("/"))  {
             throw new IllegalArgumentException("store-root must be start with \"/\" in Linux");
         }
-        log.info("[私人网盘根目录]" + root);
         File file = new File(root);
         LocalStoreConfig.STORE_ROOT =file.getPath();
         LocalStoreConfig.USER_PROFILE_ROOT = STORE_ROOT + "/user_profile/";

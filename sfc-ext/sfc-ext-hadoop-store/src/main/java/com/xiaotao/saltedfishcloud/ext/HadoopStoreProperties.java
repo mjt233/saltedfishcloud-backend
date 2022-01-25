@@ -8,7 +8,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 @Component
-@PropertySource("classpath:hadoop.yml")
+@PropertySource("classpath:/hadoop.yml")
 @ConfigurationProperties("store.hadoop")
 @Data
 public class HadoopStoreProperties implements InitializingBean {

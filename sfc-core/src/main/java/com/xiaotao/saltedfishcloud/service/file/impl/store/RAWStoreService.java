@@ -1,8 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
-import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
@@ -14,9 +12,8 @@ import com.xiaotao.saltedfishcloud.service.file.impl.store.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.DiskFileUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
@@ -31,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -38,11 +36,31 @@ import static com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConf
 
 @Slf4j
 @Component
-public class RAWStoreService implements StoreService {
+public class RAWStoreService implements StoreService, InitializingBean {
     @Autowired
     private UserService userService;
+    @Autowired
+    private LocalStoreConfig localStoreConfig;
 
     private final static Resource DEFAULT_AVATAR_RESOURCE = new ClassPathResource("/static/static/defaultAvatar.png");
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        File[] files = {
+                new File(LocalStoreConfig.PUBLIC_ROOT),
+                new File(LocalStoreConfig.STORE_ROOT),
+                new File(LocalStoreConfig.getRawStoreRoot()),
+                new File(LocalStoreConfig.STORE_ROOT + "/user_profile")
+        };
+        Arrays.stream(files).forEach(file -> {
+            if (!file.exists()) {
+                log.warn("文件夹" + file.getPath() + "不存在，将被创建");
+                file.mkdirs();
+            }
+        });
+        log.info("[公共网盘路径]" + LocalStoreConfig.PUBLIC_ROOT);
+        log.info("[私人网盘根目录]" + LocalStoreConfig.STORE_ROOT);
+    }
 
     @Override
     public Resource getAvatar(int uid) {
