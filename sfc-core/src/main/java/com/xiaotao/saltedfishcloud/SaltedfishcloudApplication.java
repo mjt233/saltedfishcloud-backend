@@ -14,8 +14,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication(
         exclude= {DataSourceAutoConfiguration.class},
         scanBasePackages = {
-                "com.xiaotao.saltedfishcloud",
-                "com.xiaotao.saltedfishcloud.ext"
+                "com.xiaotao.saltedfishcloud"
         }
 )
 @EnableTransactionManagement

@@ -21,6 +21,9 @@ public class MergeInputStream extends InputStream {
     public MergeInputStream(InputStreamGenerator generator) throws IOException {
         this.generator = generator;
         nextStream();
+        if (currentStream == null) {
+            atEnd = true;
+        }
     }
 
     @Override
@@ -77,7 +80,9 @@ public class MergeInputStream extends InputStream {
 
     @Override
     public void close() throws IOException {
-        currentStream.close();
+        if (currentStream != null) {
+            currentStream.close();
+        }
     }
 
     @Override

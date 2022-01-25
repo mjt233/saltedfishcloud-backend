@@ -28,6 +28,7 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
@@ -72,6 +73,9 @@ public class LocalDiskFileSystem implements DiskFileSystem {
         FileInfo fileInfo = files.get(0);
         String filePath = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
         Resource resource = getResource(fileInfo.getUid(), filePath, fileInfo.getName());
+        if (resource == null) {
+            return false;
+        }
         try {
             saveFile(uid, resource.getInputStream(), path, fileInfo);
         } catch (IOException e) {

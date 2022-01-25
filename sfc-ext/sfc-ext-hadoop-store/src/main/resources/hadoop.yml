@@ -1,5 +1,5 @@
 store:
   hdfs:
-    url: "hdfs://localhost:9000"
-    root: "/xyy"
-    user: "xiaotao"
+    url: hdfs://localhost:9000
+    root: /xyy
+    user: xiaotao

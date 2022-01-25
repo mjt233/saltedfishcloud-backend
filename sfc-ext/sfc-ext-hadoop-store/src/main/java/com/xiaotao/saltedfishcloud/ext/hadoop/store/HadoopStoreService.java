@@ -18,6 +18,7 @@ import org.apache.hadoop.fs.Path;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
@@ -25,6 +26,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.*;
 
+@Service
 public class HadoopStoreService implements StoreService {
     private final static Resource DEFAULT_AVATAR = new ClassPathResource("/static/static/defaultAvatar.png");
 
@@ -130,7 +132,7 @@ public class HadoopStoreService implements StoreService {
      */
     @Override
     public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
-        Path target = new Path(properties.getStoreRoot(uid), targetDir, fileInfo.getName());
+        Path target = new Path(StringUtils.appendPath(properties.getStoreRoot(uid), targetDir, fileInfo.getName()));
         if (fs.exists(target)) {
             if (fs.getFileStatus(target).isDirectory()) {
                 throw new JsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
@@ -151,12 +153,12 @@ public class HadoopStoreService implements StoreService {
 
     @Override
     public void rename(int uid, String path, String oldName, String newName) throws IOException {
-
+        throw new UnsupportedOperationException("Hadoop 存储暂未支持");
     }
 
     @Override
     public boolean mkdir(int uid, String path, String name) throws IOException {
-        Path target = new Path(properties.getStoreRoot(uid), path, name);
+        Path target = new Path(StringUtils.appendPath(properties.getStoreRoot(uid), path, name));
         if (fs.exists(target) && fs.getFileStatus(target).isFile()) {
             throw new JsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
         }
@@ -173,7 +175,7 @@ public class HadoopStoreService implements StoreService {
         int cnt = 0;
         String base = properties.getStoreRoot(uid);
         for (String file : files) {
-            Path p = new Path(base, path, file);
+            Path p = new Path(StringUtils.appendPath(base, path, file));
             fs.delete(p, true);
             cnt++;
         }
