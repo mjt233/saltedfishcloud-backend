@@ -42,7 +42,22 @@ public class HadoopStoreService implements StoreService {
 
     @Override
     public Resource getAvatar(int uid) {
-        return DEFAULT_AVATAR;
+        Path profilePath = new Path(properties.getUserProfileRoot(uid));
+        try {
+            if (!fs.exists(profilePath)) {
+                return DEFAULT_AVATAR;
+            }
+
+            final FileStatus[] avatars = fs.listStatus(profilePath, e -> e.getName().contains("avatar"));
+            if (avatars != null && avatars.length > 0) {
+                return new HDFSResource(fs, avatars[0].getPath());
+            } else {
+                return DEFAULT_AVATAR;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return DEFAULT_AVATAR;
+        }
     }
 
     @Override
@@ -55,7 +70,7 @@ public class HadoopStoreService implements StoreService {
             fs.mkdirs(profileRoot);
             final FileStatus[] existAvatars = fs.listStatus(profileRoot, n -> n.getName().contains("avatar"));
             for (FileStatus existAvatar : existAvatars) {
-                fs.delete(new Path(profileRoot + "/" + existAvatar), true);
+                fs.delete(existAvatar.getPath(), true);
             }
             try(final FSDataOutputStream out = fs.create(
                     new Path(profileRoot + "/avatar." + FileUtils.getSuffix(resource.getFilename())))
