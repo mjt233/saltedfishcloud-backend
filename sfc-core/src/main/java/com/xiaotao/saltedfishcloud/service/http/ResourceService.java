@@ -14,6 +14,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 
@@ -27,7 +28,7 @@ public class ResourceService {
      * @param dc 下载码
      * @return  资源响应体
      */
-    public ResponseEntity<Resource> getResourceByDC(String dc, boolean directDownload) throws MalformedURLException, UnsupportedEncodingException {
+    public ResponseEntity<Resource> getResourceByDC(String dc, boolean directDownload) throws IOException {
         FileDCInfo info;
         try {
             String data = JwtUtils.parse(dc);

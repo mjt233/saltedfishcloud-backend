@@ -34,7 +34,7 @@ public interface ShareService {
      * @param extractor 资源提取信息类
      * @return  文件资源
      */
-    Resource getFileResource(ShareExtractorDTO extractor) throws UnsupportedEncodingException;
+    Resource getFileResource(ShareExtractorDTO extractor) throws IOException;
 
     List<FileInfo>[] browse(int sid, String verification, String path, String extractCode) throws IOException;
 

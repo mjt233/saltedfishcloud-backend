@@ -1,8 +1,11 @@
 package com.xiaotao.saltedfishcloud.config;
 
+import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
+import com.xiaotao.saltedfishcloud.init.DatabaseUpdater;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +20,11 @@ import java.util.Map;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class SysRuntimeConfig implements InitializingBean {
     private static SysRuntimeConfig GLOBAL_HOLD_INST;
+    private final DatabaseUpdater databaseUpdater;
+    private final DatabaseInitializer initializer;
 
     @Autowired
     private ConfigService configService;

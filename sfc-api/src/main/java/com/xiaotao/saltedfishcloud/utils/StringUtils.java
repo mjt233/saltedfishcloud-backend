@@ -16,6 +16,18 @@ public class StringUtils {
      */
     private final static int PATTERN_LEN = PATTERN.length();
 
+    public static String appendPath(String...appendData) {
+        StringBuilder sb = new StringBuilder();
+        String last = null;
+        for (String data : appendData) {
+            if (last != null && !last.endsWith("/") && !data.endsWith("/")) {
+                sb.append("/");
+            }
+            sb.append(data);
+            last = data;
+        }
+        return sb.toString();
+    }
 
     /**
      * 生成一个纯字母随机字符串

@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.ext;
 
+import com.sun.org.apache.regexp.internal.RE;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
@@ -19,6 +20,8 @@ public class HadoopTest {
         Configuration conf = new Configuration();
         conf.set("fs.defaultFS", "hdfs://localhost:9000");
 
+        conf.set("hadoop.root.logger", "INFO");
+//        return FileSystem.get(conf);
         return FileSystem.get(new URI("hdfs://localhost:9000"), conf, "xiaotao");
     }
 

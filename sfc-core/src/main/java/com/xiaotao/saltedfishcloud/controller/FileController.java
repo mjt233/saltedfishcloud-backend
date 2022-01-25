@@ -149,7 +149,7 @@ public class FileController {
     public JsonResult quickSave(@UID @PathVariable int uid,
                                 @RequestParam("path") String path,
                                 @RequestParam("name") String name,
-                                @RequestParam("md5") String md5) {
+                                @RequestParam("md5") String md5) throws IOException {
         boolean b = fileService.getFileSystem().quickSave(uid, path, name, md5);
         if (b) {
             return JsonResult.emptySuccess();
@@ -227,7 +227,7 @@ public class FileController {
     @NotBlock(level = ReadOnlyLevel.DATA_CHECKING)
     public ResponseEntity<org.springframework.core.io.Resource> download(HttpServletRequest request,
                                                                          @PathVariable @UID int uid)
-            throws UnsupportedEncodingException {
+            throws IOException {
         String prefix = PREFIX + uid + "/content";
         String requestPath = URLUtils.getRequestFilePath(prefix, request);
         org.springframework.core.io.Resource resource = fileService.getFileSystem().getResource(uid, requestPath, "");

@@ -1,3 +1,5 @@
 store:
-  hadoop:
-    master: 127.0.0.1
+  hdfs:
+    url: "hdfs://localhost:9000"
+    root: "/xyy"
+    user: "xiaotao"

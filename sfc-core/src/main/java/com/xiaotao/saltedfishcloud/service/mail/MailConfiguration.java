@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.mail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
+import com.xiaotao.saltedfishcloud.init.DatabaseUpdater;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;

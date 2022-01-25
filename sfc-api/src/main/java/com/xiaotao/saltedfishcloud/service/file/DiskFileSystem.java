@@ -52,7 +52,7 @@ public interface DiskFileSystem {
      * @param md5 文件的MD5
      * @return 成功为true，失败为false
      */
-    boolean quickSave(int uid, String path, String name, String md5);
+    boolean quickSave(int uid, String path, String name, String md5) throws IOException;
 
     /**
      * 创建压缩文件并直接输出到输出流中，可用于多文件打包下载
@@ -101,7 +101,7 @@ public interface DiskFileSystem {
      * @param name  文件名
      * @return      文件资源，若不存在则为null
      */
-    Resource getResource(int uid, String path,String name);
+    Resource getResource(int uid, String path,String name) throws IOException;
 
 
     /**

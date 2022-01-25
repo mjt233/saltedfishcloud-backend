@@ -73,7 +73,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public Resource getFileResource(ShareExtractorDTO extractor) throws UnsupportedEncodingException {
+    public Resource getFileResource(ShareExtractorDTO extractor) throws IOException {
         SharePO share = shareRepo.findById(extractor.getSid()).orElse(null);
         if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         if (!share.getVerification().equals(extractor.getVerification())) throw new JsonException(ShareError.SHARE_NOT_FOUND);

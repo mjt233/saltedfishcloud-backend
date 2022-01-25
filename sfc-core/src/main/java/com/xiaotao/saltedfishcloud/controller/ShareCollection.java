@@ -60,7 +60,7 @@ public class ShareCollection {
      */
     @GetMapping("/resource")
     @AllowAnonymous
-    public HttpEntity<Resource> getShareFile(@Valid ShareExtractorDTO extractor) throws UnsupportedEncodingException {
+    public HttpEntity<Resource> getShareFile(@Valid ShareExtractorDTO extractor) throws IOException {
         return ResourceUtils.wrapResource(shareService.getFileResource(extractor));
     }
 

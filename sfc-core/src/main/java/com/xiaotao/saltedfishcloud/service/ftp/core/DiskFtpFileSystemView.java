@@ -77,7 +77,7 @@ public class DiskFtpFileSystemView implements FileSystemView {
             }
 
             return true;
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IOException e) {
             pathBuilder.update(originalPath);
             return false;
         }

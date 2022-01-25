@@ -44,7 +44,11 @@ public class DiskFtpFile implements FtpFile {
             isRoot = true;
             return;
         }
-        fileResource = fileService.getFileSystem().getResource(user.getId(), pathInfo.getResourceParent(), pathInfo.getName());
+        try {
+            fileResource = fileService.getFileSystem().getResource(user.getId(), pathInfo.getResourceParent(), pathInfo.getName());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     @Override
     public String getAbsolutePath() {

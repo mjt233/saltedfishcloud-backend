@@ -64,7 +64,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     }
 
     @Override
-    public boolean quickSave(int uid, String path, String name, String md5) {
+    public boolean quickSave(int uid, String path, String name, String md5) throws IOException {
         List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
         if (files.isEmpty()) {
             return false;
@@ -238,7 +238,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     }
 
     @Override
-    public Resource getResource(int uid, String path, String name) {
+    public Resource getResource(int uid, String path, String name) throws IOException {
         return storeServiceFactory.getService().getResource(uid, path, name);
     }
 

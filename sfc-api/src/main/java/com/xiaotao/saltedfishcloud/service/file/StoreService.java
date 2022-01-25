@@ -17,6 +17,7 @@ import java.util.List;
 /**
  * 存储服务，负责文件物理数据的存取
  * @TODO 抽离出用户元数据存储服务（头像，自定义背景图等）
+ * @TODO 编写一个对应的抽象类，实现copy,moveToSave,move
  */
 public interface StoreService {
 
@@ -50,7 +51,7 @@ public interface StoreService {
      * @param name  文件名
      * @return      文件资源
      */
-    Resource getResource(int uid, String path, String name);
+    Resource getResource(int uid, String path, String name) throws IOException;
 
     /**
      * 判断给定的文件路径是否存在
