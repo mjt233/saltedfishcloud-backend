@@ -3,8 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>sfc-api</artifactId>
         <groupId>com.xiaotao</groupId>
+        <artifactId>saltedfishcloud</artifactId>
         <version>1.8.3.5-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -15,5 +15,12 @@
         <module>sfc-ext-hadoop-store</module>
     </modules>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-api</artifactId>
+            <version>1.8.3.5-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 
 </project>

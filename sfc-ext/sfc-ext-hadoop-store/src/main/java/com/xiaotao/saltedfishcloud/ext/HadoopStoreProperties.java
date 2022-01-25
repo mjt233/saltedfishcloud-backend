@@ -1,4 +1,4 @@
-package org.sfc.ext;
+package com.xiaotao.saltedfishcloud.ext;
 
 import lombok.Data;
 import org.springframework.beans.factory.InitializingBean;
