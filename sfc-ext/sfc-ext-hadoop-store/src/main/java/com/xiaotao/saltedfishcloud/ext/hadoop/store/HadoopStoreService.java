@@ -148,12 +148,21 @@ public class HadoopStoreService implements StoreService {
 
     @Override
     public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
-        throw new UnsupportedOperationException("Hadoop 存储暂未支持");
+        String src = StringUtils.appendPath(properties.getStoreRoot(uid), source, name);
+        String dst = StringUtils.appendPath(properties.getStoreRoot(uid), target, name);
+        fs.rename(
+                new Path(src),
+                new Path(dst)
+        );
     }
 
     @Override
     public void rename(int uid, String path, String oldName, String newName) throws IOException {
-        throw new UnsupportedOperationException("Hadoop 存储暂未支持");
+        String base = StringUtils.appendPath(properties.getStoreRoot(uid), path);
+        fs.rename(
+                new Path(StringUtils.appendPath(base, oldName)),
+                new Path(StringUtils.appendPath(base, newName))
+        );
     }
 
     @Override
