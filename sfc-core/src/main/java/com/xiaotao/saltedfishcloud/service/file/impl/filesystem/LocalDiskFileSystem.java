@@ -18,6 +18,7 @@ import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.HardLinkStoreService;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -265,19 +266,14 @@ public class LocalDiskFileSystem implements DiskFileSystem {
     }
 
     @Override
-    public Resource getResourceByMd5(String md5) throws NoSuchFileException {
+    public Resource getResourceByMd5(String md5) throws IOException {
         FileInfo fileInfo;
         List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
         if (files.size() == 0) throw new NoSuchFileException("文件不存在: " + md5);
         fileInfo = files.get(0);
         String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
         fileInfo.setPath(path + "/" + fileInfo.getName());
-        return new PathResource(rawPathHandler.getStorePath(fileInfo.getUid(), path, fileInfo)){
-            @Override
-            public String getFilename() {
-                return md5 + "." + FileUtils.getSuffix(fileInfo.getName());
-            }
-        };
+        return getResource(fileInfo.getUid(), path, fileInfo.getName());
     }
 
     @Override
@@ -436,7 +432,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
         res += storeServiceFactory.getService().delete(uid, path, name);
 
         // 唯一存储模式下删除文件后若文件不再被引用，则在存储仓库中删除
-        if (LocalStoreConfig.STORE_TYPE == StoreType.UNIQUE && fileInfos.size() > 0) {
+        if (storeServiceFactory.getService() instanceof HardLinkStoreService && fileInfos.size() > 0) {
             Set<String> all = fileInfos
                     .stream()
                     .filter(BasicFileInfo::isFile)
