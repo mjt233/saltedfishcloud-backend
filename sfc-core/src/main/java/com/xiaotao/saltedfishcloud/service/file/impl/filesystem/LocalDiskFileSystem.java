@@ -20,6 +20,7 @@ import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.HardLinkStoreService;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.RAWStoreService;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.path.RawPathHandler;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -299,7 +300,7 @@ public class LocalDiskFileSystem implements DiskFileSystem {
 
     @Override
     public List<FileInfo>[] getUserFileList(int uid, String path) throws IOException {
-        if (uid == 0 || LocalStoreConfig.STORE_TYPE == StoreType.RAW) {
+        if (uid == 0 || (LocalStoreConfig.STORE_TYPE == StoreType.RAW && storeServiceFactory.getService() instanceof RAWStoreService)) {
             // 初始化用户目录
             String baseLocalPath = LocalStoreConfig.getRawFileStoreRootPath(uid);
             File root = new File(baseLocalPath);
