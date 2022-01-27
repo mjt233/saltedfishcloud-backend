@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.entity.po.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import org.springframework.core.io.Resource;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,6 +33,18 @@ public class FileInfo extends BasicFileInfo{
     private Long lastModified;
     private Date created_at;
     private Date updated_at;
+
+    public static FileInfo getFromResource(Resource resource, Integer uid, Integer type) throws IOException {
+        final FileInfo fileInfo = new FileInfo();
+        Date now = new Date();
+        fileInfo.setName(resource.getFilename());
+        fileInfo.setUid(uid);
+        fileInfo.setCreated_at(now);
+        fileInfo.setSize(resource.contentLength());
+        fileInfo.setLastModified(now.getTime());
+        fileInfo.setType(type);
+        return fileInfo;
+    }
 
     /**
      * 获取本地文件的文件信息（将自动计算其MD5）

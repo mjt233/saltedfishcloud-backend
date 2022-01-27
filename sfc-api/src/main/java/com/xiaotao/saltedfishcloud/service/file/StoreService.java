@@ -71,23 +71,26 @@ public interface StoreService {
      * @param fileInfo      文件信息
      */
     default void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("不支持store操作");
     }
 
     /**
-     * 在本地存储中复制用户网盘文件
+     * 在网盘中复制文件，若目录名相同则合并目录
      * @param uid     用户ID
      * @param source  所在网盘路径
+     * @param targetId 目的地网盘的用户ID
      * @param target  目的地网盘路径
-     * @param sourceName    文件名
+     * @param sourceName    源文件名
+     * @param targetName    目标文件名
      * @param overwrite 是否覆盖，若非true，则跳过该文件
      */
     default void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("不支持copy操作");
     }
 
     /**
-     * 向用户网盘目录中保存一个文件
+     * 向用户网盘目录中保存一个文件。
+     * 若出现文件覆盖同名文件夹的情况，应该抛出异常
      * @param uid   用户ID 0表示公共
      * @param input 输入的文件
      * @param targetDir    保存到的目标网盘目录位置（注意：不是本地真是路径）
@@ -97,11 +100,11 @@ public interface StoreService {
      * @throws UnableOverwriteException 保存位置存在同名的目录
      */
     default void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("不支持store操作");
     }
 
     /**
-     * 在本地存储中移动用户网盘文件
+     * 在网盘中移动文件，若目录名相同则合并目录
      * @param uid     用户ID
      * @param source  所在网盘路径
      * @param target  目的地网盘路径
@@ -109,7 +112,7 @@ public interface StoreService {
      * @param overwrite 是否覆盖原文件
      */
     default void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("不支持move操作");
     }
 
     /**
@@ -120,7 +123,7 @@ public interface StoreService {
      * @param newName 新文件名
      */
     default void rename(int uid, String path, String oldName, String newName) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("不支持rename操作");
     }
 
     /**
@@ -132,7 +135,7 @@ public interface StoreService {
      * @return 是否创建成功
      */
     default boolean mkdir(int uid, String path, String name) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("不支持mkdir操作");
     }
 
     /**
@@ -141,7 +144,7 @@ public interface StoreService {
      * @return      删除的文件和目录数
      */
     default int delete(String md5) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("不支持delete操作");
     }
 
     /**
@@ -152,6 +155,6 @@ public interface StoreService {
      * @return 删除的文件和文件夹总数
      */
     default long delete(int uid, String path, Collection<String> files) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("不支持delete操作");
     }
 }

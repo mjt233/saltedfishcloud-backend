@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.ext.hadoop.HDFSProperties;
 import com.xiaotao.saltedfishcloud.ext.hadoop.HDFSResource;
+import com.xiaotao.saltedfishcloud.service.file.AbstractStoreService;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -26,7 +27,7 @@ import java.nio.file.Files;
 import java.util.*;
 
 @Service
-public class HadoopStoreService implements StoreService {
+public class HadoopStoreService extends AbstractStoreService {
     private final static Resource DEFAULT_AVATAR = new ClassPathResource("/static/static/defaultAvatar.png");
 
     @Autowired
@@ -132,11 +133,6 @@ public class HadoopStoreService implements StoreService {
         Files.delete(nativePath);
     }
 
-    @Override
-    public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        throw new UnsupportedOperationException("Hadoop 存储暂不支持复制功能");
-    }
-
     /**
      * @TODO 相同文件并发写入会出问题，需要分布式锁
      */
@@ -156,15 +152,15 @@ public class HadoopStoreService implements StoreService {
 
     }
 
-    @Override
-    public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
-        String src = StringUtils.appendPath(properties.getStoreRoot(uid), source, name);
-        String dst = StringUtils.appendPath(properties.getStoreRoot(uid), target, name);
-        fs.rename(
-                new Path(src),
-                new Path(dst)
-        );
-    }
+//    @Override
+//    public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
+//        String src = StringUtils.appendPath(properties.getStoreRoot(uid), source, name);
+//        String dst = StringUtils.appendPath(properties.getStoreRoot(uid), target, name);
+//        fs.rename(
+//                new Path(src),
+//                new Path(dst)
+//        );
+//    }
 
     @Override
     public void rename(int uid, String path, String oldName, String newName) throws IOException {

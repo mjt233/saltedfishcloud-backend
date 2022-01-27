@@ -16,6 +16,12 @@ public class StringUtils {
      */
     private final static int PATTERN_LEN = PATTERN.length();
 
+    /**
+     * 以文件路径形式追加字符串，自动处理/的重复问题。<br>
+     * 开头不会自动添加/，开头是否有/取决于参数0
+     * @param appendData    要追加的各字符串，末尾和首部的/会被忽略，由函数内部自动管理/分割
+     * @return  追加后的路径字符串
+     */
     public static String appendPath(String...appendData) {
         StringBuilder sb = new StringBuilder();
         String last = null;
