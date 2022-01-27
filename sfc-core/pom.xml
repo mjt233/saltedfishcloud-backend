@@ -19,11 +19,6 @@
         </dependency>
         <dependency>
             <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-ext</artifactId>
-            <version>1.8.3.5-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
             <version>1.8.3.5-SNAPSHOT</version>
         </dependency>

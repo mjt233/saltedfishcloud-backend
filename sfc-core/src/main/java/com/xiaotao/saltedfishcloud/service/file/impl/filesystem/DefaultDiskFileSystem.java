@@ -49,12 +49,11 @@ import java.util.zip.ZipException;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class LocalDiskFileSystem implements DiskFileSystem {
+public class DefaultDiskFileSystem implements DiskFileSystem {
     private final StoreServiceFactory storeServiceFactory;
     private final FileDao fileDao;
     private final FileRecordService fileRecordService;
     private final NodeService nodeService;
-    private final RawPathHandler rawPathHandler;
 
     @Override
     public void saveAvatar(int uid, Resource resource) throws IOException {

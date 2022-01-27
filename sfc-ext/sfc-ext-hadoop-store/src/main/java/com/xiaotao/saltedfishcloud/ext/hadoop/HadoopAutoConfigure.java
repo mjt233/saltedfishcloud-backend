@@ -12,7 +12,7 @@ import java.net.URISyntaxException;
 @Configuration
 public class HadoopAutoConfigure {
     @Autowired
-    private HadoopStoreProperties properties;
+    private HDFSProperties properties;
 
     @Bean
     public FileSystem hadoopFileSystem() throws IOException, URISyntaxException, InterruptedException {

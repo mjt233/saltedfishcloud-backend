@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.sync;
 
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DiskFileSystemFactoryImpl;
+import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.RAWStoreService;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.StoreServiceFactoryImpl;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.sync.detector.SyncDiffDetector;
 import com.xiaotao.saltedfishcloud.service.sync.handler.SyncDiffHandler;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
@@ -36,8 +36,8 @@ public class SyncService {
      * @throws IOException IO出错
      */
     public void syncLocal(User user) throws Exception {
-        if (!(diskFileSystemFactory.getFileSystem() instanceof DiskFileSystemFactoryImpl) ||
-                !(storeServiceFactory instanceof StoreServiceFactoryImpl) ||
+        if (!(diskFileSystemFactory.getFileSystem() instanceof DefaultFileSystem) ||
+                !(storeServiceFactory instanceof LocalStoreServiceFactory) ||
                 !(storeServiceFactory.getService() instanceof RAWStoreService)
         ) {
             log.warn("当前文件系统服务不支持同步功能");

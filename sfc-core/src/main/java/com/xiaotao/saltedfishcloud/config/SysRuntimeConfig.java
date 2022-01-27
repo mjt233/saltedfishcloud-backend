@@ -25,6 +25,7 @@ public class SysRuntimeConfig implements InitializingBean {
 
     @Autowired
     private ConfigService configService;
+
     @Autowired
     private DatabaseInitializer initializer;
 

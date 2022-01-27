@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties("store.hdfs")
 @Slf4j
 @Data
-public class HadoopStoreProperties implements InitializingBean {
+public class HDFSProperties implements InitializingBean {
 
     /**
      * master地址

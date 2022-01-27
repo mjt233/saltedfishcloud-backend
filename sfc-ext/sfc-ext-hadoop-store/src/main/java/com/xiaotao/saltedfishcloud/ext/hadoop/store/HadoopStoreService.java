@@ -4,9 +4,8 @@ import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.ext.hadoop.HDFSFactory;
+import com.xiaotao.saltedfishcloud.ext.hadoop.HDFSProperties;
 import com.xiaotao.saltedfishcloud.ext.hadoop.HDFSResource;
-import com.xiaotao.saltedfishcloud.ext.hadoop.HadoopStoreProperties;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -30,12 +29,8 @@ import java.util.*;
 public class HadoopStoreService implements StoreService {
     private final static Resource DEFAULT_AVATAR = new ClassPathResource("/static/static/defaultAvatar.png");
 
-
     @Autowired
-    private HDFSFactory hdfsFactory;
-
-    @Autowired
-    private HadoopStoreProperties properties;
+    private HDFSProperties properties;
 
     @Autowired
     private FileSystem fs;

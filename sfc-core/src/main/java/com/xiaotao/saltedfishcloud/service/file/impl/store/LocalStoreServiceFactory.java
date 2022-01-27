@@ -3,19 +3,17 @@ package com.xiaotao.saltedfishcloud.service.file.impl.store;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
-public class StoreServiceFactoryImpl implements StoreServiceFactory {
-    private final RAWStoreService rawLocalStoreService;
-    private final HardLinkStoreService hardLinkLocalStoreService;
+public class LocalStoreServiceFactory implements StoreServiceFactory {
+    @Autowired
+    private RAWStoreService rawLocalStoreService;
 
-    public StoreServiceFactoryImpl(@Qualifier("RAWStoreService") RAWStoreService rawLocalStoreService,
-                                   HardLinkStoreService hardLinkLocalStoreService) {
-        this.rawLocalStoreService = rawLocalStoreService;
-        this.hardLinkLocalStoreService = hardLinkLocalStoreService;
-    }
+    @Autowired
+    private HardLinkStoreService hardLinkLocalStoreService;
 
     @Override
     public StoreService getService() {
