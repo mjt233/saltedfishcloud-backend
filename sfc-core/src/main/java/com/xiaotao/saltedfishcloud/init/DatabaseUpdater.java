@@ -72,7 +72,12 @@ public class DatabaseUpdater implements ApplicationRunner {
         conn = dataSource.getConnection();
         Version v;
         try {
-            v = Version.valueOf(configDao.getConfigure(ConfigName.VERSION));
+            final String versionRecord = configDao.getConfigure(ConfigName.VERSION);
+            if (versionRecord != null) {
+                v = Version.valueOf(versionRecord);
+            } else {
+                v = sysProperties.getVersion();
+            }
         } catch (Exception e) {
             v = sysProperties.getVersion();
         }

@@ -22,6 +22,11 @@ public class DatabaseInitializer implements ApplicationRunner {
     private DataSource dataSource;
 
     /**
+     * 是否已执行一次初始化
+     */
+    private boolean executed = false;
+
+    /**
      * 判断数据库中是否存在数据表<br>
      * 执行后数据库连接不会被关闭
      * @author xiaotao mjt233@qq.com
@@ -47,6 +52,13 @@ public class DatabaseInitializer implements ApplicationRunner {
      */
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        doInit();
+    }
+
+    public synchronized void doInit() throws SQLException {
+        if (executed) {
+            return;
+        }
         var con = dataSource.getConnection();
 
         // 若数据库无数据表则先初始化
@@ -57,6 +69,6 @@ public class DatabaseInitializer implements ApplicationRunner {
             log.info("[数据库]数据表初始化完成（好耶）");
         }
         con.close();
-
+        executed = true;
     }
 }

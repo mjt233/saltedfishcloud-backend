@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
-import com.xiaotao.saltedfishcloud.init.DatabaseUpdater;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import lombok.Getter;
@@ -11,8 +10,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Map;
 
 /**
@@ -23,11 +22,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SysRuntimeConfig implements InitializingBean {
     private static SysRuntimeConfig GLOBAL_HOLD_INST;
-    private final DatabaseUpdater databaseUpdater;
-    private final DatabaseInitializer initializer;
 
     @Autowired
     private ConfigService configService;
+    @Autowired
+    private DatabaseInitializer initializer;
 
     @Getter
     private boolean enableRegCode;
@@ -43,6 +42,12 @@ public class SysRuntimeConfig implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() {
+        try {
+            initializer.doInit();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
         fetchConfig();
         SysRuntimeConfig.GLOBAL_HOLD_INST = this;
 
