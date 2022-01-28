@@ -274,7 +274,7 @@ public class UserServiceImp implements UserService {
         } else {
 
             // 通过注册邀请码注册
-            if (!code.equals(sysProperties.getRegCode())) {
+            if (!code.equals(sysProperties.getCommon().getRegCode())) {
                 throw new JsonException(AccountError.REG_CODE_ERROR);
             }
             return addUser(user, passwd, email, User.TYPE_COMMON);

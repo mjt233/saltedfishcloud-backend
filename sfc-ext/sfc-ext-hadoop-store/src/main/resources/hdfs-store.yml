@@ -1,0 +1,6 @@
+sys:
+  store:
+    hdfs:
+      root: /xyy
+      url: hdfs://127.0.0.1:9000
+      user: xiaotao

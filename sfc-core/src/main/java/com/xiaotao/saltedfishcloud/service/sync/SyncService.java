@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.sync;
 
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.RAWStoreService;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreServiceFactory;
@@ -36,7 +36,7 @@ public class SyncService {
      * @throws IOException IO出错
      */
     public void syncLocal(User user) throws Exception {
-        if (!(diskFileSystemFactory.getFileSystem() instanceof DefaultFileSystem) ||
+        if (!(diskFileSystemFactory.getFileSystem() instanceof DefaultFileSystemFactory) ||
                 !(storeServiceFactory instanceof LocalStoreServiceFactory) ||
                 !(storeServiceFactory.getService() instanceof RAWStoreService)
         ) {

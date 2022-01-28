@@ -39,7 +39,7 @@ public class ConfigureInitializer implements ApplicationRunner {
 
         log.info("[当前系统版本]：" + sysProperties.getVersion());
         String storeType = configDao.getConfigure(ConfigName.STORE_TYPE);
-        String regCode = configDao.getConfigure(ConfigName.REG_CODE, sysProperties.getRegCode());
+        String regCode = configDao.getConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
         String syncDelay = configDao.getConfigure(ConfigName.SYNC_DELAY, LocalStoreConfig.SYNC_DELAY + "");
         Version version = Version.valueOf(configDao.getConfigure(ConfigName.VERSION, "1.0.0-SNAPSHOT"));
 
@@ -48,7 +48,7 @@ public class ConfigureInitializer implements ApplicationRunner {
             log.info("[初始化]存储模式记录：" + LocalStoreConfig.STORE_TYPE);
             configDao.setConfigure(ConfigName.STORE_TYPE, LocalStoreConfig.STORE_TYPE.toString());
             log.info("[初始化]邀请邀请码：" + regCode);
-            configDao.setConfigure(ConfigName.REG_CODE, sysProperties.getRegCode());
+            configDao.setConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
             log.info("[初始化]同步延迟：" + syncDelay);
             configDao.setConfigure(ConfigName.SYNC_DELAY, syncDelay);
 
@@ -82,10 +82,10 @@ public class ConfigureInitializer implements ApplicationRunner {
 
         // 服务器配置记录覆盖默认的开局配置记录
         LocalStoreConfig.STORE_TYPE = StoreType.valueOf(storeType);
-        sysProperties.setRegCode(regCode);
+        sysProperties.getCommon().setRegCode(regCode);
         LocalStoreConfig.SYNC_DELAY = Integer.parseInt(syncDelay);
         log.info("[存储模式]："+ storeType);
-        log.info("[注册邀请码]："+ regCode);
+        log.info("[注册邀请码]："+ sysProperties.getCommon().getRegCode());
         log.info("[同步延迟]：" + syncDelay);
         if (sysProperties.getVersion().getTag() != VersionTag.RELEASE) {
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");

@@ -9,6 +9,10 @@ server:
     remoteip:
       remote-ip-header: X-Real-IP
 spring:
+  config:
+    import:
+      - "classpath:sys.yml"
+      - "classpath:hdfs-store.yml"
   jpa:
     database: mysql
     open-in-view: false

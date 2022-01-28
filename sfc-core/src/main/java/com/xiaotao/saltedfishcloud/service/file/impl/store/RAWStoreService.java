@@ -15,6 +15,8 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -35,7 +37,6 @@ import java.util.List;
 import static com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig.ACCEPT_AVATAR_TYPE;
 
 @Slf4j
-@Component
 public class RAWStoreService implements StoreService, InitializingBean {
     @Autowired
     private UserService userService;

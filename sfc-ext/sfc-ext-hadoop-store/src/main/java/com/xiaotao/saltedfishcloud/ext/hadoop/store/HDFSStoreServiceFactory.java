@@ -7,11 +7,10 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component
 @Slf4j
-public class HadoopStoreServiceFactory implements StoreServiceFactory, InitializingBean {
+public class HDFSStoreServiceFactory implements StoreServiceFactory, InitializingBean {
     @Autowired
-    private HadoopStoreService hadoopStoreService;
+    private HDFSStoreService HDFSStoreService;
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -20,6 +19,6 @@ public class HadoopStoreServiceFactory implements StoreServiceFactory, Initializ
 
     @Override
     public StoreService getService() {
-        return hadoopStoreService;
+        return HDFSStoreService;
     }
 }

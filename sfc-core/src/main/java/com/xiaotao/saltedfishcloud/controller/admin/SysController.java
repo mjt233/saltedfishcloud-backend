@@ -42,7 +42,7 @@ public class SysController {
     public JsonResult getOverview() {
         LinkedHashMap<String, Object> res = JsonResultImpl.getDataMap();
         res.put("store", adminService.getStoreState());
-        res.put("invite_reg_code", sysProperties.getRegCode());
+        res.put("invite_reg_code", sysProperties.getCommon().getRegCode());
         return JsonResultImpl.getInstance(res);
     }
 

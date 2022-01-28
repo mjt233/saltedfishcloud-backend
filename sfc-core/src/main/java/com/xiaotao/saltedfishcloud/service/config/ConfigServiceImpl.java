@@ -157,6 +157,6 @@ public class ConfigServiceImpl implements ConfigService {
      */
     public void setInviteRegCode(String code) {
         configDao.setConfigure(ConfigName.REG_CODE, code);
-        sysProperties.setRegCode(code);
+        sysProperties.getCommon().setRegCode(code);
     }
 }

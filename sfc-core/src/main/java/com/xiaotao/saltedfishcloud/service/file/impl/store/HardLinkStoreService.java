@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 @Slf4j
-@Component
 public class HardLinkStoreService extends RAWStoreService {
 
     @Override

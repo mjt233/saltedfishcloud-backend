@@ -26,8 +26,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.*;
 
-@Service
-public class HadoopStoreService extends AbstractStoreService {
+public class HDFSStoreService extends AbstractStoreService {
     private final static Resource DEFAULT_AVATAR = new ClassPathResource("/static/static/defaultAvatar.png");
 
     @Autowired

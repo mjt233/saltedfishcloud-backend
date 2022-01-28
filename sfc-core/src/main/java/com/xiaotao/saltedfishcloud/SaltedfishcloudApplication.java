@@ -4,6 +4,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
@@ -20,8 +21,9 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @MapperScan("com.xiaotao.saltedfishcloud.dao.mybatis")
 @EnableScheduling
 @EnableCaching
-@PropertySource({"classpath:config.properties", "classpath:sysConfig.yml"})
+@PropertySource({"classpath:config.properties"})
 @EnableJpaAuditing
+@EnableConfigurationProperties
 public class SaltedfishcloudApplication {
 
     public static void main(String[] args) {

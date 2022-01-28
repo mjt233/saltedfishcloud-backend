@@ -1,0 +1,5 @@
+sys:
+  common:
+    reg-code: 11451411
+  store:
+    type: hdfs
