@@ -21,8 +21,10 @@ public class FileUtils {
     static {
         // 一般网页资源
         map.put("html", "text/html;charset=utf-8");
+        map.put("xml", "text/xml;charset=utf-8");
         map.put("htm", "text/html;charset=utf-8");
         map.put("js", "application/x-javascript;charset=utf-8");
+        map.put("json", "application/json;charset=utf-8");
         map.put("css", "text/css;charset=utf-8");
         map.put("txt", "text/plain;charset=utf-8");
         map.put(".otf" , "application/x-font-otf");
@@ -40,9 +42,16 @@ public class FileUtils {
         map.put("ogg", "audio/ogg");
         map.put("ape", "audio/ape");
         map.put("flac", "audio/flac");
+        map.put("wav", "audio/wav");
+        map.put("midi", "video/midi");
+        map.put("mid", "video/midi");
 
         // 视频
         map.put("mp4", "video/mp4");
+        map.put("mkv", "video/x-matroska");
+        map.put("mov", "video/quicktime");
+        map.put("avi", "video/x-msvideo");
+
 
         // 视频
         map.put("pdf", "application/pdf");
