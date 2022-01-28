@@ -15,10 +15,8 @@ public class ResourceUtils {
     }
 
     public static ResponseEntity<Resource> wrapResource(Resource resource, String filename) throws UnsupportedEncodingException {
-        String name = resource.getFilename();
-        assert name != null;
         String disposition = generateContentDisposition(filename);
-        String ct = FileUtils.getContentType(name);
+        String ct = FileUtils.getContentType(filename);
         return ResponseEntity.ok()
                 .header("Content-Type", ct)
                 .header("Content-Disposition", disposition)

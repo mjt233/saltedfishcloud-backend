@@ -7,6 +7,7 @@ import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,11 +61,13 @@ public abstract class AbstractArchiveReader implements ArchiveReader {
     @Override
     public List<? extends CompressFile> listFiles() {
         List<CompressFile> res = new LinkedList<>();
-        try {
-            walk(((file, stream) -> {
+        try(
+            InputStream ignored = walk(((file, stream) -> {
                 res.add(file);
                 return ArchiveReaderVisitor.Result.SKIP;
-            })).close();
+            }))
+        ) {
+            return res;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -73,17 +76,17 @@ public abstract class AbstractArchiveReader implements ArchiveReader {
 
     @Override
     public void extractAll(Path dest) throws IOException {
-        try {
-            walk(((file, stream) -> {
-                Path target = Paths.get(dest + "/" + file.getPath());
-                if (file.isDirectory()) {
-                    Files.createDirectories(target);
-                } else {
-                    if (!Files.exists(target.getParent())) Files.createDirectories(target.getParent());
-                    StreamUtils.copy(stream, Files.newOutputStream(target));
-                }
-                return ArchiveReaderVisitor.Result.CONTINUE;
-            }));
+        try(InputStream ignore = walk(((file, stream) -> {
+            Path target = Paths.get(dest + "/" + file.getPath());
+            if (file.isDirectory()) {
+                Files.createDirectories(target);
+            } else {
+                if (!Files.exists(target.getParent())) Files.createDirectories(target.getParent());
+                StreamUtils.copy(stream, Files.newOutputStream(target));
+            }
+            return ArchiveReaderVisitor.Result.CONTINUE;
+        }))) {
+            log.debug("完成解压：{}", dest);
         } catch (Exception e) {
             e.printStackTrace();
             throw new IOException(e.getCause());
