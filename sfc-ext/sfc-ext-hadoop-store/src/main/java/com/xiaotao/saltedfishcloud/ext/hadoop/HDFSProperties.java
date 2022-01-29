@@ -28,9 +28,9 @@ public class HDFSProperties implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() {
-        log.info("[HDFS]URL:\t{}", url);
-        log.info("[HDFS]ROOT:\t{}", root);
-        log.info("[HDFS]USER:\t{}", user);
+        log.info("[HDFS]URL :{}", url);
+        log.info("[HDFS]ROOT:{}", root);
+        log.info("[HDFS]USER:{}", user);
     }
 
     public String getStoreRoot(int uid) {

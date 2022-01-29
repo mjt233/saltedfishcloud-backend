@@ -21,12 +21,20 @@ public class SysProperties {
 
     @Data
     public static class Common {
-        private String regCode;
+
+        /**
+         * 注册邀请码
+         */
+        private String regCode = "114514";
     }
 
     @Data
     public static class Store {
-        private String type;
+
+        /**
+         * 存储服务类型，可选hdfs或local
+         */
+        private String type = "local";
     }
 
 
