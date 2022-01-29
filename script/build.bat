@@ -1,5 +1,5 @@
 @echo off
-copy ..\sfc-web\src\main\resources\application.sample.yml ..\sfc-web\src\main\resources\application.yml
+copy ..\sfc-core\src\main\resources\application.sample.yml ..\sfc-core\src\main\resources\application.yml
 if exist ..\target\*.jar (
 	del ..\target\*.jar
 )

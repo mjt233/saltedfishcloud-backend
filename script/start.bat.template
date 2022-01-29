@@ -1,50 +1,69 @@
-@echo off
 @REM 应用程序参数设置
 
-@REM server_port  服务器端口
-@REM public_root  公共网盘存储位置
-@REM store_root 私人网盘及用户数据存储位置
-@REM store_type 初始存储方式，可选unique或raw
-@REM reg_code 注册邀请码
-@REM sync_delay  同步延迟，单位分支，-1关闭
-@REM sync_launch  启动后立即同步
-@REM ftp_port   FTP服务端口
+@REM ############# 存储方式配置 ####################
+@REM  可选值：local, hdfs
+@REM  local表示使用本地文件系统进行存储，使用本地存储配置
+@REM  hdfs表示使用HDFS存储，使用HDFS存储配置
+@REM ##############################################
+store_method="local"
 
+@REM ############# 本地存储配置 ####################
+@REM  public_root 公共网盘存储位置                 #
+@REM  store_root 私人网盘及用户数据存储位置         #
+@REM  store_type 初始存储方式 可选unique或raw      #
+@REM ##############################################
+local_public_root="/data/public"
+local_store_root="/data/xyy"
+local_store_type="unique"
+
+@REM ############# HDFS存储配置 ####################
+@REM  url Namenode master节点URL                  #
+@REM  root 咸鱼云在hdfs上存储数据的根路径           #
+@REM  user 用户名                                 #
+@REM ##############################################
+set hdfs_url="hdfs://localhost:9000"
+set hdfs_root="/xyy"
+set hdfs_user="xiaotao"
+
+@REM server_port  服务器端口
+@REM reg_code 注册邀请码
+@REM sync_delay  同步延迟，单位分钟，-1关闭
+@REM sync_launch  启动后立即同步
+set reg_code="10241024"
+set server_port="8087"
+set sync_delay="-1"
+set sync_launch="false"
+
+@REM ftp_port  FTP服务控制端口
 @REM ftp_passive_port FTP被动模式数据端口
-    @REM FTP服务被动模式端口范围
-    @REM 2300 : 被动模式仅使用2300做数据端口
-    @REM 2300-2399 : 指定闭区间端口范围
-    @REM 2300- : 2300开始到往后的所有端口
-    @REM 2300, 2305, 2400- : 指定2300，2305和2400开始到往后的所有端口
+  @REM FTP服务被动模式端口范围
+  @REM 2300 : 被动模式仅使用2300做数据端口
+  @REM 2300-2399 : 指定闭区间端口范围
+  @REM 2300- : 2300开始到往后的所有端口
+  @REM 2300, 2305, 2400- : 指定2300，2305和2400开始到往后的所有端口
 @REM ftp_passive_addr FTP服务被动模式地址（在外网环境需要改为公网地址）
-set server_port=8087
-set public_root=data/public
-set store_root=data/xyy
-set store_type=unique
-set reg_code=10241024
-set sync_delay=5
-set sync_launch=false
-set ftp_port=2121
-set ftp_passive_addr=localhost
-set ftp_passive_port=1140-5140
+set ftp_port="2121"
+set ftp_passive_addr="localhost"
+set ftp_passive_port="1140-5140"
 
 @REM 数据源设置
-set db_host=127.0.0.1
-set db_port=3306
-set db_name=xyy
-set db_username=root
-set db_password=mojintao233
+set db_host="127.0.0.1"
+set db_port="3306"
+set db_name="xyy"
+set db_username="root"
+set db_password=""
 set db_params="useSSL=false&serverTimezone=UTC"
 
 @REM Redis连接设置
-set redis_host=127.0.0.1
-set redis_port=6379
+set redis_host="127.0.0.1"
+set redis_port="6379"
 set redis_password=""
+
 
 set jdbc_url=jdbc:mysql://%db_host%:%db_port%/%db_name%?%db_params%
 
-for /F %%i in ('cmd /r dir "../sfc-web/target" /b ^| findstr "sfc-web-.*.jar$"') do ( set jar_name=%%i )
-java -jar ../sfc-web/target/%jar_name% ^
+for /F %%i in ('cmd /r dir "../sfc-core/target" /b ^| findstr "sfc-core-.*.jar$"') do ( set jar_name=%%i )
+java -jar ../sfc-core/target/%jar_name% ^
 --server.port=%server_port% ^
 --spring.datasource.druid.url=%jdbc_url% ^
 --spring.datasource.druid.username=%db_username% ^
@@ -52,12 +71,16 @@ java -jar ../sfc-web/target/%jar_name% ^
 --spring.redis.host=%redis_host% ^
 --spring.redis.port=%redis_port% ^
 --spring.redis.password=%redis_password% ^
---local.store.public-root=%public_root% ^
---local.store.store-root=%store_root% ^
---local.store.store-type=%store_type% ^
+--local.store.public-root=%local_public_root% ^
+--local.store.store-root=%local_store_root% ^
+--local.store.store-type=%local_store_type% ^
 --RegCode=%reg_code% ^
 --local.store.sync-delay=%sync_delay% ^
 --local.store.sync-launch=%sync_launch% ^
+--sys.store.hdfs.root=%hdfs_root% ^
+--sys.store.hdfs.url=%hdfs_url% ^
+--sys.store.hdfs.user=%hdfs_user% ^
+--sys.store.type=%store_method% ^
 --ftp-port=%ftp_port% ^
 --ftp-passive-addr=%ftp_passive_addr% ^
 --ftp-passive-port=%ftp_passive_port% %*
