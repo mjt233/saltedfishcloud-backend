@@ -18,6 +18,7 @@ import java.util.zip.ZipException;
 
 /**
  * @TODO 兼容多种编码（或用户指定）
+ * @TODO 防御ZIP炸弹
  */
 public class ZipArchiveReader extends AbstractArchiveReader {
     private final ZipFile zip;
