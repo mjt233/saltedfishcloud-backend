@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
@@ -14,10 +15,10 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-@Component
+@Configuration
 @Order(1)
 @Slf4j
-public class DatabaseInitializer implements ApplicationRunner {
+public class DatabaseInitializer {
     @Resource
     private DataSource dataSource;
 
@@ -46,29 +47,22 @@ public class DatabaseInitializer implements ApplicationRunner {
         return ret;
     }
 
-    /**
-     * SpringBoot启动时执行的方法（ApplicationRunner接口）
-     * @author xiaotao mjt233@qq.com
-     */
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
-        doInit();
-    }
-
     public synchronized void doInit() throws SQLException {
         if (executed) {
             return;
         }
-        var con = dataSource.getConnection();
-
-        // 若数据库无数据表则先初始化
-        if (!isTableExist(con)) {
-            log.info("[数据库]正在初始化数据表...");
-            var resource = new ClassPathResource("sql/full.sql");
-            ScriptUtils.executeSqlScript(con, resource);
-            log.info("[数据库]数据表初始化完成（好耶）");
+        try(var con = dataSource.getConnection()) {
+            // 若数据库无数据表则先初始化
+            if (!isTableExist(con)) {
+                log.info("[数据库]正在初始化数据表...");
+                var resource = new ClassPathResource("sql/full.sql");
+                ScriptUtils.executeSqlScript(con, resource);
+                log.info("[数据库]数据表初始化完成（好耶）");
+            }
+            con.close();
+            executed = true;
         }
-        con.close();
-        executed = true;
+
+
     }
 }

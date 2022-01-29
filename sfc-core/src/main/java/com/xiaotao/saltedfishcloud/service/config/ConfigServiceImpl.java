@@ -5,13 +5,16 @@ import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.entity.Pair;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -31,6 +34,12 @@ public class ConfigServiceImpl implements ConfigService {
     private LocalStoreConfig localStoreConfig;
     @Resource
     private SysProperties sysProperties;
+
+    @Autowired
+    public ConfigServiceImpl(DatabaseInitializer initializer) throws SQLException {
+        initializer.doInit();
+    }
+
     private final ArrayList<Consumer<Pair<ConfigName, String>>> listeners = new ArrayList<>();
     private final Map<ConfigName, List<Consumer<String>>> configListeners = new HashMap<>();
 
