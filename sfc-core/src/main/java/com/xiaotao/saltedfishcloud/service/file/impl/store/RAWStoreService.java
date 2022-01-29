@@ -12,8 +12,8 @@ import com.xiaotao.saltedfishcloud.service.file.impl.store.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.DiskFileUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
@@ -27,36 +27,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 import static com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig.ACCEPT_AVATAR_TYPE;
 
 @Slf4j
-public class RAWStoreService implements StoreService, InitializingBean {
+public class RAWStoreService implements StoreService {
     @Autowired
     private UserService userService;
 
     private final static Resource DEFAULT_AVATAR_RESOURCE = new ClassPathResource("/static/static/defaultAvatar.png");
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        File[] files = {
-                new File(LocalStoreConfig.PUBLIC_ROOT),
-                new File(LocalStoreConfig.STORE_ROOT),
-                new File(LocalStoreConfig.getRawStoreRoot()),
-                new File(LocalStoreConfig.STORE_ROOT + "/user_profile")
-        };
-        Arrays.stream(files).forEach(file -> {
-            if (!file.exists()) {
-                log.warn("文件夹" + file.getPath() + "不存在，将被创建");
-                file.mkdirs();
-            }
-        });
-        log.info("[公共网盘路径]" + LocalStoreConfig.PUBLIC_ROOT);
-        log.info("[私人网盘根目录]" + LocalStoreConfig.STORE_ROOT);
-    }
 
     @Override
     public Resource getAvatar(int uid) {
@@ -75,16 +57,8 @@ public class RAWStoreService implements StoreService, InitializingBean {
 
     @Override
     public void saveAvatar(int uid, Resource resource) throws IOException {
-        //  文件属性约束：大小不得大于3MiB，限定文件类型
-        if (resource.contentLength() > 1024*1024*3) {
-            throw new JsonException(400, "文件过大");
-        }
-        String name = resource.getFilename();
-        if (name == null) {
-            throw new JsonException(400, "不支持的格式，只支持jpg, jpeg, gif, png");
-        }
-
-        String suffix = FileUtils.getSuffix(name);
+        FileValidator.validateAvatar(resource);
+        String suffix = FileUtils.getSuffix(resource.getFilename());
         if ( !ACCEPT_AVATAR_TYPE.contains(suffix)) {
             throw new JsonException(400, "不支持的格式，只支持jpg, jpeg, gif, png");
         }

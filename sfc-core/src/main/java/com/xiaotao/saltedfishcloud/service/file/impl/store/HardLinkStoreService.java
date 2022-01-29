@@ -18,9 +18,6 @@ import java.nio.file.StandardCopyOption;
 public class HardLinkStoreService extends RAWStoreService {
 
     @Override
-    public void afterPropertiesSet() throws Exception {}
-
-    @Override
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
         Path targetPath = Paths.get(LocalStoreConfig.rawPathHandler.getStorePath(uid, diskPath, fileInfo)); // 被移动到的目标位置
         if (Files.exists(targetPath) && Files.isDirectory(targetPath)) {
