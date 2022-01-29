@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.constant.error;
 
-import org.springframework.http.HttpStatus;
 
 public interface ErrorInfo {
     /**

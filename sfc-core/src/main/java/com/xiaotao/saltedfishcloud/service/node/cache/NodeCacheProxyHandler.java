@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.node.cache;
 
 import com.xiaotao.saltedfishcloud.service.node.cache.annotation.RemoveNodeCache;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -15,7 +14,6 @@ import java.util.List;
 @Aspect
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class NodeCacheProxyHandler {
     private final NodeCacheService cacheService;
 

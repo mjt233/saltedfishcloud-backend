@@ -28,12 +28,10 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.file.NoSuchFileException;
 import java.util.LinkedList;
@@ -47,7 +45,6 @@ public class ShareServiceImpl implements ShareService {
     private final ShareRepo shareRepo;
     private final UserDao userDao;
     private final DiskFileSystemFactory fileSystemFactory;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final WrapService wrapService;
 
     @Override

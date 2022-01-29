@@ -20,11 +20,9 @@ import java.util.zip.ZipException;
  * @TODO 兼容多种编码（或用户指定）
  */
 public class ZipArchiveReader extends AbstractArchiveReader {
-    private final File file;
     private final ZipFile zip;
 
     public ZipArchiveReader(File file) throws IOException {
-        this.file = file;
         try {
             this.zip = new ZipFile(file, "GBK");
         } catch (IOException e) {

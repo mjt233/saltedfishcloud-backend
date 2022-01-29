@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.config.security;
 import com.xiaotao.saltedfishcloud.config.security.service.UserDetailsServiceImpl;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

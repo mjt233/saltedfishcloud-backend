@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.utils.captcha;
 
 import com.xiaotao.saltedfishcloud.service.CaptchaGenerator;
 import com.xiaotao.saltedfishcloud.entity.CaptchaInfo;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -12,9 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicInteger;
 
-@Slf4j
 class CaptchaGeneratorTest {
 
     @Test
@@ -34,7 +31,6 @@ class CaptchaGeneratorTest {
         int threadCnt = 8;
         int task = 10000;
         String saveDir = "C:\\Users\\12079\\test233\\";
-        AtomicInteger cnt = new AtomicInteger(0);
         CyclicBarrier barrier = new CyclicBarrier(threadCnt + 1);
 
         for (int i = 0; i < threadCnt; i++) {

@@ -123,7 +123,6 @@ public class DefaultTaskManager implements TaskManager {
 
     @Override
     public MergeInputStream getMergeInputStream(String id) throws IOException {
-        TaskMetadata taskMetadata = queryTask(id);
         if (!this.isFinish(id)) {
             throw new IllegalStateException("断点续传任务未完成,文件块不完整");
         }

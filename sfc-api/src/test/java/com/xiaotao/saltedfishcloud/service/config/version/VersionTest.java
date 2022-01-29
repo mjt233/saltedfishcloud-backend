@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.service.config.version;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

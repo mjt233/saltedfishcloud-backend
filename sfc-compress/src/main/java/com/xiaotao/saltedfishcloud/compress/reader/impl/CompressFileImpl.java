@@ -1,16 +1,12 @@
 package com.xiaotao.saltedfishcloud.compress.reader.impl;
 
 import com.xiaotao.saltedfishcloud.compress.reader.CompressFile;
-import com.xiaotao.saltedfishcloud.compress.utils.ArchiveUtils;
 import com.xiaotao.saltedfishcloud.compress.utils.CharacterUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
-@Slf4j
 public class CompressFileImpl extends CompressFile {
     private final ArchiveEntry zipEntry;
     private String path;
-    private String name;
     public CompressFileImpl(ArchiveEntry entry) {
         this.zipEntry = entry;
     }

@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.ext.hadoop;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.springframework.core.io.AbstractResource;

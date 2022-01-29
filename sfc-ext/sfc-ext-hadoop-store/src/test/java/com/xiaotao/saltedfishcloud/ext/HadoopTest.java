@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.ext;
 
-import com.sun.org.apache.regexp.internal.RE;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;

@@ -15,12 +15,9 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,8 +37,6 @@ import static com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConf
 public class RAWStoreService implements StoreService, InitializingBean {
     @Autowired
     private UserService userService;
-    @Autowired
-    private LocalStoreConfig localStoreConfig;
 
     private final static Resource DEFAULT_AVATAR_RESOURCE = new ClassPathResource("/static/static/defaultAvatar.png");
 

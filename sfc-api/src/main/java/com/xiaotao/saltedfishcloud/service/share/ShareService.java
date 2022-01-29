@@ -9,7 +9,6 @@ import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 public interface ShareService {
