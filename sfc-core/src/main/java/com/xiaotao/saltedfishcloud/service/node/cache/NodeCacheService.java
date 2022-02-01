@@ -54,8 +54,8 @@ public class NodeCacheService {
      * @param nodeIds   要被删除的节点ID列表
      */
     private void deleteNodeCache(int uid, Collection<String> nodeIds, boolean queryParent) throws JsonProcessingException {
-        log.debug("delete path cache {} ids: {}", uid, nodeIds);
         if (nodeIds.size() == 0) return;
+        log.debug("[NodeCache]<<==== 开始删除节点缓存 uid:{} 节点id集合: {}", uid, nodeIds);
 
         List<String> keys = new LinkedList<>();
         for (String nid : nodeIds) {
@@ -68,8 +68,11 @@ public class NodeCacheService {
                 subids.add(n.getId());
                 redisTemplate.delete(NodeCacheKeyGenerator.generatePnidKey(uid, nid, n.getName()));
             }
+
             // 继续对查找出的子节点进行删除操作
-            deleteNodeCache(uid, subids ,false);
+            if (!subids.isEmpty()) {
+                deleteNodeCache(uid, subids ,false);
+            }
 
             /* 因传入的仅仅为节点的ID，而没有该节点的名称和父节点ID，缓存中可能依然存在
              * 该节点的pnid记录（通过父节点和节点名称获取节点信息）需要清除。
@@ -86,6 +89,7 @@ public class NodeCacheService {
             redisTemplate.delete(subNodeKeys);
         }
         redisTemplate.delete(keys);
+        log.debug("[NodeCache]====>> 节点缓存清理完成 被移除的节点id集合：{}", nodeIds);
     }
 
     /**
