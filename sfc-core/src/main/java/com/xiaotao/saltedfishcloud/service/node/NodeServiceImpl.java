@@ -66,7 +66,7 @@ public class NodeServiceImpl implements NodeService {
 
     @Override
     public LinkedList<NodeInfo> getPathNodeByPath(int uid, String path) throws NoSuchFileException {
-        log.debug("search path" + uid + ": " + path);
+        log.debug("[Node]<<==== 开始解析Node到Path uid: {} path: {}", uid, path);
         LinkedList<NodeInfo> link = new LinkedList<>();
         PathBuilder pb = new PathBuilder();
         pb.append(path);
@@ -100,10 +100,10 @@ public class NodeServiceImpl implements NodeService {
         if (log.isDebugEnabled()) {
             StringBuilder sb = new StringBuilder();
             for (NodeInfo nodeInfo : link) {
-                log.debug("nodeInfo:" + nodeInfo);
+                log.debug("[Node]途径节点: {}", nodeInfo);
                 sb.append("/").append(nodeInfo.getName() == null ? "" : nodeInfo.getName()).append('[').append(nodeInfo.getId()).append(']');
             }
-            log.debug(sb.toString());
+            log.debug("[Node]====>> 解析成功 path: {}", sb.toString());
         }
         return link;
     }
