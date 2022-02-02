@@ -9,5 +9,6 @@ public class FileChangeInfo {
     public FileChangeInfo(FileInfo oldFile, FileInfo newFile) {
         this.oldFile = oldFile;
         this.newFile = newFile;
+        this.newFile.setNode(this.oldFile.getNode());
     }
 }

@@ -4,8 +4,8 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordSyncService;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
-import com.xiaotao.saltedfishcloud.service.sync.SyncService;
 import lombok.var;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +19,7 @@ public class StoreController {
     @Resource
     private AdminService adminService;
     @Resource
-    private SyncService syncService;
+    private FileRecordSyncService syncService;
     @Resource
     private UserDao userDao;
 
@@ -33,6 +33,7 @@ public class StoreController {
 
     /**
      * 立即执行同步
+     * @TODO 支持精准同步参数控制
      */
     @PostMapping("sync")
     public JsonResult sync(@RequestParam(name = "all", defaultValue = "false") Boolean all) throws Exception {
@@ -41,11 +42,11 @@ public class StoreController {
             users.add(User.getPublicUser());
             for (User user : users) {
                 try {
-                    syncService.syncLocal(user);
+                    syncService.doSync(user.getId(), false);
                 } catch (Exception e) { e.printStackTrace(); }
             }
         } else {
-            syncService.syncLocal(User.getPublicUser());
+            syncService.doSync(User.getPublicUser().getId(), false);
         }
         return JsonResult.emptySuccess();
     }

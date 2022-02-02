@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.ext.hadoop.HDFSProperties;
 import com.xiaotao.saltedfishcloud.ext.hadoop.HDFSResource;
 import com.xiaotao.saltedfishcloud.service.file.AbstractStoreService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -85,10 +86,27 @@ public class HDFSStoreService extends AbstractStoreService {
         } else {
             List<FileInfo> res = new ArrayList<>();
             for (FileStatus fileStatus : fs.listStatus(targetPath)) {
-                FileInfo file = new FileInfo();
-                file.setSize(fileStatus.isDirectory() ? -1 : file.getSize());
-                file.setName(fileStatus.getPath().getName());
-                file.setCreated_at(new Date(fileStatus.getModificationTime()));
+                FileInfo file;
+                if (fileStatus.isDirectory()) {
+                    file = new FileInfo(
+                            fileStatus.getPath().getName(),
+                            -1,
+                            FileInfo.TYPE_DIR,
+                            PathUtils.getParentPath(path),
+                            fileStatus.getModificationTime(),
+                            null
+                    );
+                } else {
+                    file = new FileInfo(
+                            fileStatus.getPath().getName(),
+                            fileStatus.getLen(),
+                            FileInfo.TYPE_FILE,
+                            PathUtils.getParentPath(path),
+                            fileStatus.getModificationTime(),
+                            new HDFSResource(fs, fileStatus.getPath())
+                    );
+                }
+                file.setCreatedAt(new Date(System.currentTimeMillis()));
                 file.setUid(uid);
                 res.add(file);
             }

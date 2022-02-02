@@ -14,7 +14,7 @@ import javax.annotation.Resource;
 @RunWith(SpringRunner.class)
 class SyncServiceTest {
     @Resource
-    private SyncService syncService;
+    private DefaultFileRecordSyncService defaultFileRecordSyncService;
     @Resource
     private ConfigServiceImpl configService;
     @Resource
@@ -24,6 +24,6 @@ class SyncServiceTest {
     void syncLocal() throws Exception {
         configService.setStoreType(StoreType.RAW);
 //        syncService.syncLocal(User.getPublicUser());
-        syncService.syncLocal(userDao.getUserByUser("xiaotao"));
+        defaultFileRecordSyncService.doSync(userDao.getUserByUser("xiaotao").getId(), false);
     }
 }

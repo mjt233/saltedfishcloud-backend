@@ -12,6 +12,7 @@ import com.xiaotao.saltedfishcloud.service.file.impl.store.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.DiskFileUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,8 +89,9 @@ public class RAWStoreService implements StoreService {
         User user = userService.getUserById(uid);
         if (user == null) throw new UserNoExistException(uid + "");
         Files.list(p2).forEach(e -> {
-            FileInfo fi = FileInfo.getLocal(e.toString(), false);
-            fi.setPath(DiskFileUtils.getRelativePath(user, e.toString()));
+            FileInfo fi;
+            fi = new FileInfo(e.toFile());
+            fi.setPath(StringUtils.appendPath(path, e.getFileName().toString()));
             res.add(fi);
         });
 

@@ -63,7 +63,11 @@ public class UserServiceImp implements UserService {
 
     @Override
     public User getUserById(Integer id) {
-        return userDao.getUserById(id);
+        if (id == 0) {
+            return User.getPublicUser();
+        } else {
+            return userDao.getUserById(id);
+        }
     }
 
     @Override

@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.init;
 
+import com.xiaotao.saltedfishcloud.service.file.FileRecordSyncService;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.service.sync.SyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -19,7 +19,7 @@ import javax.annotation.Resource;
 @Order(4)
 public class FileDBSynchronizer implements ApplicationRunner, Runnable {
     @Resource
-    private SyncService syncService;
+    private FileRecordSyncService syncService;
 
     private Thread thread;
 
@@ -31,7 +31,7 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
     }
 
     public void doAction() throws Exception {
-        syncService.syncLocal(User.getPublicUser());
+        syncService.doSync(User.getPublicUser().getId(), false);
     }
 
     /**
