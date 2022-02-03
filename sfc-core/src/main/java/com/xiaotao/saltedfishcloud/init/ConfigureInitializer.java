@@ -1,15 +1,12 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.config.CommandLineOption;
-import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
-import com.xiaotao.saltedfishcloud.service.config.ConfigServiceImpl;
-import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +27,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ConfigureInitializer implements ApplicationRunner {
     private final ConfigDao configDao;
-    private final ConfigServiceImpl configService;
-    private final CommandLineOption commandLineOption;
     private final SysRuntimeConfig sysRuntimeConfig;
     private final SysProperties sysProperties;
     @Override
@@ -41,7 +36,6 @@ public class ConfigureInitializer implements ApplicationRunner {
         String storeType = configDao.getConfigure(ConfigName.STORE_TYPE);
         String regCode = configDao.getConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
         String syncDelay = configDao.getConfigure(ConfigName.SYNC_DELAY, LocalStoreConfig.SYNC_DELAY + "");
-        Version version = Version.valueOf(configDao.getConfigure(ConfigName.VERSION, "1.0.0-SNAPSHOT"));
 
         boolean firstRun = storeType == null;
         if (firstRun) {
@@ -53,23 +47,6 @@ public class ConfigureInitializer implements ApplicationRunner {
             configDao.setConfigure(ConfigName.SYNC_DELAY, syncDelay);
 
             storeType = LocalStoreConfig.STORE_TYPE.toString();
-        } else {
-            String modeSwitch = commandLineOption.getValue(CommandLineOption.SWITCH);
-            if (modeSwitch != null) {
-                if (!configService.setStoreType(StoreType.valueOf(modeSwitch))) {
-                    log.warn("系统当前已处于" + modeSwitch + "存储模式下，切换行为已忽略");
-                } else {
-                    log.info("存储已切换为：" + modeSwitch + ", 任务执行完毕");
-                }
-                System.exit(0);
-            }
-            if (Version.getEarliestVersion().equals(version) && storeType.equals(StoreType.UNIQUE.toString())) {
-                System.out.println("旧版本咸鱼云1.0.0不支持在UNIQUE（唯一）存储状态下升级版本，请先转化为RAW（原始）存储模式");
-                System.out.println("启动咸鱼云时使用命令行参数--switch=RAW可启动切换程序，但首先还是建议您备份好您的数据防止丢失");
-                System.out.println("The old version salted fish cloud(1.0.0) is unsupported upgrade to current version " + sysProperties.getVersion() + " in the UNIQUE store mode, your must switch to RAW store mode");
-                System.out.println("You can launch salted fish cloud with command line argument --switch=RAW to launch switch task, but may be you should backup your data first avoid data lose");
-                throw new IllegalStateException("Unable to upgrade from 1.0.0 in UNIQUE store mode");
-            }
         }
 
         String secret = configDao.getConfigure(ConfigName.TOKEN_SECRET);

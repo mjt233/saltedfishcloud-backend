@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
@@ -8,6 +10,7 @@ import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreServiceFactory;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -34,25 +37,28 @@ public class StoreTypeSwitch {
     @Resource
     private StoreServiceFactory storeServiceFactory;
     @Resource
-    private ConfigDao configDao;
-    @Resource
     private DiskFileSystemFactory fileService;
 
     public void switchTo(StoreType targetType) throws IOException {
-        if (targetType == StoreType.RAW) switchToRaw();
-        else switchToUnique();
+        final DiskFileSystem fileSystem = fileService.getFileSystem();
+
+        if (!(fileSystem instanceof DefaultFileSystem) || !(storeServiceFactory instanceof LocalStoreServiceFactory)) {
+            throw new UnsupportedOperationException("当前文件系统或存储服务不支持切换");
+        }
+
+        if (targetType == StoreType.RAW) {
+            switchToRaw();
+        } else {
+            switchToUnique();
+        }
     }
 
     private void switchToRaw() throws IOException {
         log.info("切换到RAW");
         if (!Files.exists(Paths.get(LocalStoreConfig.getRawStoreRoot()))) Files.createDirectories(Paths.get(LocalStoreConfig.getRawStoreRoot()));
         List<User> users = userDao.getUserList();
+        users.add(User.getPublicUser());
 
-        // 1.0.0 -> 1.1.0切换兼容
-        String v = configDao.getConfigure(ConfigName.VERSION);
-        if (v != null) {
-            users.add(User.getPublicUser());
-        }
         for (User user : users) {
             int uid = user.getId();
             log.debug("Processing user data: " + user.getUsername());
