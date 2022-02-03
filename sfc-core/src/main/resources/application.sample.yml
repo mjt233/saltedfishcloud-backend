@@ -12,7 +12,6 @@ spring:
   config:
     import:
       - "classpath:sys.yml"
-      - "classpath:hdfs-store.yml"
   jpa:
     database: mysql
     open-in-view: false
@@ -45,6 +44,7 @@ logging:
   level:
     org: warn
     com: warn
+    com.saltedfishcloud: debug
     com.xiaotao: info
     com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
 app:

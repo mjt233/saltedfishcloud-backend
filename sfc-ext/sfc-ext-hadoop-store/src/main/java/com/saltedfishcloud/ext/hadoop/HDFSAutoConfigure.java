@@ -1,11 +1,12 @@
-package com.xiaotao.saltedfishcloud.ext.hadoop;
+package com.saltedfishcloud.ext.hadoop;
 
-import com.xiaotao.saltedfishcloud.ext.hadoop.store.HDFSStoreService;
-import com.xiaotao.saltedfishcloud.ext.hadoop.store.HDFSStoreServiceFactory;
+import com.saltedfishcloud.ext.hadoop.store.HDFSStoreService;
+import com.saltedfishcloud.ext.hadoop.store.HDFSStoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import org.apache.hadoop.fs.FileSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,6 +16,7 @@ import java.net.URISyntaxException;
 
 @Configuration
 @ConditionalOnProperty(prefix = "sys.store", name = "type", havingValue = "hdfs")
+@EnableConfigurationProperties(HDFSProperties.class)
 public class HDFSAutoConfigure {
     @Autowired
     private HDFSProperties properties;

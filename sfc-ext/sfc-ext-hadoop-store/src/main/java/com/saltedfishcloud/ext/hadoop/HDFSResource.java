@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.ext.hadoop;
+package com.saltedfishcloud.ext.hadoop;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.hadoop.fs.FileSystem;

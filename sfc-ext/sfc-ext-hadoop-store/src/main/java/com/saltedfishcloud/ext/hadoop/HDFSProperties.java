@@ -1,17 +1,16 @@
-package com.xiaotao.saltedfishcloud.ext.hadoop;
+package com.saltedfishcloud.ext.hadoop;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
-@ConditionalOnProperty(prefix = "sys.store", name = "type", havingValue = "hdfs")
-@ConfigurationProperties("sys.store.hdfs")
 @Slf4j
 @Data
+@ConfigurationProperties("sys.store.hdfs")
 public class HDFSProperties implements InitializingBean {
 
     /**

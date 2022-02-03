@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.ext.hadoop.store;
+package com.saltedfishcloud.ext.hadoop.store;
 
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;

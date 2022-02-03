@@ -1,11 +1,11 @@
-package com.xiaotao.saltedfishcloud.ext.hadoop.store;
+package com.saltedfishcloud.ext.hadoop.store;
 
+import com.saltedfishcloud.ext.hadoop.HDFSProperties;
+import com.saltedfishcloud.ext.hadoop.HDFSResource;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.ext.hadoop.HDFSProperties;
-import com.xiaotao.saltedfishcloud.ext.hadoop.HDFSResource;
 import com.xiaotao.saltedfishcloud.service.file.AbstractStoreService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
