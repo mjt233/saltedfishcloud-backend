@@ -21,7 +21,7 @@ import javax.annotation.Resource;
  */
 @Configuration
 @Slf4j
-public class MailConfiguration implements ApplicationRunner {
+public class MailAutoConfigure implements ApplicationRunner {
 
     @Resource
     private ConfigService configService;
