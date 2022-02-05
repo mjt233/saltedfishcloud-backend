@@ -18,14 +18,9 @@ import java.sql.SQLException;
 @Configuration
 @Order(1)
 @Slf4j
-public class DatabaseInitializer {
+public class DatabaseInitializer implements ApplicationRunner {
     @Resource
     private DataSource dataSource;
-
-    /**
-     * 是否已执行一次初始化
-     */
-    private boolean executed = false;
 
     /**
      * 判断数据库中是否存在数据表<br>
@@ -47,10 +42,8 @@ public class DatabaseInitializer {
         return ret;
     }
 
-    public synchronized void doInit() throws SQLException {
-        if (executed) {
-            return;
-        }
+    @Override
+    public void run(ApplicationArguments args) throws SQLException {
         try(var con = dataSource.getConnection()) {
             // 若数据库无数据表则先初始化
             if (!isTableExist(con)) {
@@ -60,7 +53,6 @@ public class DatabaseInitializer {
                 log.info("[数据库]数据表初始化完成（好耶）");
             }
             con.close();
-            executed = true;
         }
 
 

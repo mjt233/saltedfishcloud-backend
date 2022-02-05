@@ -35,11 +35,6 @@ public class ConfigServiceImpl implements ConfigService {
     @Resource
     private SysProperties sysProperties;
 
-    @Autowired
-    public ConfigServiceImpl(DatabaseInitializer initializer) throws SQLException {
-        initializer.doInit();
-    }
-
     private final ArrayList<Consumer<Pair<ConfigName, String>>> listeners = new ArrayList<>();
     private final Map<ConfigName, List<Consumer<String>>> configListeners = new HashMap<>();
 

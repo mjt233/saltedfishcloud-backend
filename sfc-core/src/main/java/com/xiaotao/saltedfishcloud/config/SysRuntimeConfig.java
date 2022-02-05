@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -20,7 +22,7 @@ import java.util.Map;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class SysRuntimeConfig implements InitializingBean {
+public class SysRuntimeConfig implements ApplicationRunner {
     private static SysRuntimeConfig GLOBAL_HOLD_INST;
 
     @Autowired
@@ -42,13 +44,7 @@ public class SysRuntimeConfig implements InitializingBean {
     }
 
     @Override
-    public void afterPropertiesSet() {
-        try {
-            initializer.doInit();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+    public void run(ApplicationArguments args) {
         fetchConfig();
         SysRuntimeConfig.GLOBAL_HOLD_INST = this;
 

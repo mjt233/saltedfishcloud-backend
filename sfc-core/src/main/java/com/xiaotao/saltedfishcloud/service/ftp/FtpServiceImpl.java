@@ -16,6 +16,8 @@ import org.apache.ftpserver.ftplet.Ftplet;
 import org.apache.ftpserver.listener.ListenerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -31,7 +33,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class FtpServiceImpl implements InitializingBean, FtpService {
+public class FtpServiceImpl implements ApplicationRunner, FtpService {
     private final FtpProperties ftpProperties;
     private final DiskFtpUserManager ftpUserManager;
     private final DiskFtpFileSystemFactory ftpFileSystemFactory;
@@ -103,7 +105,7 @@ public class FtpServiceImpl implements InitializingBean, FtpService {
     }
 
     @Override
-    public void afterPropertiesSet() throws FtpException, IOException {
+    public void run(ApplicationArguments args) throws IOException {
         String configRawJson = configService.getConfig(ConfigName.FTP_PROPERTIES);
         if (configRawJson != null) {
             try {

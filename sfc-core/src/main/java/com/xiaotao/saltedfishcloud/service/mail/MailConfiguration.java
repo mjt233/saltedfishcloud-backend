@@ -7,6 +7,8 @@ import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -18,25 +20,26 @@ import org.springframework.mail.javamail.JavaMailSender;
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
-public class MailConfiguration {
+public class MailConfiguration implements ApplicationRunner {
     private final ConfigService configService;
 
-    @Bean
-    public MailProperties mailProperties() {
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        this.configureProperties();
+    }
+
+    private void configureProperties() {
         String configure = configService.getConfig(ConfigName.MAIL_PROPERTIES);
-        MailProperties res;
         if (configure != null) {
             try {
-                res = MapperHolder.mapper.readValue(configure, MailProperties.class);
+                MailProperties properties = MapperHolder.mapper.readValue(configure, MailProperties.class);
+                BeanUtils.copyProperties(properties, this.mailProperties());
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
-                res = new MailProperties();
             }
-        } else {
-            res = new MailProperties();
         }
 
-        if (!res.isValid()) {
+        if (!this.mailProperties().isValid()) {
             log.warn("邮件发信服务器信息参数无效，需要进行配置");
         }
 
@@ -52,7 +55,11 @@ public class MailConfiguration {
                 }
             }
         });
-        return res;
+    }
+
+    @Bean
+    public MailProperties mailProperties() {
+        return new MailProperties();
     }
 
     @Bean
