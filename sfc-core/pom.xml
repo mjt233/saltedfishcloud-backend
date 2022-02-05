@@ -16,6 +16,8 @@
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-ext-hadoop-store</artifactId>
             <version>1.8.3.6-SNAPSHOT</version>
+            <scope>compile</scope>
+            <systemPath>${project.basedir}/../ext/hdfs-ext.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.xiaotao</groupId>
