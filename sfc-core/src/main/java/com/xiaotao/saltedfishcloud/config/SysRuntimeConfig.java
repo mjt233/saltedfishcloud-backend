@@ -28,9 +28,6 @@ public class SysRuntimeConfig implements ApplicationRunner {
     @Autowired
     private ConfigService configService;
 
-    @Autowired
-    private DatabaseInitializer initializer;
-
     @Getter
     private boolean enableRegCode;
     @Getter

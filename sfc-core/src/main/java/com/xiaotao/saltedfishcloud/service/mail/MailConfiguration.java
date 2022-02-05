@@ -13,15 +13,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 
+import javax.annotation.Resource;
+
 /**
  * 邮件服务相关Bean配置类
  * 主要配置邮件发信参数类和MailSender
  */
 @Configuration
-@RequiredArgsConstructor
 @Slf4j
 public class MailConfiguration implements ApplicationRunner {
-    private final ConfigService configService;
+
+    @Resource
+    private ConfigService configService;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
