@@ -134,20 +134,6 @@ public class HDFSStoreService extends AbstractStoreService {
         }
     }
 
-    @Override
-    public void moveToSave(int uid, java.nio.file.Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
-        String dir = StringUtils.appendPath(properties.getStoreRoot(uid), diskPath);
-        Path targetDir = new Path(dir);
-        Path target = new Path(StringUtils.appendPath(dir, fileInfo.getName()));
-        fs.mkdirs(targetDir);
-        try(final InputStream in = Files.newInputStream(nativePath);
-            final FSDataOutputStream out = fs.create(target);
-        ) {
-            StreamUtils.copy(in, out);
-        }
-        Files.delete(nativePath);
-    }
-
     /**
      * @TODO 相同文件并发写入会出问题，需要分布式锁
      */

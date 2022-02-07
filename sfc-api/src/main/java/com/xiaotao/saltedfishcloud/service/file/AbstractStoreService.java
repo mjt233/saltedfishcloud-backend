@@ -1,15 +1,20 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 
 public abstract class AbstractStoreService implements StoreService {
@@ -17,7 +22,14 @@ public abstract class AbstractStoreService implements StoreService {
     @Setter
     private int maxDepth = 64;
 
-
+    @Override
+    public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
+        try(final InputStream is = Files.newInputStream(nativePath)) {
+            store(uid, is, diskPath, FileInfo.getFromResource(new PathResource(nativePath), uid, fileInfo.getType()));
+            is.close();
+            Files.delete(nativePath);
+        }
+    }
 
     protected void doCopy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite, int depth, boolean isMove) throws IOException {
         if (depth > maxDepth) {

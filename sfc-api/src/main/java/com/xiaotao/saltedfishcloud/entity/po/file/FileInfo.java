@@ -41,6 +41,13 @@ public class FileInfo extends BasicFileInfo{
     @JsonIgnore
     private InputStreamSource streamSource;
 
+    /**
+     * 从资源接口中创建文件信息
+     * @param resource  资源接口
+     * @param uid       文件所属用户ID
+     * @param type      文件类型，2为文件{@link FileInfo#TYPE_FILE}，1为目录{@link FileInfo#TYPE_DIR}
+     * @return          文件信息
+     */
     public static FileInfo getFromResource(Resource resource, Integer uid, Integer type) throws IOException {
         final FileInfo fileInfo = new FileInfo();
         Date now = new Date();

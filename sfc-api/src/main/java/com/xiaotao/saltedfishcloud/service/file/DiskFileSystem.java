@@ -180,6 +180,8 @@ public interface DiskFileSystem {
 
     /**
      * 通过移动本地文件的方式存储文件
+     * @TODO 编写默认实现
+     * @TODO fileInfo改为filename
      * @param uid               用户ID
      * @param nativeFilePath    本地文件路径
      * @param path              网盘路径
