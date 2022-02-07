@@ -4,40 +4,26 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.xiaotao</groupId>
-    <version>1.8.3.6-SNAPSHOT</version>
+    <parent>
+        <groupId>com.xiaotao</groupId>
+        <version>1.8.3.6-SNAPSHOT</version>
+        <artifactId>saltedfishcloud</artifactId>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
     <artifactId>sfc-ext</artifactId>
     <packaging>pom</packaging>
+    <version>1.8.3.6-SNAPSHOT</version>
 
-    <properties>
-        <java.version>1.8</java.version>
-        <skipTests>true</skipTests>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
     <modules>
         <module>sfc-ext-hadoop-store</module>
     </modules>
 
     <dependencies>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.20</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
             <version>1.8.3.6-SNAPSHOT</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>5.8.1</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
