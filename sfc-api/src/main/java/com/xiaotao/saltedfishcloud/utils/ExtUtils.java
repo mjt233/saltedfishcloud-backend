@@ -15,20 +15,20 @@ import java.util.Objects;
 public class ExtUtils {
     public static ClassLoader loadExtJar(ClassLoader parent) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         final File root = new File("./lib");
+        log.info("[拓展]加载器：{}", parent.getClass().getName());
+        final Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+        addURL.setAccessible(true);
 
-            final Class<?> appLoaderClass = Class.forName("sun.misc.Launcher$AppClassLoader");
-            if (appLoaderClass.isAssignableFrom(parent.getClass())) {
-                final Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-                addURL.setAccessible(true);
-
-                log.info("[拓展]加载拓展路径：{}", root.getAbsolutePath());
-                final URL[] urls = ExtUtils.getExtUrls();
-                for (URL url : urls) {
-                    log.info("[拓展]加载拓展：{}", url);
-                    addURL.invoke(parent, url);
-                }
-            }
-            return new URLClassLoader(ExtUtils.getExtUrls());
+        log.info("[拓展]加载拓展路径：{}", root.getAbsolutePath());
+        final URL[] urls = ExtUtils.getExtUrls();
+        for (URL url : urls) {
+            log.info("[拓展]加载拓展：{}", url);
+            addURL.invoke(parent, url);
+        }
+//            final Class<?> appLoaderClass = Class.forName("sun.misc.Launcher$AppClassLoader");
+//            if (appLoaderClass.isAssignableFrom(parent.getClass())) {
+//            }
+        return new URLClassLoader(ExtUtils.getExtUrls());
     }
 
     /**
