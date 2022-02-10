@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
-import com.xiaotao.saltedfishcloud.config.security.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;

@@ -12,11 +12,11 @@
     <artifactId>sfc-core</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-ext-hadoop-store</artifactId>
-            <version>1.8.3.6-SNAPSHOT</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.xiaotao</groupId>-->
+<!--            <artifactId>sfc-ext-hadoop-store</artifactId>-->
+<!--            <version>1.8.3.6-SNAPSHOT</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
@@ -68,7 +68,7 @@
             <artifactId>commons-pool2</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.xiaotao.saltedfishcloud</groupId>
+            <groupId>com.xiaotao</groupId>
             <artifactId>sfc-compress</artifactId>
             <version>1.8.3.6-SNAPSHOT</version>
             <scope>compile</scope>

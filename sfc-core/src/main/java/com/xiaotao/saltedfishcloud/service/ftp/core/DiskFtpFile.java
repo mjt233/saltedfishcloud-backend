@@ -1,13 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.ftp.core;
 
+import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
-import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
+import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
+import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,10 @@ import org.apache.ftpserver.ftplet.FtpFile;
 import org.springframework.core.io.Resource;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j

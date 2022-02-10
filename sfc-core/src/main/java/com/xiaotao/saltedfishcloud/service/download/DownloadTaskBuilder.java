@@ -4,7 +4,8 @@ import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.service.async.context.EmptyCallback;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.springframework.http.HttpMethod;
 

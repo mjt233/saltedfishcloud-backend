@@ -14,7 +14,7 @@ import org.springframework.util.DigestUtils;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @RequiredArgsConstructor

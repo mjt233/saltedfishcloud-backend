@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;

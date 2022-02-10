@@ -1,14 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.sync.handler;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
-import com.xiaotao.saltedfishcloud.config.StoreType;
-import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +10,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @Component
 @Slf4j

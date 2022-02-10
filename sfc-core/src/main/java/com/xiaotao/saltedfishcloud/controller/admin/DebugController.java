@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import lombok.var;
 import org.springframework.web.bind.annotation.*;
 

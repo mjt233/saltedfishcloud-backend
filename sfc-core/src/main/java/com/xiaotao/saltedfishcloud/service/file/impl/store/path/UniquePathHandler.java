@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.store.path;
 
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import org.springframework.stereotype.Component;
 
 /**

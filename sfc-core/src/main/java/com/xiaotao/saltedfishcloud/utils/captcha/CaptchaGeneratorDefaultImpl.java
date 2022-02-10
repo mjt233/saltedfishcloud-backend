@@ -2,8 +2,8 @@ package com.xiaotao.saltedfishcloud.utils.captcha;
 
 import com.google.code.kaptcha.impl.DefaultKaptcha;
 import com.google.code.kaptcha.util.Config;
-import com.xiaotao.saltedfishcloud.service.CaptchaGenerator;
 import com.xiaotao.saltedfishcloud.entity.CaptchaInfo;
+import com.xiaotao.saltedfishcloud.service.CaptchaGenerator;
 
 import java.awt.image.BufferedImage;
 import java.util.Properties;

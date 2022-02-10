@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.config.security.service;
 
-import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

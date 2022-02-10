@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl;
 
+import com.xiaotao.saltedfishcloud.service.breakpoint.PartParser;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
-import com.xiaotao.saltedfishcloud.service.breakpoint.PartParser;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskStorePath;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeInputStream;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MultipleFileMergeInputStreamGenerator;

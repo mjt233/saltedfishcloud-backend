@@ -13,7 +13,7 @@
         <module>sfc-compress</module>
         <module>sfc-core</module>
         <module>sfc-api</module>
-        <module>sfc-ext</module>
+        <module>sfc-test-module</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>

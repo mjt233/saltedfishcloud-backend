@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.config.security;
+package com.xiaotao.saltedfishcloud.annotations;
 
 import java.lang.annotation.*;
 

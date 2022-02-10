@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.ftp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.config.FtpProperties;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpUserManager;
-import com.xiaotao.saltedfishcloud.config.FtpProperties;
 import com.xiaotao.saltedfishcloud.service.ftp.ftplet.FtpUploadHandler;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,6 @@ import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.ftpserver.ftplet.Ftplet;
 import org.apache.ftpserver.listener.ListenerFactory;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.event.ContextClosedEvent;

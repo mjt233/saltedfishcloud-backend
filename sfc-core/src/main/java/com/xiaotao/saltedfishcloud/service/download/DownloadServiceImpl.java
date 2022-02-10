@@ -2,12 +2,12 @@ package com.xiaotao.saltedfishcloud.service.download;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.entity.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.param.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.entity.po.param.TaskType;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;

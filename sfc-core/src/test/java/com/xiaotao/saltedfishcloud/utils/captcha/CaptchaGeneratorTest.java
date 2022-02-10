@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils.captcha;
 
-import com.xiaotao.saltedfishcloud.service.CaptchaGenerator;
 import com.xiaotao.saltedfishcloud.entity.CaptchaInfo;
+import com.xiaotao.saltedfishcloud.service.CaptchaGenerator;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;

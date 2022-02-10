@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
+import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.config.security.service.UserDetailsServiceImpl;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;

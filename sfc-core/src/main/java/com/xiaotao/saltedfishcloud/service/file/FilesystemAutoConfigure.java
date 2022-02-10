@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
-import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
