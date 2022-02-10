@@ -36,9 +36,8 @@ import java.net.URLClassLoader;
 public class SaltedfishcloudApplication {
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-//        final ClassLoader extLoader = ExtUtils.loadExtJar(SaltedfishcloudApplication.class.getClassLoader());
+        ExtUtils.loadExtJar(SaltedfishcloudApplication.class.getClassLoader());
         SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
-//        sa.setResourceLoader(new DefaultResourceLoader(extLoader));
         sa.run(args);
         System.out.println("=========咸鱼云已启动(oﾟvﾟ)ノ==========");
     }

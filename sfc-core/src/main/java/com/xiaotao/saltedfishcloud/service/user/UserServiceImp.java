@@ -17,6 +17,8 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -37,12 +39,20 @@ import java.util.Date;
 public class UserServiceImp implements UserService {
     private final TokenDaoImpl tokenDao;
     private final UserDao userDao;
-    private final JavaMailSender mailSender;
-    private final MailMessageGenerator mailMessageGenerator;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SysProperties sysProperties;
 
-    @Resource
+
+    @Autowired
+    @Lazy
+    private JavaMailSender mailSender;
+
+    @Autowired
+    @Lazy
+    private MailMessageGenerator mailMessageGenerator;
+
+    @Autowired
+    @Lazy
     private SysRuntimeConfig sysRuntimeConfig;
 
     @Override

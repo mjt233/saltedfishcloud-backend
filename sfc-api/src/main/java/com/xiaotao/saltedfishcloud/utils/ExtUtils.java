@@ -13,22 +13,23 @@ import java.util.Objects;
 
 @Slf4j
 public class ExtUtils {
+    private static final String EXTENSION_DIRECTORY = "ext";
     public static ClassLoader loadExtJar(ClassLoader parent) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        final File root = new File("./lib");
-        log.info("[拓展]加载器：{}", parent.getClass().getName());
+        final File root = new File(EXTENSION_DIRECTORY);
+        if (root.isFile()) {
+            log.warn("[拓展]拓展资源路径{}不是目录", root.getAbsolutePath());
+        }
+        log.info("[拓展]加载拓展路径：{}", root.getAbsolutePath());
+        log.info("[拓展]ClassLoader：{}", parent.getClass().getName());
         final Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
         addURL.setAccessible(true);
 
-        log.info("[拓展]加载拓展路径：{}", root.getAbsolutePath());
         final URL[] urls = ExtUtils.getExtUrls();
         for (URL url : urls) {
             log.info("[拓展]加载拓展：{}", url);
             addURL.invoke(parent, url);
         }
-//            final Class<?> appLoaderClass = Class.forName("sun.misc.Launcher$AppClassLoader");
-//            if (appLoaderClass.isAssignableFrom(parent.getClass())) {
-//            }
-        return new URLClassLoader(ExtUtils.getExtUrls());
+        return parent;
     }
 
     /**
@@ -36,10 +37,9 @@ public class ExtUtils {
      * @return 拓展模块的URL
      */
     public static URL[] getExtUrls() {
-        final File root = new File("./lib");
+        final File root = new File(EXTENSION_DIRECTORY);
         if (root.exists()) {
             if (root.isFile()) {
-                log.warn("[拓展]拓展资源路径{}不是目录", root.getAbsolutePath());
                 return new URL[0];
             }
 

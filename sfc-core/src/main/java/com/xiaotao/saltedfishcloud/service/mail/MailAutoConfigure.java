@@ -6,10 +6,12 @@ import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import javax.annotation.Resource;
@@ -22,7 +24,8 @@ import javax.annotation.Resource;
 @Slf4j
 public class MailAutoConfigure implements ApplicationRunner {
 
-    @Resource
+    @Autowired
+    @Lazy
     private ConfigService configService;
 
     @Override
