@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
-import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
+import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
@@ -69,7 +69,7 @@ public class SysController {
      * @param type      存储类型
      */
     @PutMapping("config/STORE_TYPE/{type}")
-    @ReadOnlyBlock
+    @ProtectBlock
     public JsonResult setStoreType(@PathVariable("type") String type) throws IOException {
         try {
             StoreType storeType = StoreType.valueOf(type.toUpperCase());

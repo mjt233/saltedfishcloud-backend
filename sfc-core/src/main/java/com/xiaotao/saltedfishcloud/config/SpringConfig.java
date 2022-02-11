@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.xiaotao.saltedfishcloud.interceptor.ReadOnlyBlocker;
+import com.xiaotao.saltedfishcloud.interceptor.ProtectBlocker;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -13,10 +13,10 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class SpringConfig implements WebMvcConfigurer {
     @Resource
-    ReadOnlyBlocker readOnlyBlocker;
+    ProtectBlocker protectBlocker;
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(readOnlyBlocker)
+        registry.addInterceptor(protectBlocker)
                 .addPathPatterns("/api/**");
     }
 

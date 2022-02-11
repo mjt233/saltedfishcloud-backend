@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
-import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
+import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
-import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.http.ResourceService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
@@ -31,7 +32,7 @@ import java.nio.file.NoSuchFileException;
 @RestController
 @RequestMapping(ResourceController.PREFIX + "{uid}")
 @Validated
-@ReadOnlyBlock
+@ProtectBlock
 @RequiredArgsConstructor
 public class ResourceController {
     public static final String PREFIX = "/api/resource/";
@@ -85,7 +86,7 @@ public class ResourceController {
     @GetMapping("fileContentByFDC/{code}/**")
     @AllowAnonymous
     @ResponseBody
-    @NotBlock(level = ReadOnlyLevel.DATA_CHECKING)
+    @NotBlock(level = ProtectLevel.DATA_CHECKING)
     public ResponseEntity<org.springframework.core.io.Resource> downloadByFDC(@PathVariable String code,
                                                                               @RequestParam(required = false, defaultValue = "false") boolean download)
             throws IOException {
@@ -99,6 +100,7 @@ public class ResourceController {
      */
     @RequestMapping(value = "fileContentByMD5/{md5}/**", method = RequestMethod.GET)
     @AllowAnonymous
+    @NotBlock(level = ProtectLevel.DATA_CHECKING)
     public ResponseEntity<org.springframework.core.io.Resource> downloadByMD5(
             @PathVariable("md5") String md5,
             @PathVariable("uid") int uid,

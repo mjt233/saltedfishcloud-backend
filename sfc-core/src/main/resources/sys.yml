@@ -1,5 +1,5 @@
 sys:
   common:
-    reg-code: 11451411
+    reg-code: 114514
   store:
-    type: hdfs
+    type: local

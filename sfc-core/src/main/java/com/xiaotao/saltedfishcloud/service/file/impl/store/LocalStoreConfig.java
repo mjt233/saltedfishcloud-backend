@@ -4,7 +4,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.store;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.path.PathHandler;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.path.RawPathHandler;
@@ -56,37 +56,6 @@ public class LocalStoreConfig {
     // 用户个性化配置文件根目录
     public static String USER_PROFILE_ROOT;
 
-    private static ReadOnlyLevel READ_ONLY_LEVEL = null;
-
-
-    public static synchronized ReadOnlyLevel getReadOnlyLevel() {
-        return READ_ONLY_LEVEL;
-    }
-
-    /**
-     * 切换系统的只读模式级别<br>
-     * NOTE: 只能在只读模式的开与关之间切换，无法从只读模式的某一级别切换到另一级别<br>
-     * 例：<br>
-     *     null -> DATA_MOVING          [OK]<br>
-     *     null -> DATA_CHECKING        [OK]<br>
-     *     DATA_MOVING -> null          [OK]<br>
-     *     DATA_CHECKING -> null        [OK]<br>
-     *     DATA_MOVING -> DATA_CHECKING <strong>[!NO!]</strong> <br>
-     *     DATA_CHECKING -> DATA_MOVING <strong>[!NO!]</strong>
-     * @param level 只读模式级别
-     * @throws IllegalStateException 当系统处于只读模式下抛出此异常
-     */
-    public static synchronized void setReadOnlyLevel (ReadOnlyLevel level) {
-        if (level != null && READ_ONLY_LEVEL != null) {
-            throw new IllegalStateException("当前已处于：" + READ_ONLY_LEVEL);
-        }
-        if (level != null) {
-            log.debug("只读级别切换到" + level);
-        } else {
-            log.debug("关闭只读模式");
-        }
-        READ_ONLY_LEVEL = level;
-    }
 
     public LocalStoreConfig(UserDao userDao, RawPathHandler rawPathHandler, UniquePathHandler uniquePathHandler) {
         LocalStoreConfig.userDao = userDao;

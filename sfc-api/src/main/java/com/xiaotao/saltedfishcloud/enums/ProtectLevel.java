@@ -1,5 +1,5 @@
 package com.xiaotao.saltedfishcloud.enums;
 
-public enum ReadOnlyLevel {
+public enum ProtectLevel {
     DATA_MOVING, DATA_CHECKING
 }

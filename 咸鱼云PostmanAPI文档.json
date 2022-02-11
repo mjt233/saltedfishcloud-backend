@@ -2364,7 +2364,7 @@
 					"name": "开发调试接口",
 					"item": [
 						{
-							"name": "切换只读级别",
+							"name": "切换保护级别",
 							"request": {
 								"method": "PUT",
 								"header": [],
@@ -2390,12 +2390,12 @@
 										"readOnly"
 									]
 								},
-								"description": "设置系统的只读状态，用于只读状态下各接口的工作情况  \r\n\r\n该状态一般在切换存储模式执行过程中为null\r\n\r\n该状态仅在运行时有效\r\n- URI：`/api/admin/debug/readOnly` \r\n- 动作：PUT  \r\n\r\n参数：\r\n- level 只读级别，可选DATA_MOVING，DATA_CHECKING，和null。为null时表示关闭只读模式  \r\n\r\n当系统处于任意一种只读级别（null除外）时，无法切换到另一种只读级别，必须要先切换到null后才可切换到另一个级别"
+								"description": "设置系统的保护状态，用于保护状态下各接口的工作情况  \r\n\r\n该状态一般在切换存储模式执行过程中为null\r\n\r\n该状态仅在运行时有效\r\n- URI：`/api/admin/debug/readOnly` \r\n- 动作：PUT  \r\n\r\n参数：\r\n- level 保护级别，可选DATA_MOVING，DATA_CHECKING，和null。为null时表示关闭保护模式  \r\n\r\n当系统处于任意一种保护级别（null除外）时，无法切换到另一种保护级别，必须要先切换到null后才可切换到另一个级别"
 							},
 							"response": []
 						},
 						{
-							"name": "获取只读级别",
+							"name": "获取保护级别",
 							"protocolProfileBehavior": {
 								"disableBodyPruning": true
 							},
@@ -2418,7 +2418,7 @@
 										"readOnly"
 									]
 								},
-								"description": "获取系统当前的只读级别\r\n- URI：`/api/admin/debug/readOnly` \r\n- 动作：GET"
+								"description": "获取系统当前的保护级别\r\n- URI：`/api/admin/debug/readOnly` \r\n- 动作：GET"
 							},
 							"response": []
 						},

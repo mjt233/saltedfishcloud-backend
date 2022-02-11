@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.manager;
 
 import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
@@ -34,7 +35,7 @@ public class AdminService {
         data.put("public_free_space", publicRoot.getFreeSpace());
         data.put("store_root", storeRoot.getPath());
         data.put("public_root", publicRoot.getPath());
-        data.put("read_only", LocalStoreConfig.getReadOnlyLevel());
+        data.put("read_only", SysRuntimeConfig.getProtectModeLevel());
         return data;
     }
 }

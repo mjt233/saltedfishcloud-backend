@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
-import com.xiaotao.saltedfishcloud.annotations.ReadOnlyBlock;
+import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
@@ -14,7 +14,7 @@ import com.xiaotao.saltedfishcloud.entity.po.param.FileCopyOrMoveInfo;
 import com.xiaotao.saltedfishcloud.entity.po.param.FileNameList;
 import com.xiaotao.saltedfishcloud.entity.po.param.NamePair;
 import com.xiaotao.saltedfishcloud.enums.ArchiveType;
-import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
@@ -48,7 +48,7 @@ import java.util.List;
 @RestController
 @RequestMapping( FileController.PREFIX + "{uid}")
 @Validated
-@ReadOnlyBlock()
+@ProtectBlock
 @RequiredArgsConstructor
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
@@ -219,7 +219,7 @@ public class FileController {
      */
     @RequestMapping(value = "content/**", method = {RequestMethod.POST, RequestMethod.GET})
     @AllowAnonymous
-    @NotBlock(level = ReadOnlyLevel.DATA_CHECKING)
+    @NotBlock(level = ProtectLevel.DATA_CHECKING)
     public ResponseEntity<org.springframework.core.io.Resource> download(HttpServletRequest request,
                                                                          @PathVariable @UID int uid)
             throws IOException {

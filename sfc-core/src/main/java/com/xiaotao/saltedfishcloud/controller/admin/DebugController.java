@@ -1,9 +1,10 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
+import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import lombok.var;
 import org.springframework.web.bind.annotation.*;
@@ -20,21 +21,24 @@ public class DebugController {
     @Resource
     private ConfigDao configDao;
 
+    /**
+     * @TODO 修改路由readOnly为protectMode
+     */
     @PutMapping("readOnly")
     public JsonResult setReadOnlyLevel(@RequestParam String level) {
-        ReadOnlyLevel r;
+        ProtectLevel r;
         try {
-            r = ReadOnlyLevel.valueOf(level);
+            r = ProtectLevel.valueOf(level);
         } catch (Exception e) {
             r = null;
         }
-        LocalStoreConfig.setReadOnlyLevel(r);
+        SysRuntimeConfig.setProtectModeLevel(r);
         return JsonResult.emptySuccess();
     }
 
     @GetMapping("readOnly")
     public JsonResult getReadOnlyLevel() {
-        return JsonResultImpl.getInstance(LocalStoreConfig.getReadOnlyLevel());
+        return JsonResultImpl.getInstance(SysRuntimeConfig.getProtectModeLevel());
     }
 
     @GetMapping("options")
@@ -46,8 +50,8 @@ public class DebugController {
                 data.put(e.getKey().toString(), e.getValue());
             });
         }
-        data.put("READ_ONLY_LEVEL", LocalStoreConfig.getReadOnlyLevel());
-        data.put("read_only_level", LocalStoreConfig.getReadOnlyLevel());
+        data.put("READ_ONLY_LEVEL", SysRuntimeConfig.getProtectModeLevel());
+        data.put("read_only_level", SysRuntimeConfig.getProtectModeLevel());
         data.put("sync_delay", LocalStoreConfig.SYNC_DELAY);
 
         return JsonResultImpl.getInstance(200, data, "小写字段将在后续版本中废弃");

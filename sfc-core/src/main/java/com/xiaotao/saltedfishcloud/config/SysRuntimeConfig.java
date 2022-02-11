@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import lombok.Getter;
@@ -20,6 +21,7 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class SysRuntimeConfig implements ApplicationRunner {
+    public static ProtectLevel PROTECT_MODE_LEVEL = null;
     private static SysRuntimeConfig GLOBAL_HOLD_INST;
 
     @Autowired
@@ -35,6 +37,35 @@ public class SysRuntimeConfig implements ApplicationRunner {
             throw new IllegalStateException("SysRuntimeConfig 未实例化");
         }
         return GLOBAL_HOLD_INST;
+    }
+
+    public static synchronized ProtectLevel getProtectModeLevel() {
+        return PROTECT_MODE_LEVEL;
+    }
+
+    /**
+     * 切换系统的保护模式级别<br>
+     * NOTE: 只能在保护模式的开与关之间切换，无法从保护模式的某一级别切换到另一级别<br>
+     * 例：<br>
+     *     null -> DATA_MOVING          [OK]<br>
+     *     null -> DATA_CHECKING        [OK]<br>
+     *     DATA_MOVING -> null          [OK]<br>
+     *     DATA_CHECKING -> null        [OK]<br>
+     *     DATA_MOVING -> DATA_CHECKING <strong>[!NO!]</strong> <br>
+     *     DATA_CHECKING -> DATA_MOVING <strong>[!NO!]</strong>
+     * @param level 保护模式级别
+     * @throws IllegalStateException 当系统处于保护模式下抛出此异常
+     */
+    public static synchronized void setProtectModeLevel(ProtectLevel level) {
+        if (level != null && PROTECT_MODE_LEVEL != null) {
+            throw new IllegalStateException("当前已处于：" + PROTECT_MODE_LEVEL);
+        }
+        if (level != null) {
+            log.debug("保护级别切换到" + level);
+        } else {
+            log.debug("关闭保护模式");
+        }
+        PROTECT_MODE_LEVEL = level;
     }
 
     @Override

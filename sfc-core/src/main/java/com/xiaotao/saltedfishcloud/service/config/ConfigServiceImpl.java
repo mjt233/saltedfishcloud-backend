@@ -2,9 +2,10 @@ package com.xiaotao.saltedfishcloud.service.config;
 
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.entity.Pair;
-import com.xiaotao.saltedfishcloud.enums.ReadOnlyLevel;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -140,13 +141,13 @@ public class ConfigServiceImpl implements ConfigService {
         }
         log.info("存储切换：{} -> {}", storeType, type.toString());
         try {
-            LocalStoreConfig.setReadOnlyLevel(ReadOnlyLevel.DATA_MOVING);
+            SysRuntimeConfig.setProtectModeLevel(ProtectLevel.DATA_MOVING);
             configDao.setConfigure(StoreType.getConfigKey(), type.toString());
             localStoreConfig.setStoreType(type.toString());
             storeTypeSwitch.switchTo(type);
-            LocalStoreConfig.setReadOnlyLevel(null);
+            SysRuntimeConfig.setProtectModeLevel(null);
         } catch (IOException | RuntimeException e) {
-            LocalStoreConfig.setReadOnlyLevel(null);
+            SysRuntimeConfig.setProtectModeLevel(null);
             throw e;
         }
         return true;
