@@ -30,10 +30,6 @@ public class HDFSProperties implements InitializingBean {
     }
 
     public String getStoreRoot(int uid) {
-        return root + "/private/" + uid;
-    }
-
-    public String getUserProfileRoot(int uid) {
-        return root + "/profile/" + uid;
+        return root + "/user_file/" + uid;
     }
 }

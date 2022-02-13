@@ -15,11 +15,22 @@ public class PathUtils {
     }
 
     public static String getParentPath(String path) {
-        PathBuilder pb = new PathBuilder();
-        pb.append(path);
-        return pb.range(-1);
+        final int i = path.lastIndexOf('/');
+        if (i == 0) {
+            return "/";
+        } else if (i == -1) {
+            return "";
+        } else {
+            return path.substring(0, i);
+        }
     }
 
+    /**
+     * 获取路径中最后一个节点的名称
+     * @TODO 优化性能
+     * @param path  路径
+     * @return      节点名称
+     */
     public static String getLastNode(String path) {
         PathBuilder pb = new PathBuilder();
         pb.append(path);

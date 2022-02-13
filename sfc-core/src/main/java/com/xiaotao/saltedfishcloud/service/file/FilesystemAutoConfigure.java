@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration;
 import javax.annotation.Resource;
 
 @Configuration
-
 public class FilesystemAutoConfigure {
 
     @Resource
@@ -26,6 +25,13 @@ public class FilesystemAutoConfigure {
     @Resource
     private StoreServiceFactory storeServiceFactory;
 
+    @Resource
+    private CustomStoreService customStoreService;
+
+    @Resource
+    private FileResourceMd5Resolver fileResourceMd5Resolver;
+
+
 
     @Bean
     public DiskFileSystemFactory diskFileSystemFactory() {
@@ -35,6 +41,6 @@ public class FilesystemAutoConfigure {
     @Bean
     @ConditionalOnMissingBean(DiskFileSystem.class)
     public DefaultFileSystem defaultFileSystem() {
-        return new DefaultFileSystem(storeServiceFactory, fileDao, fileRecordService, nodeService);
+        return new DefaultFileSystem(storeServiceFactory, fileDao, fileRecordService, nodeService, customStoreService, fileResourceMd5Resolver);
     }
 }

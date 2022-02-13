@@ -10,6 +10,24 @@ import java.util.Collection;
 import java.util.List;
 
 public interface FileRecordService {
+
+    /**
+     * 获取用户的文件信息
+     * @param uid       用户ID
+     * @param dirPath   文件所在的目录路径
+     * @param name      文件名
+     */
+    FileInfo getFileInfo(int uid, String dirPath, String name) throws NoSuchFileException;
+
+    /**
+     * 通过MD5获取文件
+     * @param md5   文件MD5
+     * @param limit 限制的长度
+     * @return      文件信息列表
+     */
+    List<FileInfo> getFileInfoByMd5(String md5, int limit);
+
+
     /**
      * 操作数据库复制网盘文件或目录到指定目录下
      *
@@ -68,7 +86,7 @@ public interface FileRecordService {
      * @param uid  用户ID 0表示公共
      * @param path 路径
      * @param name 文件名列表
-     * @return 删除的文件个数
+     * @return 删除的文件列表
      */
     @Transactional(rollbackFor = Exception.class)
     List<FileInfo> deleteRecords(int uid, String path, Collection<String> name) throws NoSuchFileException;

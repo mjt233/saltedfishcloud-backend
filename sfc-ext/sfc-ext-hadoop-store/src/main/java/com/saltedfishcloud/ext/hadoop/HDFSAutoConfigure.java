@@ -1,7 +1,9 @@
 package com.saltedfishcloud.ext.hadoop;
 
+import com.saltedfishcloud.ext.hadoop.store.HDFSStoreHandler;
 import com.saltedfishcloud.ext.hadoop.store.HDFSStoreService;
 import com.saltedfishcloud.ext.hadoop.store.HDFSStoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import org.apache.hadoop.fs.FileSystem;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,8 @@ import java.net.URISyntaxException;
 public class HDFSAutoConfigure {
     @Autowired
     private HDFSProperties properties;
+    @Autowired
+    private FileResourceMd5Resolver md5Resolver;
 
     @Bean
     public FileSystem hadoopFileSystem() throws IOException, URISyntaxException, InterruptedException {
@@ -31,18 +35,13 @@ public class HDFSAutoConfigure {
     }
 
     @Bean
-    public StoreService storeService() {
-        return new HDFSStoreService();
-    }
-
-    @Bean
     public HDFSStoreServiceFactory hdfsStoreServiceFactory() {
         return new HDFSStoreServiceFactory();
     }
 
     @Bean
-    public HDFSStoreService hdfsStoreService() {
-        return new HDFSStoreService();
+    public HDFSStoreService hdfsStoreService() throws InterruptedException, IOException, URISyntaxException {
+        return new HDFSStoreService(new HDFSStoreHandler(hadoopFileSystem()), properties, md5Resolver);
     }
 
 }

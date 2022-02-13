@@ -33,7 +33,7 @@ public interface DiskFileSystem {
      * @param uid   用户ID
      * @return      用户未设置头像时，为null
      */
-    Resource getAvatar(int uid);
+    Resource getAvatar(int uid) throws IOException;
 
     /**
      * 保存用户头像

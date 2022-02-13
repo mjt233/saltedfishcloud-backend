@@ -15,10 +15,7 @@ import com.xiaotao.saltedfishcloud.enums.ArchiveError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.HardLinkStoreService;
+import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.RAWStoreService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -49,19 +46,27 @@ import java.util.zip.ZipException;
 @RequiredArgsConstructor
 @Slf4j
 public class DefaultFileSystem implements DiskFileSystem {
+    private final static String LOG_TITLE = "FileSystem";
     private final StoreServiceFactory storeServiceFactory;
     private final FileDao fileDao;
     private final FileRecordService fileRecordService;
     private final NodeService nodeService;
+    private final CustomStoreService customStoreService;
+    private final FileResourceMd5Resolver md5Resolver;
 
     @Override
     public void saveAvatar(int uid, Resource resource) throws IOException {
-        storeServiceFactory.getService().saveAvatar(uid, resource);
+        customStoreService.saveAvatar(uid, resource);
     }
 
     @Override
-    public Resource getAvatar(int uid) {
-        return storeServiceFactory.getService().getAvatar(uid);
+    public Resource getAvatar(int uid) throws IOException {
+        final Resource avatar = customStoreService.getAvatar(uid);
+        if (avatar == null) {
+            return customStoreService.getDefaultAvatar();
+        } else {
+            return avatar;
+        }
     }
 
     @Override
@@ -185,9 +190,9 @@ public class DefaultFileSystem implements DiskFileSystem {
 
         // 创建临时目录用于存放临时解压的文件
         Path tempBasePath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), System.currentTimeMillis() + ""));
-        Path zipFilePath = null;
+        Path zipFilePath;
         boolean isDownloadZip = false;
-        File zipFile = null;
+        File zipFile;
         try {
             zipFile = resource.getFile();
             zipFilePath = Paths.get(zipFile.getAbsolutePath());
@@ -196,7 +201,7 @@ public class DefaultFileSystem implements DiskFileSystem {
             zipFilePath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), StringUtils.getRandomString(6) + ".zip"));
             try(
                     final InputStream is = resource.getInputStream();
-                    final OutputStream os = Files.newOutputStream(zipFilePath);
+                    final OutputStream os = Files.newOutputStream(zipFilePath)
             ) {
                 log.debug("[解压文件]非本地文件系统存储服务，需要复制文件到本地文件系统：{} ", resource.getFilename());
                 log.debug("[解压文件]临时文件：{}", zipFilePath);
@@ -206,7 +211,7 @@ public class DefaultFileSystem implements DiskFileSystem {
         }
 
         try(
-                ZipArchiveReader fileSystem = new ZipArchiveReader(zipFile);
+                ZipArchiveReader fileSystem = new ZipArchiveReader(zipFile)
         ) {
 
             Files.createDirectories(tempBasePath);
@@ -287,7 +292,10 @@ public class DefaultFileSystem implements DiskFileSystem {
             throw new UnsupportedOperationException("已存在同名文件：" + path);
         }
         String nid = fileRecordService.mkdirs(uid, path);
-        storeServiceFactory.getService().mkdir(uid, path, "");
+        final StoreService storeService = storeServiceFactory.getService();
+        if (!storeService.isUnique()) {
+            storeService.mkdir(uid, path, "");
+        }
         return nid;
     }
 
@@ -306,7 +314,10 @@ public class DefaultFileSystem implements DiskFileSystem {
     @Transactional(rollbackFor = Exception.class)
     public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
         fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
-        storeServiceFactory.getService().copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+        final StoreService service = storeServiceFactory.getService();
+        if (!service.isUnique()) {
+            service.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+        }
     }
 
     @Override
@@ -315,7 +326,10 @@ public class DefaultFileSystem implements DiskFileSystem {
         try {
             target = URLDecoder.decode(target, "UTF-8");
             fileRecordService.move(uid, source, target, name, overwrite);
-            storeServiceFactory.getService().move(uid, source, target, name, overwrite);
+            final StoreService storeService = storeServiceFactory.getService();
+            if (!storeService.isUnique()) {
+                storeService.move(uid, source, target, name, overwrite);
+            }
         } catch (DuplicateKeyException e) {
             throw new JsonException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
         } catch (UnsupportedEncodingException e) {
@@ -455,24 +469,20 @@ public class DefaultFileSystem implements DiskFileSystem {
         // 计数删除数
         long res = 0L;
         List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
-        res += storeServiceFactory.getService().delete(uid, path, name);
+        final StoreService storeService = storeServiceFactory.getService();
 
-        // 唯一存储模式下删除文件后若文件不再被引用，则在存储仓库中删除
-        if (storeServiceFactory.getService() instanceof HardLinkStoreService && fileInfos.size() > 0) {
-            Set<String> all = fileInfos
-                    .stream()
-                    .filter(BasicFileInfo::isFile)
-                    .map(BasicFileInfo::getMd5)
-                    .collect(Collectors.toSet());
+        // 唯一存储下确认文件无引用后再执行通过md5删除
+        if (storeService.isUnique()) {
+            for (FileInfo fileInfo : fileInfos) {
 
-            if (all.size() == 0) {
-                return res;
+                // @TODO 使用批量查询和求集合差级操作进行引用判断提高性能
+                if (!md5Resolver.hasRef(fileInfo.getMd5())) {
+                    storeService.delete(fileInfo.getMd5());
+
+                }
             }
-            Set<String> valid = new HashSet<>(fileDao.getValidFileMD5s(all));
-            Set<String> invalid = SetUtils.diff(all, valid);
-            for (String md5 : invalid) {
-                storeServiceFactory.getService().delete(md5);
-            }
+        } else {
+            res += storeService.delete(uid, path, name);
         }
         return res;
     }
@@ -481,7 +491,10 @@ public class DefaultFileSystem implements DiskFileSystem {
     @Transactional(rollbackFor = Exception.class)
     public void rename(int uid, String path, String name, String newName) throws IOException {
         fileRecordService.rename(uid, path, name, newName);
-        storeServiceFactory.getService().rename(uid, path, name, newName);
+        final StoreService storeService = storeServiceFactory.getService();
+        if (!storeService.isUnique()) {
+            storeService.rename(uid, path, name, newName);
+        }
     }
 
 }

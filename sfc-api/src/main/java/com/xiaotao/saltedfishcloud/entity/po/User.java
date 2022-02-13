@@ -29,6 +29,7 @@ public class User implements UserDetails {
     public static final String SYS_NAME_PUBLIC = "__SYSTEM_PUBLIC";
     public static final String SYS_NAME_ADMIN = "ADMIN";
     public static final String SYS_GROUP_NAME_PUBLIC = "__SYSTEM_PUBLIC_GROUP";
+    public static final int PUBLIC_USER_ID = 0;
 
     private static final long serialVersionUID = -2530285292010387981L;
     public static final int TYPE_ADMIN = 1;
@@ -49,7 +50,7 @@ public class User implements UserDetails {
     static {
         PUBLIC_USER_INST = new User(){
             {
-                super.setId(0);
+                super.setId(PUBLIC_USER_ID);
                 super.setUser(SYS_NAME_PUBLIC);
             }
             @Override

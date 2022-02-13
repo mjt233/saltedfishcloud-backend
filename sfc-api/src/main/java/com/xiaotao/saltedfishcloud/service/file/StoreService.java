@@ -19,21 +19,32 @@ import java.util.List;
  * @TODO 抽离出用户元数据存储服务（头像，自定义背景图等）
  */
 public interface StoreService {
-
+    /**
+     * 清空该存储系统的所有用户网盘文件
+     */
+    void clear() throws IOException;
 
     /**
-     * 获取用户头像资源
-     * @param uid   用户ID
-     * @return      用户未设置头像时，为null
+     * 是否为唯一存储服务（内容相同的文件只存一份）
      */
-    Resource getAvatar(int uid);
+    boolean isUnique();
 
     /**
-     * 保存用户头像
-     * @param uid   用户ID
-     * @param resource 头像资源
+     * 获取原始存储服务
      */
-    void saveAvatar(int uid, Resource resource) throws IOException;
+    StoreService getRawStoreService();
+
+    /**
+     * 获取唯一存储服务
+     */
+    StoreService getUniqueStoreService();
+
+    /**
+     * 是否支持目录浏览，不支持则意味着lists方法永远返回空集合，同时也不支持记录同步机制
+     * @return 支持为true，否则为false
+     */
+    boolean canBrowse();
+
 
     /**
      * 获取指定目录的文件信息列表
@@ -84,7 +95,7 @@ public interface StoreService {
      * @param targetName    目标文件名
      * @param overwrite 是否覆盖，若非true，则跳过该文件
      */
-    default void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, Boolean overwrite) throws IOException {
+    default void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
         throw new UnsupportedOperationException("不支持copy操作");
     }
 

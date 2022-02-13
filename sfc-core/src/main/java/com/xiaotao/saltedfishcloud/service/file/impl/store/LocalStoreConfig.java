@@ -4,11 +4,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.store;
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.path.PathHandler;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.path.RawPathHandler;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.path.UniquePathHandler;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -33,8 +29,6 @@ import java.util.Objects;
 @PropertySource("classpath:config.properties")
 @Slf4j
 public class LocalStoreConfig {
-    public static RawPathHandler rawPathHandler;
-    public static UniquePathHandler uniquePathHandler;
 
     private static UserDao userDao;
 
@@ -56,12 +50,6 @@ public class LocalStoreConfig {
     // 用户个性化配置文件根目录
     public static String USER_PROFILE_ROOT;
 
-
-    public LocalStoreConfig(UserDao userDao, RawPathHandler rawPathHandler, UniquePathHandler uniquePathHandler) {
-        LocalStoreConfig.userDao = userDao;
-        LocalStoreConfig.rawPathHandler = rawPathHandler;
-        LocalStoreConfig.uniquePathHandler = uniquePathHandler;
-    }
 
     /**
      * 通过UID获取文件存储的用户根目录，公共用户使用DiskConfig.PUBLIC_ROOT 其他用户使用DiskConfig.PRIVATE_ROOT + "/" + {username} <br>
@@ -116,7 +104,6 @@ public class LocalStoreConfig {
      *  <li>当公共网盘路径或私人网盘路径为父子目录关系</li>
      *  <li>公共网盘路径与私人网盘路径为相同的目录</li>
      * </ul>
-     * @throws IOException
      */
     private void checkPathConflict() {
         if (STORE_ROOT == null || PUBLIC_ROOT == null) return;
@@ -180,13 +167,6 @@ public class LocalStoreConfig {
         return LocalStoreConfig.STORE_ROOT + "/repo/";
     }
 
-    /**
-     * 获取系统使用的的路径操纵器
-     * @return  路径操纵器示例
-     */
-    public static PathHandler getPathHandler() {
-        return rawPathHandler;
-    }
 
     /**
      * 获取当前登录用户的个性化配置目录（不以/结尾）

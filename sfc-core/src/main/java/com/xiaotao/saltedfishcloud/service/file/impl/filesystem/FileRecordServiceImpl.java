@@ -11,6 +11,7 @@ import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.node.cache.NodeCacheService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,23 @@ public class FileRecordServiceImpl implements FileRecordService {
         public String nid;
         public PathIdPair(String path, String nid) {this.path = path;this.nid = nid;}
     }
+
+    @Override
+    public FileInfo getFileInfo(int uid, String dirPath, String name) throws NoSuchFileException {
+        final String nodeId = nodeService.getNodeIdByPath(uid, dirPath);
+        final FileInfo info = fileDao.getFileInfo(uid, name, nodeId);
+        if (info == null) {
+            throw new NoSuchFileException(StringUtils.appendPath(dirPath, name));
+        } else {
+            return info;
+        }
+    }
+
+    @Override
+    public List<FileInfo> getFileInfoByMd5(String md5, int limit) {
+        return fileDao.getFilesByMD5(md5, limit);
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException {
@@ -176,7 +194,7 @@ public class FileRecordServiceImpl implements FileRecordService {
         List<FileInfo> infos = fileDao.getFilesInfo(uid, name, nodeId);
         List<FileInfo> res = new LinkedList<>();
 
-                // 先将文件和文件夹分开并单独提取其文件名
+        // 先将文件和文件夹分开并单独提取其文件名
         LinkedList<FileInfo> dirs = new LinkedList<>();
         LinkedList<String> files = new LinkedList<>();
         infos.forEach(info -> {

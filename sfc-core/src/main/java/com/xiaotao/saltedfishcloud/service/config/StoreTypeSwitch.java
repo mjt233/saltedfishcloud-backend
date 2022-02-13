@@ -6,28 +6,26 @@ import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreServiceFactory;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @TODO 使存储模式切换时的迁移动作由StoreService或DiskFileSystem提供
  */
-@Deprecated
 @Component
 @Slf4j
 public class StoreTypeSwitch {
@@ -39,79 +37,73 @@ public class StoreTypeSwitch {
     private DiskFileSystemFactory fileService;
 
     public void switchTo(StoreType targetType) throws IOException {
+//        throw new UnsupportedOperationException("未开发完成");
         final DiskFileSystem fileSystem = fileService.getFileSystem();
 
-        if (!(fileSystem instanceof DefaultFileSystem) || !(storeServiceFactory instanceof LocalStoreServiceFactory)) {
+        if (!(fileSystem instanceof DefaultFileSystem)) {
             throw new UnsupportedOperationException("当前文件系统或存储服务不支持切换");
         }
 
-        if (targetType == StoreType.RAW) {
-            switchToRaw();
-        } else {
-            switchToUnique();
-        }
+        doSwitch(targetType);
     }
 
-    private void switchToRaw() throws IOException {
-        log.info("切换到RAW");
-        if (!Files.exists(Paths.get(LocalStoreConfig.getRawStoreRoot()))) Files.createDirectories(Paths.get(LocalStoreConfig.getRawStoreRoot()));
+
+    private void doSwitch(StoreType storeType) throws IOException {
+        log.info("[STORE-SWITCH]切换到{}", storeType);
         List<User> users = userDao.getUserList();
         users.add(User.getPublicUser());
+
+        final StoreService srcStoreService = storeType == StoreType.UNIQUE ?
+                storeServiceFactory.getService().getRawStoreService() :
+                storeServiceFactory.getService().getUniqueStoreService();
+
+        final StoreService destStoreService = storeType == StoreType.UNIQUE ?
+                storeServiceFactory.getService().getUniqueStoreService() :
+                storeServiceFactory.getService().getRawStoreService();
 
         for (User user : users) {
             int uid = user.getId();
-            log.debug("Processing user data: " + user.getUsername());
-            Map<String, List<FileInfo>> allFile = fileService.getFileSystem().collectFiles(uid, false);
-            for (Map.Entry<String, List<FileInfo>> entry : allFile.entrySet()) {
-                String p = entry.getKey();
-                List<FileInfo> files = entry.getValue();
-
-                Path dirPath = Paths.get(LocalStoreConfig.rawPathHandler.getStorePath(uid, p, null));
-                if (Files.exists(dirPath)) FileUtils.delete(dirPath);
-                Files.createDirectory(dirPath);
-                log.debug("Create Dir " + dirPath);
-                for (FileInfo file : files) {
-                    if (file.isDir()) continue;
-                    Path source = Paths.get(LocalStoreConfig.uniquePathHandler.getStorePath(uid, p, file));
-                    Path target = Paths.get(LocalStoreConfig.rawPathHandler.getStorePath(uid, p, file));
-                    if (!Files.exists(source)) {
-                        log.warn("存储库文件丢失：" + file.getName() + " MD5:" + file.getMd5());
-                        continue;
-                    }
-                    log.debug("Copy file: " + source + " -> " + target);
-                    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-        }
-        //  清理存储库
-        FileUtils.delete(Paths.get(LocalStoreConfig.getUniqueStoreRoot()));
-    }
-
-
-    private void switchToUnique() throws IOException {
-        log.info("切换到Unique");
-        if (!Files.exists(Paths.get(LocalStoreConfig.getUniqueStoreRoot()))) Files.createDirectories(Paths.get(LocalStoreConfig.getUniqueStoreRoot()));
-        List<User> users = userDao.getUserList();
-        users.add(User.getPublicUser());
-        for (User user : users) {
-            log.debug("Processing user data: " + user.getUsername());
+            log.debug("[STORE-SWITCH]处理用户：{}", user.getUsername());
             LinkedHashMap<String, List<FileInfo>> allFile = fileService.getFileSystem().collectFiles(user.getId(), false);
-            //  创建本地文件
+
+            //  文件迁移
             for (Map.Entry<String, List<FileInfo>> entry : allFile.entrySet()) {
-                String path = entry.getKey();
-                List<FileInfo> v = entry.getValue();
-                for (FileInfo fileInfo : v) {
-                    if(fileInfo.isDir()) continue;
-                    Path source = Paths.get(LocalStoreConfig.rawPathHandler.getStorePath(user.getId(), path, fileInfo));
-                    String target = LocalStoreConfig.uniquePathHandler.getStorePath(user.getId(), path, fileInfo);
-                    if (!Files.exists(source)) {
-                        log.warn("未同步的文件：" + path + "/" + fileInfo.getName());
-                        continue;
+                String dirPath = entry.getKey();
+                List<FileInfo> files = entry.getValue();
+                for (FileInfo file : files) {
+                    if(file.isDir()) continue;
+                    final String diskFullPath = StringUtils.appendPath(dirPath, file.getName());
+
+                    // unique不支持list
+                    if (storeType == StoreType.UNIQUE) {
+                        if(!srcStoreService.exist(uid, diskFullPath)) {
+                            log.warn("[STORE-SWITCH]未同步的文件：{}", diskFullPath);
+                            continue;
+                        }
                     }
-                    log.debug("Copy file: " + source + " -> " + target);
-                    storeServiceFactory.getService().store(user.getId(), Files.newInputStream(source), path, fileInfo);
+
+
+                    try(final InputStream is = srcStoreService.getResource(uid, dirPath, file.getName()).getInputStream()) {
+                        destStoreService.store(uid, is, dirPath, file);
+                    } catch (FileNotFoundException e) {
+                        log.error("[STORE-SWITCH]出错：{}/{}",dirPath, file.getName());
+                        e.printStackTrace();
+                    }
+                }
+
+                if(storeType == StoreType.UNIQUE) {
+                    final List<String> fileNames = files.stream().map(FileInfo::getName).collect(Collectors.toList());
+                    log.debug("[STORE-SWITCH]RAW => UNIQUE 目录：{} 清理旧文件：{}",dirPath, fileNames);
+                    srcStoreService.delete(uid, dirPath, fileNames);
                 }
             }
         }
+
+        // 切换后，清理存储仓库
+        log.debug("[STORE-SWITCH]{} => {} 切换完成，清理存储",
+                storeType == StoreType.UNIQUE ? StoreType.RAW : StoreType.UNIQUE,
+                storeType
+        );
+        srcStoreService.clear();
     }
 }

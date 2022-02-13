@@ -28,6 +28,11 @@ public class FileNameValidator implements ConstraintValidator<FileName, Object> 
         return true;
     }
 
+    /**
+     * 判断文件名是否合法，合法返回true，否则返回false
+     * @see RejectRegex#FILE_NAME
+     * @param input 文件名
+     */
     public static boolean valid(CharSequence input) {
         return !pattern.matcher(input).find();
     }

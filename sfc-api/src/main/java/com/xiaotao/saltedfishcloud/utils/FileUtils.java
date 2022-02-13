@@ -113,7 +113,7 @@ public class FileUtils {
      */
     @SuppressWarnings("returnignore")
     public static int delete(@NonNull Path local) throws IOException {
-        log.debug("即将删除文件或目录：{}", local);
+//        log.debug("即将删除文件或目录：{}", local);
         AtomicInteger cnt = new AtomicInteger();
         if (Files.isDirectory(local)) {
             Files.walkFileTree(local, new SimpleFileVisitor<Path>() {
@@ -138,7 +138,6 @@ public class FileUtils {
             log.debug("删除文件：{}", local);
             Files.delete(local);
         }
-        log.debug("{}：删除完成", local);
         return cnt.get();
     }
 

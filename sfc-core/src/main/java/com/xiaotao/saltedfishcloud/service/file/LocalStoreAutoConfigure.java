@@ -1,9 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.service.file.impl.store.HardLinkStoreService;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.RAWStoreService;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,21 +11,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConditionalOnProperty(prefix = "sys.store", name = "type", havingValue = "local")
 public class LocalStoreAutoConfigure {
+    @Autowired
+    private FileResourceMd5Resolver md5Resolver;
 
     @Bean
     public StoreServiceFactory storeServiceFactory() {
-        return new LocalStoreServiceFactory();
+        return new LocalStoreServiceFactory(rawStoreService());
     }
 
     @Bean
-    @Qualifier("RAWStoreService")
     public RAWStoreService rawStoreService() {
-        return new RAWStoreService();
-    }
-
-    @Bean
-    @Qualifier("HardLinkStoreService")
-    public HardLinkStoreService hardLinkStoreService() {
-        return new HardLinkStoreService();
+        return new RAWStoreService(md5Resolver);
     }
 }
