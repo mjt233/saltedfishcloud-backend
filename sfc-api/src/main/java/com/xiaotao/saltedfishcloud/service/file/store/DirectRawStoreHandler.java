@@ -36,39 +36,4 @@ public interface DirectRawStoreHandler extends StoreReader, StoreWriter {
             return false;
         }
     }
-
-//    /**
-//     * 将指定路径的文件或目录复制到指定的路径。
-//     * 若复制的为目录，且目标路径已存在，则合并内容。
-//     * @param src   源路径
-//     * @param dest  目标路径
-//     */
-//    @Override
-//    default boolean copy(String src, String dest) throws IOException {
-//        final FileInfo fileInfo = getFileInfo(src);
-//        if (fileInfo != null && fileInfo.isDir()) {
-//            throw new UnsupportedOperationException("未实现目录复制");
-//        }
-//        final Resource resource = getResource(src);
-//        try(final InputStream is = resource.getInputStream()) {
-//            return store(dest, is) == resource.contentLength();
-//        }
-//    }
-
-//    /**
-//     * 将指定路径的文件或目录移动为指定的路径。
-//     * 若移动的为目录，且目标路径已存在，则合并内容。
-//     * @param src   源路径
-//     * @param dest  目标路径
-//     */
-//    @Override
-//    default boolean move(String src, String dest) throws IOException {
-//        final FileInfo fileInfo = getFileInfo(src);
-//        if (fileInfo != null && fileInfo.isDir()) {
-//            throw new UnsupportedOperationException("未实现目录移动");
-//        }
-//        final boolean copyRes = copy(src, dest);
-//        final boolean deleteRes = delete(src);
-//        return copyRes && deleteRes;
-//    }
 }
