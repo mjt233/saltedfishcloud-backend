@@ -21,6 +21,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 本地文件系统的直接原始操作类
+ */
 @Slf4j
 public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
     @Override

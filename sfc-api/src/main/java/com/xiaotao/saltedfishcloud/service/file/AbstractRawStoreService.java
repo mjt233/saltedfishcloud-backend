@@ -30,6 +30,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 原始存储服务的抽象模板类，同时实现了{@link StoreService}和{@link CustomStoreService}。
+ * 基于设定的路径和直接原始存储操作器提供文件存储能力。
+ */
 public abstract class AbstractRawStoreService implements StoreService, CustomStoreService {
     @Getter
     @Setter

@@ -9,7 +9,6 @@ import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
-import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.ArchiveError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveType;
@@ -17,11 +16,10 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.RAWStoreService;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +37,6 @@ import java.net.URLDecoder;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 
 @Component
@@ -339,7 +336,7 @@ public class DefaultFileSystem implements DiskFileSystem {
 
     @Override
     public List<FileInfo>[] getUserFileList(int uid, String path) throws IOException {
-        if (uid == 0 || (LocalStoreConfig.STORE_TYPE == StoreType.RAW && storeServiceFactory.getService() instanceof RAWStoreService)) {
+        if (uid == 0 || (LocalStoreConfig.STORE_TYPE == StoreType.RAW && storeServiceFactory.getService() instanceof LocalStoreService)) {
             // 初始化用户目录
             String baseLocalPath = LocalStoreConfig.getRawFileStoreRootPath(uid);
             File root = new File(baseLocalPath);

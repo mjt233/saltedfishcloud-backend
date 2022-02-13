@@ -3,8 +3,6 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
-
 @Slf4j
 public class DefaultUniqueStoreService extends AbstractUniqueStoreService {
     private final String publicRoot;

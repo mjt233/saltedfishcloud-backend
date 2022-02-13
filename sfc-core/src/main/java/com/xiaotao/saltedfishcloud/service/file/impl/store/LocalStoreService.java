@@ -8,12 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 
+/**
+ * 本地文件系统存储服务，网盘文件数据保存在本地文件系统当中
+ */
 @Slf4j
-public class RAWStoreService extends AbstractRawStoreService {
+public class LocalStoreService extends AbstractRawStoreService {
     @Autowired
     private LocalStoreConfig localStoreConfig;
 
-    public RAWStoreService(FileResourceMd5Resolver md5Resolver) {
+    public LocalStoreService(FileResourceMd5Resolver md5Resolver) {
         super(new LocalDirectRawStoreHandler(), md5Resolver);
     }
 

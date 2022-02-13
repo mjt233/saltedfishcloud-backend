@@ -16,11 +16,10 @@ import java.util.List;
 
 /**
  * 存储服务，负责文件物理数据的存取
- * @TODO 抽离出用户元数据存储服务（头像，自定义背景图等）
  */
 public interface StoreService {
     /**
-     * 清空该存储系统的所有用户网盘文件
+     * 清空该存储系统所有的用户私人和公共网盘文件
      */
     void clear() throws IOException;
 
@@ -30,17 +29,26 @@ public interface StoreService {
     boolean isUnique();
 
     /**
-     * 获取原始存储服务
+     * 获取原始存储服务，提供相同文件仅存一份的能力。<br>
+     * 当当前存储服务为原始存储时，通过该方法获取到的实例应为自身。<br>
+     * 当当前存储服务为唯一存储时，通过该方法获取到的实例的{@link StoreService#getUniqueStoreService()}方法应为当前存储服务实例对象，而不是新的。<br>
+     * 即该getUniqueStoreService方法与{@link StoreService#getUniqueStoreService()}方法获取获取的实例对象应为相互引用的关系
+     * @see StoreService#getUniqueStoreService()
      */
     StoreService getRawStoreService();
 
     /**
-     * 获取唯一存储服务
+     * 获取唯一存储服务，提供文件存储路径与结构与用户网盘存储结构保持一致的能力。<br>
+     * 当当前存储服务为唯一存储时，通过该方法获取到的实例应为自身。<br>
+     * 当当前存储服务为原始存储时，通过该方法获取到的实例的{@link StoreService#getRawStoreService()}方法应为当前存储服务实例对象，而不是新的。<br>
+     * 即该getUniqueStoreService方法与{@link StoreService#getRawStoreService()}方法获取获取的实例对象应为相互引用的关系
+     * @see StoreService#getRawStoreService()
      */
     StoreService getUniqueStoreService();
 
     /**
      * 是否支持目录浏览，不支持则意味着lists方法永远返回空集合，同时也不支持记录同步机制
+     * @TODO 同步机制使用canBrowse判断能否同步
      * @return 支持为true，否则为false
      */
     boolean canBrowse();
@@ -155,7 +163,7 @@ public interface StoreService {
      * @return      删除的文件和目录数
      */
     default int delete(String md5) throws IOException {
-        throw new UnsupportedOperationException("不支持delete操作");
+        throw new UnsupportedOperationException("不支持按md5进行delete操作");
     }
 
     /**
