@@ -4,7 +4,10 @@ import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 
-
+/**
+ * 用户自定义资源的存储服务。
+ * 自定义资源包括头像，卡片背景，应用背景，评论图片等（目前只设计了头像）
+ */
 public interface CustomStoreService {
 
 

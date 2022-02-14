@@ -3,6 +3,9 @@ package com.xiaotao.saltedfishcloud.service.file.store;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * 提供存储系统的资源创建与删除能力
+ */
 public interface StoreWriter {
 
     /**

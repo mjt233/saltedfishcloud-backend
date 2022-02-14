@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class DefaultFileSystemFactory implements DiskFileSystemFactory {
+public class DefaultFileSystemProvider implements DiskFileSystemProvider {
     private final DefaultFileSystem defaultFileSystem;
     @Override
     public DiskFileSystem getFileSystem() {

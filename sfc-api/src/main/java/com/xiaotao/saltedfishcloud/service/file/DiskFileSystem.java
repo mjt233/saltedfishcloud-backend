@@ -21,7 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
- * @TODO 增加基于节点ID操作的方法以避免通过路径查询节点ID
+ * 系统最直接的网盘资源操作接口，所有对用户网盘资源的调用与操作都应通过该接口进行操作。
  */
 public interface DiskFileSystem {
     int SAVE_COVER = 0;

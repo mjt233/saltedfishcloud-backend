@@ -12,7 +12,7 @@ import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
@@ -46,7 +46,7 @@ public class DownloadServiceImpl implements DownloadService {
     @Resource
     private NodeService nodeService;
     @Resource
-    private DiskFileSystemFactory fileService;
+    private DiskFileSystemProvider fileService;
     private final TaskManager taskManager;
 
     /**

@@ -9,7 +9,7 @@ import java.sql.SQLException;
 public interface FileRecordSyncService {
 
     /**
-     * 开始执行数据同步。
+     * 开始执行数据同步，将存储服务的文件信息同步到文件记录服务中。
      * @param uid       待同步的用户数据的用户ID，公共为0
      * @param precise   是否使用精确同步，使用精确同步会计算文件的哈希值，这可能将会耗费大量时间。若不使用精确同步，将仅比较文件大小。
      */

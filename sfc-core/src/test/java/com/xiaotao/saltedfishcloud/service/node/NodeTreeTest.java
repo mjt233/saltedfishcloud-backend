@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import lombok.var;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -21,7 +21,7 @@ class NodeTreeTest {
     @Resource
     private NodeService nodeService;
     @Resource
-    private DiskFileSystemFactory fileService;
+    private DiskFileSystemProvider fileService;
 
     @Test
     public void testGetNode() throws IOException {

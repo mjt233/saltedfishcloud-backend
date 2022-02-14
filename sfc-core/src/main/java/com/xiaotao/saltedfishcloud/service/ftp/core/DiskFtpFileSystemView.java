@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.ftp.core;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +19,8 @@ import java.nio.file.Paths;
 public class DiskFtpFileSystemView implements FileSystemView {
     private final PathBuilder pathBuilder = new PathBuilder();
     private final DiskFtpUser user;
-    private final DiskFileSystemFactory fileSystemFactory;
-    public DiskFtpFileSystemView(DiskFtpUser user, DiskFileSystemFactory fileSystemFactory) throws IOException {
+    private final DiskFileSystemProvider fileSystemFactory;
+    public DiskFtpFileSystemView(DiskFtpUser user, DiskFileSystemProvider fileSystemFactory) throws IOException {
         this.user = user;
         pathBuilder.setForcePrefix(true);
         if (!user.isAnonymousUser()) {

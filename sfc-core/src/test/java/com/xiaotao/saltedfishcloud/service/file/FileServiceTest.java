@@ -10,7 +10,7 @@ import java.io.IOException;
 @SpringBootTest
 public class FileServiceTest {
     @Resource
-    DiskFileSystemFactory fileService;
+    DiskFileSystemProvider fileService;
 
     @Resource
     UserDao userDao;

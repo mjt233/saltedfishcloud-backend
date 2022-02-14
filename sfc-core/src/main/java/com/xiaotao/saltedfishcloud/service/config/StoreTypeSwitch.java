@@ -5,11 +5,10 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,9 +31,9 @@ public class StoreTypeSwitch {
     @Resource
     private UserDao userDao;
     @Resource
-    private StoreServiceFactory storeServiceFactory;
+    private StoreServiceProvider storeServiceProvider;
     @Resource
-    private DiskFileSystemFactory fileService;
+    private DiskFileSystemProvider fileService;
 
     public void switchTo(StoreType targetType) throws IOException {
 //        throw new UnsupportedOperationException("未开发完成");
@@ -54,12 +53,12 @@ public class StoreTypeSwitch {
         users.add(User.getPublicUser());
 
         final StoreService srcStoreService = storeType == StoreType.UNIQUE ?
-                storeServiceFactory.getService().getRawStoreService() :
-                storeServiceFactory.getService().getUniqueStoreService();
+                storeServiceProvider.getService().getRawStoreService() :
+                storeServiceProvider.getService().getUniqueStoreService();
 
         final StoreService destStoreService = storeType == StoreType.UNIQUE ?
-                storeServiceFactory.getService().getUniqueStoreService() :
-                storeServiceFactory.getService().getRawStoreService();
+                storeServiceProvider.getService().getUniqueStoreService() :
+                storeServiceProvider.getService().getRawStoreService();
 
         for (User user : users) {
             int uid = user.getId();

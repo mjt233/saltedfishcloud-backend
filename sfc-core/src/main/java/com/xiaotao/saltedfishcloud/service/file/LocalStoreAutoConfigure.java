@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -15,8 +15,8 @@ public class LocalStoreAutoConfigure {
     private FileResourceMd5Resolver md5Resolver;
 
     @Bean
-    public StoreServiceFactory storeServiceFactory() {
-        return new LocalStoreServiceFactory(rawStoreService());
+    public StoreServiceProvider storeServiceFactory() {
+        return new LocalStoreServiceProvider(rawStoreService());
     }
 
     @Bean

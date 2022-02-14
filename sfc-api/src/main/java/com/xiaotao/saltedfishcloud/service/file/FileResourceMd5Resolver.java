@@ -1,7 +1,5 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import org.springframework.core.io.Resource;
-
 /**
  * 为存储服务提供唯一存储模式下的文件定位能力
  */

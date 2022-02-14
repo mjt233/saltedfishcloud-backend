@@ -2,9 +2,9 @@ package com.xiaotao.saltedfishcloud.service.sync.detector;
 
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 import com.xiaotao.saltedfishcloud.service.sync.model.SyncDiffResultDefaultImpl;
@@ -26,9 +26,9 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
     @Resource
     private NodeService nodeService;
     @Resource
-    private DiskFileSystemFactory fileService;
+    private DiskFileSystemProvider fileService;
     @Resource
-    private StoreServiceFactory storeServiceFactory;
+    private StoreServiceProvider storeServiceProvider;
 
     /**
      * 通过存储服务获取用户的完整目录和文件
@@ -80,7 +80,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
 
     @Override
     public SyncDiffResultDefaultImpl detect(int uid, boolean precise) throws IOException {
-        final StoreService storeService = storeServiceFactory.getService();
+        final StoreService storeService = storeServiceProvider.getService();
         SyncDiffResultDefaultImpl res = new SyncDiffResultDefaultImpl();
 
         // 原始数据获取与初步处理

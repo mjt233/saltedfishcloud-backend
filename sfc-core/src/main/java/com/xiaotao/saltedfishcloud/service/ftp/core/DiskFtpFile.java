@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class DiskFtpFile implements FtpFile {
     private final FtpPathInfo pathInfo;
     private final DiskFtpUser user;
-    private final DiskFileSystemFactory fileService;
+    private final DiskFileSystemProvider fileService;
     private Resource fileResource;
     private final int resourceUid;
 
@@ -40,7 +40,7 @@ public class DiskFtpFile implements FtpFile {
      * @param path  请求的FTP路径
      * @param user  FTP用户
      */
-    public DiskFtpFile(String path, DiskFtpUser user, DiskFileSystemFactory fileService) {
+    public DiskFtpFile(String path, DiskFtpUser user, DiskFileSystemProvider fileService) {
         this.user = user;
         pathInfo = new FtpPathInfo(path);
         this.fileService = fileService;

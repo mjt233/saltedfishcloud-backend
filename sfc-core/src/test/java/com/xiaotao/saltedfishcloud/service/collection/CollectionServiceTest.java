@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.entity.po.CollectionRecord;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class CollectionServiceTest {
     @Autowired
     private NodeService nodeService;
     @Autowired
-    private DiskFileSystemFactory diskFileSystem;
+    private DiskFileSystemProvider diskFileSystem;
 
     @Test
     void testGet() {

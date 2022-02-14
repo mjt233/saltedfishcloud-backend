@@ -2,19 +2,15 @@ package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-
-import java.io.File;
 
 @Slf4j
-public class LocalStoreServiceFactory implements StoreServiceFactory {
+public class LocalStoreServiceProvider implements StoreServiceProvider {
     private final StoreService storeService;
 
-    public LocalStoreServiceFactory(StoreService storeService) {
+    public LocalStoreServiceProvider(StoreService storeService) {
         this.storeService = storeService;
     }
 

@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.http.ResourceService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
@@ -36,7 +35,7 @@ import java.nio.file.NoSuchFileException;
 @RequiredArgsConstructor
 public class ResourceController {
     public static final String PREFIX = "/api/resource/";
-    private final DiskFileSystemFactory fileService;
+    private final DiskFileSystemProvider fileService;
     private final NodeService nodeService;
     private final ResourceService resourceService;
 

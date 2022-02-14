@@ -9,14 +9,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class FileServiceDetector implements InitializingBean {
-    private final StoreServiceFactory storeServiceFactory;
-    private final DiskFileSystemFactory fileSystemFactory;
+    private final StoreServiceProvider storeServiceProvider;
+    private final DiskFileSystemProvider fileSystemFactory;
 
     @Override
     public void afterPropertiesSet() throws Exception {
         log.info("[CORE]file-system-factory  ：{}", fileSystemFactory.getClass().getSimpleName());
         log.info("[CORE]file-system          ：{}", fileSystemFactory.getFileSystem().getClass().getSimpleName());
-        log.info("[CORE]store-service-factory：{}", storeServiceFactory.getClass().getSimpleName());
-        log.info("[CORE]store-service        ：{}", storeServiceFactory.getService().getClass().getSimpleName());
+        log.info("[CORE]store-service-factory：{}", storeServiceProvider.getClass().getSimpleName());
+        log.info("[CORE]store-service        ：{}", storeServiceProvider.getService().getClass().getSimpleName());
     }
 }

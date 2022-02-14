@@ -3,6 +3,9 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 默认的唯一存储服务，适用于使用基类为{@link AbstractRawStoreService}的存储服务创建。
+ */
 @Slf4j
 public class DefaultUniqueStoreService extends AbstractUniqueStoreService {
     private final String publicRoot;

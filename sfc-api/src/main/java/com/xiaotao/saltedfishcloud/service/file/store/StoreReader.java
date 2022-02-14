@@ -6,10 +6,14 @@ import org.springframework.core.io.Resource;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 提供存储系统的资源读取能力
+ */
 public interface StoreReader {
 
     /**
      * 判断路径是否为空目录
+     * @param path 目录路径
      */
     boolean isEmptyDirectory(String path) throws IOException;
 

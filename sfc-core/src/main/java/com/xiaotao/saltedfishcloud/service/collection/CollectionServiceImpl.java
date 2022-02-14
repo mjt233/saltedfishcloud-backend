@@ -14,7 +14,7 @@ import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -36,7 +36,7 @@ public class CollectionServiceImpl implements CollectionService {
     private final CollectionInfoRepo collectionDao;
     private final CollectionRecordRepo recordDao;
     private final NodeService nodeService;
-    private final DiskFileSystemFactory fileSystem;
+    private final DiskFileSystemProvider fileSystem;
 
     @Override
     public Page<CollectionRecord> getSubmits(Long cid, int page, int size) {

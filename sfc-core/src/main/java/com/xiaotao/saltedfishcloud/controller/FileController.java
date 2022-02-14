@@ -19,7 +19,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapInfo;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -53,7 +53,7 @@ import java.util.List;
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
-    private final DiskFileSystemFactory fileService;
+    private final DiskFileSystemProvider fileService;
     private final WrapService wrapService;
 
 

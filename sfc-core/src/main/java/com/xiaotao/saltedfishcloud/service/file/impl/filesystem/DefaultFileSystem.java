@@ -44,7 +44,7 @@ import java.util.zip.ZipException;
 @Slf4j
 public class DefaultFileSystem implements DiskFileSystem {
     private final static String LOG_TITLE = "FileSystem";
-    private final StoreServiceFactory storeServiceFactory;
+    private final StoreServiceProvider storeServiceProvider;
     private final FileDao fileDao;
     private final FileRecordService fileRecordService;
     private final NodeService nodeService;
@@ -267,12 +267,12 @@ public class DefaultFileSystem implements DiskFileSystem {
 
     @Override
     public boolean exist(int uid, String path) {
-        return storeServiceFactory.getService().exist(uid, path);
+        return storeServiceProvider.getService().exist(uid, path);
     }
 
     @Override
     public Resource getResource(int uid, String path, String name) throws IOException {
-        return storeServiceFactory.getService().getResource(uid, path, name);
+        return storeServiceProvider.getService().getResource(uid, path, name);
     }
 
     @Override
@@ -289,7 +289,7 @@ public class DefaultFileSystem implements DiskFileSystem {
             throw new UnsupportedOperationException("已存在同名文件：" + path);
         }
         String nid = fileRecordService.mkdirs(uid, path);
-        final StoreService storeService = storeServiceFactory.getService();
+        final StoreService storeService = storeServiceProvider.getService();
         if (!storeService.isUnique()) {
             storeService.mkdir(uid, path, "");
         }
@@ -311,7 +311,7 @@ public class DefaultFileSystem implements DiskFileSystem {
     @Transactional(rollbackFor = Exception.class)
     public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
         fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
-        final StoreService service = storeServiceFactory.getService();
+        final StoreService service = storeServiceProvider.getService();
         if (!service.isUnique()) {
             service.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
         }
@@ -323,7 +323,7 @@ public class DefaultFileSystem implements DiskFileSystem {
         try {
             target = URLDecoder.decode(target, "UTF-8");
             fileRecordService.move(uid, source, target, name, overwrite);
-            final StoreService storeService = storeServiceFactory.getService();
+            final StoreService storeService = storeServiceProvider.getService();
             if (!storeService.isUnique()) {
                 storeService.move(uid, source, target, name, overwrite);
             }
@@ -336,7 +336,7 @@ public class DefaultFileSystem implements DiskFileSystem {
 
     @Override
     public List<FileInfo>[] getUserFileList(int uid, String path) throws IOException {
-        if (uid == 0 || (LocalStoreConfig.STORE_TYPE == StoreType.RAW && storeServiceFactory.getService() instanceof LocalStoreService)) {
+        if (uid == 0 || (LocalStoreConfig.STORE_TYPE == StoreType.RAW && storeServiceProvider.getService() instanceof LocalStoreService)) {
             // 初始化用户目录
             String baseLocalPath = LocalStoreConfig.getRawFileStoreRootPath(uid);
             File root = new File(baseLocalPath);
@@ -394,7 +394,7 @@ public class DefaultFileSystem implements DiskFileSystem {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void moveToSaveFile(int uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
-        storeServiceFactory.getService().moveToSave(uid, nativeFilePath, path, fileInfo);
+        storeServiceProvider.getService().moveToSave(uid, nativeFilePath, path, fileInfo);
         int res = fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), path);
         if ( res == 0) {
             fileRecordService.updateFileRecord(uid, fileInfo.getName(), path, fileInfo.getSize(), fileInfo.getMd5());
@@ -446,7 +446,7 @@ public class DefaultFileSystem implements DiskFileSystem {
             }
             exist = true;
         }
-        storeServiceFactory.getService().store(uid, file, path, fileInfo);
+        storeServiceProvider.getService().store(uid, file, path, fileInfo);
         fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid);
         return exist ? SAVE_COVER : SAVE_NEW_FILE;
     }
@@ -454,7 +454,7 @@ public class DefaultFileSystem implements DiskFileSystem {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void mkdir(int uid, String path, String name) throws IOException {
-        if ( !storeServiceFactory.getService().mkdir(uid, path, name) ) {
+        if ( !storeServiceProvider.getService().mkdir(uid, path, name) ) {
             throw new IOException("在" + path + "创建文件夹失败");
         }
         fileRecordService.mkdir(uid, name, path);
@@ -466,7 +466,7 @@ public class DefaultFileSystem implements DiskFileSystem {
         // 计数删除数
         long res = 0L;
         List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
-        final StoreService storeService = storeServiceFactory.getService();
+        final StoreService storeService = storeServiceProvider.getService();
 
         // 唯一存储下确认文件无引用后再执行通过md5删除
         if (storeService.isUnique()) {
@@ -488,7 +488,7 @@ public class DefaultFileSystem implements DiskFileSystem {
     @Transactional(rollbackFor = Exception.class)
     public void rename(int uid, String path, String name, String newName) throws IOException {
         fileRecordService.rename(uid, path, name, newName);
-        final StoreService storeService = storeServiceFactory.getService();
+        final StoreService storeService = storeServiceProvider.getService();
         if (!storeService.isUnique()) {
             storeService.rename(uid, path, name, newName);
         }

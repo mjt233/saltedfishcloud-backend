@@ -14,7 +14,7 @@ import java.io.IOException;
 @RunWith(SpringRunner.class)
 class StoreServiceTest {
     @Resource
-    private StoreServiceFactory storeService;
+    private StoreServiceProvider storeService;
     @Resource
     private UserDao userDao;
 

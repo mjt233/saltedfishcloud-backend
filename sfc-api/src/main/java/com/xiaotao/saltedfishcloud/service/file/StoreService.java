@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 存储服务，负责文件物理数据的存取
+ * 网盘文件存储服务，负责用户网盘文件物理数据的存取
  */
 public interface StoreService {
     /**

@@ -12,7 +12,6 @@ import java.io.InputStream;
 /**
  * 直接使用存储服务的原始文件路径（而不是网盘路径）进行资源操作的服务，提供目标文件存储系统最基础最原始的文件操作。
  * 通常不直接使用，而是为其他涉及到文件存储操作的抽象类提供文件最基本的存储能力（如抽象文件存储服务，抽象用户配置数据服务）。
- * @TODO 实现基于DirectRawStoreService提供存储能力的存储服务和用户配置数据服务抽象类）
  */
 public interface DirectRawStoreHandler extends StoreReader, StoreWriter {
 

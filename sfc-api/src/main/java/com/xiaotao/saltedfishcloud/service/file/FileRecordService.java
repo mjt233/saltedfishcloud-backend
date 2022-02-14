@@ -9,6 +9,11 @@ import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * 为网盘系统提供不依赖存储服务的情况下提供文件系统文件信息的读取和搜索能力（仅文件信息，不包含文件内容）<br>
+ * 一般情况下，文件记录服务的记录数据应与存储服务保持同步。在默认的文件系统接口{@link DiskFileSystem}实现中，所有文件信息读取功能均使用FileRecordService而不是{@link StoreService}<br>
+ *
+ */
 public interface FileRecordService {
 
     /**

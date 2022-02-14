@@ -2,9 +2,8 @@ package com.saltedfishcloud.ext.hadoop;
 
 import com.saltedfishcloud.ext.hadoop.store.HDFSStoreHandler;
 import com.saltedfishcloud.ext.hadoop.store.HDFSStoreService;
-import com.saltedfishcloud.ext.hadoop.store.HDFSStoreServiceFactory;
+import com.saltedfishcloud.ext.hadoop.store.HDFSStoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
-import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import org.apache.hadoop.fs.FileSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,8 +34,8 @@ public class HDFSAutoConfigure {
     }
 
     @Bean
-    public HDFSStoreServiceFactory hdfsStoreServiceFactory() {
-        return new HDFSStoreServiceFactory();
+    public HDFSStoreServiceProvider hdfsStoreServiceFactory() {
+        return new HDFSStoreServiceProvider();
     }
 
     @Bean
