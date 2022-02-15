@@ -1,24 +1,17 @@
 package com.xiaotao.saltedfishcloud;
 
-import com.xiaotao.saltedfishcloud.utils.ExtUtils;
+import com.xiaotao.saltedfishcloud.ext.ExtJarClassLoader;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.ApplicationEvent;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-
-import java.lang.reflect.InvocationTargetException;
-import java.net.URLClassLoader;
 
 @SpringBootApplication(
         exclude= {DataSourceAutoConfiguration.class, GsonAutoConfiguration.class},
@@ -35,8 +28,10 @@ import java.net.URLClassLoader;
 @EnableConfigurationProperties
 public class SaltedfishcloudApplication {
 
-    public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        ExtUtils.loadExtJar(SaltedfishcloudApplication.class.getClassLoader());
+    public static void main(String[] args) {
+        final ExtJarClassLoader loader = new ExtJarClassLoader(SaltedfishcloudApplication.class.getClassLoader());
+        loader.loadAll();
+        Thread.currentThread().setContextClassLoader(loader);
         SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
         sa.run(args);
         System.out.println("=========咸鱼云已启动(oﾟvﾟ)ノ==========");
