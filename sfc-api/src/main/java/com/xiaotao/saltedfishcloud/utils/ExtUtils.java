@@ -14,23 +14,6 @@ import java.util.Objects;
 @Slf4j
 public class ExtUtils {
     private static final String EXTENSION_DIRECTORY = "ext";
-    public static ClassLoader loadExtJar(ClassLoader parent) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        final File root = new File(EXTENSION_DIRECTORY);
-        if (root.isFile()) {
-            log.warn("[拓展]拓展资源路径{}不是目录", root.getAbsolutePath());
-        }
-        log.info("[拓展]加载拓展路径：{}", root.getAbsolutePath());
-        log.info("[拓展]ClassLoader：{}", parent.getClass().getName());
-        final Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-        addURL.setAccessible(true);
-
-        final URL[] urls = ExtUtils.getExtUrls();
-        for (URL url : urls) {
-            log.info("[拓展]加载拓展：{}", url);
-            addURL.invoke(parent, url);
-        }
-        return parent;
-    }
 
     /**
      * 获取拓展目录绝对路径
