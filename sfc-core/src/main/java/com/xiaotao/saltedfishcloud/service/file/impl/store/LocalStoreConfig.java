@@ -30,12 +30,8 @@ import java.util.Objects;
 @Slf4j
 public class LocalStoreConfig {
 
-    private static UserDao userDao;
-
     public static StoreType STORE_TYPE;
 
-    // 可接收的头像文件后缀名
-    public static final List<String> ACCEPT_AVATAR_TYPE = Arrays.asList("jpg", "jpeg", "gif", "png");
 
     // 同步间隔
     public static int SYNC_DELAY;
@@ -50,29 +46,6 @@ public class LocalStoreConfig {
     // 用户个性化配置文件根目录
     public static String USER_PROFILE_ROOT;
 
-
-    /**
-     * 通过UID获取文件存储的用户根目录，公共用户使用DiskConfig.PUBLIC_ROOT 其他用户使用DiskConfig.PRIVATE_ROOT + "/" + {username} <br>
-     * 该目录为原始存储模式下的目录
-     * @param uid 用户ID 0表示公共
-     * @return 本地文件存储用户根目录，末尾不带/
-     */
-    static public String getRawFileStoreRootPath(int uid) {
-        if (uid == 0) {
-            return PUBLIC_ROOT;
-        }
-
-        User user = SecureUtils.getSpringSecurityUser();
-        if (user != null && uid == user.getId()) {
-            return getLoginUserPrivateDiskRoot();
-        } else {
-            try {
-                return getUserPrivateDiskRoot(userDao.getUserById(uid).getUsername());
-            } catch (NullPointerException e) {
-                throw new JsonException(404, "资源不存在");
-            }
-        }
-    }
 
 
 

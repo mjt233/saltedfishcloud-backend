@@ -5,7 +5,6 @@ import com.xiaotao.saltedfishcloud.compress.creator.ArchiveResourceEntry;
 import com.xiaotao.saltedfishcloud.compress.creator.ZipCompressor;
 import com.xiaotao.saltedfishcloud.compress.reader.ArchiveReaderVisitor;
 import com.xiaotao.saltedfishcloud.compress.reader.impl.ZipArchiveReader;
-import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
@@ -15,8 +14,6 @@ import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.*;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -175,6 +172,7 @@ public class DefaultFileSystem implements DiskFileSystem {
      * @TODO 使用任务队列控制同时进行解压缩的数量
      * @TODO 边解压边计算MD5
      * @TODO 实现实时计算MD5的IO流
+     * @TODO 封装代码
      */
     @Override
     public void extractArchive(int uid, String path, String name, String dest) throws IOException {
@@ -194,6 +192,7 @@ public class DefaultFileSystem implements DiskFileSystem {
             zipFile = resource.getFile();
             zipFilePath = Paths.get(zipFile.getAbsolutePath());
         } catch (FileNotFoundException ignore) {
+            // getFile异常时，需要从Resource的InputStream保存文件到本地
             isDownloadZip = true;
             zipFilePath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), StringUtils.getRandomString(6) + ".zip"));
             try(
@@ -203,6 +202,10 @@ public class DefaultFileSystem implements DiskFileSystem {
                 log.debug("[解压文件]非本地文件系统存储服务，需要复制文件到本地文件系统：{} ", resource.getFilename());
                 log.debug("[解压文件]临时文件：{}", zipFilePath);
                 StreamUtils.copy(is, os);
+            } catch (IOException e) {
+                log.debug("[解压文件]临时文件保存出错");
+                Files.deleteIfExists(zipFilePath);
+                throw e;
             }
             zipFile = zipFilePath.toFile();
         }
@@ -336,17 +339,6 @@ public class DefaultFileSystem implements DiskFileSystem {
 
     @Override
     public List<FileInfo>[] getUserFileList(int uid, String path) throws IOException {
-        if (uid == 0 || (LocalStoreConfig.STORE_TYPE == StoreType.RAW && storeServiceProvider.getService() instanceof LocalStoreService)) {
-            // 初始化用户目录
-            String baseLocalPath = LocalStoreConfig.getRawFileStoreRootPath(uid);
-            File root = new File(baseLocalPath);
-            if (!root.exists()) {
-                if (!root.mkdir()) {
-                    throw new IOException("目录" + path + "创建失败");
-                }
-            }
-        }
-
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         return getUserFileListByNodeId(uid, nodeId);
     }
