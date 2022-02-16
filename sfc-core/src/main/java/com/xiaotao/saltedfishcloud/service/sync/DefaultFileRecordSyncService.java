@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.sync;
 
 import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordSyncService;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.service.sync.detector.SyncDiffDetector;
 import com.xiaotao.saltedfishcloud.service.sync.handler.SyncDiffHandler;
@@ -26,11 +27,12 @@ import java.sql.SQLException;
 public class DefaultFileRecordSyncService implements FileRecordSyncService {
     private final SyncDiffHandler handler;
     private final SyncDiffDetector detector;
+    private final StoreServiceProvider storeServiceProvider;
 
     @Override
     public void doSync(int uid, boolean precise) throws IOException, SQLException {
-            if (LocalStoreConfig.STORE_TYPE == StoreType.UNIQUE) {
-                log.debug("[SYNC]UNIQUE模式不需要同步");
+            if (!storeServiceProvider.getService().canBrowse()) {
+                log.debug("[SYNC]存储服务不支持同步");
                 return;
             }
             var result = detector.detect(uid, precise);

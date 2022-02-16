@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.ext;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.util.ConcurrentHashSet;
-import org.springframework.beans.factory.InitializingBean;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -16,18 +15,13 @@ import java.util.stream.Collectors;
  * 默认的基于本地文件系统的拓展Jar包加载器
  */
 @Slf4j
-public class ExtJarClassLoader extends URLClassLoader implements ExtLoader, InitializingBean {
+public class ExtJarClassLoader extends URLClassLoader implements ExtLoader {
     private final static String LOG_PREFIX = "[拓展]";
     private final Set<URL> loaded = new ConcurrentHashSet<>();
 
     public ExtJarClassLoader(ClassLoader parent) {
         super(new URL[0], parent);
         log.info("{}加载器：{}", LOG_PREFIX, parent.getClass().getName());
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        log.info("{}已注入容器", LOG_PREFIX);
     }
 
     @Override
