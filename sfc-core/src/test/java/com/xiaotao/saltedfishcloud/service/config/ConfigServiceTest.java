@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -20,11 +20,11 @@ class ConfigServiceTest {
 
     @Test
     void setStoreType() throws IOException {
-        configService.setStoreType(StoreType.UNIQUE);
-        configService.setStoreType(StoreType.RAW);
-        configService.setStoreType(StoreType.RAW);
-        configService.setStoreType(StoreType.UNIQUE);
-        configService.setStoreType(StoreType.RAW);
+        configService.setStoreType(StoreMode.UNIQUE);
+        configService.setStoreType(StoreMode.RAW);
+        configService.setStoreType(StoreMode.RAW);
+        configService.setStoreType(StoreMode.UNIQUE);
+        configService.setStoreType(StoreMode.RAW);
     }
 
     @Test

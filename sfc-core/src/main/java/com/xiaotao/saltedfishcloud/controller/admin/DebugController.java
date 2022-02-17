@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import lombok.var;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +20,8 @@ public class DebugController {
     public static final String prefix = "/api/admin/debug/";
     @Resource
     private ConfigDao configDao;
+    @Resource
+    private SysProperties sysProperties;
 
     /**
      * @TODO 修改路由readOnly为protectMode
@@ -47,12 +49,12 @@ public class DebugController {
         var conf = configDao.getAllConfig();
         if (conf != null) {
             conf.forEach(e -> {
-                data.put(e.getKey().toString(), e.getValue());
+                data.put(e.getKey(), e.getValue());
             });
         }
         data.put("READ_ONLY_LEVEL", SysRuntimeConfig.getProtectModeLevel());
         data.put("read_only_level", SysRuntimeConfig.getProtectModeLevel());
-        data.put("sync_delay", LocalStoreConfig.SYNC_DELAY);
+        data.put("sync_delay", sysProperties.getSync().getInterval());
 
         return JsonResultImpl.getInstance(200, data, "小写字段将在后续版本中废弃");
     }

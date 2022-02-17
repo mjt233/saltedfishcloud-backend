@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
@@ -22,9 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * @TODO 使存储模式切换时的迁移动作由StoreService或DiskFileSystem提供
- */
 @Component
 @Slf4j
 public class StoreTypeSwitch {
@@ -35,7 +32,7 @@ public class StoreTypeSwitch {
     @Resource
     private DiskFileSystemProvider fileService;
 
-    public void switchTo(StoreType targetType) throws IOException {
+    public void switchTo(StoreMode targetType) throws IOException {
 //        throw new UnsupportedOperationException("未开发完成");
         final DiskFileSystem fileSystem = fileService.getFileSystem();
 
@@ -47,22 +44,22 @@ public class StoreTypeSwitch {
     }
 
 
-    private void doSwitch(StoreType storeType) throws IOException {
-        log.info("[STORE-SWITCH]切换到{}", storeType);
+    private void doSwitch(StoreMode targetMode) throws IOException {
+        log.info("[Store Switch]切换到{}", targetMode);
         List<User> users = userDao.getUserList();
         users.add(User.getPublicUser());
 
-        final StoreService srcStoreService = storeType == StoreType.UNIQUE ?
+        final StoreService srcStoreService = targetMode == StoreMode.UNIQUE ?
                 storeServiceProvider.getService().getRawStoreService() :
                 storeServiceProvider.getService().getUniqueStoreService();
 
-        final StoreService destStoreService = storeType == StoreType.UNIQUE ?
+        final StoreService destStoreService = targetMode == StoreMode.UNIQUE ?
                 storeServiceProvider.getService().getUniqueStoreService() :
                 storeServiceProvider.getService().getRawStoreService();
 
         for (User user : users) {
             int uid = user.getId();
-            log.debug("[STORE-SWITCH]处理用户：{}", user.getUsername());
+            log.debug("[Store Switch]处理用户：{}", user.getUsername());
             LinkedHashMap<String, List<FileInfo>> allFile = fileService.getFileSystem().collectFiles(user.getId(), false);
 
             //  文件迁移
@@ -74,9 +71,9 @@ public class StoreTypeSwitch {
                     final String diskFullPath = StringUtils.appendPath(dirPath, file.getName());
 
                     // unique不支持list
-                    if (storeType == StoreType.UNIQUE) {
+                    if (targetMode == StoreMode.UNIQUE) {
                         if(!srcStoreService.exist(uid, diskFullPath)) {
-                            log.warn("[STORE-SWITCH]未同步的文件：{}", diskFullPath);
+                            log.warn("[Store Switch]未同步的文件：{}", diskFullPath);
                             continue;
                         }
                     }
@@ -85,23 +82,23 @@ public class StoreTypeSwitch {
                     try(final InputStream is = srcStoreService.getResource(uid, dirPath, file.getName()).getInputStream()) {
                         destStoreService.store(uid, is, dirPath, file);
                     } catch (FileNotFoundException e) {
-                        log.error("[STORE-SWITCH]出错：{}/{}",dirPath, file.getName());
+                        log.error("[Store Switch]出错：{}/{}",dirPath, file.getName());
                         e.printStackTrace();
                     }
                 }
 
-                if(storeType == StoreType.UNIQUE) {
+                if(targetMode == StoreMode.UNIQUE) {
                     final List<String> fileNames = files.stream().map(FileInfo::getName).collect(Collectors.toList());
-                    log.debug("[STORE-SWITCH]RAW => UNIQUE 目录：{} 清理旧文件：{}",dirPath, fileNames);
+                    log.debug("[Store Switch]RAW => UNIQUE 目录：{} 清理旧文件：{}",dirPath, fileNames);
                     srcStoreService.delete(uid, dirPath, fileNames);
                 }
             }
         }
 
         // 切换后，清理存储仓库
-        log.debug("[STORE-SWITCH]{} => {} 切换完成，清理存储",
-                storeType == StoreType.UNIQUE ? StoreType.RAW : StoreType.UNIQUE,
-                storeType
+        log.debug("[Store Switch]{} => {} 切换完成，清理存储",
+                targetMode == StoreMode.UNIQUE ? StoreMode.RAW : StoreMode.UNIQUE,
+                targetMode
         );
         srcStoreService.clear();
     }

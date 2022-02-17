@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
-import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordSyncService;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
 import lombok.var;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +24,8 @@ public class StoreController {
     private FileRecordSyncService syncService;
     @Resource
     private UserDao userDao;
+    @Resource
+    private SysProperties sysProperties;
 
     /**
      * 获取存储状态
@@ -39,7 +41,7 @@ public class StoreController {
      */
     @PostMapping("sync")
     public JsonResult sync(@RequestParam(name = "all", defaultValue = "false") Boolean all) throws Exception {
-        if (LocalStoreConfig.STORE_TYPE == StoreType.UNIQUE) {
+        if (sysProperties.getStore().getMode() == StoreMode.UNIQUE) {
             return JsonResultImpl.getInstance(400, null, "UNIQUE模式不需要同步");
         }
         if (all) {

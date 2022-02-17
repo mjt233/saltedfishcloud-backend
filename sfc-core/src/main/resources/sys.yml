@@ -1,5 +1,0 @@
-sys:
-  common:
-    reg-code: 114514
-  store:
-    type: local

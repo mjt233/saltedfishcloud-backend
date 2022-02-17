@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
-import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -15,16 +16,17 @@ public class LocalStoreServiceProvider implements StoreServiceProvider {
     }
 
     @Autowired
-    private LocalStoreConfig localStoreConfig;
+    private SysProperties sysProperties;
 
     @Override
     public StoreService getService() {
-        if (LocalStoreConfig.STORE_TYPE == StoreType.RAW) {
+
+        if (sysProperties.getStore().getMode() == StoreMode.RAW) {
             return storeService.getRawStoreService();
-        } else if (LocalStoreConfig.STORE_TYPE == StoreType.UNIQUE) {
+        } else if (sysProperties.getStore().getMode() == StoreMode.UNIQUE) {
             return storeService.getUniqueStoreService();
         } else {
-            throw new UnsupportedOperationException("不支持的存储类型：" + LocalStoreConfig.STORE_TYPE);
+            throw new UnsupportedOperationException("不支持的存储类型：" + sysProperties.getStore().getMode());
         }
     }
 

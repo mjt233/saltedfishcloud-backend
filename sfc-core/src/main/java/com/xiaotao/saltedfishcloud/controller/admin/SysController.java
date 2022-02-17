@@ -1,16 +1,15 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
-import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.ProxyInfo;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
-import com.xiaotao.saltedfishcloud.service.config.ConfigServiceImpl;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
+import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.validation.annotation.Validated;
@@ -29,7 +28,7 @@ import java.util.LinkedHashMap;
 public class SysController {
     public static final String prefix = "/api/admin/sys/";
     @Resource
-    private ConfigServiceImpl configService;
+    private ConfigService configService;
     @Resource
     private SysProperties sysProperties;
     @Resource
@@ -72,11 +71,11 @@ public class SysController {
     @ProtectBlock
     public JsonResult setStoreType(@PathVariable("type") String type) throws IOException {
         try {
-            StoreType storeType = StoreType.valueOf(type.toUpperCase());
-            if (configService.setStoreType(storeType)) {
+            StoreMode storeMode = StoreMode.valueOf(type.toUpperCase());
+            if (configService.setStoreType(storeMode)) {
                 return JsonResult.emptySuccess();
             } else {
-                return JsonResultImpl.getInstance(202, LocalStoreConfig.STORE_TYPE.toString(), "请求被忽略，模式无变化");
+                return JsonResultImpl.getInstance(202, sysProperties.getStore().getMode().toString(), "请求被忽略，模式无变化");
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("无效的类型，可选RAW或UNIQUE");

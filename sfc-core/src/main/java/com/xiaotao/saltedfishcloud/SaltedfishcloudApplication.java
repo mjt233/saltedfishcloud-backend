@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @MapperScan("com.xiaotao.saltedfishcloud.dao.mybatis")
 @EnableScheduling
 @EnableCaching
-@PropertySource({"classpath:config.properties"})
 @EnableJpaAuditing
 @EnableConfigurationProperties
 public class SaltedfishcloudApplication {

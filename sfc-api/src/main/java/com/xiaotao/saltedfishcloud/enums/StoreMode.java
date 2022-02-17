@@ -1,10 +1,10 @@
-package com.xiaotao.saltedfishcloud.config;
+package com.xiaotao.saltedfishcloud.enums;
 
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 
-public enum StoreType {
+public enum StoreMode {
     RAW,UNIQUE;
     public static ConfigName getConfigKey() {
-        return ConfigName.STORE_TYPE;
+        return ConfigName.STORE_MODE;
     }
 }

@@ -21,7 +21,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 
 @Component
-@Order(3)
+@Order(2)
 @Slf4j
 public class DatabaseUpdater implements ApplicationRunner {
     private final Connection conn;

@@ -1,9 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.sync;
 
-import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordSyncService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.service.sync.detector.SyncDiffDetector;
 import com.xiaotao.saltedfishcloud.service.sync.handler.SyncDiffHandler;
 import lombok.RequiredArgsConstructor;

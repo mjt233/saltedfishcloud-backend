@@ -4,16 +4,12 @@ import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FileSystemView;
 import org.apache.ftpserver.ftplet.FtpFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 @Slf4j
 public class DiskFtpFileSystemView implements FileSystemView {
@@ -23,12 +19,6 @@ public class DiskFtpFileSystemView implements FileSystemView {
     public DiskFtpFileSystemView(DiskFtpUser user, DiskFileSystemProvider fileSystemFactory) throws IOException {
         this.user = user;
         pathBuilder.setForcePrefix(true);
-        if (!user.isAnonymousUser()) {
-            Path up = Paths.get(LocalStoreConfig.getUserPrivateDiskRoot(user.getName()));
-            if (!Files.exists(up)) {
-                Files.createDirectory(up);
-            }
-        }
         this.fileSystemFactory = fileSystemFactory;
     }
 

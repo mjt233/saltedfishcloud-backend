@@ -1,12 +1,10 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.config.StoreType;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +21,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
-@Order(2)
+@Order(3)
 @RequiredArgsConstructor
 public class ConfigureInitializer implements ApplicationRunner {
     private final ConfigDao configDao;
@@ -33,20 +31,22 @@ public class ConfigureInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
 
         log.info("[当前系统版本]：" + sysProperties.getVersion());
-        String storeType = configDao.getConfigure(ConfigName.STORE_TYPE);
-        String regCode = configDao.getConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
-        String syncDelay = configDao.getConfigure(ConfigName.SYNC_DELAY, LocalStoreConfig.SYNC_DELAY + "");
 
-        boolean firstRun = storeType == null;
+
+        String storeMode = configDao.getConfigure(ConfigName.STORE_MODE);
+        String regCode = configDao.getConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
+        String syncDelay = configDao.getConfigure(ConfigName.SYNC_INTERVAL, sysProperties.getSync().getInterval() + "");
+
+        boolean firstRun = storeMode == null;
         if (firstRun) {
-            log.info("[初始化]存储模式记录：" + LocalStoreConfig.STORE_TYPE);
-            configDao.setConfigure(ConfigName.STORE_TYPE, LocalStoreConfig.STORE_TYPE.toString());
+            log.info("[初始化]存储模式记录：" + sysProperties.getStore().getMode());
+            configDao.setConfigure(ConfigName.STORE_MODE, sysProperties.getStore().getMode().toString());
             log.info("[初始化]邀请邀请码：" + regCode);
             configDao.setConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
             log.info("[初始化]同步延迟：" + syncDelay);
-            configDao.setConfigure(ConfigName.SYNC_DELAY, syncDelay);
+            configDao.setConfigure(ConfigName.SYNC_INTERVAL, syncDelay);
 
-            storeType = LocalStoreConfig.STORE_TYPE.toString();
+            storeMode = sysProperties.getStore().getMode().toString();
         }
 
         String secret = configDao.getConfigure(ConfigName.TOKEN_SECRET);
@@ -58,10 +58,10 @@ public class ConfigureInitializer implements ApplicationRunner {
         JwtUtils.setSecret(secret);
 
         // 服务器配置记录覆盖默认的开局配置记录
-        LocalStoreConfig.STORE_TYPE = StoreType.valueOf(storeType);
+        sysProperties.getStore().setMode(storeMode);
         sysProperties.getCommon().setRegCode(regCode);
-        LocalStoreConfig.SYNC_DELAY = Integer.parseInt(syncDelay);
-        log.info("[存储模式]："+ storeType);
+        sysProperties.getSync().setInterval(Integer.parseInt(syncDelay));
+        log.info("[存储模式]："+ storeMode);
         log.info("[注册邀请码]："+ sysProperties.getCommon().getRegCode());
         log.info("[同步延迟]：" + syncDelay);
         if (sysProperties.getVersion().getTag() != VersionTag.RELEASE) {

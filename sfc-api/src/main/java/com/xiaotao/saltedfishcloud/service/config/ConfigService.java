@@ -2,6 +2,8 @@ package com.xiaotao.saltedfishcloud.service.config;
 
 
 import com.xiaotao.saltedfishcloud.entity.Pair;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.Map;
@@ -46,5 +48,15 @@ public interface ConfigService {
      * @param listener  监听器，参数为值
      */
     void addConfigListener(ConfigName key, Consumer<String> listener);
+
+
+    /**
+     * 设置存储类型
+     * @param type 存储类型
+     * @return true表示切换成功，false表示切换被忽略
+     * @throws IllegalStateException 数据库配置表无相关信息
+     */
+    @Transactional(rollbackFor = Exception.class)
+    boolean setStoreType(StoreMode type) throws IOException;
 
 }

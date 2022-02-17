@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.ftp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.config.FtpProperties;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpFileSystemFactory;
@@ -15,6 +15,7 @@ import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.ftpserver.ftplet.Ftplet;
 import org.apache.ftpserver.listener.ListenerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.event.ContextClosedEvent;
@@ -32,14 +33,19 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class FtpServiceImpl implements ApplicationRunner, FtpService {
-    private final FtpProperties ftpProperties;
+public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpService {
+    private final SysProperties sysProperties;
     private final DiskFtpUserManager ftpUserManager;
     private final DiskFtpFileSystemFactory ftpFileSystemFactory;
     private final FtpUploadHandler ftpUploadHandler;
     private final ConfigService configService;
     private FtpServer ftpServer;
+    private SysProperties.Ftp ftpProperties;
 
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        ftpProperties = sysProperties.getFtp();
+    }
 
     @EventListener(ContextClosedEvent.class)
     public void onApplicationEvent(ContextClosedEvent event) {
@@ -108,7 +114,7 @@ public class FtpServiceImpl implements ApplicationRunner, FtpService {
         String configRawJson = configService.getConfig(ConfigName.FTP_PROPERTIES);
         if (configRawJson != null) {
             try {
-                FtpProperties config = MapperHolder.mapper.readValue(configRawJson, FtpProperties.class);
+                final SysProperties.Ftp config = MapperHolder.mapper.readValue(configRawJson, SysProperties.Ftp.class);
                 BeanUtils.copyProperties(config, ftpProperties);
                 log.info("[FTP]已加载配置");
             } catch (JsonProcessingException e) {
@@ -121,7 +127,7 @@ public class FtpServiceImpl implements ApplicationRunner, FtpService {
         // 参数更新时重新加载FTP服务器
         configService.addConfigListener(ConfigName.FTP_PROPERTIES,  e -> {
             try {
-                FtpProperties config = MapperHolder.mapper.readValue(e, FtpProperties.class);
+                SysProperties.Ftp config = MapperHolder.mapper.readValue(e, SysProperties.Ftp.class);
                 BeanUtils.copyProperties(config, ftpProperties);
                 restart();
             } catch (JsonProcessingException | FtpException ex) {

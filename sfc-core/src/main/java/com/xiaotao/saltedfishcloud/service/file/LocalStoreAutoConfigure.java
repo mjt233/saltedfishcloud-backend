@@ -16,11 +16,11 @@ public class LocalStoreAutoConfigure {
 
     @Bean
     public StoreServiceProvider storeServiceFactory() {
-        return new LocalStoreServiceProvider(rawStoreService());
+        return new LocalStoreServiceProvider(localStoreService());
     }
 
     @Bean
-    public LocalStoreService rawStoreService() {
+    public LocalStoreService localStoreService() {
         return new LocalStoreService(md5Resolver);
     }
 }

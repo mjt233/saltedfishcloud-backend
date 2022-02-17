@@ -1,12 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import com.xiaotao.saltedfishcloud.config.StoreType;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.entity.Pair;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +27,6 @@ public class ConfigServiceImpl implements ConfigService {
     private ConfigDao configDao;
     @Resource
     private StoreTypeSwitch storeTypeSwitch;
-    @Resource
-    private LocalStoreConfig localStoreConfig;
     @Resource
     private SysProperties sysProperties;
 
@@ -90,17 +87,7 @@ public class ConfigServiceImpl implements ConfigService {
      * @param value     配置值
      */
     @Override
-    public boolean setConfig(ConfigName key, String value) throws IOException {
-        // 未采用订阅者/发布者设计模式的代码，耦合度高，代码侵害度高
-        switch (key) {
-            case STORE_TYPE: return setStoreType(StoreType.valueOf(value));
-            case REG_CODE: setInviteRegCode(value); return true;
-            case SYNC_DELAY:
-                LocalStoreConfig.SYNC_DELAY = Integer.parseInt(value);
-                configDao.setConfigure(key, value);
-            default:
-                configDao.setConfigure(key, value);
-        }
+    public boolean setConfig(ConfigName key, String value) {
 
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
         // @TODO 允许抛出异常中断执行
@@ -110,6 +97,7 @@ public class ConfigServiceImpl implements ConfigService {
         for (Consumer<String> c : configListeners.getOrDefault(key, Collections.emptyList())) {
             c.accept(value);
         }
+        configDao.setConfigure(key, value);
         return true;
     }
     /**
@@ -129,21 +117,20 @@ public class ConfigServiceImpl implements ConfigService {
      * @throws IllegalStateException 数据库配置表无相关信息
      */
     @Transactional(rollbackFor = Exception.class)
-    public boolean setStoreType(StoreType type) throws IOException {
-        String origin = configDao.getConfigure(StoreType.getConfigKey());
+    public boolean setStoreType(StoreMode type) throws IOException {
+        String origin = configDao.getConfigure(StoreMode.getConfigKey());
         if (origin == null) {
             throw new IllegalStateException("数据配置表无信息，请重启服务器");
         }
-        StoreType storeType = StoreType.valueOf(origin);
-        if (storeType == type) {
-            log.info("忽略的存储切换：{} -> {}", storeType, type);
+        StoreMode storeMode = StoreMode.valueOf(origin);
+        if (storeMode == type) {
+            log.info("忽略的存储切换：{} -> {}", storeMode, type);
             return false;
         }
-        log.info("存储切换：{} -> {}", storeType, type.toString());
+        log.info("存储切换：{} -> {}", storeMode, type.toString());
         try {
             SysRuntimeConfig.setProtectModeLevel(ProtectLevel.DATA_MOVING);
-            configDao.setConfigure(StoreType.getConfigKey(), type.toString());
-            localStoreConfig.setStoreType(type.toString());
+            configDao.setConfigure(StoreMode.getConfigKey(), type.toString());
             storeTypeSwitch.switchTo(type);
             SysRuntimeConfig.setProtectModeLevel(null);
         } catch (IOException | RuntimeException e) {
