@@ -1,4 +1,3 @@
-cp ../sfc-core/src/main/resources/application.sample.yml ../sfc-core/src/main/resources/application.yml
 rm ../sfc-core/target/*.jar 2>&1 > /dev/null
 cd ..
 echo ================清理上次打包数据================

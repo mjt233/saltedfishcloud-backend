@@ -2,20 +2,20 @@
 # 应用程序参数设置
 
 ############## 存储方式配置 ####################
-# 可选值：local, hdfs
+# 可选值：local, hdfs（需要拓展）
 # local表示使用本地文件系统进行存储，使用本地存储配置
 # hdfs表示使用HDFS存储，使用HDFS存储配置
 ###############################################
-store_method="local"
+store_type="local"
 
 ############## 本地存储配置 ####################
 # public_root 公共网盘存储位置                 #
-# store_root 私人网盘及用户数据存储位置         #
-# store_type 初始存储方式 可选unique或raw      #
+# store_root 私人网盘及用户数据存储位置         ##
+# store_mode 初始存储方式 可选unique或raw      #
 ###############################################
-local_public_root="/data/public"
-local_store_root="/data/xyy"
-local_store_type="unique"
+public_root="/data/public"
+store_root="/data/xyy"
+store_mode="unique"
 
 ############## HDFS存储配置 ####################
 # url Namenode master节点URL                  #
@@ -64,24 +64,24 @@ redis_password=""
 jdbc_url="jdbc:mysql://${db_host}:${db_port}/${db_name}?${db_params}"
 
 jar_name=`ls ../sfc-core/target/sfc-core-*.jar`
-java -Dfile.encoding=utf-8 -jar $jar_name \
+java --illegal-access=deny -Dfile.encoding=utf-8 -jar $jar_name \
 --server.port=$server_port \
---spring.datasource.druid.url="$jdbc_url" \
---spring.datasource.druid.username="$db_username" \
---spring.datasource.druid.password="$db_password" \
---spring.redis.host="$redis_host" \
---spring.redis.port="$redis_port" \
---spring.redis.password="$redis_password" \
---local.store.public-root="$local_public_root" \
---local.store.store-root="$local_store_root" \
---local.store.store-type="$local_store_type" \
---RegCode=$reg_code \
---local.store.sync-delay=$sync_delay \
---local.store.sync-launch=$sync_launch \
+--spring.datasource.druid.url=$jdbc_url \
+--spring.datasource.druid.username=$db_username \
+--spring.datasource.druid.password=$db_password \
+--spring.redis.host=$redis_host \
+--spring.redis.port=$redis_port \
+--spring.redis.password=$redis_password \
+--local.store.public-root=$public_root \
+--local.store.store-root=$store_root \
+--local.store.store-type=$store_mode \
+--sys.common.reg-code=$reg_code \
+--sys.sync.interval=$sync_interval \
+--sys.sync.sync-on-launch=$sync_on_launch \
 --sys.store.hdfs.root=$hdfs_root \
 --sys.store.hdfs.url=$hdfs_url \
 --sys.store.hdfs.user=$hdfs_user \
---sys.store.type=$store_method \
---ftp-port=$ftp_port \
---ftp-passive-addr=$ftp_passive_addr \
---ftp-passive-port=$ftp_passive_port $*
+--sys.store.type=$store_type \
+--sys.ftp.control-port=$ftp_port \
+--sys.ftp.passive-addr=$ftp_passive_addr \
+--sys.ftp.passive-port=$ftp_passive_port $*
