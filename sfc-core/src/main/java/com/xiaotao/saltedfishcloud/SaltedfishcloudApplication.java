@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud;
 
 import com.xiaotao.saltedfishcloud.ext.ExtJarClassLoader;
+import com.xiaotao.saltedfishcloud.orm.config.annotation.EnableOrmConfig;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableCaching
 @EnableJpaAuditing
 @EnableConfigurationProperties
+@EnableOrmConfig
 public class SaltedfishcloudApplication {
 
     public static void main(String[] args) {
