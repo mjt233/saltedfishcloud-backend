@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.orm.config.aop;
 
-import com.xiaotao.saltedfishcloud.orm.config.utils.ConfigUtils;
+import com.xiaotao.saltedfishcloud.orm.config.utils.ConfigReflectUtils;
 import com.xiaotao.saltedfishcloud.orm.config.ConfigureHandler;
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
 import com.xiaotao.saltedfishcloud.orm.config.enums.EntityType;
@@ -40,7 +40,7 @@ public class ConfigEntityProxy implements ApplicationRunner {
             key = prefix + "." + proceedingJoinPoint.getTarget().getClass().getName();
         } else {
             final String rawName = signature.getMethod().getName();
-            key = prefix + "." + ConfigUtils.getFieldNameByMethodName(rawName);
+            key = prefix + "." + ConfigReflectUtils.getFieldNameByMethodName(rawName);
         }
 
         System.out.println(key);

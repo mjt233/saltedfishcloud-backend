@@ -2,20 +2,17 @@ package com.xiaotao.saltedfishcloud.orm.config;
 
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
 import com.xiaotao.saltedfishcloud.orm.config.entity.MethodInst;
+import com.xiaotao.saltedfishcloud.orm.config.exception.ConfigurationException;
 import com.xiaotao.saltedfishcloud.orm.config.exception.ConfigurationKeyNotExistException;
 import com.xiaotao.saltedfishcloud.orm.config.exception.ConfigurationMapCallException;
-import com.xiaotao.saltedfishcloud.orm.config.exception.ConfigurationException;
-import com.xiaotao.saltedfishcloud.orm.config.utils.ConfigUtils;
+import com.xiaotao.saltedfishcloud.orm.config.utils.ConfigReflectUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +42,7 @@ public class ConfigureManager implements InitializingBean {
                 throw new ConfigurationKeyNotExistException(key);
             }
             configureHandler.setConfig(key, val);
-            methodInst.invoke(val);
+            methodInst.set(val);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new ConfigurationMapCallException(e.getMessage(), e.getCause());
         }
@@ -63,9 +60,14 @@ public class ConfigureManager implements InitializingBean {
     public void afterPropertiesSet() throws Exception {
         final Map<String, Object> beansWithAnnotation = context.getBeansWithAnnotation(ConfigEntity.class);
         beansWithAnnotation.forEach((k,v) -> {
-            final List<String> keys = ConfigUtils.getAllConfigKey(v.getClass());
+            final List<String> keys = ConfigReflectUtils.getAllConfigKey(v.getClass());
             for (String key : keys) {
-                final MethodInst methodInst = ConfigUtils.getMethodInst(key, v);
+                MethodInst methodInst = null;
+                try {
+                    methodInst = ConfigReflectUtils.getMethodInst(key, v);
+                } catch (NoSuchFieldException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                }
                 if (methodInst == null) {
                     log.warn("[ORM Config]无效节点：{}", key);
                     continue;

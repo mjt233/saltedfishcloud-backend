@@ -22,16 +22,43 @@ class ConfigUtilsTest {
 
     @Test
     void getAllConfigKey() {
-        final List<String> allConfigKey = ConfigUtils.getAllConfigKey(DEMO_CLASS.getClass());
+        final List<String> allConfigKey = ConfigReflectUtils.getAllConfigKey(DEMO_CLASS.getClass());
         System.out.println(allConfigKey);
     }
 
     @Test
-    void getMethodInst() throws InvocationTargetException, IllegalAccessException {
+    void getMethodInst() throws InvocationTargetException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException {
         String testName = "太强了";
-        final MethodInst inst = ConfigUtils.getMethodInst("sys.props.name", DEMO_CLASS);
-        inst.invoke(testName);
+        final MethodInst inst = ConfigReflectUtils.getMethodInst("sys.props.name", DEMO_CLASS);
+        inst.set(testName);
 
-        assertEquals(DEMO_CLASS.getProps().getName(), testName);
+        assertEquals(testName, DEMO_CLASS.getProps().getName());
+        assertEquals(testName, inst.get());
+        System.out.println(inst.get());
+    }
+
+    @Test
+    void testNoneString() throws InvocationTargetException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException {
+        String testName = "太强了";
+        try {
+            final MethodInst inst = ConfigReflectUtils.getMethodInst("sys.props", DEMO_CLASS);
+            fail();
+        } catch (IllegalArgumentException ignored) {}
+
+        MethodInst inst = ConfigReflectUtils.getMethodInst("sys.intVal", DEMO_CLASS);
+        assertNull(inst.get());
+        assertNull(inst.set(233));
+        assertEquals(233, inst.get());
+
+
+        inst = ConfigReflectUtils.getMethodInst("sys.longVal", DEMO_CLASS);
+        assertNull(inst.get());
+        assertNull(inst.set(233));
+        assertEquals(233L, inst.get());
+
+        inst = ConfigReflectUtils.getMethodInst("sys.booleanVal", DEMO_CLASS);
+        assertNull(inst.get());
+        assertNull(inst.set(true));
+        assertEquals(true, inst.get());
     }
 }
