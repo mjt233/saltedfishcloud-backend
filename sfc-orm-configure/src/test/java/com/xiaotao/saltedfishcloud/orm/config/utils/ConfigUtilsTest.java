@@ -23,7 +23,7 @@ class ConfigUtilsTest {
     @Test
     void getAllConfigKey() {
         final List<String> allConfigKey = ConfigReflectUtils.getAllConfigKey(DEMO_CLASS.getClass());
-        System.out.println(allConfigKey);
+        allConfigKey.forEach(System.out::println);
     }
 
     @Test

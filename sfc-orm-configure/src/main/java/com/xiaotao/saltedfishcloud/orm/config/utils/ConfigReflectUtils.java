@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigReflectUtils {
+
     @Data
     @AllArgsConstructor
     public static class ConfigBinding {
@@ -173,48 +174,4 @@ public class ConfigReflectUtils {
         return res;
     }
 
-    /**
-     * 将输入的类型转换为目标输出类型以适应类型转换。
-     * @TODO 缓存转换反射方法
-     * @TODO 支持浮点、BigInteger和BigDecimal
-     * @param targetType    目标输出类型
-     * @param input         输入的数据
-     * @return              转换后的数据对象
-     */
-    public static Object baseTypeConvert(Class<?> targetType, Object input) {
-        final String numberTypeName = getNumberTypeName(input.getClass());
-        final String targetNumberTypeName = getNumberTypeName(targetType);
-        if (targetNumberTypeName != null &&  numberTypeName != null) {
-            try {
-                return input.getClass().getDeclaredMethod(targetNumberTypeName + "Value").invoke(input);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                e.printStackTrace();
-                throw new IllegalArgumentException("转换失败", e);
-            }
-        } else {
-            throw new IllegalArgumentException("不支持的转换： " + input.getClass() + " -> " + targetType);
-        }
-    }
-
-    /**
-     * 获取数字类型的类型名称简称字符串
-     * @TODO 缓存类型名称
-     * @param type  待判断的类型
-     * @return int、long、short、double、float，若不是简单数字类型则返回null
-     */
-    public static String getNumberTypeName(Class<?> type) {
-        if (type == Integer.class) {
-            return "int";
-        } else if (type == Long.class) {
-            return "long";
-        } else if (type == Short.class) {
-            return "short";
-        } else if (type == Double.class) {
-            return "double";
-        } else if (type == Float.class) {
-            return "float";
-        } else {
-            return null;
-        }
-    }
 }

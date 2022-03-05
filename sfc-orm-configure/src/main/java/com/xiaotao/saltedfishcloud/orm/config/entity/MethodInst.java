@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.orm.config.entity;
 
-import com.xiaotao.saltedfishcloud.orm.config.utils.ConfigReflectUtils;
+import com.xiaotao.saltedfishcloud.orm.config.utils.TypeUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -33,7 +33,7 @@ public class MethodInst {
     public Object set(Object val) throws InvocationTargetException, IllegalAccessException {
         Object setVal = val;
         if (paramClass != val.getClass()) {
-            setVal = ConfigReflectUtils.baseTypeConvert(paramClass, val);
+            setVal = TypeUtils.convert(paramClass, val);
         }
         return setter.invoke(object, setVal);
     }
