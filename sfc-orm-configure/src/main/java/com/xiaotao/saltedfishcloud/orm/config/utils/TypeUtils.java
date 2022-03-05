@@ -134,6 +134,17 @@ public class TypeUtils {
     }
 
     /**
+     * 判断类型是否为数字，boolean或字符串类型
+     * @param type  待判断的类型
+     * @return      是则true，否则false
+     */
+    public static boolean isSimpleType(Class<?> type) {
+        return Number.class.isAssignableFrom(type) ||
+                String.class.isAssignableFrom(type) ||
+                Boolean.class.isAssignableFrom(type);
+    }
+
+    /**
      * 将输入的类型转换为目标类型
      * @param targetType    目标输出类型
      * @param input         输入的数据

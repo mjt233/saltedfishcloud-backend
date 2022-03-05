@@ -1,11 +1,16 @@
 package com.xiaotao.saltedfishcloud.orm.config.utils;
 
+import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
+import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigKey;
 import com.xiaotao.saltedfishcloud.orm.config.entity.MethodInst;
 import com.xiaotao.saltedfishcloud.orm.config.utils.demo.ConfigClass;
+import lombok.Data;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,6 +23,58 @@ class ConfigUtilsTest {
         properties.setCity("moon");
         properties.setName("rua");
         DEMO_CLASS.setProps(properties);
+    }
+
+    @Test
+    void testSubKey() {
+        @ConfigEntity("test")
+        @Data
+        class TestClass {
+            String name;        // test.name
+            Other other;        // test.other.*
+            Other other2;       // test.other2.*
+
+            @ConfigKey
+            Other other3;       // test.other3.*
+            Other2 la;          // test.lalala.*
+
+            @ConfigKey("wow")
+            Other2 la2;         // test.wow.*
+
+            Sub1 sub;
+
+            @Data
+            class Other {
+                Integer age;
+            }
+
+            @ConfigEntity("lalala")
+            @Data
+            class Other2 {
+                String name;
+            }
+
+            @Data
+            class Sub1 {
+                String subName1;
+                Sub2 subNode;
+            }
+
+            @Data
+            class Sub2 {
+                String subName2;
+            }
+        }
+
+        final Set<String> allKey = new HashSet<>(ConfigReflectUtils.getAllConfigKey(TestClass.class));
+        allKey.forEach(System.out::println);
+        assertTrue(allKey.contains("test.name"));
+        assertTrue(allKey.contains("test.other.age"));
+        assertTrue(allKey.contains("test.other2.age"));
+        assertTrue(allKey.contains("test.other3.age"));
+        assertTrue(allKey.contains("test.lalala.name"));
+        assertTrue(allKey.contains("test.wow.name"));
+        assertFalse(allKey.contains("test.other"));
     }
 
     @Test

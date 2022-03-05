@@ -164,12 +164,13 @@ public class ConfigReflectUtils {
     }
 
     /**
-     * 获取对象中声明的所有配置节点
-     * @param clazz   类
-     * @return  配置节点名集合
+     * 获取对象类的所有配置节点
+     * @param clazz     待检测对象类
+     * @param rootKey   根配置节点名称
+     * @param keyType   对象配置节点定义类型
+     * @return          所有配置节点
      */
-    public static List<String> getAllConfigKey(Class<?> clazz) {
-        final ConfigEntity annotation = AnnotationUtils.findAnnotation(clazz, ConfigEntity.class);
+    public static List<String> getAllConfigKey(Class<?> clazz, String rootKey, EntityKeyType keyType) {
         List<String> res = new ArrayList<>();
 
         // 先获取所有的字段
@@ -187,7 +188,6 @@ public class ConfigReflectUtils {
             if (!method.getName().startsWith("set") || method.getParameters().length != 1) {
                 continue;
             }
-            assert annotation != null;
             final String fieldName = ConfigReflectUtils.getFieldNameByMethodName(method.getName());
             final Field field = fieldMap.get(fieldName);
 
@@ -199,21 +199,34 @@ public class ConfigReflectUtils {
 
             if (
                     field == null ||
-                    field.getDeclaredAnnotation(IgnoreConfigKey.class) != null ||
-                    (annotation.keyType() == EntityKeyType.NOT_ALL && field.getDeclaredAnnotation(ConfigKey.class) == null)
+                            field.getDeclaredAnnotation(IgnoreConfigKey.class) != null ||
+                            (keyType == EntityKeyType.NOT_ALL && field.getDeclaredAnnotation(ConfigKey.class) == null)
             ) {
                 continue;
             }
 
-            final String key = annotation.value() + "." + fieldName;
+            final String key = rootKey + "." + fieldName;
 
             final Class<?> fieldType = field.getType();
-            final ConfigEntity fieldAnnotation = fieldType.getDeclaredAnnotation(ConfigEntity.class);
-            if (fieldAnnotation != null) {
+            final ConfigEntity fieldEneityAnno = AnnotationUtils.findAnnotation(fieldType, ConfigEntity.class);
+
+            boolean isSubKey = fieldEneityAnno != null ||
+                    !TypeUtils.isSimpleType(fieldType);
+            if (isSubKey) {
+                final ConfigKey fieldConfigKeyAnno = field.getDeclaredAnnotation(ConfigKey.class);
+                String subRootKey;
+                if (fieldConfigKeyAnno != null && fieldConfigKeyAnno.value().length() != 0) {
+                    subRootKey = fieldConfigKeyAnno.value();
+                } else if (fieldEneityAnno != null) {
+                    subRootKey = fieldEneityAnno.value();
+                } else {
+                    subRootKey = field.getName();
+                }
+                EntityKeyType subKeyType = fieldEneityAnno == null ? EntityKeyType.ALL : fieldEneityAnno.keyType();
                 res.addAll(
-                        getAllConfigKey(fieldType)
+                        getAllConfigKey(fieldType, subRootKey, subKeyType)
                                 .stream()
-                                .map(e -> annotation.value() + "." + e)
+                                .map(e -> rootKey + "." + e)
                                 .collect(Collectors.toSet())
                 );
             } else {
@@ -221,6 +234,21 @@ public class ConfigReflectUtils {
             }
         }
         return res;
+    }
+
+    /**
+     * 获取对象中声明的所有配置节点
+     * @param clazz   类
+     * @return  配置节点名集合
+     */
+    public static List<String> getAllConfigKey(Class<?> clazz) {
+        final ConfigEntity annotation = AnnotationUtils.findAnnotation(clazz, ConfigEntity.class);
+        if (annotation == null) {
+            return getAllConfigKey(clazz, clazz.getSimpleName(), EntityKeyType.ALL);
+        } else {
+            String rootKey = annotation.value().length() != 0 ? annotation.value() : clazz.getSimpleName();
+            return getAllConfigKey(clazz, rootKey, annotation.keyType());
+        }
     }
 
 }

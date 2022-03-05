@@ -11,4 +11,8 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.TYPE})
 public @interface ConfigKey {
+    /**
+     * 子节点名称，优先级最高
+     */
+    String value() default "";
 }
