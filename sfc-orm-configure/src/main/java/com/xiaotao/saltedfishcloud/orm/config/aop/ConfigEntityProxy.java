@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.orm.config.aop;
 import com.xiaotao.saltedfishcloud.orm.config.utils.ConfigReflectUtils;
 import com.xiaotao.saltedfishcloud.orm.config.ConfigureHandler;
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
-import com.xiaotao.saltedfishcloud.orm.config.enums.EntityType;
+import com.xiaotao.saltedfishcloud.orm.config.enums.EntityKeyType;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -36,7 +36,7 @@ public class ConfigEntityProxy implements ApplicationRunner {
         final ConfigEntity configEntity = proceedingJoinPoint.getTarget().getClass().getAnnotation(ConfigEntity.class);
         String prefix = configEntity.value();
         String key;
-        if (configEntity.type() == EntityType.OBJECT) {
+        if (configEntity.keyType() == EntityKeyType.ALL) {
             key = prefix + "." + proceedingJoinPoint.getTarget().getClass().getName();
         } else {
             final String rawName = signature.getMethod().getName();

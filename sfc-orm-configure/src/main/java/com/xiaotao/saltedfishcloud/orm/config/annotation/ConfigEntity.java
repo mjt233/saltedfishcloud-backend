@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.orm.config.annotation;
 
-import com.xiaotao.saltedfishcloud.orm.config.enums.EntityType;
+import com.xiaotao.saltedfishcloud.orm.config.enums.EntityKeyType;
 
 import java.lang.annotation.*;
 
@@ -11,6 +11,13 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface ConfigEntity {
+    /**
+     * 配置节点名称
+     */
     String value();
-    EntityType type() default EntityType.PROPERTIES;
+
+    /**
+     * 实体定义类型
+     */
+    EntityKeyType keyType() default EntityKeyType.ALL;
 }

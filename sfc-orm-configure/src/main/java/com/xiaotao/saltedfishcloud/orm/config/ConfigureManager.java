@@ -65,7 +65,7 @@ public class ConfigureManager implements InitializingBean {
                 MethodInst methodInst = null;
                 try {
                     methodInst = ConfigReflectUtils.getMethodInst(key, v);
-                } catch (NoSuchFieldException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                } catch (NoSuchFieldException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
                     e.printStackTrace();
                 }
                 if (methodInst == null) {

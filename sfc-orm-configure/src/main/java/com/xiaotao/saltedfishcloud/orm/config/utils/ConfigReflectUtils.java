@@ -1,14 +1,19 @@
 package com.xiaotao.saltedfishcloud.orm.config.utils;
 
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
+import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigKey;
+import com.xiaotao.saltedfishcloud.orm.config.annotation.IgnoreConfigKey;
 import com.xiaotao.saltedfishcloud.orm.config.entity.MethodInst;
+import com.xiaotao.saltedfishcloud.orm.config.enums.EntityKeyType;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -18,6 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class ConfigReflectUtils {
 
     @Data
@@ -81,12 +87,11 @@ public class ConfigReflectUtils {
 
     /**
      * 获取对象中指定配置节点属性的方法实例
-     * @TODO 实现通过配置节点读取值
      * @param key   配置节点
      * @param obj   配置对象
      * @return      key为配置节点，value为setter方
      */
-    public static MethodInst getMethodInst(String key, Object obj) throws NoSuchFieldException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public static MethodInst getMethodInst(String key, Object obj) throws NoSuchFieldException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         final String[] nodes = key.split("\\.");
         if (nodes.length < 2) {
             throw new IllegalArgumentException("无效的配置节点：" + key);
@@ -111,9 +116,19 @@ public class ConfigReflectUtils {
                     );
             }
 
+            // 获取下一节点的配置实体对象
             final Method getterMethod = curObj.getClass().getDeclaredMethod(getGetterNameByFieldName(node));
             getterMethod.setAccessible(true);
-            curObj = getterMethod.invoke(curObj);
+            Object nextObj = getterMethod.invoke(curObj);
+
+            // 获取不到则通过无参构造器构造后，再通过Setter方法设置进去
+            if (nextObj == null) {
+                nextObj = newInstance(getterMethod.getReturnType());
+                invokeSetter(curObj, node, nextObj);
+                log.debug("实例化配置子节点实体：" + nextObj.getClass());
+            }
+
+            curObj = nextObj;
 
             final ConfigEntity configEntity = curObj.getClass().getDeclaredAnnotation(ConfigEntity.class);
             if (configEntity == null || !node.equals(configEntity.value())) {
@@ -121,6 +136,31 @@ public class ConfigReflectUtils {
             }
         }
         throw new IllegalArgumentException("不存在的节点：" + key);
+    }
+
+    /**
+     * 调用对象指定字段的setter方法
+     * @param obj       待调用对象
+     * @param field     setter方法对应的字段
+     * @param val       设置的值
+     * @return          setter方法的返回值
+     */
+    public static Object invokeSetter(Object obj, String field, Object val) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        final Method setter = obj.getClass().getDeclaredMethod(getSetterNameByFieldName(field), val.getClass());
+        setter.setAccessible(true);
+        return setter.invoke(obj, val);
+    }
+
+    /**
+     * 通过无参构造器构造一个新对象
+     * @param type  待构造的对象类型class
+     * @param <T>   待构造类型
+     * @return      构造完成的对象
+     */
+    public static <T> T newInstance(Class<T> type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        final Constructor<T> constructor = type.getConstructor();
+        constructor.setAccessible(true);
+        return constructor.newInstance();
     }
 
     /**
@@ -152,13 +192,20 @@ public class ConfigReflectUtils {
             final Field field = fieldMap.get(fieldName);
 
 
-            // setter方法没有对应的字段的跳过
-            if (field == null) {
+            // 以下情况不作为子节点：
+            // 1. 存在@IgnoreConfigKey注解
+            // 2. NOT_FULL类型下没有@ConfigKey
+            // 3. setter方法没有对应字段
+
+            if (
+                    field == null ||
+                    field.getDeclaredAnnotation(IgnoreConfigKey.class) != null ||
+                    (annotation.keyType() == EntityKeyType.NOT_ALL && field.getDeclaredAnnotation(ConfigKey.class) == null)
+            ) {
                 continue;
             }
 
             final String key = annotation.value() + "." + fieldName;
-            res.add(key);
 
             final Class<?> fieldType = field.getType();
             final ConfigEntity fieldAnnotation = fieldType.getDeclaredAnnotation(ConfigEntity.class);
@@ -169,6 +216,8 @@ public class ConfigReflectUtils {
                                 .map(e -> annotation.value() + "." + e)
                                 .collect(Collectors.toSet())
                 );
+            } else {
+                res.add(key);
             }
         }
         return res;

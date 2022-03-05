@@ -21,13 +21,21 @@ class ConfigUtilsTest {
     }
 
     @Test
+    void testSetValue() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, NoSuchFieldException, InstantiationException {
+        final MethodInst inst = ConfigReflectUtils.getMethodInst("sys.props.city", new ConfigClass());
+        assertNull(inst.get());
+        inst.set("GuangDong");
+        assertEquals("GuangDong", inst.get());
+    }
+
+    @Test
     void getAllConfigKey() {
         final List<String> allConfigKey = ConfigReflectUtils.getAllConfigKey(DEMO_CLASS.getClass());
         allConfigKey.forEach(System.out::println);
     }
 
     @Test
-    void getMethodInst() throws InvocationTargetException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException {
+    void getMethodInst() throws InvocationTargetException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException, InstantiationException {
         String testName = "太强了";
         final MethodInst inst = ConfigReflectUtils.getMethodInst("sys.props.name", DEMO_CLASS);
         inst.set(testName);
@@ -38,7 +46,7 @@ class ConfigUtilsTest {
     }
 
     @Test
-    void testNoneString() throws InvocationTargetException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException {
+    void testNoneString() throws InvocationTargetException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException, InstantiationException {
         String testName = "太强了";
         try {
             final MethodInst inst = ConfigReflectUtils.getMethodInst("sys.props", DEMO_CLASS);
