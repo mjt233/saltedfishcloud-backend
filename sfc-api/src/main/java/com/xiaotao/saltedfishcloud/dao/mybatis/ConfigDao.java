@@ -21,7 +21,7 @@ public interface ConfigDao extends ConfigureHandler {
     String getConfig(String key);
 
     @Override
-    @Select("SELECT `key`,`value` FROM confi WHERE `key` like CONCAT(#{prefix}, '%')")
+    @Select("SELECT `key`,`value` FROM config WHERE `key` like CONCAT(#{prefix}, '%')")
     List<RawConfigEntity> getAllConfigByPrefix(String prefix);
 
     /**

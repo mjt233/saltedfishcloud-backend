@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.orm.config.utils;
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigKey;
 import com.xiaotao.saltedfishcloud.orm.config.annotation.IgnoreConfigKey;
-import com.xiaotao.saltedfishcloud.orm.config.entity.MethodInst;
+import com.xiaotao.saltedfishcloud.orm.config.entity.ConfigNodeHandler;
 import com.xiaotao.saltedfishcloud.orm.config.enums.EntityKeyType;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -91,7 +91,7 @@ public class ConfigReflectUtils {
      * @param obj   配置对象
      * @return      key为配置节点，value为setter方
      */
-    public static MethodInst getMethodInst(String key, Object obj) throws NoSuchFieldException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    public static ConfigNodeHandler getMethodInst(String key, Object obj) throws NoSuchFieldException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         final String[] nodes = key.split("\\.");
         if (nodes.length < 2) {
             throw new IllegalArgumentException("无效的配置节点：" + key);
@@ -100,24 +100,23 @@ public class ConfigReflectUtils {
         for (int i = 1; i < nodes.length; i++) {
             String node = nodes[i];
 
+            final String getterName = getGetterNameByFieldName(node);
             if (i == nodes.length - 1) {
                 final String setter = getSetterNameByFieldName(node);
-                final String getter = getGetterNameByFieldName(node);
                 final Method setterMethod = curObj.getClass().getDeclaredMethod(setter, curObj.getClass().getDeclaredField(node).getType());
-                final Method getterMethod = curObj.getClass().getDeclaredMethod(getter);
+                final Method getterMethod = curObj.getClass().getDeclaredMethod(getterName);
                 final Class<?> returnType = getterMethod.getReturnType();
                 if (!isValidValueType(returnType)) {
                     throw new IllegalArgumentException("不支持的配置值类型：" + returnType);
                 }
-                return new MethodInst(
+                return new ConfigNodeHandler(
                             setterMethod,
                             getterMethod,
                             curObj
                     );
             }
 
-            // 获取下一节点的配置实体对象
-            final Method getterMethod = curObj.getClass().getDeclaredMethod(getGetterNameByFieldName(node));
+            final Method getterMethod = curObj.getClass().getMethod(getterName);
             getterMethod.setAccessible(true);
             Object nextObj = getterMethod.invoke(curObj);
 
@@ -130,10 +129,10 @@ public class ConfigReflectUtils {
 
             curObj = nextObj;
 
-            final ConfigEntity configEntity = curObj.getClass().getDeclaredAnnotation(ConfigEntity.class);
-            if (configEntity == null || !node.equals(configEntity.value())) {
-                throw new IllegalArgumentException("不存在的节点：" + key);
-            }
+            //final ConfigEntity configEntity = AnnotationUtils.findAnnotation(curObj.getClass(), ConfigEntity.class);
+            //if (configEntity == null || !node.equals(configEntity.value())) {
+            //    throw new IllegalArgumentException("不存在的节点：" + key);
+            //}
         }
         throw new IllegalArgumentException("不存在的节点：" + key);
     }
@@ -174,35 +173,34 @@ public class ConfigReflectUtils {
         List<String> res = new ArrayList<>();
 
         // 先获取所有的字段
-        final Map<String, Field> fieldMap = Arrays.stream(clazz.getDeclaredFields()).
-                collect(
-                        Collectors.toMap(
-                                Field::getName,
-                                e -> e,
-                                (v1, v2) -> v1)
-
-                );
-
-        // 再获取所有的setter方法
-        for (Method method : ReflectionUtils.getAllDeclaredMethods(clazz)) {
-            if (!method.getName().startsWith("set") || method.getParameters().length != 1) {
-                continue;
-            }
+        final Map<String, Field> fieldMap = new HashMap<>();
+        final Map<String, Method> setterMap = new HashMap<>();
+        final Map<String, Method> getterMap = new HashMap<>();
+        ReflectionUtils.doWithFields(clazz, e -> {
+            fieldMap.put(e.getName(), e);
+        });
+        ReflectionUtils.doWithMethods(clazz,
+                method -> setterMap.put(method.getName(), method),
+                method -> method.getName().startsWith("set") && method.getParameters().length == 1
+        );
+        ReflectionUtils.doWithMethods(clazz,
+                method -> getterMap.put(method.getName(), method),
+                method -> method.getName().startsWith("get")
+        );
+        setterMap.forEach((setterName, method) -> {
             final String fieldName = ConfigReflectUtils.getFieldNameByMethodName(method.getName());
             final Field field = fieldMap.get(fieldName);
-
 
             // 以下情况不作为子节点：
             // 1. 存在@IgnoreConfigKey注解
             // 2. NOT_FULL类型下没有@ConfigKey
             // 3. setter方法没有对应字段
-
             if (
                     field == null ||
                             field.getDeclaredAnnotation(IgnoreConfigKey.class) != null ||
                             (keyType == EntityKeyType.NOT_ALL && field.getDeclaredAnnotation(ConfigKey.class) == null)
             ) {
-                continue;
+                return;
             }
 
             final String key = rootKey + "." + fieldName;
@@ -232,7 +230,8 @@ public class ConfigReflectUtils {
             } else {
                 res.add(key);
             }
-        }
+        });
+        // 再获取所有的setter方法
         return res;
     }
 

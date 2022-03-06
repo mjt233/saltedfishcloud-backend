@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.orm.config;
 
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
-import com.xiaotao.saltedfishcloud.orm.config.entity.MethodInst;
+import com.xiaotao.saltedfishcloud.orm.config.entity.ConfigNodeHandler;
 import com.xiaotao.saltedfishcloud.orm.config.exception.ConfigurationException;
 import com.xiaotao.saltedfishcloud.orm.config.exception.ConfigurationKeyNotExistException;
 import com.xiaotao.saltedfishcloud.orm.config.exception.ConfigurationMapCallException;
@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class ConfigureManager implements InitializingBean {
-    private final ConcurrentHashMap<String, MethodInst> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ConfigNodeHandler> cache = new ConcurrentHashMap<>();
 
     @Autowired
     private ApplicationContext context;
@@ -28,6 +28,16 @@ public class ConfigureManager implements InitializingBean {
     @Autowired
     private ConfigureHandler configureHandler;
 
+    public void fetchConfig() throws ConfigurationException {
+        for (RawConfigEntity config : configureHandler.getAllConfigByPrefix("")) {
+            log.debug("[ORM Config]同步配置节点：{} 同步值：{}", config.getKey(), config.getValue());
+            try {
+                setConfig(config.getKey(), config.getValue());
+            } catch (ConfigurationKeyNotExistException e) {
+                log.warn("[ORM Config]未知的配置节点：{}", config.getKey());
+            }
+        }
+    }
 
     /**
      * 对配置节点的值进行设置
@@ -37,12 +47,12 @@ public class ConfigureManager implements InitializingBean {
     @Transactional(rollbackFor = Exception.class)
     public void setConfig(String key, String val) throws ConfigurationException {
         try {
-            final MethodInst methodInst = cache.get(key);
-            if (methodInst == null) {
+            final ConfigNodeHandler configNodeHandler = cache.get(key);
+            if (configNodeHandler == null) {
                 throw new ConfigurationKeyNotExistException(key);
             }
             configureHandler.setConfig(key, val);
-            methodInst.set(val);
+            configNodeHandler.set(val);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new ConfigurationMapCallException(e.getMessage(), e.getCause());
         }
@@ -61,22 +71,24 @@ public class ConfigureManager implements InitializingBean {
         final Map<String, Object> beansWithAnnotation = context.getBeansWithAnnotation(ConfigEntity.class);
         beansWithAnnotation.forEach((k,v) -> {
             final List<String> keys = ConfigReflectUtils.getAllConfigKey(v.getClass());
+            log.debug("[ORM Config]发现的配置类：{}", v.getClass().getName());
             for (String key : keys) {
-                MethodInst methodInst = null;
+                ConfigNodeHandler configNodeHandler = null;
                 try {
-                    methodInst = ConfigReflectUtils.getMethodInst(key, v);
+                    configNodeHandler = ConfigReflectUtils.getMethodInst(key, v);
                 } catch (NoSuchFieldException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
                     e.printStackTrace();
                 }
-                if (methodInst == null) {
+                if (configNodeHandler == null) {
                     log.warn("[ORM Config]无效节点：{}", key);
                     continue;
                 }
-                cache.put(key, methodInst);
-                log.info("[ORM Config]注册配置节点：{}", key);
+                cache.put(key, configNodeHandler);
+                log.info("[ORM Config]注册配置节点：{} 当前值：{}", key, configNodeHandler.get());
 
             }
         });
+        fetchConfig();
         log.info("[ORM Config]配置自动映射管理器初始化完成");
     }
 

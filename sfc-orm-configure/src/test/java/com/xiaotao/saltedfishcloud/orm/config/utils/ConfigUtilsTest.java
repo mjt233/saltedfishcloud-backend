@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.orm.config.utils;
 
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigKey;
-import com.xiaotao.saltedfishcloud.orm.config.entity.MethodInst;
+import com.xiaotao.saltedfishcloud.orm.config.entity.ConfigNodeHandler;
 import com.xiaotao.saltedfishcloud.orm.config.utils.demo.ConfigClass;
 import lombok.Data;
 import org.junit.jupiter.api.Test;
@@ -79,7 +79,7 @@ class ConfigUtilsTest {
 
     @Test
     void testSetValue() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, NoSuchFieldException, InstantiationException {
-        final MethodInst inst = ConfigReflectUtils.getMethodInst("sys.props.city", new ConfigClass());
+        final ConfigNodeHandler inst = ConfigReflectUtils.getMethodInst("sys.props.city", new ConfigClass());
         assertNull(inst.get());
         inst.set("GuangDong");
         assertEquals("GuangDong", inst.get());
@@ -94,7 +94,7 @@ class ConfigUtilsTest {
     @Test
     void getMethodInst() throws InvocationTargetException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException, InstantiationException {
         String testName = "太强了";
-        final MethodInst inst = ConfigReflectUtils.getMethodInst("sys.props.name", DEMO_CLASS);
+        final ConfigNodeHandler inst = ConfigReflectUtils.getMethodInst("sys.props.name", DEMO_CLASS);
         inst.set(testName);
 
         assertEquals(testName, DEMO_CLASS.getProps().getName());
@@ -106,11 +106,11 @@ class ConfigUtilsTest {
     void testNoneString() throws InvocationTargetException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException, InstantiationException {
         String testName = "太强了";
         try {
-            final MethodInst inst = ConfigReflectUtils.getMethodInst("sys.props", DEMO_CLASS);
+            final ConfigNodeHandler inst = ConfigReflectUtils.getMethodInst("sys.props", DEMO_CLASS);
             fail();
         } catch (IllegalArgumentException ignored) {}
 
-        MethodInst inst = ConfigReflectUtils.getMethodInst("sys.intVal", DEMO_CLASS);
+        ConfigNodeHandler inst = ConfigReflectUtils.getMethodInst("sys.intVal", DEMO_CLASS);
         assertNull(inst.get());
         assertNull(inst.set(233));
         assertEquals(233, inst.get());

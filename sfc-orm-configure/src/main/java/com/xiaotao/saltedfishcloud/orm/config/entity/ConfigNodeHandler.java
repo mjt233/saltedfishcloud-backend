@@ -1,20 +1,23 @@
 package com.xiaotao.saltedfishcloud.orm.config.entity;
 
 import com.xiaotao.saltedfishcloud.orm.config.utils.TypeUtils;
+import lombok.Getter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
+ * 配置节点属性操作器
  * 绑定了对象及其getter与setter方法的对象
  */
-public class MethodInst {
+public class ConfigNodeHandler {
     private final Method setter;
     private final Method getter;
     private final Object object;
     private final Class<?> paramClass;
 
-    public MethodInst(Method setter, Method getter, Object object) {
+
+    public ConfigNodeHandler(Method setter, Method getter, Object object) {
         setter.setAccessible(true);
         getter.setAccessible(true);
         this.setter = setter;
@@ -42,7 +45,12 @@ public class MethodInst {
      * 通过getter方法获取值
      * @return getter方法的返回值
      */
-    public Object get() throws InvocationTargetException, IllegalAccessException {
-        return getter.invoke(object);
+    public Object get() {
+        try {
+            return getter.invoke(object);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
