@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.Data;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,7 +87,11 @@ public class SysProperties implements InitializingBean {
         private boolean syncOnLaunch = false;
 
         public void setSyncOnLaunch(Object syncOnLaunch) {
-            this.syncOnLaunch = objectToBoolean(syncOnLaunch);
+            this.syncOnLaunch = TypeUtils.toBoolean(syncOnLaunch);
+        }
+
+        public void setInterval(int interval) {
+            this.interval = TypeUtils.toNumber(Integer.class, interval);
         }
     }
 
@@ -98,9 +103,6 @@ public class SysProperties implements InitializingBean {
          */
         private boolean ftpEnable = true;
 
-        public void setFtpEnable(Object ftpEnable) {
-            this.ftpEnable = objectToBoolean(ftpEnable);
-        }
 
         /**
          * FTP控制监听地址
@@ -121,6 +123,14 @@ public class SysProperties implements InitializingBean {
          * 被动传输端口范围
          */
         private String passivePort = "20000-30000";
+
+        public void setFtpEnable(Object ftpEnable) {
+            this.ftpEnable = TypeUtils.toBoolean(ftpEnable);
+        }
+
+        public void setControlPort(int controlPort) {
+            this.controlPort = TypeUtils.toNumber(Integer.class, controlPort);
+        }
     }
 
     public void setVersion(String v) {
@@ -131,16 +141,6 @@ public class SysProperties implements InitializingBean {
     public void setConfigService(ConfigService configService) {
         this.configService = configService;
         subscribeConfigureChange();
-    }
-
-    private static boolean objectToBoolean(Object object) {
-        if (object instanceof String) {
-            return Boolean.parseBoolean(((String) object).toLowerCase());
-        } else if (object instanceof Number) {
-            return  ((Number) object).intValue() == 1;
-        } else {
-            return (boolean)object;
-        }
     }
 
 
