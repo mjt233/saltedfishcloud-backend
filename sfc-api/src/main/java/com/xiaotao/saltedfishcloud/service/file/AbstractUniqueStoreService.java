@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -30,6 +31,7 @@ import java.util.List;
 public abstract class AbstractUniqueStoreService extends AbstractRawStoreService {
     protected FileResourceMd5Resolver md5Resolver;
     protected StoreService rawStoreService;
+    private static final String LOG_TITLE = "Store-Unique";
 
     public AbstractUniqueStoreService(
             DirectRawStoreHandler handler,
@@ -107,11 +109,11 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
         if (!handler.exist(pathParent)) {
             handler.mkdirs(pathParent);
         } else if (handler.exist(path)) {
-            log.debug("[Store-Unique]文件重复命中：{}，保存路径：{}", fileInfo.getName(), path);
+            log.debug("[{}]文件重复命中：{}，保存路径：{}", LOG_TITLE, fileInfo.getName(), path);
             return;
         }
 
-        log.debug("[Store-Unique]存储新文件：{}，保存路径：{}", fileInfo.getName(), path);
+        log.debug("[{}]存储新文件：{}，保存路径：{}", LOG_TITLE, fileInfo.getName(), path);
         handler.store(path, input);
 
     }
@@ -125,7 +127,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
             final String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, file));
             if (!md5Resolver.hasRef(md5)) {
                 final String storePath = getMd5ResourcePath(md5);
-                log.debug("[Store-Unique]文件引用丢失，删除文件：{}", storePath);
+                log.debug("[{}]文件引用丢失，删除文件：{}", LOG_TITLE, storePath);
                 handler.delete(storePath);
             }
         }
@@ -170,6 +172,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
         }
 
         final String resourcePath = getMd5ResourcePath(md5);
+        log.debug("[{}]读取Unique资源路径：{}", LOG_TITLE, resourcePath);
         return handler.getResource(resourcePath);
     }
 
