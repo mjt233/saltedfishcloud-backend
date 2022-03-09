@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableCaching
 @EnableJpaAuditing
 @EnableConfigurationProperties
-@EnableOrmConfig
+//@EnableOrmConfig
 public class SaltedfishcloudApplication {
 
     public static void main(String[] args) {
