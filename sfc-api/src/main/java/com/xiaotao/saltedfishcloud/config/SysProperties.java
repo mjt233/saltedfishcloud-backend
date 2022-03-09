@@ -90,7 +90,7 @@ public class SysProperties implements InitializingBean {
             this.syncOnLaunch = TypeUtils.toBoolean(syncOnLaunch);
         }
 
-        public void setInterval(int interval) {
+        public void setInterval(Object interval) {
             this.interval = TypeUtils.toNumber(Integer.class, interval);
         }
     }
@@ -128,7 +128,7 @@ public class SysProperties implements InitializingBean {
             this.ftpEnable = TypeUtils.toBoolean(ftpEnable);
         }
 
-        public void setControlPort(int controlPort) {
+        public void setControlPort(Object controlPort) {
             this.controlPort = TypeUtils.toNumber(Integer.class, controlPort);
         }
     }
