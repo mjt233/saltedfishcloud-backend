@@ -84,6 +84,10 @@ public class SysProperties implements InitializingBean {
          * 咸鱼云启动时立即同步，默认关闭
          */
         private boolean syncOnLaunch = false;
+
+        public void setSyncOnLaunch(Object syncOnLaunch) {
+            this.syncOnLaunch = objectToBoolean(syncOnLaunch);
+        }
     }
 
     @Data
@@ -93,6 +97,10 @@ public class SysProperties implements InitializingBean {
          * 是否启用FTP服务
          */
         private boolean ftpEnable = true;
+
+        public void setFtpEnable(Object ftpEnable) {
+            this.ftpEnable = objectToBoolean(ftpEnable);
+        }
 
         /**
          * FTP控制监听地址
@@ -125,6 +133,15 @@ public class SysProperties implements InitializingBean {
         subscribeConfigureChange();
     }
 
+    private static boolean objectToBoolean(Object object) {
+        if (object instanceof String) {
+            return Boolean.parseBoolean(((String) object).toLowerCase());
+        } else if (object instanceof Number) {
+            return  ((Number) object).intValue() == 1;
+        } else {
+            return (boolean)object;
+        }
+    }
 
 
     private void subscribeConfigureChange() {
