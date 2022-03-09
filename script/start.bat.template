@@ -27,7 +27,7 @@ set hdfs_user="xiaotao"
 
 @REM server_port  服务器端口
 @REM reg_code 注册邀请码
-@REM sync_interval  同步延迟，单位分钟，-1关闭
+@REM sync_interval  同步间隔，单位分钟，-1关闭
 @REM sync_on_launch  启动后立即同步
 set reg_code="10241024"
 set server_port="8087"
