@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud;
 
 import com.xiaotao.saltedfishcloud.ext.ExtJarClassLoader;
 import com.xiaotao.saltedfishcloud.orm.config.annotation.EnableOrmConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,6 +14,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+import java.io.File;
+import java.nio.file.Paths;
 
 @SpringBootApplication(
         exclude= {DataSourceAutoConfiguration.class, GsonAutoConfiguration.class},
@@ -27,9 +31,11 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableJpaAuditing
 @EnableConfigurationProperties
 //@EnableOrmConfig
+@Slf4j
 public class SaltedfishcloudApplication {
 
     public static void main(String[] args) {
+        log.info("[Boot]程序运行目录: {}", Paths.get("").toAbsolutePath());
         final ExtJarClassLoader loader = new ExtJarClassLoader(SaltedfishcloudApplication.class.getClassLoader());
         loader.loadAll();
         Thread.currentThread().setContextClassLoader(loader);

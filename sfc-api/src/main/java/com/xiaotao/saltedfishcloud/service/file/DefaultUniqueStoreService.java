@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import io.jsonwebtoken.lang.Assert;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -8,17 +9,13 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class DefaultUniqueStoreService extends AbstractUniqueStoreService {
-    private final String publicRoot;
-    private final String storeRoot;
+    private final AbstractRawStoreService rawStoreService;
     public DefaultUniqueStoreService(DirectRawStoreHandler handler,
                                      FileResourceMd5Resolver md5Resolver,
-                                     AbstractRawStoreService rawStoreService,
-                                     String publicRoot,
-                                     String storeRoot
+                                     AbstractRawStoreService rawStoreService
     ) {
         super(handler, md5Resolver, rawStoreService);
-        this.publicRoot = publicRoot;
-        this.storeRoot = storeRoot;
+        this.rawStoreService = rawStoreService;
     }
 
     @Override
@@ -28,11 +25,11 @@ public class DefaultUniqueStoreService extends AbstractUniqueStoreService {
 
     @Override
     public String getPublicRoot() {
-        return publicRoot;
+        return rawStoreService.getPublicRoot();
     }
 
     @Override
     public String getStoreRoot() {
-        return storeRoot;
+        return rawStoreService.getStoreRoot();
     }
 }

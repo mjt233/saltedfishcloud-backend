@@ -28,7 +28,7 @@ hdfs_user="xiaotao"
 
 # server_port  服务器端口
 # reg_code 注册邀请码
-# sync_interval  同步延迟，单位分钟，-1关闭
+# sync_interval  同步间隔，单位分钟，-1关闭
 # sync_launch  启动后立即同步
 reg_code="10241024"
 server_port="8087"

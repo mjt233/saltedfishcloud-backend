@@ -16,6 +16,7 @@ import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -34,7 +35,9 @@ import java.util.List;
  * 原始存储服务的抽象模板类，同时实现了{@link StoreService}和{@link CustomStoreService}。
  * 基于设定的路径和直接原始存储操作器提供文件存储能力。
  */
+@Slf4j
 public abstract class AbstractRawStoreService implements StoreService, CustomStoreService {
+    private final static String LOG_TITLE = "Raw-Store";
     @Getter
     @Setter
     private int maxDepth = 64;
@@ -157,9 +160,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
             uniqueStoreService = new DefaultUniqueStoreService(
                     handler,
                     md5Resolver,
-                    this,
-                    getPublicRoot(),
-                    getStoreRoot()
+                    this
             );
         }
         return uniqueStoreService;
@@ -276,6 +277,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         } else {
             root = getPath(uid, path, name);
         }
+        log.debug("[{}]请求资源：{}", LOG_TITLE, root);
         return handler.getResource(root);
     }
 
