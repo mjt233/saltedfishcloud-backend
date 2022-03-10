@@ -33,7 +33,7 @@ hdfs_user="xiaotao"
 reg_code="10241024"
 server_port="8087"
 sync_interval="-1"
-sync_launch="false"
+sync_on_launch="false"
 
 # ftp_port  FTP服务控制端口
 # ftp_passive_port FTP被动模式数据端口
@@ -72,9 +72,6 @@ java --illegal-access=deny -Dfile.encoding=utf-8 -jar $jar_name \
 --spring.redis.host=$redis_host \
 --spring.redis.port=$redis_port \
 --spring.redis.password=$redis_password \
---local.store.public-root=$public_root \
---local.store.store-root=$store_root \
---local.store.store-type=$store_mode \
 --sys.common.reg-code=$reg_code \
 --sys.sync.interval=$sync_interval \
 --sys.sync.sync-on-launch=$sync_on_launch \
@@ -82,6 +79,9 @@ java --illegal-access=deny -Dfile.encoding=utf-8 -jar $jar_name \
 --sys.store.hdfs.url=$hdfs_url \
 --sys.store.hdfs.user=$hdfs_user \
 --sys.store.type=$store_type \
+--sys.store.public-root=$public_root \
+--sys.store.root=$store_root \
+--sys.store.mode=$store_mode \
 --sys.ftp.control-port=$ftp_port \
 --sys.ftp.passive-addr=$ftp_passive_addr \
 --sys.ftp.passive-port=$ftp_passive_port $*
