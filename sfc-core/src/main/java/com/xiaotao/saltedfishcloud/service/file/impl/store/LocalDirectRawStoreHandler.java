@@ -28,7 +28,11 @@ import java.util.List;
 public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
     @Override
     public Resource getResource(String path) throws IOException {
-        return new PathResource(Paths.get(path));
+        final Path localPath = Paths.get(path);
+        if (!Files.exists(localPath)) {
+            return null;
+        }
+        return new PathResource(localPath);
     }
 
     @Override

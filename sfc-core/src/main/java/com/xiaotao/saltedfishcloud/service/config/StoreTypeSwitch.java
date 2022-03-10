@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.entity.po.User;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
@@ -11,9 +11,10 @@ import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,11 +26,12 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class StoreTypeSwitch {
-    @Resource
+    @Autowired
     private UserDao userDao;
-    @Resource
+    @Autowired
     private StoreServiceProvider storeServiceProvider;
-    @Resource
+
+    @Autowired
     private DiskFileSystemProvider fileService;
 
     public void switchTo(StoreMode targetType) throws IOException {
@@ -78,8 +80,12 @@ public class StoreTypeSwitch {
                         }
                     }
 
-
-                    try(final InputStream is = srcStoreService.getResource(uid, dirPath, file.getName()).getInputStream()) {
+                    final Resource resource = srcStoreService.getResource(uid, dirPath, file.getName());
+                    if (resource == null) {
+                        log.warn("[Store Switch]文件不存在或未同步，uid: {}, dir: {}, fileName: {}", uid, dirPath, file);
+                        continue;
+                    }
+                    try(final InputStream is = resource.getInputStream()) {
                         destStoreService.store(uid, is, dirPath, file);
                     } catch (FileNotFoundException e) {
                         log.error("[Store Switch]出错：{}/{}",dirPath, file.getName());
