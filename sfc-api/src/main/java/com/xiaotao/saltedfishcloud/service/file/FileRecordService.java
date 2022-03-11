@@ -17,6 +17,15 @@ import java.util.List;
 public interface FileRecordService {
 
     /**
+     * 判断给定的资源路径是否存在
+     * @param uid   用户ID
+     * @param path  资源所在目录
+     * @param name  文件名
+     * @return      存在true，不存在false
+     */
+    boolean exist(int uid, String path, String name);
+
+    /**
      * 获取用户的文件信息
      * @param uid       用户ID
      * @param dirPath   文件所在的目录路径

@@ -60,6 +60,16 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
+    public boolean exist(int uid, String path, String name) {
+        try {
+            final String nid = nodeService.getNodeIdByPath(uid, path);
+            return fileDao.getFileInfo(uid, name, nid) != null;
+        } catch (NoSuchFileException e) {
+            return false;
+        }
+    }
+
+    @Override
     public List<FileInfo> getFileInfoByMd5(String md5, int limit) {
         return fileDao.getFilesByMD5(md5, limit);
     }

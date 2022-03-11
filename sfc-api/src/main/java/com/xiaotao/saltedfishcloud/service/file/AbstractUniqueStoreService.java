@@ -126,6 +126,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
         for (String file : files) {
             final String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, file));
             if (!md5Resolver.hasRef(md5)) {
+                delete(md5);
                 final String storePath = getMd5ResourcePath(md5);
                 log.debug("[{}]文件引用丢失，删除文件：{}", LOG_TITLE, storePath);
                 handler.delete(storePath);

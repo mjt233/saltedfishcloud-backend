@@ -57,6 +57,7 @@ public class FileInfo extends BasicFileInfo{
         fileInfo.setSize(resource.contentLength());
         fileInfo.setLastModified(now.getTime());
         fileInfo.setType(type);
+        fileInfo.setStreamSource(resource);
         return fileInfo;
     }
 

@@ -270,7 +270,7 @@ public class DefaultFileSystem implements DiskFileSystem {
 
     @Override
     public boolean exist(int uid, String path) {
-        return storeServiceProvider.getService().exist(uid, path);
+        return fileRecordService.exist(uid, PathUtils.getParentPath(path), PathUtils.getLastNode(path));
     }
 
     @Override
@@ -467,7 +467,6 @@ public class DefaultFileSystem implements DiskFileSystem {
                 // @TODO 使用批量查询和求集合差级操作进行引用判断提高性能
                 if (!md5Resolver.hasRef(fileInfo.getMd5())) {
                     storeService.delete(fileInfo.getMd5());
-
                 }
             }
         } else {

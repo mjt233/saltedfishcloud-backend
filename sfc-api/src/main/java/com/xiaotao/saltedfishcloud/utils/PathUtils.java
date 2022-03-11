@@ -1,8 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 
-import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +12,11 @@ public class PathUtils {
         return System.getProperty("java.io.tmpdir");
     }
 
+    /**
+     * 从一个路径字符串中获取他的父级路径
+     * @param path  待处理的路径
+     * @return      父级路径
+     */
     public static String getParentPath(String path) {
         final int i = path.lastIndexOf('/');
         if (i == 0) {
