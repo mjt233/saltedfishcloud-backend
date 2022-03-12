@@ -43,7 +43,7 @@ public class ConfigureInitializer implements ApplicationRunner {
             configDao.setConfigure(ConfigName.STORE_MODE, sysProperties.getStore().getMode().toString());
             log.info("[初始化]邀请邀请码：" + regCode);
             configDao.setConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
-            log.info("[初始化]同步延迟：" + syncDelay);
+            log.info("[初始化]自动同步间隔：" + syncDelay);
             configDao.setConfigure(ConfigName.SYNC_INTERVAL, syncDelay);
 
             storeMode = sysProperties.getStore().getMode().toString();
@@ -63,7 +63,7 @@ public class ConfigureInitializer implements ApplicationRunner {
         sysProperties.getSync().setInterval(Integer.parseInt(syncDelay));
         log.info("[存储模式]："+ storeMode);
         log.info("[注册邀请码]："+ sysProperties.getCommon().getRegCode());
-        log.info("[同步延迟]：" + syncDelay);
+        log.info("[自动同步间隔]：" + syncDelay);
         if (sysProperties.getVersion().getTag() != VersionTag.RELEASE) {
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
