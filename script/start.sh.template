@@ -8,6 +8,9 @@
 ###############################################
 store_type="local"
 
+# 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
+# archive_encoding="utf8"
+
 ############## 本地存储配置 ####################
 # public_root 公共网盘存储位置                 #
 # store_root 私人网盘及用户数据存储位置         ##
@@ -82,6 +85,7 @@ java --illegal-access=deny -Dfile.encoding=utf-8 -jar $jar_name \
 --sys.store.public-root=$public_root \
 --sys.store.root=$store_root \
 --sys.store.mode=$store_mode \
+--sys.store.archive_encoding=$archive_encoding \
 --sys.ftp.control-port=$ftp_port \
 --sys.ftp.passive-addr=$ftp_passive_addr \
 --sys.ftp.passive-port=$ftp_passive_port $*

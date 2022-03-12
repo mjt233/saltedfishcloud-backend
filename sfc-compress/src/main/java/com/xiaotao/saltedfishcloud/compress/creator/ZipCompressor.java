@@ -13,7 +13,9 @@ import java.io.OutputStream;
 
 public class ZipCompressor extends AbstractCompressor {
     private final OutputStream outputStream;
-    public ZipCompressor(OutputStream out) {
+    private final String encoding;
+    public ZipCompressor(OutputStream out, String encoding) {
+        this.encoding = encoding;
         this.outputStream = out;
     }
 
@@ -21,7 +23,7 @@ public class ZipCompressor extends AbstractCompressor {
     protected ArchiveOutputStream initArchiveOutputStream() {
         ZipArchiveOutputStream output = new ZipArchiveOutputStream(outputStream);
         output.setUseZip64(Zip64Mode.AsNeeded);
-        output.setEncoding(OSInfo.getOSDefaultEncoding());
+        output.setEncoding(encoding);
         return output;
     }
 

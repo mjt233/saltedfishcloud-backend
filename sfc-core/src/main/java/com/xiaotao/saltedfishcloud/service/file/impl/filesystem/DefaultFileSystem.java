@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.compress.creator.ArchiveResourceEntry;
 import com.xiaotao.saltedfishcloud.compress.creator.ZipCompressor;
 import com.xiaotao.saltedfishcloud.compress.reader.ArchiveReaderVisitor;
 import com.xiaotao.saltedfishcloud.compress.reader.impl.ZipArchiveReader;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
@@ -22,6 +23,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
@@ -36,22 +41,43 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.zip.ZipException;
 
-@Component
 @RequiredArgsConstructor
 @Slf4j
-public class DefaultFileSystem implements DiskFileSystem {
+public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner {
     private final static String LOG_TITLE = "FileSystem";
-    private final StoreServiceProvider storeServiceProvider;
-    private final FileDao fileDao;
-    private final FileRecordService fileRecordService;
-    private final NodeService nodeService;
-    private final CustomStoreService customStoreService;
-    private final FileResourceMd5Resolver md5Resolver;
+
+    @Autowired
+    private StoreServiceProvider storeServiceProvider;
+
+    @Autowired
+    private FileDao fileDao;
+
+    @Autowired
+    private FileRecordService fileRecordService;
+
+    @Autowired
+    private NodeService nodeService;
+
+    @Autowired
+    private CustomStoreService customStoreService;
+
+    @Autowired
+    private FileResourceMd5Resolver md5Resolver;
+
+    @Autowired
+    private SysProperties sysProperties;
 
     @Override
     public void saveAvatar(int uid, Resource resource) throws IOException {
         customStoreService.saveAvatar(uid, resource);
     }
+    
+
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        log.info("[{}]Archive File Encoding: {}", LOG_TITLE, sysProperties.getStore().getArchiveEncoding());
+    }
+
 
     @Override
     public Resource getAvatar(int uid) throws IOException {
@@ -86,7 +112,7 @@ public class DefaultFileSystem implements DiskFileSystem {
 
     @Override
     public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {
-        try(ZipCompressor compressor = new ZipCompressor(outputStream)) {
+        try(ZipCompressor compressor = new ZipCompressor(outputStream, sysProperties.getStore().getArchiveEncoding())) {
             compress(uid, path, path, names, compressor);
         }
     }

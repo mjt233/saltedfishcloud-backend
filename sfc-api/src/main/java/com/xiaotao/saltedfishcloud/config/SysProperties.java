@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
+import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.Data;
@@ -44,6 +45,10 @@ public class SysProperties implements InitializingBean {
 
     @Data
     public static class Store {
+        /**
+         * 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
+         */
+        private String archiveEncoding = OSInfo.getOSDefaultEncoding();
 
         /**
          * 存储服务类型，可选hdfs或local
@@ -72,6 +77,15 @@ public class SysProperties implements InitializingBean {
                 this.mode = StoreMode.UNIQUE;
             }
         }
+
+        public void setArchiveEncoding(String encoding) {
+            if (null == encoding || encoding.trim().length() == 0) {
+                this.archiveEncoding = OSInfo.getOSDefaultEncoding();
+            } else {
+                this.archiveEncoding = encoding;
+            }
+        }
+        
     }
 
     @Data

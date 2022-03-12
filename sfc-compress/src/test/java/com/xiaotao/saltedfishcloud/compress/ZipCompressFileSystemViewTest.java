@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.compress;
 import com.xiaotao.saltedfishcloud.compress.creator.ArchiveResourceEntry;
 import com.xiaotao.saltedfishcloud.compress.creator.ZipCompressor;
 import com.xiaotao.saltedfishcloud.compress.reader.impl.ZipArchiveReader;
+import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import org.apache.commons.compress.archivers.ArchiveException;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ class ZipCompressFileSystemViewTest {
     void compress() throws Exception {
 
         // 压缩文件
-        ZipCompressor compressor = new ZipCompressor(Files.newOutputStream(OUTPUT));
+        ZipCompressor compressor = new ZipCompressor(Files.newOutputStream(OUTPUT), OSInfo.getOSDefaultEncoding());
         compressor.addFile(new ArchiveResourceEntry("噢/h/h/h/123哈.txt", INPUT.contentLength(), INPUT));
         compressor.close();
 

@@ -1,6 +1,6 @@
 @echo off
-if exist ..\target\*.jar (
-	del ..\target\*.jar
+if exist ..\sfc-core\target\*.jar (
+	del ..\sfc-core\target\*.jar
 )
 cd ..
 echo ================清理上次打包数据================

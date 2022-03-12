@@ -118,8 +118,6 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
 
     }
 
-
-    // @TODO 实现删除后仓库目录为空时，删除目录
     @Override
     public long delete(int uid, String path, Collection<String> files) throws IOException {
         int cnt = 0;
