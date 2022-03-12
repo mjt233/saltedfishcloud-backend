@@ -74,6 +74,9 @@ public class SysRuntimeConfig implements ApplicationRunner {
         SysRuntimeConfig.GLOBAL_HOLD_INST = this;
 
         log.info("[注册规则]当前注册规则配置： 注册邀请码 - {} 邮箱注册 - {}", enableRegCode ? '√': 'X', enableEmailReg ? '√': 'X');
+        if (!this.isEnableEmailReg() && !this.isEnableRegCode()) {
+            log.warn("[注册关闭]系统未开启任何用户注册方式");
+        }
 
         // 监听配置改变，实时更新状态缓存
         configService.addConfigSetListener(e -> {

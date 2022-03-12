@@ -69,9 +69,5 @@ public class ConfigureInitializer implements ApplicationRunner {
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
         }
-
-        if (!sysRuntimeConfig.isEnableEmailReg() && !sysRuntimeConfig.isEnableRegCode()) {
-            log.warn("[注册关闭]系统未开启任何用户注册方式");
-        }
     }
 }
