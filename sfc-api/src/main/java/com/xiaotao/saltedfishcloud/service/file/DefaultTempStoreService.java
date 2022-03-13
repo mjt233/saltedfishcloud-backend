@@ -23,6 +23,16 @@ public class DefaultTempStoreService implements TempStoreService {
     }
 
     @Override
+    public boolean mkdirs(String path) throws IOException {
+        return handler.mkdirs(StringUtils.appendPath(tempRootDir, path));
+    }
+
+    @Override
+    public boolean exist(String path) {
+        return handler.exist(StringUtils.appendPath(tempRootDir, path));
+    }
+
+    @Override
     public void clean() throws IOException {
         handler.delete(tempRootDir);
     }
