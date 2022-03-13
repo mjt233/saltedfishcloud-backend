@@ -218,10 +218,12 @@ public class FileController {
 
     /**
      * 获取网盘文件内容（文件下载）
+     * @deprecated 该接口将启用，文件下载请使用{@link ResourceController#downloadByMD5(String, int, HttpServletRequest)}替代
      */
     @RequestMapping(value = "content/**", method = {RequestMethod.POST, RequestMethod.GET})
     @AllowAnonymous
     @NotBlock(level = ProtectLevel.DATA_CHECKING)
+    @Deprecated
     public ResponseEntity<Resource> download(HttpServletRequest request,@PathVariable @UID int uid)
             throws IOException {
         String prefix = PREFIX + uid + "/content";
