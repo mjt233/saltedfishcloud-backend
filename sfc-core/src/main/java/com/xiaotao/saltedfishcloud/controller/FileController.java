@@ -23,11 +23,13 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapInfo;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -220,14 +222,15 @@ public class FileController {
     @RequestMapping(value = "content/**", method = {RequestMethod.POST, RequestMethod.GET})
     @AllowAnonymous
     @NotBlock(level = ProtectLevel.DATA_CHECKING)
-    public ResponseEntity<org.springframework.core.io.Resource> download(HttpServletRequest request,
-                                                                         @PathVariable @UID int uid)
+    public ResponseEntity<Resource> download(HttpServletRequest request,@PathVariable @UID int uid)
             throws IOException {
         String prefix = PREFIX + uid + "/content";
         String requestPath = URLUtils.getRequestFilePath(prefix, request);
-        org.springframework.core.io.Resource resource = fileService.getFileSystem().getResource(uid, requestPath, "");
+        String dir = PathUtils.getParentPath(requestPath);
+        String name = PathUtils.getLastNode(requestPath);
+        Resource resource = fileService.getFileSystem().getResource(uid, dir, name);
         if (resource != null) {
-            return ResourceUtils.wrapResource(resource);
+            return ResourceUtils.wrapResource(resource, name);
         } else {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
