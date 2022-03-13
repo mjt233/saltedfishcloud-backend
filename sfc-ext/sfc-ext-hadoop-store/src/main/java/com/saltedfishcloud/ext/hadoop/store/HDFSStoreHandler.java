@@ -13,12 +13,25 @@ import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandler {
     private final FileSystem fs;
     public HDFSStoreHandler(FileSystem fs) {
         super(fs);
         this.fs = fs;
+    }
+
+    @Override
+    public OutputStream newOutputStream(String path) throws IOException {
+        Path target = new Path(path);
+        if (fs.exists(target)) {
+            if (fs.getFileStatus(target).isDirectory()) {
+                throw new JsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
+            }
+            fs.delete(target, false);
+        }
+        return fs.create(target);
     }
 
     @Override

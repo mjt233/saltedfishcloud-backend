@@ -10,11 +10,11 @@ public class TaskStorePath {
      * 获取任务数据文件夹路径
      * @param id 任务ID
      */
-    public static Path getRoot(String id) {
+    public static String getRoot(String id) {
         if (id == null) {
             throw new NullPointerException();
         }
-        return Paths.get(PathUtils.getTempDirectory() + "/xyy/" + id);
+        return "/breakpoint/" + id;
     }
 
     /**
@@ -22,15 +22,9 @@ public class TaskStorePath {
      * @param id    任务ID
      * @param part  文件块
      */
-    public static Path getPartFile(String id, int part) {
-        return Paths.get(getRoot(id) + "/" + part + ".part");
+    public static String getPartFile(String id, int part) {
+        return getRoot(id) + "/" + part + ".part";
     }
 
-    /**
-     * 获取任务元数据路径
-     * @param id    任务ID
-     */
-    public static Path getMetadata(String id) {
-        return Paths.get(getRoot(id) + "/metadata.json");
-    }
+
 }

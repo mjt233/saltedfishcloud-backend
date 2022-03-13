@@ -27,6 +27,22 @@ import java.util.List;
 @Slf4j
 public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
     @Override
+    public OutputStream newOutputStream(String path) throws IOException {
+        if (exist(path)) {
+            if (getFileInfo(path).isDir()) {
+                throw new UnsupportedOperationException("不支持向文件夹写入数据");
+            } else {
+                delete(path);
+            }
+        } else {
+            final String parent = PathUtils.getParentPath(path);
+            mkdirs(parent);
+        }
+
+        return Files.newOutputStream(Paths.get(path));
+    }
+
+    @Override
     public Resource getResource(String path) throws IOException {
         final Path localPath = Paths.get(path);
         if (!Files.exists(localPath)) {
@@ -60,7 +76,11 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
 
     @Override
     public FileInfo getFileInfo(String path) throws IOException {
-        return FileInfo.getLocal(path, false);
+        final Path path1 = Paths.get(path);
+        if (!Files.exists(path1)) {
+            return null;
+        }
+        return FileInfo.getFromResource(new PathResource(path1), 0, Files.isDirectory(path1) ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
     }
 
     @Override

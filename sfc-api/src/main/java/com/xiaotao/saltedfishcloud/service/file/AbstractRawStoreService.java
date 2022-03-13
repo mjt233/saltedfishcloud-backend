@@ -50,6 +50,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     protected FileResourceMd5Resolver md5Resolver;
 
     private volatile StoreService uniqueStoreService;
+    private volatile TempStoreService tempStoreService;
 
     public AbstractRawStoreService(DirectRawStoreHandler handler,
                                    FileResourceMd5Resolver md5Resolver
@@ -319,5 +320,19 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         copyAndMoveHandler.move(src, dst, overwrite);
     }
 
-
+    @Override
+    public TempStoreService getTempFileHandler() {
+        // 双重校验锁懒汉单例
+        if (tempStoreService != null) {
+            return tempStoreService;
+        }
+        synchronized (this) {
+            if (tempStoreService != null) {
+                return tempStoreService;
+            }
+            String tempRoot = getTempRoot();
+            tempStoreService = new DefaultTempStoreService(handler, tempRoot);
+        }
+        return tempStoreService;
+    }
 }

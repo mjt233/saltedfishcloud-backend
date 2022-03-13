@@ -18,6 +18,14 @@ public class PathUtils {
      * @return      父级路径
      */
     public static String getParentPath(String path) {
+        if (path.endsWith("/")) {
+            path = path.replaceAll("/+$", "");
+
+            // 类似只有/的路径被正则替换后，无了
+            if (path.length() == 0) {
+                return "/";
+            }
+        }
         final int i = path.lastIndexOf('/');
         if (i == 0) {
             return "/";
@@ -34,6 +42,9 @@ public class PathUtils {
      * @return      节点名称
      */
     public static String getLastNode(String path) {
+        if (path.endsWith("/")) {
+            path = path.replaceAll("/+$", "");
+        }
         int pos = path.lastIndexOf("/");
         if (pos == -1) {
             return path;
