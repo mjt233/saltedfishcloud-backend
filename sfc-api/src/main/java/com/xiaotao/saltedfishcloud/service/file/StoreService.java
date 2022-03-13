@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 
@@ -27,6 +28,12 @@ public interface StoreService {
      * 是否为唯一存储服务（内容相同的文件只存一份）
      */
     boolean isUnique();
+
+    /**
+     * 获取一个在目标存储系统的临时目录上，用于以原始路径操作临时文件的文件操作器。
+     * @return  临时存储服务
+     */
+    TempStoreService getTempFileHandler();
 
     /**
      * 获取原始存储服务，提供相同文件仅存一份的能力。<br>

@@ -216,4 +216,9 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
         }
         return res;
     }
+
+    @Override
+    public TempStoreService getTempFileHandler() {
+        return null;
+    }
 }
