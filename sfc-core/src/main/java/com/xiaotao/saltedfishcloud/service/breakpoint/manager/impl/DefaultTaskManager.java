@@ -7,18 +7,23 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskStorePath;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeInputStream;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MultipleFileMergeInputStreamGenerator;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
+import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.UUID;
+import java.time.Duration;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -27,6 +32,19 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DefaultTaskManager implements TaskManager {
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private StoreServiceProvider storeServiceProvider;
+
+    private String getMetaRedisKey(String id) {
+        return "xyy::breakpoint::" + id;
+    }
+
+    private String getFinishPartKey(String id) {
+        return "xyy::breakpoint::finish::" + id;
+    }
 
     /**
      * 创建断点续传任务
@@ -39,9 +57,8 @@ public class DefaultTaskManager implements TaskManager {
         var id = UUID.randomUUID().toString();
         info.setTaskId(id);
         var taskDir = TaskStorePath.getRoot(id);
-        Files.createDirectories(taskDir);
-        Files.write(TaskStorePath.getMetadata(id), MapperHolder.mapper.writeValueAsBytes(info));
-
+        storeServiceProvider.getTempStoreService().mkdirs(taskDir);
+        redisTemplate.opsForValue().set(getMetaRedisKey(id), info, Duration.ofDays(7));
         return id;
     }
 
@@ -53,12 +70,8 @@ public class DefaultTaskManager implements TaskManager {
      */
     @Override
     public TaskMetadata queryTask(String id) throws IOException {
-        var metadataPath = TaskStorePath.getMetadata(id);
-        if (!Files.exists(metadataPath)) {
-            throw new TaskNotFoundException(id);
-        }
 
-        return MapperHolder.mapper.readValue(Files.readAllBytes(metadataPath), TaskMetadata.class);
+        return (TaskMetadata) redisTemplate.opsForValue().get(getMetaRedisKey(id));
     }
 
     /**
@@ -68,11 +81,13 @@ public class DefaultTaskManager implements TaskManager {
      */
     @Override
     public void clear(String id) throws IOException {
-        var taskPath = TaskStorePath.getRoot(id);
-        if (!Files.exists(taskPath)) {
+        if(queryTask(id) == null) {
             throw new TaskNotFoundException(id);
         }
-        FileUtils.delete(taskPath);
+        var taskPath = TaskStorePath.getRoot(id);
+        storeServiceProvider.getTempStoreService().delete(taskPath);
+        redisTemplate.delete(getMetaRedisKey(id));
+        redisTemplate.delete(getFinishPartKey(id));
     }
 
     /**
@@ -84,28 +99,31 @@ public class DefaultTaskManager implements TaskManager {
     @Override
     public void save(String id, String part, InputStream stream) throws IOException {
         var root = TaskStorePath.getRoot(id);
-        if (!Files.exists(root)) {
+        if (queryTask(id) == null) {
             throw new TaskNotFoundException(id);
         }
+        final String redisKey = getFinishPartKey(id);
         var parts = PartParser.parse(part);
         var taskInfo = queryTask(id);
         for (int i : parts) {
             var size = taskInfo.getPartSize(i);
-            var out = Files.newOutputStream(TaskStorePath.getPartFile(id, i));
-            long l = StreamUtils.copyRange(stream, out, 0, size - 1);
-            log.debug("写入断点续传文件块，文件名：{} 编号：{}  大小：{}",taskInfo.getFileName() ,i, l);
-            out.close();
+            final String partFile = TaskStorePath.getPartFile(id, i);
+            try(final OutputStream out = storeServiceProvider.getTempStoreService().newOutputStream(partFile)) {
+                long l = StreamUtils.copyRange(stream, out, 0, size - 1);
+                log.debug("写入断点续传文件块，文件名：{} 编号：{}  大小：{}",taskInfo.getFileName() ,i, l);
+                redisTemplate.opsForSet().add(redisKey, i);
+            }
         }
         stream.close();
     }
 
     @Override
     public List<Integer> getFinishPart(String id) throws IOException {
-        return Files.list(TaskStorePath.getRoot(id))
-                .filter(e -> e.toString().endsWith(".part"))
-                .map(e -> Integer.parseInt(e.getFileName().toString().replaceAll(".part", "")))
-                .sorted()
-                .collect(Collectors.toList());
+        Set<Object> finish = redisTemplate.opsForSet().members(getFinishPartKey(id));
+        if (finish == null) {
+            return Collections.emptyList();
+        }
+        return finish.stream().map(e -> (Integer)e).sorted(Comparator.comparingInt(o -> o)).collect(Collectors.toList());
     }
 
     @Override
@@ -129,9 +147,10 @@ public class DefaultTaskManager implements TaskManager {
 
 
         List<Integer> finishPart = getFinishPart(id);
-        Path[] paths = new Path[finishPart.size()];
+        Resource[] paths = new Resource[finishPart.size()];
+        final TempStoreService tempStoreService = storeServiceProvider.getTempStoreService();
         for (Integer integer : finishPart) {
-            paths[integer - 1] = TaskStorePath.getPartFile(id, integer);
+            paths[integer - 1] =  tempStoreService.getResource(TaskStorePath.getPartFile(id, integer));
         }
         return new MergeInputStream(new MultipleFileMergeInputStreamGenerator(paths));
     }

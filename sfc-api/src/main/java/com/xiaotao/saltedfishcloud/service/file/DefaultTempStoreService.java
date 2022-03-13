@@ -7,6 +7,7 @@ import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 /**
@@ -29,6 +30,11 @@ public class DefaultTempStoreService implements TempStoreService {
     @Override
     public boolean isEmptyDirectory(String path) throws IOException {
         return handler.isEmptyDirectory(StringUtils.appendPath(tempRootDir, path));
+    }
+
+    @Override
+    public OutputStream newOutputStream(String path) throws IOException {
+        return handler.newOutputStream(StringUtils.appendPath(tempRootDir, path));
     }
 
     @Override

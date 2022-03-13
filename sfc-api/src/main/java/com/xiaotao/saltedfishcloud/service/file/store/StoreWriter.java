@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file.store;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * 提供存储系统的资源创建与删除能力
@@ -27,6 +28,14 @@ public interface StoreWriter {
      * @return              保存的数据量大小（Byte）
      */
     long store(String path, InputStream inputStream) throws IOException;
+
+    /**
+     * 获取目标路径文件资源的输出流
+     * @param path          文件保存路径
+     * @return              输出流，往流中写入的数据将写入存储系统
+     * @throws IOException  任意IO错误
+     */
+    OutputStream newOutputStream(String path) throws IOException;
 
     /**
      * 对文件资源进行重命名

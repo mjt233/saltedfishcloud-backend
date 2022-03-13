@@ -18,9 +18,9 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1/t_xyy?useSSL=false&serverTimezone=UTC
+      url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
       username: root
-      password:
+      password: mojintao233
       test-while-idle: true
       test-on-borrow: false
       test-on-return: false
@@ -41,8 +41,8 @@ logging:
   level:
     org: warn
     com: warn
-    com.xiaotao: info
-#    com.xiaotao.saltedfishcloud.dao.mybatis: warn
+    com.xiaotao: debug
+    com.xiaotao.saltedfishcloud.dao.mybatis: warn
     com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
 app:
   version: ^project.version^

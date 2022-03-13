@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.StoreReader;
 import com.xiaotao.saltedfishcloud.service.file.store.StoreWriter;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -22,12 +23,19 @@ public interface DirectRawStoreHandler extends StoreReader, StoreWriter {
      */
     @Override
     default boolean mkdirs(String path) throws IOException {
+
         final FileInfo curPathInfo = getFileInfo(path);
         if (curPathInfo == null) {
             final String parentPath = PathUtils.getParentPath(path);
             final FileInfo parentPathInfo = getFileInfo(parentPath);
-            if (parentPathInfo != null && parentPathInfo.isDir()) {
-                return mkdir(parentPath);
+
+            if (parentPathInfo == null) {
+                mkdirs(parentPath);
+                return mkdir(path);
+            }
+
+            if (parentPathInfo.isDir()) {
+                return mkdir(path);
             } else {
                 return false;
             }
