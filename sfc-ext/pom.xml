@@ -26,7 +26,7 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
-            <version>1.8.4.2-RELEASE</version>
+            <version>1.8.4.3-RELEASE</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

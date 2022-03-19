@@ -70,11 +70,11 @@ public interface StoreService {
     List<FileInfo> lists(int uid, String path) throws IOException;
 
     /**
-     * 获取文件资源，若文件不存在或目标为文件夹则为null
+     * 获取文件资源，当资源不存在或目标资源为不可作为单文件读取的目录时，应返回null
      * @param uid   用户ID
      * @param path  文件所在路径
      * @param name  文件名
-     * @return      文件资源
+     * @return      文件资源，当资源不存在或目标资源为不可作为单文件读取的目录时，应返回null
      */
     Resource getResource(int uid, String path, String name) throws IOException;
 

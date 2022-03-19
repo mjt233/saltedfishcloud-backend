@@ -45,7 +45,7 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
     @Override
     public Resource getResource(String path) throws IOException {
         final Path localPath = Paths.get(path);
-        if (!Files.exists(localPath)) {
+        if (!Files.exists(localPath) || Files.isDirectory(localPath)) {
             return null;
         }
         return new PathResource(localPath);

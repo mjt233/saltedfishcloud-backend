@@ -15,16 +15,16 @@ import java.io.IOException;
 public class DiskFtpFileSystemView implements FileSystemView {
     private final PathBuilder pathBuilder = new PathBuilder();
     private final DiskFtpUser user;
-    private final DiskFileSystemProvider fileSystemFactory;
-    public DiskFtpFileSystemView(DiskFtpUser user, DiskFileSystemProvider fileSystemFactory) throws IOException {
+    private final DiskFileSystemProvider fileSystemProvider;
+    public DiskFtpFileSystemView(DiskFtpUser user, DiskFileSystemProvider fileSystemProvider) throws IOException {
         this.user = user;
         pathBuilder.setForcePrefix(true);
-        this.fileSystemFactory = fileSystemFactory;
+        this.fileSystemProvider = fileSystemProvider;
     }
 
     @Override
     public FtpFile getHomeDirectory() {
-        return new DiskFtpFile("/", user, fileSystemFactory);
+        return new DiskFtpFile("/", user, fileSystemProvider);
     }
 
     @Override
@@ -32,10 +32,10 @@ public class DiskFtpFileSystemView implements FileSystemView {
         log.debug("取cwd:" + pathBuilder.toString());
         DiskFtpFile file;
         try {
-            file = new DiskFtpFile(pathBuilder.toString(), user, fileSystemFactory);
+            file = new DiskFtpFile(pathBuilder.toString(), user, fileSystemProvider);
         } catch (IllegalArgumentException e) {
             changeWorkingDirectory("/");
-            return new DiskFtpFile("/", user, fileSystemFactory);
+            return new DiskFtpFile("/", user, fileSystemProvider);
         }
         return file;
     }
@@ -61,7 +61,7 @@ public class DiskFtpFileSystemView implements FileSystemView {
             }
 
             // cd到具体目录
-            DiskFileSystem fileSystem = fileSystemFactory.getFileSystem();
+            DiskFileSystem fileSystem = fileSystemProvider.getFileSystem();
             int uid = ftpPathInfo.isPublicArea() ? User.getPublicUser().getId() : user.getId();
             if (!fileSystem.exist(uid, ftpPathInfo.getResourcePath()) ||
                 fileSystem.getResource(uid, ftpPathInfo.getResourceParent(), ftpPathInfo.getName()) != null) {
@@ -83,7 +83,7 @@ public class DiskFtpFileSystemView implements FileSystemView {
         } else {
             path = pathBuilder.toString() + "/" +file;
         }
-        return new DiskFtpFile(path, user, fileSystemFactory);
+        return new DiskFtpFile(path, user, fileSystemProvider);
     }
 
     @Override

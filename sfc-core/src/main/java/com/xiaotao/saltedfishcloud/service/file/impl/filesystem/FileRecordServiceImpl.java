@@ -19,10 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.nio.file.NoSuchFileException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -63,6 +60,9 @@ public class FileRecordServiceImpl implements FileRecordService {
     public boolean exist(int uid, String path, String name) {
         try {
             final String nid = nodeService.getNodeIdByPath(uid, path);
+            if ((uid + "").equals(nid)) {
+                return true;
+            }
             return fileDao.getFileInfo(uid, name, nid) != null;
         } catch (NoSuchFileException e) {
             return false;
