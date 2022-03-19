@@ -71,7 +71,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner {
     public void saveAvatar(int uid, Resource resource) throws IOException {
         customStoreService.saveAvatar(uid, resource);
     }
-    
+
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -472,7 +472,8 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void mkdir(int uid, String path, String name) throws IOException {
-        if ( !storeServiceProvider.getService().mkdir(uid, path, name) ) {
+        final StoreService storeService = storeServiceProvider.getService();
+        if ( !storeService.isUnique() && !storeService.mkdir(uid, path, name) ) {
             throw new IOException("在" + path + "创建文件夹失败");
         }
         fileRecordService.mkdir(uid, name, path);
