@@ -19,7 +19,7 @@
     </properties>
 
     <modules>
-        <module>sfc-ext-hadoop-store</module>
+<!--        <module>sfc-ext-hadoop-store</module>-->
         <module>sfc-ext-demo</module>
     </modules>
 
