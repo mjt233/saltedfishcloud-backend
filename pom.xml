@@ -13,12 +13,18 @@
         <module>sfc-compress</module>
         <module>sfc-core</module>
         <module>sfc-api</module>
-        <module>sfc-test-module</module>
         <module>sfc-orm-configure</module>
+        <module>sfc-ext</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
-    <version>1.8.4.3-RELEASE</version>
+
+    <!--  主版本号   -->
+    <!--
+        API或脚手架模块版本号仅使用数字加点（如：sfc-ext，sfc-api）
+        功能组件或咸鱼云根模块需要使用RELEASE或SNAPSHOT后缀（如：sfc-core，sfc-ext-hadoop-store）
+    -->
+    <version>1.8.4.4-RELEASE</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
