@@ -20,7 +20,7 @@ public interface StoreReader {
     /**
      * 获取指定路径的资源
      * @param path  路径
-     * @return 当资源不存在时，应返回null
+     * @return 当资源不存在或目标资源为目录时，应返回null
      */
     Resource getResource(String path) throws IOException;
 

@@ -290,7 +290,9 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     @Override
     public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
         try(final InputStream is = Files.newInputStream(nativePath)) {
-            store(uid, is, diskPath, FileInfo.getFromResource(new PathResource(nativePath), uid, fileInfo.getType()));
+            final FileInfo fileResource = FileInfo.getFromResource(new PathResource(nativePath), uid, fileInfo.getType());
+            fileResource.setName(fileInfo.getName());
+            store(uid, is, diskPath, fileResource);
             is.close();
             Files.delete(nativePath);
         }

@@ -97,7 +97,7 @@ public interface DiskFileSystem {
      * @param uid   用户ID
      * @param path  文件所在路径
      * @param name  文件名
-     * @return      文件资源，若不存在则为null
+     * @return      文件资源，当资源不存在或目标资源为目录时，应返回null
      */
     Resource getResource(int uid, String path,String name) throws IOException;
 
@@ -185,6 +185,7 @@ public interface DiskFileSystem {
      * @param uid               用户ID
      * @param nativeFilePath    本地文件路径
      * @param path              网盘路径
+     * @param fileInfo          文件信息（一般只取name）
      * @throws IOException      存储出错
      */
     void moveToSaveFile(int uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException;
