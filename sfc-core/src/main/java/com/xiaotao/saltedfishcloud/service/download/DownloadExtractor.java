@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.common.prog.ProgressProvider;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
-import com.xiaotao.saltedfishcloud.service.async.context.EmptyCallback;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * @TODO 基于org.springframework.core.io.Resource实现一个更通用的文件资源实体类
+ */
 class HttpResourceFile extends File {
     @Getter
     private String resourceName;
@@ -34,27 +37,32 @@ class HttpResourceFile extends File {
 }
 
 @Slf4j
-public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, ProgressExtractor {
-    private long total;
-    private long loaded;
-    private long speed;
+public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, ProgressProvider {
+
+    private final ProgressRecord progressRecord;
     private final Path savePath;
+    private boolean isFinish = false;
+
     @Getter
     private boolean interrupted = false;
+
     @Setter
     private AsyncTackCallback readyCallback;
-    @Setter
-    private AsyncTackCallback progressCallback = EmptyCallback.get();
+
     @Getter
     private String resourceName;
-    public DownloadExtractor(Path savePath) {
-        this.savePath = savePath;
+
+
+
+    public DownloadExtractor(File saveFile) {
+        this(saveFile.toPath());
     }
     public DownloadExtractor(String savePath) {
-        this.savePath = Paths.get(savePath);
+        this(Paths.get(savePath));
     }
-    public DownloadExtractor(File saveFile) {
-        this.savePath = saveFile.toPath();
+    public DownloadExtractor(Path savePath) {
+        this.savePath = savePath;
+        this.progressRecord = new ProgressRecord();
     }
 
     public void interrupt() {
@@ -82,13 +90,12 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
 
         // 开始下载
         InputStream body = response.getBody();
-        total = response.getHeaders().getContentLength();
+        progressRecord.setTotal(response.getHeaders().getContentLength());
+        progressRecord.setLoaded(0);
         log.debug("开始下载，文件保存到:{}", savePath);
         OutputStream localFileStream = Files.newOutputStream(savePath);
         byte[] buffer = new byte[8192];
         int cnt;
-        long lastLoad = 0;
-        long lastRecordTime = System.currentTimeMillis();
 
         readyCallback.action();
         try {
@@ -103,59 +110,33 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
                     log.debug("下载被中断");
                     return null;
                 }
-
-                // 调试模式下每1s输出下载进度，并计算下载速度和触发ProgressCallback
-                long curTime = System.currentTimeMillis();
-                loaded += cnt;
-                if (curTime - lastRecordTime > 1000) {
-                    log.debug("已下载：{}({}) 总量：{}({}) 进度：{}%",
-                            loaded, StringUtils.getFormatSize(loaded),
-                            total, StringUtils.getFormatSize(total), (int)(loaded * 100/ total));
-
-                    // 计算速度
-                    speed = (loaded - lastLoad)/( (curTime - lastRecordTime)/1000 );
-
-                    // 触发回调
-                    try {
-                        progressCallback.action();
-                    } catch (Throwable e) {
-                        e.printStackTrace();
-                    }
-
-                    // 更新记录
-                    lastRecordTime = curTime;
-                    lastLoad = loaded;
-                }
+                progressRecord.appendLoaded(cnt);
                 // 写入小块文件
                 localFileStream.write(buffer, 0, cnt);
             }
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
+            isFinish = true;
             body.close();
             localFileStream.close();
         }
 
         // 下载完毕，构造本地文件信息
         var res = new HttpResourceFile(savePath.toString(), resourceName);
-        if (res.length() != total) {
-            total = res.length();
+        if (res.length() != progressRecord.getTotal()) {
+            progressRecord.setTotal(res.length());
         }
         return res;
     }
 
     @Override
-    public long getTotal() {
-        return total;
+    public ProgressRecord getProgressRecord() {
+        return progressRecord;
     }
 
     @Override
-    public long getLoaded() {
-        return loaded;
-    }
-
-    @Override
-    public long getSpeed() {
-        return speed;
+    public boolean isStop() {
+        return isFinish;
     }
 }

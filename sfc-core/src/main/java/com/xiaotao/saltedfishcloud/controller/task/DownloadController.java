@@ -44,12 +44,7 @@ public class DownloadController {
     public JsonResult interrupt(@RequestParam String taskId) {
         var context = downloadService.getTaskContext(taskId);
         if (context == null) throw new JsonException(404, taskId + "不存在");
-        var loginUser = SecureUtils.getSpringSecurityUser();
-        if (context.getTask().getBindingInfo().uid != loginUser.getId() && loginUser.getType() != User.TYPE_ADMIN) {
-            throw new JsonException(403, "无权操作");
-        } else {
-            context.interrupt();
-        }
+        context.interrupt();
         return JsonResult.emptySuccess();
     }
 

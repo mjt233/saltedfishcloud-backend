@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.dao.jpa.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
@@ -29,6 +31,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
+/**
+ * 离线下载服务实现类
+ * @TODO 代码太烂太乱，需要重构重新实现这个模块
+ */
 @Slf4j
 public class DownloadServiceImpl implements DownloadService {
     static final private Collection<DownloadTaskInfo.State> FINISH_TYPE = Arrays.asList(
@@ -37,16 +43,28 @@ public class DownloadServiceImpl implements DownloadService {
             DownloadTaskInfo.State.FAILED
     );
     static final private Collection<DownloadTaskInfo.State> DOWNLOADING_TYPE = Collections.singleton(DownloadTaskInfo.State.DOWNLOADING);
+
     @Resource
     private DownloadTaskRepo downloadDao;
+
     @Resource
     private ProxyDao proxyDao;
+
     @Resource
     private TaskContextFactory factory;
+
     @Resource
     private NodeService nodeService;
+
     @Resource
     private DiskFileSystemProvider fileService;
+
+    @Resource
+    private DownloadTaskBuilderFactory builderFactory;
+
+    @Resource
+    private ProgressDetector detector;
+
     private final TaskManager taskManager;
 
     /**
@@ -83,17 +101,29 @@ public class DownloadServiceImpl implements DownloadService {
         } else {
             tasks = downloadDao.findByUidAndStateInOrderByCreatedAtDesc(uid, FINISH_TYPE, pageRequest);
         }
+
+
         tasks.forEach(e -> {
+            // 对于下载中的任务，先判断是否在当前实例进程中执行异步下载。如果是则直接从异步任务实例中获取进度。
+            // 通过任务id获取不到异步任务实例时，有两种情况：1. 分布式部署的情况下，任务在其他实例中下载 2. 负责下载的进程或实例退出了
+            // 对于情况1，可以通过ProgressDetector获取进度。若获取不到进度，那就是下载的进程或实例退出了，下载失败。
             if (e.state == DownloadTaskInfo.State.DOWNLOADING ) {
                 var context = taskManager.getContext(e.id, AsyncDownloadTaskImpl.class);
                 if (context == null) {
-                    e.state = DownloadTaskInfo.State.FAILED;
-                    e.message = "interrupt";
-                    downloadDao.save(e);
+                    final ProgressRecord record = detector.getRecord(e.id);
+                    if (record == null) {
+                        e.state = DownloadTaskInfo.State.FAILED;
+                        e.message = "interrupt";
+                        e.finishAt = new Date();
+                        downloadDao.save(e);
+                    } else {
+                        e.loaded = record.getLoaded();
+                        e.speed = record.getSpeed()*1000;
+                    }
                 } else {
                     var task = context.getTask();
                     e.loaded = task.getStatus().loaded;
-                    e.speed = task.getStatus().speed;
+                    e.speed = task.getStatus().speed*1000;
                 }
             }
         });
@@ -103,9 +133,10 @@ public class DownloadServiceImpl implements DownloadService {
     @Override
     public String createTask(DownloadTaskParams params, int creator) throws NoSuchFileException {
         // 初始化下载任务和上下文
-        var builder = DownloadTaskBuilder.create(params.url);
-        builder.setHeaders(params.headers);
-        builder.setMethod(params.method);
+        var builder = builderFactory.getBuilder()
+                .setUrl(params.url)
+                .setHeaders(params.headers)
+                .setMethod(params.method);
         if (params.proxy != null && params.proxy.length() != 0) {
             ProxyInfo proxy = proxyDao.getProxyByName(params.proxy);
             if (proxy == null) {
@@ -120,9 +151,9 @@ public class DownloadServiceImpl implements DownloadService {
 
         // 初始化下载任务信息和录入数据库
         var info = new DownloadTaskInfo();
-        builder.setBindingInfo(info);
         AsyncDownloadTaskImpl task = builder.build();
         TaskContext<AsyncDownloadTask> context = factory.createContextFromAsyncTask(task);
+        task.setTaskId(context.getId());
         info.id = context.getId();
         info.url = params.url;
         info.proxy = params.proxy;

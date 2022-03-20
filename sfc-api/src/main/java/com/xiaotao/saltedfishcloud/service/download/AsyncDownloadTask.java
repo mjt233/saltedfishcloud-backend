@@ -18,9 +18,4 @@ public interface AsyncDownloadTask extends AsyncTask<String, DownloadTaskStatus>
      * @param callback 回调
      */
     void onProgressCallback(AsyncTackCallback callback);
-
-    /**
-     * 获取该异步任务绑定的对应DownloadTaskInfo类（实体信息类）
-     */
-    DownloadTaskInfo getBindingInfo();
 }
