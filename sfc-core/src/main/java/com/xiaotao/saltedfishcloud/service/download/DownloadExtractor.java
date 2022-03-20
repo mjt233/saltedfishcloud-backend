@@ -38,6 +38,7 @@ class HttpResourceFile extends File {
 
 @Slf4j
 public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, ProgressProvider {
+    private final static String LOG_TITLE = "[Download Extractor]";
 
     private final ProgressRecord progressRecord;
     private final Path savePath;
@@ -78,9 +79,9 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
         // 文件名探测
         resourceName = response.getHeaders().getContentDisposition().getFilename();
         if (resourceName != null && FileNameValidator.valid(resourceName)) {
-            log.debug("从响应头探测到文件名：" + resourceName);
+            log.debug("{}从响应头探测到文件名：{}", LOG_TITLE, resourceName);
         } else {
-            log.debug("响应头无文件名");
+            log.debug("{}响应头无文件名", LOG_TITLE);
         }
 
         // 检测本地文件目录是否正常可写
@@ -92,7 +93,7 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
         InputStream body = response.getBody();
         progressRecord.setTotal(response.getHeaders().getContentLength());
         progressRecord.setLoaded(0);
-        log.debug("开始下载，文件保存到:{}", savePath);
+        log.debug("{}开始下载，文件保存到:{}",LOG_TITLE, savePath);
         OutputStream localFileStream = Files.newOutputStream(savePath);
         byte[] buffer = new byte[8192];
         int cnt;
@@ -107,7 +108,7 @@ public class DownloadExtractor implements ResponseExtractor<HttpResourceFile>, P
                     if (Files.exists(savePath)) {
                         Files.delete(savePath);
                     }
-                    log.debug("下载被中断");
+                    log.debug("{}下载被中断:{}", LOG_TITLE, resourceName);
                     return null;
                 }
                 progressRecord.appendLoaded(cnt);

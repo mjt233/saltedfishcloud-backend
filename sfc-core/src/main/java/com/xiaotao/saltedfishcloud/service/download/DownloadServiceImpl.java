@@ -54,7 +54,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
     // 发布下载中断的可订阅CHANNEL
     public static final String INTERRUPT_TOPIC = "xyy_download_interrupt";
 
-    public static final String LOG_TITLE = "[DOWNLOAD]";
+    public static final String LOG_TITLE = "[Download]";
 
     @Resource
     private DownloadTaskRepo downloadDao;
@@ -113,7 +113,6 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
             return false;
         }
         context.interrupt();
-        taskManager.remove(id);
         return true;
     }
 

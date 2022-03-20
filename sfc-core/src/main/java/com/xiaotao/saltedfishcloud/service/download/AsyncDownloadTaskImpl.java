@@ -25,6 +25,7 @@ import java.util.Optional;
  */
 @Slf4j
 public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
+    private final static String LOG_TITLE = "[Download Task]";
     private final RestTemplate restTemplate;
     private final String url;
     private final HttpMethod method;
@@ -119,7 +120,7 @@ public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
         taskInfo.url = url;
         try {
             taskInfo.name = StringUtils.getURLLastName(url);
-            log.debug("通过URL获取的默认文件名：" + taskInfo.name);
+            log.debug("{}通过URL获取的默认文件名：{}", LOG_TITLE, taskInfo.name);
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
