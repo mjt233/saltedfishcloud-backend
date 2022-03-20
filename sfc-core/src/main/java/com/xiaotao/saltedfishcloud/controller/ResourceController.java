@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.controller;
 
+import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
-import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.util.Date;
 
 /**
  * 系统资源管理控制器
@@ -42,11 +43,15 @@ public class ResourceController {
     private final NodeService nodeService;
     private final ResourceService resourceService;
     private final CustomStoreService customStoreService;
+    private static final String ONE_YEAR_SECONDS = "max-age=" + 60*60*24*365;
 
     @GetMapping("thumbnail/{md5}")
     @AllowAnonymous
     public HttpEntity<Resource> getThumbnail(@PathVariable("md5") String md5) throws IOException {
-        return ResourceUtils.wrapResource(customStoreService.getThumbnail(md5), md5 + ".jpg");
+        final ResponseEntity.BodyBuilder bodyBuilder = ResourceUtils.generateResponseEntity(md5 + ".jpg");
+        return bodyBuilder
+                .header("Cache-Control", ONE_YEAR_SECONDS)
+                .body(customStoreService.getThumbnail(md5));
     }
 
     @GetMapping({"node/**", "node"})

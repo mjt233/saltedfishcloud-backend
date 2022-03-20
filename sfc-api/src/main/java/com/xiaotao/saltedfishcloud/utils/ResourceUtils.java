@@ -23,6 +23,14 @@ public class ResourceUtils {
                 .body(resource);
     }
 
+    public static ResponseEntity.BodyBuilder generateResponseEntity(String filename) throws UnsupportedEncodingException {
+        String disposition = generateContentDisposition(filename);
+        String ct = FileUtils.getContentType(filename);
+        return ResponseEntity.ok()
+                .header("Content-Type", ct)
+                .header("Content-Disposition", disposition);
+    }
+
 
     public static String generateContentDisposition(String filename) throws UnsupportedEncodingException {
         return "inline;filename*=UTF-8''"+ URLEncoder.encode(filename, "utf-8");
