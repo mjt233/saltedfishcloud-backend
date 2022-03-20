@@ -1,45 +1,57 @@
 package com.xiaotao.saltedfishcloud.entity.po;
 
+import lombok.Data;
+import org.hibernate.annotations.Proxy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
 import java.util.Date;
 
-@Entity()
+@Data
+@Entity
+@Proxy(lazy = false)
 @Table(name = "download_task")
 @EntityListeners(AuditingEntityListener.class)
 public class DownloadTaskInfo {
     public enum State {
         WAITING, DOWNLOADING, FAILED, FINISH, CANCEL
     }
+
     @Id
-    public String id;
-    public int uid;
+    private String id;
+
+    private int uid;
 
     @NotEmpty
-    public String url;
+    private String url;
 
-    public String proxy;
+    private String proxy;
 
     @Enumerated(EnumType.STRING)
-    public State state = State.WAITING;
-    public String message;
-    public long loaded;
-    public long size;
+    private State state = State.WAITING;
+
+    private String message;
+
+    private long loaded;
+
+    private long size;
+
     @Transient
-    public long speed;
-    public String name;
+    private long speed;
+
+    private String name;
 
     @Column(name = "save_path")
     @NotEmpty
-    public String savePath;
+    private String savePath;
 
     @Column(name = "created_at")
-    public Date createdAt;
-    @Column(name = "finish_at")
-    public Date finishAt;
+    private Date createdAt;
 
-    public int createdBy;
+    @Column(name = "finish_at")
+    private Date finishAt;
+
+    private int createdBy;
 
 }

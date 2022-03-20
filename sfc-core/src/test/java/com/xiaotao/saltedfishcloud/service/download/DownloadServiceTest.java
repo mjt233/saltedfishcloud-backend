@@ -19,11 +19,13 @@ class DownloadServiceTest {
     private TaskManager taskManager;
     @Resource
     private TaskContextFactory factory;
+    @Resource
+    private DownloadTaskBuilderFactory builderFactory;
 
     @Test
     public void testInterrupt() throws InterruptedException {
         String url = "https://bigota.d.miui.com/V11.0.5.0.PCACNXM/miui_MI6_V11.0.5.0.PCACNXM_996ffd2660_9.0.zip";
-        var task = DownloadTaskBuilder.create(url).build();
+        var task = builderFactory.getBuilder().setUrl(url).build();
         var context = factory.createContextFromAsyncTask(task);
         taskManager.submit(context);
         downloadService.interrupt(context.getId());

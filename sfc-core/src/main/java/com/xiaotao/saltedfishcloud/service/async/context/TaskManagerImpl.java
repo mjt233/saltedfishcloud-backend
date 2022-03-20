@@ -10,6 +10,7 @@ import java.util.Map;
 @Slf4j
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class TaskManagerImpl implements TaskManager {
+    private final static String LOG_TITLE = "[Async Task Manager]";
 
     private final Map<String, TaskContext<? extends AsyncTask>> tasks = new HashMap<>();
 
@@ -20,7 +21,7 @@ public class TaskManagerImpl implements TaskManager {
 
     @Override
     public synchronized boolean remove(String id) {
-        log.debug("移除了任务{}", id);
+        log.debug("{}移除了任务{}",LOG_TITLE, id);
         return tasks.remove(id) != null;
     }
 

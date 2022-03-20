@@ -9,7 +9,6 @@ import org.springframework.data.domain.Page;
 import java.nio.file.NoSuchFileException;
 
 public interface DownloadService {
-    TaskContext<AsyncDownloadTask> getTaskContext(String taskId);
 
     /**
      * 中断任务下载

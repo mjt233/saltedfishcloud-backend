@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import lombok.ToString;
+
 enum TaskStatus {
     DOWNLOADING,
     FAILED,
@@ -9,6 +11,7 @@ enum TaskStatus {
     ERROR
 }
 
+@ToString
 public class DownloadTaskStatus {
     public long total;
     public long loaded;

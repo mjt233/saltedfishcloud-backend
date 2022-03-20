@@ -1,10 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.service.async.context.EmptyCallback;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.AccessLevel;
+import lombok.Data;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.springframework.http.HttpMethod;
@@ -12,28 +15,26 @@ import org.springframework.http.HttpMethod;
 import java.net.Proxy;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Accessors(chain = true)
+@Data
 public class DownloadTaskBuilder {
     private String url = "";
     private HttpMethod method = HttpMethod.GET;
     private String savePath = PathUtils.getTempDirectory() + "/xyy/download_tmp/" + System.currentTimeMillis();
     private Proxy proxy = null;
-    @Setter
     private int connectTimeout = 10000;
-    @Setter
     private int readTimeout = 60000;
-    @Setter
     private AsyncTackCallback onReadyCallback;
-    @Setter
-    private DownloadTaskInfo bindingInfo;
+    private ProgressDetector detector;
 
-    public static DownloadTaskBuilder create() {
-        return new DownloadTaskBuilder();
+    public static DownloadTaskBuilder create(String url, ProgressDetector detector) {
+        return new DownloadTaskBuilder(detector).setUrl(url);
     }
 
-    public static DownloadTaskBuilder create(String url) {
-        return new DownloadTaskBuilder().setUrl(url);
+    public DownloadTaskBuilder(ProgressDetector detector) {
+        this.detector = detector;
     }
 
     @Setter(AccessLevel.NONE)
@@ -44,41 +45,19 @@ public class DownloadTaskBuilder {
         return this;
     }
 
-    public DownloadTaskBuilder setRange(int begin) {
-        headers.put("Range", "bytes=" + begin + "-");
-        return this;
-    }
-
-    public DownloadTaskBuilder setRange(long begin, long end) {
-        headers.put("Range", "bytes=" + begin + "-" + end);
-        return this;
-    }
-
     public AsyncDownloadTaskImpl build() {
-        return new AsyncDownloadTaskImpl(url, method, headers, savePath,
-                proxy, connectTimeout, readTimeout,
-                onReadyCallback == null ? EmptyCallback.inst : onReadyCallback);
+        return new AsyncDownloadTaskImpl(
+                url,
+                method,
+                headers,
+                savePath,
+                proxy,
+                connectTimeout,
+                readTimeout,
+                Optional.ofNullable(onReadyCallback).orElse(EmptyCallback.inst),
+                detector);
     }
 
-    public DownloadTaskBuilder setUrl(String url) {
-        this.url = url;
-        return this;
-    }
-
-    public DownloadTaskBuilder setMethod(HttpMethod method) {
-        this.method = method;
-        return this;
-    }
-
-    public DownloadTaskBuilder setSavePath(String savePath) {
-        this.savePath = savePath;
-        return this;
-    }
-
-    public DownloadTaskBuilder setProxy(Proxy proxy) {
-        this.proxy = proxy;
-        return this;
-    }
 
     public DownloadTaskBuilder setHeaders(Map<String, String> headers) {
         this.headers = headers;

@@ -1,9 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.springframework.http.HttpEntity;
@@ -14,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @TODO 实现多线程下载
@@ -21,6 +25,7 @@ import java.util.Map;
  */
 @Slf4j
 public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
+    private final static String LOG_TITLE = "[Download Task]";
     private final RestTemplate restTemplate;
     private final String url;
     private final HttpMethod method;
@@ -28,11 +33,12 @@ public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
     private final DownloadTaskStatus taskInfo = new DownloadTaskStatus();
     private boolean finish = false;
     private final DownloadExtractor extractor;
+    private final ProgressDetector progressDetector;
+    @Getter
+    @Setter
+    private String taskId;
     @Getter
     private final String savePath;
-
-    @Getter
-    private DownloadTaskInfo bindingInfo;
 
     @Override
     public boolean isInterrupted() {
@@ -49,9 +55,18 @@ public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
      * @param connectTimeout    连接超时（毫秒）
      * @param readTimeout       读取超时（毫秒）
      * @param readyCallback     就绪回调
+     * @param progressDetector  进度探测器
      */
-    public AsyncDownloadTaskImpl(String url, HttpMethod method, Map<String, String> headers, String savePath, Proxy proxy,
-                                 int connectTimeout, int readTimeout, AsyncTackCallback readyCallback) {
+    public AsyncDownloadTaskImpl(String url,
+                                 HttpMethod method,
+                                 Map<String, String> headers,
+                                 String savePath,
+                                 Proxy proxy,
+                                 int connectTimeout, int readTimeout,
+                                 AsyncTackCallback readyCallback,
+                                 ProgressDetector progressDetector
+    ) {
+        this.progressDetector = progressDetector;
         this.url = url;
         this.method = method;
         this.headers = headers;
@@ -74,9 +89,7 @@ public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
     }
 
     @Override
-    public void onProgressCallback(AsyncTackCallback callback) {
-        extractor.setProgressCallback(callback);
-    }
+    public void onProgressCallback(AsyncTackCallback callback) {}
 
     /**
      * 中断任务的下载
@@ -107,7 +120,7 @@ public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
         taskInfo.url = url;
         try {
             taskInfo.name = StringUtils.getURLLastName(url);
-            log.debug("通过URL获取的默认文件名：" + taskInfo.name);
+            log.debug("{}通过URL获取的默认文件名：{}", LOG_TITLE, taskInfo.name);
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
@@ -120,6 +133,7 @@ public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
         // 开始执行下载
         taskInfo.status = TaskStatus.DOWNLOADING;
         try {
+            progressDetector.addObserve(extractor, taskId);
             HttpResourceFile res = restTemplate.execute(
                     url,
                     method,
@@ -155,9 +169,11 @@ public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
         if (extractor.getResourceName() != null) {
             taskInfo.name = extractor.getResourceName();
         }
-        taskInfo.total = extractor.getTotal();
-        taskInfo.loaded = extractor.getLoaded();
-        taskInfo.speed = extractor.getSpeed();
+        final ProgressRecord recordProgress = Optional.ofNullable(progressDetector.getRecord(taskId)).orElse(ProgressRecord.EMPTY_RECORD);
+        final ProgressRecord realTimeProgress = extractor.getProgressRecord();
+        taskInfo.total =  realTimeProgress.getTotal();
+        taskInfo.loaded = realTimeProgress.getLoaded();
+        taskInfo.speed = recordProgress.getSpeed();
         return taskInfo;
     }
 }
