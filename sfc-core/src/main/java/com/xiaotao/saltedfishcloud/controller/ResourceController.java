@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.service.file.CustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.http.ResourceService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -16,6 +17,8 @@ import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +41,13 @@ public class ResourceController {
     private final DiskFileSystemProvider fileService;
     private final NodeService nodeService;
     private final ResourceService resourceService;
+    private final CustomStoreService customStoreService;
+
+    @GetMapping("thumbnail/{md5}")
+    @AllowAnonymous
+    public HttpEntity<Resource> getThumbnail(@PathVariable("md5") String md5) throws IOException {
+        return ResourceUtils.wrapResource(customStoreService.getThumbnail(md5), md5 + ".jpg");
+    }
 
     @GetMapping({"node/**", "node"})
     @AllowAnonymous

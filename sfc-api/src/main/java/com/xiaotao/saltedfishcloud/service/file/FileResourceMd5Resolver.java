@@ -1,5 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import org.springframework.core.io.Resource;
+
+import java.io.IOException;
+
 /**
  * 为存储服务提供唯一存储模式下的文件定位能力
  */
@@ -19,4 +23,11 @@ public interface FileResourceMd5Resolver {
      * @return      存在引用为true，否则为false
      */
     boolean hasRef(String md5);
+
+    /**
+     * 通过MD5获取文件资源
+     * @param md5   文件MD5
+     * @return      对应文件资源
+     */
+    Resource getResourceByMd5(String md5) throws IOException;
 }

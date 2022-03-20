@@ -23,13 +23,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -71,7 +69,6 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner {
     public void saveAvatar(int uid, Resource resource) throws IOException {
         customStoreService.saveAvatar(uid, resource);
     }
-
 
     @Override
     public void run(ApplicationArguments args) throws Exception {

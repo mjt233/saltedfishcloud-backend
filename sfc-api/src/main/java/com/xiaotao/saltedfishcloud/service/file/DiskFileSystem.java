@@ -114,8 +114,7 @@ public interface DiskFileSystem {
     /**
      * 通过文件MD5获取一个存储在系统中的文件<br>
      * @param md5   文件MD5值
-     * @return      文件信息，path为本地文件系统中的实际存储文件路径，文件名将被重命名为md5+原文件拓展名
-     * @throws NoSuchFileException  没有文件时抛出
+     * @return      MD5在网盘中对应的资源
      */
     Resource getResourceByMd5(String md5) throws IOException;
 
