@@ -137,7 +137,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     public final String getThumbnailTempPath(String md5) {
-        return "thumbnail/" + md5;
+        return "thumbnail/" + StringUtils.getUniquePath(md5);
     }
 
     @Override
@@ -368,7 +368,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
                 e.printStackTrace();
             }
 
-            return handler.getResource(thumbnailPath);
+            return tempHandler.getResource(thumbnailPath);
         } catch (NoSuchFileException e) {
             log.debug("[缩略图]md5文件资源不存在：{}", md5);
             throw e;
