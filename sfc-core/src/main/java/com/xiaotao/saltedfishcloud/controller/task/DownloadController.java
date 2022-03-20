@@ -42,9 +42,7 @@ public class DownloadController {
 
     @DeleteMapping
     public JsonResult interrupt(@RequestParam String taskId) {
-        var context = downloadService.getTaskContext(taskId);
-        if (context == null) throw new JsonException(404, taskId + "不存在");
-        context.interrupt();
+        downloadService.interrupt(taskId);
         return JsonResult.emptySuccess();
     }
 

@@ -26,15 +26,15 @@ class DownloadTaskRepositoryTest {
     @Test
     public void doTest() {
         var info = new DownloadTaskInfo();
-        info.proxy = "local";
-        info.uid = 1;
-        info.url = "abc";
+        info.setProxy("local");
+        info.setUid(1);
+        info.setUrl("abc");
         downloadTaskRepo.saveAndFlush(info);
-        System.out.println(info.id);
-        info.url = "2333";
+        System.out.println(info.getId());
+        info.setUrl("2333");
         downloadTaskRepo.saveAndFlush(info);
-        var dbInfo = downloadTaskRepo.findById(info.id).get();
-        assertEquals("2333", dbInfo.url);
-        System.out.println(dbInfo.createdAt);
+        var dbInfo = downloadTaskRepo.findById(info.getId()).get();
+        assertEquals("2333", dbInfo.getUrl());
+        System.out.println(dbInfo.getCreatedAt());
     }
 }
