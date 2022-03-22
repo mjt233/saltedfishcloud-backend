@@ -136,10 +136,6 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         return StringUtils.appendPath(getStoreRoot(), "repo");
     }
 
-    public final String getThumbnailTempPath(String md5) {
-        return "thumbnail/" + StringUtils.getUniquePath(md5);
-    }
-
     @Override
     public boolean isUnique() {
         return false;
@@ -342,37 +338,5 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
             tempStoreService = new DefaultTempStoreService(handler, tempRoot);
         }
         return tempStoreService;
-    }
-
-    @Override
-    public Resource getThumbnail(String md5) throws IOException {
-        final String thumbnailPath = getThumbnailTempPath(md5);
-        final TempStoreService tempHandler = getTempFileHandler();
-        final Resource resource = tempHandler.getResource(thumbnailPath);
-        if (resource != null) {
-            log.debug("[缩略图]已有缩略图：{}", md5);
-            return resource;
-        }
-        try {
-            final Resource originResource = md5Resolver.getResourceByMd5(md5);
-            if (originResource == null) {
-                return null;
-            }
-            try(
-                    final InputStream input = originResource.getInputStream();
-                    final OutputStream output = tempHandler.newOutputStream(thumbnailPath)
-            ) {
-                log.debug("[缩略图]生成缩略图：{} 保存到：{}", md5, thumbnailPath);
-                ImageUtils.generateThumbnail(input, 300, output);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            return tempHandler.getResource(thumbnailPath);
-        } catch (NoSuchFileException e) {
-            log.debug("[缩略图]md5文件资源不存在：{}", md5);
-            throw e;
-        }
-
     }
 }

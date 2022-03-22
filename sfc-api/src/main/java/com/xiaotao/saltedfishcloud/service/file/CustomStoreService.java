@@ -11,13 +11,6 @@ import java.io.IOException;
 public interface CustomStoreService {
 
     /**
-     * 获取一个文件的jpg缩略图，可以是图片、视频、文档等。
-     * @param md5   文件的MD5
-     * @return      图片缩略图的资源，若没有对应的缩略图则返回null
-     */
-    Resource getThumbnail(String md5) throws IOException;
-
-    /**
      * 获取用户头像资源
      * @param uid   用户ID
      * @return      用户未设置头像时，为null
