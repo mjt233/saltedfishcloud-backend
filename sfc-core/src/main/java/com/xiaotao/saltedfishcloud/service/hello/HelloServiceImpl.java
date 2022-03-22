@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.hello;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -16,8 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @SuppressWarnings("unchecked")
 @Service
+@Slf4j
 public class HelloServiceImpl implements HelloService, ApplicationRunner {
     private final ConcurrentHashMap<String, Object> store = new ConcurrentHashMap<>();
+    private final static String LOG_TITLE = "[Hello]";
 
     @Autowired(required = false)
     @Lazy
@@ -25,6 +28,7 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
 
     @Override
     public void appendFeatureDetail(String name, Object detail) {
+        log.debug("{}追加注册新特性{}:{}", LOG_TITLE, name, detail);
         Object o = store.get(name);
         if (o == null) {
             o = new HashSet<>();
@@ -39,6 +43,7 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
 
     @Override
     public void setFeature(String name, Object detail) {
+        log.debug("{}设置特性{}:{}", LOG_TITLE, name, detail);
         store.put(name, detail);
     }
 

@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.thumbnail.handler;
 
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
+import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
+import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.ImageUtils;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +17,7 @@ import java.util.List;
  * 简单的位图缩略图生成器
  */
 @Component
-public class SimpleImageThumbnailHandler implements ThumbnailHandler {
+public class SimpleImageThumbnailHandler implements ThumbnailHandler, FeatureProvider {
     private final static List<String> supportList = Collections.unmodifiableList(new ArrayList<String>(){{
         add("jpg");
         add("jpeg");
@@ -32,5 +34,12 @@ public class SimpleImageThumbnailHandler implements ThumbnailHandler {
     @Override
     public List<String> getSupportType() {
         return supportList;
+    }
+
+    @Override
+    public void registerFeature(HelloService helloService) {
+        for (String s : supportList) {
+            helloService.appendFeatureDetail("thumbType", s);
+        }
     }
 }
