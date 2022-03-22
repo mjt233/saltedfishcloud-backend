@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @Slf4j
 public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner {
+    private final static String LOG_TITLE = "[Thumbnail]";
     private final Map<String, ThumbnailHandler> handlerCache = new ConcurrentHashMap<>();
 
     private final StoreServiceProvider storeServiceProvider;
@@ -72,15 +73,18 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
                     final InputStream input = originResource.getInputStream();
                     final OutputStream output = tempHandler.newOutputStream(thumbnailPath)
             ) {
-                log.debug("[缩略图]生成缩略图：{} 保存到：{}", md5, thumbnailPath);
-                findHandler(ext).generate(input, ext, output);
+                ThumbnailHandler handler = findHandler(ext);
+                if (log.isDebugEnabled()) {
+                    log.debug("{}生成器：{} 类型：{} 生成缩略图保存到：{} ", LOG_TITLE, handler.getClass().getSimpleName(), ext, thumbnailPath);
+                }
+                handler.generate(input, ext, output);
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
             return tempHandler.getResource(thumbnailPath);
         } catch (NoSuchFileException e) {
-            log.debug("[缩略图]md5文件资源不存在：{}", md5);
+            log.debug("{}md5文件资源不存在：{}", LOG_TITLE, md5);
             throw e;
         }
     }
@@ -95,7 +99,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
         final TempStoreService tempHandler = storeServiceProvider.getService().getTempFileHandler();
         final Resource resource = tempHandler.getResource(thumbnailPath);
         if (resource != null) {
-            log.debug("[缩略图]已有缩略图：{}", md5);
+            log.debug("{}已有缩略图：{}", LOG_TITLE, md5);
             return resource;
         } else {
             return null;
@@ -116,9 +120,11 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     @Override
     public void registerHandler(ThumbnailHandler thumbnailHandler) {
+        String name = thumbnailHandler.getClass().getSimpleName();
         for (String s : thumbnailHandler.getSupportType()) {
             handlerCache.put(s, thumbnailHandler);
         }
+        log.info("{}为{}类型注册缩略图生成器{}", LOG_TITLE, thumbnailHandler.getSupportType(), name);
     }
 
     @Override
