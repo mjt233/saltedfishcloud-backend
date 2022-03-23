@@ -1,6 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.file.thumbnail;
 
 
+import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
+import com.xiaotao.saltedfishcloud.service.hello.HelloService;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -9,7 +12,7 @@ import java.util.List;
 /**
  * 缩略图操作器，为生成缩略图提供能力支持
  */
-public interface ThumbnailHandler {
+public interface ThumbnailHandler extends FeatureProvider {
 
     /**
      * 从流中读取数据数据生成缩略图
@@ -24,4 +27,11 @@ public interface ThumbnailHandler {
      * @return  支持的缩略图类型
      */
     List<String> getSupportType();
+
+
+    default void registerFeature(HelloService helloService) {
+        for (String s : getSupportType()) {
+            helloService.appendFeatureDetail("thumbType", s);
+        }
+    }
 }

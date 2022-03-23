@@ -17,13 +17,14 @@ import java.util.List;
  * 简单的位图缩略图生成器
  */
 @Component
-public class SimpleImageThumbnailHandler implements ThumbnailHandler, FeatureProvider {
+public class SimpleImageThumbnailHandler implements ThumbnailHandler {
     private final static List<String> supportList = Collections.unmodifiableList(new ArrayList<String>(){{
         add("jpg");
         add("jpeg");
         add("png");
         add("gif");
         add("bmp");
+        add("webp");
     }});
 
     @Override
@@ -36,10 +37,4 @@ public class SimpleImageThumbnailHandler implements ThumbnailHandler, FeaturePro
         return supportList;
     }
 
-    @Override
-    public void registerFeature(HelloService helloService) {
-        for (String s : supportList) {
-            helloService.appendFeatureDetail("thumbType", s);
-        }
-    }
 }

@@ -25,6 +25,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -48,11 +49,17 @@ public class ResourceController {
 
     @GetMapping("thumbnail/{md5}")
     @AllowAnonymous
-    public HttpEntity<Resource> getThumbnail(@PathVariable("md5") String md5, @RequestParam("type") String type) throws IOException {
+    public HttpEntity<Resource> getThumbnail(@PathVariable("md5") String md5, @RequestParam("type") String type, HttpServletResponse response) throws IOException {
+        Resource img = thumbnailService.getThumbnail(md5, type);
+        if (img == null) {
+            response.setStatus(404);
+            return null;
+        }
+
         final ResponseEntity.BodyBuilder bodyBuilder = ResourceUtils.generateResponseEntity(md5 + ".jpg");
         return bodyBuilder
                 .header("Cache-Control", ONE_YEAR_SECONDS)
-                .body(thumbnailService.getThumbnail(md5, type));
+                .body(img);
     }
 
     @GetMapping({"node/**", "node"})

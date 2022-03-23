@@ -74,11 +74,12 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
                     final OutputStream output = tempHandler.newOutputStream(thumbnailPath)
             ) {
                 ThumbnailHandler handler = findHandler(ext);
+                handler.generate(input, ext, output);
                 if (log.isDebugEnabled()) {
                     log.debug("{}生成器：{} 类型：{} 生成缩略图保存到：{} ", LOG_TITLE, handler.getClass().getSimpleName(), ext, thumbnailPath);
                 }
-                handler.generate(input, ext, output);
             } catch (Exception e) {
+                tempHandler.delete(thumbnailPath);
                 e.printStackTrace();
             }
 

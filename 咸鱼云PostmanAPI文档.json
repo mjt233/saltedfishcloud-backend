@@ -4383,6 +4383,26 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "获取系统特性",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{addr}}/api/hello/feature",
+					"host": [
+						"{{addr}}"
+					],
+					"path": [
+						"api",
+						"hello",
+						"feature"
+					]
+				},
+				"description": "由于系统某些功能支持开关以及系统本身具有插件拓展能力，不同的咸鱼云实例能提供的的特性可能会不一致。通过该接口可以让客户端了解服务器的能力从而选择性进行功能调用。\n\n比如通过加载插件，服务器会比原生系统多支持exe、mp4文件的缩略图生成与查看。而客户端可以根据这一特性选择对exe、mp4文件请求缩略图查看\n\n- URI：`/api/hello/feature`\n- 动作：GET\n\n无需登录\n\n### 响应\n特性功能汇总"
+			},
+			"response": []
 		}
 	],
 	"auth": {
