@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.service.file.CustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.http.ResourceService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
@@ -24,6 +25,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -42,16 +44,22 @@ public class ResourceController {
     private final DiskFileSystemProvider fileService;
     private final NodeService nodeService;
     private final ResourceService resourceService;
-    private final CustomStoreService customStoreService;
+    private final ThumbnailService thumbnailService;
     private static final String ONE_YEAR_SECONDS = "max-age=" + 60*60*24*365;
 
     @GetMapping("thumbnail/{md5}")
     @AllowAnonymous
-    public HttpEntity<Resource> getThumbnail(@PathVariable("md5") String md5) throws IOException {
+    public HttpEntity<Resource> getThumbnail(@PathVariable("md5") String md5, @RequestParam("type") String type, HttpServletResponse response) throws IOException {
+        Resource img = thumbnailService.getThumbnail(md5, type);
+        if (img == null) {
+            response.setStatus(404);
+            return null;
+        }
+
         final ResponseEntity.BodyBuilder bodyBuilder = ResourceUtils.generateResponseEntity(md5 + ".jpg");
         return bodyBuilder
                 .header("Cache-Control", ONE_YEAR_SECONDS)
-                .body(customStoreService.getThumbnail(md5));
+                .body(img);
     }
 
     @GetMapping({"node/**", "node"})

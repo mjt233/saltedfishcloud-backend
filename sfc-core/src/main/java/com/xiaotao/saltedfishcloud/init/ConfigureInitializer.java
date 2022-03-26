@@ -25,7 +25,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ConfigureInitializer implements ApplicationRunner {
     private final ConfigDao configDao;
-    private final SysRuntimeConfig sysRuntimeConfig;
     private final SysProperties sysProperties;
     @Override
     public void run(ApplicationArguments args) throws Exception {

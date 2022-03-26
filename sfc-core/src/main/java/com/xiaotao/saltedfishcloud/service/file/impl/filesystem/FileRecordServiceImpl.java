@@ -60,7 +60,7 @@ public class FileRecordServiceImpl implements FileRecordService {
     public boolean exist(int uid, String path, String name) {
         try {
             final String nid = nodeService.getNodeIdByPath(uid, path);
-            if ((uid + "").equals(nid)) {
+            if ((uid + "").equals(nid) && (name == null || name.length() == 0)) {
                 return true;
             }
             return fileDao.getFileInfo(uid, name, nid) != null;
