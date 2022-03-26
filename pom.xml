@@ -24,7 +24,7 @@
         API或脚手架模块版本号仅使用数字加点（如：sfc-ext，sfc-api）
         功能组件或咸鱼云根模块需要使用RELEASE或SNAPSHOT后缀（如：sfc-core，sfc-ext-hadoop-store）
     -->
-    <version>1.8.5.1-SNAPSHOT</version>
+    <version>1.8.5.2-RELEASE</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
