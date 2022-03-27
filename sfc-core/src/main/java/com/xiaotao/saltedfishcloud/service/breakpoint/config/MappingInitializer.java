@@ -2,6 +2,8 @@ package com.xiaotao.saltedfishcloud.service.breakpoint.config;
 
 import com.xiaotao.saltedfishcloud.service.breakpoint.BreakPointController;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
+import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
+import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import lombok.var;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,7 +16,7 @@ import java.lang.reflect.Method;
  * 初始化断点续传管理API，注册路由
  * @TODO 通过读取外部配置实现动态配置断点续传URL
  */
-public class MappingInitializer {
+public class MappingInitializer implements FeatureProvider {
     private static final String PREFIX = "/api/breakpoint";
     private final BreakPointController controller;
     private final RequestMappingHandlerMapping mappingHandler;
@@ -46,5 +48,10 @@ public class MappingInitializer {
     private void registerMapping(String url, Method handlerMethod, RequestMethod...method) {
         var info = RequestMappingInfo.paths(url).methods(method).build();
         mappingHandler.registerMapping(info, controller, handlerMethod);
+    }
+
+    @Override
+    public void registerFeature(HelloService helloService) {
+        helloService.setFeature("breakpointUrl", PREFIX);
     }
 }

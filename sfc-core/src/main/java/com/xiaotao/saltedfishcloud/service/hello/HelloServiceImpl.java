@@ -28,7 +28,7 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
 
     @Override
     public void appendFeatureDetail(String name, Object detail) {
-        log.debug("{}追加注册新特性{}:{}", LOG_TITLE, name, detail);
+        log.debug("{}增加特性{}:{}", LOG_TITLE, name, detail);
         Object o = store.get(name);
         if (o == null) {
             o = new HashSet<>();

@@ -15,6 +15,8 @@ import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.*;
+import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
+import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -41,7 +43,7 @@ import java.util.zip.ZipException;
 
 @RequiredArgsConstructor
 @Slf4j
-public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner {
+public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, FeatureProvider {
     private final static String LOG_TITLE = "FileSystem";
 
     @Autowired
@@ -509,4 +511,9 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner {
         }
     }
 
+    @Override
+    public void registerFeature(HelloService helloService) {
+        helloService.appendFeatureDetail("archiveType", "zip");
+        helloService.appendFeatureDetail("extractArchiveType", "zip");
+    }
 }

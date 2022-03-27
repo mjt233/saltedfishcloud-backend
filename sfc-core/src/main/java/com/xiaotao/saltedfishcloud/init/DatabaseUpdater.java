@@ -27,7 +27,6 @@ public class DatabaseUpdater implements ApplicationRunner {
     private final Connection conn;
     private final ConfigDao configDao;
     private final Version lastVersion;
-    private final Version currentVersion;
     private final ResourceLoader resourceLoader;
     private final SysProperties sysProperties;
 
@@ -82,7 +81,6 @@ public class DatabaseUpdater implements ApplicationRunner {
             v = sysProperties.getVersion();
         }
         lastVersion = v;
-        currentVersion = sysProperties.getVersion();
         this.configDao = configDao;
         this.resourceLoader = resourceLoader;
         this.sysProperties = sysProperties;

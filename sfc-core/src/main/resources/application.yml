@@ -8,6 +8,9 @@ server:
   tomcat:
     remoteip:
       remote-ip-header: X-Real-IP
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
 spring:
   jpa:
     database: mysql
