@@ -12,6 +12,11 @@
     <artifactId>sfc-core</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>com.mpatric</groupId>
+            <artifactId>mp3agic</artifactId>
+            <version>0.9.1</version>
+        </dependency>
         <!-- <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-ext-hadoop-store</artifactId>
@@ -20,7 +25,7 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
-            <version>1.1.2</version>
+            <version>1.2.0</version>
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.boot</groupId>-->

@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.ImageUtils;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -28,8 +29,12 @@ public class SimpleImageThumbnailHandler implements ThumbnailHandler {
     }});
 
     @Override
-    public void generate(InputStream inputStream, String type, OutputStream outputStream) throws IOException {
-        ImageUtils.generateThumbnail(inputStream, 300, outputStream);
+    public boolean generate(Resource resource, String type, OutputStream outputStream) throws IOException {
+        try(InputStream is = resource.getInputStream()) {
+            ImageUtils.generateThumbnail(is, 300, outputStream);
+        }
+        return true;
+
     }
 
     @Override

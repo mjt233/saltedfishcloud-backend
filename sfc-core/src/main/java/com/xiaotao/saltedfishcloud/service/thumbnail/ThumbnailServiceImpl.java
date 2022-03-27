@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
+import com.xiaotao.saltedfishcloud.utils.ByteSize;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.Constants;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
@@ -66,17 +68,20 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
             final Resource originResource = md5Resolver.getResourceByMd5(md5);
             final TempStoreService tempHandler = storeServiceProvider.getService().getTempFileHandler();
             final String thumbnailPath = getThumbnailTempPath(md5);
-            if (originResource == null) {
+            if (originResource == null || originResource.contentLength() == 0 || originResource.contentLength() > ByteSize._1MiB * 128) {
                 return null;
             }
             try(
-                    final InputStream input = originResource.getInputStream();
                     final OutputStream output = tempHandler.newOutputStream(thumbnailPath)
             ) {
                 ThumbnailHandler handler = findHandler(ext);
-                handler.generate(input, ext, output);
+                boolean res = handler.generate(originResource, ext, output);
                 if (log.isDebugEnabled()) {
-                    log.debug("{}生成器：{} 类型：{} 生成缩略图保存到：{} ", LOG_TITLE, handler.getClass().getSimpleName(), ext, thumbnailPath);
+                    if (res) {
+                        log.debug("{}生成成功 生成器：{} 类型：{} 生成缩略图保存到：{} ", LOG_TITLE, handler.getClass().getSimpleName(), ext, thumbnailPath);
+                    } else {
+                        log.debug("{}生成失败 生成器：{} 类型：{} 原保存路径：{} ", LOG_TITLE, handler.getClass().getSimpleName(), ext, thumbnailPath);
+                    }
                 }
             } catch (Exception e) {
                 tempHandler.delete(thumbnailPath);

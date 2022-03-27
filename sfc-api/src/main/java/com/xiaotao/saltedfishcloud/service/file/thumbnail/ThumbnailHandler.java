@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file.thumbnail;
 
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
+import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,11 +17,12 @@ public interface ThumbnailHandler extends FeatureProvider {
 
     /**
      * 从流中读取数据数据生成缩略图
-     * @param inputStream   原图输入流
+     * @param resource      原图资源
      * @param type          文件类型
      * @param outputStream  缩略图输出流
+     * @return 是否生成成功
      */
-    void generate(InputStream inputStream, String type, OutputStream outputStream) throws IOException;
+    boolean generate(Resource resource, String type, OutputStream outputStream) throws IOException;
 
     /**
      * 获取支持的缩略图类型

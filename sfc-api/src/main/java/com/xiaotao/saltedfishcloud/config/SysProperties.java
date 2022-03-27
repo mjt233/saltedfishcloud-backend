@@ -16,6 +16,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 @ConfigEntity("sys")
 @Configuration
@@ -45,6 +46,11 @@ public class SysProperties implements InitializingBean {
 
     @Data
     public static class Store {
+        /**
+         * 本地文件系统中的临时目录
+         */
+        private String localTempDir = PathUtils.getTempDirectory();
+
         /**
          * 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
          */
@@ -85,7 +91,7 @@ public class SysProperties implements InitializingBean {
                 this.archiveEncoding = encoding;
             }
         }
-        
+
     }
 
     @Data
