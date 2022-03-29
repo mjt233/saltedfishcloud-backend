@@ -9,16 +9,16 @@ import com.xiaotao.saltedfishcloud.utils.ByteSize;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.Constants;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
@@ -34,6 +34,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     private final StoreServiceProvider storeServiceProvider;
     private final FileResourceMd5Resolver md5Resolver;
+    private final RedissonClient redisson;
 
     @Autowired(required = false)
     @Lazy
@@ -114,14 +115,24 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     @Override
     public Resource getThumbnail(String md5, String ext) throws IOException {
-
         // 优先从已生成的资源中获取，若不存在再进行生成操作
         Resource resource = getFromExist(md5);
         if (resource != null) {
             return resource;
         }
 
-        return generate(md5, ext);
+        // 双重校验锁
+        RLock lock = redisson.getLock(md5);
+        try {
+            lock.lock();
+            resource = getFromExist(md5);
+            if (resource != null) {
+                return resource;
+            }
+            return generate(md5, ext);
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override

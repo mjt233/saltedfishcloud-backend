@@ -19,7 +19,7 @@ import java.util.Objects;
 @Configuration
 @RequiredArgsConstructor
 public class RedisConfig {
-    private final LettuceConnectionFactory factory;
+    private final RedisConnectionFactory factory;
 
     @Bean
     public RedisTemplate<String, Object> redisTemplate() {
@@ -31,7 +31,7 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisCacheManager cacheManager(LettuceConnectionFactory factory) {
+    public RedisCacheManager cacheManager() {
         return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(
                 Objects.requireNonNull(redisTemplate().getConnectionFactory()))
                 .cacheDefaults(getCacheConfig())

@@ -29,7 +29,6 @@ spring:
       test-on-return: false
   redis:
     host: 127.0.0.1
-    password:
     port: 6379
     lettuce:
       pool:
