@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -67,6 +69,28 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
     @Autowired
     private SysProperties sysProperties;
 
+    @Autowired
+    private RedissonClient redisson;
+
+    /**
+     * 获取写文件时用到分布式锁key
+     * @param uid   用户id
+     * @param path  文件所在路径
+     * @param name  文件名
+     */
+    private static String getStoreLockKey(int uid, String path, String name) {
+        return uid + ":" + StringUtils.appendPath(path, name);
+    }
+
+    /**
+     * 获取写文件时用到分布式锁key
+     * @param uid   用户id
+     * @param dest  文件所在路径
+     */
+    private static String getStoreLockKey(int uid, String dest) {
+        return uid + ":" + dest;
+    }
+
     @Override
     public void saveAvatar(int uid, Resource resource) throws IOException {
         customStoreService.saveAvatar(uid, resource);
@@ -100,11 +124,15 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
         if (resource == null) {
             return false;
         }
+        RLock lock = redisson.getLock(getStoreLockKey(uid, path, name));
         try {
+            lock.lock();
             saveFile(uid, resource.getInputStream(), path, fileInfo);
         } catch (IOException e) {
             log.trace("错误：{}", e.getMessage());
             return false;
+        } finally {
+            lock.unlock();
         }
         return true;
     }
@@ -175,6 +203,8 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
             throw new JsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
         }
         Path temp = Paths.get(PathUtils.getTempDirectory() + "/temp_zip" + System.currentTimeMillis());
+        RLock lock = redisson.getLock(getStoreLockKey(uid, dest));
+        lock.lock();
         try(OutputStream output = Files.newOutputStream(temp)) {
             PathBuilder pb = new PathBuilder();
             pb.append(dest);
@@ -188,6 +218,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
             moveToSaveFile(uid, temp, pb.range(-1), fileInfo);
         } finally {
             Files.deleteIfExists(temp);
+            lock.unlock();
         }
 
 
@@ -338,17 +369,25 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
-        final StoreService service = storeServiceProvider.getService();
-        if (!service.isUnique()) {
-            service.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+        RLock lock = redisson.getLock(getStoreLockKey(uid, target, targetName));
+        try {
+            lock.lock();
+            fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+            final StoreService service = storeServiceProvider.getService();
+            if (!service.isUnique()) {
+                service.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
+        RLock lock = redisson.getLock(getStoreLockKey(uid, target, name));
         try {
+            lock.lock();
             target = URLDecoder.decode(target, "UTF-8");
             fileRecordService.move(uid, source, target, name, overwrite);
             final StoreService storeService = storeServiceProvider.getService();
@@ -359,6 +398,8 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
             throw new JsonException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
         } catch (UnsupportedEncodingException e) {
             throw new JsonException(400, "不支持的编码（请使用UTF-8）");
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -411,10 +452,16 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void moveToSaveFile(int uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
-        storeServiceProvider.getService().moveToSave(uid, nativeFilePath, path, fileInfo);
-        int res = fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), path);
-        if ( res == 0) {
-            fileRecordService.updateFileRecord(uid, fileInfo.getName(), path, fileInfo.getSize(), fileInfo.getMd5());
+        RLock lock = redisson.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
+        try {
+            lock.lock();
+            storeServiceProvider.getService().moveToSave(uid, nativeFilePath, path, fileInfo);
+            int res = fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), path);
+            if ( res == 0) {
+                fileRecordService.updateFileRecord(uid, fileInfo.getName(), path, fileInfo.getSize(), fileInfo.getMd5());
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -453,19 +500,25 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
         // 判断是否存在同名文件，若存在则依据md5判断文件内容是否相同
         // 如果文件内容相同，则不做任何处理
         // 若文件相同，则执行一次删除同名文件
-        FileInfo originInfo = fileDao.getFileInfo(uid, fileInfo.getName(), nid);
-        boolean exist = false;
-        if (originInfo != null) {
-            if (originInfo.getMd5().equals(fileInfo.getMd5())) {
-                return SAVE_NOT_CHANGE;
-            } else {
-                deleteFile(uid, path, Collections.singletonList(fileInfo.getName()));
+        RLock lock = redisson.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
+        try {
+            lock.lock();
+            FileInfo originInfo = fileDao.getFileInfo(uid, fileInfo.getName(), nid);
+            boolean exist = false;
+            if (originInfo != null) {
+                if (originInfo.getMd5().equals(fileInfo.getMd5())) {
+                    return SAVE_NOT_CHANGE;
+                } else {
+                    deleteFile(uid, path, Collections.singletonList(fileInfo.getName()));
+                }
+                exist = true;
             }
-            exist = true;
+            storeServiceProvider.getService().store(uid, file, path, fileInfo);
+            fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid);
+            return exist ? SAVE_COVER : SAVE_NEW_FILE;
+        } finally {
+            lock.unlock();
         }
-        storeServiceProvider.getService().store(uid, file, path, fileInfo);
-        fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid);
-        return exist ? SAVE_COVER : SAVE_NEW_FILE;
     }
 
     @Override
@@ -481,33 +534,54 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long deleteFile(int uid, String path, List<String> name) throws IOException {
-        // 计数删除数
-        long res = 0L;
-        List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
-        final StoreService storeService = storeServiceProvider.getService();
-
-        // 唯一存储下确认文件无引用后再执行通过md5删除
-        if (storeService.isUnique()) {
-            for (FileInfo fileInfo : fileInfos) {
-
-                // @TODO 使用批量查询和求集合差级操作进行引用判断提高性能
-                if (!md5Resolver.hasRef(fileInfo.getMd5())) {
-                    storeService.delete(fileInfo.getMd5());
-                }
-            }
-        } else {
-            res += storeService.delete(uid, path, name);
+        ArrayList<RLock> locks = new ArrayList<>();
+        for (String s : name) {
+            RLock lock = redisson.getLock(getStoreLockKey(uid, path, s));
+            lock.lock();
+            locks.add(lock);
         }
-        return res;
+        try {
+            // 计数删除数
+            long res = 0L;
+            List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
+            final StoreService storeService = storeServiceProvider.getService();
+
+            // 唯一存储下确认文件无引用后再执行通过md5删除
+            if (storeService.isUnique()) {
+                for (FileInfo fileInfo : fileInfos) {
+
+                    // @TODO 使用批量查询和求集合差级操作进行引用判断提高性能
+                    if (!md5Resolver.hasRef(fileInfo.getMd5())) {
+                        storeService.delete(fileInfo.getMd5());
+                    }
+                }
+            } else {
+                res += storeService.delete(uid, path, name);
+            }
+            return res;
+        } finally {
+            for (RLock lock : locks) {
+                lock.unlock();
+            }
+        }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rename(int uid, String path, String name, String newName) throws IOException {
-        fileRecordService.rename(uid, path, name, newName);
-        final StoreService storeService = storeServiceProvider.getService();
-        if (!storeService.isUnique()) {
-            storeService.rename(uid, path, name, newName);
+        RLock lock1 = redisson.getLock(getStoreLockKey(uid, path, name));
+        RLock lock2 = redisson.getLock(getStoreLockKey(uid, path, newName));
+        lock1.lock();
+        lock2.lock();
+        try {
+            fileRecordService.rename(uid, path, name, newName);
+            final StoreService storeService = storeServiceProvider.getService();
+            if (!storeService.isUnique()) {
+                storeService.rename(uid, path, name, newName);
+            }
+        } finally {
+            lock1.unlock();
+            lock2.unlock();
         }
     }
 
