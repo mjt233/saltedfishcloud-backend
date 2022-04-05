@@ -24,7 +24,7 @@ public class BreakPointConfigurator implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        new MappingInitializer(controller(), mapping).init();
+        mappingInitializer().init();
     }
 
     /**

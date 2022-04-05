@@ -5,10 +5,12 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -94,6 +96,35 @@ public class FileUtils {
         if (!Files.exists(parent)) {
             Files.createDirectories(parent);
         }
+    }
+
+    /**
+     * 将输入流保存到本地临时目录中，并返回保存后的临时文件Path。
+     * 该方法会一直读取inputStream直到不可再读，无论是否异常都会关闭输入流。
+     * @param inputStream   数据输入流
+     * @param tempDir       本地文件系统临时目录
+     * @return              临时文件在本地文件系统中的路径
+     * @throws IOException  任何IO错误
+     */
+    public static File saveStreamAsLocalTempFile(InputStream inputStream, String tempDir) throws IOException {
+        Path path = Paths.get(StringUtils.appendPath(tempDir, "xyy_temp", UUID.randomUUID().toString()));
+        createParentDirectory(path);
+        try(InputStream is = inputStream) {
+            Files.copy(is, path);
+        }
+        return path.toFile();
+    }
+
+    /**
+     * 将输入流保存到本地临时目录中，并返回保存后的临时文件Path。
+     * 该方法会一直读取inputStream直到不可再读，无论是否异常都会关闭输入流。
+     * @param resource      资源数据
+     * @param tempDir       本地文件系统临时目录
+     * @return              临时文件在本地文件系统中的路径
+     * @throws IOException  任何IO错误
+     */
+    public static File saveStreamAsLocalTempFile(Resource resource, String tempDir) throws IOException {
+        return saveStreamAsLocalTempFile(resource.getInputStream(), tempDir);
     }
 
     /**

@@ -9,10 +9,10 @@ import java.io.OutputStream;
 
 public class ImageUtils {
     /**
-     * 生成图片缩略图
-     * @param imageInputStream  图片输入流
+     * 生成图片缩略图。
+     * @param imageInputStream  图片输入流，在该方法内<strong>不会</strong>关闭该流
      * @param maxThumbSize      最大的长宽值，压缩生成的缩略图长或宽必有一个小于该值
-     * @param outputStream      接收缩略图的输出流
+     * @param outputStream      接收缩略图的输出流，在该方法内<strong>不会</strong>关闭该流
      * @throws IOException      IO异常
      */
     public static void generateThumbnail(InputStream imageInputStream, int maxThumbSize, OutputStream outputStream) throws IOException {

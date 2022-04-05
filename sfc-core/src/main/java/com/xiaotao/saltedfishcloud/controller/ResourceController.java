@@ -45,7 +45,6 @@ public class ResourceController {
     private final NodeService nodeService;
     private final ResourceService resourceService;
     private final ThumbnailService thumbnailService;
-    private static final String ONE_YEAR_SECONDS = "max-age=" + 60*60*24*365;
 
     @GetMapping("thumbnail/{md5}")
     @AllowAnonymous
@@ -55,11 +54,7 @@ public class ResourceController {
             response.setStatus(404);
             return null;
         }
-
-        final ResponseEntity.BodyBuilder bodyBuilder = ResourceUtils.generateResponseEntity(md5 + ".jpg");
-        return bodyBuilder
-                .header("Cache-Control", ONE_YEAR_SECONDS)
-                .body(img);
+        return ResourceUtils.wrapResourceWithCache(img, md5 + ".jpg");
     }
 
     @GetMapping({"node/**", "node"})
@@ -138,7 +133,7 @@ public class ResourceController {
         } else {
             name = resource.getFilename();
         }
-        return ResourceUtils.wrapResource(resource, name);
+        return ResourceUtils.wrapResourceWithCache(resource, name);
     }
 
 }

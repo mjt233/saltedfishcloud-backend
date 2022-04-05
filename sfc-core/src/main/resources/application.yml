@@ -8,6 +8,9 @@ server:
   tomcat:
     remoteip:
       remote-ip-header: X-Real-IP
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
 spring:
   jpa:
     database: mysql
@@ -26,7 +29,6 @@ spring:
       test-on-return: false
   redis:
     host: 127.0.0.1
-    password:
     port: 6379
     lettuce:
       pool:

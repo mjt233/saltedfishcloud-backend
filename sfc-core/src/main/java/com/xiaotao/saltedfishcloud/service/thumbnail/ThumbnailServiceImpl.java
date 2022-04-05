@@ -5,9 +5,12 @@ import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
+import com.xiaotao.saltedfishcloud.utils.ByteSize;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -16,7 +19,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
@@ -32,6 +34,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     private final StoreServiceProvider storeServiceProvider;
     private final FileResourceMd5Resolver md5Resolver;
+    private final RedissonClient redisson;
 
     @Autowired(required = false)
     @Lazy
@@ -66,17 +69,20 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
             final Resource originResource = md5Resolver.getResourceByMd5(md5);
             final TempStoreService tempHandler = storeServiceProvider.getService().getTempFileHandler();
             final String thumbnailPath = getThumbnailTempPath(md5);
-            if (originResource == null) {
+            if (originResource == null || originResource.contentLength() == 0 || originResource.contentLength() > ByteSize._1MiB * 128) {
                 return null;
             }
             try(
-                    final InputStream input = originResource.getInputStream();
                     final OutputStream output = tempHandler.newOutputStream(thumbnailPath)
             ) {
                 ThumbnailHandler handler = findHandler(ext);
-                handler.generate(input, ext, output);
+                boolean res = handler.generate(originResource, ext, output);
                 if (log.isDebugEnabled()) {
-                    log.debug("{}生成器：{} 类型：{} 生成缩略图保存到：{} ", LOG_TITLE, handler.getClass().getSimpleName(), ext, thumbnailPath);
+                    if (res) {
+                        log.debug("{}生成成功 生成器：{} 类型：{} 生成缩略图保存到：{} ", LOG_TITLE, handler.getClass().getSimpleName(), ext, thumbnailPath);
+                    } else {
+                        log.debug("{}生成失败 生成器：{} 类型：{} 原保存路径：{} ", LOG_TITLE, handler.getClass().getSimpleName(), ext, thumbnailPath);
+                    }
                 }
             } catch (Exception e) {
                 tempHandler.delete(thumbnailPath);
@@ -109,14 +115,24 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     @Override
     public Resource getThumbnail(String md5, String ext) throws IOException {
-
         // 优先从已生成的资源中获取，若不存在再进行生成操作
         Resource resource = getFromExist(md5);
         if (resource != null) {
             return resource;
         }
 
-        return generate(md5, ext);
+        // 双重校验锁
+        RLock lock = redisson.getLock(md5);
+        try {
+            lock.lock();
+            resource = getFromExist(md5);
+            if (resource != null) {
+                return resource;
+            }
+            return generate(md5, ext);
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
