@@ -120,8 +120,8 @@ CREATE TABLE `file_table` (
                               `node` char(32) DEFAULT NULL,
                               `size` bigint NOT NULL,
                               `md5` char(32) DEFAULT NULL,
-                              `created_at` timestamp NULL DEFAULT NULL,
-                              `updated_at` timestamp NULL DEFAULT NULL,
+                              `created_at` datetime NULL DEFAULT NULL,
+                              `updated_at` datetime NULL DEFAULT NULL,
                               UNIQUE KEY `file_index` (`node`,`name`,`uid`),
                               KEY `md5_index` (`md5`),
                               KEY `uid_index` (`uid`)
@@ -184,7 +184,7 @@ CREATE TABLE `share` (
                          `expired_at` datetime DEFAULT NULL COMMENT '分享过期日期',
                          PRIMARY KEY (`id`),
                          KEY `uid_index` (`uid`)
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
