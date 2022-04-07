@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.download;
 
 import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.dao.jpa.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
@@ -51,9 +52,6 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
     );
     static final private Collection<DownloadTaskInfo.State> DOWNLOADING_TYPE = Collections.singleton(DownloadTaskInfo.State.DOWNLOADING);
 
-    // 发布下载中断的可订阅CHANNEL
-    public static final String INTERRUPT_TOPIC = "xyy_download_interrupt";
-
     public static final String LOG_TITLE = "[Download]";
 
     @Resource
@@ -99,7 +97,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
             final String interruptId = (String)redisTemplate.getValueSerializer().deserialize(message.getBody());
             final boolean res = tryInterrupt(interruptId);
             log.debug("{}收到中断任务请求：{}，执行结果：{}", LOG_TITLE, interruptId, res);
-        }, new PatternTopic(INTERRUPT_TOPIC));
+        }, new PatternTopic(MQTopic.DOWNLOAD_TASK_INTERRUPT));
     }
 
     /**
@@ -123,7 +121,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
         downloadDao.save(info);
 
         log.debug("{}发送中断任务请求：{}", LOG_TITLE, id);
-        redisTemplate.convertAndSend(INTERRUPT_TOPIC, id);
+        redisTemplate.convertAndSend(MQTopic.DOWNLOAD_TASK_INTERRUPT, id);
     }
 
     @Override

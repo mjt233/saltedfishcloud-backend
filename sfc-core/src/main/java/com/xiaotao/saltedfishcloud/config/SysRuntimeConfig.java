@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
+import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.service.config.ConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
@@ -9,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -21,11 +25,17 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class SysRuntimeConfig implements ApplicationRunner {
-    public static ProtectLevel PROTECT_MODE_LEVEL = null;
+    private static ProtectLevel PROTECT_MODE_LEVEL = null;
     private static SysRuntimeConfig GLOBAL_HOLD_INST;
 
     @Autowired
     private ConfigService configService;
+
+    @Autowired
+    private RedisMessageListenerContainer redisMessageListenerContainer;
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Getter
     private boolean enableRegCode;
@@ -39,7 +49,7 @@ public class SysRuntimeConfig implements ApplicationRunner {
         return GLOBAL_HOLD_INST;
     }
 
-    public static synchronized ProtectLevel getProtectModeLevel() {
+    public synchronized ProtectLevel getProtectModeLevel() {
         return PROTECT_MODE_LEVEL;
     }
 
@@ -56,16 +66,27 @@ public class SysRuntimeConfig implements ApplicationRunner {
      * @param level 保护模式级别
      * @throws IllegalStateException 当系统处于保护模式下抛出此异常
      */
-    public static synchronized void setProtectModeLevel(ProtectLevel level) {
-        if (level != null && PROTECT_MODE_LEVEL != null) {
+    public synchronized void setProtectModeLevel(ProtectLevel level) {
+        if ((level != ProtectLevel.OFF && level != null) && PROTECT_MODE_LEVEL != null) {
             throw new IllegalStateException("当前已处于：" + PROTECT_MODE_LEVEL);
         }
-        if (level != null) {
+        if (level != null && level != ProtectLevel.OFF) {
             log.debug("保护级别切换到" + level);
         } else {
             log.debug("关闭保护模式");
+            level = ProtectLevel.OFF;
         }
-        PROTECT_MODE_LEVEL = level;
+
+        // 发布保护模式切换消息
+        redisTemplate.convertAndSend(MQTopic.PROTECT_LEVEL_SWITCH, level.toString());
+    }
+
+    protected void changeProtectModeLevel(ProtectLevel level) {
+        if (level == ProtectLevel.OFF) {
+            PROTECT_MODE_LEVEL = null;
+        } else {
+            PROTECT_MODE_LEVEL = level;
+        }
     }
 
     @Override
@@ -87,6 +108,14 @@ public class SysRuntimeConfig implements ApplicationRunner {
                 enableRegCode = "true".equals(e.getValue().toLowerCase());
             }
         });
+
+
+        // 监听分布式集群中触发保护级别切换信号
+        redisMessageListenerContainer.addMessageListener((message, pattern) -> {
+            ProtectLevel level = ProtectLevel.valueOf((String)redisTemplate.getValueSerializer().deserialize(message.getBody()));
+            log.debug("[Runtime Config]因消息通知,系统保护级别切换为：{}", level);
+            changeProtectModeLevel(level);
+        }, new PatternTopic(MQTopic.PROTECT_LEVEL_SWITCH));
     }
 
     /**
