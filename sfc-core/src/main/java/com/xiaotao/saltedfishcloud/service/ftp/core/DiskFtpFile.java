@@ -96,7 +96,7 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean isWritable() {
-        if (SysRuntimeConfig.getProtectModeLevel() == ProtectLevel.DATA_MOVING) {
+        if (SysRuntimeConfig.getInstance().getProtectModeLevel() == ProtectLevel.DATA_MOVING) {
             return false;
         }
         // FTP根目录不可写

@@ -129,12 +129,12 @@ public class ConfigServiceImpl implements ConfigService {
         }
         log.info("存储切换：{} -> {}", storeMode, type.toString());
         try {
-            SysRuntimeConfig.setProtectModeLevel(ProtectLevel.DATA_MOVING);
+            SysRuntimeConfig.getInstance().setProtectModeLevel(ProtectLevel.DATA_MOVING);
             configDao.setConfigure(StoreMode.getConfigKey(), type.toString());
             storeTypeSwitch.switchTo(type);
-            SysRuntimeConfig.setProtectModeLevel(null);
+            SysRuntimeConfig.getInstance().setProtectModeLevel(ProtectLevel.OFF);
         } catch (IOException | RuntimeException e) {
-            SysRuntimeConfig.setProtectModeLevel(null);
+            SysRuntimeConfig.getInstance().setProtectModeLevel(ProtectLevel.OFF);
             throw e;
         }
         return true;

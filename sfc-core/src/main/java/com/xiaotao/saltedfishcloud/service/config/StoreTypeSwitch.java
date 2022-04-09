@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,7 +70,12 @@ public class StoreTypeSwitch {
                 String dirPath = entry.getKey();
                 List<FileInfo> files = entry.getValue();
                 for (FileInfo file : files) {
-                    if(file.isDir()) continue;
+                    if(file.isDir()) {
+                        if (targetMode == StoreMode.RAW) {
+                            destStoreService.mkdir(uid, dirPath, file.getName());
+                        }
+                        continue;
+                    };
                     final String diskFullPath = StringUtils.appendPath(dirPath, file.getName());
 
                     // unique不支持list
@@ -91,12 +97,6 @@ public class StoreTypeSwitch {
                         log.error("[Store Switch]出错：{}/{}",dirPath, file.getName());
                         e.printStackTrace();
                     }
-                }
-
-                if(targetMode == StoreMode.UNIQUE) {
-                    final List<String> fileNames = files.stream().map(FileInfo::getName).collect(Collectors.toList());
-                    log.debug("[Store Switch]RAW => UNIQUE 目录：{} 清理旧文件：{}",dirPath, fileNames);
-                    srcStoreService.delete(uid, dirPath, fileNames);
                 }
             }
         }

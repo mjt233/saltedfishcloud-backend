@@ -40,7 +40,7 @@ public class AdminService {
         data.put("public_free_space", publicRoot.getFreeSpace());
         data.put("store_root", storeRoot.getPath());
         data.put("public_root", publicRoot.getPath());
-        data.put("read_only", SysRuntimeConfig.getProtectModeLevel());
+        data.put("read_only", SysRuntimeConfig.getInstance().getProtectModeLevel());
         return data;
     }
 }

@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.utils.ArrayUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -17,13 +18,15 @@ import java.io.IOException;
 
 @Component
 public class ProtectBlocker implements HandlerInterceptor {
+    @Autowired
+    private SysRuntimeConfig sysRuntimeConfig;
     /**
      * 检查是否处于存储模式的切换中状态，如果是，将阻止受影响的控制器的执行
      * @TODO 缓存目标方法阻塞级别
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws IOException {
-        ProtectLevel level = SysRuntimeConfig.getProtectModeLevel();
+        ProtectLevel level = sysRuntimeConfig.getProtectModeLevel();
         if (level == null) {
             return true;
         }
