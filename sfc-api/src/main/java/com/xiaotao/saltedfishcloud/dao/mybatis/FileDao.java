@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
 import org.apache.ibatis.annotations.*;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 public interface FileDao {
@@ -78,12 +79,15 @@ public interface FileDao {
      * @param nodeId 文件所在路径（不包含文件名）的映射ID，路径ID需要用NodeDao或NodeService获取
      * @return 影响的行数
      */
-    @Insert("INSERT IGNORE INTO file_table (uid,name,size,md5,node,created_at) VALUES (#{uid},#{name},#{size},#{md5},#{node},NOW())")
+    @Insert("INSERT IGNORE INTO file_table (uid,name,size,md5,node,created_at, updated_at) VALUES (#{uid},#{name},#{size},#{md5},#{node}, #{createdAt}, #{updatedAt})")
     int addRecord(@Param("uid") Integer uid,
-                    @Param("name") String fileName,
-                    @Param("size") Long size,
-                    @Param("md5") String md5,
-                    @Param("node") String nodeId);
+                  @Param("name") String fileName,
+                  @Param("size") Long size,
+                  @Param("md5") String md5,
+                  @Param("node") String nodeId,
+                  @Param("createdAt") Date createdAt,
+                  @Param("updatedAt") Date updatedAt
+              );
 
 
 

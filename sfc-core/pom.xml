@@ -12,16 +12,11 @@
     <artifactId>sfc-core</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>com.mpatric</groupId>
-            <artifactId>mp3agic</artifactId>
-            <version>0.9.1</version>
-        </dependency>
-        <!-- <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-ext-hadoop-store</artifactId>
-            <version>1.8.3.6-SNAPSHOT</version>
-        </dependency> -->
+<!--        <dependency>-->
+<!--            <groupId>com.xiaotao</groupId>-->
+<!--            <artifactId>sfc-ext-hadoop-store</artifactId>-->
+<!--            <version>1.0.0-RELEASE</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
