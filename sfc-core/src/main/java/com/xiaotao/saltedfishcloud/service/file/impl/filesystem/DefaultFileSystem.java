@@ -513,9 +513,8 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
                 }
                 exist = true;
             }
-            Date now = new Date();
             storeServiceProvider.getService().store(uid, file, path, fileInfo);
-            fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid, now, now);
+            fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid);
             return exist ? SAVE_COVER : SAVE_NEW_FILE;
         } finally {
             lock.unlock();

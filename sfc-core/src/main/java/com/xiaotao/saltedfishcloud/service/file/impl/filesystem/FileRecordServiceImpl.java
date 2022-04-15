@@ -119,8 +119,7 @@ public class FileRecordServiceImpl implements FileRecordService {
                 if (info.isDir()) {
                     t.add(new PathIdPair(pairInfo.path + "/" + info.getName(), info.getMd5()));
                 } else {
-                    Date now = new Date();
-                    if (fileDao.addRecord(targetId, info.getName(), info.getSize(), info.getMd5(), newPathInfo.nid, now, now) < 1 && overwrite) {
+                    if (fileDao.addRecord(targetId, info.getName(), info.getSize(), info.getMd5(), newPathInfo.nid) < 1 && overwrite) {
                         fileDao.updateRecord(targetId, info.getName(), newPathInfo.nid, info.getSize(), info.getMd5());
                         log.debug("overwrite " + info.getName() + " at " + newPathInfo.nid);
                     } else if (!overwrite){
@@ -188,8 +187,7 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Transactional(rollbackFor = Exception.class)
     public int addRecord(int uid, String name, Long size, String md5, String path) throws NoSuchFileException {
         String nodeId = nodeService.getNodeIdByPath(uid, path);
-        Date now = new Date();
-        return fileDao.addRecord(uid, name, size, md5, nodeId, now, now);
+        return fileDao.addRecord(uid, name, size, md5, nodeId);
     }
 
     @Override
@@ -231,11 +229,10 @@ public class FileRecordServiceImpl implements FileRecordService {
         log.debug("mkdir " + name + " at " + path);
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         String newNodeId = nodeService.addNode(uid, name, nodeId);
-        Date now = new Date();
-        if (fileDao.addRecord(uid, name, -1L, newNodeId, nodeId, now, now) < 1) {
+        if (fileDao.addRecord(uid, name, -1L, newNodeId, nodeId) < 1) {
             throw new DuplicateKeyException("目录已存在");
         }
-        fileDao.addRecord(uid, name, -1L, newNodeId, nodeId, now, now);
+        fileDao.addRecord(uid, name, -1L, newNodeId, nodeId);
         log.debug("mkdir finish: " + newNodeId);
         return newNodeId;
     }
@@ -248,12 +245,11 @@ public class FileRecordServiceImpl implements FileRecordService {
         pb.append(path);
         String id = "" + uid;
         String nid = null;
-        Date now = new Date();
         for (String s : pb.getPath()) {
             NodeInfo nodeInfo = nodeDao.getNodeByParentId(uid, id, s);
             if (nodeInfo == null) {
                 nid = nodeService.addNode(uid, s, id);
-                fileDao.addRecord(uid, s, -1L, nid, id, now, now);
+                fileDao.addRecord(uid, s, -1L, nid, id);
                 id = nid;
             } else {
                 id = nodeInfo.getId();
