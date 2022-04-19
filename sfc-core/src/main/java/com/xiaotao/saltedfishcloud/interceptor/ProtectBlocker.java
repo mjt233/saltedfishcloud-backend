@@ -15,33 +15,51 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class ProtectBlocker implements HandlerInterceptor {
     @Autowired
     private SysRuntimeConfig sysRuntimeConfig;
+
+    private final Map<Method, Boolean> CACHE_MAP = new ConcurrentHashMap<>();
+
     /**
      * 检查是否处于存储模式的切换中状态，如果是，将阻止受影响的控制器的执行
-     * @TODO 缓存目标方法阻塞级别
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws IOException {
         ProtectLevel level = sysRuntimeConfig.getProtectModeLevel();
-        if (level == null) {
+        if (level == null || level == ProtectLevel.OFF) {
             return true;
         }
 
         if (handler instanceof HandlerMethod) {
             HandlerMethod method = (HandlerMethod) handler;
-            ProtectBlock block = method.getMethod().getAnnotation(ProtectBlock.class);
-            NotBlock notBlock = method.getMethod().getAnnotation(NotBlock.class);
-            if (block == null) block = method.getBeanType().getAnnotation(ProtectBlock.class);
+            Boolean canBlock = CACHE_MAP.get(method.getMethod());
+            if (canBlock == null) {
 
-            if ( block != null && ArrayUtils.contain(block.level(), level) && (notBlock == null || !ArrayUtils.contain(notBlock.level(), level)) ) {
+                // 读取注解是否需要因为保护级别而阻止方法并缓存结果
+                ProtectBlock block = method.getMethod().getAnnotation(ProtectBlock.class);
+                NotBlock notBlock = method.getMethod().getAnnotation(NotBlock.class);
+                if (block == null) block = method.getBeanType().getAnnotation(ProtectBlock.class);
+                if ( block != null && ArrayUtils.contain(block.level(), level) && (notBlock == null || !ArrayUtils.contain(notBlock.level(), level)) ) {
+                    CACHE_MAP.put(method.getMethod(), true);
+                    canBlock = true;
+                } else {
+                    CACHE_MAP.put(method.getMethod(), false);
+                    canBlock = false;
+                }
+            }
+
+            if (canBlock) {
                 response.setContentType("application/json;charset=utf-8");
                 response.getWriter().print(JsonResultImpl.getInstance(501, null, "系统处于保护状态，暂时无法响应该API的请求，稍后将解除，请过段时间再试").toString());
                 return false;
             }
+
         }
         return true;
     }
