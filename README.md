@@ -34,11 +34,8 @@
 
 ## 快速开始    
 
-### 0. 构建项目
-```shell
-cd script
-./build
-```
+### 0. 打包与编译
+对根项目执行maven的package，执行成功后会在release目录下创建程序主程序jar包和相关文件
 
 ### 1. 准备环境
 项目依赖以下组件：
@@ -67,11 +64,24 @@ cp start.sh.template start.sh
 vim start.sh # 可根据实际需求修改start.sh中的参数
 ./start.sh
 ```
-<font color="red">注意：如果连接的Redis服务器没有配置密码，请移除start脚本的`--spring.redis.password`所在的行</font>  
+<font color="red">注意：如果连接的Redis服务器没有配置密码，请移除start脚本的`--spring.redis.password`所在的行</font>
 
 ---
 
 项目启动后会自动初始化数据库。若初始化失败，可尝试手动给数据库执行初始化脚本，脚本位于`sfc-core/src/main/resource/sql/full.sql`
+
+### 关于拓展插件
+
+#### 简要说明
+程序会读取 `程序运行路径/ext/` 下的jar文件作为拓展插件来加载。
+对sfc-ext项目执行package后，拓展jar包会在/release/ext-available/中生成，若有需要将其复制到`程序运行路径/ext/`即可
+
+#### 缺陷说明
+- 暂未对拓展插件做管理工作，只是简单地使用URLClassLoader把jar包加载后将该URLClassLoader设置为线程上下文加载器，不保证所有插件都能正常工作。
+- 该项目中的sfc-ext-hadoop-store拓展就可能会无法正常被加载，若有需要请将该项目添加到sfc-core的依赖中再打包。
+- 拓展问题后续会不断完善
+
+
 
 ### 协议支持
 - FTP（实验性功能预览）  
