@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud;
 
 import com.xiaotao.saltedfishcloud.ext.ExtJarClassLoader;
-import com.xiaotao.saltedfishcloud.orm.config.annotation.EnableOrmConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -10,12 +9,10 @@ import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import java.io.File;
 import java.nio.file.Paths;
 
 @SpringBootApplication(
