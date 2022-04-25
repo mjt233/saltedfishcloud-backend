@@ -16,3 +16,5 @@ nav:
   - 拓展插件:
       - extension/index.md
       - 拓展：mp3-thumbnail: extension/mp3-thumbnail.md
+  - 开发手册:
+      - develop/index.md
