@@ -110,6 +110,11 @@
                         </goals>
                         <configuration>
                             <tasks>
+                                <mkdir dir="${basedir}/../release/ext" />
+                                <mkdir dir="${basedir}/../release/ext-available" />
+                                <copy overwrite="true" todir="${basedir}/../release">
+                                    <fileset dir="${basedir}/../pre-release" includes="**"/>
+                                </copy>
                                 <copy
                                         overwrite="true"
                                         tofile="${basedir}/../release/sfc-core.jar"
