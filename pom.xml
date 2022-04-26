@@ -29,6 +29,8 @@
     <description>咸鱼云网盘</description>
 
     <properties>
+        <!--  前端项目路径，配置后在package时自动打包到webapp/static -->
+        <!-- <sfc.front-end-path>C:\Users\xiaotao\code\saltedfishcloud-frontend</sfc.front-end-path>-->
         <java.version>1.8</java.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -111,21 +113,22 @@
             <artifactId>activation</artifactId>
             <version>1.1.1</version>
         </dependency>
+        <dependency>
+            <groupId>ant-contrib</groupId>
+            <artifactId>ant-contrib</artifactId>
+            <version>1.0b3</version>
+            <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>ant</groupId>
+                    <artifactId>ant</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.7</version>
-                <configuration>
-                    <delimiters>
-                        <delimiter>^</delimiter>
-                    </delimiters>
-                    <useDefaultDelimiters>false</useDefaultDelimiters>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
@@ -133,6 +136,46 @@
                 <configuration>
                     <generateBackupPoms>false</generateBackupPoms>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <!--    创建release资源    -->
+<!--                    <execution>-->
+<!--                        <id>package</id>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>run</goal>-->
+<!--                        </goals>-->
+<!--                        <configuration>-->
+<!--                            <target name="release">-->
+<!--                                <echo message="233333333"/>-->
+<!--                                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpathref="maven.plugin.classpath"/>-->
+<!--                                <if>-->
+<!--                                    <equals arg1="${project.artifactId}" arg2="saltedfishcloud"/>-->
+<!--                                    <then>-->
+<!--                                        <zip basedir="${project.basedir}/release" destfile="${project.basedir}/release/sfc-core-${project.version}.zip" includes="**" />-->
+<!--                                    </then>-->
+<!--                                </if>-->
+<!--                            </target>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>ant-contrib</groupId>
+                        <artifactId>ant-contrib</artifactId>
+                        <version>1.0b3</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>ant</groupId>
+                                <artifactId>ant</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
