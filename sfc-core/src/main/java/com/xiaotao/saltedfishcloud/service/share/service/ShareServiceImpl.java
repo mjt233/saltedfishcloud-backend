@@ -50,7 +50,7 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo) {
         SharePO share = getShare(sid, verification);
-        if (share.getExtractCode() != null && !code.equals(share.getExtractCode())) {
+        if (share.getExtractCode() != null && !code.equalsIgnoreCase(share.getExtractCode())) {
             throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
         }
         if (share.getType() != ShareType.DIR) throw new JsonException(400, "只能对文件夹分享进行打包");
@@ -109,7 +109,7 @@ public class ShareServiceImpl implements ShareService {
         if (share.getType() == ShareType.FILE) throw new IllegalArgumentException("仅接受文件类型的分享");
 
         // 校验提取码
-        if (StringUtils.hasLength(share.getExtractCode()) && !share.getExtractCode().equals(extractCode)) {
+        if (StringUtils.hasLength(share.getExtractCode()) && !share.getExtractCode().equalsIgnoreCase(extractCode)) {
             throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
         }
 

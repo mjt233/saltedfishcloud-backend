@@ -44,9 +44,6 @@ public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandle
         return fs.mkdirs(new Path(path));
     }
 
-    /**
-     * @TODO 相同文件并发写入会出问题，需要分布式锁
-     */
     @Override
     public long store(String path, InputStream inputStream) throws IOException {
         Path target = new Path(path);

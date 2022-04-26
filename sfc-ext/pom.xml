@@ -19,8 +19,10 @@
     </properties>
 
     <modules>
+<!--    若有需要Hadoop，请自行在sfc-core项目中引入，目前暂时不支持单独打包jar作为拓展加载（虽然之前试过可以，不知为啥现在就不可以了，可能是依赖之类的问题？）    -->
 <!--        <module>sfc-ext-hadoop-store</module>-->
         <module>sfc-ext-demo</module>
+        <module>sfc-ext-mp3-thumbnail</module>
     </modules>
 
     <dependencies>
@@ -49,5 +51,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 </project>

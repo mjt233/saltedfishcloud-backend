@@ -1,0 +1,20 @@
+site_name: 咸鱼云网盘
+theme:
+  name: material
+  features:
+#    - navigation.tabs
+#    - navigation.tabs.sticky
+    - navigation.expand
+#    - navigation.sections
+#    - navigation.indexes
+
+nav:
+  - 简介: index.md
+  - 快速开始:
+    - quick-start/index.md
+    - 配置参数: quick-start/config.md
+  - 拓展插件:
+      - extension/index.md
+      - 拓展：mp3-thumbnail: extension/mp3-thumbnail.md
+  - 开发手册:
+      - develop/index.md

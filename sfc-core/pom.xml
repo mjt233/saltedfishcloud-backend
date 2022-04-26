@@ -5,23 +5,18 @@
     <parent>
         <artifactId>saltedfishcloud</artifactId>
         <groupId>com.xiaotao</groupId>
-        <version>1.8.5.5-RELEASE</version>
+        <version>1.8.6.0-RELEASE</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sfc-core</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>com.mpatric</groupId>
-            <artifactId>mp3agic</artifactId>
-            <version>0.9.1</version>
-        </dependency>
-        <!-- <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-ext-hadoop-store</artifactId>
-            <version>1.8.3.6-SNAPSHOT</version>
-        </dependency> -->
+<!--        <dependency>-->
+<!--            <groupId>com.xiaotao</groupId>-->
+<!--            <artifactId>sfc-ext-hadoop-store</artifactId>-->
+<!--            <version>1.0.0-RELEASE</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
@@ -75,7 +70,7 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-compress</artifactId>
-            <version>1.8.5.5-RELEASE</version>
+            <version>1.8.6.0-RELEASE</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -103,6 +98,37 @@
                         </exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <mkdir dir="${basedir}/../release/ext" />
+                                <mkdir dir="${basedir}/../release/ext-available" />
+                                <copy overwrite="true" todir="${basedir}/../release">
+                                    <fileset dir="${basedir}/../pre-release" includes="**"/>
+                                </copy>
+                                <copy
+                                        overwrite="true"
+                                        tofile="${basedir}/../release/sfc-core.jar"
+                                        file="${project.build.directory}/${project.artifactId}-${project.version}.jar"
+                                />
+                                <copy
+                                        overwrite="true"
+                                        tofile="${basedir}/../release/README.md"
+                                        file="${basedir}/../README.md"
+                                />
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

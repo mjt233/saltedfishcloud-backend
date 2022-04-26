@@ -72,7 +72,7 @@ public class SharePO {
      * @return  有效true，否则false
      */
     public boolean validateExtractCode(String code) {
-        return extractCode == null || extractCode.equals(code);
+        return extractCode == null || extractCode.equalsIgnoreCase(code);
     }
 
     public boolean isExpired() {
