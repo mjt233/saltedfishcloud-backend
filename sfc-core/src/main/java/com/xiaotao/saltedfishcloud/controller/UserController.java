@@ -232,7 +232,7 @@ public class UserController {
                 getAvatar(HttpServletResponse response, @PathVariable(required = false) String username) throws IOException {
         User currentUser = SecureUtils.getSpringSecurityUser();
         if (currentUser == null && username == null) {
-            response.sendRedirect("/api/static/static/defaultAvatar.png");
+            response.sendRedirect("/api/static/defaultAvatar.png");
             return null;
         }
         if (username == null) {
