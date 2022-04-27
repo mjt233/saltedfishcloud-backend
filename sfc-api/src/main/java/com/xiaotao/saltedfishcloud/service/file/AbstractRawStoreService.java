@@ -45,7 +45,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     private int maxDepth = 64;
 
 
-    private final static Resource DEFAULT_AVATAR = new ClassPathResource("/static/static/defaultAvatar.png");
+    private final static Resource DEFAULT_AVATAR = new ClassPathResource("/static/defaultAvatar.png");
 
     protected final DirectRawStoreHandler handler;
     protected final CopyAndMoveHandler copyAndMoveHandler;

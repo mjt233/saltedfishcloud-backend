@@ -2,8 +2,11 @@
 ![](https://img.shields.io/badge/SpringBoot-2.4-green.svg)
 ![](https://img.shields.io/badge/Java->=1.8-green.svg)
 
+---
+
+更多内容请参考项目[在线文档](https://mjt233.github.io/saltedfishcloud-backend/)
 ## 提示 
-该项目仅为后端，不带前端，前端项目请移步[这里](https://gitee.com/xiaotao233/saltedfishcloud-frontend)
+该项目仅为后端，不带前端，前端项目请移步[Gitee](https://gitee.com/xiaotao233/saltedfishcloud-frontend) 或 [GitHub](https://github.com/mjt233/saltedfishcloud-backend)
 
 ## 项目介绍
 ### 简介
@@ -64,46 +67,3 @@ vim start.sh # 可根据实际需求修改start.sh中的参数
 ---
 
 项目启动后会自动初始化数据库。若初始化失败，可尝试手动给数据库执行初始化脚本，脚本位于`sfc-core/src/main/resource/sql/full.sql`
-
-### 关于拓展插件
-
-#### 简要说明
-程序会读取 `程序运行路径/ext/` 下的jar文件作为拓展插件来加载。
-对sfc-ext项目执行package后，拓展jar包会在/release/ext-available/中生成，若有需要将其复制到`程序运行路径/ext/`即可
-
-#### 缺陷说明
-- 暂未对拓展插件做管理工作，只是简单地使用URLClassLoader把jar包加载后将该URLClassLoader设置为线程上下文加载器，不保证所有插件都能正常工作。
-- 该项目中的sfc-ext-hadoop-store拓展就可能会无法正常被加载，若有需要请将该项目添加到sfc-core的依赖中再打包。
-- 拓展问题后续会不断完善
-
-
-
-### 协议支持
-- FTP（实验性功能预览）  
-    1. 默认开启和使用21端口，可通过参数`ftp-port`进行修改  
-    2. Linux下非root用户请使用大于1024的端口号（不建议以root用户身份或通过sudo运该项目），但可利用端口转发实现21端口到FTP端口的转发
-    3. 外部网络设备需要访问FTP时，请检查`ftp_passive_addr`参数是否为用户可访问的地址，默认是localhost，外部网络设备访问时会出现连接错误
-- WebDav  
-    暂不支持，未来版本开发
-- Samba  
-    暂不支持
-
-## 未来企划
-- 第三方登录
-- 开发更完善的用户组织架构和权限管理机制
-- 微服务化重构
-- Docker部署
-- 开发多平台客户端，支持挂载到系统资源管理器
-- 完善的插件拓展体系（类似VS Code），并具有在线拓展管理系统，动态拓展和定制系统功能
-- 作为私有人云服务器以文件为主服务集成系统（比如通过咸鱼云对Minecraft服务器进行管理，通过咸鱼云部署静态/动态网页或站点）
-
-## 项目计划实现的基本特性（可能会咕咕咕）
-- WebDav访问支持
-- Samba访问支持
-- 多媒体播放列表
-- 自动备份
-- 网盘转存
-- 挂载外部存储（外部FTP，Samba，sftp等）
-
-## 接口文档/测试
-可将`postman_collection.json`文件导入到`postman`中查看文档和进行测试

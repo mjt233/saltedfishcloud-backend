@@ -104,12 +104,48 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>clean-release</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <delete dir="${project.basedir}/../release"/>
+                                <mkdir dir="${project.basedir}/../release"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <!--    打包前复制前端项目编译结果    -->
+                    <execution>
+                        <id>copy-frontend</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target if="sfc.front-end-path">
+                                <echo message="复制前端项目: ${sfc.front-end-path}" />
+                                <!-- 复制到源码  -->
+                                <copy overwrite="true" todir="${project.basedir}/src/main/resources/webapp">
+                                    <fileset dir="${sfc.front-end-path}/dist" includes="**"/>
+                                </copy>
+                                <!-- 复制到输出目录-->
+                                <copy overwrite="true" todir="${project.basedir}/target/classes/webapp">
+                                    <fileset dir="${sfc.front-end-path}/dist" includes="**"/>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <!--    创建release资源    -->
+                    <execution>
+                        <id>package</id>
                         <phase>package</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <mkdir dir="${basedir}/../release/ext" />
                                 <mkdir dir="${basedir}/../release/ext-available" />
                                 <copy overwrite="true" todir="${basedir}/../release">
@@ -125,7 +161,7 @@
                                         tofile="${basedir}/../release/README.md"
                                         file="${basedir}/../README.md"
                                 />
-                            </tasks>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
