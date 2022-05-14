@@ -275,7 +275,7 @@ public class UserServiceImp implements UserService {
             if (!code.equals(sysProperties.getCommon().getRegCode())) {
                 throw new JsonException(AccountError.REG_CODE_ERROR);
             }
-            return addUser(user, passwd, email, User.TYPE_COMMON);
+            return addUser(user, passwd, null, User.TYPE_COMMON);
         }
     }
 
