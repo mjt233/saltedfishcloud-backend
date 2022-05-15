@@ -198,7 +198,7 @@ CREATE TABLE `user` (
                         `id` int unsigned NOT NULL AUTO_INCREMENT,
                         `user` varchar(32) DEFAULT NULL,
                         `pwd` varchar(32) DEFAULT NULL,
-                        `email` varchar(256) NOT NULL,
+                        `email` varchar(256) DEFAULT NULL,
                         `last_login` int unsigned DEFAULT NULL,
                         `type` int unsigned DEFAULT '0',
                         `role` varchar(32) DEFAULT NULL,

@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.xiaotao</groupId>
         <artifactId>saltedfishcloud</artifactId>
-        <version>1.8.6.0-RELEASE</version>
+        <version>1.8.6.1-SNAPSHOT</version>
     </parent>
     <artifactId>sfc-compress</artifactId>
 
