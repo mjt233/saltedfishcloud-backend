@@ -66,6 +66,6 @@ public class ResourceUtils {
 
 
     public static String generateContentDisposition(String filename) throws UnsupportedEncodingException {
-        return "inline;filename*=UTF-8''"+ URLEncoder.encode(filename, "utf-8");
+        return "inline;filename*=UTF-8''"+ URLEncoder.encode(filename, "utf-8").replaceAll("\\+", "%20");
     }
 }

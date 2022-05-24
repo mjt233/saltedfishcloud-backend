@@ -1,8 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.thumbnail.handler;
 
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
-import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
-import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.ImageUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;

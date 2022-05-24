@@ -1,0 +1,1 @@
+ALTER TABLE user modify email VARCHAR(256) DEFAULT NULL;

@@ -39,6 +39,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -174,7 +175,7 @@ public class UserController {
      */
     @PostMapping("/regcode")
     @AllowAnonymous
-    public JsonResult sendRegCode(@RequestParam("email") @Email String email) {
+    public JsonResult sendRegCode(@Validated @NotBlank @RequestParam("email") @Email String email) {
         userService.sendRegEmail(email);
         return JsonResult.emptySuccess();
     }
