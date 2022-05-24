@@ -149,9 +149,9 @@ public class FileController {
                                 @RequestParam("md5") String md5) throws IOException {
         boolean b = fileService.getFileSystem().quickSave(uid, path, name, md5);
         if (b) {
-            return JsonResult.emptySuccess();
+            return JsonResultImpl.getInstance(true);
         } else {
-            return JsonResultImpl.getInstance(100, null, FileSystemError.QUICK_SAVE_NOT_HIT.getMessage());
+            return JsonResultImpl.getInstance(100, false, FileSystemError.QUICK_SAVE_NOT_HIT.getMessage());
         }
     }
 
@@ -197,6 +197,12 @@ public class FileController {
         Collection<? extends FileInfo>[] fileList = fileService.getFileSystem().getUserFileList(uid, requestPath);
         return JsonResultImpl.getInstance(fileList);
 
+    }
+
+    @AllowAnonymous
+    @GetMapping("getFileList")
+    public JsonResult getFileList(@PathVariable String uid, @RequestParam("path") String path) {
+        return JsonResult.emptySuccess();
     }
 
     /**
