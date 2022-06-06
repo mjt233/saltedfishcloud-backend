@@ -37,7 +37,6 @@ public class SpringConfig implements WebMvcConfigurer {
 
 
 
-
         // 默认使用static目录的资源作为静态资源，若已集成前端项目，则使用webapp作为站点目录
         String handlerPath = "/**";
         String resourcePath = "classpath:/static/";
@@ -45,6 +44,11 @@ public class SpringConfig implements WebMvcConfigurer {
         URL defaultIndex = this.getClass().getClassLoader().getResource("webapp/index.html");
         if (defaultIndex != null) {
             log.info("已集成前端项目");
+            registry.addResourceHandler("/assets/**")
+                    .addResourceLocations("classpath:/webapp/assets/")
+                    .setUseLastModified(true)
+                    .setCacheControl(CacheControl.maxAge(24, TimeUnit.HOURS));
+
             resourcePath = "classpath:/webapp/";
         } else {
             log.info("未集成前端项目");
