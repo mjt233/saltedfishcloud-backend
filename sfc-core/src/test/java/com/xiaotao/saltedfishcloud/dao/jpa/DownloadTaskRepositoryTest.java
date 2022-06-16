@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
-import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.model.po.DownloadTaskInfo;
 import lombok.var;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

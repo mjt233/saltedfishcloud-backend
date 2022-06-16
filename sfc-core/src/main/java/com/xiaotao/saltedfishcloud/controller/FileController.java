@@ -6,13 +6,11 @@ import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.entity.po.param.FileCopyOrMoveInfo;
-import com.xiaotao.saltedfishcloud.entity.po.param.FileNameList;
-import com.xiaotao.saltedfishcloud.entity.po.param.NamePair;
+import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.param.*;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -22,10 +20,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapInfo;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
@@ -249,6 +244,20 @@ public class FileController {
         =                Update               =
         =======================================
      */
+    @PostMapping("copy")
+    public JsonResult copy( @PathVariable("uid") @UID(true) long uid,
+                            @RequestBody @Validated FileTransferParam info) throws IOException {
+        int sourceUid = (int)uid;
+        int targetUid = info.getTargetUid().intValue();
+        for (FileItemTransferParam item : info.getFiles()) {
+            String source = PathUtils.getParentPath(item.getSource());
+            String sourceName = PathUtils.getLastNode(item.getSource());
+            String target = PathUtils.getParentPath(item.getTarget());
+            String targetName = PathUtils.getLastNode(item.getTarget());
+            fileService.getFileSystem().copy(sourceUid, source, target, targetUid, sourceName, targetName, true);
+        }
+        return JsonResult.emptySuccess();
+    }
 
     /**
      * 复制文件或目录

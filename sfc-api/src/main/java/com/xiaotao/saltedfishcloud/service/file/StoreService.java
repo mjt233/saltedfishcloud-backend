@@ -2,9 +2,8 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
-import com.xiaotao.saltedfishcloud.entity.po.file.BasicFileInfo;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 

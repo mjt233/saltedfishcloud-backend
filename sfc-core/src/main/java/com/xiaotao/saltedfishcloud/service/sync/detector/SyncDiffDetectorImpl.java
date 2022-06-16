@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.sync.detector;
 
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;

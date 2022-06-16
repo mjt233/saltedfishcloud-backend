@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.validator;
 
-import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 
 import javax.validation.ConstraintValidator;
@@ -16,7 +17,7 @@ public class UIDValidator implements ConstraintValidator<UID, Object> {
      * @param uid 用户ID
      * @param publicOnlyAdmin 公共资源是否只允许管理员通过验证
      */
-    public boolean validate(int uid, boolean publicOnlyAdmin) {
+    public boolean validate(long uid, boolean publicOnlyAdmin) {
         if (!publicOnlyAdmin && uid == 0) return true;
         User springSecurityUser = SecureUtils.getSpringSecurityUser();
         if (springSecurityUser == null) {
@@ -33,8 +34,8 @@ public class UIDValidator implements ConstraintValidator<UID, Object> {
 
     @Override
     public boolean isValid(Object value, ConstraintValidatorContext context) {
-        if (value instanceof Integer) {
-            return validate((Integer)value, validUID.value());
+        if (value instanceof Number) {
+            return validate(TypeUtils.toNumber(Long.class, value), validUID.value());
         } else {
             throw new IllegalArgumentException("UID验证字段类型错误：" + value.getClass().getName());
         }

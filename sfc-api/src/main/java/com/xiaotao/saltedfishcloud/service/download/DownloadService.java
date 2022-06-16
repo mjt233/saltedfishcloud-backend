@@ -1,9 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
-import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
-import com.xiaotao.saltedfishcloud.entity.po.param.DownloadTaskParams;
-import com.xiaotao.saltedfishcloud.entity.po.param.TaskType;
-import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
+import com.xiaotao.saltedfishcloud.model.po.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.model.param.DownloadTaskParams;
+import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import org.springframework.data.domain.Page;
 
 import java.nio.file.NoSuchFileException;

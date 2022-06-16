@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.ftp.core;
 
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
-import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;

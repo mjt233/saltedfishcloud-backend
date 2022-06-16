@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.http;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileDCInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;

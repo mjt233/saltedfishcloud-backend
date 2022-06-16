@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.github.pagehelper.PageInfo;
-import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import org.springframework.data.domain.Page;
 
 public class PageUtils {

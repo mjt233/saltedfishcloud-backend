@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.share;
 
-import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.wrap;
 
-import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
+import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 
 public interface WrapService {
     /**

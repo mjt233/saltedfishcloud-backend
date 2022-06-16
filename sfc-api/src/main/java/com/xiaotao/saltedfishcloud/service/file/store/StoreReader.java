@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.store;
 
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;

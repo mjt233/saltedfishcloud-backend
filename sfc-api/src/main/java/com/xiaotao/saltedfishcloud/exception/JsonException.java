@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.exception;
 
 import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import lombok.Getter;
 
 public class JsonException extends RuntimeException {

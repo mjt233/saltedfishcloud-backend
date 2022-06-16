@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;

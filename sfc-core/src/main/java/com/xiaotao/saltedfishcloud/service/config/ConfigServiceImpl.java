@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.xiaotao.saltedfishcloud.entity.Pair;
+import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

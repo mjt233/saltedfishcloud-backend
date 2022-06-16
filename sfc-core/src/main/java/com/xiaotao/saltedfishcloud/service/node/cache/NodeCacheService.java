@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.node.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
-import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.RequiredArgsConstructor;

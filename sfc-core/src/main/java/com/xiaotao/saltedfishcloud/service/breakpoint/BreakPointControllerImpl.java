@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint;
 
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;

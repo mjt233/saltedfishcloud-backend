@@ -1,0 +1,42 @@
+package com.xiaotao.saltedfishcloud.model.po;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import javax.persistence.*;
+import java.util.Date;
+
+@Entity
+@Data
+@NoArgsConstructor
+@Table(name = "collection_rec")
+@EntityListeners(AuditingEntityListener.class)
+public class CollectionRecord {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private Long cid;
+    private Integer uid;
+
+    private String filename;
+    private Long size;
+    private String md5;
+    private String ip;
+
+    @Column(insertable = false, updatable = false)
+    private String username;
+
+    public CollectionRecord(Long cid, Integer uid, String filename, Long size, String md5, String ip) {
+        this.cid = cid;
+        this.uid = uid;
+        this.filename = filename;
+        this.size = size;
+        this.md5 = md5;
+        this.ip = ip;
+    }
+
+    @CreatedDate
+    private Date createdAt;
+}

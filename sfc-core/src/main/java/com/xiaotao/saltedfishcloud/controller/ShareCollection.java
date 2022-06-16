@@ -2,12 +2,12 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;

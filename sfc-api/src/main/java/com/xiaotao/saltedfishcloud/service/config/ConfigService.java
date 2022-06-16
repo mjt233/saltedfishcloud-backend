@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
 
-import com.xiaotao.saltedfishcloud.entity.Pair;
+import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import org.springframework.transaction.annotation.Transactional;
 

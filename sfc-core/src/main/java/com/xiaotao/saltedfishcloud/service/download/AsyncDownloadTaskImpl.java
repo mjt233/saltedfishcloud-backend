@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.download;
 
 import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
-import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;

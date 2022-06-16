@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.dao;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
-import com.xiaotao.saltedfishcloud.entity.po.ProxyInfo;
+import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

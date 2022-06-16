@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
 import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;

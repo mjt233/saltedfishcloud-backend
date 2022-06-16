@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
-import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 
 import java.util.*;
 

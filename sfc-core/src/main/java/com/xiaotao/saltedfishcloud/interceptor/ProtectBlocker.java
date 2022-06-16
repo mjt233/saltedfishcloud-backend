@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.interceptor;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.utils.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
