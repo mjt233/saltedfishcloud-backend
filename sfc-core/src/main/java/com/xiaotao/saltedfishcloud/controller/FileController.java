@@ -23,6 +23,8 @@ import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +49,7 @@ import java.util.List;
 @Validated
 @ProtectBlock
 @RequiredArgsConstructor
+@Api(tags = "网盘文件基本操作")
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
@@ -244,6 +247,13 @@ public class FileController {
         =                Update               =
         =======================================
      */
+
+    /**
+     * 支持跨用户网盘的文件复制
+     * @param uid       源文件所在用户id
+     * @param info      复制参数
+     */
+    @ApiOperation("网盘文件复制（支持跨用户网盘）")
     @PostMapping("copy")
     public JsonResult copy( @PathVariable("uid") @UID(true) long uid,
                             @RequestBody @Validated FileTransferParam info) throws IOException {
@@ -260,10 +270,31 @@ public class FileController {
     }
 
     /**
+     * 同网盘内的文件移动
+     * todo 支持跨网盘移动
+     * @param uid       源文件所在用户id
+     * @param info      复制参数
+     */
+    @ApiOperation("网盘文件移动（不支持跨用户网盘）")
+    @PostMapping("move")
+    public JsonResult move( @PathVariable("uid") @UID(true) long uid,
+                            @RequestBody @Validated FileTransferParam info) throws IOException {
+        int sourceUid = (int)uid;
+        for (FileItemTransferParam item : info.getFiles()) {
+            String source = PathUtils.getParentPath(item.getSource());
+            String sourceName = PathUtils.getLastNode(item.getSource());
+            String target = PathUtils.getParentPath(item.getTarget());
+            fileService.getFileSystem().move(sourceUid, source, target, sourceName,true);
+        }
+        return JsonResult.emptySuccess();
+    }
+
+    /**
      * 复制文件或目录
      * 复制文件或目录到指定目录下
      */
     @PostMapping("fromPath/**")
+    @Deprecated
     public JsonResult copy( @PathVariable("uid") @UID(true) int uid,
                             @RequestBody @Validated FileCopyOrMoveInfo info,
                             HttpServletRequest request) throws IOException {
@@ -278,10 +309,10 @@ public class FileController {
 
     /**
      * 移动文件或目录到指定目录下
-     * @TODO 允许空参数target
      * @param uid    用户ID
      */
     @PutMapping("/fromPath/**")
+    @Deprecated
     public JsonResult move(HttpServletRequest request,
                            @PathVariable("uid") @UID(true) int uid,
                            @RequestBody @Valid FileCopyOrMoveInfo info)
