@@ -109,12 +109,22 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
+    public boolean validResetPasswordEmailCode(String account, String code) {
+        User user = getUserByAccount(account);
+        if (user == null) {
+            return false;
+        }
+        String realCode = (String) redisTemplate.opsForValue().get(RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD));
+        return code.equalsIgnoreCase(realCode);
+    }
+
+    @Override
     public void resetPassword(String account, String code, String password) {
         final User user = getUserByAccount(account);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
         String key = RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD);
         String record = (String) redisTemplate.opsForValue().get(key);
-        if (code == null || !code.equals(record)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
+        if (code == null || !code.equalsIgnoreCase(record)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
 
         userDao.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
         redisTemplate.delete(key);

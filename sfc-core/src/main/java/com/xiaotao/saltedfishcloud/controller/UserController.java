@@ -20,6 +20,8 @@ import com.xiaotao.saltedfishcloud.utils.MultipartFileResource;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import io.swagger.annotations.ApiModelProperty;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
 import org.hibernate.validator.constraints.Length;
@@ -58,6 +60,14 @@ public class UserController {
     private final UserDao userDao;
     private final TokenDaoImpl tokenDao;
     private final SysRuntimeConfig runtimeConfig;
+
+    @ApiOperation("验证用户重置密码时输入的验证码是否正确")
+    @PostMapping("/validResetPasswordEmailCode")
+    @AllowAnonymous
+    public JsonResult validResetPasswordEmailCode(@RequestParam("account") String account,
+                                                  @RequestParam("code") String code) {
+        return JsonResultImpl.getInstance(userService.validResetPasswordEmailCode(account, code));
+    }
 
     /**
      * 获取新token
