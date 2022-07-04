@@ -127,6 +127,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
         RLock lock = redisson.getLock(getStoreLockKey(uid, path, name));
         try {
             lock.lock();
+            fileInfo.setName(name);
             saveFile(uid, resource.getInputStream(), path, fileInfo);
         } catch (IOException e) {
             log.trace("错误：{}", e.getMessage());
