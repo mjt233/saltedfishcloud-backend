@@ -26,9 +26,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import javax.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
@@ -116,12 +118,17 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
 
     @Override
     public void interrupt(String id) {
-        final DownloadTaskInfo info = downloadDao.getOne(id);
-        info.setState(DownloadTaskInfo.State.CANCEL);
-        downloadDao.save(info);
+        try {
+            final DownloadTaskInfo info = downloadDao.getOne(id);
 
-        log.debug("{}发送中断任务请求：{}", LOG_TITLE, id);
-        redisTemplate.convertAndSend(MQTopic.DOWNLOAD_TASK_INTERRUPT, id);
+            info.setState(DownloadTaskInfo.State.CANCEL);
+            downloadDao.save(info);
+
+            log.debug("{}发送中断任务请求：{}", LOG_TITLE, id);
+            redisTemplate.convertAndSend(MQTopic.DOWNLOAD_TASK_INTERRUPT, id);
+        } catch (JpaObjectRetrievalFailureException e) {
+            throw new JsonException(404, "找不到id为" + id + "的下载任务");
+        }
     }
 
     @Override

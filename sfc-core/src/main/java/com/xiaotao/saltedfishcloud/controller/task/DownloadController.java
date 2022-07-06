@@ -57,9 +57,6 @@ public class DownloadController {
             @RequestParam(defaultValue = "ALL") TaskType type
     ) {
         Page<DownloadTaskInfo> res = downloadService.getTaskList(uid, page - 1, size, type);
-        return JsonResultImpl
-                .getInstance(res.getContent())
-                .put("totalItem", res.getTotalElements())
-                .put("totalPage", res.getTotalPages());
+        return JsonResultImpl.getInstance(res);
     }
 }
