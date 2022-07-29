@@ -43,6 +43,9 @@ public class SharePO {
     @Transient
     private boolean validateSuccess = false;
 
+    /**
+     * 是否隐藏敏感属性，通过getter方法获取时候获得null（如：提取码，校验码，存储节点id）
+     */
     @Transient
     @JsonIgnore
     private boolean hide = false;

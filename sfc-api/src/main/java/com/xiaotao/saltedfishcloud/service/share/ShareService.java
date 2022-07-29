@@ -35,6 +35,15 @@ public interface ShareService {
      */
     Resource getFileResource(ShareExtractorDTO extractor) throws IOException;
 
+    /**
+     * 浏览分享的目录文件列表
+     * @param sid   分享id
+     * @param verification  分享校验码
+     * @param path  浏览的路径
+     * @param extractCode   提取码
+     * @return 一个List数组，数组下标0为目录，1为文件，或null
+     * @throws IOException 任何可能的IO异常
+     */
     List<FileInfo>[] browse(int sid, String verification, String path, String extractCode) throws IOException;
 
     /**
