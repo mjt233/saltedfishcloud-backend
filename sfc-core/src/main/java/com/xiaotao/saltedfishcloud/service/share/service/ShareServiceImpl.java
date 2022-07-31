@@ -109,7 +109,7 @@ public class ShareServiceImpl implements ShareService {
         if (share.getType() == ShareType.FILE) throw new IllegalArgumentException("仅接受文件类型的分享");
 
         // 校验提取码
-        if (StringUtils.hasLength(share.getExtractCode()) && !share.getExtractCode().equalsIgnoreCase(extractCode)) {
+        if (StringUtils.hasLength(share.getExtractCode()) && !share.validateExtractCode(extractCode)) {
             throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
         }
 

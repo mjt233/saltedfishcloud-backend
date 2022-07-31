@@ -88,7 +88,7 @@ public class SharePO {
     }
 
     public String getNid() {
-        if (hide) return null;
+        if (hide && !validateSuccess) return null;
         return nid;
     }
 
@@ -98,12 +98,12 @@ public class SharePO {
     }
 
     public String getVerification() {
-        if (hide) return null;
+        if (hide && !validateSuccess) return null;
         return verification;
     }
 
     public String getExtractCode() {
-        if (hide) return null;
+        if (hide && !validateSuccess) return null;
         return extractCode;
     }
 
