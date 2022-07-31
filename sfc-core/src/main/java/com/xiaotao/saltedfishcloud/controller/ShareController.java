@@ -6,13 +6,14 @@ import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
-import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
+import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
@@ -31,7 +32,7 @@ import java.util.List;
 @RequestMapping("/api/share")
 @RestController
 @RequiredArgsConstructor
-public class ShareCollection {
+public class ShareController {
     private final ShareService shareService;
 
     @DeleteMapping("{sid}")
@@ -44,8 +45,18 @@ public class ShareCollection {
         return JsonResult.emptySuccess();
     }
 
+    /**
+     * 创建文件分享打包下载
+     * @deprecated 改用 {@link com.xiaotao.saltedfishcloud.service.wrap.WrapService#registerWrap(WrapParam)} 统一创建
+     * @param sid           分享id
+     * @param verification  分享校验码
+     * @param code          分享提取码
+     * @param fileTransferInfo  文件列表
+     * @return 打包下载码
+     */
     @PostMapping("/wrap/{sid}/{verification}")
     @AllowAnonymous
+    @Deprecated
     public JsonResult createWarp(@PathVariable("sid") Integer sid,
                                  @PathVariable("verification") String verification,
                                  @RequestParam(value = "code", required = false) String code,
@@ -71,7 +82,7 @@ public class ShareCollection {
     public JsonResult getShare(@PathVariable("sid") Integer sid,
                                @PathVariable("verification") String verification,
                                @RequestParam(value = "code", required = false) String extractCode) {
-        SharePO share = shareService.getShare(sid, verification);
+        ShareInfo share = shareService.getShare(sid, verification);
         if(share.validateExtractCode(extractCode)) {
             share.setValidateSuccess(true);
         }
@@ -104,7 +115,7 @@ public class ShareCollection {
         System.out.println(principal);
         User user = SecureUtils.getSpringSecurityUser();
         assert user != null;
-        SharePO share = shareService.createShare(user.getId(), shareDTO);
+        ShareInfo share = shareService.createShare(user.getId(), shareDTO);
         return JsonResultImpl.getInstance(share);
     }
 
@@ -130,9 +141,9 @@ public class ShareCollection {
             uid = user.getId();
         }
         page--;
-        CommonPageInfo<SharePO> userShare = shareService.getUserShare(uid, page, size, !emptyUid);
+        CommonPageInfo<ShareInfo> userShare = shareService.getUserShare(uid, page, size, !emptyUid);
         if (emptyUid) {
-            for (SharePO share : userShare.getContent()) {
+            for (ShareInfo share : userShare.getContent()) {
                 share.setValidateSuccess(true);
             }
         }

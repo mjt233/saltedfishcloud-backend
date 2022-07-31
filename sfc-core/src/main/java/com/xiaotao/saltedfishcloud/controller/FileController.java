@@ -166,21 +166,7 @@ public class FileController {
     public void wrapDownload(@PathVariable("wid") String wid,
                              @PathVariable(required = false, value = "alias") String alias,
                              HttpServletResponse response) throws IOException {
-        WrapInfo wrapInfo = wrapService.getWrapInfo(wid);
-        if (wrapInfo == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
-        }
-        if (alias == null) {
-            alias = "打包下载" + System.currentTimeMillis() + ".zip";
-        }
-        FileTransferInfo files = wrapInfo.getFiles();
-        response.setHeader(
-                ResourceUtils.Header.ContentDisposition,
-                ResourceUtils.generateContentDisposition(alias)
-        );
-        response.setContentType(FileUtils.getContentType("a.ab123c"));
-        OutputStream output = response.getOutputStream();
-        fileService.getFileSystem().compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), ArchiveType.ZIP, output);
+        wrapService.writeWrapToServlet(wid, alias, response);
     }
 
     /**

@@ -18,7 +18,7 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SharePO {
+public class ShareInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -50,23 +50,23 @@ public class SharePO {
     @JsonIgnore
     private boolean hide = false;
 
-    public SharePO(Integer uid, String nid, ShareType type, Date expiredAt) {
+    public ShareInfo(Integer uid, String nid, ShareType type, Date expiredAt) {
         this.uid = uid;
         this.nid = nid;
         this.type = type;
         this.expiredAt = expiredAt;
     }
 
-    public static SharePO valueOf(ShareDTO shareDTO, ShareType type, String nid, int uid) {
-        SharePO sharePO = new SharePO();
-        sharePO.setExpiredAt(shareDTO.getExpiredAt());
-        sharePO.setExtractCode(shareDTO.getExtractCode());
-        sharePO.setNid(nid);
-        sharePO.setUid(uid);
-        sharePO.setType(type);
-        sharePO.setVerification(SecureUtils.getUUID());
-        sharePO.setName(shareDTO.getName());
-        return sharePO;
+    public static ShareInfo valueOf(ShareDTO shareDTO, ShareType type, String nid, int uid) {
+        ShareInfo shareInfo = new ShareInfo();
+        shareInfo.setExpiredAt(shareDTO.getExpiredAt());
+        shareInfo.setExtractCode(shareDTO.getExtractCode());
+        shareInfo.setNid(nid);
+        shareInfo.setUid(uid);
+        shareInfo.setType(type);
+        shareInfo.setVerification(SecureUtils.getUUID());
+        shareInfo.setName(shareDTO.getName());
+        return shareInfo;
     }
 
     /**
@@ -82,7 +82,7 @@ public class SharePO {
         return expiredAt != null && expiredAt.getTime() < System.currentTimeMillis();
     }
 
-    public SharePO hideKeyAttr() {
+    public ShareInfo hideKeyAttr() {
         hide = true;
         return this;
     }

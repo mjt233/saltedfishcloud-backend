@@ -2,10 +2,11 @@ package com.xiaotao.saltedfishcloud.service.share;
 
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
+import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
-import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
+import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -14,12 +15,14 @@ import java.util.List;
 public interface ShareService {
     /**
      * 创建分享资源的打包码
+     * @deprecated 改用 {@link com.xiaotao.saltedfishcloud.service.wrap.WrapService#registerWrap(WrapParam)} 统一创建
      * @param sid                   分享ID
      * @param verification          分享校验码
      * @param code                  分享提取码
      * @param fileTransferInfo      打包信息，dest字段忽略
      * @return                      打包码
      */
+    @Deprecated
     String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo);
 
     /**
@@ -52,7 +55,7 @@ public interface ShareService {
      * @param shareDTO  分享初始设定数据
      * @return          完整分享信息对象
      */
-    SharePO createShare(int uid, ShareDTO shareDTO);
+    ShareInfo createShare(int uid, ShareDTO shareDTO);
 
     /**
      * 获取用户的所有分享
@@ -62,13 +65,20 @@ public interface ShareService {
      * @param hideKeyAttr 隐藏关键信息
      * @return  分页信息
      */
-    CommonPageInfo<SharePO> getUserShare(int uid, int page, int size, boolean hideKeyAttr);
+    CommonPageInfo<ShareInfo> getUserShare(int uid, int page, int size, boolean hideKeyAttr);
 
     /**
-     * 获取分享信息
+     * 获取分享信息，内部将进行有效性校验，包括：文件是否存在、分享是否存在、校验码是否正确
      * @param sid           分享ID
      * @param verification  校验码
      * @return  分享信息
      */
-    SharePO getShare(int sid, String verification);
+    ShareInfo getShare(int sid, String verification);
+
+    /**
+     * 根据id获取分享信息
+     * @param id    分享id
+     * @return      分享信息
+     */
+    ShareInfo getById(int id);
 }

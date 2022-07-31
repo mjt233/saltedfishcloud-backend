@@ -165,4 +165,12 @@ public class TypeUtils {
             throw new UnsupportedOperationException("无法将 " + input.getClass() + " 转为 " + targetType);
         }
     }
+
+    public static String toString(Object input) {
+        if (input == null) {
+            return null;
+        } else {
+            return input.toString();
+        }
+    }
 }
