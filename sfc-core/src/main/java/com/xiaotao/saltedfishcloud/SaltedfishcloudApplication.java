@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud;
 
 import com.xiaotao.saltedfishcloud.ext.ExtJarClassLoader;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -32,13 +33,25 @@ import java.nio.file.Paths;
 public class SaltedfishcloudApplication {
 
     public static void main(String[] args) {
+        long begin = System.currentTimeMillis();
         log.info("[Boot]程序运行目录: {}", Paths.get("").toAbsolutePath());
         final ExtJarClassLoader loader = new ExtJarClassLoader(SaltedfishcloudApplication.class.getClassLoader());
         loader.loadAll();
         Thread.currentThread().setContextClassLoader(loader);
         SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
         sa.run(args);
+
+        Runtime runtime = Runtime.getRuntime();
+        long total = runtime.maxMemory();
+        long used = runtime.totalMemory() - runtime.freeMemory();
+        log.info("启动耗时：{}s 最大内存：{} 占用内存：{} 使用率：{}%",
+                (System.currentTimeMillis() - begin) / 1000.0,
+                StringUtils.getFormatSize(total),
+                StringUtils.getFormatSize(used),
+                (used * 100 / total)
+        );
         System.out.println("=========咸鱼云已启动(oﾟvﾟ)ノ==========");
+        System.gc();
     }
 
 }
