@@ -75,7 +75,7 @@ public class ShareInfo {
      * @return  有效true，否则false
      */
     public boolean validateExtractCode(String code) {
-        return extractCode == null || extractCode.equalsIgnoreCase(code);
+        return !StringUtils.hasText(extractCode) || extractCode.equalsIgnoreCase(code);
     }
 
     public boolean isExpired() {
