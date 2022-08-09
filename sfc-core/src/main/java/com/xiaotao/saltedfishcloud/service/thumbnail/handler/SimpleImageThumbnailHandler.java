@@ -23,7 +23,6 @@ public class SimpleImageThumbnailHandler implements ThumbnailHandler {
         add("png");
         add("gif");
         add("bmp");
-        add("webp");
     }});
 
     @Override
