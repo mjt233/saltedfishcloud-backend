@@ -1,9 +1,8 @@
 package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.xiaotao.saltedfishcloud.service.config.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -32,27 +31,27 @@ public class ConfigureInitializer implements ApplicationRunner {
         log.info("[当前系统版本]：" + sysProperties.getVersion());
 
 
-        String storeMode = configDao.getConfigure(ConfigName.STORE_MODE);
-        String regCode = configDao.getConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
-        String syncDelay = configDao.getConfigure(ConfigName.SYNC_INTERVAL, sysProperties.getSync().getInterval() + "");
+        String storeMode = configDao.getConfigure(SysConfigName.SYS_STORE_TYPE);
+        String regCode = configDao.getConfigure(SysConfigName.SYS_REGISTER_REG_CODE, sysProperties.getCommon().getRegCode());
+        String syncDelay = configDao.getConfigure(SysConfigName.SYNC_INTERVAL, sysProperties.getSync().getInterval() + "");
 
         boolean firstRun = storeMode == null;
         if (firstRun) {
             log.info("[初始化]存储模式记录：" + sysProperties.getStore().getMode());
-            configDao.setConfigure(ConfigName.STORE_MODE, sysProperties.getStore().getMode().toString());
+            configDao.setConfigure(SysConfigName.SYS_STORE_TYPE, sysProperties.getStore().getMode().toString());
             log.info("[初始化]邀请邀请码：" + regCode);
-            configDao.setConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
+            configDao.setConfigure(SysConfigName.SYS_REGISTER_REG_CODE, sysProperties.getCommon().getRegCode());
             log.info("[初始化]自动同步间隔：" + syncDelay);
-            configDao.setConfigure(ConfigName.SYNC_INTERVAL, syncDelay);
+            configDao.setConfigure(SysConfigName.SYNC_INTERVAL, syncDelay);
 
             storeMode = sysProperties.getStore().getMode().toString();
         }
 
-        String secret = configDao.getConfigure(ConfigName.TOKEN_SECRET);
+        String secret = configDao.getConfigure(SysConfigName.SYS_COMMON_TOKEN_SECRET);
         if (secret == null) {
             secret = StringUtils.getRandomString(32, true);
             log.info("[初始化]生成token密钥");
-            configDao.setConfigure(ConfigName.TOKEN_SECRET, secret);
+            configDao.setConfigure(SysConfigName.SYS_COMMON_TOKEN_SECRET, secret);
         }
         JwtUtils.setSecret(secret);
 

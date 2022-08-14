@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.xiaotao.saltedfishcloud.service.config.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ConfigInfo {
-    private ConfigName key;
+    private SysConfigName key;
     private String value;
 }

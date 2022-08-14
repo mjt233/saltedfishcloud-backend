@@ -30,16 +30,16 @@ public class ConfigServiceImpl implements ConfigService {
     @Resource
     private SysProperties sysProperties;
 
-    private final ArrayList<Consumer<Pair<ConfigName, String>>> listeners = new ArrayList<>();
-    private final Map<ConfigName, List<Consumer<String>>> configListeners = new HashMap<>();
+    private final ArrayList<Consumer<Pair<String, String>>> listeners = new ArrayList<>();
+    private final Map<String, List<Consumer<String>>> configListeners = new HashMap<>();
 
     @Override
-    public void addConfigSetListener(Consumer<Pair<ConfigName, String>> listener) {
+    public void addConfigSetListener(Consumer<Pair<String, String>> listener) {
         listeners.add(listener);
     }
 
     @Override
-    public void addConfigListener(ConfigName key, Consumer<String> listener) {
+    public void addConfigListener(String key, Consumer<String> listener) {
         List<Consumer<String>> consumers = configListeners.computeIfAbsent(key, k -> new LinkedList<>());
         consumers.add(listener);
     }
@@ -48,15 +48,14 @@ public class ConfigServiceImpl implements ConfigService {
      * 获取存在的所有配置
      */
     @Override
-    public Map<ConfigName, String> getAllConfig() {
+    public Map<String, String> getAllConfig() {
         return configDao
                 .getAllConfig()
                 .stream()
                 .map(e -> {
                     String key = e.getKey();
                     try {
-                        ConfigName configName = ConfigName.valueOf(key);
-                        return new Pair<>(configName, e.getValue());
+                        return new Pair<>(key, e.getValue());
                     } catch (IllegalArgumentException ignore) {
                         log.warn("[配置]未知的配置项：{}", key);
                         return null;
@@ -76,7 +75,7 @@ public class ConfigServiceImpl implements ConfigService {
      * @return      结果
      */
     @Override
-    public String getConfig(ConfigName key) {
+    public String getConfig(String key) {
         return configDao.getConfigure(key);
     }
 
@@ -87,11 +86,11 @@ public class ConfigServiceImpl implements ConfigService {
      * @param value     配置值
      */
     @Override
-    public boolean setConfig(ConfigName key, String value) {
+    public boolean setConfig(String key, String value) {
 
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
         // @TODO 允许抛出异常中断执行
-        for (Consumer<Pair<ConfigName, String>> listener : listeners) {
+        for (Consumer<Pair<String, String>> listener : listeners) {
             listener.accept(new Pair<>(key, value));
         }
         for (Consumer<String> c : configListeners.getOrDefault(key, Collections.emptyList())) {
@@ -100,16 +99,6 @@ public class ConfigServiceImpl implements ConfigService {
         configDao.setConfigure(key, value);
         return true;
     }
-    /**
-     * 设置一个配置项
-     * @param key       配置项
-     * @param value     配置值
-     */
-    @Override
-    public boolean setConfig(String key, String value) throws IOException {
-        return setConfig(ConfigName.valueOf(key), value);
-    }
-
     /**
      * 设置存储类型
      * @param type 存储类型
@@ -145,7 +134,7 @@ public class ConfigServiceImpl implements ConfigService {
      * @param code  邀请码
      */
     public void setInviteRegCode(String code) {
-        configDao.setConfigure(ConfigName.REG_CODE, code);
+        configDao.setConfigure(SysConfigName.SYS_REGISTER_REG_CODE, code);
         sysProperties.getCommon().setRegCode(code);
     }
 }

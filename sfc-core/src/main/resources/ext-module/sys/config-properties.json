@@ -1,0 +1,59 @@
+[
+  {
+    "name": "存储配置",
+    "area": "sys.store",
+    "nodes": [
+      {
+        "name": "sys.store.type",
+        "title": "存储模式",
+        "describe": "系统基础存储系统的数据组织方式。\nRAW为原始存储，在目标存储系统上的文件结构与用户网盘的文件结构保持一致。\nUNIQUE为唯一存储，按文件哈希值统一组织文件，相同文件只会存储一份",
+        "inputType": "select",
+        "options": [
+          {
+            "title": "RAW",
+            "value": "RAW"
+          },
+          {
+            "title": "UNIQUE",
+            "value": "UNIQUE"
+          }
+        ]
+      },
+      {
+        "name": "sys.store.sync_interval",
+        "inputType": "text",
+        "title": "自动同步间隔",
+        "describe": "文件记录服务与存储服务文件信息自动执行同步的间隔。\n单位：分钟，-1关闭",
+        "value": "-1",
+        "defaultValue": "-1"
+      }
+    ]
+  },
+  {
+    "name": "注册配置",
+    "area": "sys.register",
+    "nodes": [
+      {
+        "name": "sys.register.regCode",
+        "inputType": "text",
+        "title": "注册邀请码",
+        "defaultValue": "114514",
+        "describe": "当开启“邀请码注册”时，游客注册账号所需的邀请码"
+      },
+      {
+        "name": "sys.register.enableEmailReg",
+        "inputType": "switch",
+        "title": "启用邮箱注册",
+        "describe": "允许使用邮箱注册",
+        "defaultValue": false
+      },
+      {
+        "name": "sys.register.enableRegCode",
+        "inputType": "switch",
+        "title": "启用邀请码注册",
+        "describe": "允许使用邀请码注册",
+        "defaultValue": true
+      }
+    ]
+  }
+]

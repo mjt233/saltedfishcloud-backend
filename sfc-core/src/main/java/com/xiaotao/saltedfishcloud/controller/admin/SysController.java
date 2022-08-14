@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.config.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
 import org.springframework.dao.DuplicateKeyException;
@@ -53,12 +53,12 @@ public class SysController {
 
     @GetMapping("configKeys")
     public JsonResult getConfigKeys() {
-        return JsonResultImpl.getInstance(ConfigName.values());
+        return JsonResultImpl.getInstance(configService.getAllConfig());
     }
 
     @GetMapping("config/{key}")
     public JsonResult getConfig(@PathVariable String key) {
-        String res = configService.getConfig(ConfigName.valueOf(key));
+        String res = configService.getConfig(key);
         return JsonResultImpl.getInstance(res);
     }
 

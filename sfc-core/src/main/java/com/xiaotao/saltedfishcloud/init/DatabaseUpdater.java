@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.xiaotao.saltedfishcloud.service.config.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +71,10 @@ public class DatabaseUpdater implements ApplicationRunner {
         conn = dataSource.getConnection();
         Version v;
         try {
-            final String versionRecord = configDao.getConfigure(ConfigName.VERSION);
+            String versionRecord = configDao.getConfigure(SysConfigName.SYS_COMMON_VERSION);
+            if (versionRecord == null) {
+                versionRecord = configDao.getConfigure(SysConfigName.OLD_VERSION);
+            }
             if (versionRecord != null) {
                 v = Version.valueOf(versionRecord);
             } else {
@@ -99,11 +102,12 @@ public class DatabaseUpdater implements ApplicationRunner {
         for (SQLVersionResource resource : resources) {
             if (lastVersion.isLessThen(resource.getVersion())) {
                 log.info("[数据库结构更新]" + resource);
+                System.out.println(resource.getResource());
                 ScriptUtils.executeSqlScript(conn, resource.getResource());
             }
         }
         conn.close();
-        configDao.setConfigure(ConfigName.VERSION, sysProperties.getVersion().toString());
+        configDao.setConfigure(SysConfigName.SYS_COMMON_VERSION, sysProperties.getVersion().toString());
     }
 
 }

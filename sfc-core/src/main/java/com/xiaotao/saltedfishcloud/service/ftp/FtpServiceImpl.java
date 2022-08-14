@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.ftp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.service.config.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpUserManager;
@@ -111,7 +111,7 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
 
     @Override
     public void run(ApplicationArguments args) throws IOException {
-        String configRawJson = configService.getConfig(ConfigName.FTP_PROPERTIES);
+        String configRawJson = configService.getConfig(SysConfigName.SYS_COMMON_FTP_PROPERTIES);
         if (configRawJson != null) {
             try {
                 final SysProperties.Ftp config = MapperHolder.mapper.readValue(configRawJson, SysProperties.Ftp.class);
@@ -121,11 +121,11 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
                 e.printStackTrace();
             }
         } else {
-            configService.setConfig(ConfigName.FTP_PROPERTIES, MapperHolder.mapper.writeValueAsString(ftpProperties));
+            configService.setConfig(SysConfigName.SYS_COMMON_FTP_PROPERTIES, MapperHolder.mapper.writeValueAsString(ftpProperties));
             log.info("[FTP]初始化FTP配置");
         }
         // 参数更新时重新加载FTP服务器
-        configService.addConfigListener(ConfigName.FTP_PROPERTIES,  e -> {
+        configService.addConfigListener(SysConfigName.SYS_COMMON_FTP_PROPERTIES, e -> {
             try {
                 SysProperties.Ftp config = MapperHolder.mapper.readValue(e, SysProperties.Ftp.class);
                 BeanUtils.copyProperties(config, ftpProperties);
