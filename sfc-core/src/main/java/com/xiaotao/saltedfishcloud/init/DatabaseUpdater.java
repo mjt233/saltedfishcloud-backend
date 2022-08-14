@@ -101,8 +101,7 @@ public class DatabaseUpdater implements ApplicationRunner {
         Arrays.sort(resources);
         for (SQLVersionResource resource : resources) {
             if (lastVersion.isLessThen(resource.getVersion())) {
-                log.info("[数据库结构更新]" + resource);
-                System.out.println(resource.getResource());
+                log.info("[数据库结构更新]{}",resource);
                 ScriptUtils.executeSqlScript(conn, resource.getResource());
             }
         }

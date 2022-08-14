@@ -65,13 +65,13 @@ public class SysController {
 
     /**
      * 设置存储类型
-     * @param type      存储类型
+     * @param mode      存储类型
      */
-    @PutMapping("config/STORE_TYPE/{type}")
+    @PutMapping("config/" + SysConfigName.SYS_STORE_TYPE + "/{mode}")
     @ProtectBlock
-    public JsonResult setStoreType(@PathVariable("type") String type) throws IOException {
+    public JsonResult setStoreType(@PathVariable("mode") String mode) throws IOException {
         try {
-            StoreMode storeMode = StoreMode.valueOf(type.toUpperCase());
+            StoreMode storeMode = StoreMode.valueOf(mode.toUpperCase());
             if (configService.setStoreType(storeMode)) {
                 return JsonResult.emptySuccess();
             } else {

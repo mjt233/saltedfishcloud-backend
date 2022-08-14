@@ -15,6 +15,7 @@
         <module>sfc-api</module>
         <module>sfc-orm-configure</module>
         <module>sfc-ext</module>
+        <module>sfc-build-in-plugin</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
@@ -32,7 +33,7 @@
         <!--  前端项目路径，配置后在package时自动打包到webapp/static -->
 <!--        <sfc.front-end-path>C:\Users\xiaotao\code\saltedfishcloud-frontend</sfc.front-end-path>-->
         <java.version>1.8</java.version>
-        <api.version>1.3.0</api.version>
+        <api.version>1.4.0</api.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>

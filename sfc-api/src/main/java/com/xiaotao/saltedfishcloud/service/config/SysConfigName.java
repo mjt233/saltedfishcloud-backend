@@ -15,7 +15,7 @@ public interface SysConfigName {
     /**
      * 存储模式
      */
-    String SYS_STORE_TYPE = "sys.store.type";
+    String SYS_STORE_TYPE = "sys.store.mode";
 
     /**
      * 自动同步间隔

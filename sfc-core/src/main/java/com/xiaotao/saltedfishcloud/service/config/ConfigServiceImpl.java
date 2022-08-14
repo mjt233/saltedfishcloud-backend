@@ -4,6 +4,10 @@ import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
+import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
+import com.xiaotao.saltedfishcloud.ext.PluginManager;
+import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.xiaotao.saltedfishcloud.model.ConfigNodeGroup;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +34,9 @@ public class ConfigServiceImpl implements ConfigService {
     @Resource
     private SysProperties sysProperties;
 
+    @Resource
+    private PluginManager pluginManager;
+
     private final ArrayList<Consumer<Pair<String, String>>> listeners = new ArrayList<>();
     private final Map<String, List<Consumer<String>>> configListeners = new HashMap<>();
 
@@ -49,24 +56,21 @@ public class ConfigServiceImpl implements ConfigService {
      */
     @Override
     public Map<String, String> getAllConfig() {
-        return configDao
-                .getAllConfig()
+        Map<String, String> dbConfig = configDao.getAllConfig().stream().collect(Collectors.toMap(
+                Pair::getKey,
+                Pair::getValue
+        ));
+
+         return pluginManager.getAllPlugin()
+                .keySet()
                 .stream()
-                .map(e -> {
-                    String key = e.getKey();
-                    try {
-                        return new Pair<>(key, e.getValue());
-                    } catch (IllegalArgumentException ignore) {
-                        log.warn("[配置]未知的配置项：{}", key);
-                        return null;
-                    }
-                }).filter(Objects::nonNull)
-                .collect(
-                        Collectors.toMap(
-                                Pair::getKey,
-                                Pair::getValue
-                        )
-                );
+                .flatMap(e -> Optional.ofNullable(pluginManager.getPluginConfigNodeGroup(e)).orElse(Collections.emptyList()).stream())
+                .flatMap(e -> e.getNodes().stream())
+                .collect(Collectors.toMap(
+                        ConfigNode::getName,
+                        e -> dbConfig.getOrDefault(e.getName(), e.getDefaultValue())
+                ));
+
     }
 
     /**

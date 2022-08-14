@@ -12,7 +12,6 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// @TODO 规范配置参数命名
 @Service
 public class AdminService {
     @Resource
