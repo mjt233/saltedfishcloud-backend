@@ -4,23 +4,18 @@ import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.model.ConfigNodeGroup;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
-import org.springframework.util.StreamUtils;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * 默认的插件管理器
@@ -36,8 +31,6 @@ public class DefaultPluginManager implements PluginManager {
     @Getter
     private final ClassLoader masterLoader;
 
-    public static final String PLUGIN_CONFIG_PROPERTIES_FILE = "config-properties.json";
-    public static final String PLUGIN_INFO_FILE = "plugin-info.json";
 
     public DefaultPluginManager(ClassLoader masterLoader) {
         this.masterLoader = masterLoader;
@@ -49,16 +42,15 @@ public class DefaultPluginManager implements PluginManager {
     @Override
     public void register(Resource pluginResource) throws IOException {
         URL pluginUrl = pluginResource.getURL();
-        URLClassLoader rawClassLoader = new URLClassLoader(new URL[]{pluginUrl});
-
+        URLClassLoader rawClassLoader = new URLClassLoader(new URL[]{pluginUrl}, null);
         PluginInfo pluginInfo;
         List<ConfigNodeGroup> configNodeGroups;
 
         try {
             pluginInfo  = getPluginInfoFromLoader(rawClassLoader);
             configNodeGroups = getPluginConfigNodeFromLoader(rawClassLoader);
-        } catch (IOException e) {
-            log.error("获取插件信息失败：{}", pluginUrl);
+        } catch (Exception e) {
+            log.error("获取插件信息失败，请检查插件的plugin-info.json：{}", pluginUrl);
             throw e;
         } finally {
             rawClassLoader.close();
@@ -73,37 +65,23 @@ public class DefaultPluginManager implements PluginManager {
         }
 
         loader.loadFromUrl(pluginUrl);
-        pluginMap.put(pluginInfo.getName(), pluginInfo);
-        pluginConfigNodeGroupMap.put(pluginInfo.getName(), configNodeGroups);
-        pluginClassLoaderMap.put(pluginInfo.getName(), loader);
+        registerPluginMetaData(pluginInfo.getName(), pluginInfo, configNodeGroups, loader);
 
     }
 
     protected List<ConfigNodeGroup> getPluginConfigNodeFromLoader(ClassLoader loader) throws IOException {
-        try(InputStream configStream = loader.getResourceAsStream(PLUGIN_CONFIG_PROPERTIES_FILE)) {
-            String json = StreamUtils.copyToString(configStream, StandardCharsets.UTF_8);
-            if (!StringUtils.hasText(json)) {
-                return Collections.emptyList();
-            }
-            List<ConfigNodeGroup> configNodeGroups = MapperHolder.parseJsonToList(json, ConfigNodeGroup.class);
-            String errMsg = configNodeGroups.stream()
-                    .flatMap(e -> e.getNodes().stream())
-                    .filter(e -> e.getDefaultValue() == null)
-                    .map(e -> "配置项【" + e.getName() + "】缺少默认值;")
-                    .collect(Collectors.joining());
-
-            if (errMsg.length() > 0) {
-                throw new RuntimeException(errMsg);
-            }
-            return configNodeGroups;
-        }
+        return ExtUtils.getPluginConfigNodeFromLoader(loader, null);
     }
 
-    protected PluginInfo getPluginInfoFromLoader(ClassLoader loader) throws IOException {
-        try(InputStream infoStream = loader.getResourceAsStream(PLUGIN_INFO_FILE)){
-            String infoJson = StreamUtils.copyToString(infoStream, StandardCharsets.UTF_8);
-            return MapperHolder.parseJson(infoJson, PluginInfo.class);
-        }
+    protected PluginInfo getPluginInfoFromLoader(ClassLoader rawLoader) throws IOException {
+        return ExtUtils.getPluginInfo(rawLoader, null);
+    }
+
+    @Override
+    public void registerPluginMetaData(String name, PluginInfo pluginInfo, List<ConfigNodeGroup> configNodeGroupList, ClassLoader loader) {
+        pluginMap.put(pluginInfo.getName(), pluginInfo);
+        pluginConfigNodeGroupMap.put(pluginInfo.getName(), configNodeGroupList);
+        pluginClassLoaderMap.put(pluginInfo.getName(), loader);
     }
 
     @Override

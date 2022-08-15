@@ -49,9 +49,12 @@ public class SaltedfishcloudApplication {
 
         // 配置SpringBoot，注册插件管理器
         SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
-        sa.addInitializers(context -> context.addBeanFactoryPostProcessor(beanFactory -> {
-            beanFactory.registerResolvableDependency(PluginManager.class, pluginManager);
-        }));
+        sa.addInitializers(context -> {
+            context.setClassLoader(pluginManager.getJarMergeClassLoader());
+            context.addBeanFactoryPostProcessor(beanFactory -> {
+                beanFactory.registerResolvableDependency(PluginManager.class, pluginManager);
+            });
+        });
 
         // 启动SpringBoot
         sa.run(args);
@@ -67,6 +70,17 @@ public class SaltedfishcloudApplication {
     public static PluginManager initPlugin() throws IOException {
         // 准备插件
         PluginManager pluginManager = new DefaultPluginManager(SaltedfishcloudApplication.class.getClassLoader());
+        ClassLoader loader = pluginManager.getJarMergeClassLoader();
+
+        // 注册固定的内置插件信息
+        pluginManager.registerPluginMetaData(
+                "sys",
+                ExtUtils.getPluginInfo(loader, "plugin"),
+                ExtUtils.getPluginConfigNodeFromLoader(loader, "plugin"),
+                loader
+        );
+
+        // 注册目录中的插件
         for (URL extUrl : ExtUtils.getExtUrls()) {
             pluginManager.register(new UrlResource(extUrl));
         }

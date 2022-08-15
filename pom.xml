@@ -15,7 +15,6 @@
         <module>sfc-api</module>
         <module>sfc-orm-configure</module>
         <module>sfc-ext</module>
-        <module>sfc-build-in-plugin</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>

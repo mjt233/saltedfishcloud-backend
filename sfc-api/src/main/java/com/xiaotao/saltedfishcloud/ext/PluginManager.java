@@ -21,6 +21,15 @@ public interface PluginManager {
     void register(Resource pluginResource) throws IOException;
 
     /**
+     * 单纯注册插件元数据
+     * @param name                  插件名称
+     * @param pluginInfo            插件信息
+     * @param configNodeGroupList   提供的配置组
+     * @param loader                插件的类加载器
+     */
+    void registerPluginMetaData(String name, PluginInfo pluginInfo, List<ConfigNodeGroup> configNodeGroupList, ClassLoader loader);
+
+    /**
      * 获取拓展插件信息。若不存在则返回null
      * @param name  拓展插件名称
      * @return      插件信息
