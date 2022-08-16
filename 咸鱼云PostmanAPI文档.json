@@ -2,7 +2,8 @@
 	"info": {
 		"_postman_id": "b8e56f77-b8f8-40ea-8288-d2f5a7e6987a",
 		"name": "咸鱼云Java版",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12016898"
 	},
 	"item": [
 		{
@@ -64,7 +65,7 @@
 										"user"
 									]
 								},
-								"description": "用户自主注册接口\r\n- URI: `/api/user/`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- user  用户名\r\n- passwd    登录密码\r\n- regcode   注册邀请码，如果是管理员用户请求该接口，则不需要填写邀请码"
+								"description": "用户自主注册接口\n\n*   URI: `/api/user/`\n*   动作：POST\n    \n\n### 请求体参数\n\n*   user 用户名\n*   passwd 登录密码\n*   regcode 注册邀请码，如果是管理员用户请求该接口，则不需要填写邀请码。若使用邮箱注册，该字段则使用邮箱验证码。\n*   email 邮箱，邮箱注册方式需要填写这个字段。若使用邀请码方式注册，该字段不会被处理\n*   type 用户类型 1 - 管理员，0 - 普通用户，只有当管理员用户调用该字段时才有效\n*   validEmail 是否使用邮箱方式注册 true - 是，false - 邀请码注册。使用邮箱方式注册时会验证email字段的有效性"
 							},
 							"response": []
 						},
@@ -2462,6 +2463,30 @@
 									]
 								},
 								"description": "获取系统开发者选项值\r\n- URI：`/api/admin/debug/options` \r\n- 动作：GET\r\n\r\n响应样例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"read_only_level\": null,    //  系统阻塞级别\r\n        \"sync_delay\": 5             //  公共网盘同步延迟\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "插件管理",
+					"item": [
+						{
+							"name": "获取插件列表",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/plugin/getAllPlugins",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"plugin",
+										"getAllPlugins"
+									]
+								}
 							},
 							"response": []
 						}
