@@ -15,6 +15,11 @@ public class PluginConfigNodeInfo {
     private String name;
 
     /**
+     * 插件别名
+     */
+    private String alias;
+
+    /**
      * 插件图标
      */
     private String icon;

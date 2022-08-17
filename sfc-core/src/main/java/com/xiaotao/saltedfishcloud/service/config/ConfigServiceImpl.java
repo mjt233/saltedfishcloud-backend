@@ -57,7 +57,8 @@ public class ConfigServiceImpl implements ConfigService {
         Map<String, String> allConfig = getAllConfig();
         return pluginManager.listAllPlugin().stream().map(e -> {
             PluginConfigNodeInfo configNodeInfo = new PluginConfigNodeInfo();
-            configNodeInfo.setName(e.getAlias());
+            configNodeInfo.setAlias(e.getAlias());
+            configNodeInfo.setName(e.getName());
             configNodeInfo.setGroups(pluginManager.getPluginConfigNodeGroup(e.getName()));
             configNodeInfo.getGroups().stream().flatMap(group -> group.getNodes().stream()).forEach(node -> node.setValue(allConfig.get(node.getName())));
             return configNodeInfo;
