@@ -16,7 +16,8 @@
         "title": "系统安全密钥",
         "describe": "系统的安全密钥，修改后会导致所有用户登录失效、直链失效",
         "defaultValue": "",
-        "inputType": "text"
+        "inputType": "text",
+        "hide": true
       },
       {
         "name": "sys.common.mail_properties",

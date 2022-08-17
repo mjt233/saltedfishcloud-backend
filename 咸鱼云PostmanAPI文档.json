@@ -2380,6 +2380,26 @@
 								"description": "获取网盘系统的存储状态  \r\n- URI：`/api/admin/sys/overview` \r\n- 动作：GET \r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"store: {\r\n            \"store_type\": \"UNIQUE\",                         //  存储类型\r\n            \"file_count\": 248,                              //  文件计数\r\n            \"dir_count\": 69,                                //  目录计数\r\n            \"real_user_size\": 14678764,                     //  实际存储的用户文件总大小\r\n            \"total_user_size\": 32274467,                    //  记录的用户文件总大小\r\n            \"total_public_size\": 9505370783,                //  公共目录总大小\r\n            \"store_total_space\": 1000203087872,             //  用户数据根所在分区总大小      \r\n            \"store_free_space\": 283439636480,               //  用户数据根所在分区可用空间大小\r\n            \"public_total_space\": 1000203087872,            //  公共数据根所在分区总大小      \r\n            \"public_free_space\": 283439636480,              //  公共数据根所在分区可用空间大小\r\n            \"store_root\": \"D:\\\\data\\\\xiaotao\\\\saltedfishcloud\\\\store\",  //  用户数据根\r\n            \"public_root\": \"D:\\\\pack\",                                  //  公共数据根\r\n            \"store_type_switching\": false                               //  系统是否处于存储切换中状态\r\n        },\r\n        \"invite_reg_code\": 114514,\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
 							},
 							"response": []
+						},
+						{
+							"name": "获取所有插件配置",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/admin/sys/listPluginConfig",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"sys",
+										"listPluginConfig"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				},

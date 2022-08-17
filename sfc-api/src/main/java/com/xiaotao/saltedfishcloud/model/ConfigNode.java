@@ -65,4 +65,9 @@ public class ConfigNode {
      * 当类型为template时使用模板内容作为内容编辑
      */
     private String template;
+
+    /**
+     * 是否在菜单中隐藏
+     */
+    private boolean hide;
 }

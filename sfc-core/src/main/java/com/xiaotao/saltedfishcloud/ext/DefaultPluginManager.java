@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -16,12 +17,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 /**
  * 默认的插件管理器
  */
 @Slf4j
 public class DefaultPluginManager implements PluginManager {
+    private final List<PluginInfo> pluginList = new CopyOnWriteArrayList<>();
     private final Map<String, PluginInfo> pluginMap = new ConcurrentHashMap<>();
     private final Map<String, PluginInfo> pluginMapView = Collections.unmodifiableMap(pluginMap);
     private final Map<String, ClassLoader> pluginClassLoaderMap = new ConcurrentHashMap<>();
@@ -82,6 +86,7 @@ public class DefaultPluginManager implements PluginManager {
         pluginMap.put(pluginInfo.getName(), pluginInfo);
         pluginConfigNodeGroupMap.put(pluginInfo.getName(), configNodeGroupList);
         pluginClassLoaderMap.put(pluginInfo.getName(), loader);
+        pluginList.add(pluginInfo);
     }
 
     @Override
@@ -92,6 +97,11 @@ public class DefaultPluginManager implements PluginManager {
     @Override
     public Map<String, PluginInfo> getAllPlugin() {
         return pluginMapView;
+    }
+
+    @Override
+    public List<PluginInfo> listAllPlugin() {
+        return pluginList;
     }
 
     @Override

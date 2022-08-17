@@ -3,13 +3,21 @@ package com.xiaotao.saltedfishcloud.service.config;
 
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
 public interface ConfigService {
+
+    /**
+     * 获取所有插件下的配置信息
+     */
+    List<PluginConfigNodeInfo> listPluginConfig();
+
     /**
      * 获取存在的所有配置
      */

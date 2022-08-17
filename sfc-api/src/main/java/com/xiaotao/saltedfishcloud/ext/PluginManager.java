@@ -43,6 +43,11 @@ public interface PluginManager {
     Map<String, PluginInfo> getAllPlugin();
 
     /**
+     * 获取所有注册的插件
+     */
+    List<PluginInfo> listAllPlugin();
+
+    /**
      * 获取插件的类加载器
      * @param name  插件名称
      */

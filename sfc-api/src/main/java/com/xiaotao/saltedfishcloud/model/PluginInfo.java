@@ -60,4 +60,9 @@ public class PluginInfo {
      * 插件API版本
      */
     private String apiVersion;
+
+    /**
+     * 插件图标
+     */
+    private String icon;
 }

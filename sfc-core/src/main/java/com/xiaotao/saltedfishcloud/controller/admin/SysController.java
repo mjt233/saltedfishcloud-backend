@@ -36,6 +36,10 @@ public class SysController {
     @Resource
     private ProxyDao proxyDao;
 
+    @GetMapping("listPluginConfig")
+    public JsonResult listAllPluginConfig() {
+        return JsonResultImpl.getInstance(configService.listPluginConfig());
+    }
 
     @GetMapping("overview")
     public JsonResult getOverview() {

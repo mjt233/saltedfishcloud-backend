@@ -20,4 +20,9 @@ public class ConfigNodeGroup {
      * 配置节点列表
      */
     private List<ConfigNode> nodes;
+
+    /**
+     * 是否在菜单中隐藏
+     */
+    private boolean hide;
 }

@@ -10,6 +10,7 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.ConfigNodeGroup;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +50,18 @@ public class ConfigServiceImpl implements ConfigService {
     public void addConfigListener(String key, Consumer<String> listener) {
         List<Consumer<String>> consumers = configListeners.computeIfAbsent(key, k -> new LinkedList<>());
         consumers.add(listener);
+    }
+
+    @Override
+    public List<PluginConfigNodeInfo> listPluginConfig() {
+        Map<String, String> allConfig = getAllConfig();
+        return pluginManager.listAllPlugin().stream().map(e -> {
+            PluginConfigNodeInfo configNodeInfo = new PluginConfigNodeInfo();
+            configNodeInfo.setName(e.getAlias());
+            configNodeInfo.setGroups(pluginManager.getPluginConfigNodeGroup(e.getName()));
+            configNodeInfo.getGroups().stream().flatMap(group -> group.getNodes().stream()).forEach(node -> node.setValue(allConfig.get(node.getName())));
+            return configNodeInfo;
+        }).collect(Collectors.toList());
     }
 
     /**
