@@ -27,5 +27,5 @@ public class PluginConfigNodeInfo {
     /**
      * 该插件的配置组
      */
-    private List<ConfigNodeGroup> groups;
+    private List<ConfigNode> groups;
 }

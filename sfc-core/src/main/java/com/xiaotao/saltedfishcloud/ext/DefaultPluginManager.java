@@ -2,12 +2,11 @@ package com.xiaotao.saltedfishcloud.ext;
 
 import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
-import com.xiaotao.saltedfishcloud.model.ConfigNodeGroup;
+import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -18,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 /**
  * 默认的插件管理器
@@ -29,7 +27,7 @@ public class DefaultPluginManager implements PluginManager {
     private final Map<String, PluginInfo> pluginMap = new ConcurrentHashMap<>();
     private final Map<String, PluginInfo> pluginMapView = Collections.unmodifiableMap(pluginMap);
     private final Map<String, ClassLoader> pluginClassLoaderMap = new ConcurrentHashMap<>();
-    private final Map<String, List<ConfigNodeGroup>> pluginConfigNodeGroupMap = new ConcurrentHashMap<>();
+    private final Map<String, List<ConfigNode>> pluginConfigNodeGroupMap = new ConcurrentHashMap<>();
     private final PluginClassLoader jarMergeClassLoader;
 
     @Getter
@@ -48,7 +46,7 @@ public class DefaultPluginManager implements PluginManager {
         URL pluginUrl = pluginResource.getURL();
         URLClassLoader rawClassLoader = new URLClassLoader(new URL[]{pluginUrl}, null);
         PluginInfo pluginInfo;
-        List<ConfigNodeGroup> configNodeGroups;
+        List<ConfigNode> configNodeGroups;
 
         try {
             pluginInfo  = getPluginInfoFromLoader(rawClassLoader);
@@ -73,7 +71,7 @@ public class DefaultPluginManager implements PluginManager {
 
     }
 
-    protected List<ConfigNodeGroup> getPluginConfigNodeFromLoader(ClassLoader loader) throws IOException {
+    protected List<ConfigNode> getPluginConfigNodeFromLoader(ClassLoader loader) throws IOException {
         return ExtUtils.getPluginConfigNodeFromLoader(loader, null);
     }
 
@@ -82,7 +80,7 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     @Override
-    public void registerPluginMetaData(String name, PluginInfo pluginInfo, List<ConfigNodeGroup> configNodeGroupList, ClassLoader loader) {
+    public void registerPluginMetaData(String name, PluginInfo pluginInfo, List<ConfigNode> configNodeGroupList, ClassLoader loader) {
         pluginMap.put(pluginInfo.getName(), pluginInfo);
         pluginConfigNodeGroupMap.put(pluginInfo.getName(), configNodeGroupList);
         pluginClassLoaderMap.put(pluginInfo.getName(), loader);
@@ -119,7 +117,7 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     @Override
-    public List<ConfigNodeGroup> getPluginConfigNodeGroup(String name) {
+    public List<ConfigNode> getPluginConfigNodeGroup(String name) {
         return pluginConfigNodeGroupMap.get(name);
     }
 }

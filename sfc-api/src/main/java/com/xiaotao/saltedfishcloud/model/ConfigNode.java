@@ -54,7 +54,7 @@ public class ConfigNode {
     /**
      * 子节点，用于为form表单类型提供子表单数据，子表单的值为json格式化字符串
      */
-    private List<ConfigNodeGroup> subNode;
+    private List<ConfigNode> nodes;
 
     /**
      * 图标

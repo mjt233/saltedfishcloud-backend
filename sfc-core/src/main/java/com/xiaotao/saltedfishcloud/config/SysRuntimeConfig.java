@@ -107,9 +107,9 @@ public class SysRuntimeConfig implements ApplicationRunner {
         // 监听配置改变，实时更新状态缓存
         configService.addConfigSetListener(e -> {
             String key = e.getKey();
-            if (SysConfigName.SYS_REGISTER_ENABLE_EMAIL_REG.equals(key)) {
+            if (SysConfigName.Register.ENABLE_EMAIL_REG.equals(key)) {
                 enableEmailReg = "true".equalsIgnoreCase(e.getValue());
-            } else if (SysConfigName.SYS_REGISTER_ENABLE_REG_CODE.equals(key)) {
+            } else if (SysConfigName.Register.ENABLE_REG_CODE.equals(key)) {
                 enableRegCode = "true".equalsIgnoreCase(e.getValue());
             }
             updateFeature();
@@ -134,13 +134,13 @@ public class SysRuntimeConfig implements ApplicationRunner {
      */
     public void fetchConfig() {
         Map<String, String> configCache = configService.getAllConfig();
-        String enableRegCode = configCache.get(SysConfigName.SYS_REGISTER_ENABLE_REG_CODE);
-        String enableEmailReg = configCache.get(SysConfigName.SYS_REGISTER_ENABLE_EMAIL_REG);
+        String enableRegCode = configCache.get(SysConfigName.Register.ENABLE_REG_CODE);
+        String enableEmailReg = configCache.get(SysConfigName.Register.ENABLE_EMAIL_REG);
         if (enableRegCode == null && enableEmailReg == null) {
             enableRegCode = "true";
             try {
-                configService.setConfig(SysConfigName.SYS_REGISTER_ENABLE_REG_CODE, "true");
-                configService.setConfig(SysConfigName.SYS_REGISTER_ENABLE_EMAIL_REG, "false");
+                configService.setConfig(SysConfigName.Register.ENABLE_REG_CODE, "true");
+                configService.setConfig(SysConfigName.Register.ENABLE_EMAIL_REG, "false");
                 log.info("[注册规则初始化]未检测到注册规则配置，默认开启邀请码注册");
             } catch (IOException ignore) { }
         }

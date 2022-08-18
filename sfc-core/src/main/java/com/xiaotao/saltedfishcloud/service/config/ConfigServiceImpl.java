@@ -4,10 +4,8 @@ import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.ConfigNodeGroup;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
@@ -60,7 +58,7 @@ public class ConfigServiceImpl implements ConfigService {
             configNodeInfo.setAlias(e.getAlias());
             configNodeInfo.setName(e.getName());
             configNodeInfo.setGroups(pluginManager.getPluginConfigNodeGroup(e.getName()));
-            configNodeInfo.getGroups().stream().flatMap(group -> group.getNodes().stream()).forEach(node -> node.setValue(allConfig.get(node.getName())));
+            configNodeInfo.getGroups().stream().flatMap(group -> group.getNodes().stream()).flatMap(group -> group.getNodes().stream()).forEach(node -> node.setValue(allConfig.get(node.getName())));
             return configNodeInfo;
         }).collect(Collectors.toList());
     }
@@ -79,6 +77,7 @@ public class ConfigServiceImpl implements ConfigService {
                 .keySet()
                 .stream()
                 .flatMap(e -> Optional.ofNullable(pluginManager.getPluginConfigNodeGroup(e)).orElse(Collections.emptyList()).stream())
+                .flatMap(e -> e.getNodes().stream())
                 .flatMap(e -> e.getNodes().stream())
                 .collect(Collectors.toMap(
                         ConfigNode::getName,
@@ -152,7 +151,7 @@ public class ConfigServiceImpl implements ConfigService {
      * @param code  邀请码
      */
     public void setInviteRegCode(String code) {
-        configDao.setConfigure(SysConfigName.SYS_REGISTER_REG_CODE, code);
+        configDao.setConfigure(SysConfigName.Register.SYS_REGISTER_REG_CODE, code);
         sysProperties.getCommon().setRegCode(code);
     }
 }

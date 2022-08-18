@@ -71,7 +71,7 @@ public class DatabaseUpdater implements ApplicationRunner {
         conn = dataSource.getConnection();
         Version v;
         try {
-            String versionRecord = configDao.getConfigure(SysConfigName.SYS_COMMON_VERSION);
+            String versionRecord = configDao.getConfigure(SysConfigName.Common.VERSION);
             if (versionRecord == null) {
                 versionRecord = configDao.getConfigure(SysConfigName.OLD_VERSION);
             }
@@ -106,7 +106,7 @@ public class DatabaseUpdater implements ApplicationRunner {
             }
         }
         conn.close();
-        configDao.setConfigure(SysConfigName.SYS_COMMON_VERSION, sysProperties.getVersion().toString());
+        configDao.setConfigure(SysConfigName.Common.VERSION, sysProperties.getVersion().toString());
     }
 
 }

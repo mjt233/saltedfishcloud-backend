@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.model;
 import lombok.Data;
 
 @Data
-public class NameValueType {
+public class NameValueType<T> {
     private String name;
-    private Object value;
+    private T value;
 }

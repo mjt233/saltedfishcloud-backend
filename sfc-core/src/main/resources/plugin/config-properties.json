@@ -1,94 +1,112 @@
 [
   {
-    "name": "常规配置",
-    "area": "sys.common",
+    "name": "common",
+    "title": "基础配置",
     "nodes": [
       {
-        "name": "sys.common.version",
-        "title": "系统版本",
-        "describe": "当前系统的主版本号",
-        "defaultValue": "1.0.0.0-SNAPSHOT",
-        "readonly": true,
-        "inputType": "text"
-      },
-      {
-        "name": "sys.common.token_secret",
-        "title": "系统安全密钥",
-        "describe": "系统的安全密钥，修改后会导致所有用户登录失效、直链失效",
-        "defaultValue": "",
-        "inputType": "text",
-        "hide": true
-      },
-      {
-        "name": "sys.common.mail_properties",
-        "title": "发信服务器配置",
-        "describe": "系统发送邮件时连接的发信服务器配置",
-        "defaultValue": "",
-        "inputType": "form"
-      },
-      {
-        "name": "sys.common.ftp_properties",
-        "title": "FTP服务接口配置",
-        "describe": "系统支持通过FTP方式进行公共网盘和私人网盘的访问，该项用于对FTP服务接口进行各项参数的设置",
-        "defaultValue": "",
-        "inputType": "form"
-      }
-    ]
-  },
-  {
-    "name": "存储配置",
-    "area": "sys.store",
-    "nodes": [
-      {
-        "name": "sys.store.mode",
-        "title": "存储模式",
-        "defaultValue": "UNIQUE",
-        "describe": "系统基础存储系统的数据组织方式。\nRAW为原始存储，在目标存储系统上的文件结构与用户网盘的文件结构保持一致。\nUNIQUE为唯一存储，按文件哈希值统一组织文件，相同文件只会存储一份",
-        "inputType": "select",
-        "options": [
+        "title": "常规",
+        "name": "general",
+        "nodes": [
           {
-            "title": "RAW",
-            "value": "RAW"
+            "name": "sys.common.version",
+            "title": "系统版本",
+            "describe": "当前系统的主版本号",
+            "defaultValue": "1.0.0.0-SNAPSHOT",
+            "readonly": true,
+            "inputType": "text"
           },
           {
-            "title": "UNIQUE",
-            "value": "UNIQUE"
+            "name": "sys.common.mail_properties",
+            "title": "发信服务器配置",
+            "describe": "系统发送邮件时连接的发信服务器配置",
+            "defaultValue": "",
+            "inputType": "form"
+          },
+          {
+            "name": "sys.common.ftp_properties",
+            "title": "FTP服务接口配置",
+            "describe": "系统支持通过FTP方式进行公共网盘和私人网盘的访问，该项用于对FTP服务接口进行各项参数的设置",
+            "defaultValue": "",
+            "inputType": "form"
           }
         ]
       },
       {
-        "name": "sys.store.sync_interval",
-        "inputType": "text",
-        "title": "自动同步间隔",
-        "describe": "文件记录服务与存储服务文件信息自动执行同步的间隔。\n单位：分钟，-1关闭",
-        "defaultValue": "-1"
+        "name": "存储配置",
+        "area": "sys.store",
+        "nodes": [
+          {
+            "name": "sys.store.mode",
+            "title": "存储模式",
+            "defaultValue": "UNIQUE",
+            "describe": "系统基础存储系统的数据组织方式。\nRAW为原始存储，在目标存储系统上的文件结构与用户网盘的文件结构保持一致。\nUNIQUE为唯一存储，按文件哈希值统一组织文件，相同文件只会存储一份",
+            "inputType": "select",
+            "options": [
+              {
+                "title": "RAW",
+                "value": "RAW"
+              },
+              {
+                "title": "UNIQUE",
+                "value": "UNIQUE"
+              }
+            ]
+          },
+          {
+            "name": "sys.store.sync_interval",
+            "inputType": "text",
+            "title": "自动同步间隔",
+            "describe": "文件记录服务与存储服务文件信息自动执行同步的间隔。\n单位：分钟，-1关闭",
+            "defaultValue": "-1"
+          }
+        ]
+      },
+      {
+        "name": "注册配置",
+        "area": "sys.register",
+        "nodes": [
+          {
+            "name": "sys.register.reg_code",
+            "inputType": "text",
+            "title": "注册邀请码",
+            "defaultValue": "114514",
+            "describe": "当开启“邀请码注册”时，游客注册账号所需的邀请码"
+          },
+          {
+            "name": "sys.register.enable_email_reg",
+            "inputType": "switch",
+            "title": "启用邮箱注册",
+            "describe": "允许使用邮箱注册",
+            "defaultValue": false
+          },
+          {
+            "name": "sys.register.enable_reg_code",
+            "inputType": "switch",
+            "title": "启用邀请码注册",
+            "describe": "允许使用邀请码注册",
+            "defaultValue": true
+          }
+        ]
       }
     ]
   },
   {
-    "name": "注册配置",
-    "area": "sys.register",
+    "name": "safe",
+    "title": "安全",
     "nodes": [
       {
-        "name": "sys.register.reg_code",
-        "inputType": "text",
-        "title": "注册邀请码",
-        "defaultValue": "114514",
-        "describe": "当开启“邀请码注册”时，游客注册账号所需的邀请码"
-      },
-      {
-        "name": "sys.register.enable_email_reg",
-        "inputType": "switch",
-        "title": "启用邮箱注册",
-        "describe": "允许使用邮箱注册",
-        "defaultValue": false
-      },
-      {
-        "name": "sys.register.enable_reg_code",
-        "inputType": "switch",
-        "title": "启用邀请码注册",
-        "describe": "允许使用邀请码注册",
-        "defaultValue": true
+        "name": "常规",
+        "value": "general",
+        "nodes": [
+          {
+            "name": "sys.safe.token",
+            "title": "系统安全密钥",
+            "describe": "系统的安全密钥，修改后会导致所有用户登录失效、直链失效",
+            "defaultValue": "",
+            "inputType": "text",
+            "hide": true
+          }
+        ]
       }
     ]
   }

@@ -111,7 +111,7 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
 
     @Override
     public void run(ApplicationArguments args) throws IOException {
-        String configRawJson = configService.getConfig(SysConfigName.SYS_COMMON_FTP_PROPERTIES);
+        String configRawJson = configService.getConfig(SysConfigName.Common.FTP_PROPERTIES);
         if (configRawJson != null) {
             try {
                 final SysProperties.Ftp config = MapperHolder.mapper.readValue(configRawJson, SysProperties.Ftp.class);
@@ -121,11 +121,11 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
                 e.printStackTrace();
             }
         } else {
-            configService.setConfig(SysConfigName.SYS_COMMON_FTP_PROPERTIES, MapperHolder.mapper.writeValueAsString(ftpProperties));
+            configService.setConfig(SysConfigName.Common.FTP_PROPERTIES, MapperHolder.mapper.writeValueAsString(ftpProperties));
             log.info("[FTP]初始化FTP配置");
         }
         // 参数更新时重新加载FTP服务器
-        configService.addConfigListener(SysConfigName.SYS_COMMON_FTP_PROPERTIES, e -> {
+        configService.addConfigListener(SysConfigName.Common.FTP_PROPERTIES, e -> {
             try {
                 SysProperties.Ftp config = MapperHolder.mapper.readValue(e, SysProperties.Ftp.class);
                 BeanUtils.copyProperties(config, ftpProperties);

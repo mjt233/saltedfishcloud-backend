@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.ext;
 
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
-import com.xiaotao.saltedfishcloud.model.ConfigNodeGroup;
+import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import org.springframework.core.io.Resource;
 
@@ -27,7 +27,7 @@ public interface PluginManager {
      * @param configNodeGroupList   提供的配置组
      * @param loader                插件的类加载器
      */
-    void registerPluginMetaData(String name, PluginInfo pluginInfo, List<ConfigNodeGroup> configNodeGroupList, ClassLoader loader);
+    void registerPluginMetaData(String name, PluginInfo pluginInfo, List<ConfigNode> configNodeGroupList, ClassLoader loader);
 
     /**
      * 获取拓展插件信息。若不存在则返回null
@@ -57,7 +57,7 @@ public interface PluginManager {
      * 获取插件的配置节点组
      * @param name  插件名称
      */
-    List<ConfigNodeGroup> getPluginConfigNodeGroup(String name);
+    List<ConfigNode> getPluginConfigNodeGroup(String name);
 
     /**
      * 获取合并了各个插件的类加载器

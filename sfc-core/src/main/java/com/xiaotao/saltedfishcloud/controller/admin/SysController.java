@@ -71,7 +71,7 @@ public class SysController {
      * 设置存储类型
      * @param mode      存储类型
      */
-    @PutMapping("config/" + SysConfigName.SYS_STORE_TYPE + "/{mode}")
+    @PutMapping("config/" + SysConfigName.Store.SYS_STORE_TYPE + "/{mode}")
     @ProtectBlock
     public JsonResult setStoreType(@PathVariable("mode") String mode) throws IOException {
         try {

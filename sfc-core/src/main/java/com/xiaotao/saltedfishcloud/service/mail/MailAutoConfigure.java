@@ -32,7 +32,7 @@ public class MailAutoConfigure implements ApplicationRunner {
     }
 
     private void configureProperties() {
-        String configure = configService.getConfig(SysConfigName.SYS_COMMON_MAIL_PROPERTIES);
+        String configure = configService.getConfig(SysConfigName.Common.MAIL_PROPERTIES);
         if (configure != null) {
             try {
                 MailProperties properties = MapperHolder.mapper.readValue(configure, MailProperties.class);
@@ -48,7 +48,7 @@ public class MailAutoConfigure implements ApplicationRunner {
 
         // 监听发信服务器的配置信息修改，更新发信服务器配置bean信息
         configService.addConfigSetListener(e -> {
-            if (e.getKey() == SysConfigName.SYS_COMMON_MAIL_PROPERTIES) {
+            if (e.getKey() == SysConfigName.Common.MAIL_PROPERTIES) {
                 try {
                     MailProperties newVal = MapperHolder.mapper.readValue(e.getValue(), MailProperties.class);
                     BeanUtils.copyProperties(newVal, this.mailProperties());

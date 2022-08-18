@@ -164,9 +164,9 @@ public class SysProperties implements InitializingBean {
 
 
     private void subscribeConfigureChange() {
-        configService.addConfigListener(SysConfigName.SYNC_INTERVAL, e -> sync.interval = Integer.parseInt(e));
-        configService.addConfigListener(SysConfigName.SYS_REGISTER_REG_CODE, e -> common.regCode = e);
-        configService.addConfigListener(SysConfigName.SYS_STORE_TYPE, e -> {
+        configService.addConfigListener(SysConfigName.Store.SYNC_INTERVAL, e -> sync.interval = Integer.parseInt(e));
+        configService.addConfigListener(SysConfigName.Register.SYS_REGISTER_REG_CODE, e -> common.regCode = e);
+        configService.addConfigListener(SysConfigName.Store.SYS_STORE_TYPE, e -> {
             final StoreMode storeMode = StoreMode.valueOf(e);
             try {
                 configService.setStoreType(storeMode);

@@ -1,9 +1,8 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.model.ConfigNodeGroup;
+import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.ResourceUtils;
 import org.springframework.util.StreamUtils;
 
 import java.io.File;
@@ -11,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,14 +54,15 @@ public class ExtUtils {
     }
 
 
-    public static List<ConfigNodeGroup> getPluginConfigNodeFromLoader(ClassLoader loader, String prefix) throws IOException {
+    public static List<ConfigNode> getPluginConfigNodeFromLoader(ClassLoader loader, String prefix) throws IOException {
         String file = prefix == null ? PLUGIN_CONFIG_PROPERTIES_FILE : StringUtils.appendPath(prefix, PLUGIN_CONFIG_PROPERTIES_FILE);
         String json = ExtUtils.getResourceText(loader, file);
         if (!StringUtils.hasText(json)) {
             return Collections.emptyList();
         }
-        List<ConfigNodeGroup> configNodeGroups = MapperHolder.parseJsonToList(json, ConfigNodeGroup.class);
+        List<ConfigNode> configNodeGroups = MapperHolder.parseJsonToList(json, ConfigNode.class);
         String errMsg = configNodeGroups.stream()
+                .flatMap(e -> e.getNodes().stream())
                 .flatMap(e -> e.getNodes().stream())
                 .filter(e -> e.getDefaultValue() == null)
                 .map(e -> "配置项【" + e.getName() + "】缺少默认值;")
