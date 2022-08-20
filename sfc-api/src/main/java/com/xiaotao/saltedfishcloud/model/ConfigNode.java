@@ -1,15 +1,23 @@
 package com.xiaotao.saltedfishcloud.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ConfigNode {
     /**
      * 配置节点
      */
     private String name;
+
+    /**
+     * 父节点的id
+     */
+    private String groupId;
 
     /**
      * 配置标题
@@ -49,7 +57,13 @@ public class ConfigNode {
     /**
      * 可选项，用于为select、multi-select、ratio和checkbox类型提供可选值
      */
-    private List<NameValueType> options;
+    private List<SelectOption> options;
+
+    /**
+     * form输入类型下的 参数类型引用
+     */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String typeRef;
 
     /**
      * 子节点，用于为form表单类型提供子表单数据，子表单的值为json格式化字符串

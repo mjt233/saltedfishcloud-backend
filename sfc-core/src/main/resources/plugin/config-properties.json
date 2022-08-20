@@ -20,13 +20,15 @@
             "title": "发信服务器配置",
             "describe": "系统发送邮件时连接的发信服务器配置",
             "defaultValue": "",
-            "inputType": "form"
+            "inputType": "form",
+            "typeRef": "com.xiaotao.saltedfishcloud.service.mail.MailProperties"
           },
           {
             "name": "sys.common.ftp_properties",
             "title": "FTP服务接口配置",
             "describe": "系统支持通过FTP方式进行公共网盘和私人网盘的访问，该项用于对FTP服务接口进行各项参数的设置",
             "defaultValue": "",
+            "typeRef": "com.xiaotao.saltedfishcloud.config.SysProperties$Ftp",
             "inputType": "form"
           }
         ]
