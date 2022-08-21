@@ -34,4 +34,9 @@ public @interface ConfigProperties {
      * 所在配置组
      */
     String group() default "base";
+
+    /**
+     * 是否掩盖显示为“*”
+     */
+    boolean isMask() default false;
 }

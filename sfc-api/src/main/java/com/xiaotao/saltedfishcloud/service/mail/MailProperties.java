@@ -64,7 +64,7 @@ public class MailProperties {
     /**
      * 发信服务器密码
      */
-    @ConfigProperties(value = "密码", group = "sender")
+    @ConfigProperties(value = "密码", group = "sender", isMask = true)
     private String password;
 
     /**

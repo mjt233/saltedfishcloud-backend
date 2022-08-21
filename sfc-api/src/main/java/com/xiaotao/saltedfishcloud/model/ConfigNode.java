@@ -20,6 +20,11 @@ public class ConfigNode {
     private String groupId;
 
     /**
+     * 是否掩盖显示（显示为*，类似密码）
+     */
+    private boolean isMask;
+
+    /**
      * 配置标题
      */
     private String title;
@@ -28,6 +33,11 @@ public class ConfigNode {
      * 配置值
      */
     private String value;
+
+    /**
+     * 被修改前的原值
+     */
+    private String originValue;
 
     /**
      * 默认值

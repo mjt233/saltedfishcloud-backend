@@ -4,32 +4,29 @@
     "title": "基础配置",
     "nodes": [
       {
-        "title": "常规",
-        "name": "general",
+        "name": "注册配置",
+        "area": "sys.register",
         "nodes": [
           {
-            "name": "sys.common.version",
-            "title": "系统版本",
-            "describe": "当前系统的主版本号",
-            "defaultValue": "1.0.0.0-SNAPSHOT",
-            "readonly": true,
-            "inputType": "text"
+            "name": "sys.register.reg_code",
+            "inputType": "text",
+            "title": "注册邀请码",
+            "defaultValue": "114514",
+            "describe": "当开启“邀请码注册”时，游客注册账号所需的邀请码"
           },
           {
-            "name": "sys.common.mail_properties",
-            "title": "发信服务器配置",
-            "describe": "系统发送邮件时连接的发信服务器配置",
-            "defaultValue": "",
-            "inputType": "form",
-            "typeRef": "com.xiaotao.saltedfishcloud.service.mail.MailProperties"
+            "name": "sys.register.enable_email_reg",
+            "inputType": "switch",
+            "title": "启用邮箱注册",
+            "describe": "允许使用邮箱注册",
+            "defaultValue": false
           },
           {
-            "name": "sys.common.ftp_properties",
-            "title": "FTP服务接口配置",
-            "describe": "系统支持通过FTP方式进行公共网盘和私人网盘的访问，该项用于对FTP服务接口进行各项参数的设置",
-            "defaultValue": "",
-            "typeRef": "com.xiaotao.saltedfishcloud.config.SysProperties$Ftp",
-            "inputType": "form"
+            "name": "sys.register.enable_reg_code",
+            "inputType": "switch",
+            "title": "启用邀请码注册",
+            "describe": "允许使用邀请码注册",
+            "defaultValue": true
           }
         ]
       },
@@ -64,29 +61,32 @@
         ]
       },
       {
-        "name": "注册配置",
-        "area": "sys.register",
+        "title": "常规",
+        "name": "general",
         "nodes": [
           {
-            "name": "sys.register.reg_code",
-            "inputType": "text",
-            "title": "注册邀请码",
-            "defaultValue": "114514",
-            "describe": "当开启“邀请码注册”时，游客注册账号所需的邀请码"
+            "name": "sys.common.version",
+            "title": "系统版本",
+            "describe": "当前系统的主版本号",
+            "defaultValue": "1.0.0.0-SNAPSHOT",
+            "readonly": true,
+            "inputType": "text"
           },
           {
-            "name": "sys.register.enable_email_reg",
-            "inputType": "switch",
-            "title": "启用邮箱注册",
-            "describe": "允许使用邮箱注册",
-            "defaultValue": false
+            "name": "sys.common.mail_properties",
+            "title": "发信服务器配置",
+            "describe": "系统发送邮件时连接的发信服务器配置",
+            "defaultValue": "",
+            "inputType": "form",
+            "typeRef": "com.xiaotao.saltedfishcloud.service.mail.MailProperties"
           },
           {
-            "name": "sys.register.enable_reg_code",
-            "inputType": "switch",
-            "title": "启用邀请码注册",
-            "describe": "允许使用邀请码注册",
-            "defaultValue": true
+            "name": "sys.common.ftp_properties",
+            "title": "FTP服务接口配置",
+            "describe": "系统支持通过FTP方式进行公共网盘和私人网盘的访问，该项用于对FTP服务接口进行各项参数的设置",
+            "defaultValue": "",
+            "typeRef": "com.xiaotao.saltedfishcloud.config.SysProperties$Ftp",
+            "inputType": "form"
           }
         ]
       }

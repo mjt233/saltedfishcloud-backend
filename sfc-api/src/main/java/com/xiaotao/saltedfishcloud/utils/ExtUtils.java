@@ -5,7 +5,6 @@ import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StreamUtils;
 
 import java.io.File;
@@ -74,6 +73,7 @@ public class ExtUtils {
         List<ConfigNode> configNodeGroups = MapperHolder.parseJsonToList(json, ConfigNode.class);
         List<ConfigNode> allNodes = configNodeGroups.stream().flatMap(e -> e.getNodes().stream()).flatMap(e -> e.getNodes().stream()).collect(Collectors.toList());
         StringBuilder errMsg = new StringBuilder();
+        // 默认值缺失检测
         errMsg.append(
             allNodes
                 .stream()
@@ -82,6 +82,7 @@ public class ExtUtils {
                 .collect(Collectors.joining())
         );
 
+        // form类型的参数对象属性组装
         allNodes.stream()
                 .filter(e -> e.getInputType().equals("form"))
                 .forEach(e -> {
@@ -91,12 +92,19 @@ public class ExtUtils {
                             return;
                         }
                         Class<?> refClass = null;
+
+                        // 先从插件的直接加载器类型引用
                         try {
                             refClass = loader.loadClass(e.getTypeRef());
                         } catch (ClassNotFoundException ex) {
+                            // 找不到则使用默认的加载器加载（类型引用未在插件jar包中声明而是引用系统核心的类）
                             refClass = ExtUtils.class.getClassLoader().loadClass(e.getTypeRef());
                         }
+
+                        // 读取引用的类配置实体信息
                         ConfigPropertiesEntity entity = refClass.getAnnotation(ConfigPropertiesEntity.class);
+
+                        // 读取所有声明的配置组信息
                         List<ConfigNode> groupList = Arrays.stream(entity.groups()).map(g -> {
                             ConfigNode node = new ConfigNode();
                             node.setName(g.id());
@@ -104,6 +112,8 @@ public class ExtUtils {
                             return node;
                         }).collect(Collectors.toList());
                         Map<String, ConfigNode> groupMap = groupList.stream().collect(Collectors.toMap(ConfigNode::getName, Function.identity()));
+
+                        // 读取配置实体的各个字段信息，并按所属组进行分组后，设置到所属组下
                         Map<String, List<ConfigNode>> subGroupMap = Arrays.stream(refClass.getDeclaredFields())
                                 .filter(f -> f.getAnnotation(ConfigProperties.class) != null)
                                 .map(f -> {
@@ -115,6 +125,7 @@ public class ExtUtils {
                                     configNode.setTitle(p.value());
                                     configNode.setName(f.getName());
                                     configNode.setGroupId(p.group());
+                                    configNode.setMask(p.isMask());
                                     return configNode;
                                 }).collect(Collectors.groupingBy(ConfigNode::getGroupId));
                         subGroupMap.forEach((groupId, nodes) -> {
