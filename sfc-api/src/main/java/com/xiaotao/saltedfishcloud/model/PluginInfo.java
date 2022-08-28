@@ -5,6 +5,8 @@ import com.xiaotao.saltedfishcloud.enums.PluginType;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.util.List;
+
 /**
  * 拓展插件信息
  */
@@ -65,4 +67,9 @@ public class PluginInfo {
      * 插件图标
      */
     private String icon;
+
+    /**
+     * 需要自动加载的静态资源
+     */
+    private List<String> autoLoad;
 }

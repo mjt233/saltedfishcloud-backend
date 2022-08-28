@@ -4,10 +4,10 @@ import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
+import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(PluginController.PREFIX)
@@ -33,6 +35,17 @@ public class PluginController {
     @RolesAllowed({"ADMIN"})
     public JsonResult getAllPlugins() {
         return JsonResultImpl.getInstance(pluginService.listPlugins());
+    }
+
+
+    /**
+     * 获取需要前端自动加载的插件的js和css资源的插件
+     */
+    @GetMapping("/listPluginAutoLoadList")
+    @AllowAnonymous
+    public JsonResult listPluginAutoLoadList() {
+        List<PluginInfo> pluginInfos = pluginService.listPlugins().stream().filter(e -> e.getAutoLoad() != null && !e.getAutoLoad().isEmpty()).collect(Collectors.toList());
+        return JsonResultImpl.getInstance(pluginInfos);
     }
 
     /**
