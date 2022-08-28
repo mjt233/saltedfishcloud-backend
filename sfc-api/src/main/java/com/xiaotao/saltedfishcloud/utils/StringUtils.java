@@ -25,11 +25,19 @@ public class StringUtils {
      * @return  追加后的路径字符串
      */
     public static String appendPath(String...appendData) {
+        if (appendData.length == 2 && appendData[0] != null && appendData[0].length() == 0) {
+            return appendData[1];
+        }
+
         StringBuilder sb = new StringBuilder();
         String last = null;
         for (String data : appendData) {
-            if (last != null && !last.endsWith("/") && !data.endsWith("/")) {
-                sb.append("/");
+            if (data == null) continue;
+
+            if (last != null && last.length() != 0) {
+                if (!(data.startsWith("/") || last.endsWith("/"))) {
+                    sb.append('/');
+                }
             }
             sb.append(data);
             last = data;

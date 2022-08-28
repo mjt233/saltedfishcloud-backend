@@ -21,13 +21,31 @@ public interface PluginManager {
     void register(Resource pluginResource) throws IOException;
 
     /**
-     * 单纯注册插件元数据
+     * 注册插件的资源数据
      * @param name                  插件名称
      * @param pluginInfo            插件信息
      * @param configNodeGroupList   提供的配置组
      * @param loader                插件的类加载器
      */
-    void registerPluginMetaData(String name, PluginInfo pluginInfo, List<ConfigNode> configNodeGroupList, ClassLoader loader);
+    void registerPluginResource(String name, PluginInfo pluginInfo, List<ConfigNode> configNodeGroupList, ClassLoader loader);
+
+    /**
+     * 注册插件的资源数据
+     * @param name                  插件名称
+     * @param pluginInfo            插件信息
+     * @param configNodeGroupList   提供的配置组
+     * @param resourceRoot          限定插件的资源文件相对于插件jar包内容ClassPath的根路径，当获取插件的资源时，将会从该路径下获取
+     * @param loader                插件的类加载器
+     */
+    void registerPluginResource(String name, PluginInfo pluginInfo, List<ConfigNode> configNodeGroupList, String resourceRoot,ClassLoader loader);
+
+    /**
+     * 获取插件的资源文件
+     * @param name  插件名称
+     * @param path  资源路径，如：static/aaa.js
+     * @return      对应插件资源
+     */
+    Resource getPluginResource(String name, String path) throws PluginNotFoundException;
 
     /**
      * 获取拓展插件信息。若不存在则返回null

@@ -5,8 +5,10 @@ import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -27,7 +29,9 @@ public class DefaultPluginManager implements PluginManager {
     private final Map<String, PluginInfo> pluginMap = new ConcurrentHashMap<>();
     private final Map<String, PluginInfo> pluginMapView = Collections.unmodifiableMap(pluginMap);
     private final Map<String, ClassLoader> pluginClassLoaderMap = new ConcurrentHashMap<>();
+    private final Map<String, ClassLoader> pluginRawLoaderMap = new ConcurrentHashMap<>();
     private final Map<String, List<ConfigNode>> pluginConfigNodeGroupMap = new ConcurrentHashMap<>();
+    private final Map<String, String> pluginResourceRootMap = new ConcurrentHashMap<>();
     private final PluginClassLoader jarMergeClassLoader;
 
     @Getter
@@ -53,11 +57,9 @@ public class DefaultPluginManager implements PluginManager {
             configNodeGroups = getPluginConfigNodeFromLoader(rawClassLoader);
         } catch (Exception e) {
             log.error("获取插件信息失败，请检查插件的plugin-info.json：{}", pluginUrl);
-            throw e;
-        } finally {
             rawClassLoader.close();
+            throw e;
         }
-
 
         PluginClassLoader loader;
         if (pluginInfo.getLoadType() == PluginLoadType.MERGE) {
@@ -67,7 +69,8 @@ public class DefaultPluginManager implements PluginManager {
         }
 
         loader.loadFromUrl(pluginUrl);
-        registerPluginMetaData(pluginInfo.getName(), pluginInfo, configNodeGroups, loader);
+        registerPluginResource(pluginInfo.getName(), pluginInfo, configNodeGroups, loader);
+        pluginRawLoaderMap.put(pluginInfo.getName(), rawClassLoader);
 
     }
 
@@ -80,11 +83,28 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     @Override
-    public void registerPluginMetaData(String name, PluginInfo pluginInfo, List<ConfigNode> configNodeGroupList, ClassLoader loader) {
+    public void registerPluginResource(String name, PluginInfo pluginInfo, List<ConfigNode> configNodeGroupList, ClassLoader loader) {
+        registerPluginResource(name, pluginInfo, configNodeGroupList, "",loader);
+    }
+
+    @Override
+    public void registerPluginResource(String name, PluginInfo pluginInfo, List<ConfigNode> configNodeGroupList, String resourceRoot, ClassLoader loader) {
         pluginMap.put(pluginInfo.getName(), pluginInfo);
         pluginConfigNodeGroupMap.put(pluginInfo.getName(), configNodeGroupList);
         pluginClassLoaderMap.put(pluginInfo.getName(), loader);
         pluginList.add(pluginInfo);
+        pluginResourceRootMap.put(name, resourceRoot);
+    }
+
+    @Override
+    public Resource getPluginResource(String name, String path) throws PluginNotFoundException {
+        ClassLoader loader = pluginRawLoaderMap.getOrDefault(name, pluginClassLoaderMap.get(name));
+        if (loader == null) {
+            throw new PluginNotFoundException(name);
+        }
+        String resourceRoot = pluginResourceRootMap.get(name);
+        String realPath = StringUtils.appendPath(resourceRoot, path);
+        return new ClassPathResource(realPath, loader);
     }
 
     @Override

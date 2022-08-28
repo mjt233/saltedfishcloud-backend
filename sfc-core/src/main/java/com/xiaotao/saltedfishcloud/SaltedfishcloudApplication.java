@@ -17,7 +17,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
@@ -73,10 +72,11 @@ public class SaltedfishcloudApplication {
         ClassLoader loader = pluginManager.getJarMergeClassLoader();
 
         // 注册固定的内置插件信息
-        pluginManager.registerPluginMetaData(
+        pluginManager.registerPluginResource(
                 "sys",
-                ExtUtils.getPluginInfo(loader, "plugin"),
-                ExtUtils.getPluginConfigNodeFromLoader(loader, "plugin"),
+                ExtUtils.getPluginInfo(loader, "plugin/sys"),
+                ExtUtils.getPluginConfigNodeFromLoader(loader, "plugin/sys"),
+                "plugin/sys",
                 loader
         );
 

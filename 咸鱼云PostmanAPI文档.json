@@ -4430,6 +4430,32 @@
 			]
 		},
 		{
+			"name": "插件模块",
+			"item": [
+				{
+					"name": "获取插件资源文件",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/plugin/mp3-thumbnail/resource",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"plugin",
+								"mp3-thumbnail",
+								"resource"
+							]
+						},
+						"description": "获取插件的静态资源文件\n\n* URI: `/api/plugin/{插件名}/resource/{资源路径}`\n* 动作：GET\n    \n\n直接响应文件二进制内容，或404\n\n示例：\n\n获取插件sys的资源文件test.txt，则URL为：\n\n`/api/plugin/sys/resource/test.txt`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "获取系统特性",
 			"request": {
 				"method": "GET",
