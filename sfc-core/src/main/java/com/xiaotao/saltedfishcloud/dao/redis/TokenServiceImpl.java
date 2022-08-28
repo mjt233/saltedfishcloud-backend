@@ -15,7 +15,7 @@ import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
-public class TokenDaoImpl implements TokenDao {
+public class TokenServiceImpl implements TokenService {
     private final RedisTemplate<String, String> redisTemplate;
     private final RedisDao redisDao;
     private final UserDao userDao;
@@ -43,7 +43,7 @@ public class TokenDaoImpl implements TokenDao {
 
     @Override
     public void setToken(Integer uid, String token) {
-        redisTemplate.opsForValue().set(TokenDao.getTokenKey(uid, token), "1", Duration.ofDays(2));
+        redisTemplate.opsForValue().set(TokenService.getTokenKey(uid, token), "1", Duration.ofDays(2));
     }
 
     @Override
@@ -53,7 +53,7 @@ public class TokenDaoImpl implements TokenDao {
 
     @Override
     public boolean isTokenValid(Integer uid, String token) {
-        return redisTemplate.opsForValue().get(TokenDao.getTokenKey(uid, token)) != null;
+        return redisTemplate.opsForValue().get(TokenService.getTokenKey(uid, token)) != null;
     }
 
 }

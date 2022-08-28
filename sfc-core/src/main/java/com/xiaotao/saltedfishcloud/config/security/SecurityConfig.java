@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.config.security;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.config.security.service.UserDetailsServiceImpl;
-import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,7 +44,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private PasswordEncoder myPasswordEncoder;
 
     @Resource
-    private TokenDaoImpl tokenDao;
+    private TokenServiceImpl tokenDao;
 
     @Bean
     @Override

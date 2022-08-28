@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.dao.redis;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 
-public interface TokenDao {
+public interface TokenService {
     /**
      * 获取用户鉴权token在redis中的key
      *

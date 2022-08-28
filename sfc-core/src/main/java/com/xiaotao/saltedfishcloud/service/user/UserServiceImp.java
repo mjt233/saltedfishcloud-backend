@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -36,7 +36,7 @@ import java.util.Date;
 @Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class UserServiceImp implements UserService {
-    private final TokenDaoImpl tokenDao;
+    private final TokenServiceImpl tokenDao;
     private final UserDao userDao;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SysProperties sysProperties;
