@@ -125,13 +125,23 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
             log.info("[FTP]初始化FTP配置");
         }
         // 参数更新时重新加载FTP服务器
-        configService.addConfigListener(SysConfigName.Common.FTP_PROPERTIES, e -> {
+        configService.addBeforeSetListener(SysConfigName.Common.FTP_PROPERTIES, e -> {
+            SysProperties.Ftp originProperties = new SysProperties.Ftp();
+            BeanUtils.copyProperties(ftpProperties, originProperties);
             try {
                 SysProperties.Ftp config = MapperHolder.mapper.readValue(e, SysProperties.Ftp.class);
                 BeanUtils.copyProperties(config, ftpProperties);
                 restart();
-            } catch (JsonProcessingException | FtpException ex) {
-                ex.printStackTrace();
+            } catch (Exception ex) {
+                log.warn("[FTP]配置更新失败，还原后重新启动");
+                BeanUtils.copyProperties(originProperties, ftpProperties);
+                try {
+                    restart();
+                } catch (Exception exc) {
+                    log.error("[FTP]恢复启动失败", exc);
+                    throw new RuntimeException(ex.getMessage(), exc);
+                }
+                throw new RuntimeException(ex.getMessage(), ex);
             }
         });
         if (ftpProperties.isFtpEnable()) {

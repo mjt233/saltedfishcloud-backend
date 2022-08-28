@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
 import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
@@ -192,9 +191,9 @@ public class SysProperties implements InitializingBean {
 
 
     private void subscribeConfigureChange() {
-        configService.addConfigListener(SysConfigName.Store.SYNC_INTERVAL, e -> sync.interval = Integer.parseInt(e));
-        configService.addConfigListener(SysConfigName.Register.SYS_REGISTER_REG_CODE, e -> common.regCode = e);
-        configService.addConfigListener(SysConfigName.Store.SYS_STORE_TYPE, e -> {
+        configService.addBeforeSetListener(SysConfigName.Store.SYNC_INTERVAL, e -> sync.interval = Integer.parseInt(e));
+        configService.addBeforeSetListener(SysConfigName.Register.SYS_REGISTER_REG_CODE, e -> common.regCode = e);
+        configService.addBeforeSetListener(SysConfigName.Store.SYS_STORE_TYPE, e -> {
             final StoreMode storeMode = StoreMode.valueOf(e);
             try {
                 configService.setStoreType(storeMode);

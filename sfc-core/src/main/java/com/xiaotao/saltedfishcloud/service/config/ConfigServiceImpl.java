@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -37,7 +39,8 @@ public class ConfigServiceImpl implements ConfigService {
     private PluginManager pluginManager;
 
     private final ArrayList<Consumer<Pair<String, String>>> listeners = new ArrayList<>();
-    private final Map<String, List<Consumer<String>>> configListeners = new HashMap<>();
+    private final Map<String, List<Consumer<String>>> configBeforeSetListeners = new ConcurrentHashMap<>();
+    private final Map<String, List<Consumer<String>>> configAfterSetListeners = new ConcurrentHashMap<>();
 
     @Override
     public void addConfigSetListener(Consumer<Pair<String, String>> listener) {
@@ -45,8 +48,14 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
-    public void addConfigListener(String key, Consumer<String> listener) {
-        List<Consumer<String>> consumers = configListeners.computeIfAbsent(key, k -> new LinkedList<>());
+    public void addBeforeSetListener(String key, Consumer<String> listener) {
+        List<Consumer<String>> consumers = configBeforeSetListeners.computeIfAbsent(key, k -> new LinkedList<>());
+        consumers.add(listener);
+    }
+
+    @Override
+    public void addAfterSetListener(String key, Consumer<String> listener) {
+        List<Consumer<String>> consumers = configAfterSetListeners.computeIfAbsent(key, k -> new LinkedList<>());
         consumers.add(listener);
     }
 
@@ -103,6 +112,7 @@ public class ConfigServiceImpl implements ConfigService {
      * @param value     配置值
      */
     @Override
+    @Transactional
     public boolean setConfig(String key, String value) {
 
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
@@ -110,12 +120,24 @@ public class ConfigServiceImpl implements ConfigService {
         for (Consumer<Pair<String, String>> listener : listeners) {
             listener.accept(new Pair<>(key, value));
         }
-        for (Consumer<String> c : configListeners.getOrDefault(key, Collections.emptyList())) {
+        for (Consumer<String> c : configBeforeSetListeners.getOrDefault(key, Collections.emptyList())) {
             c.accept(value);
         }
         configDao.setConfigure(key, value);
+        for (Consumer<String> c : configAfterSetListeners.getOrDefault(key, Collections.emptyList())) {
+            c.accept(value);
+        }
         return true;
     }
+
+    @Override
+    public boolean batchSetConfig(List<NameValueType<String>> configList) throws IOException {
+        for (NameValueType<String> config : configList) {
+            setConfig(config.getName(), config.getValue());
+        }
+        return false;
+    }
+
     /**
      * 设置存储类型
      * @param type 存储类型

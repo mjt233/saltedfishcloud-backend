@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
 
+import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
@@ -38,6 +39,11 @@ public interface ConfigService {
     boolean setConfig(String key, String value) throws IOException;
 
     /**
+     * 批量设置配置项
+     */
+    boolean batchSetConfig(List<NameValueType<String>> configList) throws IOException;
+
+    /**
      * 添加一个当有配置被更改时触发的监听器
      * @param listener  监听器，key为发生改变的配置名，value为新的配置值
      */
@@ -48,7 +54,14 @@ public interface ConfigService {
      * @param key       被监听的key
      * @param listener  监听器，参数为值
      */
-    void addConfigListener(String key, Consumer<String> listener);
+    void addBeforeSetListener(String key, Consumer<String> listener);
+
+    /**
+     * 添加一个监听指定配置被设置后触发的监听器
+     * @param key       被监听的key
+     * @param listener  监听器，参数为值
+     */
+    void addAfterSetListener(String key, Consumer<String> listener);
 
 
     /**
