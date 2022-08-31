@@ -28,7 +28,7 @@
                                 <copy
                                         overwrite="true"
                                         tofile="${basedir}/../../release/ext-available/${project.artifactId}.jar"
-                                        file="${project.build.directory}/${project.artifactId}-${project.version}.jar"
+                                        file="${project.build.directory}/${project.artifactId}-${project.version}-with-dependencies.jar"
                                 />
                             </tasks>
                         </configuration>
