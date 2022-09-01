@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.ext;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
@@ -54,7 +55,7 @@ public class DefaultPluginManager implements PluginManager {
     /**
      * 已注册的外部依赖
      */
-    private Map<String, JarDependenceInfo> registeredDependencies = new HashMap<>();
+    private final Map<String, JarDependenceInfo> registeredDependencies = new HashMap<>();
 
     @Getter
     private final ClassLoader masterLoader;
@@ -163,16 +164,17 @@ public class DefaultPluginManager implements PluginManager {
      * 加载外部依赖
      * @param urls  外部jar包依赖集合
      * @param loader    加载器
+     * @param name 插件名称
      */
-    protected void loadExtraDependencies(List<URL> urls, PluginClassLoader loader) throws IOException {
-        // TODO 处理依赖冲突问题
+    protected void loadExtraDependencies(List<URL> urls, PluginClassLoader loader, String name) throws IOException {
         // TODO 直接从jar内读取依赖而不提取到硬盘
-        Files.createDirectories(Paths.get(DEP_EXPLODE_PATH));
+        String pluginUnpackPath = DEP_EXPLODE_PATH + "/" + name;
+        Files.createDirectories(Paths.get(pluginUnpackPath));
         for (URL url : urls) {
-            String name = StringUtils.getURLLastName(url.getPath());
+            String depName = StringUtils.getURLLastName(url.getPath());
             registerDependence(url.toString());
-            log.debug("{}加载外部依赖:{}",LOG_PREFIX, name);
-            Path tempFile =  Paths.get(DEP_EXPLODE_PATH + "/" + name);
+            log.debug("{}加载外部依赖:{}",LOG_PREFIX, depName);
+            Path tempFile =  Paths.get(pluginUnpackPath + "/" + depName);
             try(InputStream is = url.openStream(); OutputStream os = Files.newOutputStream(tempFile)) {
                 StreamUtils.copy(is, os);
             } catch (IOException e) {
@@ -195,10 +197,13 @@ public class DefaultPluginManager implements PluginManager {
             pluginInfo  = getPluginInfoFromLoader(rawClassLoader);
             configNodeGroups = getPluginConfigNodeFromLoader(rawClassLoader);
             List<URL> pluginDependencies = getPluginDependencies(rawClassLoader);
-            loadExtraDependencies(pluginDependencies, jarMergeClassLoader);
-        } catch (Exception e) {
+            loadExtraDependencies(pluginDependencies, jarMergeClassLoader, pluginInfo.getName());
+        } catch (JsonProcessingException e) {
             log.error("获取插件信息失败，请检查插件的plugin-info.json：{}", pluginUrl);
             rawClassLoader.close();
+            throw e;
+        } catch (RuntimeException e) {
+            log.error("{}插件 {} 加载失败", LOG_PREFIX, pluginResource.getURL());
             throw e;
         }
 
