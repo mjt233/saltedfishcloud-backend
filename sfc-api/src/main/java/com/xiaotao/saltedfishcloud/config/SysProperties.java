@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
-import com.xiaotao.saltedfishcloud.orm.config.annotation.ConfigEntity;
 import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
@@ -20,7 +19,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 
-@ConfigEntity("sys")
 @Configuration
 @ConfigurationProperties(prefix = "sys")
 @Data

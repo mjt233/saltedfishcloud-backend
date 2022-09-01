@@ -60,10 +60,7 @@ public class SaltedfishcloudApplication {
 
         // 打印启动信息
         printLaunchInfo(begin);
-
-
         System.out.println("=========咸鱼云已启动(oﾟvﾟ)ノ==========");
-        System.gc();
     }
 
     public static PluginManager initPlugin() throws IOException {

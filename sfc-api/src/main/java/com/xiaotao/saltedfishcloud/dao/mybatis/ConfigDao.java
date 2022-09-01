@@ -1,7 +1,5 @@
 package com.xiaotao.saltedfishcloud.dao.mybatis;
 
-import com.xiaotao.saltedfishcloud.orm.config.ConfigureHandler;
-import com.xiaotao.saltedfishcloud.orm.config.RawConfigEntity;
 import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import org.apache.ibatis.annotations.Insert;
@@ -10,19 +8,14 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
-public interface ConfigDao extends ConfigureHandler {
+public interface ConfigDao {
 
-    @Override
     @Insert("INSERT INTO config (`key`,`value`) VALUES (#{key}, #{value}) ON DUPLICATE KEY UPDATE `value`=#{value}")
     int setConfig(@Param("key") String key,@Param("value") String value);
 
-    @Override
     @Select("SELECT `value` FROM config WHERE `key` = #{key}")
     String getConfig(String key);
 
-    @Override
-    @Select("SELECT `key`,`value` FROM config WHERE `key` like CONCAT(#{prefix}, '%')")
-    List<RawConfigEntity> getAllConfigByPrefix(String prefix);
 
     /**
      * 读取一条配置

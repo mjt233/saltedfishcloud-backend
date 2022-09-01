@@ -36,7 +36,6 @@ public class JarMergePluginClassLoader extends PluginClassLoader {
         }
 
         try {
-            log.info("{}加载拓展: {}", LOG_PREFIX, url);
             this.addURL(url);
             loaded.add(url);
         } catch (Throwable e) {
