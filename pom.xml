@@ -13,7 +13,7 @@
         <module>sfc-compress</module>
         <module>sfc-core</module>
         <module>sfc-api</module>
-<!--        <module>sfc-ext</module>-->
+        <module>sfc-ext</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
@@ -37,11 +37,6 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-loader</artifactId>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
@@ -237,52 +232,22 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.10.1</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>2.3</version>
                 <configuration>
                     <generateBackupPoms>false</generateBackupPoms>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <!--    创建release资源    -->
-<!--                    <execution>-->
-<!--                        <id>package</id>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>run</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <target name="release">-->
-<!--                                <echo message="233333333"/>-->
-<!--                                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpathref="maven.plugin.classpath"/>-->
-<!--                                <if>-->
-<!--                                    <equals arg1="${project.artifactId}" arg2="saltedfishcloud"/>-->
-<!--                                    <then>-->
-<!--                                        <zip basedir="${project.basedir}/release" destfile="${project.basedir}/release/sfc-core-${project.version}.zip" includes="**" />-->
-<!--                                    </then>-->
-<!--                                </if>-->
-<!--                            </target>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>ant-contrib</groupId>
-                        <artifactId>ant-contrib</artifactId>
-                        <version>1.0b3</version>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>ant</groupId>
-                                <artifactId>ant</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>

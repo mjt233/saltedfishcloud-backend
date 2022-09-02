@@ -7,18 +7,18 @@
 
     <includeBaseDirectory>false</includeBaseDirectory>
 
-    <dependencySets>
-        <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
-            <unpack>false</unpack>
-            <scope>runtime</scope>
-            <outputDirectory>plugin-lib</outputDirectory>
-        </dependencySet>
-    </dependencySets>
-    <fileSets>
-        <fileSet>
-            <directory>${project.build.outputDirectory}</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-    </fileSets>
+<!--    <dependencySets>-->
+<!--        <dependencySet>-->
+<!--            <useProjectArtifact>false</useProjectArtifact>-->
+<!--            <unpack>false</unpack>-->
+<!--            <scope>runtime</scope>-->
+<!--            <outputDirectory>plugin-lib</outputDirectory>-->
+<!--        </dependencySet>-->
+<!--    </dependencySets>-->
+<!--    <fileSets>-->
+<!--        <fileSet>-->
+<!--            <directory>${project.build.outputDirectory}</directory>-->
+<!--            <outputDirectory>/</outputDirectory>-->
+<!--        </fileSet>-->
+<!--    </fileSets>-->
 </assembly>
