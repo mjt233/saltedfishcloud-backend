@@ -41,60 +41,10 @@ public class JarMergePluginClassLoader extends PluginClassLoader {
             return;
         }
 
-        validUrl(url);
         this.addURL(url);
         loaded.add(url);
     }
 
-    /**
-     * 校验URL是否允许加载。若出现重复的class，则不允许加载
-     * @param url   url
-     */
-    protected void validUrl(URL url) {
-        String protocol = url.getProtocol();
-        JarFile jarFile = null;
-
-        try {
-            if ("file".equals(protocol) && url.getFile().endsWith(".jar")) {
-                jarFile = new JarFile(new File(url.getFile()));
-            } else if("jar".equals(protocol)) {
-                JarURLConnection connection = (JarURLConnection) url.openConnection();
-                jarFile = connection.getJarFile();
-            } else {
-                return;
-            }
-            Enumeration<JarEntry> entries = jarFile.entries();
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                String name = entry.getName();
-                if (!name.endsWith(".class")) {
-                    continue;
-                }
-
-                URL resource = this.getResource(name);
-                if (resource != null) {
-                    String className = name.substring(0, name.length() - 6).replaceAll("/", ".");
-                    if ("module-info".equals(className)) {
-                        continue;
-                    }
-                    throw new IllegalArgumentException("类加载冲突："+ className + " url:" + url);
-                }
-
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (jarFile != null) {
-                try {
-                    jarFile.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-        }
-
-    }
 
     @Override
     public Set<URL> getAvailableExtUrl() {
