@@ -1,6 +1,6 @@
 # 基于SpringBoot实现的咸鱼云网盘-后端
 ![](https://img.shields.io/badge/SpringBoot-2.4-green.svg)
-![](https://img.shields.io/badge/Java->=1.8-green.svg)
+![](https://img.shields.io/badge/Java-11-green.svg)
 
 ---
 
