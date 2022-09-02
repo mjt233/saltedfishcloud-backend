@@ -9,9 +9,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeInputStream;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MultipleFileMergeInputStreamGenerator;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,8 +18,6 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -54,9 +50,9 @@ public class DefaultTaskManager implements TaskManager {
      */
     @Override
     public String createTask(TaskMetadata info) throws IOException {
-        var id = UUID.randomUUID().toString();
+        String id = UUID.randomUUID().toString();
         info.setTaskId(id);
-        var taskDir = TaskStorePath.getRoot(id);
+        String taskDir = TaskStorePath.getRoot(id);
         storeServiceProvider.getTempStoreService().mkdirs(taskDir);
         redisTemplate.opsForValue().set(getMetaRedisKey(id), info, Duration.ofDays(7));
         return id;
@@ -84,7 +80,7 @@ public class DefaultTaskManager implements TaskManager {
         if(queryTask(id) == null) {
             throw new TaskNotFoundException(id);
         }
-        var taskPath = TaskStorePath.getRoot(id);
+        String taskPath = TaskStorePath.getRoot(id);
         storeServiceProvider.getTempStoreService().delete(taskPath);
         redisTemplate.delete(getMetaRedisKey(id));
         redisTemplate.delete(getFinishPartKey(id));
@@ -98,15 +94,16 @@ public class DefaultTaskManager implements TaskManager {
      */
     @Override
     public void save(String id, String part, InputStream stream) throws IOException {
-        var root = TaskStorePath.getRoot(id);
+        String root = TaskStorePath.getRoot(id);
         if (queryTask(id) == null) {
             throw new TaskNotFoundException(id);
         }
+
         final String redisKey = getFinishPartKey(id);
-        var parts = PartParser.parse(part);
-        var taskInfo = queryTask(id);
+        int[] parts = PartParser.parse(part);
+        TaskMetadata taskInfo = queryTask(id);
         for (int i : parts) {
-            var size = taskInfo.getPartSize(i);
+            long size = taskInfo.getPartSize(i);
             final String partFile = TaskStorePath.getPartFile(id, i);
             try(final OutputStream out = storeServiceProvider.getTempStoreService().newOutputStream(partFile)) {
                 long l = StreamUtils.copyRange(stream, out, 0, size - 1);

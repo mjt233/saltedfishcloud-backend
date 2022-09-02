@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.node;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
-import lombok.var;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,9 +33,9 @@ class NodeTreeTest {
         fileService.mkdir(0, "/nodetest/folder2", "deepfolder");
 
         // 获取目标路径的节点ID
-        var node = nodeService.getNodeIdByPath(0, targetPath);
-        var fullTree = nodeService.getFullTree(0);
-        var res = fullTree.getPath(node);
+        String node = nodeService.getNodeIdByPath(0, targetPath);
+        NodeTree fullTree = nodeService.getFullTree(0);
+        String res = fullTree.getPath(node);
 
         // 清理环境
         fileService.deleteFile(0, "/", Collections.singletonList("nodetest"));
@@ -48,7 +47,8 @@ class NodeTreeTest {
 
     @Test
     public void testIterator() {
-        var tree = nodeService.getFullTree(0);
+
+        NodeTree tree = nodeService.getFullTree(0);
         for (NodeInfo nodeInfo : tree) {
             System.out.print(nodeInfo.getName() + " ");
         }

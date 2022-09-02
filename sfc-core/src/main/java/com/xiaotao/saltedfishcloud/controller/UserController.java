@@ -22,7 +22,7 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
+
 import org.hibernate.validator.constraints.Length;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -169,7 +169,7 @@ public class UserController {
      */
     @GetMapping
     public JsonResult getUserInfo(HttpServletRequest request) throws UserNoExistException {
-        var user =  SecureUtils.getSpringSecurityUser();
+        User user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
             throw new JsonException(401, "未登录");
         }

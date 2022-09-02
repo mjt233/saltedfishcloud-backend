@@ -16,7 +16,6 @@ import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
@@ -122,7 +121,7 @@ public class ResourceController {
             HttpServletRequest request
     )
             throws IOException {
-        var resource = fileService.getFileSystem().getResourceByMd5(md5);
+        Resource resource = fileService.getFileSystem().getResourceByMd5(md5);
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/fileContentByMD5/" + md5, request);
         String name;
         if (path.length() > 1) {

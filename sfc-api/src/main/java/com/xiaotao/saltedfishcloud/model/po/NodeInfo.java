@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.var;
 
 @Data
 @AllArgsConstructor
@@ -22,7 +21,7 @@ public class NodeInfo {
     }
 
     public static NodeInfo getRootNode(int uid) {
-        var info = new NodeInfo();
+        NodeInfo info = new NodeInfo();
         info.setName("");
         info.setId("" + uid);
         info.setUid(uid);

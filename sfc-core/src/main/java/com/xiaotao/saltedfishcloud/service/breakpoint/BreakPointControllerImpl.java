@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
-import lombok.var;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,7 +33,7 @@ public class BreakPointControllerImpl implements BreakPointController {
 
     @Override
     public TaskMetadata queryTask(String id) throws Exception {
-        var res = manager.queryTask(id);
+        TaskMetadata res = manager.queryTask(id);
         if (res == null) {
             throw new TaskNotFoundException(id);
         }

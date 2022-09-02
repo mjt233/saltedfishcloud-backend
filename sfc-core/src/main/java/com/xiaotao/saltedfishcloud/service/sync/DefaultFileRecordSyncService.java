@@ -1,17 +1,20 @@
 package com.xiaotao.saltedfishcloud.service.sync;
 
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordSyncService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import com.xiaotao.saltedfishcloud.service.sync.detector.SyncDiffDetector;
 import com.xiaotao.saltedfishcloud.service.sync.handler.SyncDiffHandler;
+import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
+import com.xiaotao.saltedfishcloud.service.sync.model.SyncDiffDetectResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 
 
 /**
@@ -33,12 +36,12 @@ public class DefaultFileRecordSyncService implements FileRecordSyncService {
                 log.debug("[SYNC]存储服务不支持同步");
                 return;
             }
-            var result = detector.detect(uid, precise);
-            var deletedFiles = result.getDeletedFiles();
-            var changeFiles = result.getChangeFiles();
-            var deletedDir = result.getDeletedDirPaths();
-            var newDir = result.getNewDirPaths();
-            var newFiles = result.getNewFiles();
+            SyncDiffDetectResult result = detector.detect(uid, precise);
+            List<FileInfo> deletedFiles = result.getDeletedFiles();
+            List<FileChangeInfo> changeFiles = result.getChangeFiles();
+            List<String> deletedDir = result.getDeletedDirPaths();
+            List<String> newDir = result.getNewDirPaths();
+            List<FileInfo> newFiles = result.getNewFiles();
 
             handler.handleDirDel(uid, deletedDir);
             handler.handleFileDel(uid, deletedFiles);

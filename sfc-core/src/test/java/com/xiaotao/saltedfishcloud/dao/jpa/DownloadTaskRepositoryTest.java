@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
 import com.xiaotao.saltedfishcloud.model.po.DownloadTaskInfo;
-import lombok.var;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import javax.annotation.Resource;
@@ -17,7 +17,7 @@ class DownloadTaskRepositoryTest {
 
     @Test
     public void testMethod() {
-        var res = downloadTaskRepo.findByUidOrderByCreatedAtDesc(1, PageRequest.of(0, 10));
+        Page<DownloadTaskInfo> res = downloadTaskRepo.findByUidOrderByCreatedAtDesc(1, PageRequest.of(0, 10));
         for (DownloadTaskInfo info : res) {
             System.out.println(info);
         }
@@ -25,7 +25,7 @@ class DownloadTaskRepositoryTest {
 
     @Test
     public void doTest() {
-        var info = new DownloadTaskInfo();
+        DownloadTaskInfo info = new DownloadTaskInfo();
         info.setProxy("local");
         info.setUid(1);
         info.setUrl("abc");
@@ -33,7 +33,7 @@ class DownloadTaskRepositoryTest {
         System.out.println(info.getId());
         info.setUrl("2333");
         downloadTaskRepo.saveAndFlush(info);
-        var dbInfo = downloadTaskRepo.findById(info.getId()).get();
+        DownloadTaskInfo dbInfo = downloadTaskRepo.findById(info.getId()).get();
         assertEquals("2333", dbInfo.getUrl());
         System.out.println(dbInfo.getCreatedAt());
     }

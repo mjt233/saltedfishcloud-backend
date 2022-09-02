@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.breakpoint.merge;
 
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
-import lombok.var;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -49,8 +48,8 @@ public class MergeBreakpointMultipartFile implements MultipartFile {
     @Override
     public byte[] getBytes() throws IOException {
         byte[] ret = new byte[Math.toIntExact(getSize())];
-        var in = getInputStream();
-        var r = in.read(ret);
+        InputStream in = getInputStream();
+        int r = in.read(ret);
         in.close();
         if (r != getSize()) {
             throw new IOException("不完整的流");

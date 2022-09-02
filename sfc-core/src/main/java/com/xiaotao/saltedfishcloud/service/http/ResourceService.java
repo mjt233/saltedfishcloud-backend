@@ -10,7 +10,6 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -40,7 +39,7 @@ public class ResourceService {
         } catch (JsonProcessingException e) {
             throw new JsonException(400, "下载码无效");
         }
-        var resource = fileSystemFactory.getFileSystem().getResource(info.getUid(), info.getDir(), info.getName());
+        Resource resource = fileSystemFactory.getFileSystem().getResource(info.getUid(), info.getDir(), info.getName());
         if (directDownload) {
             return ResourceUtils.wrapResource(resource, info.getName(), DIRECT_DOWNLOAD_HEADER);
         } else {

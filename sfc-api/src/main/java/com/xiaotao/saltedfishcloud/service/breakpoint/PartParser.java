@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
+
 
 /**
  * 分块字符串解析器
@@ -21,7 +21,7 @@ public class PartParser {
             return true;
         }
 
-        var s = part.split("-");
+        String[] s = part.split("-");
         try {
             if (Integer.parseInt(s[1]) <= Integer.parseInt(s[0])) {
                 return false;
@@ -48,7 +48,7 @@ public class PartParser {
         int[] pair;
 
         // 按-分割
-        var t = part.split("-", 2);
+        String[] t = part.split("-", 2);
 
         // 为数组分配大小
         pair = new int[t.length];
@@ -62,7 +62,7 @@ public class PartParser {
 
         // 范围表达式，取第二个值，计算两数之差，生成区间序列
         pair[1] = Integer.parseInt(t[1]);
-        var size = pair[1] - pair[0] + 1;
+        int size = pair[1] - pair[0] + 1;
         int[] res = new int[size];
         for (int i = 0; i < res.length; i++) {
             res[i] = pair[0] + i;

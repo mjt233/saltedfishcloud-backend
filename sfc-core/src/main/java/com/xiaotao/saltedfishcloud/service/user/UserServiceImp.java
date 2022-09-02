@@ -16,7 +16,6 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
@@ -290,7 +289,7 @@ public class UserServiceImp implements UserService {
 
     @Override
     public int addUser(String user, String passwd, String email, Integer type) {
-        var upperName = user.toUpperCase();
+        String  upperName = user.toUpperCase();
         if (User.SYS_NAME_PUBLIC.equals(upperName) || User.SYS_NAME_ADMIN.equals(upperName)) {
             throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
         }

@@ -2,18 +2,20 @@ package com.xiaotao.saltedfishcloud.service.breakpoint;
 
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
+import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeBreakpointFileProvider;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Parameter;
 
 /**
@@ -32,23 +34,23 @@ public class ProxyProcessor {
     @Around("@annotation(com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint)")
     public Object proxy(ProceedingJoinPoint pjp) throws Throwable {
         // 判断是否使用断点续传任务
-        var req = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        var id = req.getParameter("breakpoint_id");
+        HttpServletRequest req = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        String  id = req.getParameter("breakpoint_id");
         // 如果不是断点续传任务，则跳过处理
         if (id == null) {
             return pjp.proceed();
         }
 
-        var taskInfo = manager.queryTask(id);
+        TaskMetadata taskInfo = manager.queryTask(id);
         if (taskInfo == null) {
             throw new TaskNotFoundException(id);
         }
-        var args = pjp.getArgs();
-        var sign = pjp.getSignature();
+        Object[] args = pjp.getArgs();
+        Signature sign = pjp.getSignature();
 
         //  控制器参数偷梁换柱，替换掉被@MergeFile标记的MultipartFile类型参数
         if (sign instanceof MethodSignature) {
-            var params = ((MethodSignature) sign).getMethod().getParameters();
+            Parameter[] params = ((MethodSignature) sign).getMethod().getParameters();
             int index = 0;
             for (Parameter param : params) {
                 if (param.getAnnotation(MergeFile.class) != null) {
@@ -60,7 +62,7 @@ public class ProxyProcessor {
             throw new UnsupportedOperationException();
         }
 
-        var ret = pjp.proceed(args);
+        Object ret = pjp.proceed(args);
         manager.clear(id);
         return ret;
     }
