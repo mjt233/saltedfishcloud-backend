@@ -33,18 +33,13 @@ import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 默认的插件管理器
  */
 @Slf4j
 public class DefaultPluginManager implements PluginManager {
-    private interface DependenceRegisterResult {
-        int SUCCESS = 0;
-        int REPEAT = 1;
-        int CONFLICT = 2;
-        int NO_NAME = 3;
-    }
 
     private final static String LOG_PREFIX = "[插件系统]";
     /**
@@ -80,11 +75,23 @@ public class DefaultPluginManager implements PluginManager {
     private void initPureDependenceJar() {
         try {
             Enumeration<URL> resources = masterLoader.getResources("META-INF");
+            int successCount = 0;
+            int total = 0;
             while (resources.hasMoreElements()) {
+                ++total;
                 URL url = resources.nextElement();
-                registerDependence(url.toString());
+                try {
+                    registerDependence(url.toString());
+                    ++successCount;
+                } catch (PluginDependenceRepeatException e) {
+                    log.warn("{}初始依赖存在重复：{}", LOG_PREFIX, e.getMessage());
+                } catch (PluginDependenceConflictException e) {
+                    String name = parseJarNameByUrl(url.toString());
+                    log.warn("{}初始依赖存在版本冲突：{} 与 {}", LOG_PREFIX, name, e.getMessage());
+                }
+
             }
-            log.info("{}识别的初始Jar包依赖数量：{}", LOG_PREFIX, registeredDependencies.size());
+            log.info("{}识别的初始Jar包依赖数量：{}，成功注册数量：{}", LOG_PREFIX, total, successCount);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -95,24 +102,22 @@ public class DefaultPluginManager implements PluginManager {
      * @param url   待注册的插件url
      * @return      是否注册成功，存在版本冲突注册失败为false，其他情况均为true
      */
-    private synchronized int registerDependence(String url) {
+    private synchronized void registerDependence(String url) {
         String name = parseJarNameByUrl(url);
         if (name == null) {
-            return DependenceRegisterResult.NO_NAME;
+            log.warn("{}插件依赖名称解析失败:{}", LOG_PREFIX, url);
+            return;
         }
         JarDependenceInfo jarDependenceInfo = getJarDependenceInfoFromName(name);
         JarDependenceInfo exist = registeredDependencies.get(jarDependenceInfo.getName());
         if (exist != null) {
             if (Objects.equals(exist.getVersion(), jarDependenceInfo.getVersion())) {
-                log.warn("{}依赖重复：{} 与 {}", LOG_PREFIX, name, jarDependenceInfo);
-                return DependenceRegisterResult.REPEAT;
+                throw new PluginDependenceRepeatException(exist.toString());
             } else {
-                log.error("{}!!注意!!依赖版本冲突：{} 与 {}",LOG_PREFIX,  exist, jarDependenceInfo);
-                return DependenceRegisterResult.CONFLICT;
+                throw new PluginDependenceConflictException(exist.toString());
             }
         }
         registeredDependencies.put(jarDependenceInfo.getName(), jarDependenceInfo);
-        return DependenceRegisterResult.SUCCESS;
     }
 
     /**
@@ -188,19 +193,26 @@ public class DefaultPluginManager implements PluginManager {
         Files.createDirectories(Paths.get(pluginUnpackPath));
 
         List<Result<List<String>, URL>> errorList = new ArrayList<>();
+        List<String> conflictList = new ArrayList<>();
         List<URL> passValidUrls = new ArrayList<>();
 
         // 对每个待加载的url进行 解包 和 校验
         if (urls.size() > 0) {
-            log.debug("{}验证来自{}的依赖，共{}个", LOG_PREFIX, name, urls.size());
+            log.info("{}验证来自{}的依赖，共{}个", LOG_PREFIX, name, urls.size());
         }
         for (URL url : urls) {
             String depName = StringUtils.getURLLastName(url.getPath());
             Path tempFile =  Paths.get(pluginUnpackPath + "/" + depName);
 
             // 整包冲突校验
-            if(registerDependence(url.toString()) == DependenceRegisterResult.CONFLICT) {
-                log.warn("{}来自插件{}的依赖包版本出现冲突，已忽略：{}", LOG_PREFIX, name, depName);
+            try {
+                registerDependence(url.toString());
+            } catch (PluginDependenceConflictException e) {
+                log.warn("{}来自插件{}的依赖包版本出现冲突：{} 与 {}", LOG_PREFIX, name, depName, e.getMessage());
+                conflictList.add(depName);
+                continue;
+            } catch (PluginDependenceRepeatException e) {
+                log.warn("{}来自插件{}的依赖包版本出现重复，已忽略：{} ", LOG_PREFIX, name, depName);
                 continue;
             }
 
@@ -223,11 +235,18 @@ public class DefaultPluginManager implements PluginManager {
         // 若存在未通过校验的，则展示出来
         if (!errorList.isEmpty()) {
             for (Result<List<String>, URL> result : errorList) {
-                log.error("{}外部插件无法加载: {}，存在以下冲突class：{}", LOG_PREFIX, result.getParam(), result.getData());
+                String depFullName = StringUtils.getURLLastName(result.getParam().toString());
+                log.error("{}外部插件无法加载: {}，存在以下冲突class：{}", LOG_PREFIX, depFullName, result.getData());
             }
-            String failJar = errorList.stream().map(e -> StringUtils.getURLLastName(e.getParam())).collect(Collectors.joining("\n"));
+            for (String conflictName : conflictList) {
+                log.error(conflictName);
+            }
+            String failJar = Stream.concat(
+                        errorList.stream().map(e -> StringUtils.getURLLastName(e.getParam())),
+                        conflictList.stream()
+                    ).collect(Collectors.joining("\n"));
             log.error("{}以下插件依赖无法被加载：\n{}", LOG_PREFIX, failJar);
-            throw new IllegalArgumentException("插件依赖无法加载：" + failJar);
+            throw new IllegalArgumentException("插件依赖无法加载：\n" + failJar);
         }
 
         // 通过校验，开始加载依赖
