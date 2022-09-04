@@ -32,7 +32,6 @@ public class SysProperties implements InitializingBean {
     private Sync sync;
     private Ftp ftp;
 
-    private ConfigService configService;
 
 
     @Data
@@ -170,26 +169,6 @@ public class SysProperties implements InitializingBean {
         version = Version.valueOf(v);
     }
 
-    @Autowired
-    public void setConfigService(ConfigService configService) {
-        this.configService = configService;
-        subscribeConfigureChange();
-    }
-
-
-    private void subscribeConfigureChange() {
-        configService.addBeforeSetListener(SysConfigName.Store.SYNC_INTERVAL, e -> sync.interval = Integer.parseInt(e));
-        configService.addBeforeSetListener(SysConfigName.Register.SYS_REGISTER_REG_CODE, e -> common.regCode = e);
-        configService.addBeforeSetListener(SysConfigName.Store.SYS_STORE_TYPE, e -> {
-            final StoreMode storeMode = StoreMode.valueOf(e);
-            try {
-                configService.setStoreType(storeMode);
-                store.mode = storeMode;
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        });
-    }
 
     /*
      * 检查公共网盘路径和私人存储路径是否存在冲突。<br>
