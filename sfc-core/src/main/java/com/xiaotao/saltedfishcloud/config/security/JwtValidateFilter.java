@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
-import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,9 +20,9 @@ import java.io.IOException;
  */
 public class JwtValidateFilter extends OncePerRequestFilter {
     private final static ObjectMapper MAPPER = new ObjectMapper();
-    private final TokenDaoImpl tokenDao;
+    private final TokenServiceImpl tokenDao;
 
-    public JwtValidateFilter(TokenDaoImpl tokenDao) {
+    public JwtValidateFilter(TokenServiceImpl tokenDao) {
         this.tokenDao = tokenDao;
     }
 

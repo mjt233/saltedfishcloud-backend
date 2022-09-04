@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud;
 
-import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -43,8 +43,8 @@ logging:
   level:
     org: warn
     com: warn
-    com.xiaotao: info
-#    com.xiaotao.saltedfishcloud.dao.mybatis: warn
+    com.xiaotao: debug
+    com.xiaotao.saltedfishcloud.dao.mybatis: warn
 #    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
 app:
   version: ^project.version^

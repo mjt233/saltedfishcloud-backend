@@ -4,8 +4,12 @@ import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.xiaotao.saltedfishcloud.entity.Pair;
+import com.xiaotao.saltedfishcloud.ext.PluginManager;
+import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.xiaotao.saltedfishcloud.model.NameValueType;
+import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -30,44 +35,65 @@ public class ConfigServiceImpl implements ConfigService {
     @Resource
     private SysProperties sysProperties;
 
-    private final ArrayList<Consumer<Pair<ConfigName, String>>> listeners = new ArrayList<>();
-    private final Map<ConfigName, List<Consumer<String>>> configListeners = new HashMap<>();
+    @Resource
+    private PluginManager pluginManager;
+
+    private final ArrayList<Consumer<Pair<String, String>>> listeners = new ArrayList<>();
+    private final Map<String, List<Consumer<String>>> configBeforeSetListeners = new ConcurrentHashMap<>();
+    private final Map<String, List<Consumer<String>>> configAfterSetListeners = new ConcurrentHashMap<>();
 
     @Override
-    public void addConfigSetListener(Consumer<Pair<ConfigName, String>> listener) {
+    public void addConfigSetListener(Consumer<Pair<String, String>> listener) {
         listeners.add(listener);
     }
 
     @Override
-    public void addConfigListener(ConfigName key, Consumer<String> listener) {
-        List<Consumer<String>> consumers = configListeners.computeIfAbsent(key, k -> new LinkedList<>());
+    public void addBeforeSetListener(String key, Consumer<String> listener) {
+        List<Consumer<String>> consumers = configBeforeSetListeners.computeIfAbsent(key, k -> new LinkedList<>());
         consumers.add(listener);
+    }
+
+    @Override
+    public void addAfterSetListener(String key, Consumer<String> listener) {
+        List<Consumer<String>> consumers = configAfterSetListeners.computeIfAbsent(key, k -> new LinkedList<>());
+        consumers.add(listener);
+    }
+
+    @Override
+    public List<PluginConfigNodeInfo> listPluginConfig() {
+        Map<String, String> allConfig = getAllConfig();
+        return pluginManager.listAllPlugin().stream().map(e -> {
+            PluginConfigNodeInfo configNodeInfo = new PluginConfigNodeInfo();
+            configNodeInfo.setAlias(e.getAlias());
+            configNodeInfo.setName(e.getName());
+            configNodeInfo.setIcon(e.getIcon());
+            configNodeInfo.setGroups(pluginManager.getPluginConfigNodeGroup(e.getName()));
+            configNodeInfo.getGroups().stream().flatMap(group -> group.getNodes().stream()).flatMap(group -> group.getNodes().stream()).forEach(node -> node.setValue(allConfig.get(node.getName())));
+            return configNodeInfo;
+        }).collect(Collectors.toList());
     }
 
     /**
      * 获取存在的所有配置
      */
     @Override
-    public Map<ConfigName, String> getAllConfig() {
-        return configDao
-                .getAllConfig()
+    public Map<String, String> getAllConfig() {
+        Map<String, String> dbConfig = configDao.getAllConfig().stream().collect(Collectors.toMap(
+                Pair::getKey,
+                Pair::getValue
+        ));
+
+         return pluginManager.getAllPlugin()
+                .keySet()
                 .stream()
-                .map(e -> {
-                    String key = e.getKey();
-                    try {
-                        ConfigName configName = ConfigName.valueOf(key);
-                        return new Pair<>(configName, e.getValue());
-                    } catch (IllegalArgumentException ignore) {
-                        log.warn("[配置]未知的配置项：{}", key);
-                        return null;
-                    }
-                }).filter(Objects::nonNull)
-                .collect(
-                        Collectors.toMap(
-                                Pair::getKey,
-                                Pair::getValue
-                        )
-                );
+                .flatMap(e -> Optional.ofNullable(pluginManager.getPluginConfigNodeGroup(e)).orElse(Collections.emptyList()).stream())
+                .flatMap(e -> e.getNodes().stream())
+                .flatMap(e -> e.getNodes().stream())
+                .collect(Collectors.toMap(
+                        ConfigNode::getName,
+                        e -> dbConfig.getOrDefault(e.getName(), e.getDefaultValue())
+                ));
+
     }
 
     /**
@@ -76,7 +102,7 @@ public class ConfigServiceImpl implements ConfigService {
      * @return      结果
      */
     @Override
-    public String getConfig(ConfigName key) {
+    public String getConfig(String key) {
         return configDao.getConfigure(key);
     }
 
@@ -87,27 +113,30 @@ public class ConfigServiceImpl implements ConfigService {
      * @param value     配置值
      */
     @Override
-    public boolean setConfig(ConfigName key, String value) {
+    @Transactional
+    public boolean setConfig(String key, String value) {
 
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
         // @TODO 允许抛出异常中断执行
-        for (Consumer<Pair<ConfigName, String>> listener : listeners) {
+        for (Consumer<Pair<String, String>> listener : listeners) {
             listener.accept(new Pair<>(key, value));
         }
-        for (Consumer<String> c : configListeners.getOrDefault(key, Collections.emptyList())) {
+        for (Consumer<String> c : configBeforeSetListeners.getOrDefault(key, Collections.emptyList())) {
             c.accept(value);
         }
         configDao.setConfigure(key, value);
+        for (Consumer<String> c : configAfterSetListeners.getOrDefault(key, Collections.emptyList())) {
+            c.accept(value);
+        }
         return true;
     }
-    /**
-     * 设置一个配置项
-     * @param key       配置项
-     * @param value     配置值
-     */
+
     @Override
-    public boolean setConfig(String key, String value) throws IOException {
-        return setConfig(ConfigName.valueOf(key), value);
+    public boolean batchSetConfig(List<NameValueType<String>> configList) throws IOException {
+        for (NameValueType<String> config : configList) {
+            setConfig(config.getName(), config.getValue());
+        }
+        return false;
     }
 
     /**
@@ -145,7 +174,7 @@ public class ConfigServiceImpl implements ConfigService {
      * @param code  邀请码
      */
     public void setInviteRegCode(String code) {
-        configDao.setConfigure(ConfigName.REG_CODE, code);
+        configDao.setConfigure(SysConfigName.Register.SYS_REGISTER_REG_CODE, code);
         sysProperties.getCommon().setRegCode(code);
     }
 }

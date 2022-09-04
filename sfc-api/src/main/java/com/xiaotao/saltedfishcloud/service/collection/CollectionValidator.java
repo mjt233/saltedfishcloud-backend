@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
-import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionField;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
+import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
+import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
+import com.xiaotao.saltedfishcloud.model.po.CollectionField;
+import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;

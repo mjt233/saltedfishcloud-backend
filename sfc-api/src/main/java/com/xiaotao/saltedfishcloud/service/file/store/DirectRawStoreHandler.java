@@ -1,14 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.file.store;
 
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.store.StoreReader;
-import com.xiaotao.saltedfishcloud.service.file.store.StoreWriter;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * 直接使用存储服务的原始文件路径（而不是网盘路径）进行资源操作的服务，提供目标文件存储系统最基础最原始的文件操作。<br>

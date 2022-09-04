@@ -3,15 +3,16 @@ package com.xiaotao.saltedfishcloud.controller.admin;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.Pair;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import lombok.var;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 @RequestMapping(DebugController.prefix)
 @RolesAllowed({"ADMIN"})
@@ -46,7 +47,7 @@ public class DebugController {
     @GetMapping("options")
     public JsonResult getAllOptions() {
         LinkedHashMap<String, Object> data = JsonResultImpl.getDataMap();
-        var conf = configDao.getAllConfig();
+        List<Pair<String, String>> conf = configDao.getAllConfig();
         if (conf != null) {
             conf.forEach(e -> {
                 data.put(e.getKey(), e.getValue());

@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
-import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
+import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ShareRepo extends JpaRepository<SharePO, Integer> {
+public interface ShareRepo extends JpaRepository<ShareInfo, Integer> {
 //
 //    @Query(value = "SELECT " +
 //            "s.id, s.verification, s.uid, s.nid, s.parent_id, s.type, s.size, s.extract_code, s.name, s.created_at, expired_at, u.user as username " +

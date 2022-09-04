@@ -6,11 +6,11 @@ import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.entity.po.QuotaInfo;
-import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
@@ -20,8 +20,9 @@ import com.xiaotao.saltedfishcloud.utils.MultipartFileResource;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
+
 import org.hibernate.validator.constraints.Length;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -56,8 +57,16 @@ public class UserController {
     private final UserService userService;
     private final DiskFileSystemProvider fileSystemFactory;
     private final UserDao userDao;
-    private final TokenDaoImpl tokenDao;
+    private final TokenServiceImpl tokenDao;
     private final SysRuntimeConfig runtimeConfig;
+
+    @ApiOperation("验证用户重置密码时输入的验证码是否正确")
+    @PostMapping("/validResetPasswordEmailCode")
+    @AllowAnonymous
+    public JsonResult validResetPasswordEmailCode(@RequestParam("account") String account,
+                                                  @RequestParam("code") String code) {
+        return JsonResultImpl.getInstance(userService.validResetPasswordEmailCode(account, code));
+    }
 
     /**
      * 获取新token
@@ -160,7 +169,7 @@ public class UserController {
      */
     @GetMapping
     public JsonResult getUserInfo(HttpServletRequest request) throws UserNoExistException {
-        var user =  SecureUtils.getSpringSecurityUser();
+        User user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
             throw new JsonException(401, "未登录");
         }

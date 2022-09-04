@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.config.security.handler;
 
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;

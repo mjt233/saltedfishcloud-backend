@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.entity.dto.CollectionDTO;
-import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionInfoId;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionRecord;
-import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
+import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
+import com.xiaotao.saltedfishcloud.model.po.CollectionInfoId;
+import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
+import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;

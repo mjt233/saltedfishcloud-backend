@@ -2,7 +2,8 @@
 	"info": {
 		"_postman_id": "b8e56f77-b8f8-40ea-8288-d2f5a7e6987a",
 		"name": "咸鱼云Java版",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12016898"
 	},
 	"item": [
 		{
@@ -64,7 +65,7 @@
 										"user"
 									]
 								},
-								"description": "用户自主注册接口\r\n- URI: `/api/user/`\r\n- 动作：POST\r\n\r\n### 请求体参数\r\n- user  用户名\r\n- passwd    登录密码\r\n- regcode   注册邀请码，如果是管理员用户请求该接口，则不需要填写邀请码"
+								"description": "用户自主注册接口\n\n*   URI: `/api/user/`\n*   动作：POST\n    \n\n### 请求体参数\n\n*   user 用户名\n*   passwd 登录密码\n*   regcode 注册邀请码，如果是管理员用户请求该接口，则不需要填写邀请码。若使用邮箱注册，该字段则使用邮箱验证码。\n*   email 邮箱，邮箱注册方式需要填写这个字段。若使用邀请码方式注册，该字段不会被处理\n*   type 用户类型 1 - 管理员，0 - 普通用户，只有当管理员用户调用该字段时才有效\n*   validEmail 是否使用邮箱方式注册 true - 是，false - 邀请码注册。使用邮箱方式注册时会验证email字段的有效性"
 							},
 							"response": []
 						},
@@ -2379,6 +2380,26 @@
 								"description": "获取网盘系统的存储状态  \r\n- URI：`/api/admin/sys/overview` \r\n- 动作：GET \r\n\r\n响应示例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"store: {\r\n            \"store_type\": \"UNIQUE\",                         //  存储类型\r\n            \"file_count\": 248,                              //  文件计数\r\n            \"dir_count\": 69,                                //  目录计数\r\n            \"real_user_size\": 14678764,                     //  实际存储的用户文件总大小\r\n            \"total_user_size\": 32274467,                    //  记录的用户文件总大小\r\n            \"total_public_size\": 9505370783,                //  公共目录总大小\r\n            \"store_total_space\": 1000203087872,             //  用户数据根所在分区总大小      \r\n            \"store_free_space\": 283439636480,               //  用户数据根所在分区可用空间大小\r\n            \"public_total_space\": 1000203087872,            //  公共数据根所在分区总大小      \r\n            \"public_free_space\": 283439636480,              //  公共数据根所在分区可用空间大小\r\n            \"store_root\": \"D:\\\\data\\\\xiaotao\\\\saltedfishcloud\\\\store\",  //  用户数据根\r\n            \"public_root\": \"D:\\\\pack\",                                  //  公共数据根\r\n            \"store_type_switching\": false                               //  系统是否处于存储切换中状态\r\n        },\r\n        \"invite_reg_code\": 114514,\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
 							},
 							"response": []
+						},
+						{
+							"name": "获取所有插件配置",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/admin/sys/listPluginConfig",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"sys",
+										"listPluginConfig"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				},
@@ -2462,6 +2483,30 @@
 									]
 								},
 								"description": "获取系统开发者选项值\r\n- URI：`/api/admin/debug/options` \r\n- 动作：GET\r\n\r\n响应样例\r\n```json\r\n{\r\n    \"code\": 1,\r\n    \"data\": {\r\n        \"read_only_level\": null,    //  系统阻塞级别\r\n        \"sync_delay\": 5             //  公共网盘同步延迟\r\n    },\r\n    \"msg\": \"OK\"\r\n}\r\n```"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "插件管理",
+					"item": [
+						{
+							"name": "获取插件列表",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/plugin/getAllPlugins",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"plugin",
+										"getAllPlugins"
+									]
+								}
 							},
 							"response": []
 						}
@@ -4381,6 +4426,53 @@
 							"body": "{\n    \"code\": 200,\n    \"data\": \"546bcea5900140a4bc56acdde1cd5bd7\",\n    \"msg\": \"OK\"\n}"
 						}
 					]
+				}
+			]
+		},
+		{
+			"name": "插件模块",
+			"item": [
+				{
+					"name": "获取插件资源文件",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/plugin/sys/resource/test.txt",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"plugin",
+								"sys",
+								"resource",
+								"test.txt"
+							]
+						},
+						"description": "获取插件的静态资源文件\n\n* URI: `/api/plugin/{插件名}/resource/{资源路径}`\n* 动作：GET\n    \n\n直接响应文件二进制内容，或404\n\n示例：\n\n获取插件sys的资源文件test.txt，则URL为：\n\n`/api/plugin/sys/resource/test.txt`"
+					},
+					"response": []
+				},
+				{
+					"name": "获取需要自动加载的资源",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/plugin/listPluginAutoLoadList",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"plugin",
+								"listPluginAutoLoadList"
+							]
+						},
+						"description": "列出所有autoLoad不为空的插件列表，前端可以根据这个列表选择加载这些资源实现前端部分的动态拓展"
+					},
+					"response": []
 				}
 			]
 		},

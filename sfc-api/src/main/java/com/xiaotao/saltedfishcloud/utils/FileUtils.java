@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.entity.po.file.DirCollection;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.DirCollection;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

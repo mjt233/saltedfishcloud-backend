@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.service.async.CustomConstructorTask;
 import com.xiaotao.saltedfishcloud.service.async.FailedTask;
 import com.xiaotao.saltedfishcloud.service.async.TestTask;
 import com.xiaotao.saltedfishcloud.service.async.TestTask2;
-import lombok.var;
 import org.junit.jupiter.api.Test;
 
 class TaskManagerTest {
@@ -14,7 +13,7 @@ class TaskManagerTest {
 
     @Test
     public void testCallback() {
-        var context = factory.createContextFromAbstractAsyncTask(TestTask.class);
+        TaskContext<TestTask> context = factory.createContextFromAbstractAsyncTask(TestTask.class);
         context.onSuccess(() -> {
             System.out.println("success");
         });
@@ -22,7 +21,7 @@ class TaskManagerTest {
             System.out.println("finish");
         });
         taskManager.submit(context);
-        var context2 = factory.createContextFromAbstractAsyncTask(FailedTask.class);
+        TaskContext<FailedTask> context2 = factory.createContextFromAbstractAsyncTask(FailedTask.class);
         context2.onFinish(() -> {
             System.out.println("");
         });
@@ -31,8 +30,10 @@ class TaskManagerTest {
     @Test
     public void doTest() throws InterruptedException {
 
-        var t1 = factory.createContextFromAbstractAsyncTask(TestTask.class);
-        var t2 = factory.createContextFromAbstractAsyncTask(TestTask2.class);
+        TaskContext
+                <com.xiaotao.saltedfishcloud.service.async.TestTask> t1 = factory.createContextFromAbstractAsyncTask(TestTask.class);
+        TaskContext
+                <com.xiaotao.saltedfishcloud.service.async.TestTask2> t2 = factory.createContextFromAbstractAsyncTask(TestTask2.class);
         taskManager.submit(t2);
         taskManager.submit(t1);
         Thread.sleep(100);

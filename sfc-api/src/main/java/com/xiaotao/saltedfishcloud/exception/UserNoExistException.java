@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.exception;
 
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 
 public class UserNoExistException extends JsonException {
     private static final long serialVersionUID = -1973360070517009554L;

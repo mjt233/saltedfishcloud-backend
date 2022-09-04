@@ -1,0 +1,15 @@
+{
+  "name": "sys",
+  "loadType": "merge",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "describe": "基础插件，系统内建的配置核心",
+  "alias": "系统",
+  "version": "1.0.0",
+  "apiVersion": "1.4.0",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ],
+  "icon": "mdi-cog"
+}

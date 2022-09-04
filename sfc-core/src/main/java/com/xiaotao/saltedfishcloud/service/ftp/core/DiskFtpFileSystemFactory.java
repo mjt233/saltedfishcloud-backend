@@ -20,10 +20,10 @@ public class DiskFtpFileSystemFactory implements FileSystemFactory {
     @Override
     public FileSystemView createFileSystemView(User user) throws FtpException {
         try {
-            if (user.getName().equals(com.xiaotao.saltedfishcloud.entity.po.User.SYS_NAME_PUBLIC)) {
+            if (user.getName().equals(com.xiaotao.saltedfishcloud.model.po.User.SYS_NAME_PUBLIC)) {
                 return new DiskFtpFileSystemView(DiskFtpUser.getAnonymousUser(), fileSystemFactory);
             }
-            com.xiaotao.saltedfishcloud.entity.po.User dbUser = userDao.getUserByUser(user.getName());
+            com.xiaotao.saltedfishcloud.model.po.User dbUser = userDao.getUserByUser(user.getName());
             if (dbUser == null) {
                 throw new UserNoExistException("用户" + user + "不存在");
             }

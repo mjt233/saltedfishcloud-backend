@@ -5,8 +5,8 @@ import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
-import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
@@ -16,7 +16,6 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
@@ -25,7 +24,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.Resource;
 import javax.mail.MessagingException;
 import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
@@ -37,7 +35,7 @@ import java.util.Date;
 @Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class UserServiceImp implements UserService {
-    private final TokenDaoImpl tokenDao;
+    private final TokenServiceImpl tokenDao;
     private final UserDao userDao;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SysProperties sysProperties;
@@ -110,12 +108,22 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
+    public boolean validResetPasswordEmailCode(String account, String code) {
+        User user = getUserByAccount(account);
+        if (user == null) {
+            return false;
+        }
+        String realCode = (String) redisTemplate.opsForValue().get(RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD));
+        return code.equalsIgnoreCase(realCode);
+    }
+
+    @Override
     public void resetPassword(String account, String code, String password) {
         final User user = getUserByAccount(account);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
         String key = RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD);
         String record = (String) redisTemplate.opsForValue().get(key);
-        if (code == null || !code.equals(record)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
+        if (code == null || !code.equalsIgnoreCase(record)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
 
         userDao.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
         redisTemplate.delete(key);
@@ -281,7 +289,7 @@ public class UserServiceImp implements UserService {
 
     @Override
     public int addUser(String user, String passwd, String email, Integer type) {
-        var upperName = user.toUpperCase();
+        String  upperName = user.toUpperCase();
         if (User.SYS_NAME_PUBLIC.equals(upperName) || User.SYS_NAME_ADMIN.equals(upperName)) {
             throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
         }

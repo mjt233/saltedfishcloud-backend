@@ -6,11 +6,11 @@ import com.xiaotao.saltedfishcloud.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ShareRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.entity.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
-import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
-import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
+import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
@@ -18,7 +18,7 @@ import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
-import com.xiaotao.saltedfishcloud.service.share.entity.SharePO;
+import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
@@ -49,7 +49,7 @@ public class ShareServiceImpl implements ShareService {
 
     @Override
     public String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo) {
-        SharePO share = getShare(sid, verification);
+        ShareInfo share = getShare(sid, verification);
         if (share.getExtractCode() != null && !code.equalsIgnoreCase(share.getExtractCode())) {
             throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
         }
@@ -63,7 +63,7 @@ public class ShareServiceImpl implements ShareService {
 
     @Override
     public void deleteShare(Integer sid, Integer uid) {
-        SharePO share = shareRepo.findById(sid).orElse(null);
+        ShareInfo share = shareRepo.findById(sid).orElse(null);
         if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         if (!share.getUid().equals(uid)) throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
         shareRepo.deleteById(sid);
@@ -71,7 +71,7 @@ public class ShareServiceImpl implements ShareService {
 
     @Override
     public Resource getFileResource(ShareExtractorDTO extractor) throws IOException {
-        SharePO share = shareRepo.findById(extractor.getSid()).orElse(null);
+        ShareInfo share = shareRepo.findById(extractor.getSid()).orElse(null);
         if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         if (!share.getVerification().equals(extractor.getVerification())) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         if (!share.validateExtractCode(extractor.getCode())) throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
@@ -97,7 +97,7 @@ public class ShareServiceImpl implements ShareService {
 
     @Override
     public List<FileInfo>[] browse(int sid, String verification, String path, String extractCode) throws IOException {
-        SharePO share = shareRepo.findById(sid).orElse(null);
+        ShareInfo share = shareRepo.findById(sid).orElse(null);
 
         // 校验存在
         if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
@@ -109,7 +109,7 @@ public class ShareServiceImpl implements ShareService {
         if (share.getType() == ShareType.FILE) throw new IllegalArgumentException("仅接受文件类型的分享");
 
         // 校验提取码
-        if (StringUtils.hasLength(share.getExtractCode()) && !share.getExtractCode().equalsIgnoreCase(extractCode)) {
+        if (StringUtils.hasLength(share.getExtractCode()) && !share.validateExtractCode(extractCode)) {
             throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
         }
 
@@ -125,33 +125,33 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public SharePO createShare(int uid, ShareDTO shareDTO) {
+    public ShareInfo createShare(int uid, ShareDTO shareDTO) {
         try {
             LinkedList<NodeInfo> nodes = nodeService.getPathNodeByPath(uid, shareDTO.getPath());
             String nid = nodes.getLast().getId();
             FileInfo fileInfo = fileDao.getFileInfo(uid, shareDTO.getName(), nid);
 
             if (fileInfo == null) throw new JsonException(FileSystemError.FILE_NOT_FOUND);
-            SharePO sharePO = SharePO.valueOf(
+            ShareInfo shareInfo = ShareInfo.valueOf(
                     shareDTO,
                     fileInfo.isFile() ? ShareType.FILE : ShareType.DIR,
                     fileInfo.getMd5(),
                     uid
             );
-            sharePO.setParentId(nid);
-            sharePO.setSize(fileInfo.getSize());
-            shareRepo.save(sharePO);
-            return sharePO;
+            shareInfo.setParentId(nid);
+            shareInfo.setSize(fileInfo.getSize());
+            shareRepo.save(shareInfo);
+            return shareInfo;
         } catch (NoSuchFileException e) {
             throw new JsonException(FileSystemError.NODE_NOT_FOUND);
         }
     }
 
     @Override
-    public CommonPageInfo<SharePO> getUserShare(int uid, int page, int size, boolean hideKeyAttr) {
-        SharePO po = new SharePO();
+    public CommonPageInfo<ShareInfo> getUserShare(int uid, int page, int size, boolean hideKeyAttr) {
+        ShareInfo po = new ShareInfo();
         po.setUid(uid);
-        CommonPageInfo<SharePO> res = CommonPageInfo.of(
+        CommonPageInfo<ShareInfo> res = CommonPageInfo.of(
                 shareRepo.findAll(
                         Example.of(po, ExampleMatcher.matching()),
                         PageRequest.of(
@@ -166,7 +166,7 @@ public class ShareServiceImpl implements ShareService {
 //                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
 //        ));
         if (hideKeyAttr) {
-            for (SharePO share : res.getContent()) {
+            for (ShareInfo share : res.getContent()) {
                 share.hideKeyAttr();
             }
         }
@@ -174,8 +174,8 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public SharePO getShare(int sid, String verification) {
-        SharePO po = shareRepo.findById(sid).orElse(null);
+    public ShareInfo getShare(int sid, String verification) {
+        ShareInfo po = shareRepo.findById(sid).orElse(null);
         if (po == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
 
         if (po.getType() == ShareType.DIR) {
@@ -197,4 +197,8 @@ public class ShareServiceImpl implements ShareService {
         return po;
     }
 
+    @Override
+    public ShareInfo getById(int id) {
+        return shareRepo.findById(id).orElse(null);
+    }
 }

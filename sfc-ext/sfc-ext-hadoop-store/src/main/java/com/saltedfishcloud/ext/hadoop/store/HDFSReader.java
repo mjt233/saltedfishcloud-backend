@@ -1,7 +1,7 @@
 package com.saltedfishcloud.ext.hadoop.store;
 
 import com.saltedfishcloud.ext.hadoop.HDFSResource;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.StoreReader;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.apache.hadoop.fs.FileStatus;

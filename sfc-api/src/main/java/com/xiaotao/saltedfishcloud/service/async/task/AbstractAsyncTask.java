@@ -7,7 +7,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
 
 @Slf4j
 public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
@@ -73,7 +72,7 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
             hasStart = true;
         }
         try {
-            var res = execute();
+            AsyncTaskResult res = execute();
             if (res.timeout == 0) {
                 setExpire(true);
             } else if (res.timeout > 0){

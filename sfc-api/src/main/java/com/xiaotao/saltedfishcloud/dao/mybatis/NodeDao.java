@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.mybatis;
 
-import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import org.apache.ibatis.annotations.*;
 
 import java.util.Collection;

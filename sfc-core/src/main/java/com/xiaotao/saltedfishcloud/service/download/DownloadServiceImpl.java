@@ -5,11 +5,11 @@ import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.dao.jpa.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
-import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
-import com.xiaotao.saltedfishcloud.entity.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.entity.po.param.DownloadTaskParams;
-import com.xiaotao.saltedfishcloud.entity.po.param.TaskType;
+import com.xiaotao.saltedfishcloud.model.po.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.param.DownloadTaskParams;
+import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
@@ -18,7 +18,6 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,12 +25,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import javax.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -116,18 +118,23 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
 
     @Override
     public void interrupt(String id) {
-        final DownloadTaskInfo info = downloadDao.getOne(id);
-        info.setState(DownloadTaskInfo.State.CANCEL);
-        downloadDao.save(info);
+        try {
+            final DownloadTaskInfo info = downloadDao.getOne(id);
 
-        log.debug("{}发送中断任务请求：{}", LOG_TITLE, id);
-        redisTemplate.convertAndSend(MQTopic.DOWNLOAD_TASK_INTERRUPT, id);
+            info.setState(DownloadTaskInfo.State.CANCEL);
+            downloadDao.save(info);
+
+            log.debug("{}发送中断任务请求：{}", LOG_TITLE, id);
+            redisTemplate.convertAndSend(MQTopic.DOWNLOAD_TASK_INTERRUPT, id);
+        } catch (JpaObjectRetrievalFailureException e) {
+            throw new JsonException(404, "找不到id为" + id + "的下载任务");
+        }
     }
 
     @Override
     public Page<DownloadTaskInfo> getTaskList(int uid, int page, int size, TaskType type) {
         Page<DownloadTaskInfo> tasks;
-        var pageRequest = PageRequest.of(page, size);
+        PageRequest pageRequest = PageRequest.of(page, size);
         if (type == null || type == TaskType.ALL) {
             tasks = downloadDao.findByUidOrderByCreatedAtDesc(uid, pageRequest);
         } else if (type == TaskType.DOWNLOADING) {
@@ -142,7 +149,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
             // 通过任务id获取不到异步任务实例时，有两种情况：1. 分布式部署的情况下，任务在其他实例中下载 2. 负责下载的进程或实例退出了
             // 对于情况1，可以通过ProgressDetector获取进度。若获取不到进度，那就是下载的进程或实例退出了，下载失败。
             if (e.getState() == DownloadTaskInfo.State.DOWNLOADING ) {
-                var context = taskManager.getContext(e.getId(), AsyncDownloadTaskImpl.class);
+                TaskContext<AsyncDownloadTaskImpl> context = taskManager.getContext(e.getId(), AsyncDownloadTaskImpl.class);
                 if (context == null) {
                     final ProgressRecord record = detector.getRecord(e.getId());
                     if (record == null) {
@@ -155,7 +162,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
                         e.setSpeed(record.getSpeed()*1000);
                     }
                 } else {
-                    var task = context.getTask();
+                    AsyncDownloadTaskImpl task = context.getTask();
                     e.setLoaded(task.getStatus().loaded);
                     e.setSpeed(task.getStatus().speed*1000);
                 }
@@ -167,7 +174,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
     @Override
     public String createTask(DownloadTaskParams params, int creator) throws NoSuchFileException {
         // 初始化下载任务和上下文
-        var builder = builderFactory.getBuilder()
+        DownloadTaskBuilder builder = builderFactory.getBuilder()
                 .setUrl(params.url)
                 .setHeaders(params.headers)
                 .setMethod(params.method);
@@ -184,7 +191,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
         nodeService.getPathNodeByPath(params.uid, params.savePath);
 
         // 初始化下载任务信息和录入数据库
-        var info = new DownloadTaskInfo();
+        DownloadTaskInfo info = new DownloadTaskInfo();
         AsyncDownloadTaskImpl task = builder.build();
         TaskContext<AsyncDownloadTask> context = taskContextFactory.createContextFromAsyncTask(task);
         task.setTaskId(context.getId());
@@ -210,8 +217,8 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
         context.onSuccess(() -> {
             info.setState(DownloadTaskInfo.State.FINISH);
             // 获取文件信息（包括md5）
-            var tempFile = Paths.get(task.getSavePath());
-            var fileInfo = FileInfo.getLocal(tempFile.toString());
+            Path tempFile = Paths.get(task.getSavePath());
+            FileInfo fileInfo = FileInfo.getLocal(tempFile.toString());
             try {
                 // 创建预期的保存目录以应对下载完成前用户删除目录的情况
                 fileService.mkdirs(params.uid, params.savePath);

@@ -3,15 +3,15 @@ package com.xiaotao.saltedfishcloud.controller.admin;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordSyncService;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
-import lombok.var;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 @RestController
 @RequestMapping(StoreController.prefix)
@@ -45,7 +45,7 @@ public class StoreController {
             return JsonResultImpl.getInstance(400, null, "UNIQUE模式不需要同步");
         }
         if (all) {
-            var users = userDao.getUserList();
+            List<User> users = userDao.getUserList();
             users.add(User.getPublicUser());
             for (User user : users) {
                 try {

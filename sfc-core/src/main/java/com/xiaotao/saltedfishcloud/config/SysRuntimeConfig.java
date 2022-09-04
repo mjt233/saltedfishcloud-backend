@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.service.config.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import lombok.Getter;
@@ -106,10 +106,10 @@ public class SysRuntimeConfig implements ApplicationRunner {
         updateFeature();
         // 监听配置改变，实时更新状态缓存
         configService.addConfigSetListener(e -> {
-            ConfigName key = e.getKey();
-            if (key == ConfigName.ENABLE_EMAIL_REG) {
+            String key = e.getKey();
+            if (SysConfigName.Register.ENABLE_EMAIL_REG.equals(key)) {
                 enableEmailReg = "true".equalsIgnoreCase(e.getValue());
-            } else if (key == ConfigName.ENABLE_REG_CODE) {
+            } else if (SysConfigName.Register.ENABLE_REG_CODE.equals(key)) {
                 enableRegCode = "true".equalsIgnoreCase(e.getValue());
             }
             updateFeature();
@@ -133,14 +133,14 @@ public class SysRuntimeConfig implements ApplicationRunner {
      * 从数据库中抓取数据更新配置
      */
     public void fetchConfig() {
-        Map<ConfigName, String> configCache = configService.getAllConfig();
-        String enableRegCode = configCache.get(ConfigName.ENABLE_REG_CODE);
-        String enableEmailReg = configCache.get(ConfigName.ENABLE_EMAIL_REG);
+        Map<String, String> configCache = configService.getAllConfig();
+        String enableRegCode = configCache.get(SysConfigName.Register.ENABLE_REG_CODE);
+        String enableEmailReg = configCache.get(SysConfigName.Register.ENABLE_EMAIL_REG);
         if (enableRegCode == null && enableEmailReg == null) {
             enableRegCode = "true";
             try {
-                configService.setConfig(ConfigName.ENABLE_REG_CODE, "true");
-                configService.setConfig(ConfigName.ENABLE_EMAIL_REG, "false");
+                configService.setConfig(SysConfigName.Register.ENABLE_REG_CODE, "true");
+                configService.setConfig(SysConfigName.Register.ENABLE_EMAIL_REG, "false");
                 log.info("[注册规则初始化]未检测到注册规则配置，默认开启邀请码注册");
             } catch (IOException ignore) { }
         }

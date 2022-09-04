@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.download;
 
+import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
-import lombok.var;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,8 +25,8 @@ class DownloadServiceTest {
     @Test
     public void testInterrupt() throws InterruptedException {
         String url = "https://bigota.d.miui.com/V11.0.5.0.PCACNXM/miui_MI6_V11.0.5.0.PCACNXM_996ffd2660_9.0.zip";
-        var task = builderFactory.getBuilder().setUrl(url).build();
-        var context = factory.createContextFromAsyncTask(task);
+        AsyncDownloadTaskImpl task = builderFactory.getBuilder().setUrl(url).build();
+        TaskContext<AsyncDownloadTaskImpl> context = factory.createContextFromAsyncTask(task);
         taskManager.submit(context);
         downloadService.interrupt(context.getId());
         Thread.sleep(500);

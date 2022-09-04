@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.service.async.TaskConstructException;
 import com.xiaotao.saltedfishcloud.service.async.io.TaskMessageIOPair;
 import com.xiaotao.saltedfishcloud.service.async.io.impl.StringMessageIOPair;
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
-import lombok.var;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -25,7 +24,7 @@ public class TaskContextFactoryImpl implements TaskContextFactory {
         Constructor<T> constructor;
         try {
             constructor = t.getConstructor(TaskMessageIOPair.class, TaskMessageIOPair.class);
-            var task = constructor.newInstance(new StringMessageIOPair(), new StringMessageIOPair());
+            T task = constructor.newInstance(new StringMessageIOPair(), new StringMessageIOPair());
             return new TaskContextImpl<>(task, taskManager);
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException(t.getName() + "is not an AbstractAsyncTask class");

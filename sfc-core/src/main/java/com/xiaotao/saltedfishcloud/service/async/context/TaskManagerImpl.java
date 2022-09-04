@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.async.context;
 
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +31,7 @@ public class TaskManagerImpl implements TaskManager {
 
     @Override
     public synchronized <T> TaskContext<T> getContext(String taskId, Class<T> type) {
-        var task = tasks.get(taskId);
+        TaskContext<? extends AsyncTask> task = tasks.get(taskId);
         if (task == null) {
             return null;
         }

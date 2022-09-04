@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import org.springframework.lang.Nullable;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Random;
@@ -23,11 +25,19 @@ public class StringUtils {
      * @return  追加后的路径字符串
      */
     public static String appendPath(String...appendData) {
+        if (appendData.length == 2 && appendData[0] != null && appendData[0].length() == 0) {
+            return appendData[1];
+        }
+
         StringBuilder sb = new StringBuilder();
         String last = null;
         for (String data : appendData) {
-            if (last != null && !last.endsWith("/") && !data.endsWith("/")) {
-                sb.append("/");
+            if (data == null) continue;
+
+            if (last != null && last.length() != 0) {
+                if (!(data.startsWith("/") || last.endsWith("/"))) {
+                    sb.append('/');
+                }
             }
             sb.append(data);
             last = data;
@@ -80,6 +90,9 @@ public class StringUtils {
     public static String getURLLastName(String url) throws MalformedURLException {
         return getURLLastName(new URL(url));
     }
+
+
+
     /**
      * 获取URL中最后一个目录节点的名称
      * @param url   URL
@@ -155,4 +168,24 @@ public class StringUtils {
         return input.substring(prefix.length());
     }
 
+
+    public static boolean hasText(@Nullable CharSequence str) {
+        return str != null && str.length() > 0 && containsText(str);
+    }
+
+    public static boolean hasText(@Nullable String str) {
+        return str != null && !str.isEmpty() && containsText(str);
+    }
+
+    private static boolean containsText(CharSequence str) {
+        int strLen = str.length();
+
+        for(int i = 0; i < strLen; ++i) {
+            if (!Character.isWhitespace(str.charAt(i))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

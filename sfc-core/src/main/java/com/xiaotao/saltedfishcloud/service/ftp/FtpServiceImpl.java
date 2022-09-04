@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.ftp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.service.config.ConfigName;
+import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpUserManager;
@@ -111,7 +111,7 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
 
     @Override
     public void run(ApplicationArguments args) throws IOException {
-        String configRawJson = configService.getConfig(ConfigName.FTP_PROPERTIES);
+        String configRawJson = configService.getConfig(SysConfigName.Common.FTP_PROPERTIES);
         if (configRawJson != null) {
             try {
                 final SysProperties.Ftp config = MapperHolder.mapper.readValue(configRawJson, SysProperties.Ftp.class);
@@ -121,17 +121,27 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
                 e.printStackTrace();
             }
         } else {
-            configService.setConfig(ConfigName.FTP_PROPERTIES, MapperHolder.mapper.writeValueAsString(ftpProperties));
+            configService.setConfig(SysConfigName.Common.FTP_PROPERTIES, MapperHolder.mapper.writeValueAsString(ftpProperties));
             log.info("[FTP]初始化FTP配置");
         }
         // 参数更新时重新加载FTP服务器
-        configService.addConfigListener(ConfigName.FTP_PROPERTIES,  e -> {
+        configService.addBeforeSetListener(SysConfigName.Common.FTP_PROPERTIES, e -> {
+            SysProperties.Ftp originProperties = new SysProperties.Ftp();
+            BeanUtils.copyProperties(ftpProperties, originProperties);
             try {
                 SysProperties.Ftp config = MapperHolder.mapper.readValue(e, SysProperties.Ftp.class);
                 BeanUtils.copyProperties(config, ftpProperties);
                 restart();
-            } catch (JsonProcessingException | FtpException ex) {
-                ex.printStackTrace();
+            } catch (Exception ex) {
+                log.warn("[FTP]配置更新失败，还原后重新启动");
+                BeanUtils.copyProperties(originProperties, ftpProperties);
+                try {
+                    restart();
+                } catch (Exception exc) {
+                    log.error("[FTP]恢复启动失败", exc);
+                    throw new RuntimeException(ex.getMessage(), exc);
+                }
+                throw new RuntimeException(ex.getMessage(), ex);
             }
         });
         if (ftpProperties.isFtpEnable()) {

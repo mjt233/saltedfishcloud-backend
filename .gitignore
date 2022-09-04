@@ -37,3 +37,4 @@ sfc-web/src/main/resources/application.yml
 /script/start.bat
 /store
 /release/*
+/ext

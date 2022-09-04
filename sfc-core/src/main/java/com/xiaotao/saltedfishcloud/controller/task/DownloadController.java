@@ -1,18 +1,16 @@
 package com.xiaotao.saltedfishcloud.controller.task;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResult;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.entity.po.DownloadTaskInfo;
-import com.xiaotao.saltedfishcloud.entity.po.User;
-import com.xiaotao.saltedfishcloud.entity.po.param.DownloadTaskParams;
-import com.xiaotao.saltedfishcloud.entity.po.param.TaskType;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.po.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.model.param.DownloadTaskParams;
+import com.xiaotao.saltedfishcloud.model.param.TaskType;
+import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.service.download.DownloadService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 import org.springframework.data.domain.Page;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import java.nio.file.NoSuchFileException;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,7 +30,7 @@ public class DownloadController {
 
     @GetMapping("proxy")
     public JsonResult getProxy() {
-        var res = proxyDao.getAllProxy();
+        List<ProxyInfo> res = proxyDao.getAllProxy();
         res.forEach(e -> {
             e.setAddress(null);
             e.setPort(null);
@@ -59,9 +58,6 @@ public class DownloadController {
             @RequestParam(defaultValue = "ALL") TaskType type
     ) {
         Page<DownloadTaskInfo> res = downloadService.getTaskList(uid, page - 1, size, type);
-        return JsonResultImpl
-                .getInstance(res.getContent())
-                .put("totalItem", res.getTotalElements())
-                .put("totalPage", res.getTotalPages());
+        return JsonResultImpl.getInstance(res);
     }
 }

@@ -2,8 +2,8 @@ package com.xiaotao.saltedfishcloud.config.security;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.config.security.service.UserDetailsServiceImpl;
-import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -44,7 +44,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private PasswordEncoder myPasswordEncoder;
 
     @Resource
-    private TokenDaoImpl tokenDao;
+    private TokenServiceImpl tokenDao;
 
     @Bean
     @Override
@@ -80,7 +80,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
         //  放行公共API和登录API
         http.authorizeRequests()
-                .antMatchers("/", "/assets/**","/static/**", "/api/static/**", "/favicon.ico", "/index.*").permitAll()
+                .antMatchers("/","/static-extension.json", "/ext/**", "/assets/**","/static/**", "/api/static/**", "/favicon.ico", "/index.*").permitAll()
                 .antMatchers(getAnonymousUrls()).permitAll()
                 .antMatchers(HttpMethod.POST, LOGIN_URI).permitAll()
                 .anyRequest().authenticated();

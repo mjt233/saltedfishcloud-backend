@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
-import com.xiaotao.saltedfishcloud.dao.redis.TokenDaoImpl;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,9 +19,9 @@ import java.io.IOException;
  * 在SpringSecurity过滤器链中处理用户登录的过滤器
  */
 public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
-    private final TokenDaoImpl tokenDao;
+    private final TokenServiceImpl tokenDao;
 
-    protected JwtLoginFilter(String defaultFilterProcessesUrl, AuthenticationManager authenticationManager, TokenDaoImpl tokenDao) {
+    protected JwtLoginFilter(String defaultFilterProcessesUrl, AuthenticationManager authenticationManager, TokenServiceImpl tokenDao) {
         super(new AntPathRequestMatcher(defaultFilterProcessesUrl));
         setAuthenticationManager(authenticationManager);
         this.tokenDao = tokenDao;

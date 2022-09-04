@@ -1,11 +1,13 @@
 package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.xiaotao.saltedfishcloud.service.config.ConfigName;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +15,8 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 
 /**
@@ -25,6 +29,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ConfigureInitializer implements ApplicationRunner {
     private final ConfigDao configDao;
+    private final ConfigService configService;
     private final SysProperties sysProperties;
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -32,27 +37,27 @@ public class ConfigureInitializer implements ApplicationRunner {
         log.info("[当前系统版本]：" + sysProperties.getVersion());
 
 
-        String storeMode = configDao.getConfigure(ConfigName.STORE_MODE);
-        String regCode = configDao.getConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
-        String syncDelay = configDao.getConfigure(ConfigName.SYNC_INTERVAL, sysProperties.getSync().getInterval() + "");
+        String storeMode = configDao.getConfigure(SysConfigName.Store.SYS_STORE_TYPE);
+        String regCode = configDao.getConfigure(SysConfigName.Register.SYS_REGISTER_REG_CODE, sysProperties.getCommon().getRegCode());
+        String syncDelay = configDao.getConfigure(SysConfigName.Store.SYNC_INTERVAL, sysProperties.getSync().getInterval() + "");
 
         boolean firstRun = storeMode == null;
         if (firstRun) {
             log.info("[初始化]存储模式记录：" + sysProperties.getStore().getMode());
-            configDao.setConfigure(ConfigName.STORE_MODE, sysProperties.getStore().getMode().toString());
+            configDao.setConfigure(SysConfigName.Store.SYS_STORE_TYPE, sysProperties.getStore().getMode().toString());
             log.info("[初始化]邀请邀请码：" + regCode);
-            configDao.setConfigure(ConfigName.REG_CODE, sysProperties.getCommon().getRegCode());
+            configDao.setConfigure(SysConfigName.Register.SYS_REGISTER_REG_CODE, sysProperties.getCommon().getRegCode());
             log.info("[初始化]自动同步间隔：" + syncDelay);
-            configDao.setConfigure(ConfigName.SYNC_INTERVAL, syncDelay);
+            configDao.setConfigure(SysConfigName.Store.SYNC_INTERVAL, syncDelay);
 
             storeMode = sysProperties.getStore().getMode().toString();
         }
 
-        String secret = configDao.getConfigure(ConfigName.TOKEN_SECRET);
+        String secret = configDao.getConfigure(SysConfigName.Safe.TOKEN);
         if (secret == null) {
             secret = StringUtils.getRandomString(32, true);
             log.info("[初始化]生成token密钥");
-            configDao.setConfigure(ConfigName.TOKEN_SECRET, secret);
+            configDao.setConfigure(SysConfigName.Safe.TOKEN, secret);
         }
         JwtUtils.setSecret(secret);
 
@@ -68,5 +73,19 @@ public class ConfigureInitializer implements ApplicationRunner {
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
             log.warn("正在使用非发行版本，系统运行可能存在不稳定甚至出现数据损坏，请勿用于线上正式环境");
         }
+
+
+        subscribeConfigureChange();
+    }
+
+
+    /**
+     * 订阅配置变更并同步到配置类
+     */
+    private void subscribeConfigureChange() {
+        configService.addBeforeSetListener(SysConfigName.Store.SYNC_INTERVAL, e -> sysProperties.getSync().setInterval(Integer.parseInt(e)));
+        configService.addBeforeSetListener(SysConfigName.Register.SYS_REGISTER_REG_CODE, e -> sysProperties.getCommon().setRegCode(e));
+        configService.addBeforeSetListener(SysConfigName.Store.SYS_STORE_TYPE, e -> sysProperties.getStore().setMode(e));
+        configService.addBeforeSetListener(SysConfigName.Safe.TOKEN, JwtUtils::setSecret);
     }
 }

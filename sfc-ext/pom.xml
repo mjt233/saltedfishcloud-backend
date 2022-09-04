@@ -9,9 +9,9 @@
     <artifactId>sfc-ext</artifactId>
     <packaging>pom</packaging>
 
-
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>11</java.version>
+        <api.version>1.5.0</api.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -19,17 +19,17 @@
     </properties>
 
     <modules>
-<!--    若有需要Hadoop，请自行在sfc-core项目中引入，目前暂时不支持单独打包jar作为拓展加载（虽然之前试过可以，不知为啥现在就不可以了，可能是依赖之类的问题？）    -->
-<!--        <module>sfc-ext-hadoop-store</module>-->
+        <module>sfc-ext-hadoop-store</module>
         <module>sfc-ext-demo</module>
         <module>sfc-ext-mp3-thumbnail</module>
     </modules>
+
 
     <dependencies>
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
-            <version>1.2.2</version>
+            <version>${api.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

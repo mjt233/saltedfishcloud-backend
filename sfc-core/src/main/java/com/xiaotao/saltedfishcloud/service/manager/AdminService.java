@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
-import com.xiaotao.saltedfishcloud.entity.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -12,7 +12,6 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// @TODO 规范配置参数命名
 @Service
 public class AdminService {
     @Resource

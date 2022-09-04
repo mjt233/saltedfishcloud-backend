@@ -36,7 +36,7 @@ public class DiskFtpUserManager implements UserManager {
     public String[] getAllUserNames() throws FtpException {
         String[] users = (String[]) userDao.getUserList()
                 .stream()
-                .map(com.xiaotao.saltedfishcloud.entity.po.User::getUsername)
+                .map(com.xiaotao.saltedfishcloud.model.po.User::getUsername)
                 .toArray();
         return users;
     }
@@ -59,11 +59,11 @@ public class DiskFtpUserManager implements UserManager {
     @Override
     public User authenticate(Authentication authentication) throws AuthenticationFailedException {
         if (authentication instanceof AnonymousAuthentication) {
-            return getUserByName(com.xiaotao.saltedfishcloud.entity.po.User.SYS_NAME_PUBLIC);
+            return getUserByName(com.xiaotao.saltedfishcloud.model.po.User.SYS_NAME_PUBLIC);
         }
         if (authentication instanceof UsernamePasswordAuthentication) {
             UsernamePasswordAuthentication auth = (UsernamePasswordAuthentication) authentication;
-            com.xiaotao.saltedfishcloud.entity.po.User user = userDao.getUserByUser(auth.getUsername());
+            com.xiaotao.saltedfishcloud.model.po.User user = userDao.getUserByUser(auth.getUsername());
             if (user == null) return null;
             if (user.getPassword().equals(SecureUtils.getPassswd(auth.getPassword()))) {
                 return getUserByName(auth.getUsername());
@@ -79,7 +79,7 @@ public class DiskFtpUserManager implements UserManager {
 
     @Override
     public boolean isAdmin(String username) throws FtpException {
-        return userDao.getUserByUser(username).getType() == com.xiaotao.saltedfishcloud.entity.po.User.TYPE_ADMIN;
+        return userDao.getUserByUser(username).getType() == com.xiaotao.saltedfishcloud.model.po.User.TYPE_ADMIN;
     }
 }
 

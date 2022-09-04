@@ -1,0 +1,8 @@
+{
+  "name": "mp3-thumbnail",
+  "alias": "mp3缩略图封面",
+  "loadType": "merge",
+  "type": "jar",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com"
+}

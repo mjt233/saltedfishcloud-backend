@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.entity.po.User;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import org.springframework.validation.annotation.Validated;
 
@@ -77,6 +77,14 @@ public interface UserService {
      * @return  验证码，注意不要暴露到响应
      */
     String sendResetPasswordEmail(String account) throws MessagingException, UnsupportedEncodingException;
+
+    /**
+     * 验证重置密码的邮件验证码是否正确
+     * @param account   待找回账号
+     * @param code      要测试的验证码
+     * @return          结果，正确true，否则false
+     */
+    boolean validResetPasswordEmailCode(String account, String code);
 
     /**
      * 发送注册验证码到邮箱中

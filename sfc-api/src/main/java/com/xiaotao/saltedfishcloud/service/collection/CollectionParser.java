@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.xiaotao.saltedfishcloud.entity.dto.SubmitFile;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionField;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
+import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
+import com.xiaotao.saltedfishcloud.model.po.CollectionField;
+import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 
 import java.util.List;

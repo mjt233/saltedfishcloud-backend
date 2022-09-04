@@ -1,6 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.wrap;
 
-import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
+import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
+import com.xiaotao.saltedfishcloud.model.param.WrapParam;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStream;
 
 public interface WrapService {
     /**
@@ -19,4 +24,26 @@ public interface WrapService {
      * @return 打包信息
      */
     WrapInfo getWrapInfo(String wid);
+
+    /**
+     * 根据复杂打包参数创建打包
+     * @param param 参数
+     * @return      打包id
+     */
+    String registerWrap(WrapParam param);
+
+    /**
+     * 生成打包的内容并输出到输出流
+     * @param wid           打包id
+     * @param outputStream  输出流
+     */
+    void writeWrapToStream(String wid, OutputStream outputStream) throws IOException;
+
+    /**
+     * 直接生成打包的内容并输出到servlet响应中
+     * @param wid           打包id
+     * @param alias         响应文件别名
+     * @param response      响应对象
+     */
+    void writeWrapToServlet(String wid, String alias, HttpServletResponse response) throws IOException;
 }

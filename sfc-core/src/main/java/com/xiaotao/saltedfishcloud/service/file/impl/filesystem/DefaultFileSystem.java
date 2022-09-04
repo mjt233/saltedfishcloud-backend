@@ -8,8 +8,8 @@ import com.xiaotao.saltedfishcloud.compress.reader.impl.ZipArchiveReader;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
-import com.xiaotao.saltedfishcloud.entity.po.NodeInfo;
-import com.xiaotao.saltedfishcloud.entity.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.ArchiveError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -127,6 +127,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
         RLock lock = redisson.getLock(getStoreLockKey(uid, path, name));
         try {
             lock.lock();
+            fileInfo.setName(name);
             saveFile(uid, resource.getInputStream(), path, fileInfo);
         } catch (IOException e) {
             log.trace("错误：{}", e.getMessage());

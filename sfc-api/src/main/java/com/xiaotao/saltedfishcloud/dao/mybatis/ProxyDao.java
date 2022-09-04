@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.mybatis;
 
-import com.xiaotao.saltedfishcloud.entity.po.ProxyInfo;
+import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;

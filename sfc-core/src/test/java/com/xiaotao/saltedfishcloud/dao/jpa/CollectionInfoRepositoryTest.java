@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
-import com.xiaotao.saltedfishcloud.entity.po.CollectionField;
-import com.xiaotao.saltedfishcloud.entity.po.CollectionInfo;
+import com.xiaotao.saltedfishcloud.model.po.CollectionField;
+import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.utils.ByteSize;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

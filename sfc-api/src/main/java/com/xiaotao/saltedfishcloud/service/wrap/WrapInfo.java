@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.wrap;
 
-import com.xiaotao.saltedfishcloud.entity.FileTransferInfo;
+import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
