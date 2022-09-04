@@ -42,8 +42,12 @@ public class ProxyController {
 
     @PutMapping
     public JsonResult modifyProxy(@Valid ProxyInfo info, String proxyName) {
-        if (proxyDao.modifyProxy(proxyName, info) == 0) {
-            throw new JsonException(400, "代理" + proxyName + "不存在");
+        try {
+            if (proxyDao.modifyProxy(proxyName, info) == 0) {
+                throw new JsonException(400, "代理" + proxyName + "不存在");
+            }
+        } catch (DuplicateKeyException e) {
+            throw new JsonException(400, "新名称已存在");
         }
         return JsonResult.emptySuccess();
     }

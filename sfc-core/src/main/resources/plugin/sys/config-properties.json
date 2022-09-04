@@ -93,6 +93,26 @@
     ]
   },
   {
+    "name": "proxy-node",
+    "title": "代理节点",
+    "nodes": [
+      {
+        "name": "",
+        "title": "",
+        "nodes": [
+          {
+            "name": "proxy",
+            "title": "代理配置",
+            "describe": "代理节点配置可用于离线下载",
+            "defaultValue": "",
+            "inputType": "template",
+            "template": "proxy-config"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "safe",
     "title": "安全",
     "nodes": [

@@ -10,5 +10,6 @@
   "autoLoad": [
     "index.umd.js",
     "style.css"
-  ]
+  ],
+  "icon": "mdi-cog"
 }
