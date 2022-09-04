@@ -14,6 +14,7 @@ import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
 import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +33,7 @@ public class WrapServiceImpl implements WrapService {
     private final DiskFileSystemProvider fileSystemProvider;
 
     @Autowired
+    @Lazy
     private ShareService shareService;
 
     @Override

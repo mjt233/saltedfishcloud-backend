@@ -23,6 +23,8 @@ import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
@@ -45,7 +47,10 @@ public class ShareServiceImpl implements ShareService {
     private final ShareRepo shareRepo;
     private final UserDao userDao;
     private final DiskFileSystemProvider fileSystemFactory;
-    private final WrapService wrapService;
+
+    @Autowired
+    @Lazy
+    private WrapService wrapService;
 
     @Override
     public String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo) {
