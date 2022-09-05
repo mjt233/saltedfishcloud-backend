@@ -152,6 +152,7 @@ public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
             taskInfo.status = TaskStatus.FAILED;
             return false;
         } finally {
+            progressDetector.removeObserve(taskId);
             finish = true;
         }
         return true;
