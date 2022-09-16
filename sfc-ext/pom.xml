@@ -22,6 +22,7 @@
         <module>sfc-ext-hadoop-store</module>
         <module>sfc-ext-demo</module>
         <module>sfc-ext-mp3-thumbnail</module>
+        <module>sfc-ext-minio-store</module>
     </modules>
 
 
