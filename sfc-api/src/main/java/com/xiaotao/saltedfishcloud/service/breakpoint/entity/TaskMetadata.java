@@ -26,12 +26,12 @@ public class TaskMetadata {
     private long length;
 
     /**
-     * 每个分块的大小（默认2MiB）
-     * 最小2MiB，最大64MiB
+     * 每个分块的大小（默认20MiB）
+     * 最小20MiB，最大128MiB
      */
-    @Min(2097152)
-    @Max(67108864)
-    private int chunkSize = 2097152;
+    @Min(20971520)
+    @Max(134217728)
+    private int chunkSize = 20971520;
 
     @Setter(AccessLevel.NONE)
     private int chunkCount = 0;
