@@ -76,9 +76,8 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
 
     @Override
     public List<FileInfo> listFiles(String path) throws IOException {
-        String objectName = MinioUtils.toMinioObjectName(path);
         Iterable<Result<Item>> results = client.listObjects(ListObjectsArgs.builder()
-                .bucket(objectName)
+                .bucket(properties.getBucket())
                 .prefix(MinioUtils.toDirectoryName(path))
                 .build());
 

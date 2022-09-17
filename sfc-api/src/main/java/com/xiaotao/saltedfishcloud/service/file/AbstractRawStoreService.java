@@ -61,6 +61,12 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
 
     }
 
+    /**
+     * 文件移动是否需要递归执行。
+     * @return 若返回值为true，则通过递归逐个移动文件。若为false，则直接调用{@link CopyAndMoveHandler#moveFile(String, String)}方法进行移动。
+     * 使用递归移动时，支持同名目录合并。
+     *
+     */
     public abstract boolean isMoveWithRecursion();
 
     @Override

@@ -16,11 +16,11 @@ public class MinioStoreService extends AbstractRawStoreService {
 
     @Override
     public String getPublicRoot() {
-        return "";
+        return "public";
     }
 
     @Override
     public String getStoreRoot() {
-        return "";
+        return "store";
     }
 }

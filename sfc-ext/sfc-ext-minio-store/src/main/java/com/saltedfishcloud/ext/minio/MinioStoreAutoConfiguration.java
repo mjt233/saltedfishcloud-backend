@@ -1,22 +1,19 @@
 package com.saltedfishcloud.ext.minio;
 
 import com.saltedfishcloud.ext.minio.utils.MinioUtils;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
-import io.minio.errors.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 
 @ConditionalOnProperty(prefix = "sys.store", name = "type", havingValue = "minio")
 @EnableConfigurationProperties(MinioProperties.class)
@@ -29,6 +26,9 @@ public class MinioStoreAutoConfiguration {
     @Autowired
     private FileResourceMd5Resolver md5Resolver;
 
+    @Autowired
+    private SysProperties sysProperties;
+
     @Bean
     public MinioStoreService minioStoreService() {
         return new MinioStoreService(new MinioDirectRawHandler(minioClient(), minioProperties), md5Resolver);
@@ -36,7 +36,13 @@ public class MinioStoreAutoConfiguration {
 
     @Bean
     public StoreServiceProvider storeServiceProvider() {
-        return this::minioStoreService;
+        return () -> {
+            if (sysProperties.getStore().getMode() == StoreMode.RAW) {
+                return this.minioStoreService().getRawStoreService();
+            } else {
+                return this.minioStoreService().getUniqueStoreService();
+            }
+        };
     }
 
     @Bean
