@@ -65,7 +65,7 @@ sys:
     # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
     archive-encoding: gbk
 
-    # 存储服务类型，可选hdfs（需要hdfs拓展）或local
+    # 存储服务类型，可选local、minio（需要拓展）、hdfs（需要拓展）
     type: local
 
     # 各类资源根目录存储路径
