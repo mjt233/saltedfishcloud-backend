@@ -44,6 +44,7 @@ logging:
     org: warn
     com: warn
     com.xiaotao: debug
+    com.saltedfishcloud: debug
     com.xiaotao.saltedfishcloud.dao.mybatis: warn
 #    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
 app:
@@ -75,6 +76,18 @@ sys:
 
     # 存储模式，可选 raw - 原始存储 或 unique - 唯一存储
     mode: unique
+
+    # minio存储配置
+    minio:
+      access-key: xyy
+      secret-key: xyy123456
+      bucket: xyy
+
+    # hdfs存储配置
+    hdfs:
+      url: hdfs://localhost:9000
+      root: /xyy2
+      user: xiaotao
   ftp:
     # FTP控制端口
     control-port: 21

@@ -87,8 +87,20 @@ public class StringUtils {
         return getRandomString(len, true);
     }
 
-    public static String getURLLastName(String url) throws MalformedURLException {
-        return getURLLastName(new URL(url));
+    public static String getURLLastName(String url) {
+        String path = url;
+        if (path.endsWith("/")) {
+            path = path.substring(0, path.length() -1);
+        }
+        int i = path.lastIndexOf("/");
+        if (i == -1) {
+            if (path.length() > 0) {
+                return path;
+            } else {
+                return null;
+            }
+        }
+        return path.substring(i + 1);
     }
 
 
@@ -99,13 +111,7 @@ public class StringUtils {
      * @return      资源名称，若URL中
      */
     public static String getURLLastName(URL url) {
-        String path = url.getPath();
-        if (path.endsWith("/")) {
-            path = path.substring(0, path.length() -1);
-        }
-        int i = path.lastIndexOf("/");
-        if (i == -1) return null;
-        return path.substring(i + 1);
+        return getURLLastName(url.getPath());
     }
 
     /**

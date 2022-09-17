@@ -116,12 +116,8 @@ public class AsyncDownloadTaskImpl implements AsyncDownloadTask {
     public boolean start() {
         // 初始化任务信息
         taskInfo.url = url;
-        try {
-            taskInfo.name = StringUtils.getURLLastName(url);
-            log.debug("{}通过URL获取的默认文件名：{}", LOG_TITLE, taskInfo.name);
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException(e.getMessage());
-        }
+        taskInfo.name = StringUtils.getURLLastName(url);
+        log.debug("{}通过URL获取的默认文件名：{}", LOG_TITLE, taskInfo.name);
         HttpHeaders headers = new HttpHeaders();
         headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36");
         if(this.headers != null) {

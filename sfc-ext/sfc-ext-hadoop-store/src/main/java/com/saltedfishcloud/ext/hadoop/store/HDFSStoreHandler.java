@@ -45,7 +45,7 @@ public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandle
     }
 
     @Override
-    public long store(String path, InputStream inputStream) throws IOException {
+    public long store(String path, long size, InputStream inputStream) throws IOException {
         Path target = new Path(path);
         if (fs.exists(target)) {
             if (fs.getFileStatus(target).isDirectory()) {

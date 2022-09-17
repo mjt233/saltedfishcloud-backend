@@ -24,10 +24,11 @@ public interface StoreWriter {
     /**
      * 直接存储数据流为指定路径的文件
      * @param path          保存路径
+     * @param size          文件大小，-1为未知
      * @param inputStream   文件输入流
      * @return              保存的数据量大小（Byte）
      */
-    long store(String path, InputStream inputStream) throws IOException;
+    long store(String path, long size, InputStream inputStream) throws IOException;
 
     /**
      * 获取目标路径文件资源的输出流

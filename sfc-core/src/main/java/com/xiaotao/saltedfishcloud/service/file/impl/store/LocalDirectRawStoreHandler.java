@@ -101,7 +101,7 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
     }
 
     @Override
-    public long store(String path, InputStream inputStream) throws IOException {
+    public long store(String path, long size, InputStream inputStream) throws IOException {
         int cnt;
         final Path savePath = Paths.get(path);
         FileUtils.createParentDirectory(savePath);

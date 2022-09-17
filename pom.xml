@@ -23,7 +23,7 @@
         API或脚手架模块版本号仅使用数字加点（如：sfc-ext，sfc-api）
         功能组件或咸鱼云根模块需要使用RELEASE或SNAPSHOT后缀（如：sfc-core，sfc-ext-hadoop-store）
     -->
-    <version>1.9.4.0-RELEASE</version>
+    <version>1.10.0.0-SNAPSHOT</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
@@ -31,12 +31,17 @@
         <!--  前端项目路径，配置后在package时自动打包到webapp/static -->
 <!--        <sfc.front-end-path>C:\Users\xiaotao\code\saltedfishcloud-frontend</sfc.front-end-path>-->
         <java.version>11</java.version>
-        <api.version>1.5.1</api.version>
+        <api.version>1.6.0</api.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.9.3</version>
+        </dependency>
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>

@@ -5,13 +5,18 @@
     <parent>
         <artifactId>saltedfishcloud</artifactId>
         <groupId>com.xiaotao</groupId>
-        <version>1.9.4.0-RELEASE</version>
+        <version>1.10.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sfc-core</artifactId>
 
     <dependencies>
+<!--        <dependency>-->
+<!--            <groupId>com.xiaotao</groupId>-->
+<!--            <artifactId>sfc-ext-minio-store</artifactId>-->
+<!--            <version>1.0.0</version>-->
+<!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>com.xiaotao</groupId>-->
 <!--            <artifactId>sfc-ext-hadoop-store</artifactId>-->
@@ -25,7 +30,7 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-compress</artifactId>
-            <version>1.9.4.0-RELEASE</version>
+            <version>1.10.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

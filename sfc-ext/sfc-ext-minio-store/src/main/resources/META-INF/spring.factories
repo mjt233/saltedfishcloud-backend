@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.saltedfishcloud.ext.minio.MinIOStoreAutoConfiguration
+com.saltedfishcloud.ext.minio.MinioStoreAutoConfiguration
