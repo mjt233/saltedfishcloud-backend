@@ -16,15 +16,28 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 本地路径目录类加载器，用于将某个指定的目录作为一个类加载路径，解决UrlClassLoader无法从本地文件系统中读取资源的问题
+ */
 @Slf4j
 public class DirPathClassLoader extends ClassLoader {
     private final Path basePath;
-    private final Map<String, Class<?>> loadedClass = new ConcurrentHashMap<>();
+
+    /**
+     *
+     * @param path      作为类加载路径的本地文件系统目录路径
+     * @param parent    指定父加载器
+     */
     public DirPathClassLoader(Path path, ClassLoader parent) {
         super(parent);
         this.checkPath(path);
         this.basePath = path;
     }
+
+    /**
+     * 使用Bootstrap ClassLoader作为父加载器
+     * @param path  作为类加载路径的本地文件系统目录路径
+     */
     public DirPathClassLoader(Path path) {
         this(path, null);
     }
