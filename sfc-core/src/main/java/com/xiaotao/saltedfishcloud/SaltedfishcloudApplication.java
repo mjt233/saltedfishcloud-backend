@@ -73,16 +73,7 @@ public class SaltedfishcloudApplication {
     public static PluginManager initPlugin() throws IOException {
         // 准备插件
         PluginManager pluginManager = new DefaultPluginManager(SaltedfishcloudApplication.class.getClassLoader());
-        ClassLoader loader = pluginManager.getJarMergeClassLoader();
 
-        // 注册固定的内置插件信息
-        pluginManager.registerPluginResource(
-                "sys",
-                ExtUtils.getPluginInfo(loader, "plugin/sys"),
-                ExtUtils.getPluginConfigNodeFromLoader(loader, "plugin/sys"),
-                "plugin/sys",
-                loader
-        );
         Enumeration<URL> resources = PluginManager.class.getClassLoader().getResources(PluginManager.PLUGIN_INFO_FILE);
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
