@@ -60,7 +60,7 @@ public class SaltedfishcloudApplication {
             });
         });
 
-        String pluginLists = "[" + String.join("", pluginManager.getAllPlugin().keySet()) + "]";
+        String pluginLists = "[" + String.join(",", pluginManager.getAllPlugin().keySet()) + "]";
         log.info("[Boot]启动时加载的插件清单：{}", pluginLists);
         // 启动SpringBoot
         sa.run(args);
