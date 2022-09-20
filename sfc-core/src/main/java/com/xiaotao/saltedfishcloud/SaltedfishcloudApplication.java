@@ -1,8 +1,11 @@
 package com.xiaotao.saltedfishcloud;
 
 import com.xiaotao.saltedfishcloud.ext.DefaultPluginManager;
+import com.xiaotao.saltedfishcloud.ext.DirPathClassLoader;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
+import com.xiaotao.saltedfishcloud.utils.OSInfo;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
@@ -19,7 +22,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Paths;
+import java.util.Enumeration;
+import java.util.stream.Collectors;
 
 @SpringBootApplication(
         exclude= {DataSourceAutoConfiguration.class, GsonAutoConfiguration.class},
@@ -45,7 +51,6 @@ public class SaltedfishcloudApplication {
         // 加载插件
         PluginManager pluginManager = initPlugin();
         Thread.currentThread().setContextClassLoader(pluginManager.getJarMergeClassLoader());
-
         // 配置SpringBoot，注册插件管理器
         SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
         sa.addInitializers(context -> {
@@ -55,6 +60,8 @@ public class SaltedfishcloudApplication {
             });
         });
 
+        String pluginLists = "[" + String.join("", pluginManager.getAllPlugin().keySet()) + "]";
+        log.info("[Boot]启动时加载的插件清单：{}", pluginLists);
         // 启动SpringBoot
         sa.run(args);
 
@@ -76,8 +83,26 @@ public class SaltedfishcloudApplication {
                 "plugin/sys",
                 loader
         );
+        Enumeration<URL> resources = PluginManager.class.getClassLoader().getResources(PluginManager.PLUGIN_INFO_FILE);
+        while (resources.hasMoreElements()) {
+            URL url = resources.nextElement();
+            String classpath = PathUtils.getParentPath(url.toString());
+            log.info("[Boot]classpath中发现的插件：{}", classpath);
+            UrlResource resource = new UrlResource(classpath);
+            if ("file".equals(url.getProtocol()) && !classpath.endsWith(".jar")) {
+                String classpathRoot;
+                if (OSInfo.isWindows()) {
+                    classpathRoot = url.getPath().substring(1);
+                } else {
+                    classpathRoot = url.getPath();
+                }
+                pluginManager.register(resource, new DirPathClassLoader(Paths.get(classpathRoot).getParent()));
+            } else {
+                pluginManager.register(resource);
+            }
+        }
 
-        // 注册目录中的插件
+        // 注册目录中的jar包插件
         for (URL extUrl : ExtUtils.getExtUrls()) {
             pluginManager.register(new UrlResource(extUrl));
         }

@@ -13,12 +13,21 @@ import java.util.Map;
  * 拓展插件管理器
  */
 public interface PluginManager {
+    String PLUGIN_INFO_FILE = "plugin-info.json";
+    String CONFIG_PROPERTIES_FILE = "config-properties.json";
 
     /**
      * 注册插件
      * @param pluginResource 插件jar包资源
      */
     void register(Resource pluginResource) throws IOException;
+
+    /**
+     * 注册插件
+     * @param pluginResource    插件类路径资源
+     * @param classLoader       插件的类加载器
+     */
+    void register(Resource pluginResource, ClassLoader classLoader) throws IOException;
 
     /**
      * 注册插件的资源数据

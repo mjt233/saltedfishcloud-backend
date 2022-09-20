@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
+import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ExtUtils {
     private static final String EXTENSION_DIRECTORY = "ext";
-    public static final String PLUGIN_CONFIG_PROPERTIES_FILE = "config-properties.json";
-    public static final String PLUGIN_INFO_FILE = "plugin-info.json";
 
     /**
      * 获取拓展目录绝对路径
@@ -31,16 +30,20 @@ public class ExtUtils {
     }
 
     public static PluginInfo getPluginInfo(ClassLoader loader, String prefix) throws IOException {
-        String file = prefix == null ? PLUGIN_INFO_FILE : StringUtils.appendPath(prefix, PLUGIN_INFO_FILE);
+        String file = prefix == null ? PluginManager.PLUGIN_INFO_FILE : StringUtils.appendPath(prefix, PluginManager.PLUGIN_INFO_FILE);
         String infoJson = ExtUtils.getResourceText(loader, file);
         return MapperHolder.parseJson(infoJson, PluginInfo.class);
     }
 
+    /**
+     * 从类加载器中读取资源文件并返回该文件的文本内容
+     * @param loader    类加载器
+     * @param name      类资源名称
+     */
     public static String getResourceText(ClassLoader loader, String name) throws IOException {
         try(InputStream is = loader.getResourceAsStream(name)){
             if (is != null) {
-                String s = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-                return s;
+                return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
             }
         }
         Enumeration<URL> resources = loader.getResources(name);
@@ -65,7 +68,7 @@ public class ExtUtils {
      * @throws IOException  任何IO错误
      */
     public static List<ConfigNode> getPluginConfigNodeFromLoader(ClassLoader loader, String prefix) throws IOException {
-        String file = prefix == null ? PLUGIN_CONFIG_PROPERTIES_FILE : StringUtils.appendPath(prefix, PLUGIN_CONFIG_PROPERTIES_FILE);
+        String file = prefix == null ? PluginManager.CONFIG_PROPERTIES_FILE : StringUtils.appendPath(prefix, PluginManager.CONFIG_PROPERTIES_FILE);
         String json = ExtUtils.getResourceText(loader, file);
         if (!StringUtils.hasText(json)) {
             return Collections.emptyList();

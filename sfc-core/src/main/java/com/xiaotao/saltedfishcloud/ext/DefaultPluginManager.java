@@ -259,21 +259,24 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     @Override
-    public void register(Resource pluginResource) throws IOException {
+    public void register(Resource pluginResource, ClassLoader classLoader) throws IOException {
         URL pluginUrl = pluginResource.getURL();
-        URLClassLoader rawClassLoader = new URLClassLoader(new URL[]{pluginUrl}, null);
         PluginInfo pluginInfo;
         List<ConfigNode> configNodeGroups;
 
         try {
+            // 读取插件基本信息
             log.info("{}加载插件：{}",LOG_PREFIX, StringUtils.getURLLastName(pluginUrl));
-            pluginInfo  = getPluginInfoFromLoader(rawClassLoader);
-            configNodeGroups = getPluginConfigNodeFromLoader(rawClassLoader);
-            List<URL> pluginDependencies = getPluginDependencies(rawClassLoader);
+            pluginInfo  = getPluginInfoFromLoader(classLoader);
+
+            // 读取配置项
+            configNodeGroups = getPluginConfigNodeFromLoader(classLoader);
+
+            // 加载插件所需的外部依赖
+            List<URL> pluginDependencies = getPluginDependencies(classLoader);
             loadExtraDependencies(pluginDependencies, jarMergeClassLoader, pluginInfo.getName());
         } catch (JsonProcessingException e) {
             log.error("获取插件信息失败，请检查插件的plugin-info.json：{}", pluginUrl);
-            rawClassLoader.close();
             throw e;
         } catch (RuntimeException e) {
             log.error("{}插件 {} 加载失败", LOG_PREFIX, pluginResource.getURL());
@@ -289,8 +292,13 @@ public class DefaultPluginManager implements PluginManager {
 
         loader.loadFromUrl(pluginUrl);
         registerPluginResource(pluginInfo.getName(), pluginInfo, configNodeGroups, loader);
-        pluginRawLoaderMap.put(pluginInfo.getName(), rawClassLoader);
+        pluginRawLoaderMap.put(pluginInfo.getName(), classLoader);
+    }
 
+    @Override
+    public void register(Resource pluginResource) throws IOException {
+        URLClassLoader loader = new URLClassLoader(new URL[]{pluginResource.getURL()}, null);
+        register(pluginResource, loader);
     }
 
     protected List<ConfigNode> getPluginConfigNodeFromLoader(ClassLoader loader) throws IOException {
