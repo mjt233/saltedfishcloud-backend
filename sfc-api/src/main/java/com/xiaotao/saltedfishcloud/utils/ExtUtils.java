@@ -50,9 +50,7 @@ public class ExtUtils {
         if (resources.hasMoreElements()) {
             URL url = resources.nextElement();
             try( InputStream is = url.openStream()){
-                String s = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-                log.debug("通过getResources获取数据：{} -> {}", name, s);
-                return s;
+                return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
             }
         } else {
             return "";
