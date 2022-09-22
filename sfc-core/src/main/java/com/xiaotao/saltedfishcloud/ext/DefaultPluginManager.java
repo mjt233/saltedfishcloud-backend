@@ -202,7 +202,6 @@ public class DefaultPluginManager implements PluginManager {
      * @param name 插件名称
      */
     protected void loadExtraDependencies(List<URL> urls, PluginClassLoader loader, String name) throws IOException {
-        // TODO 直接从jar内读取依赖而不提取到硬盘
         String pluginUnpackPath = DEP_EXPLODE_PATH + "/" + name;
         Files.createDirectories(Paths.get(pluginUnpackPath));
 
@@ -288,7 +287,10 @@ public class DefaultPluginManager implements PluginManager {
 
             // 加载插件所需的外部依赖
             List<URL> pluginDependencies = getPluginDependencies(classLoader);
-            loadExtraDependencies(pluginDependencies, jarMergeClassLoader, pluginInfo.getName());
+            if (!pluginDependencies.isEmpty()) {
+                loadExtraDependencies(pluginDependencies, jarMergeClassLoader, pluginInfo.getName());
+            }
+
         } catch (JsonProcessingException e) {
             log.error("获取插件信息失败，请检查插件的plugin-info.json：{}", pluginUrl);
             throw e;
