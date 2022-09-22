@@ -50,6 +50,14 @@ logging:
 app:
   version: ^project.version^
 
+# 插件系统配置
+plugin:
+  # 额外加载的插件资源
+  extra-resource:
+#    - sfc-ext/sfc-ext-minio-store/target/classes
+#    - sfc-ext/sfc-ext-hadoop-store/target/classes
+    - sfc-ext/sfc-ext-mp3-thumbnail/target/classes
+    - sfc-ext/sfc-ext-demo/target/classes
 
 sys:
   common:

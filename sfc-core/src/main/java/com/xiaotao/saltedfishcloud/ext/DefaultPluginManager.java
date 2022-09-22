@@ -19,9 +19,7 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -165,16 +163,32 @@ public class DefaultPluginManager implements PluginManager {
         Enumeration<URL> resources = rawClassLoader.getResources("plugin-lib/");
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
-            if (!url.getProtocol().equals("jar")) {
-                continue;
-            }
-            JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
-            JarFile jarFile = jarURLConnection.getJarFile();
-            Enumeration<JarEntry> entries = jarFile.entries();
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                if (entry.getName().startsWith("plugin-lib/") && entry.getName().endsWith(".jar") && !entry.isDirectory()) {
-                    res.add(rawClassLoader.getResource(entry.getName()));
+
+            // 从jar包中获取url
+            if ("jar".equals(url.getProtocol())) {
+                JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
+                JarFile jarFile = jarURLConnection.getJarFile();
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().startsWith("plugin-lib/") && entry.getName().endsWith(".jar") && !entry.isDirectory()) {
+                        res.add(rawClassLoader.getResource(entry.getName()));
+                    }
+                }
+            } else if ("file".equals(url.getProtocol())) {
+                // 从本地文件中获取
+                try {
+                    Path path = Paths.get(url.toURI());
+                    res.addAll(Files.list(path).map(e -> {
+                        try {
+                            return e.toUri().toURL();
+                        } catch (MalformedURLException ex) {
+                            ex.printStackTrace();
+                            return null;
+                        }
+                    }).filter(Objects::nonNull).collect(Collectors.toList()));
+                } catch (URISyntaxException e) {
+                    e.printStackTrace();
                 }
             }
         }
