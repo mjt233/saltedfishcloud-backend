@@ -79,7 +79,7 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
         ClassLoader loader = PluginInitializer.class.getClassLoader();
         PluginInfo pluginInfo = MapperHolder.parseJson(ExtUtils.getResourceText(loader, buildInPath + "/" + PluginManager.PLUGIN_INFO_FILE), PluginInfo.class);
         List<ConfigNode> configNodes = MapperHolder.parseJsonToList(ExtUtils.getResourceText(loader, buildInPath + "/" + PluginManager.CONFIG_PROPERTIES_FILE), ConfigNode.class);
-        pluginManager.registerPluginResource("sys", pluginInfo, configNodes, buildInPath + "/static", loader);
+        pluginManager.registerPluginResource("sys", pluginInfo, configNodes, buildInPath, loader);
     }
 
     /**
