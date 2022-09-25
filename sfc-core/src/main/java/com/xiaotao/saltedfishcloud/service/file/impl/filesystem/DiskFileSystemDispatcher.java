@@ -6,7 +6,6 @@ import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -40,6 +39,9 @@ class FileSystemMatchResult {
     }
 }
 
+/**
+ * 特殊的文件系统，文件系统指派器，根据请求的路径指派相对应的文件系统类型来执行相关请求，为实现第三方文件系统挂载点功能提供支持。
+ */
 @Data
 @Slf4j
 public class DiskFileSystemDispatcher implements DiskFileSystem {
@@ -48,6 +50,12 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     private MountPointService mountPointService;
     private DiskFileSystemManager diskFileSystemManager;
 
+    /**
+     * 构造一个指派器
+     * @param mainFileSystem        主文件系统
+     * @param mountPointService     挂载点服务
+     * @param diskFileSystemManager 文件系统管理器
+     */
     public DiskFileSystemDispatcher(DiskFileSystem mainFileSystem, MountPointService mountPointService, DiskFileSystemManager diskFileSystemManager) {
         this.mainFileSystem = mainFileSystem;
         this.mountPointService = mountPointService;
@@ -149,7 +157,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
 
         FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
         FileSystemMatchResult targetMatchResult = matchFileSystem(targetUid, target);
-        if (sourceMatchResult.equals(targetMatchResult)) {
+        if (Objects.equals(sourceMatchResult.fileSystem, mainFileSystem) && Objects.equals(targetMatchResult.fileSystem, mainFileSystem)) {
             log.debug("{}相同文件系统内copy: {}/{} -> {}/{}", LOG_PREFIX, source, sourceName, target, targetName);
             sourceMatchResult.fileSystem.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
             return;
@@ -230,7 +238,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
         FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
         FileSystemMatchResult targetMatchResult = matchFileSystem(uid, target);
-        if (sourceMatchResult.equals(targetMatchResult)) {
+        if (Objects.equals(sourceMatchResult.fileSystem, mainFileSystem) && Objects.equals(targetMatchResult.fileSystem, mainFileSystem)) {
             sourceMatchResult.fileSystem.move(uid, source, target, name, overwrite);
             return;
         }

@@ -589,4 +589,9 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
         helloService.appendFeatureDetail("archiveType", "zip");
         helloService.appendFeatureDetail("extractArchiveType", "zip");
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj == this;
+    }
 }
