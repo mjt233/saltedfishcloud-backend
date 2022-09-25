@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.model.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
@@ -21,7 +21,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class ResourceService {
-    private final DiskFileSystemProvider fileSystemFactory;
+    private final DiskFileSystemManager fileSystemFactory;
     private static final Map<String, String> DIRECT_DOWNLOAD_HEADER = new HashMap<String, String>() {{
        put("Content-Type", FileUtils.getContentType("a.a"));
     }};
@@ -39,7 +39,7 @@ public class ResourceService {
         } catch (JsonProcessingException e) {
             throw new JsonException(400, "下载码无效");
         }
-        Resource resource = fileSystemFactory.getFileSystem().getResource(info.getUid(), info.getDir(), info.getName());
+        Resource resource = fileSystemFactory.getMainFileSystem().getResource(info.getUid(), info.getDir(), info.getName());
         if (directDownload) {
             return ResourceUtils.wrapResource(resource, info.getName(), DIRECT_DOWNLOAD_HEADER);
         } else {

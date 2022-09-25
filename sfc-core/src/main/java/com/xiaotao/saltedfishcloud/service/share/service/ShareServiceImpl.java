@@ -13,7 +13,7 @@ import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
@@ -46,7 +46,7 @@ public class ShareServiceImpl implements ShareService {
     private final FileDao fileDao;
     private final ShareRepo shareRepo;
     private final UserDao userDao;
-    private final DiskFileSystemProvider fileSystemFactory;
+    private final DiskFileSystemManager fileSystemFactory;
 
     @Autowired
     @Lazy
@@ -84,7 +84,7 @@ public class ShareServiceImpl implements ShareService {
         // 文件直接获取Resource
         String basePath = nodeService.getPathByNode(share.getUid(), share.getParentId());
         if (share.getType() == ShareType.FILE) {
-            return fileSystemFactory.getFileSystem().getResource(
+            return fileSystemFactory.getMainFileSystem().getResource(
                     share.getUid(),
                     basePath,
                     share.getName()
@@ -93,7 +93,7 @@ public class ShareServiceImpl implements ShareService {
         String fullPath = PathBuilder.formatPath(basePath + "/" + share.getName() + "/" + extractor.getPath(), true);
         if (!FileNameValidator.valid(extractor.getName())) throw new IllegalArgumentException("无效文件名");
         if (!fullPath.startsWith(basePath)) throw new IllegalArgumentException("无效路径");
-        return fileSystemFactory.getFileSystem().getResource(
+        return fileSystemFactory.getMainFileSystem().getResource(
                 share.getUid(),
                 fullPath,
                 URLDecoder.decode(extractor.getName(), "UTF-8")
@@ -125,7 +125,7 @@ public class ShareServiceImpl implements ShareService {
 
 
         try {
-            return fileSystemFactory.getFileSystem().getUserFileList(share.getUid(), fullPath);
+            return fileSystemFactory.getMainFileSystem().getUserFileList(share.getUid(), fullPath);
         } catch (NoSuchFileException e) { throw new JsonException(FileSystemError.NODE_NOT_FOUND); }
     }
 

@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file.filesystem;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -20,14 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @RequiredArgsConstructor
 class LocalDiskFileSystemTest {
     @Autowired
-    private DiskFileSystemProvider factory;
+    private DiskFileSystemManager factory;
     @Autowired
     private UserService userService;
 
     @Test
     public void testExtract() throws IOException {
         User admin = userService.getUserByUser("admin");
-        DiskFileSystem fileSystem = factory.getFileSystem();
+        DiskFileSystem fileSystem = factory.getMainFileSystem();
         ClassPathResource resource = new ClassPathResource("/test/test.zip");
         String md5 = DigestUtils.md5DigestAsHex(resource.getInputStream());
 

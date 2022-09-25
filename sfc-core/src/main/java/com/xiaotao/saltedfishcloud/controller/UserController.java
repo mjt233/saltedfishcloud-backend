@@ -13,7 +13,7 @@ import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MultipartFileResource;
@@ -55,7 +55,7 @@ public class UserController {
     public static final String PREFIX = "/api/user";
 
     private final UserService userService;
-    private final DiskFileSystemProvider fileSystemFactory;
+    private final DiskFileSystemManager fileSystemFactory;
     private final UserDao userDao;
     private final TokenServiceImpl tokenDao;
     private final SysRuntimeConfig runtimeConfig;
@@ -222,7 +222,7 @@ public class UserController {
      */
     @PostMapping("avatar")
     public JsonResult uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
-        fileSystemFactory.getFileSystem().saveAvatar(
+        fileSystemFactory.getMainFileSystem().saveAvatar(
                 SecureUtils.getSpringSecurityUser().getId(),
                 new MultipartFileResource(file)
         );
@@ -246,13 +246,13 @@ public class UserController {
             return null;
         }
         if (username == null) {
-            return ResourceUtils.wrapResource(fileSystemFactory.getFileSystem().getAvatar(currentUser.getId()));
+            return ResourceUtils.wrapResource(fileSystemFactory.getMainFileSystem().getAvatar(currentUser.getId()));
         } else {
             User user = userService.getUserByUser(username);
             if (user == null) {
                 throw new JsonException(AccountError.USER_NOT_EXIST);
             } else {
-                return ResourceUtils.wrapResource(fileSystemFactory.getFileSystem().getAvatar(user.getId()));
+                return ResourceUtils.wrapResource(fileSystemFactory.getMainFileSystem().getAvatar(user.getId()));
             }
         }
     }

@@ -21,7 +21,6 @@ import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -43,13 +42,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.zip.ZipException;
 
-@RequiredArgsConstructor
 @Slf4j
 public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, FeatureProvider {
     private final static String LOG_TITLE = "FileSystem";
 
     @Autowired
-    private StoreServiceProvider storeServiceProvider;
+    private StoreServiceFactory storeServiceFactory;
 
     @Autowired
     private FileDao fileDao;
@@ -332,7 +330,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
 
     @Override
     public Resource getResource(int uid, String path, String name) throws IOException {
-        return storeServiceProvider.getService().getResource(uid, path, name);
+        return storeServiceFactory.getService().getResource(uid, path, name);
     }
 
     @Override
@@ -349,7 +347,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
             throw new UnsupportedOperationException("已存在同名文件：" + path);
         }
         String nid = fileRecordService.mkdirs(uid, path);
-        final StoreService storeService = storeServiceProvider.getService();
+        final StoreService storeService = storeServiceFactory.getService();
         if (!storeService.isUnique()) {
             storeService.mkdir(uid, path, "");
         }
@@ -374,7 +372,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
         try {
             lock.lock();
             fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
-            final StoreService service = storeServiceProvider.getService();
+            final StoreService service = storeServiceFactory.getService();
             if (!service.isUnique()) {
                 service.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
             }
@@ -391,7 +389,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
             lock.lock();
             target = URLDecoder.decode(target, "UTF-8");
             fileRecordService.move(uid, source, target, name, overwrite);
-            final StoreService storeService = storeServiceProvider.getService();
+            final StoreService storeService = storeServiceFactory.getService();
             if (!storeService.isUnique()) {
                 storeService.move(uid, source, target, name, overwrite);
             }
@@ -456,7 +454,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
         RLock lock = redisson.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
         try {
             lock.lock();
-            storeServiceProvider.getService().moveToSave(uid, nativeFilePath, path, fileInfo);
+            storeServiceFactory.getService().moveToSave(uid, nativeFilePath, path, fileInfo);
             int res = fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), path);
             if ( res == 0) {
                 fileRecordService.updateFileRecord(uid, fileInfo.getName(), path, fileInfo.getSize(), fileInfo.getMd5());
@@ -514,7 +512,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
                 }
                 exist = true;
             }
-            storeServiceProvider.getService().store(uid, file, path, fileInfo);
+            storeServiceFactory.getService().store(uid, file, path, fileInfo);
             fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid);
             return exist ? SAVE_COVER : SAVE_NEW_FILE;
         } finally {
@@ -525,7 +523,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void mkdir(int uid, String path, String name) throws IOException {
-        final StoreService storeService = storeServiceProvider.getService();
+        final StoreService storeService = storeServiceFactory.getService();
         if ( !storeService.isUnique() && !storeService.mkdir(uid, path, name) ) {
             throw new IOException("在" + path + "创建文件夹失败");
         }
@@ -545,7 +543,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
             // 计数删除数
             long res = 0L;
             List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
-            final StoreService storeService = storeServiceProvider.getService();
+            final StoreService storeService = storeServiceFactory.getService();
 
             // 唯一存储下确认文件无引用后再执行通过md5删除
             if (storeService.isUnique()) {
@@ -576,7 +574,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
         lock2.lock();
         try {
             fileRecordService.rename(uid, path, name, newName);
-            final StoreService storeService = storeServiceProvider.getService();
+            final StoreService storeService = storeServiceFactory.getService();
             if (!storeService.isUnique()) {
                 storeService.rename(uid, path, name, newName);
             }

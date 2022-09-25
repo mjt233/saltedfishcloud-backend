@@ -36,6 +36,7 @@ public class RedisConfig {
                 Objects.requireNonNull(redisTemplate().getConnectionFactory()))
                 .cacheDefaults(getCacheConfig())
                 .withCacheConfiguration("path", getCacheConfig().entryTtl(Duration.ofHours(12)))
+                .withCacheConfiguration("default", getCacheConfig().entryTtl(Duration.ofHours(6)))
                 .build();
     }
 

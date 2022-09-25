@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,13 +20,13 @@ class NodeTreeTest {
     @Resource
     private NodeService nodeService;
     @Resource
-    private DiskFileSystemProvider fileService;
+    private DiskFileSystemManager fileService;
 
     @Test
     public void testGetNode() throws IOException {
         String targetPath = "/nodetest/folder2/deepfolder";
 
-        DiskFileSystem fileService = this.fileService.getFileSystem();
+        DiskFileSystem fileService = this.fileService.getMainFileSystem();
         // 初始化环境
         fileService.mkdir(0, "/", "nodetest");
         fileService.mkdir(0, "/nodetest", "folder2");

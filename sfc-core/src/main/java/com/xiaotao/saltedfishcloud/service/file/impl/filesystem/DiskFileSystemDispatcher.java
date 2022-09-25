@@ -1,0 +1,297 @@
+package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
+
+import com.xiaotao.saltedfishcloud.enums.ArchiveType;
+import com.xiaotao.saltedfishcloud.model.po.MountPoint;
+import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
+import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
+
+class FileSystemMatchResult {
+    DiskFileSystem fileSystem;
+    String resolvedPath;
+
+    public FileSystemMatchResult(DiskFileSystem fileSystem, String resolvedPath) {
+        this.fileSystem = fileSystem;
+        this.resolvedPath = resolvedPath;
+    }
+
+    @Override
+    public String toString() {
+        return "FileSystemMatchResult{" +
+                "fileSystem=" + fileSystem +
+                ", resolvedPath='" + resolvedPath + '\'' +
+                '}';
+    }
+}
+
+@Data
+@Slf4j
+public class DiskFileSystemDispatcher implements DiskFileSystem {
+    private final static String LOG_PREFIX = "[FileSystemDispatcher]";
+    private DiskFileSystem mainFileSystem;
+    private MountPointService mountPointService;
+    private DiskFileSystemManager diskFileSystemManager;
+
+    public DiskFileSystemDispatcher(DiskFileSystem mainFileSystem, MountPointService mountPointService, DiskFileSystemManager diskFileSystemManager) {
+        this.mainFileSystem = mainFileSystem;
+        this.mountPointService = mountPointService;
+        this.diskFileSystemManager = diskFileSystemManager;
+    }
+
+    protected MountPoint matchMountPoint(int uid, String path) {
+        Map<String, MountPoint> mountPointMap = mountPointService.findMountPointPathByUid(uid);
+        return mountPointMap.entrySet().stream()
+                .filter(e -> path.startsWith(e.getKey()))
+                .findAny()
+                .map(Map.Entry::getValue)
+                .orElse(null);
+    }
+
+    protected FileSystemMatchResult matchFileSystem(int uid, String path) {
+        MountPoint mountPoint = matchMountPoint(uid, path);
+        if (mountPoint == null) {
+            return new FileSystemMatchResult(mainFileSystem, path);
+        } else {
+            try {
+                Map<String, Object> map = MapperHolder.parseJsonToMap(mountPoint.getParams());
+                DiskFileSystem fileSystem = diskFileSystemManager.getFileSystem(mountPoint.getProtocol(), map);
+                return new FileSystemMatchResult(fileSystem, resolvePath(mountPoint.getPath(), path));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+
+    protected String resolvePath(String mountPath, String requestPath) {
+        return requestPath.substring(mountPath.length() - 1);
+    }
+
+    @Override
+    public Resource getAvatar(int uid) throws IOException {
+        return mainFileSystem.getAvatar(uid);
+    }
+
+    @Override
+    public void saveAvatar(int uid, Resource resource) throws IOException {
+        mainFileSystem.saveAvatar(uid, resource);
+    }
+
+    @Override
+    public boolean quickSave(int uid, String path, String name, String md5) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        return matchResult.fileSystem.quickSave(uid, matchResult.resolvedPath, name, md5);
+    }
+
+    @Override
+    public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        matchResult.fileSystem.compressAndWriteOut(uid, matchResult.resolvedPath, names, type, outputStream);
+    }
+
+    @Override
+    public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        matchResult.fileSystem.compress(uid, matchResult.resolvedPath, names, dest, type);
+    }
+
+    @Override
+    public void extractArchive(int uid, String path, String name, String dest) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        matchResult.fileSystem.extractArchive(uid, matchResult.resolvedPath, name, dest);
+    }
+
+    @Override
+    public boolean exist(int uid, String path) {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        return matchResult.fileSystem.exist(uid, matchResult.resolvedPath);
+    }
+
+    @Override
+    public Resource getResource(int uid, String path, String name) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        return matchResult.fileSystem.getResource(uid, matchResult.resolvedPath, name);
+    }
+
+    @Override
+    public String mkdirs(int uid, String path) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        return matchResult.fileSystem.mkdirs(uid, matchResult.resolvedPath);
+    }
+
+    @Override
+    public Resource getResourceByMd5(String md5) throws IOException {
+        return mainFileSystem.getResourceByMd5(md5);
+    }
+
+    private void doCopy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite, int depth) throws IOException {
+        log.debug("{}执行复制：{}/{} -> {}/{}", LOG_PREFIX, source, sourceName, target, targetName);
+        if (depth >= 64) {
+            throw new IOException("目录嵌套层数过大！（不能大于64）");
+        }
+
+
+        FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
+        FileSystemMatchResult targetMatchResult = matchFileSystem(targetUid, target);
+        if (sourceMatchResult.equals(targetMatchResult)) {
+            log.debug("{}相同文件系统内copy: {}/{} -> {}/{}", LOG_PREFIX, source, sourceName, target, targetName);
+            sourceMatchResult.fileSystem.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+            return;
+        }
+
+        log.debug("{}不同文件系统间copy: {}/{} -> {}/{}，文件系统：{} -> {}", LOG_PREFIX, source, sourceName, target, targetName, sourceMatchResult, targetMatchResult);
+
+        Resource sourceResource = sourceMatchResult.fileSystem.getResource(uid, sourceMatchResult.resolvedPath, sourceName);
+        if (sourceResource != null) {
+            List<FileInfo>[] userFileList = sourceMatchResult.fileSystem.getUserFileList(uid, sourceMatchResult.resolvedPath);
+            FileInfo fileInfo = Optional.ofNullable(userFileList[1])
+                    .orElseThrow(() -> new IOException(source + " 下获取不到文件列表"))
+                    .stream()
+                    .filter(e -> e.getName().equals(sourceName))
+                    .findAny()
+                    .orElseThrow(() -> new IOException(source + "/" + sourceName + " 不存在"));
+
+            targetMatchResult.fileSystem.saveFile(targetUid, sourceResource.getInputStream(), targetMatchResult.resolvedPath, fileInfo);
+            return;
+        }
+        String resolvedSourcePath = StringUtils.appendPath(sourceMatchResult.resolvedPath, sourceName);
+        String resolvedTargetPath = StringUtils.appendPath(targetMatchResult.resolvedPath, targetName);
+        if(!targetMatchResult.fileSystem.exist(targetUid, resolvedTargetPath)) {
+            targetMatchResult.fileSystem.mkdir(targetUid, targetMatchResult.resolvedPath, targetName);
+        }
+        List<FileInfo>[] sourceFileList = sourceMatchResult.fileSystem.getUserFileList(uid, resolvedSourcePath);
+        List<FileInfo> fileList = sourceFileList[1];
+        // 先复制文件
+        if (fileList != null) {
+            for (FileInfo fileInfo : fileList) {
+                Resource resource = sourceMatchResult.fileSystem.getResource(uid, resolvedSourcePath, fileInfo.getName());
+                try(InputStream inputStream = resource.getInputStream()) {
+                    targetMatchResult.fileSystem.saveFile(targetUid, inputStream, resolvedTargetPath, fileInfo);
+                }
+            }
+        }
+
+        // 再复制目录
+        List<FileInfo> dirList = sourceFileList[0];
+        if (dirList != null) {
+
+            List<FileInfo>[] targetList = targetMatchResult.fileSystem.getUserFileList(targetUid, resolvedTargetPath);
+            List<FileInfo> targetFileList = targetList[0];
+            List<FileInfo> targetDirList = targetList[1];
+            Set<String> existDir;
+            Set<String> existFile;
+            if (targetDirList != null) {
+                existDir = targetDirList.stream().map(BasicFileInfo::getName).collect(Collectors.toSet());
+            } else {
+                existDir = Collections.emptySet();
+            }
+
+            if (targetFileList != null) {
+                existFile = targetFileList.stream().map(BasicFileInfo::getName).collect(Collectors.toSet());
+            } else {
+                existFile = Collections.emptySet();
+            }
+
+            for (FileInfo fileInfo : dirList) {
+                if (!existDir.contains(fileInfo.getName())) {
+                    if (existFile.contains(fileInfo.getName())) {
+                        log.warn("{}复制目标路径已存在同名文件：{}/{}", LOG_PREFIX, resolvedTargetPath, fileInfo.getName());
+                        continue;
+                    }
+                    targetMatchResult.fileSystem.mkdir(targetUid, resolvedTargetPath, fileInfo.getName());
+                }
+                doCopy(uid, StringUtils.appendPath(source, sourceName), StringUtils.appendPath(target, targetName), targetUid, fileInfo.getName(), fileInfo.getName(), overwrite, ++depth);
+            }
+        }
+    }
+
+    @Override
+    public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
+        doCopy(uid, source, target, targetUid, sourceName, targetName, overwrite, 0);
+    }
+
+    @Override
+    public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
+        FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
+        FileSystemMatchResult targetMatchResult = matchFileSystem(uid, target);
+        if (sourceMatchResult.equals(targetMatchResult)) {
+            sourceMatchResult.fileSystem.move(uid, source, target, name, overwrite);
+            return;
+        }
+        copy(uid, source, target, uid, name, name, true);
+        deleteFile(uid, source, Collections.singletonList(name));
+    }
+
+    @Override
+    public List<FileInfo>[] getUserFileList(int uid, String path) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        return matchResult.fileSystem.getUserFileList(uid, matchResult.resolvedPath);
+    }
+
+    @Override
+    public LinkedHashMap<String, List<FileInfo>> collectFiles(int uid, boolean reverse) {
+        return mainFileSystem.collectFiles(uid, reverse);
+    }
+
+    @Override
+    public List<FileInfo>[] getUserFileListByNodeId(int uid, String nodeId) {
+        return mainFileSystem.getUserFileListByNodeId(uid, nodeId);
+    }
+
+    @Override
+    public List<FileInfo> search(int uid, String key) {
+        return mainFileSystem.search(uid, key);
+    }
+
+    @Override
+    public void moveToSaveFile(int uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        matchResult.fileSystem.moveToSaveFile(uid, nativeFilePath, matchResult.resolvedPath, fileInfo);
+    }
+
+    @Override
+    public int saveFile(int uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        return matchResult.fileSystem.saveFile(uid, stream, path, fileInfo);
+    }
+
+    @Override
+    public int saveFile(int uid, MultipartFile file, String requestPath, String md5) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, requestPath);
+        return matchResult.fileSystem.saveFile(uid, file, matchResult.resolvedPath, md5);
+    }
+
+    @Override
+    public void mkdir(int uid, String path, String name) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        matchResult.fileSystem.mkdir(uid, matchResult.resolvedPath, name);
+    }
+
+    @Override
+    public long deleteFile(int uid, String path, List<String> name) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        return matchResult.fileSystem.deleteFile(uid, matchResult.resolvedPath, name);
+    }
+
+    @Override
+    public void rename(int uid, String path, String name, String newName) throws IOException {
+        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        matchResult.fileSystem.rename(uid, matchResult.resolvedPath, name, newName);
+    }
+}

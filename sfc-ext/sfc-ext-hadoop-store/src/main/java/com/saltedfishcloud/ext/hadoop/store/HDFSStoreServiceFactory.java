@@ -1,13 +1,13 @@
 package com.saltedfishcloud.ext.hadoop.store;
 
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
-public class HDFSStoreServiceProvider implements StoreServiceProvider, InitializingBean {
+public class HDFSStoreServiceFactory implements StoreServiceFactory, InitializingBean {
     @Autowired
     private HDFSStoreService HDFSStoreService;
 

@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class DiskFtpFile implements FtpFile {
     private final FtpPathInfo pathInfo;
     private final DiskFtpUser user;
-    private final DiskFileSystemProvider fileService;
+    private final DiskFileSystemManager fileService;
     private Resource fileResource;
     private final int resourceUid;
 
@@ -40,7 +40,7 @@ public class DiskFtpFile implements FtpFile {
      * @param path  请求的FTP路径
      * @param user  FTP用户
      */
-    public DiskFtpFile(String path, DiskFtpUser user, DiskFileSystemProvider fileService) {
+    public DiskFtpFile(String path, DiskFtpUser user, DiskFileSystemManager fileService) {
         this.user = user;
         pathInfo = new FtpPathInfo(path);
         this.fileService = fileService;
@@ -50,7 +50,7 @@ public class DiskFtpFile implements FtpFile {
             return;
         }
         try {
-            fileResource = fileService.getFileSystem().getResource(resourceUid, pathInfo.getResourceParent(), pathInfo.getName());
+            fileResource = fileService.getMainFileSystem().getResource(resourceUid, pathInfo.getResourceParent(), pathInfo.getName());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -75,7 +75,7 @@ public class DiskFtpFile implements FtpFile {
         if (pathInfo.isFtpRoot() || pathInfo.isResourceRoot() || fileResource == null) {
             return true;
         } else {
-            return fileService.getFileSystem().exist(resourceUid, pathInfo.getResourcePath()) && fileResource == null;
+            return fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath()) && fileResource == null;
         }
     }
 
@@ -86,7 +86,7 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean doesExist() {
-        return isRoot || fileService.getFileSystem().exist(resourceUid, pathInfo.getResourcePath());
+        return isRoot || fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath());
     }
 
     @Override
@@ -178,7 +178,7 @@ public class DiskFtpFile implements FtpFile {
         PathBuilder pb = new PathBuilder();
         pb.append(pathInfo.getResourcePath());
         try {
-            fileService.getFileSystem().mkdir(
+            fileService.getMainFileSystem().mkdir(
                     resourceUid,
                     new PathBuilder().append(pathInfo.getResourcePath()).range(-1),
                     pathInfo.getName()
@@ -193,7 +193,7 @@ public class DiskFtpFile implements FtpFile {
     @Override
     public boolean delete() {
         try {
-            fileService.getFileSystem().deleteFile(
+            fileService.getMainFileSystem().deleteFile(
                     resourceUid,
                     (new PathBuilder()).append(pathInfo.getResourcePath()).range(-1),
                     Collections.singletonList(pathInfo.getName())
@@ -221,10 +221,10 @@ public class DiskFtpFile implements FtpFile {
         try {
             // 资源路径相同表示重命名
             if (pathInfo.getResourceParent().equals(this.pathInfo.getResourceParent()) ) {
-                fileService.getFileSystem().rename(resourceUid, pathInfo.getResourceParent(), this.pathInfo.getName(), destination.getName());
+                fileService.getMainFileSystem().rename(resourceUid, pathInfo.getResourceParent(), this.pathInfo.getName(), destination.getName());
                 return true;
             } else {
-                fileService.getFileSystem().move(resourceUid, this.pathInfo.getResourceParent(), pathInfo.getResourceParent(), destination.getName(), true);
+                fileService.getMainFileSystem().move(resourceUid, this.pathInfo.getResourceParent(), pathInfo.getResourceParent(), destination.getName(), true);
                 return true;
             }
         } catch (IOException e) {
@@ -245,7 +245,7 @@ public class DiskFtpFile implements FtpFile {
         }
 
         try {
-            List<FileInfo>[] userFileList = fileService.getFileSystem().getUserFileList(resourceUid, pathInfo.getResourcePath());
+            List<FileInfo>[] userFileList = fileService.getMainFileSystem().getUserFileList(resourceUid, pathInfo.getResourcePath());
             if (userFileList == null) {
                 return Collections.emptyList();
             }
@@ -268,7 +268,7 @@ public class DiskFtpFile implements FtpFile {
     public OutputStream createOutputStream(long offset) throws IOException {
         log.debug("create output stream");
         if (doesExist()) {
-            fileService.getFileSystem().deleteFile(
+            fileService.getMainFileSystem().deleteFile(
                     resourceUid,
                     pathInfo.getResourceParent(),
                     Collections.singletonList(pathInfo.getName())

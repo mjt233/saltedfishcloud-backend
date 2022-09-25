@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
@@ -14,12 +13,9 @@ import java.nio.file.NoSuchFileException;
 public class FileResourceMd5ResolverImpl implements FileResourceMd5Resolver {
     private final FileRecordService fileRecordService;
 
-    /**
-     * @TODO 循环依赖了
-     */
     @Autowired
     @Lazy
-    private DiskFileSystemProvider fileSystemProvider;
+    private DiskFileSystemManager fileSystemProvider;
 
     public FileResourceMd5ResolverImpl(FileRecordService fileRecordService) {
         this.fileRecordService = fileRecordService;
@@ -42,6 +38,6 @@ public class FileResourceMd5ResolverImpl implements FileResourceMd5Resolver {
 
     @Override
     public Resource getResourceByMd5(String md5) throws IOException {
-        return fileSystemProvider.getFileSystem().getResourceByMd5(md5);
+        return fileSystemProvider.getMainFileSystem().getResourceByMd5(md5);
     }
 }

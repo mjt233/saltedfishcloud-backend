@@ -7,17 +7,16 @@ import lombok.NoArgsConstructor;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.security.core.parameters.P;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.Date;
 
-/**
- * @TODO 本地文件，网盘文件，临时文件，数据库文件记录混合使用，需单独拆分
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
@@ -68,7 +67,9 @@ public class FileInfo extends BasicFileInfo{
      */
     public static FileInfo getLocal(String path) {
         try {
-            return getLocal(path, true);
+            FileInfo fileInfo = getLocal(path, true);
+            fileInfo.streamSource = new PathResource(Paths.get(path));
+            return fileInfo;
         } catch (IOException e) {
             e.printStackTrace();
             return null;

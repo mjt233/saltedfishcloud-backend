@@ -5,9 +5,9 @@ import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -28,14 +28,14 @@ public class StoreTypeSwitch {
     @Autowired
     private UserDao userDao;
     @Autowired
-    private StoreServiceProvider storeServiceProvider;
+    private StoreServiceFactory storeServiceFactory;
 
     @Autowired
-    private DiskFileSystemProvider fileService;
+    private DiskFileSystemManager fileService;
 
     public void switchTo(StoreMode targetType) throws IOException {
 //        throw new UnsupportedOperationException("未开发完成");
-        final DiskFileSystem fileSystem = fileService.getFileSystem();
+        final DiskFileSystem fileSystem = fileService.getMainFileSystem();
 
         if (!(fileSystem instanceof DefaultFileSystem)) {
             throw new UnsupportedOperationException("当前文件系统或存储服务不支持切换");
@@ -51,17 +51,17 @@ public class StoreTypeSwitch {
         users.add(User.getPublicUser());
 
         final StoreService srcStoreService = targetMode == StoreMode.UNIQUE ?
-                storeServiceProvider.getService().getRawStoreService() :
-                storeServiceProvider.getService().getUniqueStoreService();
+                storeServiceFactory.getService().getRawStoreService() :
+                storeServiceFactory.getService().getUniqueStoreService();
 
         final StoreService destStoreService = targetMode == StoreMode.UNIQUE ?
-                storeServiceProvider.getService().getUniqueStoreService() :
-                storeServiceProvider.getService().getRawStoreService();
+                storeServiceFactory.getService().getUniqueStoreService() :
+                storeServiceFactory.getService().getRawStoreService();
 
         for (User user : users) {
             int uid = user.getId();
             log.debug("[Store Switch]处理用户：{}", user.getUsername());
-            LinkedHashMap<String, List<FileInfo>> allFile = fileService.getFileSystem().collectFiles(user.getId(), false);
+            LinkedHashMap<String, List<FileInfo>> allFile = fileService.getMainFileSystem().collectFiles(user.getId(), false);
 
             //  文件迁移
             for (Map.Entry<String, List<FileInfo>> entry : allFile.entrySet()) {

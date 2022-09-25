@@ -11,9 +11,11 @@ import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
@@ -37,6 +39,7 @@ import java.util.stream.Stream;
  * 默认的插件管理器
  */
 @Slf4j
+//@Component
 public class DefaultPluginManager implements PluginManager {
 
     private final static String LOG_PREFIX = "[插件系统]";
@@ -63,6 +66,9 @@ public class DefaultPluginManager implements PluginManager {
     @Getter
     private final ClassLoader masterLoader;
 
+    public DefaultPluginManager() {
+        this(DefaultPluginManager.class.getClassLoader());
+    }
 
     public DefaultPluginManager(ClassLoader masterLoader) {
         this.masterLoader = masterLoader;

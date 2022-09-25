@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.thumbnail;
 
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
@@ -32,7 +32,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     private final static String LOG_TITLE = "[Thumbnail]";
     private final Map<String, ThumbnailHandler> handlerCache = new ConcurrentHashMap<>();
 
-    private final StoreServiceProvider storeServiceProvider;
+    private final StoreServiceFactory storeServiceFactory;
     private final FileResourceMd5Resolver md5Resolver;
     private final RedissonClient redisson;
 
@@ -67,7 +67,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
         try {
             final Resource originResource = md5Resolver.getResourceByMd5(md5);
-            final TempStoreService tempHandler = storeServiceProvider.getService().getTempFileHandler();
+            final TempStoreService tempHandler = storeServiceFactory.getService().getTempFileHandler();
             final String thumbnailPath = getThumbnailTempPath(md5);
             if (originResource == null || originResource.contentLength() == 0 || originResource.contentLength() > ByteSize._1MiB * 128) {
                 return null;
@@ -103,7 +103,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
      */
     protected Resource getFromExist(String md5) throws IOException {
         final String thumbnailPath = getThumbnailTempPath(md5);
-        final TempStoreService tempHandler = storeServiceProvider.getService().getTempFileHandler();
+        final TempStoreService tempHandler = storeServiceFactory.getService().getTempFileHandler();
         final Resource resource = tempHandler.getResource(thumbnailPath);
         if (resource != null) {
             log.debug("{}已有缩略图：{}", LOG_TITLE, md5);

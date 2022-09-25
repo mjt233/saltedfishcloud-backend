@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.http.ResourceService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -38,7 +38,7 @@ import java.nio.file.NoSuchFileException;
 @RequiredArgsConstructor
 public class ResourceController {
     public static final String PREFIX = "/api/resource/";
-    private final DiskFileSystemProvider fileService;
+    private final DiskFileSystemManager fileService;
     private final NodeService nodeService;
     private final ResourceService resourceService;
     private final ThumbnailService thumbnailService;
@@ -88,7 +88,7 @@ public class ResourceController {
                              @RequestParam(value = "expr", defaultValue = "1") int expr) throws IOException {
         String filePath = URLUtils.getRequestFilePath(PREFIX + uid + "/FDC", request);
         BasicFileInfo fileInfo = new BasicFileInfo(name, md5);
-        String dc = fileService.getFileSystem().getFileDC(uid, filePath, fileInfo, expr);
+        String dc = fileService.getMainFileSystem().getFileDC(uid, filePath, fileInfo, expr);
         return JsonResultImpl.getInstance(dc);
     }
 
@@ -121,7 +121,7 @@ public class ResourceController {
             HttpServletRequest request
     )
             throws IOException {
-        Resource resource = fileService.getFileSystem().getResourceByMd5(md5);
+        Resource resource = fileService.getMainFileSystem().getResourceByMd5(md5);
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/fileContentByMD5/" + md5, request);
         String name;
         if (path.length() > 1) {

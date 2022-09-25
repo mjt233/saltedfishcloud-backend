@@ -4,7 +4,7 @@ import com.saltedfishcloud.ext.minio.utils.MinioUtils;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
@@ -35,7 +35,7 @@ public class MinioStoreAutoConfiguration {
     }
 
     @Bean
-    public StoreServiceProvider storeServiceProvider() {
+    public StoreServiceFactory storeServiceProvider() {
         return () -> {
             if (sysProperties.getStore().getMode() == StoreMode.RAW) {
                 return this.minioStoreService().getRawStoreService();

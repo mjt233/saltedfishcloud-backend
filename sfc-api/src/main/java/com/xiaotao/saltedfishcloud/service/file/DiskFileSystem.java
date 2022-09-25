@@ -192,7 +192,7 @@ public interface DiskFileSystem {
     /**
      * 保存数据流的数据到网盘系统中
      * @param uid         用户ID 0表示公共
-     * @param stream      要保存的数据流
+     * @param stream      要保存的数据流，方法内无需处理数据流的关闭
      * @param path        文件要保存到的网盘目录
      * @param fileInfo    文件信息
      * @throws IOException 文件写入失败时抛出

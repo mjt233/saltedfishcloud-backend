@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.Map;
 
 public class MapperHolder {
     public static final ObjectMapper mapper = new ObjectMapper();
@@ -21,5 +22,9 @@ public class MapperHolder {
 
     public static <T> List<T> parseJsonToList(String json, Class<T> elementType) throws JsonProcessingException {
         return mapper.readValue(json, mapper.getTypeFactory().constructCollectionType(List.class, elementType));
+    }
+
+    public static Map<String, Object> parseJsonToMap(String json) throws JsonProcessingException {
+        return mapper.readValue(json, mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
     }
 }
