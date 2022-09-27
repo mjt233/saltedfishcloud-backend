@@ -40,7 +40,7 @@ public class MountPointServiceImpl implements MountPointService {
             @CacheEvict(cacheNames = CACHE_NAME, key = "'mp_' + #mountPoint.uid"),
             @CacheEvict(cacheNames = CACHE_NAME, key = "'full_mp_' + #mountPoint.uid")
     })
-    public void addMountPoint(MountPoint mountPoint) {
+    public void saveMountPoint(MountPoint mountPoint) {
         String protocol = mountPoint.getProtocol();
         if(fileSystemManager.isSupportedProtocol(protocol)) {
             throw new UnsupportedFileSystemProtocolException(protocol);

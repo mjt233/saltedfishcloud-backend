@@ -9,20 +9,28 @@ import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Component
 public class DefaultFileSystemManager implements DiskFileSystemManager {
+    /**
+     * 记录各个文件系统对应的所支持的协议
+     */
+    private final Map<String, DiskFileSystemFactory> factoryMap = new ConcurrentHashMap<>();
+
     @Autowired
     private MountPointService mountPointService;
 
     private DiskFileSystemDispatcher dispatcher;
 
-    /**
-     * 记录各个文件系统对应的所支持的协议
-     */
-    private final Map<String, DiskFileSystemFactory> factoryMap = new ConcurrentHashMap<>();
+    @Override
+    public List<DiskFileSystemFactory> listAllFileSystem() {
+        return List.copyOf(factoryMap.values());
+    }
+
 
     @Override
     public DiskFileSystem getMainFileSystem() {
@@ -57,5 +65,10 @@ public class DefaultFileSystemManager implements DiskFileSystemManager {
     @Override
     public boolean isSupportedProtocol(String protocol) {
         return factoryMap.containsKey(protocol.toLowerCase());
+    }
+
+    @Override
+    public List<DiskFileSystemFactory> listPublicFileSystem() {
+        return factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).collect(Collectors.toList());
     }
 }

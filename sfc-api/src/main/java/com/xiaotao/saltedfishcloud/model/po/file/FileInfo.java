@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.security.core.parameters.P;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,6 +35,11 @@ public class FileInfo extends BasicFileInfo{
     private Long lastModified;
     private Date createdAt;
     private Date updatedAt;
+
+    /**
+     * 是否为外部挂载的文件系统文件
+     */
+    private boolean isMount;
 
     @JsonIgnore
     private InputStreamSource streamSource;

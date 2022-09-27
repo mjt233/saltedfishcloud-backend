@@ -249,7 +249,15 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Override
     public List<FileInfo>[] getUserFileList(int uid, String path) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
-        return matchResult.fileSystem.getUserFileList(uid, matchResult.resolvedPath);
+        List<FileInfo>[] res = matchResult.fileSystem.getUserFileList(uid, matchResult.resolvedPath);
+        if (!matchResult.fileSystem.equals(mainFileSystem)) {
+            for (List<FileInfo> fileList : res) {
+                for (FileInfo fileInfo : fileList) {
+                    fileInfo.setMount(true);
+                }
+            }
+        }
+        return res;
     }
 
     @Override

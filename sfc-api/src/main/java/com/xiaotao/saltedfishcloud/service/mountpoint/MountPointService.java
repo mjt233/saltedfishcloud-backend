@@ -13,10 +13,10 @@ public interface MountPointService {
     List<MountPoint> findByUid(long uid);
 
     /**
-     * 添加挂载点
+     * 添加/修改挂载点
      * @param mountPoint    挂载点信息
      */
-    void addMountPoint(MountPoint mountPoint);
+    void saveMountPoint(MountPoint mountPoint);
 
     /**
      * 查找用户的所有挂载点的路径

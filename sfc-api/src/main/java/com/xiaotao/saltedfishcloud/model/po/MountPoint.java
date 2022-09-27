@@ -1,11 +1,13 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
+import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.*;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Proxy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.validation.annotation.Validated;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -21,6 +23,7 @@ import java.util.Objects;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Validated
 public class MountPoint {
 
     @Id
@@ -28,6 +31,7 @@ public class MountPoint {
     @GenericGenerator(name = "snowflake", strategy = "com.xiaotao.saltedfishcloud.utils.identifier.SnowFlakeIdGenerator")
     private Long id;
 
+    @UID
     private Long uid;
 
     private String nid;
