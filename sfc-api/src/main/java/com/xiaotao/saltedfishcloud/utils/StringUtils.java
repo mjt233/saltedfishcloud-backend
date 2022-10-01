@@ -4,6 +4,7 @@ import org.springframework.lang.Nullable;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
 import java.util.Random;
 import java.util.regex.Pattern;
 
@@ -17,6 +18,25 @@ public class StringUtils {
      * 随机字符串采用的字符序列长度
      */
     private final static int PATTERN_LEN = PATTERN.length();
+
+    /**
+     * 判断a和b是否为相同表示的路径
+     */
+    public static boolean isPathEqual(String a, String b) {
+        boolean eq = Objects.equals(a, b);
+        if (eq) {
+            return eq;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+
+        a = a.replaceAll("//+", "/");
+        b = b.replaceAll("//+", "/");
+        return a.equals(b);
+
+
+    }
 
     /**
      * 以文件路径形式追加字符串，自动处理/的重复问题。<br>
@@ -89,6 +109,10 @@ public class StringUtils {
 
     public static String getURLLastName(String url) {
         String path = url;
+        int qsIndex = path.indexOf("?");
+        if (qsIndex != -1) {
+            path = path.substring(0, qsIndex);
+        }
         if (path.endsWith("/")) {
             path = path.substring(0, path.length() -1);
         }

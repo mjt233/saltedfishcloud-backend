@@ -41,6 +41,12 @@ public class FileInfo extends BasicFileInfo{
      */
     private boolean isMount;
 
+    /**
+     * 挂载id
+     */
+    private Long mountId;
+
+
     @JsonIgnore
     private InputStreamSource streamSource;
 

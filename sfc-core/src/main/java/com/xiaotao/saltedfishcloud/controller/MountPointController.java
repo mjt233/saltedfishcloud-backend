@@ -52,5 +52,16 @@ public class MountPointController {
         return JsonResultImpl.getInstance(mountPointService.findByUid(uid));
     }
 
+    /**
+     * 移除挂载点
+     * @param uid   挂载点的用户id
+     * @param id    挂载点id
+     */
+    @DeleteMapping("remove")
+    public JsonResult delete(@UID @RequestParam("uid") long uid, @RequestParam("id") long id) {
+        mountPointService.remove(uid, id);
+        return JsonResult.emptySuccess();
+    }
+
 
 }

@@ -412,11 +412,17 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
     public LinkedHashMap<String, List<FileInfo>> collectFiles(int uid, boolean reverse) {
         LinkedHashMap<String, List<FileInfo>> res = new LinkedHashMap<>();
         List<NodeInfo> nodes = new LinkedList<>();
-        //  获取目录结构
+
+        // 根目录使用用户id作为id
         String strId = "" + uid;
-        nodes.add(new NodeInfo(null, uid, strId, null));
+        nodes.add(NodeInfo.builder()
+                .uid((long) uid)
+                .id(strId)
+                .build()
+        );
         nodes.addAll(nodeService.getChildNodes(uid, strId));
 
+        //  获取目录结构
         if (reverse) Collections.reverse(nodes);
         for (NodeInfo node : nodes) {
             String dir = nodeService.getPathByNode(uid, node.getId());

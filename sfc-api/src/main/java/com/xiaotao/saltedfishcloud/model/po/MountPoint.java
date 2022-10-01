@@ -34,18 +34,41 @@ public class MountPoint {
     @UID
     private Long uid;
 
+    /**
+     * 挂载点所在的节点id
+     */
     private String nid;
 
+    /**
+     * 协议
+     */
     private String protocol;
 
+    /**
+     * 文件系统参数
+     */
     private String params;
+
+    /**
+     * 挂载的目录名称
+     */
+    private String name;
 
     @Column(name = "create_at")
     @CreatedDate
     private Date createAt;
 
+    /**
+     * 该挂载点的完整路径
+     */
     @Transient
     private String path;
+
+    /**
+     * 挂载的节点所处节点的路径(nid对应的路径)
+     */
+    @Transient
+    private String parentPath;
 
     @Override
     public boolean equals(Object o) {

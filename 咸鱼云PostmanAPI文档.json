@@ -4477,6 +4477,39 @@
 			]
 		},
 		{
+			"name": "挂载点",
+			"item": [
+				{
+					"name": "添加挂载点",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"挂载点测试2\",\r\n    \"nid\": \"0\",\r\n    \"uid\": 0,\r\n    \"protocol\": \"local\",\r\n    \"params\": \"{\\\"path\\\":\\\"store\\\"}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/mountPoint/setMountPoint",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"mountPoint",
+								"setMountPoint"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "获取系统特性",
 			"request": {
 				"method": "GET",

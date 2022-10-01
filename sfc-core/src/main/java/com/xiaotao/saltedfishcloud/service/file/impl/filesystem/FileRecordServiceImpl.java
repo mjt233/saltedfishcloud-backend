@@ -299,4 +299,9 @@ public class FileRecordServiceImpl implements FileRecordService {
         fileDao.deleteRecords(uid, dirInfo.getParent(), Collections.singletonList(dirInfo.getName()));
         return res;
     }
+
+    @Override
+    public int insert(FileInfo fileInfo) {
+        return fileDao.insert(fileInfo);
+    }
 }

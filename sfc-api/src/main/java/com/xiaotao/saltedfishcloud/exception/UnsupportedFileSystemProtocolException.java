@@ -9,7 +9,7 @@ public class UnsupportedFileSystemProtocolException extends RuntimeException {
     }
 
     public UnsupportedFileSystemProtocolException(String message) {
-        super(message);
+        super("不支持的文件挂载系统协议：" + message);
     }
 
     public UnsupportedFileSystemProtocolException(String message, Throwable cause) {

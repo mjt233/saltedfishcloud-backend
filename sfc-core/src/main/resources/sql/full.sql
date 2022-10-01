@@ -122,6 +122,7 @@ CREATE TABLE `file_table` (
                               `md5` char(32) DEFAULT NULL,
                               `created_at` datetime NULL DEFAULT NULL,
                               `updated_at` datetime NULL DEFAULT NULL,
+                              `mount_id` bigint NULL COMMENT '挂载点id',
                               UNIQUE KEY `file_index` (`node`,`name`,`uid`),
                               KEY `md5_index` (`md5`),
                               KEY `uid_index` (`uid`)
@@ -219,3 +220,13 @@ CREATE TABLE `user` (
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2021-12-25 16:16:14
+CREATE TABLE mount_point (
+                             id BIGINT NOT NULL PRIMARY KEY,
+                             uid BIGINT NOT NULL COMMENT '用户id',
+                             nid CHAR(32) COMMENT '挂载的节点id',
+                             name VARCHAR(100) COMMENT '挂载节点名称',
+                             protocol VARCHAR(32) COMMENT '挂载的文件系统协议',
+                             params TEXT COMMENT '挂载参数',
+                             create_at DATETIME COMMENT '创建日期',
+                             KEY `idx_uid`(uid, nid)
+)ENGINE=InnoDB CHARSET=utf8mb4 COMMENT '第三方文件系统挂载点';
