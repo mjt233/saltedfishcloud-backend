@@ -60,6 +60,9 @@ class FileSystemMatchResult {
      * 判断请求的路径是否为匹配的挂载点本身
      */
     public boolean isMountPath(String path) {
+        if (mountPoint == null) {
+            return false;
+        }
         return StringUtils.isPathEqual(path, mountPoint.getPath());
     }
 }

@@ -96,7 +96,7 @@ public class MountPointServiceImpl implements MountPointService {
             // 主表保存
             mountPointRepo.save(mountPoint);
             // 文件表保存
-            nodeService.addMountPointNode(mountPoint);
+            String newNodeId = nodeService.addMountPointNode(mountPoint);
             FileInfo fileInfo = new FileInfo(mountPoint.getName(), -1, FileInfo.TYPE_DIR, "", System.currentTimeMillis(), null);
             Date now = new Date();
             fileInfo.setUid(Math.toIntExact(mountPoint.getUid()));
@@ -104,7 +104,7 @@ public class MountPointServiceImpl implements MountPointService {
             fileInfo.setCreatedAt(now);
             fileInfo.setUpdatedAt(now);
             fileInfo.setMountId(mountPoint.getId());
-            fileInfo.setMd5(mountPoint.getNid());
+            fileInfo.setMd5(newNodeId);
             fileRecordService.insert(fileInfo);
         } else {
             throw new UnsupportedOperationException("暂时不支持挂载点修改");

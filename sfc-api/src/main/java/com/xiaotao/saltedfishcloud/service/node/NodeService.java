@@ -80,6 +80,7 @@ public interface NodeService {
     /**
      * 添加挂载点节点
      * @param mountPoint    挂载点
+     * @return 新节点id
      */
-    void addMountPointNode(MountPoint mountPoint);
+    String addMountPointNode(MountPoint mountPoint);
 }

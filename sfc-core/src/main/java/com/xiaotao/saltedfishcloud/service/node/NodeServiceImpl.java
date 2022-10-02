@@ -200,7 +200,7 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    public void addMountPointNode(MountPoint mountPoint) {
+    public String addMountPointNode(MountPoint mountPoint) {
         NodeInfo nodeInfo = NodeInfo.builder()
                 .mountId(mountPoint.getId())
                 .name(mountPoint.getName())
@@ -208,5 +208,6 @@ public class NodeServiceImpl implements NodeService {
                 .parent(mountPoint.getNid())
                 .build();
         nodeInfoRepo.save(nodeInfo);
+        return nodeInfo.getId();
     }
 }
