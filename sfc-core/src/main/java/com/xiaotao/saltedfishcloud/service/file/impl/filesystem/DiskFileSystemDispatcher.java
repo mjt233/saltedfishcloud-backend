@@ -104,7 +104,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         }
         // 遍历所有挂载点，匹配所处路径前缀相同且名称相同的
         return mountPointMap.entrySet().stream()
-                .filter(e -> path.startsWith(StringUtils.appendPath(e.getKey(), e.getValue().getName())) )
+                .filter(e -> path.startsWith(e.getKey()))
                 .findAny()
                 .map(Map.Entry::getValue)
                 .orElse(null);
@@ -332,12 +332,6 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     fileInfo.setMount(true);
                 }
             }
-        } else {
-            //
-            MountPoint mountPoint = mountPointService.findMountPointPathByUid(uid).get(path);
-            if (mountPoint != null) {
-                
-            }
         }
         return res;
     }
@@ -384,6 +378,26 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Override
     public long deleteFile(int uid, String path, List<String> name) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
+        // 得到挂载完整路径 -> 挂载点 的map
+        Map<String, MountPoint> mountPointMap = mountPointService.findMountPointPathByUid(uid);
+        Set<Long> deleteMountId = new HashSet<>();
+        for (String n : name) {
+            String deletePath = StringUtils.appendPath(path, n);
+            List<Long> ids = mountPointMap.entrySet()
+                    .stream()
+                    .filter(e -> e.getKey().startsWith(deletePath))
+                    .map(e -> e.getValue().getId())
+                    .collect(Collectors.toList());
+
+            if (!ids.isEmpty()) {
+                deleteMountId.addAll(ids);
+            }
+        }
+        if (!deleteMountId.isEmpty()) {
+            log.info("{}:删除的路径中存在以下挂载点需要删除：{}", LOG_PREFIX, deleteMountId);
+            mountPointService.batchRemove(uid, deleteMountId);
+        }
+
         return matchResult.fileSystem.deleteFile(uid, matchResult.resolvedPath, name);
     }
 
