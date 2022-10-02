@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.MountPointRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -92,7 +93,13 @@ public class MountPointServiceImpl implements MountPointService {
             throw new UnsupportedFileSystemProtocolException(protocol);
         }
         if (mountPoint.getId() == null) {
-            log.debug("{}创建挂载点:{}", LOG_PREFIX, mountPoint.getName());
+            String path = StringUtils.appendPath(nodeService.getPathByNode(Math.toIntExact(mountPoint.getUid()), mountPoint.getNid()), mountPoint.getName());
+
+            log.debug("{}创建挂载点:{}", LOG_PREFIX, path);
+            if(fileSystemManager.getMainFileSystem().exist(Math.toIntExact(mountPoint.getUid()), path)) {
+               throw new JsonException(FileSystemError.FILE_EXIST);
+            }
+
             // 主表保存
             mountPointRepo.save(mountPoint);
             // 文件表保存
