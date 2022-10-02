@@ -37,6 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -387,7 +388,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
         RLock lock = redisson.getLock(getStoreLockKey(uid, target, name));
         try {
             lock.lock();
-            target = URLDecoder.decode(target, "UTF-8");
+            target = URLDecoder.decode(target, StandardCharsets.UTF_8);
             fileRecordService.move(uid, source, target, name, overwrite);
             final StoreService storeService = storeServiceFactory.getService();
             if (!storeService.isUnique()) {

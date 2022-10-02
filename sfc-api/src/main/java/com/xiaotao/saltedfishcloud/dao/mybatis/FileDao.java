@@ -64,7 +64,7 @@ public interface FileDao {
      * @param nodeId    节点ID
      * @return 文件信息列表
      */
-    @Select("SELECT uid, name, node, size, md5, created_at, updated_at FROM file_table WHERE node = #{nid} AND uid = #{uid}")
+    @Select("SELECT uid, name, node, size, md5, created_at, updated_at, mount_id FROM file_table WHERE node = #{nid} AND uid = #{uid}")
     List<FileInfo> getFileListByNodeId(@Param("uid") Integer uid, @Param("nid") String nodeId);
 
     /**

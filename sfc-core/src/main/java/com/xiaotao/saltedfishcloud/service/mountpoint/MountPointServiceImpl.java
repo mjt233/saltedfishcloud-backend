@@ -103,6 +103,7 @@ public class MountPointServiceImpl implements MountPointService {
             fileInfo.setNode(mountPoint.getNid());
             fileInfo.setCreatedAt(now);
             fileInfo.setUpdatedAt(now);
+            fileInfo.setMountId(mountPoint.getId());
             fileInfo.setMd5(mountPoint.getNid());
             fileRecordService.insert(fileInfo);
         } else {
