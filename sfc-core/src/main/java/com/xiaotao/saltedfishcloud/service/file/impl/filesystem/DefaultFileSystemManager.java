@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class DefaultFileSystemManager implements DiskFileSystemManager {
+    private final static String LOG_PREFIX = "[DiskFileManager]";
     /**
      * 记录各个文件系统对应的所支持的协议
      */
@@ -48,6 +51,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager {
         if (existFactory != null) {
             throw new IllegalArgumentException(factory.getDescribe().getProtocol() + "协议的文件系统已经被注册：" + factory.getDescribe());
         } else {
+            log.info("{}为{}协议注册文件系统：{}", LOG_PREFIX, factory.getDescribe().getProtocol(), factory.getDescribe().getName());
             factoryMap.put(factory.getDescribe().getProtocol(), factory);
         }
     }

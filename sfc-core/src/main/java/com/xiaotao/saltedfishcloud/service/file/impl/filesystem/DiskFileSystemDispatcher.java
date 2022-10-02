@@ -101,7 +101,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         }
         // 遍历所有挂载点，匹配所处路径前缀相同且名称相同的
         return mountPointMap.entrySet().stream()
-                .filter(e -> path.startsWith(e.getKey()) && name.equals(e.getValue().getName()))
+                .filter(e -> path.startsWith(StringUtils.appendPath(e.getKey(), e.getValue().getName())) )
                 .findAny()
                 .map(Map.Entry::getValue)
                 .orElse(null);
@@ -135,7 +135,11 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
      * @return              挂载点下的相对路径
      */
     protected String resolvePath(String mountPath, String requestPath) {
-        return requestPath.substring(mountPath.length() - 1);
+        if (requestPath.startsWith("/")) {
+            return requestPath.substring(mountPath.length());
+        } else {
+            return StringUtils.appendPath("/", requestPath.substring(mountPath.length()));
+        }
     }
 
     @Override
@@ -357,13 +361,13 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
-    public int saveFile(int uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
+    public long saveFile(int uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         return matchResult.fileSystem.saveFile(uid, stream, path, fileInfo);
     }
 
     @Override
-    public int saveFile(int uid, MultipartFile file, String requestPath, String md5) throws IOException {
+    public long saveFile(int uid, MultipartFile file, String requestPath, String md5) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, requestPath);
         return matchResult.fileSystem.saveFile(uid, file, matchResult.resolvedPath, md5);
     }

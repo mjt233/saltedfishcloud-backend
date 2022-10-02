@@ -27,6 +27,30 @@ public abstract class CopyAndMoveHandler {
         this.reader = reader;
     }
 
+    public static CopyAndMoveHandler createByStoreHandler(DirectRawStoreHandler handler) {
+        return new CopyAndMoveHandler(handler) {
+            @Override
+            protected boolean copyFile(String src, String dest) throws IOException {
+                return handler.copy(src, dest);
+            }
+
+            @Override
+            protected boolean moveFile(String src, String dest) throws IOException {
+                return handler.move(src, dest);
+            }
+
+            @Override
+            protected boolean isMoveWithRecursion() {
+                return true;
+            }
+
+            @Override
+            protected boolean mkdir(String path) throws IOException {
+                return handler.mkdir(path);
+            }
+        };
+    }
+
     /**
      * 复制单个文件
      * @param src   待复制的源文件路径

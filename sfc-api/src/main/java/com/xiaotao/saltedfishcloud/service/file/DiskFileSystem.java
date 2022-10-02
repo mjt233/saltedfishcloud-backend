@@ -197,7 +197,7 @@ public interface DiskFileSystem {
      * @param fileInfo    文件信息
      * @throws IOException 文件写入失败时抛出
      */
-    int saveFile(int uid,
+    long saveFile(int uid,
                  InputStream stream,
                  String path,
                  FileInfo fileInfo) throws IOException;
@@ -211,7 +211,7 @@ public interface DiskFileSystem {
      * @return 新文件 - 1，旧文件覆盖 - 0，常量见{@link DiskFileSystem#SAVE_COVER}和{@link DiskFileSystem#SAVE_NEW_FILE}
      * @throws IOException 文件写入失败时抛出
      */
-    int saveFile(int uid,
+    long saveFile(int uid,
                  MultipartFile file,
                  String requestPath,
                  String md5) throws IOException;

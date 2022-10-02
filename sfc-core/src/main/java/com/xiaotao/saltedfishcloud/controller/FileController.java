@@ -90,7 +90,7 @@ public class FileController {
             throw new JsonException(400, "文件为空");
         }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
-        int i = fileSystemManager.getMainFileSystem().saveFile(uid, file, requestPath, md5);
+        long i = fileSystemManager.getMainFileSystem().saveFile(uid, file, requestPath, md5);
         return JsonResultImpl.getInstance(i);
     }
 

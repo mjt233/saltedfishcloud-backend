@@ -472,7 +472,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int saveFile(int uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
+    public long saveFile(int uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
 
         if (fileInfo.getMd5() == null) {
             fileInfo.updateMd5();
@@ -482,7 +482,7 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int saveFile(int uid, MultipartFile file, String requestPath, String md5) throws IOException {
+    public long saveFile(int uid, MultipartFile file, String requestPath, String md5) throws IOException {
         FileInfo fileInfo = new FileInfo(file);
         // 获取上传的文件信息 并看情况计算MD5
         if (md5 != null) {
