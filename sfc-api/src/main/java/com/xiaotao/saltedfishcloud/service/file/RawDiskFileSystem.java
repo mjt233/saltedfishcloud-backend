@@ -142,7 +142,7 @@ public class RawDiskFileSystem implements DiskFileSystem {
     @Override
     public long saveFile(int uid, MultipartFile file, String requestPath, String md5) throws IOException {
         long size = file.getSize();
-        storeHandler.store(StringUtils.appendPath(basePath, requestPath, file.getName()), size, file.getInputStream());
+        storeHandler.store(StringUtils.appendPath(basePath, requestPath, file.getOriginalFilename()), size, file.getInputStream());
         return size;
     }
 

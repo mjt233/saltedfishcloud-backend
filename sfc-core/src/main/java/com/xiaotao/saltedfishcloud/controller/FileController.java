@@ -147,7 +147,7 @@ public class FileController {
         if (b) {
             return JsonResultImpl.getInstance(true);
         } else {
-            return JsonResultImpl.getInstance(100, false, FileSystemError.QUICK_SAVE_NOT_HIT.getMessage());
+            return JsonResultImpl.getInstance(200, false, FileSystemError.QUICK_SAVE_NOT_HIT.getMessage());
         }
     }
 
