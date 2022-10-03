@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundExce
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.context.HttpRequestResponseHolder;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
@@ -68,7 +71,7 @@ public class ControllerAdvice {
         if (log.isDebugEnabled()) {
             e.printStackTrace();
         }
-        response.setStatus(e.getRes().getCode());
+        setStatusCode(e.getRes().getCode());
         return e.getRes();
     }
 
@@ -115,8 +118,15 @@ public class ControllerAdvice {
     }
 
     private JsonResult responseError(int code, String message) {
-        response.setStatus(code);
+        setStatusCode(code);
         return JsonResultImpl.getInstance(code, null, message);
     }
 
+    private void setStatusCode(int code) {
+        response.setStatus(code);
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (requestAttributes != null && requestAttributes.getResponse() != null) {
+            requestAttributes.getResponse().setStatus(code);
+        }
+    }
 }

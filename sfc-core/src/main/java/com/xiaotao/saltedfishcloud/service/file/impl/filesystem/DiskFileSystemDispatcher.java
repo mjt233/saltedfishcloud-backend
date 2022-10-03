@@ -330,6 +330,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             for (List<FileInfo> fileList : res) {
                 for (FileInfo fileInfo : fileList) {
                     fileInfo.setMount(true);
+                    fileInfo.setUid(uid);
                 }
             }
         }

@@ -83,7 +83,7 @@ public class ResourceController {
     @NotBlock
     public JsonResult getFDC(@PathVariable @UID int uid,
                              HttpServletRequest request,
-                             @RequestParam("md5") String md5,
+                             @RequestParam(value = "md5", required = false) String md5,
                              @RequestParam("name") @Valid @FileName String name,
                              @RequestParam(value = "expr", defaultValue = "1") int expr) throws IOException {
         String filePath = URLUtils.getRequestFilePath(PREFIX + uid + "/FDC", request);
