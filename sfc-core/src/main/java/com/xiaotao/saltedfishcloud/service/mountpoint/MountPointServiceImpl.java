@@ -95,7 +95,6 @@ public class MountPointServiceImpl implements MountPointService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveMountPoint(@Validated MountPoint mountPoint) {
-        clearCache(mountPoint.getUid());
         String protocol = mountPoint.getProtocol();
         if(!fileSystemManager.isSupportedProtocol(protocol)) {
             throw new UnsupportedFileSystemProtocolException(protocol);
@@ -125,6 +124,7 @@ public class MountPointServiceImpl implements MountPointService {
             throw new UnsupportedOperationException("暂时不支持挂载点修改");
         }
 
+        clearCache(mountPoint.getUid());
     }
 
     @Override

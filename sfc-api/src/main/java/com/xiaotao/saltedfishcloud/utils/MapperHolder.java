@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,14 @@ public class MapperHolder {
         // 忽略未知属性
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+
+        // 序列化时将Long转为字符串
+        SimpleModule simpleModule = new SimpleModule();
+        // long -> String
+        simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+        // Long -> String
+        simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
+        mapper.registerModule(simpleModule);
     }
 
     public static <T> T parseJson(String json, Class<T> clazz) throws JsonProcessingException {
