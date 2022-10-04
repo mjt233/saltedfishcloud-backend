@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.validation.annotation.Validated;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.Date;
 import java.util.Objects;
 
@@ -37,11 +38,13 @@ public class MountPoint {
     /**
      * 挂载点所在的节点id
      */
+    @NotNull
     private String nid;
 
     /**
      * 协议
      */
+    @NotNull
     private String protocol;
 
     /**
@@ -52,6 +55,7 @@ public class MountPoint {
     /**
      * 挂载的目录名称
      */
+    @NotNull
     private String name;
 
     @Column(name = "create_at")

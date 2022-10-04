@@ -260,7 +260,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException, JsonProcessingException {
+    public void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException {
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         FileInfo fileInfo = fileDao.getFileInfo(uid, oldName, nodeId);
         if (fileInfo == null) {

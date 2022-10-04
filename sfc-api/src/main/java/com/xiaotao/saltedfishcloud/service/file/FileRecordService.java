@@ -139,5 +139,5 @@ public interface FileRecordService {
      * @param newName 新文件名
      */
     @Transactional(rollbackFor = Exception.class)
-    void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException, JsonProcessingException;
+    void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException;
 }

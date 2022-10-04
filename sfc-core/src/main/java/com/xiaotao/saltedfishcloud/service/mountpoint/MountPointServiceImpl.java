@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.MountPointRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -13,6 +15,7 @@ import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -100,31 +103,59 @@ public class MountPointServiceImpl implements MountPointService {
             throw new UnsupportedFileSystemProtocolException(protocol);
         }
         if (mountPoint.getId() == null) {
-            String path = StringUtils.appendPath(nodeService.getPathByNode(Math.toIntExact(mountPoint.getUid()), mountPoint.getNid()), mountPoint.getName());
-
-            log.debug("{}创建挂载点:{}", LOG_PREFIX, path);
-            if(fileSystemManager.getMainFileSystem().exist(Math.toIntExact(mountPoint.getUid()), path)) {
-               throw new JsonException(FileSystemError.FILE_EXIST);
-            }
-
-            // 主表保存
-            mountPointRepo.save(mountPoint);
-            // 文件表保存
-            String newNodeId = nodeService.addMountPointNode(mountPoint);
-            FileInfo fileInfo = new FileInfo(mountPoint.getName(), -1, FileInfo.TYPE_DIR, "", System.currentTimeMillis(), null);
-            Date now = new Date();
-            fileInfo.setUid(Math.toIntExact(mountPoint.getUid()));
-            fileInfo.setNode(mountPoint.getNid());
-            fileInfo.setCreatedAt(now);
-            fileInfo.setUpdatedAt(now);
-            fileInfo.setMountId(mountPoint.getId());
-            fileInfo.setMd5(newNodeId);
-            fileRecordService.insert(fileInfo);
+            createMountPoint(mountPoint);
         } else {
-            throw new UnsupportedOperationException("暂时不支持挂载点修改");
+            changeMountPoint(mountPoint);
         }
 
         clearCache(mountPoint.getUid());
+    }
+
+    private void changeMountPoint(MountPoint mountPoint) {
+        MountPoint dbObj = mountPointRepo.findById(mountPoint.getId()).orElseThrow(() -> new JsonException(CommonError.RESOURCE_NOT_FOUND));
+        if (!Objects.equals(dbObj.getUid(), mountPoint.getUid())) {
+            throw new IllegalArgumentException("不能修改uid");
+        }
+        if (!Objects.equals(dbObj.getNid(), mountPoint.getNid())) {
+            throw new IllegalArgumentException("不能修改nid");
+        }
+        String originName = dbObj.getName();
+        if (!Objects.equals(originName, mountPoint.getName())) {
+            String path = nodeService.getPathByNode(Math.toIntExact(mountPoint.getUid()), mountPoint.getNid());
+            try {
+                fileRecordService.rename(Math.toIntExact(mountPoint.getUid()), path, originName, mountPoint.getName());
+            } catch (NoSuchFileException e) {
+                throw new JsonException(e.getMessage());
+            }
+        }
+        mountPointRepo.save(mountPoint);
+    }
+
+    /**
+     * 创建挂载点
+     * @param mountPoint    待创建的挂载点
+     */
+    private void createMountPoint(MountPoint mountPoint) {
+        String path = StringUtils.appendPath(nodeService.getPathByNode(Math.toIntExact(mountPoint.getUid()), mountPoint.getNid()), mountPoint.getName());
+
+        log.debug("{}创建挂载点:{}", LOG_PREFIX, path);
+        if(fileSystemManager.getMainFileSystem().exist(Math.toIntExact(mountPoint.getUid()), path)) {
+            throw new JsonException(FileSystemError.FILE_EXIST);
+        }
+
+        // 主表保存
+        mountPointRepo.save(mountPoint);
+        // 文件表保存
+        String newNodeId = nodeService.addMountPointNode(mountPoint);
+        FileInfo fileInfo = new FileInfo(mountPoint.getName(), -1, FileInfo.TYPE_DIR, "", System.currentTimeMillis(), null);
+        Date now = new Date();
+        fileInfo.setUid(Math.toIntExact(mountPoint.getUid()));
+        fileInfo.setNode(mountPoint.getNid());
+        fileInfo.setCreatedAt(now);
+        fileInfo.setUpdatedAt(now);
+        fileInfo.setMountId(mountPoint.getId());
+        fileInfo.setMd5(newNodeId);
+        fileRecordService.insert(fileInfo);
     }
 
     @Override
