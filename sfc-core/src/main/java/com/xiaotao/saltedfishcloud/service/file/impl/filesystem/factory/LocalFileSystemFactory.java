@@ -61,6 +61,7 @@ public class LocalFileSystemFactory implements DiskFileSystemFactory, Initializi
         checkParams(params);
         String path = params.get("path").toString();
 
+        // todo 需要缓存失效策略
         return CACHE.computeIfAbsent(path, key -> {
             LocalDirectRawStoreHandler handler = new LocalDirectRawStoreHandler();
             RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(handler, path);

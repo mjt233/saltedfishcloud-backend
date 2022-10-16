@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveType;
+import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
@@ -410,7 +411,22 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
 
     @Override
     public void rename(int uid, String path, String name, String newName) throws IOException {
-        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
-        matchResult.fileSystem.rename(uid, matchResult.resolvedPath, name, newName);
+        String originPath = StringUtils.appendPath(path, name);
+        FileSystemMatchResult matchResult = matchFileSystem(uid, originPath);
+        if (matchResult.isMountPath(originPath)) {
+            if(matchResult.fileSystem.exist(uid, StringUtils.appendPath(path, newName))) {
+                throw new JsonException(FileSystemError.FILE_EXIST);
+            }
+            try {
+                matchResult.mountPoint.setName(newName);
+                mountPointService.saveMountPoint(matchResult.mountPoint);
+            } catch (FileSystemParameterException e) {
+                e.printStackTrace();
+                throw new JsonException(e.getMessage());
+            }
+        } else {
+            mainFileSystem.rename(uid, path, name, newName);
+        }
+
     }
 }

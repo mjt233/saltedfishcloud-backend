@@ -161,12 +161,17 @@ public class MountPointServiceImpl implements MountPointService {
      */
     private void createMountPoint(MountPoint mountPoint) throws JsonProcessingException, FileSystemParameterException {
         String path = StringUtils.appendPath(nodeService.getPathByNode(Math.toIntExact(mountPoint.getUid()), mountPoint.getNid()), mountPoint.getName());
-
+        if (!StringUtils.hasText(mountPoint.getNid())) {
+            mountPoint.setNid(mountPoint.getUid().toString());
+        }
         log.debug("{}创建挂载点:{}", LOG_PREFIX, path);
         if(fileSystemManager.getMainFileSystem().exist(Math.toIntExact(mountPoint.getUid()), path)) {
             throw new JsonException(FileSystemError.FILE_EXIST);
         }
         DiskFileSystem targetFileSystem = fileSystemManager.getFileSystem(mountPoint.getProtocol(), MapperHolder.parseJsonToMap(mountPoint.getParams()));
+        if (targetFileSystem == null) {
+            throw new JsonException("无法挂载目标文件系统");
+        }
 
         // 主表保存
         mountPointRepo.save(mountPoint);
