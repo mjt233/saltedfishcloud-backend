@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.share;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
@@ -14,6 +13,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+/**
+ * 为统一资源访问接口添加文件分享的资源支持
+ */
 @Component
 public class ShareResourceHandler implements ResourceProtocolHandler, InitializingBean {
     @Autowired

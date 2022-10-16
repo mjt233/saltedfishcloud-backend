@@ -23,6 +23,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 原始的文件系统，根据DirectRawStoreHandler和basePath对存储操作器进行操作封装，暴露为对网盘文件系统的操作。
+ * 需要手动设置单独的ThumbnailService以提供缩略图服务
+ */
 public class RawDiskFileSystem implements DiskFileSystem {
     private final DirectRawStoreHandler storeHandler;
     private final CopyAndMoveHandler camHandler;
@@ -31,6 +35,11 @@ public class RawDiskFileSystem implements DiskFileSystem {
     @Setter
     private ThumbnailService thumbnailService;
 
+    /**
+     * 将直接存储操作器封装为文件系统操作
+     * @param storeHandler  存储操作器
+     * @param basePath      统一给所有操作添加的路径前缀
+     */
     public RawDiskFileSystem(DirectRawStoreHandler storeHandler, String basePath) {
         this.storeHandler = storeHandler;
         camHandler = CopyAndMoveHandler.createByStoreHandler(storeHandler);

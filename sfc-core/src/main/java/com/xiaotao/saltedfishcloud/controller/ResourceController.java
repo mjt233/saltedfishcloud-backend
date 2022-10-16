@@ -56,11 +56,14 @@ public class ResourceController {
     @GetMapping("get")
     @AllowAnonymous
     public HttpEntity<Resource> getResource(@Validated ResourceRequest resourceRequest, HttpServletRequest request) throws UnsupportedProtocolException, IOException {
+        // 读取所有请求参数，设置到params中
         Map<String, String> paramsMap = new HashMap<>();
         for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
             paramsMap.put(entry.getKey(), entry.getValue()[0]);
         }
         resourceRequest.setParams(paramsMap);
+
+        // 根据请求对象获取资源
         Resource resource = resourceService.getResource(resourceRequest);
         if (resource == null) {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
