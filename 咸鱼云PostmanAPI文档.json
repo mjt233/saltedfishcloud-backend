@@ -1006,6 +1006,63 @@
 						"description": "通过文件MD5获取网盘中文件的缩略图\n\n- URI：`/api/resource/{uid}/thumbnail/{md5}`\n- 动作：GET\n\nURI参数：\n- uid 任意数字均可\n- md5 文件md5值\n\n### 响应\n直接响应缩略图文件"
 					},
 					"response": []
+				},
+				{
+					"name": "通用文件资源获取接口",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/0/get?targetId=3&protocol=share&path=/&name=10.【1】中村由利子 - 火宵の月・テーマ~ピアノソロ.jpg&isThumbnail=true&vid=f56dc279a40f4b3c8e53ddddb9686df0&code=jXeY",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"0",
+								"get"
+							],
+							"query": [
+								{
+									"key": "targetId",
+									"value": "3",
+									"description": "目标资源id"
+								},
+								{
+									"key": "protocol",
+									"value": "share",
+									"description": "main-主存储服务，share-文件分享"
+								},
+								{
+									"key": "path",
+									"value": "/",
+									"description": "资源所处路径"
+								},
+								{
+									"key": "name",
+									"value": "10.【1】中村由利子 - 火宵の月・テーマ~ピアノソロ.jpg",
+									"description": "文件名"
+								},
+								{
+									"key": "isThumbnail",
+									"value": "true",
+									"description": "是否为获取缩略图"
+								},
+								{
+									"key": "vid",
+									"value": "f56dc279a40f4b3c8e53ddddb9686df0",
+									"description": "文件分享的额外参数-校验id"
+								},
+								{
+									"key": "code",
+									"value": "jXeY",
+									"description": "文件分享的额外参数-提取码"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -4486,7 +4543,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\":\"挂载点测试2\",\r\n    \"nid\": \"0\",\r\n    \"uid\": 0,\r\n    \"protocol\": \"local\",\r\n    \"params\": \"{\\\"path\\\":\\\"store\\\"}\"\r\n}",
+							"raw": "{\r\n    \"name\":\"挂载点测试32332\",\r\n    \"nid\": \"1\",\r\n    \"uid\": 1,\r\n    \"protocol\": \"local\",\r\n    \"params\": \"{\\\"path\\\":\\\"store\\\"}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
