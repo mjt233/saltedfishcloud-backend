@@ -33,6 +33,8 @@ import javax.validation.Valid;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.NoSuchFileException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -53,7 +55,12 @@ public class ResourceController {
 
     @GetMapping("get")
     @AllowAnonymous
-    public HttpEntity<Resource> getResource(@Validated ResourceRequest resourceRequest) throws UnsupportedProtocolException, IOException {
+    public HttpEntity<Resource> getResource(@Validated ResourceRequest resourceRequest, HttpServletRequest request) throws UnsupportedProtocolException, IOException {
+        Map<String, String> paramsMap = new HashMap<>();
+        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
+            paramsMap.put(entry.getKey(), entry.getValue()[0]);
+        }
+        resourceRequest.setParams(paramsMap);
         Resource resource = resourceService.getResource(resourceRequest);
         if (resource == null) {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);

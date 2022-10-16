@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.share.service;
+package com.xiaotao.saltedfishcloud.service.share;
 
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
@@ -6,16 +6,15 @@ import com.xiaotao.saltedfishcloud.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ShareRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
-import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
@@ -35,6 +34,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.LinkedList;
 import java.util.List;
@@ -81,23 +81,40 @@ public class ShareServiceImpl implements ShareService {
         if (!share.getVerification().equals(extractor.getVerification())) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         if (!share.validateExtractCode(extractor.getCode())) throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
 
-        // 文件直接获取Resource
+        // 文件类型的分享直接获取Resource
         String basePath = nodeService.getPathByNode(share.getUid(), share.getParentId());
         if (share.getType() == ShareType.FILE) {
-            return fileSystemFactory.getMainFileSystem().getResource(
-                    share.getUid(),
-                    basePath,
-                    share.getName()
+            if (extractor.isThumbnail()) {
+                return fileSystemFactory.getMainFileSystem().getThumbnail(
+                        share.getUid(),
+                        basePath,
+                        share.getName()
                 );
+            } else {
+                return fileSystemFactory.getMainFileSystem().getResource(
+                        share.getUid(),
+                        basePath,
+                        share.getName()
+                );
+            }
         }
         String fullPath = PathBuilder.formatPath(basePath + "/" + share.getName() + "/" + extractor.getPath(), true);
         if (!FileNameValidator.valid(extractor.getName())) throw new IllegalArgumentException("无效文件名");
         if (!fullPath.startsWith(basePath)) throw new IllegalArgumentException("无效路径");
-        return fileSystemFactory.getMainFileSystem().getResource(
-                share.getUid(),
-                fullPath,
-                URLDecoder.decode(extractor.getName(), "UTF-8")
-        );
+
+        if (extractor.isThumbnail()) {
+            return fileSystemFactory.getMainFileSystem().getThumbnail(
+                    share.getUid(),
+                    fullPath,
+                    URLDecoder.decode(extractor.getName(), StandardCharsets.UTF_8)
+            );
+        } else {
+            return fileSystemFactory.getMainFileSystem().getResource(
+                    share.getUid(),
+                    fullPath,
+                    URLDecoder.decode(extractor.getName(), StandardCharsets.UTF_8)
+            );
+        }
     }
 
     @Override

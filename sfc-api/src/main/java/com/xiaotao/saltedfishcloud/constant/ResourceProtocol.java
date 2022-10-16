@@ -13,4 +13,9 @@ public interface ResourceProtocol {
      * 主文件系统
      */
     String MAIN = "main";
+
+    /**
+     * 文件分享
+     */
+    String SHARE = "share";
 }

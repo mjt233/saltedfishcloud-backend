@@ -48,6 +48,9 @@ public class RawDiskFileSystem implements DiskFileSystem {
         }
 
         Resource resource = getResource(uid, path, name);
+        if (resource == null) {
+            return null;
+        }
         String lastModified = String.valueOf(resource.lastModified());
         return thumbnailService.getThumbnail(resource, suffix, SecureUtils.getMd5(StringUtils.appendPath(path,name, lastModified)));
     }

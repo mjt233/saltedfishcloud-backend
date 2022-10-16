@@ -37,7 +37,7 @@ public class ResourceRequest {
     /**
      * 额外参数
      */
-    private Map<String, Object> params;
+    private Map<String, String> params;
 
     /**
      * 是否为缩略图资源
