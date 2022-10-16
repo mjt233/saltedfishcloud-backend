@@ -10,9 +10,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 
 
 /**
@@ -33,6 +35,15 @@ public class JwtValidateFilter extends OncePerRequestFilter {
         if (token == null) {
             // 获取不到再从表单获取
             token = req.getParameter(JwtUtils.AUTHORIZATION);
+        }
+        // 最后从cookie中获取
+        if (token == null && req.getCookies() != null) {
+            for (Cookie cookie : req.getCookies()) {
+                if (!"token".equals(cookie.getName())) {
+                    continue;
+                }
+                token = cookie.getValue();
+            }
         }
 
         // 还是获取不到或获取到个空的token当作无鉴权
