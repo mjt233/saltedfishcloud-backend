@@ -10,10 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -73,6 +73,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager {
 
     @Override
     public List<DiskFileSystemFactory> listPublicFileSystem() {
-        return factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).collect(Collectors.toList());
+        return new ArrayList<>(factoryMap.values());
+//        return factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).collect(Collectors.toList());
     }
 }

@@ -41,6 +41,12 @@ public class RawDiskFileSystem implements DiskFileSystem {
      * @param basePath      统一给所有操作添加的路径前缀
      */
     public RawDiskFileSystem(DirectRawStoreHandler storeHandler, String basePath) {
+        if ("".equals(basePath)) {
+            basePath = ".";
+        }
+        if(!storeHandler.exist(basePath)) {
+            throw new IllegalArgumentException("[" + basePath + "]为无效路径");
+        }
         this.storeHandler = storeHandler;
         camHandler = CopyAndMoveHandler.createByStoreHandler(storeHandler);
         this.basePath = basePath;

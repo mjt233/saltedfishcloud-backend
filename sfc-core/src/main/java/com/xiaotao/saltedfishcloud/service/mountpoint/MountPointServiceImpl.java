@@ -1,9 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.MountPointRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
+import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
@@ -12,6 +14,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
@@ -25,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.function.Function;
@@ -117,7 +121,7 @@ public class MountPointServiceImpl implements MountPointService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveMountPoint(@Validated MountPoint mountPoint) {
+    public void saveMountPoint(@Validated MountPoint mountPoint) throws IOException, FileSystemParameterException {
         String protocol = mountPoint.getProtocol();
         if(!fileSystemManager.isSupportedProtocol(protocol)) {
             throw new UnsupportedFileSystemProtocolException(protocol);
@@ -155,13 +159,14 @@ public class MountPointServiceImpl implements MountPointService {
      * 创建挂载点
      * @param mountPoint    待创建的挂载点
      */
-    private void createMountPoint(MountPoint mountPoint) {
+    private void createMountPoint(MountPoint mountPoint) throws JsonProcessingException, FileSystemParameterException {
         String path = StringUtils.appendPath(nodeService.getPathByNode(Math.toIntExact(mountPoint.getUid()), mountPoint.getNid()), mountPoint.getName());
 
         log.debug("{}创建挂载点:{}", LOG_PREFIX, path);
         if(fileSystemManager.getMainFileSystem().exist(Math.toIntExact(mountPoint.getUid()), path)) {
             throw new JsonException(FileSystemError.FILE_EXIST);
         }
+        DiskFileSystem targetFileSystem = fileSystemManager.getFileSystem(mountPoint.getProtocol(), MapperHolder.parseJsonToMap(mountPoint.getParams()));
 
         // 主表保存
         mountPointRepo.save(mountPoint);

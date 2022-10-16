@@ -26,7 +26,9 @@ public class LocalFileSystemFactory implements DiskFileSystemFactory, Initializi
                         .nodes(Collections.singletonList(
                                 ConfigNode.builder()
                                         .name("path")
-                                        .defaultValue("路径")
+                                        .title("要挂载的路径")
+                                        .describe("选择咸鱼云所在的服务器的本地文件系统目录")
+                                        .defaultValue("/")
                                         .inputType("text")
                                         .build()
                         ))

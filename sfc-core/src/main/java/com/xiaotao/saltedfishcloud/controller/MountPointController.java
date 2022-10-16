@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.controller;
 
+import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.stream.Collectors;
 
 @RestController
@@ -38,7 +40,7 @@ public class MountPointController {
      * @param mountPoint    挂载点信息
      */
     @PutMapping("setMountPoint")
-    public JsonResult setMountPoint(@RequestBody MountPoint mountPoint) {
+    public JsonResult setMountPoint(@RequestBody MountPoint mountPoint) throws IOException, FileSystemParameterException {
         mountPointService.saveMountPoint(mountPoint);
         return JsonResult.emptySuccess();
     }
