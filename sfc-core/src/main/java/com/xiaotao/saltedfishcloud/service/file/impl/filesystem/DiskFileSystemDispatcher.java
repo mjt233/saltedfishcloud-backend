@@ -425,7 +425,8 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                 throw new JsonException(e.getMessage());
             }
         } else {
-            mainFileSystem.rename(uid, path, name, newName);
+            matchResult = matchFileSystem(uid, path);
+            matchResult.fileSystem.rename(uid, matchResult.resolvedPath, name, newName);
         }
 
     }
