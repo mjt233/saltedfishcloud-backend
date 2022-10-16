@@ -5,7 +5,11 @@ import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.Setter;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,11 +28,30 @@ public class RawDiskFileSystem implements DiskFileSystem {
     private final CopyAndMoveHandler camHandler;
     private final String basePath;
 
+    @Setter
+    private ThumbnailService thumbnailService;
+
     public RawDiskFileSystem(DirectRawStoreHandler storeHandler, String basePath) {
         this.storeHandler = storeHandler;
         camHandler = CopyAndMoveHandler.createByStoreHandler(storeHandler);
         this.basePath = basePath;
     }
+
+    @Override
+    public Resource getThumbnail(int uid, String path, String name) throws IOException {
+        if (thumbnailService == null) {
+            return null;
+        }
+        String suffix = FileUtils.getSuffix(name);
+        if(!thumbnailService.isSupport(suffix)) {
+            return null;
+        }
+
+        Resource resource = getResource(uid, path, name);
+        String lastModified = String.valueOf(resource.lastModified());
+        return thumbnailService.getThumbnail(resource, suffix, SecureUtils.getMd5(StringUtils.appendPath(path,name, lastModified)));
+    }
+
 
     @Override
     public Resource getAvatar(int uid) throws IOException {

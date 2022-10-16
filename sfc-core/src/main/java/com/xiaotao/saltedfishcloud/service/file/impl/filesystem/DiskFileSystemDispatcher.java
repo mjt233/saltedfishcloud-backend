@@ -90,6 +90,12 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         this.diskFileSystemManager = diskFileSystemManager;
     }
 
+    @Override
+    public Resource getThumbnail(int uid, String path, String name) throws IOException {
+        FileSystemMatchResult fileSystemMatchResult = matchFileSystem(uid, path);
+        return fileSystemMatchResult.fileSystem.getThumbnail(uid, fileSystemMatchResult.resolvedPath, name);
+    }
+
     /**
      * 根据给定的uid和请求路径，匹配所处的挂载点路径
      * @param uid   用户id

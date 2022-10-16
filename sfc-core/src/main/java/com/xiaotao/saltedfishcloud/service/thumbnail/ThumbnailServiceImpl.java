@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
@@ -27,9 +28,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
 @Service
+@Primary
 @Slf4j
 public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner {
     private final static String LOG_TITLE = "[Thumbnail]";
+    /**
+     * key - 文件拓展名，value - 对应的缩略图生成器
+     */
     private final Map<String, ThumbnailHandler> handlerCache = new ConcurrentHashMap<>();
 
     private final StoreServiceFactory storeServiceFactory;
@@ -40,8 +45,20 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     @Lazy
     private List<ThumbnailHandler> handlerList;
 
-    public String getThumbnailTempPath(String md5) {
-        return "thumbnail/" + StringUtils.getUniquePath(md5);
+    /**
+     * 获取主存储服务中的缩略图文件缓存路径
+     *
+     * @param id 文件缩略图的唯一标识
+     */
+    public String getThumbnailTempPath(String id) {
+        if (id.length() == 32) {
+            return "thumbnail/md5/" + StringUtils.getUniquePath(id);
+        } else if (id.length() > 4) {
+            return "thumbnail/other/" + StringUtils.getUniquePath(id);
+        } else {
+            return "thumbnail/id/" + id;
+        }
+
     }
 
     /**
@@ -59,24 +76,26 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     /**
      * 生成缩略图
-     * @param md5   源文件md5
+     * @param resource 待生成缩略图的源资源
      * @param ext   源文件类型（拓展名）
+     * @param id    缩略图唯一id
      * @return      缩略图资源，生成失败则为null
      */
-    protected Resource generate(String md5, String ext) throws IOException {
+    protected Resource generate(Resource resource, String ext, String id) throws IOException {
+        ThumbnailHandler handler = handlerCache.get(ext);
+        if (handler == null) {
+            return null;
+        }
 
         try {
-            final Resource originResource = md5Resolver.getResourceByMd5(md5);
             final TempStoreService tempHandler = storeServiceFactory.getService().getTempFileHandler();
-            final String thumbnailPath = getThumbnailTempPath(md5);
-            if (originResource == null || originResource.contentLength() == 0 || originResource.contentLength() > ByteSize._1MiB * 128) {
+
+            final String thumbnailPath = getThumbnailTempPath(id);
+            if (resource == null || resource.contentLength() == 0 || resource.contentLength() > ByteSize._1MiB * 128) {
                 return null;
             }
-            try(
-                    final OutputStream output = tempHandler.newOutputStream(thumbnailPath)
-            ) {
-                ThumbnailHandler handler = findHandler(ext);
-                boolean res = handler.generate(originResource, ext, output);
+            try(final OutputStream output = tempHandler.newOutputStream(thumbnailPath)) {
+                boolean res = handler.generate(resource, ext, output);
                 if (log.isDebugEnabled()) {
                     if (res) {
                         log.debug("{}生成成功 生成器：{} 类型：{} 生成缩略图保存到：{} ", LOG_TITLE, handler.getClass().getSimpleName(), ext, thumbnailPath);
@@ -91,7 +110,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
             return tempHandler.getResource(thumbnailPath);
         } catch (NoSuchFileException e) {
-            log.debug("{}md5文件资源不存在：{}", LOG_TITLE, md5);
+            log.debug("{}文件资源不存在：{}", LOG_TITLE, id);
             throw e;
         }
     }
@@ -114,25 +133,35 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     }
 
     @Override
-    public Resource getThumbnail(String md5, String ext) throws IOException {
+    public Resource getThumbnail(Resource resource, String ext, String id) throws IOException {
         // 优先从已生成的资源中获取，若不存在再进行生成操作
-        Resource resource = getFromExist(md5);
-        if (resource != null) {
-            return resource;
+        Resource existResource = getFromExist(id);
+        if (existResource != null) {
+            return existResource;
         }
-
-        // 双重校验锁
-        RLock lock = redisson.getLock(md5);
+        RLock lock = redisson.getLock(id);
         try {
             lock.lock();
-            resource = getFromExist(md5);
-            if (resource != null) {
-                return resource;
+
+            existResource = getFromExist(id);
+            if (existResource != null) {
+                return existResource;
             }
-            return generate(md5, ext);
+            return generate(resource, ext, id);
         } finally {
             lock.unlock();
         }
+    }
+
+    @Override
+    public boolean isSupport(String ext) {
+        return handlerCache.containsKey(ext);
+    }
+
+    @Override
+    public Resource getThumbnail(String md5, String ext) throws IOException {
+        Resource originResource = md5Resolver.getResourceByMd5(md5);
+        return getThumbnail(originResource, ext, md5);
     }
 
     @Override

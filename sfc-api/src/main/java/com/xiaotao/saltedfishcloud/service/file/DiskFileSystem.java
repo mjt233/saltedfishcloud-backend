@@ -101,6 +101,14 @@ public interface DiskFileSystem {
      */
     Resource getResource(int uid, String path,String name) throws IOException;
 
+    /**
+     * 获取对应文件资源的缩略图
+     * @param uid       用户id
+     * @param path      文件路径
+     * @param name      文件名称
+     * @return          缩略图资源，若不支持或无法获取则为null
+     */
+    Resource getThumbnail(int uid, String path, String name) throws IOException;
 
     /**
      * 在网盘中连同所有父级目录，创建一个目录
@@ -245,27 +253,5 @@ public interface DiskFileSystem {
      */
     void rename(int uid, String path, String name, String newName) throws IOException;
 
-    /**
-     * 获取网盘中文件的下载码
-     * @param uid 用户ID
-     * @param path 文件所在网盘目录
-     * @param fileInfo 文件信息
-     * @param expr  下载码有效时长（单位：天），若小于0，则无限制
-     */
-    @SuppressWarnings("all")
-    default String getFileDC(int uid, String path, BasicFileInfo fileInfo, int expr) throws IOException {
-        if (
-                !exist(uid, PathBuilder.formatPath(path + "/" + fileInfo.getName(), true))
-                || getResource(uid, path, fileInfo.getName()) == null
-        ) {
-            throw new JsonException(404, "文件不存在");
-        }
-        FileDCInfo info = new FileDCInfo();
-        info.setDir(path);
-        info.setMd5(fileInfo.getMd5());
-        info.setName(fileInfo.getName());
-        info.setUid(uid);
-        String token = JwtUtils.generateToken(MapperHolder.mapper.writeValueAsString(info), expr < 0 ? expr : expr*60*60*24);
-        return token;
-    }
+
 }

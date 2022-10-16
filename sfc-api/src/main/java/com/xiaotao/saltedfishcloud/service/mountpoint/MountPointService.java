@@ -1,12 +1,20 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 public interface MountPointService {
+
+    /**
+     * 根据id查询挂载点
+     * @param id    挂载点id
+     */
+    MountPoint findById(long id);
+
     /**
      * 根据用户id查找挂载点
      * @param uid   用户id

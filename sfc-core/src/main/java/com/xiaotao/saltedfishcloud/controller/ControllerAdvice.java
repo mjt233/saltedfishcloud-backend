@@ -32,6 +32,7 @@ import java.util.List;
 @Slf4j
 @RestControllerAdvice
 public class ControllerAdvice {
+    private static final String LOG_PREFIX = "[GlobalException]";
     @Resource
     private HttpServletResponse response;
 
@@ -59,7 +60,7 @@ public class ControllerAdvice {
     @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class})
     public JsonResult paramsError(Exception e) {
         if (log.isDebugEnabled()) {
-            e.printStackTrace();
+            log.debug("{}校验错误：{}",LOG_PREFIX, e);
         }
         return responseError(422, e.getMessage());
     }
@@ -69,7 +70,7 @@ public class ControllerAdvice {
     @ExceptionHandler(JsonException.class)
     public JsonResult handle(JsonException e) {
         if (log.isDebugEnabled()) {
-            e.printStackTrace();
+            log.error("{}错误：",LOG_PREFIX, e);
         }
         setStatusCode(e.getRes().getCode());
         return e.getRes();

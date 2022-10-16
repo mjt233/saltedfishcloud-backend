@@ -15,6 +15,7 @@ import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.*;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -71,6 +72,9 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
     @Autowired
     private RedissonClient redisson;
 
+    @Autowired
+    private ThumbnailService thumbnailService;
+
     /**
      * 获取写文件时用到分布式锁key
      * @param uid   用户id
@@ -79,6 +83,15 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
      */
     private static String getStoreLockKey(int uid, String path, String name) {
         return uid + ":" + StringUtils.appendPath(path, name);
+    }
+
+    @Override
+    public Resource getThumbnail(int uid, String path, String name) throws IOException {
+        String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, name));
+        if (md5 != null) {
+            return thumbnailService.getThumbnail(md5, FileUtils.getSuffix(name));
+        }
+        return null;
     }
 
     /**

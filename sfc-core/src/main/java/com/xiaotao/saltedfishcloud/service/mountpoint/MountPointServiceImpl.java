@@ -1,13 +1,14 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.MountPointRepo;
+import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -15,11 +16,11 @@ import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.cache.RedisCache;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -44,12 +45,29 @@ public class MountPointServiceImpl implements MountPointService {
     private NodeService nodeService;
     @Autowired
     private FileRecordService fileRecordService;
+    @Autowired
+    private RedisDao redisDao;
 
 
     @Override
     @Cacheable(cacheNames = CACHE_NAME, key = "'mp_' + #uid")
     public List<MountPoint> findByUid(long uid) {
         return mountPointRepo.findByUid(uid);
+    }
+
+    @Override
+    public MountPoint findById(long id) {
+        MountPoint mountPoint = mountPointRepo.findById(id).orElse(null);
+        if (mountPoint == null) {
+            return null;
+        }
+        String key = "mp_uid:" + mountPoint.getUid() + "_id:" + id;
+        Cache cache = cacheManager.getCache(CACHE_NAME);
+        if (cache != null) {
+            cache.put(key, mountPoint);
+        }
+
+        return mountPoint;
     }
 
     /**
@@ -67,6 +85,8 @@ public class MountPointServiceImpl implements MountPointService {
         keys.add("mp_" + uid);
         // 移除挂载路径映射缓存
         keys.add("full_mp_" + uid);
+        keys.addAll(redisDao.scanKeys("mp_uid:" + uid + "*"));
+
         for (String key : keys) {
             cache.evict(key);
         }

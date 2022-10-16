@@ -1,9 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem.factory;
 
+import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalDirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -33,7 +35,7 @@ public class LocalFileSystemFactory implements DiskFileSystemFactory, Initializi
                 .configNode(CONFIG_NODE_LIST)
                 .name("本地文件系统")
                 .describe("访问本地文件系统")
-                .protocol("local")
+                .protocol(ResourceProtocol.LOCAL)
                 .isPublic(false)
                 .build();
     }
@@ -42,6 +44,9 @@ public class LocalFileSystemFactory implements DiskFileSystemFactory, Initializi
 
     @Autowired
     private DiskFileSystemManager diskFileSystemManager;
+
+    @Autowired
+    private ThumbnailService thumbnailService;
 
     private void checkParams(Map<String, Object> params) {
         if (!params.containsKey("path")) {
@@ -56,7 +61,9 @@ public class LocalFileSystemFactory implements DiskFileSystemFactory, Initializi
 
         return CACHE.computeIfAbsent(path, key -> {
             LocalDirectRawStoreHandler handler = new LocalDirectRawStoreHandler();
-            return new RawDiskFileSystem(handler, path);
+            RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(handler, path);
+            rawDiskFileSystem.setThumbnailService(thumbnailService);
+            return rawDiskFileSystem;
         });
 
     }
