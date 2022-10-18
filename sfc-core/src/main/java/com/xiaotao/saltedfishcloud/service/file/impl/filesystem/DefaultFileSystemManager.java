@@ -30,6 +30,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager {
     @Autowired
     private MountPointService mountPointService;
 
+    @Autowired
     private DiskFileSystemDispatcher dispatcher;
 
     @Override
@@ -45,7 +46,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager {
 
     @Override
     public void setMainFileSystem(DiskFileSystem fileSystem) {
-        this.dispatcher = new DiskFileSystemDispatcher(fileSystem, mountPointService, this);
+        dispatcher.setMainFileSystem(fileSystem);
     }
 
     @Override

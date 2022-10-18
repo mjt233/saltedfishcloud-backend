@@ -63,13 +63,25 @@ public class LocalFileSystemFactory implements DiskFileSystemFactory, Initializi
         String path = params.get("path").toString();
 
         // todo 需要缓存失效策略
-        return CACHE.computeIfAbsent(path, key -> {
-            LocalDirectRawStoreHandler handler = new LocalDirectRawStoreHandler();
-            RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(handler, path);
-            rawDiskFileSystem.setThumbnailService(thumbnailService);
-            return rawDiskFileSystem;
-        });
+        return CACHE.computeIfAbsent(path, key -> generateFileSystem(params));
+    }
 
+    protected RawDiskFileSystem generateFileSystem(Map<String, Object> params) {
+        checkParams(params);
+        String path = params.get("path").toString();
+        LocalDirectRawStoreHandler handler = new LocalDirectRawStoreHandler();
+        RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(handler, path);
+        rawDiskFileSystem.setThumbnailService(thumbnailService);
+        return rawDiskFileSystem;
+    }
+
+    @Override
+    public DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException {
+        RawDiskFileSystem fileSystem = generateFileSystem(params);
+        if(fileSystem.getStoreHandler().exist(fileSystem.getBasePath())) {
+            return fileSystem;
+        }
+        throw new FileSystemParameterException("找不到路径：" + fileSystem.getBasePath());
     }
 
     @Override

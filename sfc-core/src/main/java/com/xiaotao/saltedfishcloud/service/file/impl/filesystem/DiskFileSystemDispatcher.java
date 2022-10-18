@@ -12,9 +12,11 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -71,25 +73,37 @@ class FileSystemMatchResult {
 /**
  * 特殊的文件系统，文件系统指派器，根据请求的路径指派相对应的文件系统类型来执行相关请求，为实现第三方文件系统挂载点功能提供支持。
  */
-@Data
 @Slf4j
+@Component
 public class DiskFileSystemDispatcher implements DiskFileSystem {
     private final static String LOG_PREFIX = "[FileSystemDispatcher]";
+
     private DiskFileSystem mainFileSystem;
+
+    @Autowired
     private MountPointService mountPointService;
+
+    @Autowired
     private DiskFileSystemManager diskFileSystemManager;
 
-    /**
-     * 构造一个指派器
-     * @param mainFileSystem        主文件系统
-     * @param mountPointService     挂载点服务
-     * @param diskFileSystemManager 文件系统管理器
-     */
-    public DiskFileSystemDispatcher(DiskFileSystem mainFileSystem, MountPointService mountPointService, DiskFileSystemManager diskFileSystemManager) {
+    public void setMainFileSystem(DiskFileSystem mainFileSystem) {
+        if (this.mainFileSystem != null) {
+            throw new IllegalArgumentException("已经设置了主文件系统:" + mainFileSystem.getClass());
+        }
         this.mainFileSystem = mainFileSystem;
-        this.mountPointService = mountPointService;
-        this.diskFileSystemManager = diskFileSystemManager;
     }
+
+    //    /**
+//     * 构造一个指派器
+//     * @param mainFileSystem        主文件系统
+//     * @param mountPointService     挂载点服务
+//     * @param diskFileSystemManager 文件系统管理器
+//     */
+//    public DiskFileSystemDispatcher(DiskFileSystem mainFileSystem, MountPointService mountPointService, DiskFileSystemManager diskFileSystemManager) {
+//        this.mainFileSystem = mainFileSystem;
+//        this.mountPointService = mountPointService;
+//        this.diskFileSystemManager = diskFileSystemManager;
+//    }
 
     @Override
     public Resource getThumbnail(int uid, String path, String name) throws IOException {
@@ -158,11 +172,13 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveAvatar(int uid, Resource resource) throws IOException {
         mainFileSystem.saveAvatar(uid, resource);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean quickSave(int uid, String path, String name, String md5) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         return matchResult.fileSystem.quickSave(uid, matchResult.resolvedPath, name, md5);
@@ -175,6 +191,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException {
         FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, path);
         FileSystemMatchResult targetMatchResult = matchFileSystem(uid, dest);
@@ -185,6 +202,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void extractArchive(int uid, String path, String name, String dest) throws IOException {
         FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, path);
         FileSystemMatchResult targetMatchResult = matchFileSystem(uid, dest);
@@ -212,6 +230,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String mkdirs(int uid, String path) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         if (matchResult.isMountPath(path)) {
@@ -311,11 +330,13 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
         doCopy(uid, source, target, targetUid, sourceName, targetName, overwrite, 0);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
         FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
         FileSystemMatchResult targetMatchResult = matchFileSystem(uid, target);
@@ -360,30 +381,35 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void moveToSaveFile(int uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         matchResult.fileSystem.moveToSaveFile(uid, nativeFilePath, matchResult.resolvedPath, fileInfo);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public long saveFile(int uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         return matchResult.fileSystem.saveFile(uid, stream, path, fileInfo);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public long saveFile(int uid, MultipartFile file, String requestPath, String md5) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, requestPath);
         return matchResult.fileSystem.saveFile(uid, file, matchResult.resolvedPath, md5);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void mkdir(int uid, String path, String name) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         matchResult.fileSystem.mkdir(uid, matchResult.resolvedPath, name);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public long deleteFile(int uid, String path, List<String> name) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         // 得到挂载完整路径 -> 挂载点 的map
@@ -410,6 +436,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void rename(int uid, String path, String name, String newName) throws IOException {
         String originPath = StringUtils.appendPath(path, name);
         FileSystemMatchResult matchResult = matchFileSystem(uid, originPath);
@@ -429,5 +456,16 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             matchResult.fileSystem.rename(uid, matchResult.resolvedPath, name, newName);
         }
 
+    }
+
+    @Override
+    public String toString() {
+        if (mainFileSystem == null) {
+            log.error("{}找不到主文件系统！请检查是否正确配置sys.store.type", LOG_PREFIX);
+            log.error("{}Could not find main filesystem! Please check whether sys.store.type is configured correctly", LOG_PREFIX);
+            throw new IllegalArgumentException("!!! Could not find main filesystem! Please check whether sys.store.type is configured correctly !!!");
+        } else {
+            return mainFileSystem.getClass().getSimpleName() + " - Proxy by DiskFileSystemDispatcher";
+        }
     }
 }

@@ -15,8 +15,7 @@ public class FileServiceDetector implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        log.info("[CORE]file-system-factory  ：{}", fileSystemFactory.getClass().getSimpleName());
-        log.info("[CORE]file-system          ：{}", fileSystemFactory.getMainFileSystem().getClass().getSimpleName());
+        log.info("[CORE]file-system          ：{}", fileSystemFactory.getMainFileSystem().toString());
         log.info("[CORE]store-service-factory：{}", storeServiceFactory.getClass().getSimpleName());
         log.info("[CORE]store-service        ：{}", storeServiceFactory.getService().getClass().getSimpleName());
     }

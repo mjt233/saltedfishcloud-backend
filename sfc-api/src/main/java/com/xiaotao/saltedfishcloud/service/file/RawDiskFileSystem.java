@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.Getter;
 import lombok.Setter;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,8 +29,13 @@ import java.util.stream.Collectors;
  * 需要手动设置单独的ThumbnailService以提供缩略图服务
  */
 public class RawDiskFileSystem implements DiskFileSystem {
+    @Getter
     private final DirectRawStoreHandler storeHandler;
+
+    @Getter
     private final CopyAndMoveHandler camHandler;
+
+    @Getter
     private final String basePath;
 
     @Setter

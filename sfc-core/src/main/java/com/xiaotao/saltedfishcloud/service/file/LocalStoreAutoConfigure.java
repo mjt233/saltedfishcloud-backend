@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreServiceFact
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStoreService;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -32,13 +33,14 @@ public class LocalStoreAutoConfigure implements FeatureProvider {
 
     @Bean
     public DiskFileSystem defaultDiskFileSystem() {
-        DefaultFileSystem fileSystem = new DefaultFileSystem();
-        diskFileSystemManager.setMainFileSystem(fileSystem);
-        return fileSystem;
+        DefaultFileSystem defaultFileSystem = new DefaultFileSystem();
+        diskFileSystemManager.setMainFileSystem(defaultFileSystem);
+        return defaultFileSystem;
     }
 
     @Override
     public void registerFeature(HelloService helloService) {
         helloService.appendFeatureDetail("fileSystem", "local");
     }
+
 }

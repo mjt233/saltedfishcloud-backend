@@ -14,6 +14,12 @@ public interface DiskFileSystemFactory {
     DiskFileSystem getFileSystem(Map<String, Object> params) throws FileSystemParameterException;
 
     /**
+     * 以测试的方式尝试去获取文件系统
+     * @param params    获取参数
+     */
+    DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException;
+
+    /**
      * 获取该文件系统的描述信息，
      * @return  协议名称
      */
