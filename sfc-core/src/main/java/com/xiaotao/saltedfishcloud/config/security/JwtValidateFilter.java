@@ -52,19 +52,17 @@ public class JwtValidateFilter extends OncePerRequestFilter {
             return;
         } else {
             // 获取到token
-            try {
                 // 将其token的负载数据json反序列化为User对象
-                User user = MAPPER.readValue(JwtUtils.parse(token), User.class);
+            User user = MAPPER.readValue(JwtUtils.parse(token), User.class);
 
-                // 判断token是否有效（是否存在redis）
-                if (tokenDao.isTokenValid(user.getId(), token)) {
-                    // token有效，设置SpringSecurity鉴权上下文
-                    SecurityContextHolder.getContext()
-                            .setAuthentication(
-                                    new UsernamePasswordAuthenticationToken( user, null, user.getAuthorities())
-                            );
-                }
-            } catch (Exception ignored) { }
+            // 判断token是否有效（是否存在redis）
+            if (tokenDao.isTokenValid(user.getId(), token)) {
+                // token有效，设置SpringSecurity鉴权上下文
+                SecurityContextHolder.getContext()
+                        .setAuthentication(
+                                new UsernamePasswordAuthenticationToken( user, null, user.getAuthorities())
+                        );
+            }
         }
         chain.doFilter(req, response);
     }
