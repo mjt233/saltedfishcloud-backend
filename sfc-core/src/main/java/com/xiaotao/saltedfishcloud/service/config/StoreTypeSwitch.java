@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DiskFileSystemDispatcher;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,7 @@ public class StoreTypeSwitch {
 //        throw new UnsupportedOperationException("未开发完成");
         final DiskFileSystem fileSystem = fileService.getMainFileSystem();
 
-        if (!(fileSystem instanceof DefaultFileSystem)) {
+        if (!(fileSystem instanceof DefaultFileSystem) && !(fileSystem instanceof DiskFileSystemDispatcher)) {
             throw new UnsupportedOperationException("当前文件系统或存储服务不支持切换");
         }
 
