@@ -27,11 +27,13 @@ import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,7 +47,8 @@ import java.util.*;
 import java.util.zip.ZipException;
 
 @Slf4j
-public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, FeatureProvider {
+@Component
+public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, FeatureProvider, InitializingBean {
     private final static String LOG_TITLE = "FileSystem";
 
     @Autowired
@@ -74,6 +77,14 @@ public class DefaultFileSystem implements DiskFileSystem, ApplicationRunner, Fea
 
     @Autowired
     private ThumbnailService thumbnailService;
+
+    @Autowired
+    private DiskFileSystemManager diskFileSystemManager;
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        diskFileSystemManager.setMainFileSystem(this);
+    }
 
     /**
      * 获取写文件时用到分布式锁key
