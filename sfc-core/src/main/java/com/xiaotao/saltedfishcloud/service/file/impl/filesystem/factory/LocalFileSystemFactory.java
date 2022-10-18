@@ -29,6 +29,7 @@ public class LocalFileSystemFactory implements DiskFileSystemFactory, Initializi
                                         .title("要挂载的路径")
                                         .describe("选择咸鱼云所在的服务器的本地文件系统目录")
                                         .defaultValue("/")
+                                        .required(true)
                                         .inputType("text")
                                         .build()
                         ))

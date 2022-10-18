@@ -100,4 +100,9 @@ public class ConfigNode {
      * 是否在菜单中隐藏
      */
     private boolean hide;
+
+    /**
+     * 是否必填
+     */
+    private boolean required;
 }

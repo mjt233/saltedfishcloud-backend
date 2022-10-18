@@ -2,10 +2,12 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -73,7 +76,11 @@ public class DefaultFileSystemManager implements DiskFileSystemManager {
 
     @Override
     public List<DiskFileSystemFactory> listPublicFileSystem() {
-        return new ArrayList<>(factoryMap.values());
-//        return factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).collect(Collectors.toList());
+        User user = SecureUtils.getSpringSecurityUser();
+        if (user != null && user.isAdmin()) {
+            return new ArrayList<>(factoryMap.values());
+        } else {
+            return factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).collect(Collectors.toList());
+        }
     }
 }
