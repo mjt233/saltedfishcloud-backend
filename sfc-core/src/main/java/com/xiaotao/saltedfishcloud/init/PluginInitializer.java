@@ -66,7 +66,7 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
 
             PathResource pathResource = new PathResource(path);
             log.info("{}从额外资源路径加载插件：{}",LOG_PREFIX, path);
-            DirPathClassLoader classLoader = new DirPathClassLoader(path);
+            DirPathClassLoader classLoader = new DirPathClassLoader(path, this.getClass().getClassLoader());
             pluginManager.register(pathResource, classLoader);
         }
     }

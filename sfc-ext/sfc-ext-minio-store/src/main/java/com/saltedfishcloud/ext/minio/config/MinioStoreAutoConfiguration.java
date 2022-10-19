@@ -1,5 +1,8 @@
-package com.saltedfishcloud.ext.minio;
+package com.saltedfishcloud.ext.minio.config;
 
+import com.saltedfishcloud.ext.minio.MinioDirectRawHandler;
+import com.saltedfishcloud.ext.minio.MinioProperties;
+import com.saltedfishcloud.ext.minio.MinioStoreService;
 import com.saltedfishcloud.ext.minio.utils.MinioUtils;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;

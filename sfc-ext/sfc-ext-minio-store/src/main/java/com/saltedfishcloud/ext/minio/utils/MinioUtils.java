@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.temporal.ChronoField;
+import java.util.Optional;
 
 public class MinioUtils {
 
@@ -90,6 +91,10 @@ public class MinioUtils {
         }
     }
 
+    public static boolean isRootPath(String path) {
+        return !StringUtils.hasText(path) || "/".equals(path);
+    }
+
     public static boolean isNotFound(Exception e) {
         if (e instanceof ErrorResponseException) {
             return ((ErrorResponseException) e).response().code() == 404;
@@ -108,12 +113,18 @@ public class MinioUtils {
 
     public static FileInfo itemToFileInfo(MinioClient client, String bucket, Item item) {
         boolean isDir = item.objectName().endsWith("/");
+        long lastModified;
+        try {
+            lastModified = item.lastModified().getLong(ChronoField.MILLI_OF_SECOND);
+        } catch (NullPointerException e) {
+            lastModified = 0;
+        }
         return new FileInfo(
                 StringUtils.getURLLastName(item.objectName()),
                 item.size(),
                 isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE,
                 MinioUtils.toDirectoryName(item.objectName()),
-                item.lastModified().getLong(ChronoField.MILLI_OF_SECOND),
+                lastModified,
                 isDir ? null : () -> {
                     try {
                         return client.getObject(GetObjectArgs.builder()

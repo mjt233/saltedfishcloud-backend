@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import io.minio.*;
+import io.minio.errors.*;
 import io.minio.messages.Item;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -16,6 +17,8 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -76,10 +79,12 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
 
     @Override
     public List<FileInfo> listFiles(String path) throws IOException {
-        Iterable<Result<Item>> results = client.listObjects(ListObjectsArgs.builder()
-                .bucket(properties.getBucket())
-                .prefix(MinioUtils.toDirectoryName(path))
-                .build());
+        ListObjectsArgs.Builder builder = ListObjectsArgs.builder()
+                .bucket(properties.getBucket());
+        if (!MinioUtils.isRootPath(path)) {
+            builder.prefix(MinioUtils.toDirectoryName(path));
+        }
+        Iterable<Result<Item>> results = client.listObjects(builder.build());
 
         List<FileInfo> fileInfos = new ArrayList<>();
         for (Result<Item> result : results) {
@@ -98,26 +103,32 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
         return fileInfos;
     }
 
+    private boolean checkDirExist(String path) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        Iterable<Result<Item>> results = client.listObjects(ListObjectsArgs.builder()
+                .bucket(properties.getBucket())
+                .prefix(MinioUtils.toDirectoryName(path))
+                .maxKeys(1)
+                .build());
+        for (Result<Item> item : results) {
+            log.debug("{}->存在子对象：{}",LOG_PREFIX, item.get().objectName());
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public boolean exist(String path) {
         try {
             log.debug("{}<-检测是否存在：{}", LOG_PREFIX, path);
+            if (MinioUtils.isRootPath(path)) {
+                return checkDirExist(path);
+            }
             StatObjectResponse stat = MinioUtils.getStat(client, properties.getBucket(), path);
             if(stat != null) {
                 log.debug("{}->存在对象：{}", LOG_PREFIX, stat.object());
                 return true;
             }
-            Iterable<Result<Item>> results = client.listObjects(ListObjectsArgs.builder()
-                    .bucket(properties.getBucket())
-                    .prefix(MinioUtils.toDirectoryName(path))
-                    .maxKeys(1)
-                    .build());
-            for (Result<Item> item : results) {
-                log.debug("{}->存在子对象：{}",LOG_PREFIX, item.get().objectName());
-                return true;
-            }
-            log.debug("{}->对象不存在：{}", LOG_PREFIX, path);
-            return false;
+            return checkDirExist(path);
         } catch (Exception e) {
             if (MinioUtils.isNotFound(e)) {
                 return false;

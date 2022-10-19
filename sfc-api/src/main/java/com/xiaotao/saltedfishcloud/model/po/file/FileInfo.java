@@ -115,6 +115,9 @@ public class FileInfo extends BasicFileInfo{
         this.path = path;
         this.lastModified = lastModified;
         this.streamSource = streamSource;
+        if (type == TYPE_DIR) {
+            this.size = -1;
+        }
     }
 
     /**
