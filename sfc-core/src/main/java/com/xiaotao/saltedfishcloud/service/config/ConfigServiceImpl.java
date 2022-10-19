@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 /**
  * 配置服务实现类
- * @TODO 监听机制实现线程安全
+ * TODO 监听机制实现线程安全
  */
 @Service
 @Slf4j
@@ -108,7 +108,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     /**
      * 设置一个配置项
-     * @TODO 将写死的配置响应事件使用监听器功能重构
+     * TODO 将写死的配置响应事件使用监听器功能重构
      * @param key       配置项
      * @param value     配置值
      */
@@ -167,14 +167,5 @@ public class ConfigServiceImpl implements ConfigService {
             throw e;
         }
         return true;
-    }
-
-    /**
-     * 设置系统注册邀请码
-     * @param code  邀请码
-     */
-    public void setInviteRegCode(String code) {
-        configDao.setConfigure(SysConfigName.Register.SYS_REGISTER_REG_CODE, code);
-        sysProperties.getCommon().setRegCode(code);
     }
 }
