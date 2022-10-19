@@ -58,7 +58,7 @@ public interface SysConfigName {
         /**
          * 注册邀请码
          */
-        String SYS_REGISTER_REG_CODE = "sys.register.regCode";
+        String SYS_REGISTER_REG_CODE = "sys.register.reg_code";
     }
 
     /**

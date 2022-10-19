@@ -83,9 +83,16 @@ public class ConfigureInitializer implements ApplicationRunner {
      * 订阅配置变更并同步到配置类
      */
     private void subscribeConfigureChange() {
-        configService.addBeforeSetListener(SysConfigName.Store.SYNC_INTERVAL, e -> sysProperties.getSync().setInterval(Integer.parseInt(e)));
-        configService.addBeforeSetListener(SysConfigName.Register.SYS_REGISTER_REG_CODE, e -> sysProperties.getCommon().setRegCode(e));
-        configService.addBeforeSetListener(SysConfigName.Store.SYS_STORE_TYPE, e -> sysProperties.getStore().setMode(e));
-        configService.addBeforeSetListener(SysConfigName.Safe.TOKEN, JwtUtils::setSecret);
+        configService.addAfterSetListener(SysConfigName.Store.SYNC_INTERVAL, e -> sysProperties.getSync().setInterval(Integer.parseInt(e)));
+        configService.addAfterSetListener(SysConfigName.Register.SYS_REGISTER_REG_CODE, e -> sysProperties.getCommon().setRegCode(e));
+        configService.addAfterSetListener(SysConfigName.Store.SYS_STORE_TYPE, e -> {
+            try {
+                configService.setStoreType(StoreMode.valueOf(e));
+                sysProperties.getStore().setMode(e);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+        configService.addAfterSetListener(SysConfigName.Safe.TOKEN, JwtUtils::setSecret);
     }
 }
