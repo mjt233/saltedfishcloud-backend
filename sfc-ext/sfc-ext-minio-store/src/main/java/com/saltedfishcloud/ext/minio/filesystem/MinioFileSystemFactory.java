@@ -26,7 +26,7 @@ public class MinioFileSystemFactory implements DiskFileSystemFactory {
     private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
             .isPublic(true)
             .protocol("minio")
-            .name("minio")
+            .name("Minio对象存储")
             .describe("Minio对象存储")
             .configNode(Collections.singletonList(ConfigNode.builder()
                             .title("基本信息")
