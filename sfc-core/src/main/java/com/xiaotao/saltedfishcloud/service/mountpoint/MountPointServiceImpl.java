@@ -168,6 +168,10 @@ public class MountPointServiceImpl implements MountPointService {
         if(fileSystemManager.getMainFileSystem().exist(Math.toIntExact(mountPoint.getUid()), path)) {
             throw new JsonException(FileSystemError.FILE_EXIST);
         }
+        boolean protocolIsAvailable = fileSystemManager.listPublicFileSystem().stream().anyMatch(e -> e.getDescribe().getProtocol().equals(mountPoint.getProtocol()));
+        if (!protocolIsAvailable) {
+            throw new JsonException("找不到或无权创建对应的文件系统协议");
+        }
         DiskFileSystem targetFileSystem = fileSystemManager.getFileSystem(mountPoint.getProtocol(), MapperHolder.parseJsonToMap(mountPoint.getParams()));
         if (targetFileSystem == null) {
             throw new JsonException("无法挂载目标文件系统");
