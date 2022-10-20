@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -20,6 +21,7 @@ import java.nio.file.Paths;
 @Component
 @RequiredArgsConstructor
 public class FtpUploadHandler extends DefaultFtplet {
+    private final static String LOG_PREFIX = "[FtpLet]";
     private final DiskFileSystemManager fileService;
     private final UserDao userDao;
 
@@ -60,7 +62,10 @@ public class FtpUploadHandler extends DefaultFtplet {
           获取FTP接收的临时文件路径
          */
         Path nativePath = Paths.get(tmpDir + File.separator + tag);
-
+        if (!Files.exists(nativePath)) {
+            log.debug("{}不存在对应的临时本地文件", LOG_PREFIX);
+            return FtpletResult.DEFAULT;
+        }
         FileInfo fileInfo = FileInfo.getLocal(nativePath.toString());
         fileInfo.setName(pathInfo.getName());
         fileService.getMainFileSystem().moveToSaveFile(uid, nativePath, pathInfo.getResourceParent(), fileInfo);

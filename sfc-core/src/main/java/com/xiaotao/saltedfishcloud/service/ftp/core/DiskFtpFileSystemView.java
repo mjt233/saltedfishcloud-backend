@@ -81,7 +81,7 @@ public class DiskFtpFileSystemView implements FileSystemView {
         if (file.startsWith("/")) {
             path = file;
         } else {
-            path = pathBuilder.toString() + "/" +file;
+            path = pathBuilder + "/" +file;
         }
         return new DiskFtpFile(path, user, fileSystemProvider);
     }

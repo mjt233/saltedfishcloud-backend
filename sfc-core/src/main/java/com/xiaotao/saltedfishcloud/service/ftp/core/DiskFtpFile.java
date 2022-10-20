@@ -10,6 +10,7 @@ import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FtpFile;
 import org.springframework.core.io.Resource;
@@ -20,6 +21,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.aspectj.weaver.tools.cache.SimpleCacheFactory.path;
 
 @Slf4j
 public class DiskFtpFile implements FtpFile {
@@ -35,6 +38,14 @@ public class DiskFtpFile implements FtpFile {
     @Getter
     private boolean isRoot;
 
+    private boolean noResource;
+
+    @Setter
+    private Boolean isDir;
+
+    @Setter
+    private Boolean isExist;
+
     /**
      * 构造一个网盘FTP文件
      * @param path  请求的FTP路径
@@ -47,12 +58,22 @@ public class DiskFtpFile implements FtpFile {
         resourceUid = pathInfo.isPublicArea() ? User.getPublicUser().getId() : user.getId();
         if (pathInfo.isFtpRoot() || pathInfo.isResourceRoot()) {
             isRoot = true;
-            return;
         }
-        try {
-            fileResource = fileService.getMainFileSystem().getResource(resourceUid, pathInfo.getResourceParent(), pathInfo.getName());
-        } catch (IOException e) {
-            e.printStackTrace();
+    }
+    protected Resource getFileResource() {
+        if (fileResource != null) {
+            return fileResource;
+        } else if (noResource) {
+            return null;
+        } else {
+            try {
+                fileResource = fileService.getMainFileSystem().getResource(resourceUid, pathInfo.getResourceParent(), pathInfo.getName());
+                return fileResource;
+            } catch (IOException e) {
+                noResource = true;
+                e.printStackTrace();
+                return null;
+            }
         }
     }
     @Override
@@ -72,11 +93,16 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean isDirectory() {
-        if (pathInfo.isFtpRoot() || pathInfo.isResourceRoot() || fileResource == null) {
-            return true;
-        } else {
-            return fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath()) && fileResource == null;
+        if (isDir != null) {
+            return isDir;
         }
+
+        if (pathInfo.isFtpRoot() || pathInfo.isResourceRoot() || getFileResource() == null) {
+            isDir = true;
+        } else {
+            isDir = fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath()) && getFileResource() == null;
+        }
+        return isDir;
     }
 
     @Override
@@ -86,7 +112,11 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean doesExist() {
-        return isRoot || fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath());
+        if (isExist != null) {
+            return isExist;
+        }
+        isExist = isRoot || fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath());
+        return isExist;
     }
 
     @Override
@@ -137,6 +167,7 @@ public class DiskFtpFile implements FtpFile {
      */
     @Override
     public long getLastModified() {
+        Resource fileResource = getFileResource();
         if (isRoot() || fileResource == null) {
             return System.currentTimeMillis();
         } else {
@@ -157,6 +188,7 @@ public class DiskFtpFile implements FtpFile {
     @Override
     public long getSize() {
         try {
+            Resource fileResource = getFileResource();
             if (fileResource == null) {
                 return 0;
             } else {
@@ -233,6 +265,16 @@ public class DiskFtpFile implements FtpFile {
         }
     }
 
+    protected List<? extends FtpFile> fileInfo2FtpFile(List<FileInfo> fileInfos) {
+        return fileInfos.stream().map(fileInfo -> {
+            String path = getAbsolutePath();
+            DiskFtpFile ftpFile = new DiskFtpFile(path + "/" + fileInfo.getName(), user, fileService);
+            ftpFile.isDir = fileInfo.isDir();
+            ftpFile.isExist = true;
+            return ftpFile;
+        }).collect(Collectors.toList());
+    }
+
     @Override
     public List<? extends FtpFile> listFiles() {
         if (pathInfo.isFtpRoot()) {
@@ -249,11 +291,16 @@ public class DiskFtpFile implements FtpFile {
             if (userFileList == null) {
                 return Collections.emptyList();
             }
-            String path = getAbsolutePath();
-            List<FileInfo> res = new ArrayList<>();
-            res.addAll(userFileList[0]);
-            res.addAll(userFileList[1]);
-            return res.stream().map(f -> new DiskFtpFile(path + "/" + f.getName(), user, fileService)).collect(Collectors.toList());
+            List<FtpFile> res = new ArrayList<>();
+            if (userFileList[0] != null) {
+                List<? extends FtpFile> ftpFiles = fileInfo2FtpFile(userFileList[0]);
+                res.addAll(ftpFiles);
+            }
+            if (userFileList[1] != null) {
+                List<? extends FtpFile> ftpFiles = fileInfo2FtpFile(userFileList[1]);
+                res.addAll(ftpFiles);
+            }
+            return res;
         } catch (IOException e) {
             e.printStackTrace();
             return Collections.emptyList();
@@ -280,12 +327,12 @@ public class DiskFtpFile implements FtpFile {
         if (offset > 0) {
             throw new IOException("Not support random write");
         }
-        return new FileOutputStream(new File(tmpDir + File.separator + tag));
+        return new FileOutputStream(tmpDir + File.separator + tag);
     }
 
     @Override
     public InputStream createInputStream(long offset) throws IOException {
-        InputStream inputStream = fileResource.getInputStream();
+        InputStream inputStream = getFileResource().getInputStream();
         if (inputStream.skip(offset) != offset) {
             throw new IOException("Out of offset");
         }
