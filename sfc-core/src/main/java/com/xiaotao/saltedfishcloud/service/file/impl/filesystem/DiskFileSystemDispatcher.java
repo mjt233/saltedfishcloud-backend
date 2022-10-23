@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
@@ -7,12 +8,14 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.AbstractDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -75,7 +78,7 @@ class FileSystemMatchResult {
  */
 @Slf4j
 @Component
-public class DiskFileSystemDispatcher implements DiskFileSystem {
+public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements DiskFileSystem {
     private final static String LOG_PREFIX = "[FileSystemDispatcher]";
 
     private DiskFileSystem mainFileSystem;
@@ -86,24 +89,28 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Autowired
     private DiskFileSystemManager diskFileSystemManager;
 
+    @Autowired
+    private RedissonClient redisson;
+
+    @Autowired
+    private SysProperties sysProperties;
+
+    @Override
+    protected RedissonClient getRedissonClient() {
+        return redisson;
+    }
+
+    @Override
+    protected SysProperties getSysProperties() {
+        return sysProperties;
+    }
+
     public void setMainFileSystem(DiskFileSystem mainFileSystem) {
         if (this.mainFileSystem != null) {
             throw new IllegalArgumentException("已经设置了主文件系统:" + mainFileSystem.getClass());
         }
         this.mainFileSystem = mainFileSystem;
     }
-
-    //    /**
-//     * 构造一个指派器
-//     * @param mainFileSystem        主文件系统
-//     * @param mountPointService     挂载点服务
-//     * @param diskFileSystemManager 文件系统管理器
-//     */
-//    public DiskFileSystemDispatcher(DiskFileSystem mainFileSystem, MountPointService mountPointService, DiskFileSystemManager diskFileSystemManager) {
-//        this.mainFileSystem = mainFileSystem;
-//        this.mountPointService = mountPointService;
-//        this.diskFileSystemManager = diskFileSystemManager;
-//    }
 
     @Override
     public Resource getThumbnail(int uid, String path, String name) throws IOException {
@@ -182,34 +189,6 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     public boolean quickSave(int uid, String path, String name, String md5) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         return matchResult.fileSystem.quickSave(uid, matchResult.resolvedPath, name, md5);
-    }
-
-    @Override
-    public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {
-        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
-        matchResult.fileSystem.compressAndWriteOut(uid, matchResult.resolvedPath, names, type, outputStream);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException {
-        FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, path);
-        FileSystemMatchResult targetMatchResult = matchFileSystem(uid, dest);
-        if (!sourceMatchResult.fileSystem.equals(mainFileSystem) || !targetMatchResult.fileSystem.equals(mainFileSystem)) {
-            throw new UnsupportedOperationException("暂不支持对挂载路径进行在线压缩到网盘操作");
-        }
-        sourceMatchResult.fileSystem.compress(uid, sourceMatchResult.resolvedPath, names, dest, type);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void extractArchive(int uid, String path, String name, String dest) throws IOException {
-        FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, path);
-        FileSystemMatchResult targetMatchResult = matchFileSystem(uid, dest);
-        if (!sourceMatchResult.fileSystem.equals(mainFileSystem) || !targetMatchResult.fileSystem.equals(mainFileSystem)) {
-            throw new UnsupportedOperationException("暂不支持对挂载路径进行解压操作");
-        }
-        sourceMatchResult.fileSystem.extractArchive(uid, sourceMatchResult.resolvedPath, name, dest);
     }
 
     @Override

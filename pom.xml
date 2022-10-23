@@ -30,7 +30,7 @@
         <!--  前端项目路径，配置后在package时自动打包到webapp/static -->
 <!--        <sfc.front-end-path>C:\Users\xiaotao\code\saltedfishcloud-frontend</sfc.front-end-path>-->
         <java.version>11</java.version>
-        <api.version>1.7.0</api.version>
+        <api.version>1.11.0</api.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
