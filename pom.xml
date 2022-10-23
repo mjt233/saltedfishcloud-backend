@@ -10,7 +10,6 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <modules>
-        <module>sfc-compress</module>
         <module>sfc-core</module>
         <module>sfc-api</module>
         <module>sfc-ext</module>
@@ -37,6 +36,11 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.21</version>
+        </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>

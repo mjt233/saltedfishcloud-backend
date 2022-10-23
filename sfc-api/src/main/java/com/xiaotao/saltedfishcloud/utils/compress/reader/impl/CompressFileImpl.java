@@ -1,14 +1,9 @@
-package com.xiaotao.saltedfishcloud.compress.reader.impl;
+package com.xiaotao.saltedfishcloud.utils.compress.reader.impl;
 
-import com.xiaotao.saltedfishcloud.compress.reader.CompressFile;
-import com.xiaotao.saltedfishcloud.compress.utils.CharacterUtils;
+import com.xiaotao.saltedfishcloud.utils.compress.reader.CompressFile;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
-import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import com.xiaotao.saltedfishcloud.validator.RejectRegex;
-import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
 import java.util.regex.Pattern;

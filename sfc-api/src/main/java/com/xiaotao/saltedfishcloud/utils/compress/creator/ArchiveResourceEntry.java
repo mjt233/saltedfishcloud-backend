@@ -1,6 +1,6 @@
-package com.xiaotao.saltedfishcloud.compress.creator;
+package com.xiaotao.saltedfishcloud.utils.compress.creator;
 
-import com.xiaotao.saltedfishcloud.compress.reader.CompressFile;
+import com.xiaotao.saltedfishcloud.utils.compress.reader.CompressFile;
 import org.springframework.core.io.InputStreamSource;
 
 import java.io.IOException;

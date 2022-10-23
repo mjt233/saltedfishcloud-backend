@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.compress.utils;
+package com.xiaotao.saltedfishcloud.utils;
 
 public class ArchiveUtils {
     public static boolean isDirectory(String full) {

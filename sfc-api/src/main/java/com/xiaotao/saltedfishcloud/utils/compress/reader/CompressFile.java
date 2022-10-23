@@ -1,7 +1,7 @@
-package com.xiaotao.saltedfishcloud.compress.reader;
+package com.xiaotao.saltedfishcloud.utils.compress.reader;
 
-import com.xiaotao.saltedfishcloud.compress.reader.impl.CompressFileImpl;
-import com.xiaotao.saltedfishcloud.compress.utils.ArchiveUtils;
+import com.xiaotao.saltedfishcloud.utils.compress.reader.impl.CompressFileImpl;
+import com.xiaotao.saltedfishcloud.utils.ArchiveUtils;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
 public abstract class CompressFile {

@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.compress.reader;
+package com.xiaotao.saltedfishcloud.utils.compress.reader;
 
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;

@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
-import com.xiaotao.saltedfishcloud.compress.creator.ArchiveCompressor;
-import com.xiaotao.saltedfishcloud.compress.creator.ArchiveResourceEntry;
-import com.xiaotao.saltedfishcloud.compress.creator.ZipCompressor;
-import com.xiaotao.saltedfishcloud.compress.reader.ArchiveReaderVisitor;
-import com.xiaotao.saltedfishcloud.compress.reader.impl.ZipArchiveReader;
+import com.xiaotao.saltedfishcloud.utils.compress.creator.ArchiveCompressor;
+import com.xiaotao.saltedfishcloud.utils.compress.creator.ArchiveResourceEntry;
+import com.xiaotao.saltedfishcloud.utils.compress.creator.ZipCompressor;
+import com.xiaotao.saltedfishcloud.utils.compress.reader.ArchiveReaderVisitor;
+import com.xiaotao.saltedfishcloud.utils.compress.reader.impl.ZipArchiveReader;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;

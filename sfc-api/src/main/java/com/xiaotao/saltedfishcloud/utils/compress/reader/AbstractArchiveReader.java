@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.compress.reader;
+package com.xiaotao.saltedfishcloud.utils.compress.reader;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;

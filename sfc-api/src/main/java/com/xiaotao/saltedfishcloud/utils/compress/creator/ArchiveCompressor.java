@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.compress.creator;
+package com.xiaotao.saltedfishcloud.utils.compress.creator;
 
 import java.io.Closeable;
 import java.io.IOException;
