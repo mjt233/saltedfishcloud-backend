@@ -82,7 +82,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
      * @return      缩略图资源，生成失败则为null
      */
     protected Resource generate(Resource resource, String ext, String id) throws IOException {
-        ThumbnailHandler handler = handlerCache.get(ext);
+        ThumbnailHandler handler = handlerCache.get(ext.toLowerCase());
         if (handler == null) {
             return null;
         }
@@ -168,7 +168,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     public void registerHandler(ThumbnailHandler thumbnailHandler) {
         String name = thumbnailHandler.getClass().getSimpleName();
         for (String s : thumbnailHandler.getSupportType()) {
-            handlerCache.put(s, thumbnailHandler);
+            handlerCache.put(s.toLowerCase(), thumbnailHandler);
         }
         log.info("{}为{}类型注册缩略图生成器{}", LOG_TITLE, thumbnailHandler.getSupportType(), name);
     }
