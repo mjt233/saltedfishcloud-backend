@@ -108,15 +108,19 @@ public class StringUtils {
     }
 
     public static String getURLLastName(String url) {
+        return getURLLastName(url, "/");
+    }
+
+    public static String getURLLastName(String url, String spec) {
         String path = url;
         int qsIndex = path.indexOf("?");
         if (qsIndex != -1) {
             path = path.substring(0, qsIndex);
         }
-        if (path.endsWith("/")) {
+        if (path.endsWith(spec)) {
             path = path.substring(0, path.length() -1);
         }
-        int i = path.lastIndexOf("/");
+        int i = path.lastIndexOf(spec);
         if (i == -1) {
             if (path.length() > 0) {
                 return path;

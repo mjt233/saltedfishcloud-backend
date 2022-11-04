@@ -23,6 +23,7 @@
         <module>sfc-ext-demo</module>
         <module>sfc-ext-mp3-thumbnail</module>
         <module>sfc-ext-minio-store</module>
+        <module>sfc-ext-samba-store</module>
     </modules>
 
 
@@ -31,6 +32,12 @@
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
             <version>${api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.30</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

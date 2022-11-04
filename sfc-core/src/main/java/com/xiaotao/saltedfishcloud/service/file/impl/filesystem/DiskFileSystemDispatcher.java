@@ -249,7 +249,7 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
                     .filter(e -> e.getName().equals(sourceName))
                     .findAny()
                     .orElseThrow(() -> new IOException(source + "/" + sourceName + " 不存在"));
-
+            fileInfo.setStreamSource(sourceResource);
             targetMatchResult.fileSystem.saveFile(targetUid, sourceResource.getInputStream(), targetMatchResult.resolvedPath, fileInfo);
             return;
         }
@@ -264,6 +264,9 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
         if (fileList != null) {
             for (FileInfo fileInfo : fileList) {
                 Resource resource = sourceMatchResult.fileSystem.getResource(uid, resolvedSourcePath, fileInfo.getName());
+                if (targetMatchResult.fileSystem == mainFileSystem) {
+                    fileInfo.setStreamSource(resource);
+                }
                 try(InputStream inputStream = resource.getInputStream()) {
                     targetMatchResult.fileSystem.saveFile(targetUid, inputStream, resolvedTargetPath, fileInfo);
                 }
@@ -291,6 +294,7 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
                 existFile = Collections.emptySet();
             }
 
+            int nextDepth = depth + 1;
             for (FileInfo fileInfo : dirList) {
                 // 跳过挂载点
                 if (fileInfo.isMount()) {
@@ -303,7 +307,7 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
                     }
                     targetMatchResult.fileSystem.mkdir(targetUid, resolvedTargetPath, fileInfo.getName());
                 }
-                doCopy(uid, StringUtils.appendPath(source, sourceName), StringUtils.appendPath(target, targetName), targetUid, fileInfo.getName(), fileInfo.getName(), overwrite, ++depth);
+                doCopy(uid, StringUtils.appendPath(source, sourceName), StringUtils.appendPath(target, targetName), targetUid, fileInfo.getName(), fileInfo.getName(), overwrite, nextDepth);
             }
         }
     }

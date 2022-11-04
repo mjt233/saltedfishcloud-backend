@@ -44,7 +44,8 @@ public class MapValidator<K,V> {
     }
 
     /**
-     * 执行校验
+     * 执行校验，校验不通过将抛出IllegalArgumentException
+     * @throws IllegalArgumentException 校验不通过
      */
     public void valid() {
         List<String> invalidPropertyList = new ArrayList<>();

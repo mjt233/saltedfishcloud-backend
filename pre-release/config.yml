@@ -17,6 +17,13 @@ spring:
 #    database: 0
 #    password:
 
+logging:
+  level:
+    org: warn
+    com: warn
+    com.xiaotao: info
+    com.saltedfishcloud: info
+    com.xiaotao.saltedfishcloud.dao.mybatis: warn
 sys:
   common:
     # 注册邀请码

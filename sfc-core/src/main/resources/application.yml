@@ -56,6 +56,7 @@ plugin:
   # 额外加载的插件资源
   extra-resource:
 #    - sfc-ext/sfc-ext-minio-store
+#   - sfc-ext/sfc-ext-samba-store
 #    - sfc-ext/sfc-ext-hadoop-store
 #    - sfc-ext/sfc-ext-mp3-thumbnail
 #    - sfc-ext/sfc-ext-demo

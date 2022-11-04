@@ -1,9 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
