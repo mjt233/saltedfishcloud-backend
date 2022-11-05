@@ -11,6 +11,7 @@ import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolExcept
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
@@ -155,6 +156,7 @@ public class MountPointServiceImpl implements MountPointService {
         mountPointRepo.save(mountPoint);
     }
 
+
     /**
      * 创建挂载点
      * @param mountPoint    待创建的挂载点
@@ -172,9 +174,19 @@ public class MountPointServiceImpl implements MountPointService {
         if (!protocolIsAvailable) {
             throw new JsonException("找不到或无权创建对应的文件系统协议");
         }
-        DiskFileSystem targetFileSystem = fileSystemManager.getFileSystem(mountPoint.getProtocol(), MapperHolder.parseJsonToMap(mountPoint.getParams()));
-        if (targetFileSystem == null) {
-            throw new JsonException("无法挂载目标文件系统");
+
+        // 测试挂载点参数
+        Map<String, Object> paramMap = MapperHolder.parseJsonToMap(mountPoint.getParams());
+        DiskFileSystemFactory factory = fileSystemManager.getFileSystemFactory(mountPoint.getProtocol());
+        if (factory == null) {
+            throw new JsonException("不支持的协议" + mountPoint.getProtocol());
+        }
+        DiskFileSystem fileSystem = factory.testGet(paramMap);
+        try {
+            fileSystem.getUserFileList(0, "/");
+        } catch (IOException e) {
+            log.error("{}挂载测试失败：", LOG_PREFIX, e);
+            throw new JsonException("挂载测试失败:" + e);
         }
 
         // 主表保存

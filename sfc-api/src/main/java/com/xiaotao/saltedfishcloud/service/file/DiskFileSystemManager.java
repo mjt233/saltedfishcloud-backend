@@ -45,6 +45,12 @@ public interface DiskFileSystemManager {
     DiskFileSystem getFileSystem(String protocol, Map<String, Object> params) throws FileSystemParameterException;
 
     /**
+     * 获取文件系统工程
+     * @param protocol  文件协议
+     */
+    DiskFileSystemFactory getFileSystemFactory(String protocol);
+
+    /**
      * 判断所有注册的文件系统中是否含有支持指定协议的
      */
     boolean isSupportedProtocol(String protocol);

@@ -18,6 +18,7 @@ import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.Directory;
 import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -29,6 +30,7 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketException;
 import java.util.*;
 
 @Slf4j
@@ -77,6 +79,9 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler {
                 exists = getShare().folderExists(path);
             }
             return exists;
+        } catch (SocketException e) {
+            e.printStackTrace();
+            throw new JsonException(e.getMessage());
         } catch (IOException e) {
             e.printStackTrace();
             return false;

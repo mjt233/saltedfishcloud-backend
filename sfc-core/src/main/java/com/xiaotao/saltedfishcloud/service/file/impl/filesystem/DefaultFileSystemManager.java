@@ -71,6 +71,11 @@ public class DefaultFileSystemManager implements DiskFileSystemManager {
     }
 
     @Override
+    public DiskFileSystemFactory getFileSystemFactory(String protocol) {
+        return factoryMap.get(protocol.toLowerCase());
+    }
+
+    @Override
     public boolean isSupportedProtocol(String protocol) {
         return factoryMap.containsKey(protocol.toLowerCase());
     }
