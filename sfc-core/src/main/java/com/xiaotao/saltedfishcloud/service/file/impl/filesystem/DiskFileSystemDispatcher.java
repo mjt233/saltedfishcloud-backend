@@ -130,9 +130,11 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
         if (name == null) {
             return null;
         }
+        // 路径后面添加一个/，防止出现因为部分前缀匹配导致的误判，如：当访问 /挂载点12 时候,若存在 /挂载点1，则会误匹配到/挂载点1
+        String path2 = path + "/";
         // 遍历所有挂载点，匹配所处路径前缀相同且名称相同的
         return mountPointMap.entrySet().stream()
-                .filter(e -> path.startsWith(e.getKey()))
+                .filter(e -> path2.startsWith(e.getKey() + "/"))
                 .findAny()
                 .map(Map.Entry::getValue)
                 .orElse(null);

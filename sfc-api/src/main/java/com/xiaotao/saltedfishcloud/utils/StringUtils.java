@@ -52,7 +52,7 @@ public class StringUtils {
         StringBuilder sb = new StringBuilder();
         String last = null;
         for (String data : appendData) {
-            if (data == null || "/".equals(data)) continue;
+            if (data == null || (last != null && "/".equals(data))) continue;
 
             if (last != null && last.length() != 0) {
                 if (!(data.startsWith("/") || last.endsWith("/"))) {
