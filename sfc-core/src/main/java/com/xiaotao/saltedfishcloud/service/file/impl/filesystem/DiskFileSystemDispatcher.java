@@ -134,7 +134,7 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
         String path2 = path + "/";
         // 遍历所有挂载点，匹配所处路径前缀相同且名称相同的
         return mountPointMap.entrySet().stream()
-                .filter(e -> path2.startsWith(e.getKey() + "/"))
+                .filter(e -> path2.startsWith(e.getKey()))
                 .findAny()
                 .map(Map.Entry::getValue)
                 .orElse(null);
@@ -168,10 +168,16 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
      * @return              挂载点下的相对路径
      */
     protected String resolvePath(String mountPath, String requestPath) {
-        if (requestPath.startsWith("/")) {
-            return requestPath.substring(mountPath.length());
+        int prefixLength;
+        if (mountPath.endsWith("/")) {
+            prefixLength = mountPath.length() - 1;
         } else {
-            return StringUtils.appendPath("/", requestPath.substring(mountPath.length()));
+            prefixLength = mountPath.length();
+        }
+        if (requestPath.startsWith("/")) {
+            return requestPath.substring(prefixLength);
+        } else {
+            return StringUtils.appendPath("/", requestPath.substring(prefixLength));
         }
     }
 

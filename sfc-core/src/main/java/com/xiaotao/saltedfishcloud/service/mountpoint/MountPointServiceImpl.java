@@ -211,8 +211,9 @@ public class MountPointServiceImpl implements MountPointService {
         if (mountPointList == null || mountPointList.isEmpty()) {
             return Collections.emptyMap();
         }
+        // key末尾加个/，防止出现部分前缀误匹配导致的挂载点误匹配，如：/挂载点1 与 /挂载点11，两者前缀相同，访问/挂载点11时容易出现误匹配到/挂载点1
         Map<String, MountPoint> mountPointMap = mountPointList.stream().collect(Collectors.toMap(
-                e -> StringUtils.appendPath(nodeService.getPathByNode(e.getUid().intValue(), e.getNid()), e.getName()),
+                e -> StringUtils.appendPath(nodeService.getPathByNode(e.getUid().intValue(), e.getNid()), e.getName()) + "/",
                 Function.identity(),
                 (oldVal, newVal) -> {
                     log.warn("{}存在挂载路径冲突：{} 与 {}", LOG_PREFIX, oldVal.getNid(), newVal.getNid());
