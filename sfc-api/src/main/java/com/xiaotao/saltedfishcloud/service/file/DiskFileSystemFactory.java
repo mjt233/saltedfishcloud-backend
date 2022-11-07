@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 
+import java.util.Collection;
 import java.util.Map;
 
 public interface DiskFileSystemFactory {
@@ -18,6 +19,15 @@ public interface DiskFileSystemFactory {
      * @param params    获取参数
      */
     DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException;
+
+    /**
+     * 清理无用文件系统缓存，会被定时任务定时调用，以达到通知清理缓存和释放不再使用的远程文件系统连接的目的。
+     * todo 实现定期清理文件系统缓存的定时任务
+     * @param params    可以保留的文件系统参数
+     */
+    default void clearCache(Collection<Map<String, Object>> params) {
+
+    }
 
     /**
      * 获取该文件系统的描述信息，

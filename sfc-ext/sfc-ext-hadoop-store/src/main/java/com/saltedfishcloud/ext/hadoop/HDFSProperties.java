@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.hadoop;
 
-import lombok.Data;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,7 +11,11 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Data
 @ConfigurationProperties("sys.store.hdfs")
-public class HDFSProperties implements InitializingBean {
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode
+public class HDFSProperties {
 
     /**
      * master地址
@@ -21,13 +25,6 @@ public class HDFSProperties implements InitializingBean {
     private String root = "/xyy";
 
     private String user = "xiaotao";
-
-    @Override
-    public void afterPropertiesSet() {
-        log.info("[HDFS]URL :{}", url);
-        log.info("[HDFS]ROOT:{}", root);
-        log.info("[HDFS]USER:{}", user);
-    }
 
     public String getStoreRoot(int uid) {
         return root + "/user_file/" + uid;
