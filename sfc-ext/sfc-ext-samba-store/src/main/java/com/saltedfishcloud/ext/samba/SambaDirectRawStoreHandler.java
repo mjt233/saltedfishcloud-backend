@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,7 +35,7 @@ import java.net.SocketException;
 import java.util.*;
 
 @Slf4j
-public class SambaDirectRawStoreHandler implements DirectRawStoreHandler {
+public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closeable {
     private static final String LOG_PREFIX = "[Samba]";
     private SambaProperty sambaProperty;
     private SMBClient client;
@@ -44,6 +45,14 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler {
     public SambaDirectRawStoreHandler(SambaProperty property) {
         this.sambaProperty = property;
         this.client = new SMBClient(SmbConfig.createDefaultConfig());
+    }
+
+    @Override
+    public void close() throws IOException {
+        share.close();
+        Connection connection = session.getConnection();
+        session.close();
+        connection.close();
     }
 
     protected synchronized Session getSession() throws IOException {

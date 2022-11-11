@@ -13,16 +13,15 @@ import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class SambaDiskFileSystemFactory implements DiskFileSystemFactory {
     @Autowired
     private ThumbnailService thumbnailService;
-    private final Map<SambaProperty, DiskFileSystem> CACHE = new ConcurrentHashMap<>();
+    private final Map<SambaProperty, SambaDiskFileSystem> CACHE = new ConcurrentHashMap<>();
     private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
             .isPublic(true)
             .protocol("samba")
@@ -58,9 +57,9 @@ public class SambaDiskFileSystemFactory implements DiskFileSystemFactory {
                 .build();
     }
 
-    protected RawDiskFileSystem generateDiskFileSystem(SambaProperty property) {
+    protected SambaDiskFileSystem generateDiskFileSystem(SambaProperty property) {
         SambaDirectRawStoreHandler handler = new SambaDirectRawStoreHandler(property);
-        RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getBasePath());
+        SambaDiskFileSystem fileSystem = new SambaDiskFileSystem(handler, property.getBasePath());
         fileSystem.setThumbnailService(thumbnailService);
         return fileSystem;
     }
@@ -80,6 +79,22 @@ public class SambaDiskFileSystemFactory implements DiskFileSystemFactory {
             throw new FileSystemParameterException("路径不存在");
         }
         return rawDiskFileSystem;
+    }
+
+    @Override
+    public void clearCache(Collection<Map<String, Object>> params) {
+        Set<SambaProperty> paramSet = params.stream().map(this::parseProperty).collect(Collectors.toSet());
+        for (Map.Entry<SambaProperty, SambaDiskFileSystem> entry : CACHE.entrySet()) {
+            try {
+                if (!paramSet.contains(entry.getKey())) {
+                    entry.getValue().close();
+                    CACHE.remove(entry.getKey());
+                }
+            } catch (IOException err) {
+                err.printStackTrace();
+            }
+        }
+
     }
 
     @Override

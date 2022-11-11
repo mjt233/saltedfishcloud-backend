@@ -22,6 +22,8 @@ public interface MountPointService {
      */
     List<MountPoint> findByUid(long uid);
 
+    List<MountPoint> listAll();
+
     /**
      * 添加/修改挂载点
      * @param mountPoint    挂载点信息

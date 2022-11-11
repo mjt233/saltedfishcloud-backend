@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class HDFSFileSystemFactory implements DiskFileSystemFactory {
+    private static final String LOG_PREFIX = "[HDFS]";
     @Setter
     private ThumbnailService thumbnailService;
 
@@ -28,7 +29,14 @@ public class HDFSFileSystemFactory implements DiskFileSystemFactory {
 
     @Override
     public void clearCache(Collection<Map<String, Object>> params) {
-        Set<HDFSProperties> collect = params.stream().map(this::checkAndGetProperties).collect(Collectors.toSet());
+        Set<HDFSProperties> collect = params.stream().map(e -> {
+            try {
+                return this.checkAndGetProperties(e);
+            } catch (Exception err) {
+                log.error("{}清理缓存解析参数出错:{}", LOG_PREFIX, e);
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(Collectors.toSet());
         for (Map.Entry<HDFSProperties, HDFSFileSystem> entry : cache.entrySet()) {
             try {
                 if(!collect.contains(entry.getKey())) {
@@ -56,15 +64,6 @@ public class HDFSFileSystemFactory implements DiskFileSystemFactory {
                     ))
                     .build()))
             .build();
-
-    /**
-     * 获取所有缓存的文件系统。
-     * 由外部进行判断缓存是否可以失效并执行close。
-     * todo 定时任务定时清理失效的缓存
-     */
-    public Map<HDFSProperties, HDFSFileSystem> getAllCache() {
-        return cache;
-    }
 
     @Override
     public DiskFileSystem getFileSystem(Map<String, Object> params) throws FileSystemParameterException {
@@ -104,7 +103,6 @@ public class HDFSFileSystemFactory implements DiskFileSystemFactory {
     public DiskFileSystemDescribe getDescribe() {
         return DESCRIBE;
     }
-
 
 
     public HDFSProperties checkAndGetProperties(Map<String, Object> params) {

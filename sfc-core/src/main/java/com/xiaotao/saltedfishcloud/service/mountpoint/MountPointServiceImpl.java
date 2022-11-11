@@ -53,6 +53,10 @@ public class MountPointServiceImpl implements MountPointService {
     @Autowired
     private RedisDao redisDao;
 
+    @Override
+    public List<MountPoint> listAll() {
+        return mountPointRepo.findAll();
+    }
 
     @Override
     @Cacheable(cacheNames = CACHE_NAME, key = "'mp_' + #uid")

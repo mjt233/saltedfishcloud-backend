@@ -1,13 +1,11 @@
-package com.xiaotao.saltedfishcloud.service.collection;
+package com.xiaotao.saltedfishcloud.schedule;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-@EnableScheduling
 @RequiredArgsConstructor
 public class ExpiredChecker {
     private final CollectionInfoRepo cir;
