@@ -6,7 +6,18 @@ import org.apache.ibatis.annotations.*;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * 文件信息dao
+ * 后面会逐步迁移到使用jpa
+ */
 public interface FileDao {
+
+    /**
+     * 插入一条记录
+     * @param fileInfo 文件信息
+     * @return  受影响行数
+     */
+    int insert(@Param("file") FileInfo fileInfo);
 
     /**
      * 通过文件MD5获取文件信息
@@ -53,7 +64,7 @@ public interface FileDao {
      * @param nodeId    节点ID
      * @return 文件信息列表
      */
-    @Select("SELECT uid, name, node, size, md5, created_at, updated_at FROM file_table WHERE node = #{nid} AND uid = #{uid}")
+    @Select("SELECT uid, name, node, size, md5, created_at, updated_at, mount_id FROM file_table WHERE node = #{nid} AND uid = #{uid}")
     List<FileInfo> getFileListByNodeId(@Param("uid") Integer uid, @Param("nid") String nodeId);
 
     /**

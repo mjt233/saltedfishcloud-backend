@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.ftp.core;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import lombok.RequiredArgsConstructor;
 import org.apache.ftpserver.ftplet.FileSystemFactory;
 import org.apache.ftpserver.ftplet.FileSystemView;
@@ -16,7 +16,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class DiskFtpFileSystemFactory implements FileSystemFactory {
     private final UserDao userDao;
-    private final DiskFileSystemProvider fileSystemFactory;
+    private final DiskFileSystemManager fileSystemFactory;
     @Override
     public FileSystemView createFileSystemView(User user) throws FtpException {
         try {

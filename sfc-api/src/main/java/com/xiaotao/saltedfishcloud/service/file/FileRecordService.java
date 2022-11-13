@@ -81,6 +81,9 @@ public interface FileRecordService {
     @Transactional(rollbackFor = Exception.class)
     int addRecord(int uid, String name, Long size, String md5, String path) throws NoSuchFileException;
 
+    @Transactional(rollbackFor = Exception.class)
+    int insert(FileInfo fileInfo);
+
     /**
      * 因文件被替换而更新一条记录
      *
@@ -136,5 +139,5 @@ public interface FileRecordService {
      * @param newName 新文件名
      */
     @Transactional(rollbackFor = Exception.class)
-    void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException, JsonProcessingException;
+    void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException;
 }

@@ -4,6 +4,7 @@ import org.springframework.lang.Nullable;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
 import java.util.Random;
 import java.util.regex.Pattern;
 
@@ -19,6 +20,25 @@ public class StringUtils {
     private final static int PATTERN_LEN = PATTERN.length();
 
     /**
+     * 判断a和b是否为相同表示的路径
+     */
+    public static boolean isPathEqual(String a, String b) {
+        boolean eq = Objects.equals(a, b);
+        if (eq) {
+            return eq;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+
+        a = a.replaceAll("//+", "/");
+        b = b.replaceAll("//+", "/");
+        return a.equals(b);
+
+
+    }
+
+    /**
      * 以文件路径形式追加字符串，自动处理/的重复问题。<br>
      * 开头不会自动添加/，开头是否有/取决于参数0
      * @param appendData    要追加的各字符串，末尾和首部的/会被忽略，由函数内部自动管理/分割
@@ -32,7 +52,7 @@ public class StringUtils {
         StringBuilder sb = new StringBuilder();
         String last = null;
         for (String data : appendData) {
-            if (data == null) continue;
+            if (data == null || (last != null && "/".equals(data))) continue;
 
             if (last != null && last.length() != 0) {
                 if (!(data.startsWith("/") || last.endsWith("/"))) {
@@ -87,8 +107,28 @@ public class StringUtils {
         return getRandomString(len, true);
     }
 
-    public static String getURLLastName(String url) throws MalformedURLException {
-        return getURLLastName(new URL(url));
+    public static String getURLLastName(String url) {
+        return getURLLastName(url, "/");
+    }
+
+    public static String getURLLastName(String url, String spec) {
+        String path = url;
+        int qsIndex = path.indexOf("?");
+        if (qsIndex != -1) {
+            path = path.substring(0, qsIndex);
+        }
+        if (path.endsWith(spec)) {
+            path = path.substring(0, path.length() -1);
+        }
+        int i = path.lastIndexOf(spec);
+        if (i == -1) {
+            if (path.length() > 0) {
+                return path;
+            } else {
+                return null;
+            }
+        }
+        return path.substring(i + 1);
     }
 
 
@@ -99,13 +139,7 @@ public class StringUtils {
      * @return      资源名称，若URL中
      */
     public static String getURLLastName(URL url) {
-        String path = url.getPath();
-        if (path.endsWith("/")) {
-            path = path.substring(0, path.length() -1);
-        }
-        int i = path.lastIndexOf("/");
-        if (i == -1) return null;
-        return path.substring(i + 1);
+        return getURLLastName(url.getPath());
     }
 
     /**

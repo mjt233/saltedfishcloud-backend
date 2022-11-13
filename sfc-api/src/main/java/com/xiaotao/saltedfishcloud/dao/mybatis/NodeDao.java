@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.mybatis;
 
+import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import org.apache.ibatis.annotations.*;
 
@@ -13,7 +14,7 @@ public interface NodeDao {
      * @param uid   用户ID
      * @return      用户节点列表
      */
-    @Select("SELECT name, id, parent, uid FROM node_list WHERE uid = #{uid}")
+    @Select("SELECT name, id, parent, uid, mount_id FROM node_list WHERE uid = #{uid}")
     List<NodeInfo> getAllNode(@Param("uid") Integer uid);
 
     /**
@@ -50,6 +51,9 @@ public interface NodeDao {
                 @Param("id") String id,
                 @Param("parent") String parent);
 
+    @Insert("INSERT INTO node_list (name, id, parent, uid, mount_id) VALUES (#{mountPoint.})")
+    int addMountPointNode(@Param("mountPoint")MountPoint mountPoint);
+
     /**
      * 取某个用户目录下多个节点的所有直接子节点
      * @param uid   用户ID
@@ -58,7 +62,7 @@ public interface NodeDao {
      */
     @Select({
             "<script>",
-            "SELECT name, id, parent, uid FROM node_list ",
+            "SELECT name, id, parent, uid, mount_id FROM node_list ",
             "WHERE parent in ",
                 "<foreach collection='nid' item='id' open='(' separator=',' close=')'>",
                 "#{id}",
@@ -75,7 +79,7 @@ public interface NodeDao {
      * @param name  目标节点名称
      * @return  节点信息
      */
-    @Select("SELECT name, id, parent, uid, parent FROM node_list WHERE parent = #{pid} AND name = #{name} AND  uid = #{uid}")
+    @Select("SELECT name, id, parent, uid, parent, mount_id FROM node_list WHERE parent = #{pid} AND name = #{name} AND  uid = #{uid}")
     NodeInfo getNodeByParentId(@Param("uid") Integer uid, @Param("pid") String pid, @Param("name") String name);
 
     @Delete({

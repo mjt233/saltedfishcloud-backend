@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class CollectionServiceTest {
     @Autowired
     private NodeService nodeService;
     @Autowired
-    private DiskFileSystemProvider diskFileSystem;
+    private DiskFileSystemManager diskFileSystem;
 
     @Test
     void testGet() {
@@ -58,7 +58,7 @@ class CollectionServiceTest {
         String title = "测试收集样例";
         String savePath = "/我的收集" + "/" + title;
 
-        diskFileSystem.getFileSystem().mkdirs(u.getId(), savePath);
+        diskFileSystem.getMainFileSystem().mkdirs(u.getId(), savePath);
         Calendar calender = Calendar.getInstance();
         calender.add(Calendar.DATE, 7);
 

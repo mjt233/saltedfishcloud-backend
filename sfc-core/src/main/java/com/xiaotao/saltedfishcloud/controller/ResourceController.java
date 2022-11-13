@@ -3,14 +3,18 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
+import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
-import com.xiaotao.saltedfishcloud.service.http.ResourceService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
@@ -27,6 +31,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 系统资源管理控制器
@@ -38,10 +44,28 @@ import java.nio.file.NoSuchFileException;
 @RequiredArgsConstructor
 public class ResourceController {
     public static final String PREFIX = "/api/resource/";
-    private final DiskFileSystemProvider fileService;
+    private final DiskFileSystemManager fileService;
     private final NodeService nodeService;
     private final ResourceService resourceService;
     private final ThumbnailService thumbnailService;
+
+    @GetMapping("get")
+    @AllowAnonymous
+    public HttpEntity<Resource> getResource(@Validated ResourceRequest resourceRequest, HttpServletRequest request) throws UnsupportedProtocolException, IOException {
+        // 读取所有请求参数，设置到params中
+        Map<String, String> paramsMap = new HashMap<>();
+        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
+            paramsMap.put(entry.getKey(), entry.getValue()[0]);
+        }
+        resourceRequest.setParams(paramsMap);
+
+        // 根据请求对象获取资源
+        Resource resource = resourceService.getResource(resourceRequest);
+        if (resource == null) {
+            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+        }
+        return ResourceUtils.wrapResource(resource, resourceRequest.getName());
+    }
 
     @GetMapping("thumbnail/{md5}")
     @AllowAnonymous
@@ -83,12 +107,12 @@ public class ResourceController {
     @NotBlock
     public JsonResult getFDC(@PathVariable @UID int uid,
                              HttpServletRequest request,
-                             @RequestParam("md5") String md5,
+                             @RequestParam(value = "md5", required = false) String md5,
                              @RequestParam("name") @Valid @FileName String name,
                              @RequestParam(value = "expr", defaultValue = "1") int expr) throws IOException {
         String filePath = URLUtils.getRequestFilePath(PREFIX + uid + "/FDC", request);
         BasicFileInfo fileInfo = new BasicFileInfo(name, md5);
-        String dc = fileService.getFileSystem().getFileDC(uid, filePath, fileInfo, expr);
+        String dc = resourceService.getFileDownloadCode(uid, filePath, fileInfo, expr);
         return JsonResultImpl.getInstance(dc);
     }
 
@@ -104,7 +128,7 @@ public class ResourceController {
     public ResponseEntity<org.springframework.core.io.Resource> downloadByFDC(@PathVariable String code,
                                                                               @RequestParam(required = false, defaultValue = "false") boolean download)
             throws IOException {
-        return resourceService.getResourceByDC(code, download);
+        return resourceService.getResourceByDownloadCode(code, download);
     }
 
 
@@ -121,7 +145,7 @@ public class ResourceController {
             HttpServletRequest request
     )
             throws IOException {
-        Resource resource = fileService.getFileSystem().getResourceByMd5(md5);
+        Resource resource = fileService.getMainFileSystem().getResourceByMd5(md5);
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/fileContentByMD5/" + md5, request);
         String name;
         if (path.length() > 1) {

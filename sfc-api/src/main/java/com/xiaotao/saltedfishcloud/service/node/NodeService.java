@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
+import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 
 import java.nio.file.NoSuchFileException;
@@ -75,4 +76,11 @@ public interface NodeService {
      * @return          完整路径
      */
     String getPathByNode(int uid, String nodeId);
+
+    /**
+     * 添加挂载点节点
+     * @param mountPoint    挂载点
+     * @return 新节点id
+     */
+    String addMountPointNode(MountPoint mountPoint);
 }

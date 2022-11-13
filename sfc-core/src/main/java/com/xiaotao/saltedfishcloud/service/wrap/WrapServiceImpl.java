@@ -7,20 +7,20 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
 import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.Map;
 
@@ -29,9 +29,10 @@ import java.util.Map;
 public class WrapServiceImpl implements WrapService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final NodeService nodeService;
-    private final DiskFileSystemProvider fileSystemProvider;
+    private final DiskFileSystemManager fileSystemProvider;
 
     @Autowired
+    @Lazy
     private ShareService shareService;
 
     @Override
@@ -105,7 +106,7 @@ public class WrapServiceImpl implements WrapService {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
         FileTransferInfo files = wrapInfo.getFiles();
-        fileSystemProvider.getFileSystem().compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), ArchiveType.ZIP, outputStream);
+        fileSystemProvider.getMainFileSystem().compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), ArchiveType.ZIP, outputStream);
 
     }
 
@@ -125,7 +126,7 @@ public class WrapServiceImpl implements WrapService {
         );
         response.setContentType(FileUtils.getContentType("a.ab123c"));
         OutputStream output = response.getOutputStream();
-        fileSystemProvider.getFileSystem().compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), ArchiveType.ZIP, output);
+        fileSystemProvider.getMainFileSystem().compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), ArchiveType.ZIP, output);
 
     }
 }

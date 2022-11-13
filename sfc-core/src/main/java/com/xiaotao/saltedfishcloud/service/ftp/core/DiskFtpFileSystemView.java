@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.ftp.core;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FileSystemView;
@@ -15,8 +15,8 @@ import java.io.IOException;
 public class DiskFtpFileSystemView implements FileSystemView {
     private final PathBuilder pathBuilder = new PathBuilder();
     private final DiskFtpUser user;
-    private final DiskFileSystemProvider fileSystemProvider;
-    public DiskFtpFileSystemView(DiskFtpUser user, DiskFileSystemProvider fileSystemProvider) throws IOException {
+    private final DiskFileSystemManager fileSystemProvider;
+    public DiskFtpFileSystemView(DiskFtpUser user, DiskFileSystemManager fileSystemProvider) throws IOException {
         this.user = user;
         pathBuilder.setForcePrefix(true);
         this.fileSystemProvider = fileSystemProvider;
@@ -61,7 +61,7 @@ public class DiskFtpFileSystemView implements FileSystemView {
             }
 
             // cd到具体目录
-            DiskFileSystem fileSystem = fileSystemProvider.getFileSystem();
+            DiskFileSystem fileSystem = fileSystemProvider.getMainFileSystem();
             int uid = ftpPathInfo.isPublicArea() ? User.getPublicUser().getId() : user.getId();
             if (!fileSystem.exist(uid, ftpPathInfo.getResourcePath()) ||
                 fileSystem.getResource(uid, ftpPathInfo.getResourceParent(), ftpPathInfo.getName()) != null) {
@@ -81,7 +81,7 @@ public class DiskFtpFileSystemView implements FileSystemView {
         if (file.startsWith("/")) {
             path = file;
         } else {
-            path = pathBuilder.toString() + "/" +file;
+            path = pathBuilder + "/" +file;
         }
         return new DiskFtpFile(path, user, fileSystemProvider);
     }

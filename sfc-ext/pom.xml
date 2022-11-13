@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>11</java.version>
-        <api.version>1.5.0</api.version>
+        <api.version>2.0.0</api.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -22,6 +22,8 @@
         <module>sfc-ext-hadoop-store</module>
         <module>sfc-ext-demo</module>
         <module>sfc-ext-mp3-thumbnail</module>
+        <module>sfc-ext-minio-store</module>
+        <module>sfc-ext-samba-store</module>
     </modules>
 
 
@@ -30,6 +32,12 @@
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
             <version>${api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.30</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -51,4 +59,54 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/classes/plugin-lib</outputDirectory>
+                    <includeScope>compile</includeScope>
+                    <excludeTransitive>false</excludeTransitive>
+                    <excludeScope>provided</excludeScope>
+                    <includeScope>runtime</includeScope>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <failOnError>false</failOnError>
+                            <target>
+                                <copy
+                                        overwrite="true"
+                                        tofile="${basedir}/../../release/ext-available/${project.artifactId}.jar"
+                                        file="${project.build.directory}/${project.artifactId}-${project.version}.jar"
+                                >
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -10,7 +10,7 @@ import java.io.IOException;
 @SpringBootTest
 public class FileServiceTest {
     @Resource
-    DiskFileSystemProvider fileService;
+    DiskFileSystemManager fileService;
 
     @Resource
     UserDao userDao;
@@ -18,7 +18,7 @@ public class FileServiceTest {
     @Test
     public void move() {
         try {
-            DiskFileSystem fileService = this.fileService.getFileSystem();
+            DiskFileSystem fileService = this.fileService.getMainFileSystem();
             int uid = userDao.getUserByUser("xiaotao").getId();
             fileService.mkdir(uid, "/", "test");
             fileService.mkdir(uid, "/", "test2");
@@ -33,14 +33,14 @@ public class FileServiceTest {
     public void copy() {
         int uid = userDao.getUserByUser("xiaotao").getId();
         try {
-            fileService.getFileSystem().copy(uid, "/", "/", uid, "f1", "f2", true);
+            fileService.getMainFileSystem().copy(uid, "/", "/", uid, "f1", "f2", true);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
     @Test
     public void mkdirs() throws IOException {
-        DiskFileSystem fileService = this.fileService.getFileSystem();
+        DiskFileSystem fileService = this.fileService.getMainFileSystem();
         fileService.mkdirs(1, "/a/b/c/d/e/f/g/h/j/k/l");
     }
 }

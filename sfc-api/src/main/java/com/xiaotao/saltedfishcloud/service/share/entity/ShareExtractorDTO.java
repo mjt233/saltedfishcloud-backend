@@ -1,11 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.share.entity;
 
+import lombok.Builder;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Data
+@Builder
 public class ShareExtractorDTO {
     @NotNull
     private Integer sid;
@@ -21,4 +23,9 @@ public class ShareExtractorDTO {
      * 要获取的资源的文件名，当被提取的分享类型为目录时需提供此参数，文件类型的分享该参数可为null
      */
     private String name;
+
+    /**
+     * 是否为获取缩略图
+     */
+    private boolean isThumbnail;
 }

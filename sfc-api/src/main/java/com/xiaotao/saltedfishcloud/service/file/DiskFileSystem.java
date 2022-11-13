@@ -101,6 +101,14 @@ public interface DiskFileSystem {
      */
     Resource getResource(int uid, String path,String name) throws IOException;
 
+    /**
+     * 获取对应文件资源的缩略图
+     * @param uid       用户id
+     * @param path      文件路径
+     * @param name      文件名称
+     * @return          缩略图资源，若不支持或无法获取则为null
+     */
+    Resource getThumbnail(int uid, String path, String name) throws IOException;
 
     /**
      * 在网盘中连同所有父级目录，创建一个目录
@@ -192,12 +200,12 @@ public interface DiskFileSystem {
     /**
      * 保存数据流的数据到网盘系统中
      * @param uid         用户ID 0表示公共
-     * @param stream      要保存的数据流
+     * @param stream      要保存的数据流，方法内无需处理数据流的关闭
      * @param path        文件要保存到的网盘目录
      * @param fileInfo    文件信息
      * @throws IOException 文件写入失败时抛出
      */
-    int saveFile(int uid,
+    long saveFile(int uid,
                  InputStream stream,
                  String path,
                  FileInfo fileInfo) throws IOException;
@@ -211,7 +219,7 @@ public interface DiskFileSystem {
      * @return 新文件 - 1，旧文件覆盖 - 0，常量见{@link DiskFileSystem#SAVE_COVER}和{@link DiskFileSystem#SAVE_NEW_FILE}
      * @throws IOException 文件写入失败时抛出
      */
-    int saveFile(int uid,
+    long saveFile(int uid,
                  MultipartFile file,
                  String requestPath,
                  String md5) throws IOException;
@@ -245,27 +253,5 @@ public interface DiskFileSystem {
      */
     void rename(int uid, String path, String name, String newName) throws IOException;
 
-    /**
-     * 获取网盘中文件的下载码
-     * @param uid 用户ID
-     * @param path 文件所在网盘目录
-     * @param fileInfo 文件信息
-     * @param expr  下载码有效时长（单位：天），若小于0，则无限制
-     */
-    @SuppressWarnings("all")
-    default String getFileDC(int uid, String path, BasicFileInfo fileInfo, int expr) throws IOException {
-        if (
-                !exist(uid, PathBuilder.formatPath(path + "/" + fileInfo.getName(), true))
-                || getResource(uid, path, fileInfo.getName()) == null
-        ) {
-            throw new JsonException(404, "文件不存在");
-        }
-        FileDCInfo info = new FileDCInfo();
-        info.setDir(path);
-        info.setMd5(fileInfo.getMd5());
-        info.setName(fileInfo.getName());
-        info.setUid(uid);
-        String token = JwtUtils.generateToken(MapperHolder.mapper.writeValueAsString(info), expr < 0 ? expr : expr*60*60*24);
-        return token;
-    }
+
 }

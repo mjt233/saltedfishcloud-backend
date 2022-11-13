@@ -61,6 +61,12 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
 
     }
 
+    /**
+     * 文件移动是否需要递归执行。
+     * @return 若返回值为true，则通过递归逐个移动文件。若为false，则直接调用{@link CopyAndMoveHandler#moveFile(String, String)}方法进行移动。
+     * 使用递归移动时，支持同名目录合并。
+     *
+     */
     public abstract boolean isMoveWithRecursion();
 
     @Override
@@ -175,7 +181,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
         final String root = getUserFileRoot(uid);
         final String savePath = StringUtils.appendPath(root, targetDir, fileInfo.getName());
-        handler.store(savePath, input);
+        handler.store(savePath, fileInfo.getSize(), input);
     }
 
     @Override
@@ -224,7 +230,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         }
         try(final InputStream is = resource.getInputStream()) {
             final String path = StringUtils.appendPath(userProfileRoot, "avatar." + FileUtils.getSuffix(resource.getFilename()));
-            handler.store(path, is);
+            handler.store(path, resource.contentLength() ,is);
         }
 
     }

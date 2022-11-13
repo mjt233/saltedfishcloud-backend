@@ -14,7 +14,7 @@ import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -36,7 +36,7 @@ public class CollectionServiceImpl implements CollectionService {
     private final CollectionInfoRepo collectionDao;
     private final CollectionRecordRepo recordDao;
     private final NodeService nodeService;
-    private final DiskFileSystemProvider fileSystem;
+    private final DiskFileSystemManager fileSystem;
 
     @Override
     public Page<CollectionRecord> getSubmits(Long cid, int page, int size) {
@@ -151,7 +151,7 @@ public class CollectionServiceImpl implements CollectionService {
         String filename = CollectionParser.parseFilename(ci, submitFile);
         CollectionRecord record = new CollectionRecord(cid.getId(), uid, filename, submitFile.getSize(), fileInfo.getMd5(), ip);
 
-        DiskFileSystem fileSystem = this.fileSystem.getFileSystem();
+        DiskFileSystem fileSystem = this.fileSystem.getMainFileSystem();
         String path = nodeService.getPathByNode(ci.getUid(), ci.getSaveNode());
         String[] pair = FileUtils.parseName(filename);
 

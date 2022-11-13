@@ -10,14 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class StringUtilsTest {
     @Test
     public void testURLParse() {
-        try {
-            assertNull(StringUtils.getURLLastName("http://www.baidu.com/"));
-            assertNull(StringUtils.getURLLastName("http://www.baidu.com"));
-            assertEquals("a", StringUtils.getURLLastName("http://www.baidu.com/a"));
-            assertEquals("dea", StringUtils.getURLLastName("http://www.baidu.com/a/b/d/c/dea?a=1/abcde"));
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
+        assertNull(StringUtils.getURLLastName("http://www.baidu.com/"));
+        assertNull(StringUtils.getURLLastName("http://www.baidu.com"));
+        assertEquals("a", StringUtils.getURLLastName("http://www.baidu.com/a"));
+        assertEquals("dea", StringUtils.getURLLastName("http://www.baidu.com/a/b/d/c/dea?a=1/abcde"));
     }
 
     @Test

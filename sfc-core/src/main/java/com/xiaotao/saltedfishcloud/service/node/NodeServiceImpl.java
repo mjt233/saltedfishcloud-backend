@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
+import com.xiaotao.saltedfishcloud.dao.jpa.NodeInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
+import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
@@ -31,7 +33,11 @@ import java.util.*;
 public class NodeServiceImpl implements NodeService {
     private final NodeDao nodeDao;
     @Autowired
+    private NodeInfoRepo nodeInfoRepo;
+
+    @Autowired
     private NodeCacheService cacheService;
+
     @Autowired
     private NodeService self;
 
@@ -43,7 +49,7 @@ public class NodeServiceImpl implements NodeService {
         }
         NodeInfo node = new NodeInfo();
         node.setId(uid + "");
-        node.setUid(uid);
+        node.setUid(Long.valueOf(uid));
         return node;
     }
 
@@ -94,7 +100,7 @@ public class NodeServiceImpl implements NodeService {
         } catch (NullPointerException e) {
             NodeInfo info = new NodeInfo();
             info.setId(strId);
-            info.setUid(uid);
+            info.setUid((long) uid);
             link.add(info);
         }
         if (log.isDebugEnabled()) {
@@ -191,5 +197,17 @@ public class NodeServiceImpl implements NodeService {
         StringBuilder stringBuilder = new StringBuilder();
         link.forEach(name -> stringBuilder.append("/").append(name));
         return stringBuilder.toString();
+    }
+
+    @Override
+    public String addMountPointNode(MountPoint mountPoint) {
+        NodeInfo nodeInfo = NodeInfo.builder()
+                .mountId(mountPoint.getId())
+                .name(mountPoint.getName())
+                .uid(mountPoint.getUid())
+                .parent(mountPoint.getNid())
+                .build();
+        nodeInfoRepo.save(nodeInfo);
+        return nodeInfo.getId();
     }
 }

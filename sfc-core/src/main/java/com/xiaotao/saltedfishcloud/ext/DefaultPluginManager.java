@@ -11,17 +11,17 @@ import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +39,7 @@ import java.util.stream.Stream;
  * 默认的插件管理器
  */
 @Slf4j
+//@Component
 public class DefaultPluginManager implements PluginManager {
 
     private final static String LOG_PREFIX = "[插件系统]";
@@ -65,6 +66,9 @@ public class DefaultPluginManager implements PluginManager {
     @Getter
     private final ClassLoader masterLoader;
 
+    public DefaultPluginManager() {
+        this(DefaultPluginManager.class.getClassLoader());
+    }
 
     public DefaultPluginManager(ClassLoader masterLoader) {
         this.masterLoader = masterLoader;
@@ -165,16 +169,32 @@ public class DefaultPluginManager implements PluginManager {
         Enumeration<URL> resources = rawClassLoader.getResources("plugin-lib/");
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
-            if (!url.getProtocol().equals("jar")) {
-                continue;
-            }
-            JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
-            JarFile jarFile = jarURLConnection.getJarFile();
-            Enumeration<JarEntry> entries = jarFile.entries();
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                if (entry.getName().startsWith("plugin-lib/") && entry.getName().endsWith(".jar") && !entry.isDirectory()) {
-                    res.add(rawClassLoader.getResource(entry.getName()));
+
+            // 从jar包中获取url
+            if ("jar".equals(url.getProtocol())) {
+                JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
+                JarFile jarFile = jarURLConnection.getJarFile();
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().startsWith("plugin-lib/") && entry.getName().endsWith(".jar") && !entry.isDirectory()) {
+                        res.add(rawClassLoader.getResource(entry.getName()));
+                    }
+                }
+            } else if ("file".equals(url.getProtocol())) {
+                // 从本地文件中获取
+                try {
+                    Path path = Paths.get(url.toURI());
+                    res.addAll(Files.list(path).map(e -> {
+                        try {
+                            return e.toUri().toURL();
+                        } catch (MalformedURLException ex) {
+                            ex.printStackTrace();
+                            return null;
+                        }
+                    }).filter(Objects::nonNull).collect(Collectors.toList()));
+                } catch (URISyntaxException e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -188,7 +208,6 @@ public class DefaultPluginManager implements PluginManager {
      * @param name 插件名称
      */
     protected void loadExtraDependencies(List<URL> urls, PluginClassLoader loader, String name) throws IOException {
-        // TODO 直接从jar内读取依赖而不提取到硬盘
         String pluginUnpackPath = DEP_EXPLODE_PATH + "/" + name;
         Files.createDirectories(Paths.get(pluginUnpackPath));
 
@@ -259,21 +278,27 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     @Override
-    public void register(Resource pluginResource) throws IOException {
+    public void register(Resource pluginResource, ClassLoader classLoader) throws IOException {
         URL pluginUrl = pluginResource.getURL();
-        URLClassLoader rawClassLoader = new URLClassLoader(new URL[]{pluginUrl}, null);
         PluginInfo pluginInfo;
         List<ConfigNode> configNodeGroups;
 
         try {
+            // 读取插件基本信息
             log.info("{}加载插件：{}",LOG_PREFIX, StringUtils.getURLLastName(pluginUrl));
-            pluginInfo  = getPluginInfoFromLoader(rawClassLoader);
-            configNodeGroups = getPluginConfigNodeFromLoader(rawClassLoader);
-            List<URL> pluginDependencies = getPluginDependencies(rawClassLoader);
-            loadExtraDependencies(pluginDependencies, jarMergeClassLoader, pluginInfo.getName());
+            pluginInfo  = getPluginInfoFromLoader(classLoader);
+
+            // 读取配置项
+            configNodeGroups = getPluginConfigNodeFromLoader(classLoader);
+
+            // 加载插件所需的外部依赖
+            List<URL> pluginDependencies = getPluginDependencies(classLoader);
+            if (!pluginDependencies.isEmpty()) {
+                loadExtraDependencies(pluginDependencies, jarMergeClassLoader, pluginInfo.getName());
+            }
+
         } catch (JsonProcessingException e) {
             log.error("获取插件信息失败，请检查插件的plugin-info.json：{}", pluginUrl);
-            rawClassLoader.close();
             throw e;
         } catch (RuntimeException e) {
             log.error("{}插件 {} 加载失败", LOG_PREFIX, pluginResource.getURL());
@@ -289,8 +314,13 @@ public class DefaultPluginManager implements PluginManager {
 
         loader.loadFromUrl(pluginUrl);
         registerPluginResource(pluginInfo.getName(), pluginInfo, configNodeGroups, loader);
-        pluginRawLoaderMap.put(pluginInfo.getName(), rawClassLoader);
+        pluginRawLoaderMap.put(pluginInfo.getName(), classLoader);
+    }
 
+    @Override
+    public void register(Resource pluginResource) throws IOException {
+        URLClassLoader loader = new URLClassLoader(new URL[]{pluginResource.getURL()}, null);
+        register(pluginResource, loader);
     }
 
     protected List<ConfigNode> getPluginConfigNodeFromLoader(ClassLoader loader) throws IOException {

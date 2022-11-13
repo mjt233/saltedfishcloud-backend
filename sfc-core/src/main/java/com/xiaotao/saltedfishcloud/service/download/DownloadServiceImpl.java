@@ -15,7 +15,7 @@ import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -29,7 +29,6 @@ import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import javax.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
@@ -69,7 +68,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
     private NodeService nodeService;
 
     @Resource
-    private DiskFileSystemProvider fileSystemProvider;
+    private DiskFileSystemManager fileSystemProvider;
 
     @Resource
     private DownloadTaskBuilderFactory builderFactory;
@@ -212,7 +211,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
             downloadDao.save(info);
             log.debug("{}任务已就绪,文件名:{} 大小：{}", LOG_TITLE, info.getName(), info.getSize());
         });
-        DiskFileSystem fileService = this.fileSystemProvider.getFileSystem();
+        DiskFileSystem fileService = this.fileSystemProvider.getMainFileSystem();
 
         context.onSuccess(() -> {
             info.setState(DownloadTaskInfo.State.FINISH);

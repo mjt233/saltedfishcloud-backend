@@ -2,9 +2,9 @@ package com.xiaotao.saltedfishcloud.service.sync.detector;
 
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.node.NodeTree;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
@@ -26,9 +26,9 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
     @Resource
     private NodeService nodeService;
     @Resource
-    private DiskFileSystemProvider fileService;
+    private DiskFileSystemManager fileService;
     @Resource
-    private StoreServiceProvider storeServiceProvider;
+    private StoreServiceFactory storeServiceFactory;
 
     /**
      * 通过存储服务获取用户的完整目录和文件
@@ -69,7 +69,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
     private Map<String, Collection<? extends FileInfo>> fetchDbFiles(int uid) {
         Map<String, Collection<? extends FileInfo>> dbFile = new HashMap<>();
         NodeTree tree = nodeService.getFullTree(uid);
-        DiskFileSystem fileSystem = fileService.getFileSystem();
+        DiskFileSystem fileSystem = fileService.getMainFileSystem();
         tree.forEach(n -> {
             Collection<? extends FileInfo>[] fileList = fileSystem.getUserFileListByNodeId(uid, n.getId());
             String path = tree.getPath(n.getId());
@@ -80,7 +80,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
 
     @Override
     public SyncDiffResultDefaultImpl detect(int uid, boolean precise) throws IOException {
-        final StoreService storeService = storeServiceProvider.getService();
+        final StoreService storeService = storeServiceFactory.getService();
         SyncDiffResultDefaultImpl res = new SyncDiffResultDefaultImpl();
 
         // 原始数据获取与初步处理

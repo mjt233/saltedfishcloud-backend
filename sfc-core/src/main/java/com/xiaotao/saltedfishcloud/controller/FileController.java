@@ -17,8 +17,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemProvider;
-import com.xiaotao.saltedfishcloud.service.wrap.WrapInfo;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
@@ -36,7 +35,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.util.Collection;
 import java.util.List;
@@ -53,7 +51,7 @@ import java.util.List;
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
-    private final DiskFileSystemProvider fileService;
+    private final DiskFileSystemManager fileSystemManager;
     private final WrapService wrapService;
 
 
@@ -71,7 +69,7 @@ public class FileController {
                             HttpServletRequest request,
                             @RequestParam("name") @FileName String name) throws JsonException, IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/dir", request);
-        DiskFileSystem fileSystem = fileService.getFileSystem();
+        DiskFileSystem fileSystem = fileSystemManager.getMainFileSystem();
         fileSystem.mkdirs(uid, requestPath + "/" + name);
         return JsonResult.emptySuccess();
     }
@@ -92,7 +90,7 @@ public class FileController {
             throw new JsonException(400, "文件为空");
         }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
-        int i = fileService.getFileSystem().saveFile(uid, file, requestPath, md5);
+        long i = fileSystemManager.getMainFileSystem().saveFile(uid, file, requestPath, md5);
         return JsonResultImpl.getInstance(i);
     }
 
@@ -103,7 +101,7 @@ public class FileController {
                                      HttpServletRequest request) throws IOException {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/extractArchive", request);
 
-        fileService.getFileSystem().extractArchive(uid, path, name, dest);
+        fileSystemManager.getMainFileSystem().extractArchive(uid, path, name, dest);
         return JsonResult.emptySuccess();
     }
 
@@ -115,7 +113,7 @@ public class FileController {
     @PostMapping("compress")
     public JsonResult compress(@PathVariable @UID int uid,
                                @RequestBody FileTransferInfo files) throws IOException {
-        fileService.getFileSystem().compress(uid, files.getSource(), files.getFilenames(), files.getDest(), ArchiveType.ZIP);
+        fileSystemManager.getMainFileSystem().compress(uid, files.getSource(), files.getFilenames(), files.getDest(), ArchiveType.ZIP);
         return JsonResult.emptySuccess();
     }
 
@@ -145,7 +143,7 @@ public class FileController {
                                 @RequestParam("path") String path,
                                 @RequestParam("name") String name,
                                 @RequestParam("md5") String md5) throws IOException {
-        boolean b = fileService.getFileSystem().quickSave(uid, path, name, md5);
+        boolean b = fileSystemManager.getMainFileSystem().quickSave(uid, path, name, md5);
         if (b) {
             return JsonResultImpl.getInstance(true);
         } else {
@@ -178,7 +176,7 @@ public class FileController {
     @NotBlock
     public JsonResult getFileList(HttpServletRequest request, @PathVariable @UID int uid) throws IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fileList/byPath", request);
-        Collection<? extends FileInfo>[] fileList = fileService.getFileSystem().getUserFileList(uid, requestPath);
+        Collection<? extends FileInfo>[] fileList = fileSystemManager.getMainFileSystem().getUserFileList(uid, requestPath);
         return JsonResultImpl.getInstance(fileList);
 
     }
@@ -201,7 +199,7 @@ public class FileController {
                              @PathVariable @UID int uid,
                              @RequestParam(value = "page", defaultValue = "1") Integer page) {
         PageHelper.startPage(page, 10);
-        List<FileInfo> res = fileService.getFileSystem().search(uid, key);
+        List<FileInfo> res = fileSystemManager.getMainFileSystem().search(uid, key);
         PageInfo<FileInfo> pageInfo = new PageInfo<>(res);
         return JsonResultImpl.getInstance(pageInfo);
     }
@@ -220,7 +218,7 @@ public class FileController {
         String requestPath = URLUtils.getRequestFilePath(prefix, request);
         String dir = PathUtils.getParentPath(requestPath);
         String name = PathUtils.getLastNode(requestPath);
-        Resource resource = fileService.getFileSystem().getResource(uid, dir, name);
+        Resource resource = fileSystemManager.getMainFileSystem().getResource(uid, dir, name);
         if (resource != null) {
             return ResourceUtils.wrapResource(resource, name);
         } else {
@@ -250,7 +248,7 @@ public class FileController {
             String sourceName = PathUtils.getLastNode(item.getSource());
             String target = PathUtils.getParentPath(item.getTarget());
             String targetName = PathUtils.getLastNode(item.getTarget());
-            fileService.getFileSystem().copy(sourceUid, source, target, targetUid, sourceName, targetName, true);
+            fileSystemManager.getMainFileSystem().copy(sourceUid, source, target, targetUid, sourceName, targetName, true);
         }
         return JsonResult.emptySuccess();
     }
@@ -270,7 +268,7 @@ public class FileController {
             String source = PathUtils.getParentPath(item.getSource());
             String sourceName = PathUtils.getLastNode(item.getSource());
             String target = PathUtils.getParentPath(item.getTarget());
-            fileService.getFileSystem().move(sourceUid, source, target, sourceName,true);
+            fileSystemManager.getMainFileSystem().move(sourceUid, source, target, sourceName,true);
         }
         return JsonResult.emptySuccess();
     }
@@ -288,7 +286,7 @@ public class FileController {
         String source = URLDecoder.decode(requestPath, "UTF-8");
         String target = URLDecoder.decode(info.getTarget(), "UTF-8");
         for (NamePair file : info.getFiles()) {
-            fileService.getFileSystem().copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
+            fileSystemManager.getMainFileSystem().copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
         }
         return JsonResult.emptySuccess();
     }
@@ -306,7 +304,7 @@ public class FileController {
         String source = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
         String target = URLDecoder.decode(info.getTarget(), "UTF-8");
         for (NamePair file : info.getFiles()) {
-            fileService.getFileSystem().move(uid, source, target, file.getSource(), info.isOverwrite());
+            fileSystemManager.getMainFileSystem().move(uid, source, target, file.getSource(), info.isOverwrite());
         }
         return JsonResult.emptySuccess();
     }
@@ -323,7 +321,7 @@ public class FileController {
         if (newName.length() < 1) {
             throw new JsonException(400, "文件名不能为空");
         }
-        fileService.getFileSystem().rename(uid, from, oldName, newName);
+        fileSystemManager.getMainFileSystem().rename(uid, from, oldName, newName);
         return JsonResult.emptySuccess();
     }
 
@@ -344,7 +342,7 @@ public class FileController {
                              @PathVariable @UID(true) int uid,
                              @RequestBody @Validated FileNameList fileName) throws IOException {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/content", request);
-        long res = fileService.getFileSystem().deleteFile(uid, path, fileName.getFileName());
+        long res = fileSystemManager.getMainFileSystem().deleteFile(uid, path, fileName.getFileName());
         return JsonResultImpl.getInstance(res);
     }
 }

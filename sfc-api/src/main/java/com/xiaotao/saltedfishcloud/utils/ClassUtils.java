@@ -58,7 +58,7 @@ public class ClassUtils {
                 URL resource = loader.getResource(name);
                 if (resource != null) {
                     String className = name.substring(0, name.length() - 6).replaceAll("/", ".");
-                    if ("module-info".equals(className)) {
+                    if (className.endsWith("module-info")) {
                         continue;
                     }
                     names.add(className);

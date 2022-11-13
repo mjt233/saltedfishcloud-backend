@@ -17,6 +17,13 @@ spring:
 #    database: 0
 #    password:
 
+logging:
+  level:
+    org: warn
+    com: warn
+    com.xiaotao: info
+    com.saltedfishcloud: info
+    com.xiaotao.saltedfishcloud.dao.mybatis: warn
 sys:
   common:
     # 注册邀请码
@@ -31,7 +38,7 @@ sys:
     # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
     archive-encoding: gbk
 
-    # 存储服务类型，可选hdfs（需要hdfs拓展）或local
+    # 存储服务类型，可选local、minio（需要拓展）、hdfs（需要拓展）
     type: local
 
     # 各类资源根目录存储路径
@@ -44,6 +51,18 @@ sys:
     # 注意:仅首次启动有效, 后续需要切换请在管理员后台切换, 但需要注意的是切换功能不是特别稳定, 容易导致数据丢失, 所以最好一开始就确定好存储模式不要再动了
     # (切换功能已经修过好几次严重bug了, 虽然目前没发现有bug, 但不确保真的没bug)
     mode: unique
+
+    # minio存储配置
+    minio:
+      access-key: xyy
+      secret-key: xyy123456
+      bucket: xyy
+
+    # hdfs存储配置
+    hdfs:
+      url: hdfs://localhost:9000
+      root: /xyy2
+      user: xiaotao
   ftp:
     # FTP控制端口
     control-port: 21

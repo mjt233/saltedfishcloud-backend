@@ -122,12 +122,15 @@ public class TypeUtils {
      * @return      boolean转换结果
      */
     public static Boolean toBoolean(Object obj) {
+        if (obj == null) {
+            return false;
+        }
         if (obj instanceof String) {
-            return ((String) obj).toLowerCase().equals("true");
+            return ((String) obj).equalsIgnoreCase("true");
         } else if (obj instanceof Number) {
             return ((Number) obj).intValue() >= 1;
         } else if (obj instanceof Boolean) {
-            return (Boolean)obj;
+            return (Boolean) obj;
         } else {
             throw new UnsupportedOperationException("无法将 " + obj.getClass() + " 转为boolean");
         }

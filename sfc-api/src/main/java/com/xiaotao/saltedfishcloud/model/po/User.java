@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -99,6 +100,14 @@ public class User implements UserDetails {
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
         }
         this.type = type;
+    }
+
+    /**
+     * 是否具备管理员权限
+     */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    public boolean isAdmin() {
+        return TYPE_ADMIN == this.type;
     }
 
     /**

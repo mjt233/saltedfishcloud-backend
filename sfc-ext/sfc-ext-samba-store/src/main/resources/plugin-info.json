@@ -1,0 +1,9 @@
+{
+  "name": "samba-store",
+  "alias": "Samba文件共享存储",
+  "loadType": "merge",
+  "type": "jar",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "2.0.0"
+}

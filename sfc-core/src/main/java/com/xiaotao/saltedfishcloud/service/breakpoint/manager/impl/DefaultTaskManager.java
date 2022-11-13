@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskStorePath;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeInputStream;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MultipleFileMergeInputStreamGenerator;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceProvider;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class DefaultTaskManager implements TaskManager {
     private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
-    private StoreServiceProvider storeServiceProvider;
+    private StoreServiceFactory storeServiceFactory;
 
     private String getMetaRedisKey(String id) {
         return "xyy::breakpoint::" + id;
@@ -53,7 +53,7 @@ public class DefaultTaskManager implements TaskManager {
         String id = UUID.randomUUID().toString();
         info.setTaskId(id);
         String taskDir = TaskStorePath.getRoot(id);
-        storeServiceProvider.getTempStoreService().mkdirs(taskDir);
+        storeServiceFactory.getTempStoreService().mkdirs(taskDir);
         redisTemplate.opsForValue().set(getMetaRedisKey(id), info, Duration.ofDays(7));
         return id;
     }
@@ -81,7 +81,7 @@ public class DefaultTaskManager implements TaskManager {
             throw new TaskNotFoundException(id);
         }
         String taskPath = TaskStorePath.getRoot(id);
-        storeServiceProvider.getTempStoreService().delete(taskPath);
+        storeServiceFactory.getTempStoreService().delete(taskPath);
         redisTemplate.delete(getMetaRedisKey(id));
         redisTemplate.delete(getFinishPartKey(id));
     }
@@ -105,7 +105,7 @@ public class DefaultTaskManager implements TaskManager {
         for (int i : parts) {
             long size = taskInfo.getPartSize(i);
             final String partFile = TaskStorePath.getPartFile(id, i);
-            try(final OutputStream out = storeServiceProvider.getTempStoreService().newOutputStream(partFile)) {
+            try(final OutputStream out = storeServiceFactory.getTempStoreService().newOutputStream(partFile)) {
                 long l = StreamUtils.copyRange(stream, out, 0, size - 1);
                 log.debug("写入断点续传文件块，文件名：{} 编号：{}  大小：{}",taskInfo.getFileName() ,i, l);
                 redisTemplate.opsForSet().add(redisKey, i);
@@ -145,7 +145,7 @@ public class DefaultTaskManager implements TaskManager {
 
         List<Integer> finishPart = getFinishPart(id);
         Resource[] paths = new Resource[finishPart.size()];
-        final TempStoreService tempStoreService = storeServiceProvider.getTempStoreService();
+        final TempStoreService tempStoreService = storeServiceFactory.getTempStoreService();
         for (Integer integer : finishPart) {
             paths[integer - 1] =  tempStoreService.getResource(TaskStorePath.getPartFile(id, integer));
         }

@@ -93,6 +93,9 @@ public class FileUtils {
      */
     static public void createParentDirectory(Path path) throws IOException {
         Path parent = path.getParent();
+        if (parent == null) {
+            parent = Paths.get("");
+        }
         if (!Files.exists(parent)) {
             Files.createDirectories(parent);
         }
