@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.apache.ibatis.annotations.*;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -33,16 +34,7 @@ public interface FileDao {
      * @param md5 文件MD5集合
      * @return 有效的MD5集合
      */
-    @Select({
-            "<script>",
-                "SELECT md5 FROM file_table WHERE md5 in ",
-                "<foreach collection='md5' item='md5' open='(' separator=',' close=')'>",
-                "#{md5}",
-                "</foreach>" +
-                " GROUP BY md5",
-            "</script>"
-    })
-    List<String> getValidFileMD5s(Collection<String> md5);
+    List<String> getValidFileMD5s(@Param("md5s") Collection<String> md5);
 
     /**
      * 移动资源到指定目录下
@@ -89,12 +81,27 @@ public interface FileDao {
      * @param nodeId 文件所在路径（不包含文件名）的映射ID，路径ID需要用NodeDao或NodeService获取
      * @return 影响的行数
      */
-    @Insert("INSERT IGNORE INTO file_table (uid,name,size,md5,node,created_at) VALUES (#{uid},#{name},#{size},#{md5},#{node},NOW())")
+    default int addRecord(Integer uid, String fileName, Long size, String md5, String nodeId) {
+        return addRecord(uid, fileName, size, md5, nodeId, new Date());
+    }
+
+    /**
+     * 添加一条文件记录
+     * @param uid 用户ID 0表示公共
+     * @param fileName 文件名
+     * @param size 文件大小
+     * @param md5 文件md5
+     * @param nodeId 文件所在路径（不包含文件名）的映射ID，路径ID需要用NodeDao或NodeService获取
+     * @param createAt 文件创建日期
+     * @return 影响的行数
+     */
+    @Insert("INSERT IGNORE INTO file_table (uid,name,size,md5,node,created_at) VALUES (#{uid},#{name},#{size},#{md5},#{node},#{createAt})")
     int addRecord(@Param("uid") Integer uid,
-                    @Param("name") String fileName,
-                    @Param("size") Long size,
-                    @Param("md5") String md5,
-                    @Param("node") String nodeId);
+                  @Param("name") String fileName,
+                  @Param("size") Long size,
+                  @Param("md5") String md5,
+                  @Param("node") String nodeId,
+                 @Param("createAt") Date createAt);
 
 
 
@@ -105,15 +112,6 @@ public interface FileDao {
      * @param name 文件名
      * @return 受影响的行数
      */
-    @Delete({
-            "<script>",
-                "DELETE FROM file_table WHERE node = #{node} AND name in ",
-                "<foreach collection='name' item='item' open='(' separator=',' close=')'>",
-                    "#{item}",
-                "</foreach>",
-            "AND uid=#{uid}",
-            "</script>"
-    })
     int deleteRecords(@Param("uid") Integer uid,
                       @Param("node") String node,
                       @Param("name") List<String> name);
@@ -137,15 +135,6 @@ public interface FileDao {
      * @param nodes  节点ID列表
      * @return 删除数
      */
-    @Delete({
-            "<script>",
-            "DELETE FROM file_table WHERE node in ",
-                "<foreach collection='nodes' item='node' open='(' separator=',' close=')'>",
-                    "#{node}",
-                "</foreach>",
-            " AND uid=#{uid} ",
-            "</script>"
-    })
     int deleteDirsRecord(@Param("uid") Integer uid,
                          @Param("nodes") List<String> nodes
                       );
@@ -158,12 +147,25 @@ public interface FileDao {
      * @param newMd5 新文件MD5
      * @return 受影响行数
      */
-    @Update("UPDATE file_table SET md5=#{newMd5}, size=#{newSize}, updated_at=NOW() WHERE node=#{node} AND uid=#{uid} AND name=#{name}")
+    @Update("UPDATE file_table SET md5=#{newMd5}, size=#{newSize}, updated_at=#{updateAt} WHERE node=#{node} AND uid=#{uid} AND name=#{name}")
     int updateRecord(@Param("uid") Integer uid,
                      @Param("name") String name,
+                     @Param("updateAt") Date updateAt,
                      @Param("node") String nodeId,
                      @Param("newSize") Long newSize,
                      @Param("newMd5") String newMd5);
+
+    /**
+     * 更新文件记录
+     * @param uid 用户ID 0表示公共用户
+     * @param nodeId 原文件所在路径的ID
+     * @param newSize 新文件大小
+     * @param newMd5 新文件MD5
+     * @return 受影响行数
+     */
+    default int updateRecord(Integer uid, String name, String nodeId, Long newSize, String newMd5) {
+        return updateRecord(uid, name, new Date(), nodeId, newSize, newMd5);
+    }
 
     /**
      * 获取文件信息
@@ -182,15 +184,6 @@ public interface FileDao {
      * @param nodeId 路径ID
      * @return 删除数
      */
-    @Select({
-            "<script>",
-            "SELECT name, size, md5, node AS parent FROM file_table WHERE node=#{nodeId} AND name in ",
-                "<foreach collection='names' item='name' open='(' separator=',' close=')'>",
-                    "#{name}",
-                "</foreach>",
-            " AND  uid=#{uid}",
-            "</script>"
-    })
     List<FileInfo> getFilesInfo(@Param("uid") Integer uid, @Param("names") Collection<String> name, @Param("nodeId") String nodeId);
 
     /**
