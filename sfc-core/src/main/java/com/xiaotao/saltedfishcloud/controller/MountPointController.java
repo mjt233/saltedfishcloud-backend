@@ -66,8 +66,7 @@ public class MountPointController {
     public JsonResult getById(@RequestParam("id") long id) {
         MountPoint mountPoint = mountPointService.findById(id);
         if (mountPoint != null) {
-            User user = SecureUtils.getSpringSecurityUser();
-            if(!UIDValidator.validate(user.getId(), false)) {
+            if(!UIDValidator.validate(mountPoint.getUid(), true)) {
                 throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
             }
         } else {
