@@ -38,6 +38,9 @@ public class SFTPSession extends SFTPClient implements Closeable {
         }
     }
 
+    /**
+     * 关闭SFTP会话
+     */
     public void closeSession() throws IOException {
         super.close();
         sshClient.close();
