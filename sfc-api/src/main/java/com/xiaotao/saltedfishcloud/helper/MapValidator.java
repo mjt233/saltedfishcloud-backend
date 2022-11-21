@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.helper;
 
 import com.xiaotao.saltedfishcloud.model.NameValueType;
+import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 
 import java.util.ArrayList;
@@ -62,5 +63,22 @@ public class MapValidator<K,V> {
         if (!invalidPropertyList.isEmpty()) {
             throw new IllegalArgumentException("【" + String.join(",", invalidPropertyList) + "】不能为空");
         }
+    }
+
+    /**
+     * 执行校验，并将属性复制到bean对象中
+     */
+    public void validAndCopyToBean(Object obj) {
+        valid();
+        ObjectUtils.copyMapToBean(map, obj);
+    }
+
+    /**
+     * 执行校验，并将map转为bean
+     * @param clazz     待转换的bean class
+     */
+    public <T> T validAndToBean(Class<T> clazz) {
+        valid();
+        return ObjectUtils.mapToBean(map, clazz);
     }
 }

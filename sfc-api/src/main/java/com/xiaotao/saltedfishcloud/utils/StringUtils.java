@@ -57,6 +57,8 @@ public class StringUtils {
             if (last != null && last.length() != 0) {
                 if (!(data.startsWith("/") || last.endsWith("/"))) {
                     sb.append('/');
+                } else if (data.startsWith("/") && last.equals("/")) {
+                    data = data.replaceAll("^/+", "");
                 }
             }
             sb.append(data);

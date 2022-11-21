@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>11</java.version>
-        <api.version>2.0.0</api.version>
+        <api.version>2.1.0</api.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -24,6 +24,7 @@
         <module>sfc-ext-mp3-thumbnail</module>
         <module>sfc-ext-minio-store</module>
         <module>sfc-ext-samba-store</module>
+        <module>sfc-ext-sftp-store</module>
     </modules>
 
 

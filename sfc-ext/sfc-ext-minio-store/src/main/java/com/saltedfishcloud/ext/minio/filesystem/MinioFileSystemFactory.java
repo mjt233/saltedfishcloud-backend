@@ -47,13 +47,11 @@ public class MinioFileSystemFactory implements DiskFileSystemFactory {
         return CACHE.computeIfAbsent(minioProperties, k -> generateFileSystem(minioProperties));
     }
 
+
     @Override
-    public DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException {
-        MinioProperties minioProperties = checkAndGetProperties(params);
-        RawDiskFileSystem rawDiskFileSystem = generateFileSystem(minioProperties);
+    public void testFileSystem(DiskFileSystem fileSystem) throws FileSystemParameterException {
         try {
-            rawDiskFileSystem.getStoreHandler().listFiles("/");
-            return rawDiskFileSystem;
+            ((RawDiskFileSystem) fileSystem).getStoreHandler().listFiles("/");
         } catch (IOException e) {
             throw new FileSystemParameterException(e.getMessage(), e);
         }

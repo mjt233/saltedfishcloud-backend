@@ -75,13 +75,13 @@ public class LocalFileSystemFactory implements DiskFileSystemFactory, Initializi
         return rawDiskFileSystem;
     }
 
+
     @Override
-    public DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException {
-        RawDiskFileSystem fileSystem = generateFileSystem(params);
-        if(fileSystem.getStoreHandler().exist(fileSystem.getBasePath())) {
-            return fileSystem;
+    public void testFileSystem(DiskFileSystem fileSystem) throws FileSystemParameterException {
+        RawDiskFileSystem rawDiskFileSystem = (RawDiskFileSystem) fileSystem;
+        if(!rawDiskFileSystem.getStoreHandler().exist(rawDiskFileSystem.getBasePath())) {
+            throw new FileSystemParameterException("找不到路径：" + rawDiskFileSystem.getBasePath());
         }
-        throw new FileSystemParameterException("找不到路径：" + fileSystem.getBasePath());
     }
 
     @Override

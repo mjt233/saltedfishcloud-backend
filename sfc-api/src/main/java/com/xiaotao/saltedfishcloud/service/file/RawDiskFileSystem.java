@@ -14,6 +14,7 @@ import lombok.Setter;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
  * 原始的文件系统，根据DirectRawStoreHandler和basePath对存储操作器进行操作封装，暴露为对网盘文件系统的操作。
  * 需要手动设置单独的ThumbnailService以提供缩略图服务
  */
-public class RawDiskFileSystem implements DiskFileSystem {
+public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     @Getter
     private final DirectRawStoreHandler storeHandler;
 
@@ -209,5 +210,12 @@ public class RawDiskFileSystem implements DiskFileSystem {
     @Override
     public void rename(int uid, String path, String name, String newName) throws IOException {
         storeHandler.rename(StringUtils.appendPath(basePath, path, name), newName);
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (storeHandler instanceof Closeable) {
+            ((Closeable) storeHandler).close();
+        }
     }
 }

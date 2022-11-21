@@ -95,8 +95,8 @@ public class HDFSFileSystemFactory implements DiskFileSystemFactory {
     }
 
     @Override
-    public DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException {
-        return getFileSystem(params);
+    public void testFileSystem(DiskFileSystem fileSystem) throws FileSystemParameterException {
+
     }
 
     @Override

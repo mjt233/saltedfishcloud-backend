@@ -185,7 +185,8 @@ public class MountPointServiceImpl implements MountPointService {
         if (factory == null) {
             throw new JsonException("不支持的协议" + mountPoint.getProtocol());
         }
-        DiskFileSystem fileSystem = factory.testGet(paramMap);
+        DiskFileSystem fileSystem = factory.getFileSystem(paramMap);
+        factory.testFileSystem(fileSystem);
         try {
             fileSystem.getUserFileList(0, "/");
         } catch (IOException e) {

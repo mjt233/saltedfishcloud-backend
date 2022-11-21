@@ -71,14 +71,12 @@ public class SambaDiskFileSystemFactory implements DiskFileSystemFactory {
     }
 
     @Override
-    public DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException {
-        SambaProperty sambaProperty = parseProperty(params);
-        RawDiskFileSystem rawDiskFileSystem = generateDiskFileSystem(sambaProperty);
-        boolean exist = rawDiskFileSystem.exist(0, "/");
+    public void testFileSystem(DiskFileSystem fileSystem) throws FileSystemParameterException {
+
+        boolean exist = fileSystem.exist(0, "/");
         if (!exist) {
             throw new FileSystemParameterException("路径不存在");
         }
-        return rawDiskFileSystem;
     }
 
     @Override

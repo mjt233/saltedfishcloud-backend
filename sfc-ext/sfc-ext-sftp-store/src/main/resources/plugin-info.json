@@ -1,6 +1,6 @@
 {
-  "name": "samba-store",
-  "alias": "Samba文件共享存储",
+  "name": "sftp-store",
+  "alias": "SFTP文件存储",
   "loadType": "merge",
   "type": "jar",
   "author": "xiaotao233",
