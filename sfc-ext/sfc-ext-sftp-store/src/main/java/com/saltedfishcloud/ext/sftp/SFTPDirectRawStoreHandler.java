@@ -66,7 +66,7 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
             @Override
             public void destroyObject(PooledObject<SFTPSession> p) throws Exception {
                 log.debug("{}SFTP会话销毁", LOG_PREFIX);
-                p.getObject().close();
+                p.getObject().closeSession();
             }
         });
     }
