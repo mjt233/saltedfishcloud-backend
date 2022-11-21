@@ -13,7 +13,7 @@ public class PoolUtils {
             setMaxTotal(64);
             setMaxWaitMillis(10000);
             // 10s一次空闲检测
-            setTimeBetweenEvictionRunsMillis(3000);
+            setTimeBetweenEvictionRunsMillis(10000);
         }});
     }
 
