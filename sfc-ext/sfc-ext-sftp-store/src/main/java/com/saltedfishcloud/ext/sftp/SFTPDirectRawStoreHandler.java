@@ -4,12 +4,17 @@ import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.PoolUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.sftp.*;
 import net.schmizz.sshj.transport.verification.HostKeyVerifier;
+import org.apache.commons.pool2.BasePooledObjectFactory;
+import org.apache.commons.pool2.ObjectPool;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -17,7 +22,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.rmi.RemoteException;
 import java.security.PublicKey;
 import java.util.Collections;
 import java.util.Date;
@@ -32,14 +36,42 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
 
     @Getter
     private final SFTPProperty property;
-    private SSHClient client;
+
+    private final ObjectPool<SFTPSession> pool;
 
     public SFTPDirectRawStoreHandler(SFTPProperty property) {
         this.property = property;
+        pool = PoolUtils.createObjectPool(new BasePooledObjectFactory<>() {
+            @Override
+            public SFTPSession create() throws Exception {
+                log.debug("{}创建SFTP会话", LOG_PREFIX);
+                return new SFTPSession(getSSHClient(), pool);
+            }
+
+            @Override
+            public PooledObject<SFTPSession> wrap(SFTPSession sftpSession) {
+                return new DefaultPooledObject<>(sftpSession);
+            }
+
+            @Override
+            public boolean validateObject(PooledObject<SFTPSession> p) {
+                try {
+                    return p.getObject().statExistence(property.getPath()) != null;
+                } catch (IOException e) {
+                    log.error("{}会话失效：{}", LOG_PREFIX, e);
+                    return false;
+                }
+            }
+
+            @Override
+            public void destroyObject(PooledObject<SFTPSession> p) throws Exception {
+                log.debug("{}SFTP会话销毁", LOG_PREFIX);
+                p.getObject().close();
+            }
+        });
     }
 
     public SSHClient getSSHClient() throws IOException {
-        // todo: 使用连接池
         SSHClient ssh = new SSHClient();
         ssh.addHostKeyVerifier(new HostKeyVerifier() {
             @Override
@@ -54,18 +86,16 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
         });
         ssh.connect(property.getHost(), property.getPort());
         ssh.authPassword(property.getUsername(), property.getPassword());
-        this.client = ssh;
         return ssh;
     }
 
     public SFTPClient getSFTPClient() throws IOException {
         try {
-            return getSSHClient().newSFTPClient();
+            return pool.borrowObject();
         } catch (Exception e) {
             log.error("{}获取客户端错误：{}", LOG_PREFIX, e);
-            throw new RuntimeException(e);
+            throw new IOException(e);
         }
-
     }
 
     @Override
