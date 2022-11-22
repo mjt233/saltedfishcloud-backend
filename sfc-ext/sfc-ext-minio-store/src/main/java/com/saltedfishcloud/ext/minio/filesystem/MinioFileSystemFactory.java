@@ -4,10 +4,7 @@ import com.saltedfishcloud.ext.minio.MinioDirectRawHandler;
 import com.saltedfishcloud.ext.minio.MinioProperties;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import io.minio.MinioClient;
@@ -19,7 +16,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MinioFileSystemFactory implements DiskFileSystemFactory {
+public class MinioFileSystemFactory extends AbstractRawDiskFileSystemFactory<MinioProperties, RawDiskFileSystem> {
     @Setter
     private ThumbnailService thumbnailService;
 
@@ -41,12 +38,35 @@ public class MinioFileSystemFactory implements DiskFileSystemFactory {
             .build();
     private final Map<MinioProperties, DiskFileSystem> CACHE = new ConcurrentHashMap<>();
 
+
     @Override
-    public DiskFileSystem getFileSystem(Map<String, Object> params) throws FileSystemParameterException {
-        MinioProperties minioProperties = checkAndGetProperties(params);
-        return CACHE.computeIfAbsent(minioProperties, k -> generateFileSystem(minioProperties));
+    public MinioProperties parseProperty(Map<String, Object> params) {
+
+        CollectionUtils.validMap(params)
+                .addField("endpoint")
+                .addField("accessKey")
+                .addField("secretKey")
+                .addField("bucket")
+                .valid();
+        return MinioProperties.builder()
+                .endpoint(params.get("endpoint").toString())
+                .accessKey(params.get("accessKey").toString())
+                .secretKey(params.get("secretKey").toString())
+                .bucket(params.get("bucket").toString())
+                .build();
     }
 
+    @Override
+    public RawDiskFileSystem generateDiskFileSystem(MinioProperties property) throws IOException {
+        MinioClient client = MinioClient.builder()
+                .endpoint(property.getEndpoint())
+                .credentials(property.getAccessKey(), property.getSecretKey())
+                .build();
+        MinioDirectRawHandler rawHandler = new MinioDirectRawHandler(client, property);
+        RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(rawHandler, "/");
+        rawDiskFileSystem.setThumbnailService(thumbnailService);
+        return rawDiskFileSystem;
+    }
 
     @Override
     public void testFileSystem(DiskFileSystem fileSystem) throws FileSystemParameterException {
@@ -61,31 +81,6 @@ public class MinioFileSystemFactory implements DiskFileSystemFactory {
     public DiskFileSystemDescribe getDescribe() {
         return DESCRIBE;
     }
-    
-    protected RawDiskFileSystem generateFileSystem(MinioProperties minioProperties) {
-        MinioClient client = MinioClient.builder()
-                .endpoint(minioProperties.getEndpoint())
-                .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
-                .build();
-        MinioDirectRawHandler rawHandler = new MinioDirectRawHandler(client, minioProperties);
-        RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(rawHandler, "/");
-        rawDiskFileSystem.setThumbnailService(thumbnailService);
-        return rawDiskFileSystem;
 
-    }
 
-    public MinioProperties checkAndGetProperties(Map<String, Object> params) {
-        CollectionUtils.validMap(params)
-                .addField("endpoint")
-                .addField("accessKey")
-                .addField("secretKey")
-                .addField("bucket")
-                .valid();
-        return MinioProperties.builder()
-                .endpoint(params.get("endpoint").toString())
-                .accessKey(params.get("accessKey").toString())
-                .secretKey(params.get("secretKey").toString())
-                .bucket(params.get("bucket").toString())
-                .build();
-    };
 }

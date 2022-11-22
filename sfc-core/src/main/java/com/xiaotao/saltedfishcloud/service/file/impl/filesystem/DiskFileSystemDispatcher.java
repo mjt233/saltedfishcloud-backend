@@ -200,7 +200,7 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
     }
 
     @Override
-    public boolean exist(int uid, String path) {
+    public boolean exist(int uid, String path) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         if (matchResult.mountPoint != null && (matchResult.resolvedPath.equals("/") || matchResult.resolvedPath.equals(""))) {
             return true;

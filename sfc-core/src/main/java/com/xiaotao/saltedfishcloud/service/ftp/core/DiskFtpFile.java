@@ -100,7 +100,12 @@ public class DiskFtpFile implements FtpFile {
         if (pathInfo.isFtpRoot() || pathInfo.isResourceRoot() || getFileResource() == null) {
             isDir = true;
         } else {
-            isDir = fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath()) && getFileResource() == null;
+            try {
+                isDir = fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath()) && getFileResource() == null;
+            } catch (IOException e) {
+                log.error("[FTP Server]判断目录类型失败：", e);
+                return false;
+            }
         }
         return isDir;
     }
@@ -115,7 +120,12 @@ public class DiskFtpFile implements FtpFile {
         if (isExist != null) {
             return isExist;
         }
-        isExist = isRoot || fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath());
+        try {
+            isExist = isRoot || fileService.getMainFileSystem().exist(resourceUid, pathInfo.getResourcePath());
+        } catch (IOException e) {
+            log.error("[FTP Server]判断文件是否存在失败：", e);
+            return false;
+        }
         return isExist;
     }
 

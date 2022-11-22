@@ -21,12 +21,23 @@ public abstract class AbstractRawDiskFileSystemFactory<T, D extends DiskFileSyst
     @Override
     public DiskFileSystem getFileSystem(Map<String, Object> params) throws FileSystemParameterException {
         T property = parseProperty(params);
-        return CACHE.computeIfAbsent(property, key -> generateDiskFileSystem(property));
+        return CACHE.computeIfAbsent(property, key -> {
+            try {
+                return generateDiskFileSystem(property);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
     public void testFileSystem(DiskFileSystem fileSystem) throws FileSystemParameterException {
-        fileSystem.exist(0, "/");
+        try {
+            fileSystem.exist(0, "/");
+        } catch (IOException e) {
+            throw new FileSystemParameterException("测试失败",e);
+        }
+
     }
 
     @Override
@@ -49,7 +60,7 @@ public abstract class AbstractRawDiskFileSystemFactory<T, D extends DiskFileSyst
 
     public abstract T parseProperty(Map<String, Object> params);
 
-    public abstract D generateDiskFileSystem(T property);
+    public abstract D generateDiskFileSystem(T property) throws IOException;
 
 
 }

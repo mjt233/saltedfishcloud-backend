@@ -288,7 +288,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public boolean exist(int uid, String path) {
+    public boolean exist(int uid, String path) throws IOException {
         return handler.exist(getPath(uid, path));
     }
 

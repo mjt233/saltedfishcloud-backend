@@ -30,7 +30,7 @@ public class MapValidator<K,V> {
      * @param key       待校验的key
      * @param name      该key的含义
      */
-    public MapValidator<K,V> addField(K key, String name) {
+    public MapValidator<K,V> addAliasField(K key, String name) {
         validMap.put(key, name);
         return this;
     }
@@ -39,8 +39,12 @@ public class MapValidator<K,V> {
      * 添加校验信息字段
      * @param key       待校验的key
      */
-    public MapValidator<K,V> addField(K key) {
-        validMap.put(key, key.toString());
+    public MapValidator<K,V> addField(K ...key) {
+        if (key != null) {
+            for (K k : key) {
+                validMap.put(k, k.toString());
+            }
+        }
         return this;
     }
 

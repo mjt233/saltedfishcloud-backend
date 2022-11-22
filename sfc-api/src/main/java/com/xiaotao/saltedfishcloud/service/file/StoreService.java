@@ -83,7 +83,7 @@ public interface StoreService {
      * @param path  文件或目录路径
      * @return  存在为true，否则为false
      */
-    boolean exist(int uid, String path);
+    boolean exist(int uid, String path) throws IOException;
 
     /**
      * 通过文件移动的方式存储文件到网盘系统，相对于{@link #store}方法，避免了文件的重复写入操作。对本地文件操作后，原路径文件不再存在<br><br>

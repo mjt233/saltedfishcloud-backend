@@ -90,7 +90,7 @@ public interface DiskFileSystem {
      * @param path  要判断的文件路径
      * @return      结果，存在则返回true，否则为false
      */
-    boolean exist(int uid, String path);
+    boolean exist(int uid, String path) throws IOException;
 
     /**
      * 从文件系统获取文件资源

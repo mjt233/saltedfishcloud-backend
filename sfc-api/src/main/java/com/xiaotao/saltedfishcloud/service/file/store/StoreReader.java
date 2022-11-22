@@ -43,7 +43,7 @@ public interface StoreReader {
      * 检测指定路径是否为有效的文件或目录路径
      * @param path 待检测路径
      */
-    default boolean exist(String path)  {
+    default boolean exist(String path) throws IOException {
         try {
             return getFileInfo(path) != null;
         } catch (IOException e) {

@@ -165,7 +165,7 @@ public class MountPointServiceImpl implements MountPointService {
      * 创建挂载点
      * @param mountPoint    待创建的挂载点
      */
-    private void createMountPoint(MountPoint mountPoint) throws JsonProcessingException, FileSystemParameterException {
+    private void createMountPoint(MountPoint mountPoint) throws IOException, FileSystemParameterException {
         String path = StringUtils.appendPath(nodeService.getPathByNode(Math.toIntExact(mountPoint.getUid()), mountPoint.getNid()), mountPoint.getName());
         if (!StringUtils.hasText(mountPoint.getNid())) {
             mountPoint.setNid(mountPoint.getUid().toString());

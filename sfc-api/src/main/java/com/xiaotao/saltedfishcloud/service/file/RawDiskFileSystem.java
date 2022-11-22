@@ -47,7 +47,7 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
      * @param storeHandler  存储操作器
      * @param basePath      统一给所有操作添加的路径前缀
      */
-    public RawDiskFileSystem(DirectRawStoreHandler storeHandler, String basePath) {
+    public RawDiskFileSystem(DirectRawStoreHandler storeHandler, String basePath) throws IOException {
         if ("".equals(basePath)) {
             basePath = ".";
         }
@@ -109,7 +109,7 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public boolean exist(int uid, String path) {
+    public boolean exist(int uid, String path) throws IOException {
         return storeHandler.exist(StringUtils.appendPath(basePath, path));
     }
 
