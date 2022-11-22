@@ -25,6 +25,7 @@
         <module>sfc-ext-minio-store</module>
         <module>sfc-ext-samba-store</module>
         <module>sfc-ext-sftp-store</module>
+        <module>sfc-ext-ftp-store</module>
     </modules>
 
 

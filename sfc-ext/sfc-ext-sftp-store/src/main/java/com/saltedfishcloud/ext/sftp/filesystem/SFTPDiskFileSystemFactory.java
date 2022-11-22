@@ -9,12 +9,14 @@ import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-
+@Slf4j
 public class SFTPDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<SFTPProperty, RawDiskFileSystem> {
     private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
             .isPublic(true)
@@ -26,7 +28,7 @@ public class SFTPDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<
                     .name("base")
                     .nodes(Arrays.asList(
                             ConfigNode.builder().name("host").inputType("text").required(true).build(),
-                            ConfigNode.builder().name("port").inputType("text").build(),
+                            ConfigNode.builder().name("port").inputType("text").required(true).build(),
                             ConfigNode.builder().name("username").inputType("text").required(true).build(),
                             ConfigNode.builder().name("path").inputType("text").required(true).build(),
                             ConfigNode.builder().name("password").inputType("text").isMask(true).build()
@@ -48,9 +50,15 @@ public class SFTPDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<
 
     @Override
     public RawDiskFileSystem generateDiskFileSystem(SFTPProperty property) {
-        RawDiskFileSystem fileSystem = new RawDiskFileSystem(new SFTPDirectRawStoreHandler(property), property.getPath());
-        fileSystem.setThumbnailService(thumbnailService);
-        return fileSystem;
+        RawDiskFileSystem fileSystem = null;
+        try {
+            fileSystem = new RawDiskFileSystem(new SFTPDirectRawStoreHandler(property), property.getPath());
+            fileSystem.setThumbnailService(thumbnailService);
+            return fileSystem;
+        } catch (IOException e) {
+            log.error("获取文件系统失败", e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
