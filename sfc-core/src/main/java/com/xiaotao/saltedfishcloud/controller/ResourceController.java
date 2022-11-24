@@ -25,6 +25,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -62,6 +64,12 @@ public class ResourceController {
         // 根据请求对象获取资源
         Resource resource = resourceService.getResource(resourceRequest);
         if (resource == null) {
+            if (resourceRequest.getIsThumbnail()) {
+                RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+                if (requestAttributes != null) {
+                    requestAttributes.setAttribute("isThumbnail", true, RequestAttributes.SCOPE_REQUEST);
+                }
+            }
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
         return ResourceUtils.wrapResource(resource, resourceRequest.getName());

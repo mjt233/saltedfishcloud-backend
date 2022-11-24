@@ -2,12 +2,12 @@ package com.saltedfishcloud.ext.ftp;
 
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
+import org.apache.commons.net.ftp.parser.ParserInitializationException;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObject;
@@ -34,6 +34,10 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
             public FTPSession create() throws Exception {
                 log.debug("{}开始创建FTP会话", LOG_PREFIX);
                 FTPSession client = new FTPSession(pool);
+                client.setConnectTimeout(1000);
+                client.setDataTimeout(1000);
+                client.setConnectTimeout(1000);
+                client.setDefaultTimeout(5000);
                 client.connect(property.getHostname(), property.getPort());
                 if(!client.login(property.getUsername(), property.getPassword())) {
                     client.disconnect();
@@ -41,7 +45,7 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
                 }
                 client.setFileType(FTPClient.BINARY_FILE_TYPE);
                 client.setControlEncoding("UTF-8");
-
+                client.setBufferSize(8192);
                 if (property.isUsePassive()) {
                     client.enterLocalPassiveMode();
                 }
@@ -51,11 +55,11 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
                     client.disconnect();
                     throw new IOException("FTP连接错误，错误码：" + replyCode);
                 }
-                if (!client.changeWorkingDirectory(property.getPath())) {
+                if (!client.changeWorkingDirectory( "\\")) {
                     throw new IOException("FTP目录切换失败：" + property.getPath());
                 }
 
-                log.debug("{}创建FTP会话完成", LOG_PREFIX);
+                log.debug("{}创建FTP会话完成:{}", LOG_PREFIX, client.hashCode());
                 return client;
             }
 
@@ -66,14 +70,17 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
 
             @Override
             public void destroyObject(PooledObject<FTPSession> p) throws Exception {
+                log.debug("{}FTP会话销毁：{}", LOG_PREFIX, p.getObject().hashCode());
                 p.getObject().disconnect();
             }
+
 
             @Override
             public boolean validateObject(PooledObject<FTPSession> p) {
                 try {
-                    boolean result = p.getObject().changeWorkingDirectory(property.getPath());
-                    if (result) {
+                    log.debug("{}FTP会话验证 - {}", LOG_PREFIX, p.getObject().hashCode());
+                    if (p.getObject().printWorkingDirectory() != null) {
+                        log.debug("{}FTP会话验证成功 - {}", LOG_PREFIX, p.getObject().hashCode());
                         return true;
                     } else {
                         log.error("{}FTP会话cwd验证失败：{}", LOG_PREFIX, property.getPath());
@@ -84,6 +91,9 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
                     return false;
                 }
             }
+        }, config -> {
+            config.setTestOnReturn(true);
+            config.setTestOnBorrow(true);
         });
     }
 
@@ -108,39 +118,35 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
     @Override
     public boolean isEmptyDirectory(String path) throws IOException {
         try(FTPSession session = getSession()) {
-            session.cd(path);
-            FTPFile[] files = session.listFiles();
+            FTPFile[] files = session.listFiles(path);
             return files == null || files.length == 0;
         }
     }
 
     @Override
     public Resource getResource(String path) throws IOException {
-        FTPSession session = getSession();
-        try {
-            session.cd(PathUtils.getParentPath(path));
-            String name = PathUtils.getLastNode(path);
-            FTPFile[] ftpFiles = session.listFiles(".", e -> e.getName().equals(name));
+        FTPFile file;
+        try(FTPSession session = getSession()) {
+            FTPFile[] ftpFiles = session.listFiles(path);
             if (ftpFiles == null || ftpFiles.length == 0) {
                 session.close();
                 return null;
             }
-            return new FTPPoolResource(this, ftpFiles[0], path);
-
+            file = ftpFiles[0];
+        } catch (ParserInitializationException e) {
+            throw new IOException(e.getMessage(), e);
         } catch (Exception e) {
-            session.close();
             log.error("{}获取资源失败:{}", LOG_PREFIX, e);
+            return null;
         }
-        return null;
+
+        return new FTPPoolResource(this, file, path);
     }
 
     @Override
     public List<FileInfo> listFiles(String path) throws IOException {
          try(FTPSession session = getSession()) {
-            String parentPath = PathUtils.getParentPath(path);
-            String name = PathUtils.getLastNode(path);
-            session.cd(parentPath);
-            FTPFile[] ftpFiles = session.listFiles(name);
+            FTPFile[] ftpFiles = session.listFiles(path);
             return Arrays.stream(ftpFiles)
                     .map(this::toFileInfo)
                     .collect(Collectors.toList());
@@ -161,10 +167,8 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
 
     @Override
     public FileInfo getFileInfo(String path) throws IOException {
-        String parentPath = PathUtils.getParentPath(path);
-        String name = PathUtils.getLastNode(path);
         try(FTPSession session = getSession()) {
-            FTPFile[] ftpFiles = session.listFiles(parentPath, e -> e.getName().equals(name));
+            FTPFile[] ftpFiles = session.listFiles(path);
 
             if (ftpFiles == null || ftpFiles.length == 0) {
                 return null;
@@ -216,7 +220,7 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
 
     @Override
     public boolean exist(String path) throws IOException {
-        return getFileInfo(path) == null;
+        return getFileInfo(path) != null;
     }
 
 

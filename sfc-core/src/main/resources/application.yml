@@ -57,7 +57,7 @@ plugin:
   extra-resource:
     - sfc-ext/sfc-ext-minio-store
     - sfc-ext/sfc-ext-samba-store
-    - sfc-ext/sfc-ext-hadoop-store
+#    - sfc-ext/sfc-ext-hadoop-store
     - sfc-ext/sfc-ext-mp3-thumbnail
     - sfc-ext/sfc-ext-demo
     - sfc-ext/sfc-ext-sftp-store

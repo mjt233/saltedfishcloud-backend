@@ -104,7 +104,7 @@ public class TypeUtils {
      * @return      是boolean为true，否则false
      */
     public static boolean isBoolean(Class<?> type) {
-        return Boolean.class.isAssignableFrom(type);
+        return type == boolean.class || Boolean.class.isAssignableFrom(type);
     }
 
     /**

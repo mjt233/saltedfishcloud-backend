@@ -171,8 +171,9 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
 
         //  控制连接配置
         ConnectionConfigFactory connectionConfigFactory = new ConnectionConfigFactory();
-        connectionConfigFactory.setMaxAnonymousLogins(10);
-        connectionConfigFactory.setMaxLogins(10);
+        connectionConfigFactory.setMaxAnonymousLogins(64);
+        connectionConfigFactory.setMaxLogins(64);
+        connectionConfigFactory.setMaxThreads(64);
 
         //  监听配置
         listenerFactory.setPort(ftpProperties.getControlPort());

@@ -1,6 +1,5 @@
 package com.saltedfishcloud.ext.ftp;
 
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.FTPFile;
 import org.jetbrains.annotations.NotNull;
@@ -28,10 +27,24 @@ public class FTPPoolResource extends AbstractResource {
     }
 
     @Override
+    public long contentLength() throws IOException {
+        return file.getSize();
+    }
+
+    @Override
+    public long lastModified() throws IOException {
+        return file.getTimestamp().getTimeInMillis();
+    }
+
+    @Override
     public InputStream getInputStream() throws IOException {
         FTPSession session = handler.getSession();
+        final InputStream is = session.retrieveFileStream(fullPath);
+        if (is == null) {
+            session.close();
+            throw new IOException("获取文件流失败：" + fullPath);
+        }
         return new InputStream() {
-            private final InputStream is = session.retrieveFileStream(fullPath);
             @Override
             public int read(@NotNull byte[] b) throws IOException {
                 return is.read(b);
@@ -55,6 +68,9 @@ public class FTPPoolResource extends AbstractResource {
             @Override
             public void close() throws IOException {
                 is.close();
+                if(!session.completePendingCommand()) {
+                    log.error("{}传输会话关闭失败", LOG_PREFIX);
+                }
                 session.close();
             }
 

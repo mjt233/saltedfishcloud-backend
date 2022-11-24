@@ -30,7 +30,8 @@ public class FTPFileSystemFactory extends AbstractRawDiskFileSystemFactory<FTPPr
                             ConfigNode.builder().name("port").inputType("text").required(true).build(),
                             ConfigNode.builder().name("username").inputType("text").build(),
                             ConfigNode.builder().name("password").inputType("text").isMask(true).build(),
-                            ConfigNode.builder().name("path").inputType("text").required(true).build()
+                            ConfigNode.builder().name("path").inputType("text").required(true).build(),
+                            ConfigNode.builder().name("usePassive").title("").describe("使用被动模式").inputType("switch").required(true).build()
                     ))
                     .build()))
             .build();
