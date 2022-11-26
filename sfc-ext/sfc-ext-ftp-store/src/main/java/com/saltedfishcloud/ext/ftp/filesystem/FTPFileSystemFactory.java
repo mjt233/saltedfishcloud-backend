@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import lombok.Setter;
+import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -47,7 +48,16 @@ public class FTPFileSystemFactory extends AbstractRawDiskFileSystemFactory<FTPPr
     @Override
     public RawDiskFileSystem generateDiskFileSystem(FTPProperty property) throws IOException {
         FTPDirectRawStoreHandler handler = new FTPDirectRawStoreHandler(property);
-        RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getPath());
+        RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getPath()) {
+            @Override
+            public Resource getThumbnail(int uid, String path, String name) throws IOException {
+                if (property.isUseThumbnail()) {
+                    return super.getThumbnail(uid, path, name);
+                } else {
+                    return null;
+                }
+            }
+        };
         fileSystem.setThumbnailService(thumbnailService);
         return fileSystem;
     }

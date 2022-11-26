@@ -39,4 +39,9 @@ public class FTPProperty {
      * 使用的路径
      */
     private String path;
+
+    /**
+     * 启用缩略图支持
+     */
+    private boolean useThumbnail = false;
 }

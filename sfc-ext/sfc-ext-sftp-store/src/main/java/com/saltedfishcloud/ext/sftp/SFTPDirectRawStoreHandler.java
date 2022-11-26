@@ -301,7 +301,11 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
 
     @Override
     public void close() throws IOException {
-        getSFTPClient().close();
-        getSSHClient().close();
+        try {
+            pool.clear();
+        } catch (Exception e) {
+            log.error("SFTP连接池清空异常：", e);
+        }
+        pool.close();
     }
 }

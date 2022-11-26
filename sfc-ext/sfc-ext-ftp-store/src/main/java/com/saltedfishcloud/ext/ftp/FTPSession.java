@@ -6,10 +6,7 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPFileFilter;
 import org.apache.commons.pool2.ObjectPool;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 
 /**
  * FTP会话，关联对象池和原始FTP客户端对象
@@ -55,7 +52,30 @@ public class FTPSession extends FTPClient implements Closeable {
         return super.retrieveFileStream(toServerCharset(remote));
     }
 
+    @Override
+    public boolean rename(String from, String to) throws IOException {
+        return super.rename(toServerCharset(from), toServerCharset(to));
+    }
 
+    @Override
+    public boolean makeDirectory(String pathname) throws IOException {
+        return super.makeDirectory(toServerCharset(pathname));
+    }
+
+    @Override
+    public OutputStream storeFileStream(String remote) throws IOException {
+        return super.storeFileStream(toServerCharset(remote));
+    }
+
+    @Override
+    public boolean deleteFile(String pathname) throws IOException {
+        return super.deleteFile(toServerCharset(pathname));
+    }
+
+    @Override
+    public boolean removeDirectory(String pathname) throws IOException {
+        return super.removeDirectory(toServerCharset(pathname));
+    }
 
     @Override
     public FTPFile[] listFiles(String pathname, FTPFileFilter filter) throws IOException {

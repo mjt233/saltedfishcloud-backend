@@ -2,7 +2,9 @@ package com.saltedfishcloud.ext.ftp;
 
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -13,12 +15,12 @@ import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.UnknownServiceException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,9 +60,7 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
                 if (!client.changeWorkingDirectory( "\\")) {
                     throw new IOException("FTP目录切换失败：" + property.getPath());
                 }
-
-                log.debug("{}创建FTP会话完成:{}", LOG_PREFIX, client.hashCode());
-                return client;
+                    return client;
             }
 
             @Override
@@ -178,44 +178,68 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
         }
     }
 
+    private FileInfo createDirFileInfo(String name) {
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setName(name);
+        fileInfo.setSize(-1);
+        fileInfo.setType(FileInfo.TYPE_DIR);
+        return fileInfo;
+    }
+
     @Override
     public boolean delete(String path) throws IOException {
-        throw new UnknownServiceException("FTP目前只支持只读模式");
+        try (FTPSession session = getSession()) {
+            return session.removeDirectory(path) || session.deleteFile(path);
+        }
     }
 
     @Override
     public boolean mkdir(String path) throws IOException {
-        throw new UnknownServiceException("FTP目前只支持只读模式");
+        try (FTPSession session = getSession()) {
+            return session.makeDirectory(path);
+        }
     }
 
     @Override
     public long store(String path, long size, InputStream inputStream) throws IOException {
-        throw new UnknownServiceException("FTP目前只支持只读模式");
+        try (OutputStream os = newOutputStream(path)) {
+            return StreamUtils.copy(inputStream, os);
+        }
     }
 
     @Override
     public OutputStream newOutputStream(String path) throws IOException {
-        throw new UnknownServiceException("FTP目前只支持只读模式");
+        try (FTPSession session = getSession()) {
+            return session.storeFileStream(path);
+        }
     }
 
     @Override
     public boolean rename(String path, String newName) throws IOException {
-        throw new UnknownServiceException("FTP目前只支持只读模式");
+        try(FTPSession session = getSession()) {
+            return session.rename(path, StringUtils.appendPath(PathUtils.getParentPath(path), newName));
+        }
     }
 
     @Override
     public boolean copy(String src, String dest) throws IOException {
-        throw new UnknownServiceException("FTP目前只支持只读模式");
+        try (OutputStream os = newOutputStream(dest)) {
+            Resource resource = getResource(src);
+            if (resource == null) {
+                throw new IOException("文件不存在：" + src);
+            }
+            try (InputStream is = resource.getInputStream()) {
+                StreamUtils.copy(is, os);
+            }
+        }
+        return true;
     }
 
     @Override
     public boolean move(String src, String dest) throws IOException {
-        throw new UnknownServiceException("FTP目前只支持只读模式");
-    }
-
-    @Override
-    public boolean mkdirs(String path) throws IOException {
-        throw new UnknownServiceException("FTP目前只支持只读模式");
+        try (FTPSession session = getSession()) {
+            return session.rename(src, dest);
+        }
     }
 
     @Override
