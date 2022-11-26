@@ -40,78 +40,15 @@ spring:
     multipart:
       max-file-size: 8192MB
       max-request-size: 8192MB
+  profiles:
+    active: ^spring-profile^
 logging:
   level:
     org: warn
     com: warn
-    com.xiaotao: debug
-    com.saltedfishcloud: debug
+    com.xiaotao: info
+    com.saltedfishcloud: info
     com.xiaotao.saltedfishcloud.dao.mybatis: warn
 #    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
 app:
   version: ^project.version^
-
-# 插件系统配置
-plugin:
-  # 额外加载的插件资源
-  extra-resource:
-    - sfc-ext/sfc-ext-minio-store
-    - sfc-ext/sfc-ext-samba-store
-#    - sfc-ext/sfc-ext-hadoop-store
-    - sfc-ext/sfc-ext-mp3-thumbnail
-    - sfc-ext/sfc-ext-demo
-    - sfc-ext/sfc-ext-sftp-store
-    - sfc-ext/sfc-ext-ftp-store
-
-sys:
-  common:
-    # 注册邀请码
-    reg-code: 114514
-  sync:
-    # 自动同步间隔，单位分钟，-1表示关闭自动同步
-    interval: -1
-
-    # 咸鱼云启动时立即同步，默认关闭
-    sync-on-launch: false
-  store:
-    # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
-    archive-encoding: gbk
-
-    # 存储服务类型，可选local、minio（需要拓展）、hdfs（需要拓展）
-    type: local
-
-    # 各类资源根目录存储路径
-    root: store
-
-    # 公共网盘根目录路径
-    public-root: public
-
-    # 存储模式，可选 raw - 原始存储 或 unique - 唯一存储
-    mode: unique
-
-    # minio存储配置
-    minio:
-      access-key: xyy
-      secret-key: xyy123456
-      bucket: xyy
-
-    # hdfs存储配置
-    hdfs:
-      url: hdfs://localhost:9000
-      root: /xyy2
-      user: xiaotao
-  ftp:
-    # FTP控制端口
-    control-port: 21
-
-    # FTP监听地址
-    listen-addr: 0.0.0.0
-
-    # 是否开启FTP
-    ftp-enable: true
-
-    # FTP被动模式传输重定向地址
-    passive-addr: localhost
-
-    # FTP被动模式传输端口范围
-    passive-port: 20000-30000

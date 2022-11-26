@@ -11,6 +11,23 @@
 
     <artifactId>sfc-core</artifactId>
 
+    <profiles>
+        <profile>
+            <id>develop</id>
+            <properties>
+                <spring-profile>develop</spring-profile>
+            </properties>
+        </profile>
+        <profile>
+            <id>product</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <spring-profile>product</spring-profile>
+            </properties>
+        </profile>
+    </profiles>
     <dependencies>
 <!--        <dependency>-->
 <!--            <groupId>com.xiaotao</groupId>-->
