@@ -35,17 +35,11 @@ public class FTPFileSystemFactory extends AbstractRawDiskFileSystemFactory<FTPPr
     @Override
     public RawDiskFileSystem generateDiskFileSystem(FTPProperty property) throws IOException {
         FTPDirectRawStoreHandler handler = new FTPDirectRawStoreHandler(property);
-        RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getPath()) {
-            @Override
-            public Resource getThumbnail(int uid, String path, String name) throws IOException {
-                if (property.getUseThumbnail()) {
-                    return super.getThumbnail(uid, path, name);
-                } else {
-                    return null;
-                }
-            }
-        };
-        fileSystem.setThumbnailService(thumbnailService);
+        RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getPath());
+
+        if (property.getUseThumbnail()) {
+            fileSystem.setThumbnailService(thumbnailService);
+        }
         return fileSystem;
     }
 
