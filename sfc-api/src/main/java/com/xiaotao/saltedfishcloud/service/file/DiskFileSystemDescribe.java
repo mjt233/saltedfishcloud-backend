@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -38,7 +39,7 @@ public class DiskFileSystemDescribe {
     /**
      * 参数配置节点，用于给用户创建挂载时提供输入和参数描述
      */
-    private final List<ConfigNode> configNode;
+    private final Collection<ConfigNode> configNode;
 
 
 }

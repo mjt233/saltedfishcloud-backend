@@ -48,7 +48,7 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
                 client.setFileType(FTPClient.BINARY_FILE_TYPE);
                 client.setControlEncoding("UTF-8");
                 client.setBufferSize(8192);
-                if (property.isUsePassive()) {
+                if (property.getUsePassive()) {
                     client.enterLocalPassiveMode();
                 }
 

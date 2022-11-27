@@ -31,6 +31,16 @@ public @interface ConfigProperties {
     String inputType() default "text";
 
     /**
+     * 是否必填
+     */
+    boolean required() default false;
+
+    /**
+     * 显示的标题名称
+     */
+    String title() default "";
+
+    /**
      * 所在配置组
      */
     String group() default "base";

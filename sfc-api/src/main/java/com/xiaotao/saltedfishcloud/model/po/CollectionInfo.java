@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionParser;
-import com.xiaotao.saltedfishcloud.utils.ByteSize;
+import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
