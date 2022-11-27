@@ -5,5 +5,5 @@
   "type": "jar",
   "author": "xiaotao233",
   "email": "mjt233@qq.com",
-  "apiVersion": "2.1.1"
+  "apiVersion": "^api.version^"
 }
