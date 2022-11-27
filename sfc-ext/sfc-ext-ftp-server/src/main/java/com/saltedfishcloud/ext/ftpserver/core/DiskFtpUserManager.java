@@ -1,23 +1,22 @@
-package com.xiaotao.saltedfishcloud.service.ftp.core;
+package com.saltedfishcloud.ext.ftpserver.core;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import lombok.RequiredArgsConstructor;
 import org.apache.ftpserver.ftplet.*;
 import org.apache.ftpserver.usermanager.AnonymousAuthentication;
 import org.apache.ftpserver.usermanager.UsernamePasswordAuthentication;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
 import org.apache.ftpserver.usermanager.impl.ConcurrentLoginPermission;
 import org.apache.ftpserver.usermanager.impl.TransferRatePermission;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.LinkedList;
 import java.util.List;
 
-@Component
-@RequiredArgsConstructor
+
 public class DiskFtpUserManager implements UserManager {
-    private final UserDao userDao;
+    @Autowired
+    private UserDao userDao;
 
     @Override
     public BaseUser getUserByName(String username) {

@@ -1,12 +1,13 @@
-package com.xiaotao.saltedfishcloud.service.ftp;
+package com.saltedfishcloud.ext.ftpserver;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.saltedfishcloud.ext.ftpserver.constant.FtpConstant;
+import com.saltedfishcloud.ext.ftpserver.core.DiskFtpFileSystemFactory;
+import com.saltedfishcloud.ext.ftpserver.core.DiskFtpUserManager;
+import com.saltedfishcloud.ext.ftpserver.ftplet.FtpUploadHandler;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpUserManager;
-import com.xiaotao.saltedfishcloud.service.ftp.ftplet.FtpUploadHandler;
+import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +16,7 @@ import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.ftpserver.ftplet.Ftplet;
 import org.apache.ftpserver.listener.ListenerFactory;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.event.ContextClosedEvent;
@@ -30,22 +31,22 @@ import java.util.Map;
 /**
  * FTP服务类（实验性功能）
  */
-@Service
-@RequiredArgsConstructor
 @Slf4j
-public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpService {
-    private final SysProperties sysProperties;
-    private final DiskFtpUserManager ftpUserManager;
-    private final DiskFtpFileSystemFactory ftpFileSystemFactory;
-    private final FtpUploadHandler ftpUploadHandler;
-    private final ConfigService configService;
-    private FtpServer ftpServer;
-    private SysProperties.Ftp ftpProperties;
+public class FtpServiceImpl implements ApplicationRunner , FtpService {
+    @Autowired
+    private DiskFtpUserManager ftpUserManager;
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        ftpProperties = sysProperties.getFtp();
-    }
+    @Autowired
+    private DiskFtpFileSystemFactory ftpFileSystemFactory;
+
+    @Autowired
+    private FtpUploadHandler ftpUploadHandler;
+
+    @Autowired
+    private ConfigService configService;
+
+    private FtpServer ftpServer;
+    private final FTPServerProperty property = new FTPServerProperty();
 
     @EventListener(ContextClosedEvent.class)
     public void onApplicationEvent(ContextClosedEvent event) {
@@ -84,10 +85,10 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
         }
         log.info("[FTP]==========  FTP服务正在启动  ==========");
         ftpServer = createServer();
-        log.info("[FTP]监听地址：{}", ftpProperties.getListenAddr());
-        log.info("[FTP]控制端口：{}", ftpProperties.getControlPort());
-        log.info("[FTP]被动地址：{}", ftpProperties.getPassiveAddr());
-        log.info("[FTP]被动端口：{}", ftpProperties.getPassivePort());
+        log.info("[FTP]监听地址：{}", property.getListenAddr());
+        log.info("[FTP]控制端口：{}", property.getControlPort());
+        log.info("[FTP]被动地址：{}", property.getPassiveAddr());
+        log.info("[FTP]被动端口：{}", property.getPassivePort());
         ftpServer.start();
         log.info("[FTP]==========  FTP服务已启动    ==========");
     }
@@ -102,7 +103,7 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
             stop();
         }
 
-        if (ftpProperties.isFtpEnable()) {
+        if (property.isFtpEnable()) {
             start();
         } else {
             log.info("[FTP]FTP服务处于禁用中，启动已忽略");
@@ -111,30 +112,30 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
 
     @Override
     public void run(ApplicationArguments args) throws IOException {
-        String configRawJson = configService.getConfig(SysConfigName.Common.FTP_PROPERTIES);
+        String configRawJson = configService.getConfig(FtpConstant.CONFIG_NAME);
         if (configRawJson != null) {
             try {
-                final SysProperties.Ftp config = MapperHolder.mapper.readValue(configRawJson, SysProperties.Ftp.class);
-                BeanUtils.copyProperties(config, ftpProperties);
+                final FTPServerProperty config = MapperHolder.mapper.readValue(configRawJson, FTPServerProperty.class);
+                BeanUtils.copyProperties(config, property);
                 log.info("[FTP]已加载配置");
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
         } else {
-            configService.setConfig(SysConfigName.Common.FTP_PROPERTIES, MapperHolder.mapper.writeValueAsString(ftpProperties));
+            configService.setConfig(FtpConstant.CONFIG_NAME, MapperHolder.mapper.writeValueAsString(property));
             log.info("[FTP]初始化FTP配置");
         }
         // 参数更新时重新加载FTP服务器
-        configService.addBeforeSetListener(SysConfigName.Common.FTP_PROPERTIES, e -> {
-            SysProperties.Ftp originProperties = new SysProperties.Ftp();
-            BeanUtils.copyProperties(ftpProperties, originProperties);
+        configService.addBeforeSetListener(FtpConstant.CONFIG_NAME, e -> {
+            FTPServerProperty originProperties = new FTPServerProperty();
+            BeanUtils.copyProperties(property, originProperties);
             try {
-                SysProperties.Ftp config = MapperHolder.mapper.readValue(e, SysProperties.Ftp.class);
-                BeanUtils.copyProperties(config, ftpProperties);
+                FTPServerProperty config = MapperHolder.mapper.readValue(e, FTPServerProperty.class);
+                BeanUtils.copyProperties(config, property);
                 restart();
             } catch (Exception ex) {
                 log.warn("[FTP]配置更新失败，还原后重新启动");
-                BeanUtils.copyProperties(originProperties, ftpProperties);
+                BeanUtils.copyProperties(originProperties, property);
                 try {
                     restart();
                 } catch (Exception exc) {
@@ -144,7 +145,7 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
                 throw new RuntimeException(ex.getMessage(), ex);
             }
         });
-        if (ftpProperties.isFtpEnable()) {
+        if (property.isFtpEnable()) {
             try {
                 restart();
             } catch (FtpException | FtpServerConfigurationException e) {
@@ -166,8 +167,8 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
 
         //  数据连接配置
         DataConnectionConfigurationFactory dataConnectionConfigurationFactory = new DataConnectionConfigurationFactory();
-        dataConnectionConfigurationFactory.setPassiveExternalAddress(ftpProperties.getPassiveAddr());
-        dataConnectionConfigurationFactory.setPassivePorts(ftpProperties.getPassivePort());
+        dataConnectionConfigurationFactory.setPassiveExternalAddress(property.getPassiveAddr());
+        dataConnectionConfigurationFactory.setPassivePorts(property.getPassivePort());
 
         //  控制连接配置
         ConnectionConfigFactory connectionConfigFactory = new ConnectionConfigFactory();
@@ -176,8 +177,8 @@ public class FtpServiceImpl implements ApplicationRunner, InitializingBean ,FtpS
         connectionConfigFactory.setMaxThreads(64);
 
         //  监听配置
-        listenerFactory.setPort(ftpProperties.getControlPort());
-        listenerFactory.setServerAddress(ftpProperties.getListenAddr());
+        listenerFactory.setPort(property.getControlPort());
+        listenerFactory.setServerAddress(property.getListenAddr());
         listenerFactory.setDataConnectionConfiguration(dataConnectionConfigurationFactory.createDataConnectionConfiguration());
 
         Map<String, Ftplet> ftplets = new HashMap<>();

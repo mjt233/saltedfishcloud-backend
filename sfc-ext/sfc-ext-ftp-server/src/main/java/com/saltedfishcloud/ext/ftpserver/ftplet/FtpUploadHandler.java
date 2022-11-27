@@ -1,15 +1,14 @@
-package com.xiaotao.saltedfishcloud.service.ftp.ftplet;
+package com.saltedfishcloud.ext.ftpserver.ftplet;
 
+import com.saltedfishcloud.ext.ftpserver.core.DiskFtpUser;
+import com.saltedfishcloud.ext.ftpserver.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.ftp.core.DiskFtpUser;
-import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.*;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,12 +17,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Slf4j
-@Component
-@RequiredArgsConstructor
 public class FtpUploadHandler extends DefaultFtplet {
     private final static String LOG_PREFIX = "[FtpLet]";
-    private final DiskFileSystemManager fileService;
-    private final UserDao userDao;
+
+    @Autowired
+    private DiskFileSystemManager fileService;
+
+    @Autowired
+    private UserDao userDao;
 
     /**
      * 开始文件上传时获取好用户id与路径信息

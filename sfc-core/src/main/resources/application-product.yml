@@ -43,18 +43,3 @@ sys:
       url: hdfs://localhost:9000
       root: /xyy2
       user: xiaotao
-  ftp:
-    # FTP控制端口
-    control-port: 21
-
-    # FTP监听地址
-    listen-addr: 0.0.0.0
-
-    # 是否开启FTP
-    ftp-enable: true
-
-    # FTP被动模式传输重定向地址
-    passive-addr: localhost
-
-    # FTP被动模式传输端口范围
-    passive-port: 20000-30000

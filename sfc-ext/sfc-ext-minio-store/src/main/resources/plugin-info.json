@@ -6,5 +6,5 @@
   "describe": "为系统提供Minio对象存储的文件读写支持",
   "alias": "Minio对象存储支持",
   "version": "1.0.0",
-  "apiVersion": "2.1.0"
+  "apiVersion": "2.1.1"
 }

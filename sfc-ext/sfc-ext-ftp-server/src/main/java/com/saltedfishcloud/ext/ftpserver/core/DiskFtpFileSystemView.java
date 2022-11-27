@@ -1,10 +1,10 @@
-package com.xiaotao.saltedfishcloud.service.ftp.core;
+package com.saltedfishcloud.ext.ftpserver.core;
 
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
+import com.saltedfishcloud.ext.ftpserver.utils.FtpPathInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.FileSystemView;
 import org.apache.ftpserver.ftplet.FtpFile;

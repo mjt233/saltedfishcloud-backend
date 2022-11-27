@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.ftp.core;
+package com.saltedfishcloud.ext.ftpserver.core;
 
 import com.xiaotao.saltedfishcloud.model.po.User;
 import org.apache.ftpserver.usermanager.impl.BaseUser;

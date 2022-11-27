@@ -1,6 +1,6 @@
 {
-  "name": "sftp-store",
-  "alias": "SFTP文件存储",
+  "name": "ftp-server",
+  "alias": "FTP服务器",
   "loadType": "merge",
   "type": "jar",
   "author": "xiaotao233",

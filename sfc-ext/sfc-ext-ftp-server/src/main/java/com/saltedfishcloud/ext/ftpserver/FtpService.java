@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.ftp;
+package com.saltedfishcloud.ext.ftpserver;
 
 import org.apache.ftpserver.ftplet.FtpException;
 

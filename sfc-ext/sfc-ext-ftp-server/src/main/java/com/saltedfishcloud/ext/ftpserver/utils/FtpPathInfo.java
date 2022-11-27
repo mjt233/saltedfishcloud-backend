@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.ftp.utils;
+package com.saltedfishcloud.ext.ftpserver.utils;
 
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import lombok.AccessLevel;

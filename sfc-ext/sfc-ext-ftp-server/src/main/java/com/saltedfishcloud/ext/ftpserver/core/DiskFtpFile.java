@@ -1,13 +1,11 @@
-package com.xiaotao.saltedfishcloud.service.ftp.core;
+package com.saltedfishcloud.ext.ftpserver.core;
 
-import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
+import com.saltedfishcloud.ext.ftpserver.utils.FtpDiskType;
+import com.saltedfishcloud.ext.ftpserver.utils.FtpPathInfo;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpDiskType;
-import com.xiaotao.saltedfishcloud.service.ftp.utils.FtpPathInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,8 +19,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.aspectj.weaver.tools.cache.SimpleCacheFactory.path;
 
 @Slf4j
 public class DiskFtpFile implements FtpFile {
@@ -136,9 +132,6 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public boolean isWritable() {
-        if (SysRuntimeConfig.getInstance().getProtectModeLevel() == ProtectLevel.DATA_MOVING) {
-            return false;
-        }
         // FTP根目录不可写
         if (pathInfo.isFtpRoot()) {
             log.debug("根目录写入拒绝");

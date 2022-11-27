@@ -107,12 +107,18 @@ public class SysRuntimeConfig implements ApplicationRunner {
         // 监听配置改变，实时更新状态缓存
         configService.addConfigSetListener(e -> {
             String key = e.getKey();
+            boolean change = false;
             if (SysConfigName.Register.ENABLE_EMAIL_REG.equals(key)) {
                 enableEmailReg = "true".equalsIgnoreCase(e.getValue());
+                change = true;
             } else if (SysConfigName.Register.ENABLE_REG_CODE.equals(key)) {
                 enableRegCode = "true".equalsIgnoreCase(e.getValue());
+                change = true;
             }
-            updateFeature();
+            if (change) {
+                updateFeature();
+            }
+
         });
 
 

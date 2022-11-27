@@ -29,10 +29,6 @@ public interface SysConfigName {
     interface Common {
 
         /**
-         * FTP配置
-         */
-        String FTP_PROPERTIES = "sys.common.ftp_properties";
-        /**
          * 系统版本
          */
         String VERSION = "sys.common.version";

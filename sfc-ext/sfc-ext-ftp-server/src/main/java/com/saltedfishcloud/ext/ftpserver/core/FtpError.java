@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.ftp.core;
+package com.saltedfishcloud.ext.ftpserver.core;
 
 import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
 import lombok.Getter;
