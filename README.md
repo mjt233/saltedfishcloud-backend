@@ -74,13 +74,16 @@ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 位于sfc-ext模块下，打包后各模块jar包在`release/ext-available`下，若要启用，将其复制到运行目录下的`ext`目录即可
 
+> 注意：以下插件均为实验性功能，未经过较为全面的测试
+
 **目前有以下插件：**
 
-| 插件名           | 简介                                      |
-|---------------|-----------------------------------------|
+| 插件名          | 简介                                      |
+|--------------|-----------------------------------------|
 | mp3-thumbnail | 为mp3文件提供缩率图显示支持                         |
-| demo          | 没啥用，就是个demo，添加/ext/img和/ext/hello两个测试路由 |
-| hadoop-store  | 提供hdfs文件系统读写支持（主存储、挂载存储）                |
-| minio-store   | 提供minio对象存储系统读写支持（主存储、挂载存储）             |
-| samba-store   | 提供Samba文件共享的读写支持（挂载存储）                  |
-| sftp-store    | 提供基于SFTP文件传输的存储读写支持（挂载存储）               |
+| demo         | 没啥用，就是个demo，添加/ext/img和/ext/hello两个测试路由 |
+| hadoop-store | 提供hdfs文件系统读写支持（主存储、挂载存储）                |
+| minio-store  | 提供minio对象存储系统读写支持（主存储、挂载存储）             |
+| samba-store  | 提供Samba文件共享的读写支持（挂载存储）                  |
+| sftp-store   | 提供基于SFTP文件传输的存储读写支持（挂载存储）               |
+| ftp-store    | 提供基于FTP文件传输的存储读写支持（挂载存储）                |

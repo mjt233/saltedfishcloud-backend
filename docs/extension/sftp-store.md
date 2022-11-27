@@ -1,4 +1,4 @@
-# samba-store
+# sftp-store
 
 ## 简介
 
