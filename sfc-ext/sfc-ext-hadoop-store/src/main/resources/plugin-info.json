@@ -5,6 +5,6 @@
   "email": "mjt233@qq.com",
   "describe": "为系统提供HDFS系统的文件读写支持",
   "alias": "Hadoop存储支持",
-  "version": "1.0.0",
-  "apiVersion": "^api.version^"
+  "apiVersion": "^api.version^",
+  "version": "^project.version^"
 }
