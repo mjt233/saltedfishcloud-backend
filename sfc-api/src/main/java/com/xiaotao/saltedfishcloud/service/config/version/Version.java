@@ -94,7 +94,7 @@ public final class Version implements Comparable<Version>{
      * @return
      */
     public int toInteger() {
-        return bigVer * 100000000 + mdVer * 100000 + smVer * 100 + bugFixVer;
+        return bigVer * 10000000 + mdVer * 100000 + smVer * 100 + bugFixVer;
     }
 
     /**
