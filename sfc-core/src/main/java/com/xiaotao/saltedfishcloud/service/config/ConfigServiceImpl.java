@@ -73,6 +73,14 @@ public class ConfigServiceImpl implements ConfigService {
         }).collect(Collectors.toList());
     }
 
+    @Override
+    public Map<String, String> listConfig(String operator, String keyPattern) {
+        return Optional.ofNullable(configDao.listConfig(operator, keyPattern))
+                .orElseGet(ArrayList::new)
+                .stream()
+                .collect(Collectors.toMap(Pair::getKey, Pair::getValue, (oldVal, newVal) -> newVal));
+    }
+
     /**
      * 获取存在的所有配置
      */

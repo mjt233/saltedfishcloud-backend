@@ -20,6 +20,13 @@ public interface ConfigService {
     List<PluginConfigNodeInfo> listPluginConfig();
 
     /**
+     * 按自定义SQL操作符和表达式获取配置
+     * @param operation     SQL运算符，如：=、like、in
+     * @param keyPattern    SQL表达式，如：('a','b')
+     */
+    Map<String, String> listConfig(String operation, String keyPattern);
+
+    /**
      * 获取存在的所有配置
      */
     Map<String, String> getAllConfig();

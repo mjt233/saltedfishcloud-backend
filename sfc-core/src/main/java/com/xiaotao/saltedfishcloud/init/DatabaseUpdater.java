@@ -4,10 +4,15 @@ import com.xiaotao.saltedfishcloud.common.update.VersionUpdateHandler;
 import com.xiaotao.saltedfishcloud.common.update.VersionUpdateManager;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
+import com.xiaotao.saltedfishcloud.ext.PluginManager;
+import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -21,6 +26,10 @@ import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Component
 @Order(2)
@@ -32,6 +41,12 @@ public class DatabaseUpdater implements ApplicationRunner {
     private final ResourceLoader resourceLoader;
     private final SysProperties sysProperties;
     private final VersionUpdateManager updateManager;
+
+    @Autowired
+    private ConfigService configService;
+
+    @Autowired
+    private PluginManager pluginManager;
 
     /**
      * SQL版本更新脚本资源类，用于从一个SQL版本更新脚本文件Resource中解析版本信息
@@ -129,6 +144,73 @@ public class DatabaseUpdater implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        handleGlobalUpdate();
+        handlePluginUpdate();
+    }
+
+    /**
+     * 获取插件更新作用域的配置key
+     * @param pluginName    插件name
+     */
+    private String getPluginUpdateScopeKey(String pluginName) {
+        return "plugin." + pluginName + ".version";
+    }
+
+    /**
+     * 执行插件作用域的版本更新
+     */
+    private void handlePluginUpdate() throws Exception {
+        // 筛选出除内置插件外的插件
+        List<PluginInfo> pluginList = pluginManager.listAllPlugin().stream().filter(e -> !"sys".equals(e.getName())).collect(Collectors.toList());
+
+        // 组装插件名称用于查询记录的插件上个版本
+        String pluginNames = pluginList.stream()
+                .map(e -> "'" + this.getPluginUpdateScopeKey(e.getName()) + "'")
+                .collect(Collectors.joining(","));
+
+        if (!StringUtils.hasText(pluginNames)) {
+            return;
+        }
+        pluginNames = "(" + pluginNames + ")";
+        Map<String, String> pluginLastVersionMap = configService.listConfig("IN", pluginNames);
+
+        for (PluginInfo pluginInfo : pluginList) {
+            // 筛选出具有上次运行版本记录的插件
+            String versionKey = this.getPluginUpdateScopeKey(pluginInfo.getName());
+            String lastPluginVersionStr = pluginLastVersionMap.get(versionKey);
+            if (lastPluginVersionStr == null) {
+                configService.setConfig(versionKey, pluginInfo.getVersion());
+                continue;
+            }
+
+            // 筛选出需要执行更新的操作器
+            Version lastVersion = Version.valueOf(lastPluginVersionStr);
+            Version nowVersion = Version.valueOf(pluginInfo.getVersion());
+            List<VersionUpdateHandler> updateHandlerList = updateManager.getNeedUpdateHandlerList(pluginInfo.getName(), lastVersion);
+            if (updateHandlerList == null || updateHandlerList.isEmpty()) {
+                configService.setConfig(versionKey, pluginInfo.getVersion());
+                continue;
+            }
+
+            // 执行更新
+            try {
+                for (VersionUpdateHandler handler : updateHandlerList) {
+                    handler.update(lastVersion, nowVersion);
+                }
+                configService.setConfig(versionKey, pluginInfo.getVersion());
+            } catch (Exception e) {
+                updateHandlerList.forEach(handler -> handler.rollback(lastVersion, nowVersion));
+                throw e;
+            }
+
+        }
+
+    }
+
+    /**
+     * 执行全局作用域的版本更新
+     */
+    private void handleGlobalUpdate() throws Exception {
         try {
             for (VersionUpdateHandler updateHandler : updateManager.getNeedUpdateHandlerList(null, lastVersion)) {
                 if (log.isInfoEnabled()) {

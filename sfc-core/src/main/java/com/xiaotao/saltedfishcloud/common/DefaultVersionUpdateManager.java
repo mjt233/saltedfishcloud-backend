@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.common;
 import com.xiaotao.saltedfishcloud.common.update.VersionUpdateHandler;
 import com.xiaotao.saltedfishcloud.common.update.VersionUpdateManager;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,11 +30,14 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager {
         log.debug("{}从Spring Context中获取到的更新器数量：{}", LOG_PREFIX, handlerList.size());
         Map<String, Map<Version, List<VersionUpdateHandler>>> handlerMap = handlerList.stream()
                 .collect(Collectors.groupingBy(
-                        e -> Optional.ofNullable(e.getScope()).orElse(GLOBAL_SCOPE),
+                        e -> StringUtils.hasText(e.getScope()) ? e.getScope() : GLOBAL_SCOPE,
                         Collectors.groupingBy(VersionUpdateHandler::getUpdateVersion)
                 ));
         handlerMap.forEach((scope, scopeHandlerList) -> {
             scopeHandlerList.forEach((version, versionUpdateHandlers) -> {
+                for (VersionUpdateHandler handler : versionUpdateHandlers) {
+                    log.debug("{}在作用域[{}]注册[{}]的更新器：{}", LOG_PREFIX,scope, handler.getUpdateVersion(),handler);
+                }
                 List<VersionUpdateHandler> existList = allHandler
                         .computeIfAbsent(scope, k -> new TreeMap<>(Version::compareTo))
                         .computeIfAbsent(version, k -> new ArrayList<>());
@@ -44,9 +48,10 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager {
 
     @Override
     public synchronized void registerUpdateHandler(VersionUpdateHandler handler) {
-        log.debug("{}注册[{}]的更新器：{}", LOG_PREFIX, handler.getUpdateVersion(),handler);
+        String scope = StringUtils.hasText(handler.getScope()) ? handler.getScope() : GLOBAL_SCOPE;
+        log.debug("{}在作用域[{}]注册[{}]的更新器：{}", LOG_PREFIX,scope, handler.getUpdateVersion(),handler);
         List<VersionUpdateHandler> existList = allHandler
-                .computeIfAbsent(Optional.ofNullable(handler.getScope()).orElse(GLOBAL_SCOPE), k -> new TreeMap<>(Version::compareTo))
+                .computeIfAbsent(scope, k -> new TreeMap<>(Version::compareTo))
                 .computeIfAbsent(handler.getUpdateVersion(), k -> new ArrayList<>());
 
         existList.add(handler);
@@ -64,9 +69,10 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager {
 
     @Override
     public List<VersionUpdateHandler> getNeedUpdateHandlerList(String scope, Version referVersion) {
-        return allHandler.values()
+        return allHandler
+                .getOrDefault(Optional.ofNullable(scope).orElse(GLOBAL_SCOPE), new TreeMap<>())
+                .values()
                 .stream()
-                .flatMap(e -> e.values().stream())
                 .flatMap(Collection::stream)
                 .filter(e -> referVersion.isLessThen(e.getUpdateVersion()))
                 .sorted(Comparator.comparing(VersionUpdateHandler::getUpdateVersion))
