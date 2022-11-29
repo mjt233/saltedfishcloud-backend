@@ -158,6 +158,7 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
                             }
                         };
                     })
+                    .sorted(Comparator.comparing(VersionUpdateHandler::getUpdateVersion))
                     .collect(Collectors.toList());
         }
     }
@@ -195,7 +196,6 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
         if (handlerList == null || handlerList.isEmpty()) {
             return;
         }
-        log.debug("{}从Spring Context中获取到的更新器数量：{}", LOG_PREFIX, handlerList.size());
         Map<String, Map<Version, List<VersionUpdateHandler>>> handlerMap = handlerList.stream()
                 .collect(Collectors.groupingBy(
                         e -> StringUtils.hasText(e.getScope()) ? e.getScope() : GLOBAL_SCOPE,
@@ -253,7 +253,7 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
                 .stream()
                 .flatMap(Collection::stream)
                 .filter(e -> referVersion.isLessThen(e.getUpdateVersion()))
-                .sorted(Comparator.comparing(VersionUpdateHandler::getUpdateVersion))
+                .sorted((a,b) -> b.getUpdateVersion().compareTo(a.getUpdateVersion()))
                 .collect(Collectors.toList());
     }
 }
