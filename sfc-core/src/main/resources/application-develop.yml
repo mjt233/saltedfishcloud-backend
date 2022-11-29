@@ -13,6 +13,7 @@ spring:
     port: 6379
 logging:
   level:
+    test: info
     org: warn
     com: warn
     com.xiaotao: debug

@@ -20,6 +20,11 @@ public class ExtDemoAutoConfigure implements InitializingBean {
         return new DemoController();
     }
 
+    @Bean
+    public DemoUpdater demoUpdater() {
+        return new DemoUpdater();
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
         versionUpdateManager.registerUpdateHandler(new VersionUpdateHandler() {
