@@ -1,26 +1,28 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
+import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
+import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class DefaultFileSystemManager implements DiskFileSystemManager {
+public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOverviewItemProvider {
     private final static String LOG_PREFIX = "[DiskFileManager]";
     /**
      * 记录各个文件系统对应的所支持的协议
@@ -28,10 +30,13 @@ public class DefaultFileSystemManager implements DiskFileSystemManager {
     private final Map<String, DiskFileSystemFactory> factoryMap = new ConcurrentHashMap<>();
 
     @Autowired
-    private MountPointService mountPointService;
+    @Lazy
+    private StoreServiceFactory storeServiceFactory;
+
 
     @Autowired
     private DiskFileSystemDispatcher dispatcher;
+
 
     @Override
     public List<DiskFileSystemFactory> listAllFileSystem() {
@@ -88,5 +93,26 @@ public class DefaultFileSystemManager implements DiskFileSystemManager {
         } else {
             return factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).collect(Collectors.toList());
         }
+    }
+
+    @Override
+    public List<ConfigNode> provideItem(Map<String, ConfigNode> existItem) {
+        String protocols = factoryMap.values().stream().map(e -> e.getDescribe().getProtocol()).collect(Collectors.joining(","));
+        String publicProtocols = factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).map(e -> e.getDescribe().getProtocol()).collect(Collectors.joining(","));
+        return Collections.singletonList(ConfigNode.builder()
+                        .name("fileSystemFeature")
+                        .title("文件系统功能")
+                        .nodes(Arrays.asList(
+                                ConfigNode.builder().name("mainFileSystem")
+                                        .title("主存储服务")
+                                        .value(storeServiceFactory.toString()).build(),
+                                ConfigNode.builder().name("protocols")
+                                        .title("支持的挂载协议")
+                                        .value(protocols).build(),
+                                ConfigNode.builder().name("publicProtocols")
+                                        .title("开放的挂载协议")
+                                        .value(StringUtils.hasText(publicProtocols) ? publicProtocols : "-").build()
+                        ))
+                .build());
     }
 }

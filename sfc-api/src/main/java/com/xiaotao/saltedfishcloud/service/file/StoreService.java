@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
+import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.springframework.core.io.Resource;
@@ -18,6 +19,10 @@ import java.util.List;
  * 网盘文件存储服务，负责用户网盘文件物理数据的存取
  */
 public interface StoreService {
+    /**
+     * 获取存储系统状态，主要是存储空间相关大小
+     */
+    List<FileSystemStatus> getStatus();
     /**
      * 清空该存储系统所有的用户私人和公共网盘文件
      */

@@ -56,6 +56,11 @@ public class ConfigNode {
     private String describe;
 
     /**
+     * 排序
+     */
+    private long sort = 0;
+
+    /**
      * 是否只读
      */
     private boolean readonly;

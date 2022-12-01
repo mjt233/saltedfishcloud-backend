@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -17,6 +19,7 @@ import java.io.OutputStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -253,5 +256,10 @@ public interface DiskFileSystem {
      */
     void rename(int uid, String path, String name, String newName) throws IOException;
 
-
+    /**
+     * 获取文件系统状态
+     */
+    default List<FileSystemStatus> getStatus() {
+        return Collections.emptyList();
+    }
 }

@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -14,6 +15,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,6 +83,7 @@ class FileSystemMatchResult {
 public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements DiskFileSystem {
     private final static String LOG_PREFIX = "[FileSystemDispatcher]";
 
+    @Getter
     private DiskFileSystem mainFileSystem;
 
     @Autowired
@@ -458,5 +461,10 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
         } else {
             return mainFileSystem.getClass().getSimpleName() + " - Proxy by DiskFileSystemDispatcher";
         }
+    }
+
+    @Override
+    public List<FileSystemStatus> getStatus() {
+        return mainFileSystem.getStatus();
     }
 }

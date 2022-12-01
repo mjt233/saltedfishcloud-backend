@@ -1,9 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.*;
@@ -35,6 +37,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PRIVATE;
+import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PUBLIC;
 
 @Slf4j
 @Component
@@ -46,6 +52,9 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
 
     @Autowired
     private FileDao fileDao;
+
+    @Autowired
+    private FileAnalyseDao fileAnalyseDao;
 
     @Autowired
     private FileRecordService fileRecordService;
@@ -437,5 +446,32 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
     @Override
     public boolean equals(Object obj) {
         return obj == this;
+    }
+
+    @Override
+    public List<FileSystemStatus> getStatus() {
+        List<FileSystemStatus> status = storeServiceFactory.getService().getStatus();
+        Map<String, FileSystemStatus> areaMap;
+        if (status != null) {
+            areaMap = status.stream().collect(Collectors.toMap(FileSystemStatus::getArea, e -> e));
+        } else {
+            areaMap = new HashMap<>();
+        }
+
+        areaMap.putIfAbsent(AREA_PRIVATE, FileSystemStatus.builder().area(AREA_PRIVATE).build());
+        areaMap.putIfAbsent(AREA_PUBLIC, FileSystemStatus.builder().area(AREA_PUBLIC).build());
+
+        FileSystemStatus publicStatus = areaMap.get(AREA_PUBLIC);
+        publicStatus.setFileCount(fileAnalyseDao.getPublicFileCount());
+        publicStatus.setDirCount(fileAnalyseDao.getPublicDirCount());
+        publicStatus.setSysUsed(fileAnalyseDao.getPublicTotalSize());
+
+
+        FileSystemStatus privateStatus = areaMap.get(FileSystemStatus.AREA_PRIVATE);
+        privateStatus.setFileCount(fileAnalyseDao.getUserFileCount());
+        privateStatus.setDirCount(fileAnalyseDao.getUserDirCount());
+        privateStatus.setSysUsed(fileAnalyseDao.getUserTotalSize());
+
+        return Arrays.asList(publicStatus, privateStatus);
     }
 }
