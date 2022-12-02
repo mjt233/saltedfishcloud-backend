@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
@@ -32,6 +33,9 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
     @Autowired
     @Lazy
     private StoreServiceFactory storeServiceFactory;
+
+    @Autowired
+    private SysProperties sysProperties;
 
 
     @Autowired
@@ -103,6 +107,10 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
                         .name("fileSystemFeature")
                         .title("文件系统功能")
                         .nodes(Arrays.asList(
+                                ConfigNode.builder().name("storeMode")
+                                        .title("存储模式")
+                                        .value(sysProperties.getStore().getMode().toString())
+                                        .build(),
                                 ConfigNode.builder().name("mainFileSystem")
                                         .title("主存储服务")
                                         .value(storeServiceFactory.toString()).build(),

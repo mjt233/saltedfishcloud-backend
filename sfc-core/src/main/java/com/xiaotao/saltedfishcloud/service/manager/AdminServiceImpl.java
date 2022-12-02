@@ -28,7 +28,8 @@ public class AdminServiceImpl implements AdminService {
     @Autowired(required = false)
     private List<SystemOverviewItemProvider> itemProviderList;
 
-    @Override public SystemOverviewVO getOverviewData() {
+    @Override
+    public SystemOverviewVO getOverviewData() {
         SystemOverviewVO vo = new SystemOverviewVO();
         vo.setFileSystemStatus(diskFileSystemManager.getMainFileSystem().getStatus());
         if (itemProviderList == null || itemProviderList.isEmpty()) {

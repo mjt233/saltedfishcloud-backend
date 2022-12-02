@@ -15,6 +15,18 @@ import java.util.List;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ConfigNode {
+
+    /**
+     * 快捷创建一个name-value节点
+     * @param nameAndTitle  id名称与标题
+     * @param value         值
+     */
+    public ConfigNode(String nameAndTitle, String value) {
+        this.name = nameAndTitle;
+        this.title = nameAndTitle;
+        this.value = value;
+    }
+
     /**
      * 配置节点
      */
