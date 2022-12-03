@@ -21,6 +21,6 @@ public interface SystemOverviewItemProvider {
      * 获取提供顺序，越小越优先
      */
     default long getProvideOrder() {
-        return 0;
+        return 114514;
     }
 }
