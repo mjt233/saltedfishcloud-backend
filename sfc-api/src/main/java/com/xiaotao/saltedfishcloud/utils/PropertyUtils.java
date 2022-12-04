@@ -19,6 +19,9 @@ public class PropertyUtils {
 
         // 读取引用的类配置实体信息
         ConfigPropertiesEntity entity = refClass.getAnnotation(ConfigPropertiesEntity.class);
+        if (entity == null) {
+            throw new IllegalArgumentException(refClass + "上没有@ConfigPropertiesEntity注解");
+        }
 
         // 读取所有声明的配置组信息
         List<ConfigNode> groupList = Arrays.stream(entity.groups()).map(g -> {
