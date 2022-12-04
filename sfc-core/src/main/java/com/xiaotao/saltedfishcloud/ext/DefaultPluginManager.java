@@ -344,7 +344,7 @@ public class DefaultPluginManager implements PluginManager {
 
     @Override
     public void register(Resource pluginResource) throws IOException {
-        URLClassLoader loader = new URLClassLoader(new URL[]{pluginResource.getURL()}, null);
+        ClassLoader loader = PluginClassLoaderFactory.createPurePluginClassLoader(pluginResource.getURL());
         register(pluginResource, loader);
     }
 
