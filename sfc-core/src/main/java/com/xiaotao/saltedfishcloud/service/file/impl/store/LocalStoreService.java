@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
 import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStoreService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
@@ -66,7 +67,13 @@ public class LocalStoreService extends AbstractRawStoreService implements Applic
     @Override
     public List<FileSystemStatus> getStatus() {
         File storeRoot = new File(sysProperties.getStore().getRoot());
-        File publicRoot = new File(sysProperties.getStore().getPublicRoot());
+        File publicRoot;
+        if (sysProperties.getStore().getMode() == StoreMode.UNIQUE) {
+            publicRoot = new File(getStoreRoot());
+        } else {
+            publicRoot = new File(sysProperties.getStore().getPublicRoot());
+        }
+
         return Arrays.asList(
                 FileSystemStatus.builder()
                         .area(AREA_PUBLIC)
