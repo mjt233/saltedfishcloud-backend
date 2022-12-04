@@ -10,6 +10,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -103,23 +105,17 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
     public List<ConfigNode> provideItem(Map<String, ConfigNode> existItem) {
         String protocols = factoryMap.values().stream().map(e -> e.getDescribe().getProtocol()).collect(Collectors.joining(","));
         String publicProtocols = factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).map(e -> e.getDescribe().getProtocol()).collect(Collectors.joining(","));
+        String tempSize = StringUtils.getFormatSize(new File(PathUtils.getTempDirectory()).getFreeSpace());
         return Collections.singletonList(ConfigNode.builder()
                         .name("fileSystemFeature")
                         .title("文件系统功能")
                         .nodes(Arrays.asList(
-                                ConfigNode.builder().name("storeMode")
-                                        .title("存储模式")
-                                        .value(sysProperties.getStore().getMode().toString())
-                                        .build(),
-                                ConfigNode.builder().name("mainFileSystem")
-                                        .title("主存储服务")
-                                        .value(storeServiceFactory.toString()).build(),
-                                ConfigNode.builder().name("protocols")
-                                        .title("支持的挂载协议")
-                                        .value(protocols).build(),
-                                ConfigNode.builder().name("publicProtocols")
-                                        .title("开放的挂载协议")
-                                        .value(StringUtils.hasText(publicProtocols) ? publicProtocols : "-").build()
+                                new ConfigNode("存储模式", sysProperties.getStore().getMode().toString()),
+                                new ConfigNode("系统临时目录", PathUtils.getTempDirectory()),
+                                new ConfigNode("临时目录可用空间", tempSize),
+                                new ConfigNode("主存储服务", storeServiceFactory.toString()),
+                                new ConfigNode("支持的挂载协议", protocols),
+                                new ConfigNode("开放的挂载协议", StringUtils.hasText(publicProtocols) ? publicProtocols : "-")
                         ))
                 .build());
     }
