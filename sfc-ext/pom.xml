@@ -27,6 +27,7 @@
         <module>sfc-ext-sftp-store</module>
         <module>sfc-ext-ftp-store</module>
         <module>sfc-ext-ftp-server</module>
+        <module>sfc-ext-video-enhance</module>
     </modules>
 
 

@@ -1,0 +1,10 @@
+{
+  "name": "video-enhance",
+  "alias": "视频增强",
+  "loadType": "merge",
+  "type": "jar",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^"
+}

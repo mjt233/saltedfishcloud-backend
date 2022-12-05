@@ -11,7 +11,7 @@ import java.lang.annotation.*;
 public @interface ConfigProperties {
 
     /**
-     * 配置标题
+     * 配置项
      */
     String value();
 

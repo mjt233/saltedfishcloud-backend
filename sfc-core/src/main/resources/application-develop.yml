@@ -33,6 +33,7 @@ plugin:
     - sfc-ext/sfc-ext-demo
     - sfc-ext/sfc-ext-sftp-store
     - sfc-ext/sfc-ext-ftp-store
+    - sfc-ext/sfc-ext-video-enhance
 
 
 sys:
