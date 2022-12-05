@@ -17,6 +17,7 @@ nav:
     - 衍生项目: quick-start/other.md
   - 插件:
       - extension/index.md
+      - 插件：ftp-server: extension/ftp-server.md
       - 插件：mp3-thumbnail: extension/mp3-thumbnail.md
       - 插件：hadoop-store: extension/hadoop-store.md
       - 插件：minio-store: extension/minio-store.md
