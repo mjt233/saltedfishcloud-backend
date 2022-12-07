@@ -1,6 +1,7 @@
 package com.saltedfishcloud.ext.ve.core;
 
 import com.saltedfishcloud.ext.ve.model.Chapter;
+import com.saltedfishcloud.ext.ve.model.MediaStream;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 
@@ -26,6 +27,10 @@ public class VideoParser {
         this.invoker = new FFMpegInvoker(property);
     }
 
+    private static class TextGroup {
+        public String mainLine;
+    }
+
     /**
      * 获取视频信息
      * @param localFilePath 视频本地文件路径
@@ -42,17 +47,27 @@ public class VideoParser {
             }
 
             if (line.equals("  Chapters:")) {
-                i += parseChapters(outputArr, i+1, videoInfo::addChapter);
+                i = parseChapters(outputArr, i+1, videoInfo::addChapter);
+                continue;
+            }
+            if (line.startsWith("  Stream #")) {
+                i = parseStream(outputArr, i, videoInfo::addStream);
             }
         }
         return videoInfo;
     }
 
-    private Map<String, String> parseMetadata(String[] outputArr, int beginIndex) {
+    private Map<String, String> parseMetadata(String[] outputArr, int beginIndex, int indent) {
+        String prefix;
+        StringBuilder prefixBuilder = new StringBuilder();
+        for (int i = 0; i < indent; i++) {
+            prefixBuilder.append(" ");
+        }
+        prefix = prefixBuilder.toString();
         Map<String, String> metadata = new HashMap<>();
         for (int i = beginIndex; i < outputArr.length; i++) {
             String line = outputArr[i];
-            if (!line.startsWith("        ")) {
+            if (!line.startsWith(prefix)) {
                 return metadata;
             }
             String[] split = line.split(":", 2);
@@ -65,6 +80,56 @@ public class VideoParser {
         return metadata;
     }
 
+    /**
+     * 解析流数据
+     * @param outputArr     原始输出字符串
+     * @param beginIndex    开始查找的行数
+     * @param consumer      流数据消费函数
+     * @return              处理完成后的所处行数（处理最后一条数据时所处的行数）
+     */
+    private int parseStream(String[] outputArr, int beginIndex, Consumer<MediaStream> consumer) {
+        for (int i = beginIndex; i < outputArr.length; i++) {
+            String line = outputArr[i];
+            if (!line.startsWith("  Stream")) {
+                return i;
+            }
+
+            // 解析编号
+            MediaStream stream = new MediaStream();
+            Matcher matcher = STREAM_NO_PATTERN.matcher(line);
+            if (matcher.find()) {
+                stream.setNo(matcher.group());
+                stream.setOriginLine(line);
+            } else {
+                continue;
+            }
+
+
+            if (i + 1 >= outputArr.length) {
+                consumer.accept(stream);
+                return i;
+            }
+            line = outputArr[++i];
+            if (!line.startsWith("    Metadata:")) {
+                consumer.accept(stream);
+                continue;
+            }
+            Map<String, String> metadata = parseMetadata(outputArr, i + 1, 6);
+            i += metadata.size();
+            stream.setMetadata(metadata);
+            consumer.accept(stream);
+        }
+        return outputArr.length - 1;
+    }
+
+
+    /**
+     * 解析章节锚点
+     * @param outputArr     原始输出字符串
+     * @param beginIndex    开始查找的行数
+     * @param consumer      章节锚点信息消费函数
+     * @return              处理完成后的所处行数（处理最后一条数据时所处的行数）
+     */
     private int parseChapters(String[] outputArr, int beginIndex, Consumer<Chapter> consumer) {
 
         for (int i = beginIndex; i < outputArr.length; i++) {
@@ -99,11 +164,11 @@ public class VideoParser {
                 consumer.accept(chapter);
                 continue;
             }
-            Map<String, String> metadata = parseMetadata(outputArr, i + 1);
+            Map<String, String> metadata = parseMetadata(outputArr, i + 1, 8);
             i += metadata.size();
             chapter.setTitle(metadata.get("title"));
             consumer.accept(chapter);
         }
-        return outputArr.length;
+        return outputArr.length - 1;
     }
 }

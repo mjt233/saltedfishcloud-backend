@@ -38,4 +38,9 @@ public class MediaStream {
      * 持续时长
      */
     private Long duration;
+
+    /**
+     * 原始行文本
+     */
+    private String originLine;
 }

@@ -30,4 +30,8 @@ public class VideoInfo {
     public void addChapter(Chapter chapter) {
         this.chapterList.add(chapter);
     }
+
+    public void addStream(MediaStream stream) {
+        this.mediaStreamList.add(stream);
+    }
 }

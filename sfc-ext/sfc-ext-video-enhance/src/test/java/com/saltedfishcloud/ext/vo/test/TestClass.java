@@ -1,6 +1,7 @@
 package com.saltedfishcloud.ext.vo.test;
 
 import com.saltedfishcloud.ext.ve.core.VideoParser;
+import com.saltedfishcloud.ext.ve.model.MediaStream;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,13 @@ public class TestClass {
     public void testParseChapter() throws IOException {
         VideoParser parser = new VideoParser(PROPERTY);
         VideoInfo videoInfo = parser.getVideoInfo(VIDEO_PATH);
+        System.out.println("==== 章节锚点 ====");
         System.out.println(videoInfo.getChapterList());
+
+        System.out.println("==== 流数据 ====");
+        for (MediaStream stream : videoInfo.getMediaStreamList()) {
+            System.out.println(stream.getOriginLine());
+            System.out.println(stream.getMetadata());
+        }
     }
 }
