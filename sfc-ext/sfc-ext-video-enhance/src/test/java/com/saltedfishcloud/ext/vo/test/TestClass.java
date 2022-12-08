@@ -25,8 +25,7 @@ public class TestClass {
 
         System.out.println("==== 流数据 ====");
         for (MediaStream stream : videoInfo.getMediaStreamList()) {
-            System.out.println(stream.getOriginLine());
-            System.out.println(stream.getMetadata());
+            System.out.println(stream.toString());
         }
     }
 }
