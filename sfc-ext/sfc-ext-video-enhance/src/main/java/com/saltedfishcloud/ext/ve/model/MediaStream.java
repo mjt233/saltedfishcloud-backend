@@ -1,6 +1,5 @@
 package com.saltedfishcloud.ext.ve.model;
 
-import com.xiaotao.saltedfishcloud.utils.PatternUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.Data;
 
