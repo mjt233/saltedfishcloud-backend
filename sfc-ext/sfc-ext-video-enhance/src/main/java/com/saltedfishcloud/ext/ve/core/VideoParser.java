@@ -17,7 +17,10 @@ import java.util.regex.Pattern;
  */
 public class VideoParser {
 
-    private final Pattern STREAM_NO_PATTERN = Pattern.compile("#.*: ");
+    /**
+     * 媒体流编号匹配正则，取出实际编号，如：#0:45(chi) 匹配出0:45， #0:0 匹配出0:0
+     */
+    private final Pattern STREAM_NO_PATTERN = Pattern.compile("(?<=#)\\d+:\\d+(?=(\\(\\w+\\))?:)");
 
     private final VEProperty property;
     private final FFMpegInvoker invoker;
@@ -25,10 +28,6 @@ public class VideoParser {
     public VideoParser(VEProperty property) {
         this.property = property;
         this.invoker = new FFMpegInvoker(property);
-    }
-
-    private static class TextGroup {
-        public String mainLine;
     }
 
     /**
@@ -48,7 +47,6 @@ public class VideoParser {
 
             if (line.equals("  Chapters:")) {
                 i = parseChapters(outputArr, i+1, videoInfo::addChapter);
-                continue;
             }
             if (line.startsWith("  Stream #")) {
                 i = parseStream(outputArr, i, videoInfo::addStream);
@@ -58,12 +56,7 @@ public class VideoParser {
     }
 
     private Map<String, String> parseMetadata(String[] outputArr, int beginIndex, int indent) {
-        String prefix;
-        StringBuilder prefixBuilder = new StringBuilder();
-        for (int i = 0; i < indent; i++) {
-            prefixBuilder.append(" ");
-        }
-        prefix = prefixBuilder.toString();
+        String prefix = " ".repeat(indent);
         Map<String, String> metadata = new HashMap<>();
         for (int i = beginIndex; i < outputArr.length; i++) {
             String line = outputArr[i];
@@ -135,7 +128,7 @@ public class VideoParser {
         for (int i = beginIndex; i < outputArr.length; i++) {
             String line = outputArr[i];
             if (!line.startsWith("    Chapter")) {
-                return i;
+                return i - 1;
             }
 
             // 解析编号
@@ -157,7 +150,7 @@ public class VideoParser {
 
             if (i + 1 >= outputArr.length) {
                 consumer.accept(chapter);
-                return i;
+                return i - 1;
             }
             line = outputArr[++i];
             if (!line.equals("      Metadata:")) {
