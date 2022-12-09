@@ -23,6 +23,11 @@ public class VideoInfo {
     private List<VideoStream> videoStreamList = new ArrayList<>();
 
     /**
+     * 字幕流列表
+     */
+    private List<SubtitleStream> subtitleStreamList = new ArrayList<>();
+
+    /**
      * 章节标记
      */
     private List<Chapter> chapterList = new ArrayList<>();
@@ -32,6 +37,22 @@ public class VideoInfo {
     }
 
     public void addStream(MediaStream stream) {
-        this.mediaStreamList.add(stream);
+        if (stream.isAudio()) {
+            AudioStream audioStream = stream.toAudioStream();
+            mediaStreamList.add(audioStream);
+            audioStreamList.add(audioStream);
+        } else if (stream.isVideo()) {
+            VideoStream videoStream = stream.toVideoStream();
+            mediaStreamList.add(videoStream);
+            videoStreamList.add(videoStream);
+        } else if (stream.isSubtitle()) {
+            SubtitleStream subtitleStream = stream.toSubtitleStream();
+            mediaStreamList.add(subtitleStream);
+            subtitleStreamList.add(subtitleStream);
+        } else {
+            mediaStreamList.add(stream);
+        }
     }
+
+
 }

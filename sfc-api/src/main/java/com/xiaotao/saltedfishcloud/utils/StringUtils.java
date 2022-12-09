@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 import java.util.Random;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class StringUtils {
@@ -36,6 +37,21 @@ public class StringUtils {
         return a.equals(b);
 
 
+    }
+
+    /**
+     * 从正则中匹配字符串
+     * @param str       待匹配字符串
+     * @param pattern   正则
+     * @return          返回匹配的字符串，不匹配则null
+     */
+    public static String matchStr(String str,Pattern pattern) {
+        Matcher matcher = pattern.matcher(str);
+        if (matcher.find()) {
+            return matcher.group();
+        } else {
+            return null;
+        }
     }
 
     /**

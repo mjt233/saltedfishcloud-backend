@@ -1,7 +1,9 @@
 package com.saltedfishcloud.ext.ve.model;
 
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.Data;
+import org.springframework.beans.BeanUtils;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -14,6 +16,11 @@ import java.util.regex.Pattern;
 public class MediaStream {
     private static final Pattern STREAM_REMARK_PATTERN = Pattern.compile("(?<=#\\d\\d?:\\d\\d?\\()\\w+(?=\\):)");
     private static final Pattern STREAM_TYPE_PATTERN = Pattern.compile("#.*\\d+(\\(\\w+\\))?: \\w+:");
+    private static final Pattern AUDIO_SAMPLE_RATE_PATTERN = Pattern.compile("\\d+(?= Hz)");
+    private static final Pattern AUDIO_MODE_PATTERN = Pattern.compile("(?<=Hz, )\\w+(?=,)");
+    private static final Pattern STREAM_ENCODE_PATTERN = Pattern.compile("(?<=(Audio|Video): )\\w+");
+    private static final Pattern VIDEO_RESOLUTION_PATTERN = Pattern.compile("\\d+x\\d+");
+    private static final Pattern VIDEO_FPS_PATTERN = Pattern.compile("\\d+(\\.\\d+)?(?= fps)");
     /**
      * 流编号
      */
@@ -85,6 +92,37 @@ public class MediaStream {
         this.metadata = metadata;
         this.bps = TypeUtils.toNumber(Long.class, metadata.get("BPS"));
         this.duration = TypeUtils.toString(metadata.get("DURATION"));
+    }
+
+    protected AudioStream toAudioStream() {
+        AudioStream audioStream = new AudioStream();
+        BeanUtils.copyProperties(this, audioStream);
+        String sampleRate = StringUtils.matchStr(originLine, AUDIO_SAMPLE_RATE_PATTERN);
+        if (sampleRate != null) {
+            audioStream.setSampleRate(Long.parseLong(sampleRate));
+        }
+        audioStream.setMode(StringUtils.matchStr(originLine, AUDIO_MODE_PATTERN));
+        audioStream.setEncode(StringUtils.matchStr(originLine, STREAM_ENCODE_PATTERN));
+        return audioStream;
+    }
+
+    protected VideoStream toVideoStream() {
+        VideoStream videoStream = new VideoStream();
+        BeanUtils.copyProperties(this, videoStream);
+        videoStream.setResolution(StringUtils.matchStr(originLine, VIDEO_RESOLUTION_PATTERN));
+        String fps = StringUtils.matchStr(originLine, VIDEO_FPS_PATTERN);
+        if (fps != null) {
+            videoStream.setFrameRage(Double.parseDouble(fps));
+        }
+        videoStream.setEncode(StringUtils.matchStr(originLine, STREAM_ENCODE_PATTERN));
+        return videoStream;
+    }
+
+    protected SubtitleStream toSubtitleStream() {
+        SubtitleStream subtitleStream = new SubtitleStream();
+        BeanUtils.copyProperties(this, subtitleStream);
+        subtitleStream.setTitle(getMetadata().get("title"));
+        return subtitleStream;
     }
 
     @Override

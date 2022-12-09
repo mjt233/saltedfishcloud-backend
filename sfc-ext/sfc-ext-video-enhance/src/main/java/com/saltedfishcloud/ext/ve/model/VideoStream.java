@@ -20,4 +20,14 @@ public class VideoStream extends MediaStream {
      * 帧率
      */
     private Double frameRage;
+
+    @Override
+    public String toString() {
+        return "VideoStream(" +
+                "encode='" + encode + '\'' +
+                ", resolution='" + resolution + '\'' +
+                ", frameRage=" + frameRage +
+                ", bps=" + getBps() +
+                ')';
+    }
 }

@@ -21,4 +21,14 @@ public class AudioStream extends MediaStream {
      * 模式（单声道/双声道）
      */
     private String mode;
+
+    @Override
+    public String toString() {
+        return "AudioStream(" +
+                "encode='" + encode + '\'' +
+                ", sampleRate=" + sampleRate +
+                ", mode='" + mode + '\'' +
+                ", bps='" + getBps() +
+                ')';
+    }
 }
