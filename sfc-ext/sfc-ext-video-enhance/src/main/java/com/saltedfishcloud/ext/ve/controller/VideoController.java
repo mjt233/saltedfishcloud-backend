@@ -33,8 +33,8 @@ public class VideoController {
 
     @AllowAnonymous
     @GetMapping("getSubtitle")
-    public JsonResult getSubtitle(VideoRequest request) throws IOException {
+    public String getSubtitle(VideoRequest request) throws IOException {
         Resource resource = fileSystemManager.getMainFileSystem().getResource(Math.toIntExact(request.getUid()), request.getPath(), request.getName());
-        return JsonResultImpl.getInstance(videoService.getSubtitleText(resource, request.getStream(), request.getType()));
+        return videoService.getSubtitleText(resource, request.getStream(), request.getType());
     }
 }

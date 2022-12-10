@@ -12,19 +12,18 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FFMpegHelper {
     /**
      * 媒体流编号匹配正则，取出实际编号，如：#0:45(chi) 匹配出0:45， #0:0 匹配出0:0
      */
-    private final Pattern STREAM_NO_PATTERN = Pattern.compile("(?<=#)\\d+:\\d+(?=(\\(\\w+\\))?:)");
+    private final Pattern STREAM_NO_PATTERN = Pattern.compile("(?<=#)\\d+:\\d+(?=(\\[\\w+\\])?(\\(\\w+\\))?:)");
 
 
     @Setter
@@ -68,9 +67,18 @@ public class FFMpegHelper {
      * @return          字幕文件srt内容
      */
     public String extractSubtitle(String localFile, String streamNo, String type) throws IOException {
-        Process process = executeCmd(property.getFFMpegExecPath(), "-i", localFile, "-map", streamNo, "-c", "copy", "-f", type, "-loglevel", "error", "-");
+        List<String> args = Stream.of(property.getFFMpegExecPath(), "-i", localFile, "-map", streamNo, "-f", type, "-loglevel", "error", "-").collect(Collectors.toList());
+        Process process = executeCmd(args);
         try (InputStream is = process.getInputStream()) {
-            return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+            String output = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+            int i = process.waitFor();
+            if (i != 0) {
+                throw new RuntimeException("ffmpeg调用出错："+ String.join(" ", args) + "\n" + output);
+            }
+            return output;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -111,10 +119,10 @@ public class FFMpegHelper {
                 continue;
             }
 
-            if (line.equals("  Chapters:")) {
+            if (line.contains("Chapters:")) {
                 i = parseChapters(outputArr, i+1, videoInfo::addChapter);
             }
-            if (line.startsWith("  Stream #")) {
+            if (line.contains("Stream #")) {
                 i = parseStream(outputArr, i, videoInfo::addStream);
             }
         }
@@ -149,7 +157,7 @@ public class FFMpegHelper {
     private int parseStream(String[] outputArr, int beginIndex, Consumer<MediaStream> consumer) {
         for (int i = beginIndex; i < outputArr.length; i++) {
             String line = outputArr[i];
-            if (!line.startsWith("  Stream")) {
+            if (!line.contains("Stream")) {
                 return i;
             }
 
@@ -169,11 +177,12 @@ public class FFMpegHelper {
                 return i;
             }
             line = outputArr[++i];
-            if (!line.startsWith("    Metadata:")) {
+            int metaDataIdx = line.indexOf("Metadata:");
+            if (metaDataIdx == -1) {
                 consumer.accept(stream);
                 continue;
             }
-            Map<String, String> metadata = parseMetadata(outputArr, i + 1, 6);
+            Map<String, String> metadata = parseMetadata(outputArr, i + 1, metaDataIdx + 2);
             i += metadata.size();
             stream.setMetadata(metadata);
             consumer.accept(stream);
@@ -193,7 +202,7 @@ public class FFMpegHelper {
 
         for (int i = beginIndex; i < outputArr.length; i++) {
             String line = outputArr[i];
-            if (!line.startsWith("    Chapter")) {
+            if (!line.contains("Chapter")) {
                 return i - 1;
             }
 
@@ -219,11 +228,12 @@ public class FFMpegHelper {
                 return i - 1;
             }
             line = outputArr[++i];
-            if (!line.equals("      Metadata:")) {
+            int metaDataIdx = line.indexOf("Metadata:");
+            if (metaDataIdx == -1) {
                 consumer.accept(chapter);
                 continue;
             }
-            Map<String, String> metadata = parseMetadata(outputArr, i + 1, 8);
+            Map<String, String> metadata = parseMetadata(outputArr, i + 1, metaDataIdx + 2);
             i += metadata.size();
             chapter.setTitle(metadata.get("title"));
             consumer.accept(chapter);

@@ -1,7 +1,7 @@
 package com.saltedfishcloud.ext.ve.service;
 
+import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
-import com.saltedfishcloud.ext.ve.model.SubtitleStream;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.PathResource;
@@ -9,7 +9,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.List;
 
 @Service
 public class VideoService {
@@ -39,6 +38,12 @@ public class VideoService {
      * @param type      字幕类型
      */
     public String getSubtitleText(Resource resource, String streamNo, String type) throws IOException {
+        if (type == null) {
+            type = VEConstants.SUBTITLE_TYPE.WEBVTT;
+        }
+        if (streamNo == null) {
+            throw new IllegalArgumentException("流编号不能为空");
+        }
         String localPath = resourceToLocalPath(resource);
         return ffMpegHelper.extractSubtitle(localPath, streamNo, type);
     }

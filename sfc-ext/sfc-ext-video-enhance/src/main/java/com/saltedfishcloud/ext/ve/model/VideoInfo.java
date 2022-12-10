@@ -1,5 +1,6 @@
 package com.saltedfishcloud.ext.ve.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ public class VideoInfo {
     /**
      * 媒体流列表
      */
+    @JsonIgnore
     private List<MediaStream> mediaStreamList = new ArrayList<>();
 
     /**
@@ -26,6 +28,8 @@ public class VideoInfo {
      * 字幕流列表
      */
     private List<SubtitleStream> subtitleStreamList = new ArrayList<>();
+
+    private List<MediaStream> otherStreamList = new ArrayList<>();
 
     /**
      * 章节标记
@@ -51,6 +55,7 @@ public class VideoInfo {
             subtitleStreamList.add(subtitleStream);
         } else {
             mediaStreamList.add(stream);
+            otherStreamList.add(stream);
         }
     }
 

@@ -14,13 +14,14 @@ import java.util.regex.Pattern;
  */
 @Data
 public class MediaStream {
-    private static final Pattern STREAM_REMARK_PATTERN = Pattern.compile("(?<=#\\d\\d?:\\d\\d?\\()\\w+(?=\\):)");
-    private static final Pattern STREAM_TYPE_PATTERN = Pattern.compile("#.*\\d+(\\(\\w+\\))?: \\w+:");
+    private static final Pattern STREAM_REMARK_PATTERN = Pattern.compile("(?<=#\\d\\d?:\\d\\d?\\[\\d\\d?x\\d\\d?\\]\\()\\w+(?=\\):)");
+    private static final Pattern STREAM_TYPE_PATTERN = Pattern.compile("#.*\\d+(\\[\\w+\\])?(\\(\\w+\\))?: \\w+:");
     private static final Pattern AUDIO_SAMPLE_RATE_PATTERN = Pattern.compile("\\d+(?= Hz)");
     private static final Pattern AUDIO_MODE_PATTERN = Pattern.compile("(?<=Hz, )\\w+(?=,)");
     private static final Pattern STREAM_ENCODE_PATTERN = Pattern.compile("(?<=(Audio|Video): )\\w+");
-    private static final Pattern VIDEO_RESOLUTION_PATTERN = Pattern.compile("\\d+x\\d+");
+    private static final Pattern VIDEO_RESOLUTION_PATTERN = Pattern.compile("(?<=, )\\d+x\\d+");
     private static final Pattern VIDEO_FPS_PATTERN = Pattern.compile("\\d+(\\.\\d+)?(?= fps)");
+    private static final Pattern STREAM_BPS_PATTERN = Pattern.compile("\\d+(?=\\s+kb/s)");
     /**
      * 流编号
      */
@@ -74,6 +75,10 @@ public class MediaStream {
             int spaceIdx = t.lastIndexOf(" ");
             this.type = t.substring(spaceIdx + 1, t.length() - 1);
         }
+        String bps = StringUtils.matchStr(originLine, STREAM_BPS_PATTERN);
+        if (bps != null) {
+            this.bps = Long.parseLong(bps);
+        }
     }
 
     public boolean isSubtitle() {
@@ -90,8 +95,13 @@ public class MediaStream {
 
     public void setMetadata(Map<String, String> metadata) {
         this.metadata = metadata;
-        this.bps = TypeUtils.toNumber(Long.class, metadata.get("BPS"));
         this.duration = TypeUtils.toString(metadata.get("DURATION"));
+        if (this.bps == null) {
+            String bpsStr = metadata.get("BPS");
+            if (bpsStr != null) {
+                this.bps = Long.parseLong(bpsStr);
+            }
+        }
     }
 
     protected AudioStream toAudioStream() {
