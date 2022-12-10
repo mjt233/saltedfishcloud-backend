@@ -28,12 +28,12 @@ public class VEProperty {
     /**
      * ffmpeg
      */
-    @ConfigProperties(value = "ffmpeg-path", title = "ffmpeg目录", describe = "ffmpeg可执行程序的所在目录")
+    @ConfigProperties(value = "ffmpegPath", title = "ffmpeg目录", describe = "ffmpeg可执行程序的所在目录")
     private String ffmpegPath;
 
 
     @ConfigProperties(
-            value = "enable-tThumbnail",
+            value = "enableThumbnail",
             title = "启用视频缩略图",
             describe = "是否启用视频缩略图总开关",
             group = "feature",
@@ -43,7 +43,7 @@ public class VEProperty {
     private boolean enableThumbnail;
 
     @ConfigProperties(
-            value = "enable-tThumbnail-on-mount",
+            value = "enableThumbnailOnMount",
             title = "在挂载目录中启用视频缩略图",
             describe = "控制是否为挂载目录中的视频创建缩略图",
             group = "feature",
@@ -53,6 +53,9 @@ public class VEProperty {
     private boolean enableThumbnailOnMount;
 
     public String getExecutablePathOnFFMpegPATH(String name) {
+        if (ffmpegPath == null) {
+            throw new IllegalArgumentException("ve.property未配置ffmpeg-path");
+        }
         String execFileName = OSInfo.isWindows() ? name + ".exe" : name;
         return Paths.get(ffmpegPath).resolve(execFileName).toString();
     }

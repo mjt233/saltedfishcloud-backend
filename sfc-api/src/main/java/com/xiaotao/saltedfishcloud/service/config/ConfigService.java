@@ -1,10 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -37,6 +39,14 @@ public interface ConfigService {
      * @return      结果
      */
     String getConfig(String key);
+
+    default <T> T getJsonConfig(String key, Class<T> clazz) throws JsonProcessingException {
+        String config = getConfig(key);
+        if (config == null) {
+            return null;
+        }
+        return MapperHolder.parseJson(config, clazz);
+    }
 
     /**
      * 设置一个配置项

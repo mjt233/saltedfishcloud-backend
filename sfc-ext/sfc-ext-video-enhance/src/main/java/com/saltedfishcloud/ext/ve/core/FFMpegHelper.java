@@ -1,33 +1,99 @@
 package com.saltedfishcloud.ext.ve.core;
 
+import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.model.Chapter;
 import com.saltedfishcloud.ext.ve.model.MediaStream;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * 视频信息解析器
- */
-public class VideoParser {
-
+public class FFMpegHelper {
     /**
      * 媒体流编号匹配正则，取出实际编号，如：#0:45(chi) 匹配出0:45， #0:0 匹配出0:0
      */
     private final Pattern STREAM_NO_PATTERN = Pattern.compile("(?<=#)\\d+:\\d+(?=(\\(\\w+\\))?:)");
 
-    private final VEProperty property;
-    private final FFMpegInvoker invoker;
 
-    public VideoParser(VEProperty property) {
+    @Setter
+    @Getter
+    private VEProperty property;
+
+    public FFMpegHelper(VEProperty property) {
         this.property = property;
-        this.invoker = new FFMpegInvoker(property);
+    }
+
+    /**
+     * 执行ffprobe命令
+     * @param localFilePath 本地文件路径
+     * @return              命令输出内容
+     */
+    public String executeProbe(String localFilePath) throws IOException {
+        List<String> args = new ArrayList<>();
+        args.add(property.getFFProbeExecPath());
+        args.add("-i");
+        args.add(localFilePath);
+        Process process = this.executeCmd(args);
+        try (InputStream is = process.getInputStream()) {
+            return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * 提取视频字幕
+     * @param localFile 本地文件路径
+     * @param streamNo  字幕流编号
+     * @return          字幕文件srt内容
+     */
+    public String extractSubtitle(String localFile, String streamNo) throws IOException {
+        return extractSubtitle(localFile, streamNo, VEConstants.SUBTITLE_TYPE.SRT);
+    }
+
+    /**
+     * 提取视频字幕
+     * @param localFile 本地文件路径
+     * @param streamNo  字幕流编号
+     * @return          字幕文件srt内容
+     */
+    public String extractSubtitle(String localFile, String streamNo, String type) throws IOException {
+        Process process = executeCmd(property.getFFMpegExecPath(), "-i", localFile, "-map", streamNo, "-c", "copy", "-f", type, "-loglevel", "error", "-");
+        try (InputStream is = process.getInputStream()) {
+            return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * 执行命令行
+     */
+    private Process executeCmd(List<String> args) throws IOException {
+
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command(args);
+        processBuilder.redirectErrorStream(true);
+        return processBuilder.start();
+    }
+
+    /**
+     * 执行命令行
+     */
+    private Process executeCmd(String... args) throws IOException {
+
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command(args);
+        processBuilder.redirectErrorStream(true);
+        return processBuilder.start();
     }
 
     /**
@@ -37,7 +103,7 @@ public class VideoParser {
      */
     public VideoInfo getVideoInfo(String localFilePath) throws IOException {
         VideoInfo videoInfo = new VideoInfo();
-        String probeOutput = invoker.executeProbe(localFilePath);
+        String probeOutput = this.executeProbe(localFilePath);
         String[] outputArr = probeOutput.split("\r?\n");
         for (int i = 0; i < outputArr.length; i++) {
             String line = outputArr[i];

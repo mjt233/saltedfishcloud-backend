@@ -28,7 +28,7 @@ public class AudioStream extends MediaStream {
                 "encode='" + encode + '\'' +
                 ", sampleRate=" + sampleRate +
                 ", mode='" + mode + '\'' +
-                ", bps='" + getBps() +
+                ", bps=" + getBps() +
                 ')';
     }
 }

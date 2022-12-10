@@ -11,7 +11,7 @@
             "name": "ve.property",
             "title": "配置",
             "describe": "对插件依赖和相关功能进行配置",
-            "defaultValue": "",
+            "defaultValue": "{}",
             "typeRef": "com.saltedfishcloud.ext.ve.model.VEProperty",
             "inputType": "form"
           }
