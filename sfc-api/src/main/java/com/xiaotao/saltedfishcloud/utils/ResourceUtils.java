@@ -1,12 +1,20 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.xiaotao.saltedfishcloud.common.ResponseResource;
+import org.springframework.core.io.AbstractResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class ResourceUtils {
     public static class Header {
@@ -32,10 +40,13 @@ public class ResourceUtils {
      * @param extraHeaders  额外的响应头
      */
     public static ResponseEntity<Resource> wrapResource(Resource resource, String filename, Map<String, String> extraHeaders) throws UnsupportedEncodingException {
+        String ct = null;
+        if (resource instanceof ResponseResource) {
+            ct = ((ResponseResource) resource).getContentType();
+        }
         String disposition = generateContentDisposition(filename);
-        String ct = FileUtils.getContentType(filename);
         ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
-                .header("Content-Type", ct)
+                .header("Content-Type", Optional.ofNullable(ct).orElseGet(() -> FileUtils.getContentType(filename)))
                 .header("Content-Disposition", disposition);
         if (extraHeaders != null) {
             for (Map.Entry<String, String> e : extraHeaders.entrySet()) {
@@ -66,6 +77,20 @@ public class ResourceUtils {
 
 
     public static String generateContentDisposition(String filename) throws UnsupportedEncodingException {
-        return "inline;filename*=UTF-8''"+ URLEncoder.encode(filename, "utf-8").replaceAll("\\+", "%20");
+        return "inline;filename*=UTF-8''"+ URLEncoder.encode(filename, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+    }
+
+    public static ResponseResource stringToResource(String string) {
+        return new ResponseResource() {
+            @Override
+            public String getDescription() {
+                return "StringResource";
+            }
+
+            @Override
+            public InputStream getInputStream() throws IOException {
+                return new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8));
+            }
+        };
     }
 }

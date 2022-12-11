@@ -37,4 +37,8 @@ public class MapperHolder {
     public static Map<String, Object> parseJsonToMap(String json) throws JsonProcessingException {
         return mapper.readValue(json, mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
     }
+
+    public static String toJson(Object val) throws JsonProcessingException {
+        return mapper.writeValueAsString(val);
+    }
 }

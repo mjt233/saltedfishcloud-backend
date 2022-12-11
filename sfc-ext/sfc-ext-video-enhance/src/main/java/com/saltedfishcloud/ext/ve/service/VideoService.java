@@ -3,17 +3,63 @@ package com.saltedfishcloud.ext.ve.service;
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
+import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
+import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 @Service
 public class VideoService {
     @Autowired
     private FFMpegHelper ffMpegHelper;
+
+    @Autowired
+    @Lazy
+    private ResourceService resourceService;
+
+    @Autowired
+    private DiskFileSystemManager diskFileSystemManager;
+
+    /**
+     * 提取资源拓展方法，支持通过sourceProtocol和sourceId获取资源的依赖资源
+     */
+    public Resource getResource(ResourceRequest param) throws IOException {
+        String sourceProtocol = param.getParams().get("sourceProtocol");
+        Resource resource;
+
+        // 若指定了文件来源协议，则从来源协议处理器中获取资源（如：从文件分享中获取，或是其他拓展的协议）
+        if (sourceProtocol != null) {
+            if (sourceProtocol.equals(param.getProtocol())) {
+                throw new IllegalArgumentException("来源协议不能与请求协议相同");
+            }
+            String sourceId = param.getParams().get("sourceId");
+            if (sourceId == null) {
+                throw new IllegalArgumentException("缺少sourceId");
+            }
+            ResourceRequest nextRequest = new ResourceRequest();
+            BeanUtils.copyProperties(param, nextRequest);
+            nextRequest.setParams(new HashMap<>(param.getParams()));
+            nextRequest.setProtocol(sourceProtocol);
+            nextRequest.setTargetId(sourceId);
+            try {
+                resource = resourceService.getResource(nextRequest);
+            } catch (UnsupportedProtocolException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            resource = diskFileSystemManager.getMainFileSystem().getResource(Integer.parseInt(param.getTargetId()), param.getPath(), param.getName());
+        }
+        return resource;
+    }
 
     private String resourceToLocalPath(Resource resource) {
         if (!(resource instanceof PathResource)) {
