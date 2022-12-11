@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  */
 @Data
 public class MediaStream {
-    private static final Pattern STREAM_REMARK_PATTERN = Pattern.compile("(?<=#\\d\\d?:\\d\\d?\\[\\d\\d?x\\d\\d?\\]\\()\\w+(?=\\):)");
+    private static final Pattern STREAM_REMARK_PATTERN = Pattern.compile("(?<=#\\d\\d?:\\d\\d?(\\[\\d\\d?x\\d\\d?\\])?\\()\\w+(?=\\):)");
     private static final Pattern STREAM_TYPE_PATTERN = Pattern.compile("#.*\\d+(\\[\\w+\\])?(\\(\\w+\\))?: \\w+:");
     private static final Pattern AUDIO_SAMPLE_RATE_PATTERN = Pattern.compile("\\d+(?= Hz)");
     private static final Pattern AUDIO_MODE_PATTERN = Pattern.compile("(?<=Hz, )\\w+(?=,)");
