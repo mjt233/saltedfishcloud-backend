@@ -62,6 +62,9 @@ public class VideoService {
     }
 
     private String resourceToLocalPath(Resource resource) {
+        if (resource == null) {
+            throw new IllegalArgumentException("资源为null");
+        }
         if (!(resource instanceof PathResource)) {
             throw new IllegalArgumentException("目前仅支持PathResource");
         }
