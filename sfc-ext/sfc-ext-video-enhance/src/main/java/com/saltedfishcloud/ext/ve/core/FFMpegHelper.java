@@ -1,10 +1,9 @@
 package com.saltedfishcloud.ext.ve.core;
 
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
-import com.saltedfishcloud.ext.ve.model.Chapter;
-import com.saltedfishcloud.ext.ve.model.MediaStream;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.StreamUtils;
@@ -12,9 +11,7 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
+import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,11 +37,13 @@ public class FFMpegHelper {
      * @return              命令输出内容
      */
     public String executeProbe(String localFilePath) throws IOException {
-        List<String> args = new ArrayList<>();
-        args.add(property.getFFProbeExecPath());
-        args.add("-i");
-        args.add(localFilePath);
-        Process process = this.executeCmd(args);
+        Process process = this.executeCmd(
+                property.getFFProbeExecPath(),
+                "-v", "quiet",
+                "-print_format", "json",
+                "-i", localFilePath,
+                "-show_streams", "-show_chapters"
+        );
         try (InputStream is = process.getInputStream()) {
             return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
         }
@@ -110,134 +109,7 @@ public class FFMpegHelper {
      * @return              视频信息
      */
     public VideoInfo getVideoInfo(String localFilePath) throws IOException {
-        VideoInfo videoInfo = new VideoInfo();
         String probeOutput = this.executeProbe(localFilePath);
-        String[] outputArr = probeOutput.split("\r?\n");
-        for (int i = 0; i < outputArr.length; i++) {
-            String line = outputArr[i];
-            if (!line.startsWith("  ")) {
-                continue;
-            }
-
-            if (line.contains("Chapters:")) {
-                i = parseChapters(outputArr, i+1, videoInfo::addChapter);
-            }
-            if (line.contains("Stream #")) {
-                i = parseStream(outputArr, i, videoInfo::addStream);
-            }
-        }
-        return videoInfo;
-    }
-
-    private Map<String, String> parseMetadata(String[] outputArr, int beginIndex, int indent) {
-        String prefix = " ".repeat(indent);
-        Map<String, String> metadata = new HashMap<>();
-        for (int i = beginIndex; i < outputArr.length; i++) {
-            String line = outputArr[i];
-            if (!line.startsWith(prefix)) {
-                return metadata;
-            }
-            String[] split = line.split(":", 2);
-            if (split.length == 2) {
-                metadata.put(split[0].trim(), split[1].trim());
-            } else if (split.length == 1) {
-                metadata.put(split[0].trim(), "");
-            }
-        }
-        return metadata;
-    }
-
-    /**
-     * 解析流数据
-     * @param outputArr     原始输出字符串
-     * @param beginIndex    开始查找的行数
-     * @param consumer      流数据消费函数
-     * @return              处理完成后的所处行数（处理最后一条数据时所处的行数）
-     */
-    private int parseStream(String[] outputArr, int beginIndex, Consumer<MediaStream> consumer) {
-        for (int i = beginIndex; i < outputArr.length; i++) {
-            String line = outputArr[i];
-            if (!line.contains("Stream")) {
-                return i;
-            }
-
-            // 解析编号
-            MediaStream stream = new MediaStream();
-            Matcher matcher = STREAM_NO_PATTERN.matcher(line);
-            if (matcher.find()) {
-                stream.setNo(matcher.group());
-                stream.setOriginLine(line);
-            } else {
-                continue;
-            }
-
-
-            if (i + 1 >= outputArr.length) {
-                consumer.accept(stream);
-                return i;
-            }
-            line = outputArr[++i];
-            int metaDataIdx = line.indexOf("Metadata:");
-            if (metaDataIdx == -1) {
-                consumer.accept(stream);
-                continue;
-            }
-            Map<String, String> metadata = parseMetadata(outputArr, i + 1, metaDataIdx + 2);
-            i += metadata.size();
-            stream.setMetadata(metadata);
-            consumer.accept(stream);
-        }
-        return outputArr.length - 1;
-    }
-
-
-    /**
-     * 解析章节锚点
-     * @param outputArr     原始输出字符串
-     * @param beginIndex    开始查找的行数
-     * @param consumer      章节锚点信息消费函数
-     * @return              处理完成后的所处行数（处理最后一条数据时所处的行数）
-     */
-    private int parseChapters(String[] outputArr, int beginIndex, Consumer<Chapter> consumer) {
-
-        for (int i = beginIndex; i < outputArr.length; i++) {
-            String line = outputArr[i];
-            if (!line.contains("Chapter")) {
-                return i - 1;
-            }
-
-            // 解析编号
-            Chapter chapter = new Chapter();
-            Matcher matcher = STREAM_NO_PATTERN.matcher(line);
-            if (matcher.find()) {
-                chapter.setNo(matcher.group());
-            } else {
-                continue;
-            }
-
-
-            // 解析跨度
-            int startIdx = line.indexOf("start ");
-            int splitIdx = line.indexOf(",");
-            int endIdx = line.indexOf("end ");
-            chapter.setStart((long) (Double.parseDouble(line.substring(startIdx + 6, splitIdx)) * 1000));
-            chapter.setEnd((long) (Double.parseDouble(line.substring(endIdx + 4)) * 1000));
-
-            if (i + 1 >= outputArr.length) {
-                consumer.accept(chapter);
-                return i - 1;
-            }
-            line = outputArr[++i];
-            int metaDataIdx = line.indexOf("Metadata:");
-            if (metaDataIdx == -1) {
-                consumer.accept(chapter);
-                continue;
-            }
-            Map<String, String> metadata = parseMetadata(outputArr, i + 1, metaDataIdx + 2);
-            i += metadata.size();
-            chapter.setTitle(metadata.get("title"));
-            consumer.accept(chapter);
-        }
-        return outputArr.length - 1;
+        return MapperHolder.parseSnakeJson(probeOutput, VideoInfo.class);
     }
 }

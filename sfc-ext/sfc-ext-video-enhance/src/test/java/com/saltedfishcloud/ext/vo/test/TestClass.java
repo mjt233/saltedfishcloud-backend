@@ -1,10 +1,8 @@
 package com.saltedfishcloud.ext.vo.test;
 
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
-import com.saltedfishcloud.ext.ve.model.MediaStream;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -20,42 +18,7 @@ public class TestClass {
      */
     @Test
     public void testParseChapter() throws IOException {
-        VideoInfo videoInfo = this.ffmpegHelper.getVideoInfo(VIDEO_PATH);
-        System.out.println("==== 章节锚点 ====");
-        System.out.println(videoInfo.getChapterList());
-
-        System.out.println("==== 流数据 ====");
-        for (MediaStream stream : videoInfo.getMediaStreamList()) {
-            System.out.println(stream.toString());
-        }
-    }
-    /**
-     * 尝试读取一个字幕类型的数据流并获取其srt格式的字幕文件内容
-     */
-    @Test
-    public void testGetSubtitle() throws IOException {
         VideoInfo videoInfo = ffmpegHelper.getVideoInfo(VIDEO_PATH);
-        MediaStream stream = videoInfo.getMediaStreamList().stream()
-                // 筛选中文字幕
-                .filter(e -> e.isSubtitle() && "chi".equals(e.getRemark()) && TypeUtils.toNumber(Long.class, e.getMetadata().get("NUMBER_OF_FRAMES")) > 10)
-                .findAny()
-                .orElseThrow(() -> new IllegalArgumentException("找不到字幕流"));
-        String srt = ffmpegHelper.extractSubtitle(VIDEO_PATH, stream.getNo());
-        System.out.println(srt);
-        System.out.println("=== 来自：" + stream);
-    }
-
-    /**
-     * 测试流分组
-     */
-    @Test
-    public void testStreamGroup() throws IOException {
-        VideoInfo videoInfo = ffmpegHelper.getVideoInfo(VIDEO_PATH);
-        System.out.println("===== 字幕流 =====");
-        videoInfo.getSubtitleStreamList().forEach(System.out::println);
-        System.out.println("\n===== 音频流 =====");
-        videoInfo.getAudioStreamList().forEach(System.out::println);
-        System.out.println("\n===== 视频流 =====");
-        videoInfo.getVideoStreamList().forEach(System.out::println);
+        System.out.println(videoInfo);
     }
 }
