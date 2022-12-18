@@ -66,7 +66,8 @@ public class FFMpegHelper {
      * @return          字幕文件srt内容
      */
     public String extractSubtitle(String localFile, String streamNo, String type) throws IOException {
-        List<String> args = Stream.of(property.getFFMpegExecPath(), "-i", localFile, "-map", streamNo, "-f", type, "-loglevel", "error", "-").collect(Collectors.toList());
+        String realStreamNo = streamNo.contains(":") ? streamNo : "0:" + streamNo;
+        List<String> args = Stream.of(property.getFFMpegExecPath(), "-i", localFile, "-map", realStreamNo, "-f", type, "-loglevel", "error", "-").collect(Collectors.toList());
         Process process = executeCmd(args);
         try (InputStream is = process.getInputStream()) {
             String output = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
