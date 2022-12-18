@@ -42,7 +42,7 @@ public class FFMpegHelper {
                 "-v", "quiet",
                 "-print_format", "json",
                 "-i", localFilePath,
-                "-show_streams", "-show_chapters"
+                "-show_streams", "-show_chapters", "-show_format"
         );
         try (InputStream is = process.getInputStream()) {
             return StreamUtils.copyToString(is, StandardCharsets.UTF_8);

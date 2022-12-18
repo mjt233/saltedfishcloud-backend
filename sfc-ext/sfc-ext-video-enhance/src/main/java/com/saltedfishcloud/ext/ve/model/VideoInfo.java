@@ -9,4 +9,5 @@ import java.util.List;
 public class VideoInfo {
     private List<StreamInfo> streams = new ArrayList<>(0);
     private List<ChapterInfo> chapters = new ArrayList<>(0);
+    private FormatInfo format;
 }
