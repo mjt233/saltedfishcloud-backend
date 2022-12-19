@@ -88,7 +88,7 @@ public class VideoService {
      */
     public String getSubtitleText(Resource resource, String streamNo, String type) throws IOException {
         if (type == null) {
-            type = VEConstants.SUBTITLE_TYPE.WEBVTT;
+            type = VEConstants.SubtitleType.WEBVTT;
         }
         if (streamNo == null) {
             throw new IllegalArgumentException("流编号不能为空");

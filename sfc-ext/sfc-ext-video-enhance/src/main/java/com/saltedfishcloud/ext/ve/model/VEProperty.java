@@ -52,6 +52,9 @@ public class VEProperty {
     )
     private boolean enableThumbnailOnMount;
 
+    /**
+     * 获取ffmpeg目录下的程序可执行路径
+     */
     public String getExecutablePathOnFFMpegPATH(String name) {
         if (ffmpegPath == null) {
             throw new IllegalArgumentException("ve.property未配置ffmpeg-path");
@@ -60,10 +63,16 @@ public class VEProperty {
         return Paths.get(ffmpegPath).resolve(execFileName).toString();
     }
 
+    /**
+     * 获取ffmpeg的可执行完整路径
+     */
     public String getFFMpegExecPath() {
         return getExecutablePathOnFFMpegPATH("ffmpeg");
     }
 
+    /**
+     * 获取ffprobe的可执行完整路径
+     */
     public String getFFProbeExecPath() {
         return getExecutablePathOnFFMpegPATH("ffprobe");
     }

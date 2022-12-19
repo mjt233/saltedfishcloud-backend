@@ -1,6 +1,8 @@
 package com.saltedfishcloud.ext.ve.core;
 
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
+import com.saltedfishcloud.ext.ve.model.Encoder;
+import com.saltedfishcloud.ext.ve.model.FFMpegInfo;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -11,7 +13,7 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,6 +45,13 @@ public class FFMpegHelper {
         }
     }
 
+    protected String readOutput(Process process) throws IOException {
+        try (InputStream is = process.getInputStream()) {
+            return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+        }
+    }
+
+
     /**
      * 提取视频字幕
      * @param localFile 本地文件路径
@@ -50,7 +59,7 @@ public class FFMpegHelper {
      * @return          字幕文件srt内容
      */
     public String extractSubtitle(String localFile, String streamNo) throws IOException {
-        return extractSubtitle(localFile, streamNo, VEConstants.SUBTITLE_TYPE.SRT);
+        return extractSubtitle(localFile, streamNo, VEConstants.SubtitleType.SRT);
     }
 
     /**
@@ -106,5 +115,61 @@ public class FFMpegHelper {
     public VideoInfo getVideoInfo(String localFilePath) throws IOException {
         String probeOutput = this.executeProbe(localFilePath);
         return MapperHolder.parseSnakeJson(probeOutput, VideoInfo.class);
+    }
+
+    /**
+     * 获取ffmpeg的信息
+     */
+    public FFMpegInfo getFFMpegInfo() throws IOException {
+        Process process = this.executeCmd(property.getFFMpegExecPath(), "-encoders", "-v", "quiet");
+        String output = readOutput(process);
+        String[] outputArr = output.split("\r?\n");
+
+        FFMpegInfo ffMpegInfo = new FFMpegInfo();
+
+        // 获取编码器支持
+        Map<String, List<Encoder>> encodeTypeGroup = parseEncoderInfo(outputArr).stream().collect(Collectors.groupingBy(Encoder::getType));
+        ffMpegInfo.setAudioEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.AUDIO, Collections.emptyList()));
+        ffMpegInfo.setVideoEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.VIDEO, Collections.emptyList()));
+        ffMpegInfo.setSubtitleEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.SUBTITLE, Collections.emptyList()));
+        ffMpegInfo.setOtherEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.OTHER, Collections.emptyList()));
+
+        String[] versionInfoArr = readOutput(this.executeCmd(property.getFFMpegExecPath(), "-version")).split("\r?\n");
+        ffMpegInfo.setVersion(versionInfoArr[0].split("\\s+")[2]);
+        ffMpegInfo.setBuilt(versionInfoArr[1].split("\\s+", 3)[2]);
+        ffMpegInfo.setConfiguration(versionInfoArr[2].split(": ")[1]);
+
+        return ffMpegInfo;
+    }
+
+    private List<Encoder> parseEncoderInfo(String[] output) {
+        List<Encoder> res = new ArrayList<>();
+        boolean find = false;
+        for (String line : output) {
+            if (!find) {
+                if (line.contains("----")) {
+                    find = true;
+                }
+                continue;
+            }
+
+            Encoder encoder = new Encoder();
+            String[] split = line.trim().split("\\s+", 3);
+            char type = split[0].charAt(0);
+            if (type == 'V') {
+                encoder.setType(VEConstants.EncoderType.VIDEO);
+            } else if (type == 'A') {
+                encoder.setType(VEConstants.EncoderType.AUDIO);
+            } else if (type == 'S') {
+                encoder.setType(VEConstants.EncoderType.SUBTITLE);
+            } else {
+                encoder.setType(VEConstants.EncoderType.OTHER);
+            }
+            encoder.setFlag(split[0]);
+            encoder.setName(split[1]);
+            encoder.setDescribe(split[2]);
+            res.add(encoder);
+        }
+        return res;
     }
 }

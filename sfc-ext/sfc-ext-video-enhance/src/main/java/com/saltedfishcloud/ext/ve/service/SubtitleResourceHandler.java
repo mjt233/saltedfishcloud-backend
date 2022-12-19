@@ -23,7 +23,7 @@ public class SubtitleResourceHandler implements ResourceProtocolHandler {
         String subtitleText;
 
         String stream = Objects.requireNonNull(param.getParams().get("stream"), "param.stream不能为空");
-        String subtitleType = param.getParams().getOrDefault("type", VEConstants.SUBTITLE_TYPE.WEBVTT);
+        String subtitleType = param.getParams().getOrDefault("type", VEConstants.SubtitleType.WEBVTT);
         subtitleText = videoService.getSubtitleText(resource, stream, subtitleType);
         return ResourceUtils.stringToResource(subtitleText)
                 .setContentType("text/vtt");

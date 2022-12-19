@@ -1,6 +1,7 @@
 package com.saltedfishcloud.ext.vo.test;
 
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
+import com.saltedfishcloud.ext.ve.model.FFMpegInfo;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import org.junit.jupiter.api.Test;
@@ -20,5 +21,11 @@ public class TestClass {
     public void testParseChapter() throws IOException {
         VideoInfo videoInfo = ffmpegHelper.getVideoInfo(VIDEO_PATH);
         System.out.println(videoInfo);
+    }
+
+    @Test
+    public void getInfo() throws Exception {
+        FFMpegInfo ffMpegInfo = ffmpegHelper.getFFMpegInfo();
+        System.out.println(ffMpegInfo);
     }
 }

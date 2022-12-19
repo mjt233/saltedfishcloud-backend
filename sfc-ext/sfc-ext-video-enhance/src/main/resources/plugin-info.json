@@ -9,6 +9,7 @@
   "version": "^project.version^",
   "autoLoad": [
     "index.umd.js",
-    "style.css"
+    "style.css",
+    "customComponent.js"
   ]
 }
