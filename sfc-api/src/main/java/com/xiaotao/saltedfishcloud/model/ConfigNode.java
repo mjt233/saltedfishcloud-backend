@@ -23,7 +23,7 @@ public class ConfigNode {
      * @param nameAndTitle  id名称与标题
      * @param value         值
      */
-    public ConfigNode(String nameAndTitle, String value) {
+    public ConfigNode(String nameAndTitle, Object value) {
         this.name = nameAndTitle;
         this.title = nameAndTitle;
         this.value = value;
@@ -52,7 +52,7 @@ public class ConfigNode {
     /**
      * 配置值
      */
-    private String value;
+    private Object value;
 
     /**
      * 被修改前的原值
@@ -124,4 +124,10 @@ public class ConfigNode {
      * 是否必填
      */
     private boolean required;
+
+    public ConfigNode useTemplate(String template) {
+        this.setInputType("template");
+        this.setTemplate(template);
+        return this;
+    }
 }

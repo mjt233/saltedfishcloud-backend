@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 @Configuration
 @ComponentScan("com.saltedfishcloud.ext.ve")
@@ -81,17 +80,22 @@ public class VEAutoConfiguration implements SystemOverviewItemProvider {
                                     new ConfigNode("ffmpeg路径", property.getFfmpegPath()),
                                     new ConfigNode("版本", ffMpegInfo.getVersion()),
                                     new ConfigNode("构建信息", ffMpegInfo.getBuilt()),
-                                    new ConfigNode("编译参数", ffMpegInfo.getConfiguration()).setInputType("ffmpeg-configure")
+                                    new ConfigNode("编译参数", ffMpegInfo.getConfiguration())
+                                            .useTemplate("configure-info")
                             ))
                             .build(),
                     ConfigNode.builder()
                             .title("ffmpeg编码器信息")
                             .name("ffmpeg-encoders")
                             .nodes(Arrays.asList(
-                                    new ConfigNode("视频编码器", ffMpegInfo.getVideoEncoders().size() + ""),
-                                    new ConfigNode("音频编码器", ffMpegInfo.getAudioEncoders().size() + ""),
-                                    new ConfigNode("字幕编码器", ffMpegInfo.getSubtitleEncoders().size() + ""),
-                                    new ConfigNode("其他编码器", ffMpegInfo.getOtherEncoders().size() + "")
+                                    new ConfigNode("视频编码器", ffMpegInfo.getVideoEncoders())
+                                            .useTemplate("encoder-info"),
+                                    new ConfigNode("音频编码器", ffMpegInfo.getAudioEncoders())
+                                            .useTemplate("encoder-info"),
+                                    new ConfigNode("字幕编码器", ffMpegInfo.getSubtitleEncoders())
+                                            .useTemplate("encoder-info"),
+                                    new ConfigNode("其他编码器", ffMpegInfo.getOtherEncoders())
+                                            .useTemplate("encoder-info")
                             ))
                             .build()
                     );
