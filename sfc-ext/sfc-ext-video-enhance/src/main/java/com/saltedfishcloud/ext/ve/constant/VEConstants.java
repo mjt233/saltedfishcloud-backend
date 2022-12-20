@@ -15,4 +15,9 @@ public interface VEConstants {
         String SUBTITLE = "subtitle";
         String OTHER = "other";
     }
+
+    interface EncodeMethod {
+        String CONVERT = "convert";
+        String COPY = "copy";
+    }
 }

@@ -3,6 +3,7 @@ package com.saltedfishcloud.ext.ve.config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
+import com.saltedfishcloud.ext.ve.core.FFMpegHelperImpl;
 import com.saltedfishcloud.ext.ve.model.FFMpegInfo;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.service.SubtitleResourceHandler;
@@ -52,7 +53,7 @@ public class VEAutoConfiguration implements SystemOverviewItemProvider {
         if (property == null) {
             property = new VEProperty();
         }
-        FFMpegHelper ffMpegHelper = new FFMpegHelper(property);
+        FFMpegHelper ffMpegHelper = new FFMpegHelperImpl(property);
 
         // 配置更新时，操作器也跟着更新
         configService.addBeforeSetListener(VEConstants.PROPERTY_KEY, json -> {
