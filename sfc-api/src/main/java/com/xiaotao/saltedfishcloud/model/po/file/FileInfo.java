@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.model.po.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import lombok.experimental.Accessors;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -17,6 +18,7 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
+@Accessors(chain = true)
 public class FileInfo extends BasicFileInfo{
     /**
      * 文件所属用户ID

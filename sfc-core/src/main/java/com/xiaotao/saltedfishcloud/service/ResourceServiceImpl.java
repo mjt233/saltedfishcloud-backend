@@ -106,4 +106,13 @@ public class ResourceServiceImpl implements ResourceService {
         info.setUid(uid);
         return JwtUtils.generateToken(MapperHolder.mapper.writeValueAsString(info), expr < 0 ? expr : expr*60*60*24);
     }
+
+    @Override
+    public void writeResource(ResourceRequest param, Resource resource) throws IOException {
+        ResourceProtocolHandler handler = getResourceHandler(param.getProtocol());
+        if (!handler.isWriteable()) {
+            throw new IllegalArgumentException("目标资源不支持数据写入");
+        }
+        handler.writeResource(param, resource);
+    }
 }

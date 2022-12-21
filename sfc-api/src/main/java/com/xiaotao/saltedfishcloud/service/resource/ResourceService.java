@@ -49,4 +49,11 @@ public interface ResourceService {
      * @return          生成的文件下载码
      */
     String getFileDownloadCode(int uid, String path, BasicFileInfo fileInfo, int expr) throws IOException;
+
+    /**
+     * 向目标资源操作器写入资源
+     * @param param     资源定位参数
+     * @param resource  待写入资源
+     */
+    void writeResource(ResourceRequest param, Resource resource) throws IOException;
 }
