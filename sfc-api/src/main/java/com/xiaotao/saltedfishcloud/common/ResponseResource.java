@@ -12,4 +12,9 @@ public abstract class ResponseResource extends AbstractResource {
     protected String contentType;
     protected String redirectUrl;
     protected String responseFilename;
+
+    @Override
+    public String getFilename() {
+        return responseFilename;
+    }
 }

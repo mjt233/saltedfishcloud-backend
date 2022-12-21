@@ -21,6 +21,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -37,6 +38,19 @@ public class PluginController {
         return JsonResultImpl.getInstance(pluginService.listPlugins());
     }
 
+    @AllowAnonymous
+    @GetMapping("/autoLoad.js")
+    public ResponseEntity<Resource> autoLoadJs() throws UnsupportedEncodingException {
+        Resource resource = pluginService.getMergeAutoLoadResource("js");
+        return ResourceUtils.wrapResourceWithCache(resource, resource.getFilename());
+    }
+
+    @AllowAnonymous
+    @GetMapping("/autoLoad.css")
+    public ResponseEntity<Resource> autoLoadCss() throws UnsupportedEncodingException {
+        Resource resource = pluginService.getMergeAutoLoadResource("css");
+        return ResourceUtils.wrapResourceWithCache(resource, resource.getFilename());
+    }
 
     /**
      * 获取需要前端自动加载的插件的js和css资源的插件

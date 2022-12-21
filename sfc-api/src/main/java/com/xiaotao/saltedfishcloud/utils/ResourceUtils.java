@@ -22,7 +22,7 @@ public class ResourceUtils {
     }
     // 默认的一年缓存响应
     private static final Map<String, String> DEFAULT_CACHE_MAP = new HashMap<String, String>(){{
-        put("Cache-Control", "max-age=" + 60*60*24*365);
+        put("Cache-Control", "max-age=" + 60*60*24*7);
     }};
 
     /**
@@ -80,6 +80,10 @@ public class ResourceUtils {
         return "inline;filename*=UTF-8''"+ URLEncoder.encode(filename, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
     }
 
+    /**
+     * 生成一个字符串资源
+     * @param string    要封装的字符串
+     */
     public static ResponseResource stringToResource(String string) {
         return new ResponseResource() {
             @Override
