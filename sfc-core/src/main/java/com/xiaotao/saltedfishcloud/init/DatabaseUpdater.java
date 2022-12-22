@@ -178,14 +178,19 @@ public class DatabaseUpdater implements ApplicationRunner {
             // 筛选出具有上次运行版本记录的插件
             String versionKey = this.getPluginUpdateScopeKey(pluginInfo.getName());
             String lastPluginVersionStr = pluginLastVersionMap.get(versionKey);
+            Version nowVersion = Version.valueOf(pluginInfo.getVersion());
+
             if (lastPluginVersionStr == null) {
+                List<VersionUpdateHandler> initHandlers = updateManager.getInitHandlerList(pluginInfo.getName());
+                for (VersionUpdateHandler handler : initHandlers) {
+                    handler.update(null, nowVersion);
+                }
                 configService.setConfig(versionKey, pluginInfo.getVersion());
                 continue;
             }
+            Version lastVersion = Version.valueOf(lastPluginVersionStr);
 
             // 筛选出需要执行更新的操作器
-            Version lastVersion = Version.valueOf(lastPluginVersionStr);
-            Version nowVersion = Version.valueOf(pluginInfo.getVersion());
             List<VersionUpdateHandler> updateHandlerList = updateManager.getNeedUpdateHandlerList(pluginInfo.getName(), lastVersion);
             if (updateHandlerList == null || updateHandlerList.isEmpty()) {
                 configService.setConfig(versionKey, pluginInfo.getVersion());
@@ -195,6 +200,7 @@ public class DatabaseUpdater implements ApplicationRunner {
             // 执行更新
             try {
                 for (VersionUpdateHandler handler : updateHandlerList) {
+                    log.info("{}执行{}的{}更新", "[插件更新]", handler.getScope(), handler.getUpdateVersion());
                     handler.update(lastVersion, nowVersion);
                 }
                 configService.setConfig(versionKey, pluginInfo.getVersion());

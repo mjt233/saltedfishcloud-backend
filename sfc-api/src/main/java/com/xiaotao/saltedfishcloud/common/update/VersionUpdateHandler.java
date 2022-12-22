@@ -39,7 +39,8 @@ public interface VersionUpdateHandler {
     }
 
     /**
-     * 需要该控制器执行所截止的版本号，系统版本高于或等于该版本时不会执行该操作器
+     * 需要该控制器执行所截止的版本号，系统版本高于或等于该版本时不会执行该操作器。
+     * 如果返回null，则表示该方法为初始化方法，在目标组件第一次被系统加载时调用
      */
     Version getUpdateVersion();
 }

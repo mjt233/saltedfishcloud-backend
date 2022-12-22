@@ -10,6 +10,11 @@ public class AsyncTaskResult {
     public Status status;
     public long timeout;
 
+    /**
+     *
+     * @param status    执行结果
+     * @param timeout   超时时间，0表示永不自动过期，大于0则表示该数秒数后自动过期
+     */
     public AsyncTaskResult(Status status, long timeout) {
         this.status = status;
         this.timeout = timeout;

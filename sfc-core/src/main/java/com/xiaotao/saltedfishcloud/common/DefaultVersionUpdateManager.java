@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.common;
 
+import com.xiaotao.saltedfishcloud.annotations.update.InitAction;
 import com.xiaotao.saltedfishcloud.annotations.update.RollbackAction;
 import com.xiaotao.saltedfishcloud.annotations.update.UpdateAction;
 import com.xiaotao.saltedfishcloud.annotations.update.Updater;
@@ -17,11 +18,15 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class DefaultVersionUpdateManager implements VersionUpdateManager, ApplicationContextAware {
+    private final static String ACTION_TYPE_UPDATE = "update";
+    private final static String ACTION_TYPE_ROLLBACK = "rollback";
+    private final static String ACTION_TYPE_INIT = "init";
     private final static String GLOBAL_SCOPE = "GLOBAL_SCOPE";
     private final static String LOG_PREFIX = "[系统更新]";
     private final Map<String, TreeMap<Version, List<VersionUpdateHandler>>> allHandler;
@@ -42,12 +47,17 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
     public static class AnnotationActionMethod {
         public final UpdateAction updateAction;
         public final RollbackAction rollbackAction;
+        public final InitAction initAction;
         public final Method method;
         public final Version version;
 
-        public AnnotationActionMethod(UpdateAction updateAction, RollbackAction rollbackAction, Method method) {
+        public AnnotationActionMethod(UpdateAction updateAction,
+                                      RollbackAction rollbackAction,
+                                      InitAction initAction,
+                                      Method method) {
             this.updateAction = updateAction;
             this.rollbackAction = rollbackAction;
+            this.initAction = initAction;
             this.method = method;
             if (updateAction != null) {
                 version = Version.valueOf(updateAction.value());
@@ -59,10 +69,16 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
         }
 
         public String getActionType() {
-            if (updateAction == null && rollbackAction == null) {
+            if (updateAction == null && rollbackAction == null && initAction == null) {
                 return null;
             }
-            return updateAction != null ? "update" : "rollback";
+            if (updateAction != null) {
+                return ACTION_TYPE_UPDATE;
+            } else if (rollbackAction != null) {
+                return ACTION_TYPE_ROLLBACK;
+            } else {
+                return ACTION_TYPE_INIT;
+            }
         }
     }
 
@@ -96,11 +112,12 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
                     .map(method -> {
                         UpdateAction updateAction = method.getAnnotation(UpdateAction.class);
                         RollbackAction rollbackAction = method.getAnnotation(RollbackAction.class);
-                        return new AnnotationActionMethod(updateAction, rollbackAction, method);
+                        InitAction initAction = method.getAnnotation(InitAction.class);
+                        return new AnnotationActionMethod(updateAction, rollbackAction, initAction, method);
                     })
-                    .filter(method -> method.version != null)
+                    .filter(method -> method.version != null || method.initAction != null)
                     .collect(Collectors.groupingBy(
-                            method -> method.version,
+                            method -> Optional.ofNullable(method.version).orElseGet(() -> Version.valueOf("0.0.0")),
                             Collectors.toMap(
                                 AnnotationActionMethod::getActionType,
                                 method -> method,
@@ -118,7 +135,10 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
                         return new VersionUpdateHandler() {
                             @Override
                             public void update(Version from, Version to) throws Exception {
-                                AnnotationActionMethod updateMethod = methodMap.get("update");
+                                AnnotationActionMethod updateMethod = methodMap.get(ACTION_TYPE_UPDATE);
+                                if (updateMethod == null) {
+                                    updateMethod = methodMap.get(ACTION_TYPE_INIT);
+                                }
                                 Object[] args = getArgs(updateMethod.method, from, to);
                                 if (args == null) {
                                     updateMethod.method.invoke(obj);
@@ -242,14 +262,30 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
     }
 
     @Override
+    public List<VersionUpdateHandler> getInitHandlerList(String scope) {
+        return allHandler.getOrDefault(Optional.ofNullable(scope).orElse(GLOBAL_SCOPE), new TreeMap<>())
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(e -> Version.getZeroVersion().equals(e.getUpdateVersion()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<VersionUpdateHandler> getNeedUpdateHandlerList(String scope, Version referVersion) {
         registerAnnotationUpdateMethod();
+
+
+        Predicate<VersionUpdateHandler> filter = referVersion == null ?
+                e -> e.getUpdateVersion() == null :
+                e -> referVersion.isLessThen(e.getUpdateVersion());
+
         return allHandler
                 .getOrDefault(Optional.ofNullable(scope).orElse(GLOBAL_SCOPE), new TreeMap<>())
                 .values()
                 .stream()
                 .flatMap(Collection::stream)
-                .filter(e -> referVersion.isLessThen(e.getUpdateVersion()))
+                .filter(filter)
                 .sorted((a,b) -> b.getUpdateVersion().compareTo(a.getUpdateVersion()))
                 .collect(Collectors.toList());
     }
