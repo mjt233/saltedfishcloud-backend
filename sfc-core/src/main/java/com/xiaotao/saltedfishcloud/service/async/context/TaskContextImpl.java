@@ -6,8 +6,9 @@ import lombok.Getter;
 import java.util.UUID;
 
 /**
- * 默认的任务上下文接口实现
- * @TODO 使用线程池
+ * 默认的任务上下文接口实现<br>
+ * todo 使用线程池
+ * todo 抽离该部分逻辑到管理器中，该类多余，模糊了task和manager职责
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class TaskContextImpl<T> implements TaskContext<T> {
@@ -16,6 +17,7 @@ public class TaskContextImpl<T> implements TaskContext<T> {
     private AsyncTackCallback success = EmptyCallback.get();
     private AsyncTackCallback failed = EmptyCallback.get();
     private AsyncTackCallback finish = EmptyCallback.get();
+    private AsyncTackCallback startCallback = EmptyCallback.get();
     @Getter
     private final String id = UUID.randomUUID().toString();
 
@@ -86,6 +88,11 @@ public class TaskContextImpl<T> implements TaskContext<T> {
     }
 
     @Override
+    public void onStart(AsyncTackCallback callback) {
+        this.startCallback = callback;
+    }
+
+    @Override
     public boolean isFinish() {
         return task.isFinish();
     }
@@ -96,9 +103,10 @@ public class TaskContextImpl<T> implements TaskContext<T> {
     }
 
     @Override
-    public void start() {
+    public synchronized void start() {
         if (!started) {
             started = true;
+            startCallback.action();
             thread.start();
         }
     }

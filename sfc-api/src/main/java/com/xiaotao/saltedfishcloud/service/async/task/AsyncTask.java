@@ -1,5 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.async.task;
 
+/**
+ * 异步任务接口
+ * @param <MT>  消息类型
+ * @param <ST>  任务状态类型
+ */
 public interface AsyncTask<MT, ST> {
 
     void interrupt();
