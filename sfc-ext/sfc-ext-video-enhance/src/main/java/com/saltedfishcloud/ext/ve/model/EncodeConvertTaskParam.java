@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class EncodeConvertTask extends EncodeConvertParam {
+public class EncodeConvertTaskParam extends EncodeConvertParam {
     /**
      * 待转换资源
      */

@@ -9,6 +9,9 @@ import java.util.regex.Pattern;
 public class StringParser {
     private final static Pattern TIME_PATTERN = Pattern.compile("(?<=time=)\\d+:\\d+:\\d+");
 
+    /**
+     * 从ffmpeg处理进度输出字符串中解析对应的已处理时间，转为秒数
+     */
     public static Double parseTimeProgress(String progressOutput) {
         Matcher matcher = TIME_PATTERN.matcher(progressOutput);
         if (matcher.find()) {

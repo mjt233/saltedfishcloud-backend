@@ -1,5 +1,6 @@
 package com.saltedfishcloud.ext.ve.controller;
 
+import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
 import com.saltedfishcloud.ext.ve.model.request.VideoRequest;
 import com.saltedfishcloud.ext.ve.service.VideoService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
@@ -22,6 +23,15 @@ public class VideoController {
 
     @Autowired
     private DiskFileSystemManager fileSystemManager;
+
+    /**
+     * 编码转换
+     */
+    @PostMapping("encodeConvert")
+    public JsonResult encodeConvert(@RequestBody EncodeConvertTaskParam task) {
+        String taskId = videoService.createEncodeConvertTask(task);
+        return JsonResultImpl.getInstance(taskId);
+    }
 
     @AllowAnonymous
     @GetMapping("getVideoInfo")
