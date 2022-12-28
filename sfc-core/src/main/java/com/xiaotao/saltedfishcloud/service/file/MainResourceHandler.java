@@ -93,7 +93,7 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
                 .setUid(uid)
                 .setStreamSource(resource);
         fileInfo.setName(param.getName());
-        fileInfo.setSize(TypeUtils.toLong(param.getParams().get("size")));
+        fileInfo.setSize(resource.contentLength());
         String md5 = param.getParams().get("md5");
         if (md5 != null) {
             fileInfo.setMd5(md5);

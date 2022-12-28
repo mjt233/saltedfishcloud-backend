@@ -17,6 +17,9 @@ import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +29,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -134,18 +139,23 @@ public class VideoService {
      * @param param  任务参数
      * @return      任务ID
      */
-    public String createEncodeConvertTask(EncodeConvertTaskParam param) {
+    public String createEncodeConvertTask(EncodeConvertTaskParam param) throws IOException {
+        param.getTarget().getParams().put("createUId", SecureUtils.getSpringSecurityUser().getId() + "");
         EncodeConvertAsyncTask task = encodeConvertAsyncTaskFactory.createTask(param);
         TaskContext<EncodeConvertAsyncTask> context = taskContextFactory.createContextFromAsyncTask(task);
+
+        Files.createDirectories(Paths.get(StringUtils.appendSystemPath(PathUtils.getTempDirectory(), context.getId())));
+        task.setOutputFile(StringUtils.appendSystemPath(PathUtils.getTempDirectory(), context.getId(), param.getTarget().getName()));
+
         String taskId = context.getId();
         context.onStart(() -> {
             EncodeConvertTask taskPo = createTaskPo(param);
             taskPo.setTaskId(taskId);
             taskPo.setTaskStatus(TaskStatus.RUNNING);
-            progressDetector.addObserve(task, taskId);
+//            progressDetector.addObserve(task, taskId);
             encodeConvertTaskRepo.save(taskPo);
         });
-        context.onFinish(() -> progressDetector.removeObserve(taskId));
+//        context.onFinish(() -> progressDetector.removeObserve(taskId));
         context.onSuccess(() -> encodeConvertTaskRepo.updateStatusByTaskId(taskId, TaskStatus.SUCCESS));
         context.onFailed(() -> encodeConvertTaskRepo.updateStatusByTaskId(taskId, TaskStatus.FAILED));
         asyncTaskManager.submit(context);

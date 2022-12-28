@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import org.springframework.lang.Nullable;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
@@ -75,6 +76,37 @@ public class StringUtils {
                     sb.append('/');
                 } else if (data.startsWith("/") && last.equals("/")) {
                     data = data.replaceAll("^/+", "");
+                }
+            }
+            sb.append(data);
+            last = data;
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 以文件路径形式追加字符串，自动处理/或\的重复问题。<br>
+     * 开头不会自动添加/或\，开头是否有/或\取决于参数0。
+     * 使用/还是\取决于操作系统
+     * @param appendData    要追加的各字符串，末尾和首部的/或\会被忽略，由函数内部自动管理/或\分割
+     * @return  追加后的路径字符串
+     */
+    public static String appendSystemPath(String...appendData) {
+        if (appendData.length == 2 && appendData[0] != null && appendData[0].length() == 0) {
+            return appendData[1];
+        }
+        String regex = "^" + File.separator + "+";
+
+        StringBuilder sb = new StringBuilder();
+        String last = null;
+        for (String data : appendData) {
+            if (data == null || (last != null && File.separator.equals(data))) continue;
+
+            if (last != null && last.length() != 0) {
+                if (!(data.startsWith(File.separator) || last.endsWith(File.separator))) {
+                    sb.append(File.separator);
+                } else if (data.startsWith(File.separator) && last.equals(File.separator)) {
+                    data = data.replaceAll(regex, "");
                 }
             }
             sb.append(data);

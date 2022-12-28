@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface EncodeConvertTaskRepo extends JpaRepository<EncodeConvertTask, Long> {
@@ -12,5 +13,6 @@ public interface EncodeConvertTaskRepo extends JpaRepository<EncodeConvertTask, 
 
     @Modifying
     @Query("UPDATE EncodeConvertTask SET taskStatus = ?2 WHERE taskId = ?1")
+    @Transactional
     void updateStatusByTaskId(String taskId, int status);
 }

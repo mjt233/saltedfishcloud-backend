@@ -22,5 +22,6 @@ public class EncodeConvertAsyncTaskFactory {
 
     private void paddingDependence(EncodeConvertAsyncTask task) {
         task.setFfMpegHelper(ffMpegHelper);
+        task.setResourceService(resourceService);
     }
 }

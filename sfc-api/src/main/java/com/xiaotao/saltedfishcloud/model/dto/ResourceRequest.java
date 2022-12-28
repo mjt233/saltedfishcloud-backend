@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.model.dto;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -37,7 +38,7 @@ public class ResourceRequest {
     /**
      * 额外参数
      */
-    private Map<String, String> params;
+    private Map<String, String> params = new HashMap<>();
 
     /**
      * 是否为缩略图资源

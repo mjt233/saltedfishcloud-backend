@@ -1,5 +1,6 @@
 package com.saltedfishcloud.ext.ve.controller;
 
+import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
 import com.saltedfishcloud.ext.ve.model.request.VideoRequest;
 import com.saltedfishcloud.ext.ve.service.VideoService;
@@ -24,11 +25,22 @@ public class VideoController {
     @Autowired
     private DiskFileSystemManager fileSystemManager;
 
+    @Autowired
+    private FFMpegHelper ffMpegHelper;
+
+    /**
+     * 获取ffmpeg信息
+     */
+    @GetMapping("getFFMpegInfo")
+    public JsonResult getFFMpegInfo() throws IOException {
+        return JsonResultImpl.getInstance(ffMpegHelper.getFFMpegInfo());
+    }
+
     /**
      * 编码转换
      */
     @PostMapping("encodeConvert")
-    public JsonResult encodeConvert(@RequestBody EncodeConvertTaskParam task) {
+    public JsonResult encodeConvert(@RequestBody EncodeConvertTaskParam task) throws IOException {
         String taskId = videoService.createEncodeConvertTask(task);
         return JsonResultImpl.getInstance(taskId);
     }

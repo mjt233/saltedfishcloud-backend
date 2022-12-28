@@ -30,8 +30,14 @@ public class VEUpdater {
     }
 
     @UpdateAction("1.1.0")
-    public void createTaskTable() throws SQLException {
+    public void createTaskTable110() throws SQLException {
 
         executeScript("1.1.0");
+    }
+
+    @UpdateAction("1.1.1")
+    public void createTaskTable111() throws SQLException {
+
+        executeScript("1.1.1");
     }
 }
