@@ -10,7 +10,7 @@ import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
-import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
+import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;

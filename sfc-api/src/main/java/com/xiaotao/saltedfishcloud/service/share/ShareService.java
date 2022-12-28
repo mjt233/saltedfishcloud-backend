@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
-import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
+import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
