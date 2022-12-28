@@ -15,9 +15,11 @@ import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +28,8 @@ import java.util.Map;
 
 @Configuration
 @ComponentScan("com.saltedfishcloud.ext.ve")
+@EntityScan("com.saltedfishcloud.ext.ve.model")
+@EnableJpaRepositories(basePackages = "com.saltedfishcloud.ext.ve.dao")
 public class VEAutoConfiguration implements SystemOverviewItemProvider {
     @Autowired
     private ConfigService configService;

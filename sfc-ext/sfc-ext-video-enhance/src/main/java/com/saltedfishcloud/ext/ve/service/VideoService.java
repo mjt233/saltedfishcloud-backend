@@ -4,7 +4,7 @@ import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.EncodeConvertAsyncTask;
 import com.saltedfishcloud.ext.ve.core.EncodeConvertAsyncTaskFactory;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
-import com.saltedfishcloud.ext.ve.dao.EncodeConvertTaskDao;
+import com.saltedfishcloud.ext.ve.dao.EncodeConvertTaskRepo;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertRule;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
@@ -12,7 +12,6 @@ import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
@@ -44,7 +43,7 @@ public class VideoService {
     private EncodeConvertAsyncTaskFactory encodeConvertAsyncTaskFactory;
 
     @Autowired
-    private EncodeConvertTaskDao encodeConvertTaskDao;
+    private EncodeConvertTaskRepo encodeConvertTaskRepo;
 
     @Autowired
     @Lazy
@@ -144,11 +143,11 @@ public class VideoService {
             taskPo.setTaskId(taskId);
             taskPo.setTaskStatus(TaskStatus.RUNNING);
             progressDetector.addObserve(task, taskId);
-            encodeConvertTaskDao.save(taskPo);
+            encodeConvertTaskRepo.save(taskPo);
         });
         context.onFinish(() -> progressDetector.removeObserve(taskId));
-        context.onSuccess(() -> encodeConvertTaskDao.updateStatusByTaskId(taskId, TaskStatus.SUCCESS));
-        context.onFailed(() -> encodeConvertTaskDao.updateStatusByTaskId(taskId, TaskStatus.FAILED));
+        context.onSuccess(() -> encodeConvertTaskRepo.updateStatusByTaskId(taskId, TaskStatus.SUCCESS));
+        context.onFailed(() -> encodeConvertTaskRepo.updateStatusByTaskId(taskId, TaskStatus.FAILED));
         asyncTaskManager.submit(context);
         return taskId;
     }
