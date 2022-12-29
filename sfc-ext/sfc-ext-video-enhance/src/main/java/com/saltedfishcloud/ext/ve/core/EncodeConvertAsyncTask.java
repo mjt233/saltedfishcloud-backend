@@ -82,7 +82,7 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
             String line;
             try {
                 while ((line = scanner.nextLine()) != null) {
-                    outputProducer.write(line);
+//                    outputProducer.write(line);
                     Double progress = StringParser.parseTimeProgress(line);
                     if (progress != null) {
                         status.setLoaded(progress.longValue());

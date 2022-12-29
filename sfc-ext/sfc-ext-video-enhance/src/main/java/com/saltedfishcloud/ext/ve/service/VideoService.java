@@ -1,5 +1,6 @@
 package com.saltedfishcloud.ext.ve.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.EncodeConvertAsyncTask;
 import com.saltedfishcloud.ext.ve.core.EncodeConvertAsyncTaskFactory;
@@ -11,12 +12,14 @@ import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -27,16 +30,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.saltedfishcloud.ext.ve.constant.VEConstants.*;
@@ -66,6 +68,29 @@ public class VideoService {
 
     @Autowired
     private TaskContextFactory taskContextFactory;
+
+    /**
+     * 获取视频编码转换任务列表
+     * @param uid       用户id
+     * @param status    任务状态
+     * @param page      页码，首页为0
+     * @param pageSize  页大小
+     */
+    public CommonPageInfo<EncodeConvertTask> listTask(Long uid, Integer status, Integer page, Integer pageSize) {
+        PageRequest pageRequest = PageRequest.of(page, pageSize);
+        Page<EncodeConvertTask> tasks = encodeConvertTaskRepo.findByUidAndTaskStatus(uid, status, pageRequest);
+
+        // 针对运行中的任务获取相关进度
+        tasks.forEach(e -> {
+            if (Objects.equals(TaskStatus.RUNNING, e.getTaskStatus())) {
+                TaskContext<EncodeConvertAsyncTask> taskContext = asyncTaskManager.getContext(e.getTaskId(), EncodeConvertAsyncTask.class);
+                if (taskContext != null) {
+                    e.setProgress(taskContext.getTask().getProgressRecord());
+                }
+            }
+        });
+        return CommonPageInfo.of(tasks);
+    }
 
     /**
      * 提取资源拓展方法，支持通过sourceProtocol和sourceId获取资源的依赖资源
@@ -141,7 +166,8 @@ public class VideoService {
      * @return      任务ID
      */
     public String createEncodeConvertTask(EncodeConvertTaskParam param) throws IOException {
-        param.getTarget().getParams().put("createUId", SecureUtils.getSpringSecurityUser().getId() + "");
+        Integer uid = SecureUtils.getSpringSecurityUser().getId();
+        param.getTarget().getParams().put("createUId", uid + "");
         EncodeConvertAsyncTask task = encodeConvertAsyncTaskFactory.createTask(param);
         TaskContext<EncodeConvertAsyncTask> context = taskContextFactory.createContextFromAsyncTask(task);
 
@@ -152,6 +178,7 @@ public class VideoService {
 
         String taskId = context.getId();
         EncodeConvertTask taskPo = createTaskPo(param);
+        taskPo.setUid(Long.valueOf(uid));
         context.onStart(() -> {
             taskPo.setTaskId(taskId);
             taskPo.setTaskStatus(TaskStatus.RUNNING);
@@ -177,9 +204,10 @@ public class VideoService {
         return taskId;
     }
 
-    private EncodeConvertTask createTaskPo(EncodeConvertTaskParam param) {
+    private EncodeConvertTask createTaskPo(EncodeConvertTaskParam param) throws JsonProcessingException {
         EncodeConvertTask task = new EncodeConvertTask();
         task.setTaskStatus(TaskStatus.WAITING);
+        task.setParams(MapperHolder.toJson(param));
 
         Map<String, List<EncodeConvertRule>> typeMap = param.getRules().stream().collect(Collectors.groupingBy(EncodeConvertRule::getType));
         boolean videoConvert = typeMap.getOrDefault(EncoderType.VIDEO, Collections.emptyList()).stream().anyMatch(e -> EncodeMethod.CONVERT.equals(e.getMethod()));

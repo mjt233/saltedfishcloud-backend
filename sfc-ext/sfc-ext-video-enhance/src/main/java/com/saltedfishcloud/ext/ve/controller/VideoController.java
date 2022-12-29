@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -27,6 +28,15 @@ public class VideoController {
 
     @Autowired
     private FFMpegHelper ffMpegHelper;
+
+    @GetMapping("listConvertTask")
+    public JsonResult listConvertTask(@RequestParam("uid") @UID Long uid,
+                                      @RequestParam("status") Integer status,
+                                      @RequestParam(value = "page", defaultValue = "1") Integer page,
+                                      @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize
+    ) {
+        return JsonResultImpl.getInstance(videoService.listTask(uid, status, page, pageSize));
+    }
 
     /**
      * 获取ffmpeg信息
