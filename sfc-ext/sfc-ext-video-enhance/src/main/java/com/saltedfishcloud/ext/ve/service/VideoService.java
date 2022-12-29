@@ -21,6 +21,7 @@ import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +42,9 @@ import java.util.stream.Collectors;
 import static com.saltedfishcloud.ext.ve.constant.VEConstants.*;
 
 @Service
+@Slf4j
 public class VideoService {
+    private final static String LOG_PREFIX = "[视频增强服务]";
     @Autowired
     private FFMpegHelper ffMpegHelper;
 
@@ -62,9 +66,6 @@ public class VideoService {
 
     @Autowired
     private TaskContextFactory taskContextFactory;
-
-    @Autowired
-    private ProgressDetector progressDetector;
 
     /**
      * 提取资源拓展方法，支持通过sourceProtocol和sourceId获取资源的依赖资源
@@ -144,27 +145,40 @@ public class VideoService {
         EncodeConvertAsyncTask task = encodeConvertAsyncTaskFactory.createTask(param);
         TaskContext<EncodeConvertAsyncTask> context = taskContextFactory.createContextFromAsyncTask(task);
 
-        Files.createDirectories(Paths.get(StringUtils.appendSystemPath(PathUtils.getTempDirectory(), context.getId())));
+        Path tempDir = Paths.get(StringUtils.appendSystemPath(PathUtils.getTempDirectory(), context.getId()));
+        Files.createDirectories(tempDir);
         task.setOutputFile(StringUtils.appendSystemPath(PathUtils.getTempDirectory(), context.getId(), param.getTarget().getName()));
+        log.info("{}创建临时目录：{}", LOG_PREFIX, tempDir);
 
         String taskId = context.getId();
+        EncodeConvertTask taskPo = createTaskPo(param);
         context.onStart(() -> {
-            EncodeConvertTask taskPo = createTaskPo(param);
             taskPo.setTaskId(taskId);
             taskPo.setTaskStatus(TaskStatus.RUNNING);
-//            progressDetector.addObserve(task, taskId);
             encodeConvertTaskRepo.save(taskPo);
         });
-//        context.onFinish(() -> progressDetector.removeObserve(taskId));
-        context.onSuccess(() -> encodeConvertTaskRepo.updateStatusByTaskId(taskId, TaskStatus.SUCCESS));
-        context.onFailed(() -> encodeConvertTaskRepo.updateStatusByTaskId(taskId, TaskStatus.FAILED));
+        context.onSuccess(() -> {
+            taskPo.setTaskStatus(TaskStatus.SUCCESS);
+            encodeConvertTaskRepo.save(taskPo);
+        });
+        context.onFailed(() -> {
+            taskPo.setTaskStatus(TaskStatus.FAILED);
+            encodeConvertTaskRepo.save(taskPo);
+        });
+        context.onFinish(() -> {
+            try {
+                Files.deleteIfExists(tempDir);
+                log.info("{}移除临时目录：{}", LOG_PREFIX, tempDir);
+            } catch (IOException e) {
+                log.error("{}临时目录移除失败：", LOG_PREFIX, e);
+            }
+        });
         asyncTaskManager.submit(context);
         return taskId;
     }
 
     private EncodeConvertTask createTaskPo(EncodeConvertTaskParam param) {
         EncodeConvertTask task = new EncodeConvertTask();
-        task.setId(IdUtil.getId());
         task.setTaskStatus(TaskStatus.WAITING);
 
         Map<String, List<EncodeConvertRule>> typeMap = param.getRules().stream().collect(Collectors.groupingBy(EncodeConvertRule::getType));

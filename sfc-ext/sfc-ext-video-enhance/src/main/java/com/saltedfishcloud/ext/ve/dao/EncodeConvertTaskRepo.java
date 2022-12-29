@@ -4,6 +4,7 @@ import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,7 +13,7 @@ public interface EncodeConvertTaskRepo extends JpaRepository<EncodeConvertTask, 
     EncodeConvertTask findByTaskId(String taskId);
 
     @Modifying
-    @Query("UPDATE EncodeConvertTask SET taskStatus = ?2 WHERE taskId = ?1")
+    @Query("UPDATE EncodeConvertTask SET taskStatus = :status WHERE taskId = :taskId")
     @Transactional
-    void updateStatusByTaskId(String taskId, int status);
+    void updateStatusByTaskId(@Param("taskId") String taskId,@Param("status") int status);
 }

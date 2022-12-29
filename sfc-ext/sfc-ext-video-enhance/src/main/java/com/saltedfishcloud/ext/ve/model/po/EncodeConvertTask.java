@@ -1,10 +1,13 @@
 package com.saltedfishcloud.ext.ve.model.po;
 
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 @Entity
 @Table(name = "encode_convert_task")
@@ -34,4 +37,7 @@ public class EncodeConvertTask extends AuditModel {
      * 任务JSON参数
      */
     private String params;
+
+    @Transient
+    private ProgressRecord progress;
 }

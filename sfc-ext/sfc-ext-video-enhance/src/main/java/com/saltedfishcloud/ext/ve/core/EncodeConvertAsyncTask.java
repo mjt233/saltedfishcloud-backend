@@ -100,6 +100,7 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
             resourceService.writeResource(param.getTarget(), new PathResource(outputFile));
             log.info("{}保存完毕：{}", LOG_PREFIX, param.getTarget().getPath() + File.separator + param.getTarget().getName());
             Files.deleteIfExists(Paths.get(outputFile));
+            log.info("{}删除临时输出文件：{}", LOG_PREFIX, outputFile);
             return new AsyncTaskResult(AsyncTaskResult.Status.SUCCESS, 10);
         } catch (Exception e) {
             log.error("{}编码转换失败", LOG_PREFIX, e);
