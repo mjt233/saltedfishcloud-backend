@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.dto;
 
 import com.xiaotao.saltedfishcloud.model.po.CollectionField;
-import com.xiaotao.saltedfishcloud.utils.ByteSize;
+import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

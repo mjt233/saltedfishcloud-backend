@@ -24,5 +24,21 @@ public interface ResourceProtocolHandler {
      */
     String getProtocolName();
 
+    /**
+     * 是否支持写入资源
+     */
+    default boolean isWriteable() {
+        return false;
+    }
+
+    /**
+     * 执行资源写入
+     * @param param     资源定位请求参数
+     * @param resource  待写入资源
+     */
+    default void writeResource(ResourceRequest param, Resource resource) throws IOException {
+
+    }
+
 
 }

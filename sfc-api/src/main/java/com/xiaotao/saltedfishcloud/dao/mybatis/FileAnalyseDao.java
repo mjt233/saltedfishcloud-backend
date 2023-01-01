@@ -31,10 +31,34 @@ public interface FileAnalyseDao {
     Long getDirCount();
 
     /**
+     * 取目录数
+     */
+    @Select("SELECT count(*) FROM file_table WHERE uid = 0 AND size = -1")
+    Long getPublicDirCount();
+
+    /**
+     * 取目录数
+     */
+    @Select("SELECT count(*) FROM file_table WHERE uid != 0 AND size = -1")
+    Long getUserDirCount();
+
+    /**
      * 取文件数
      */
     @Select("SELECT count(*) FROM file_table WHERE size != -1")
     Long getFileCount();
+
+    /**
+     * 取公共网盘文件数
+     */
+    @Select("SELECT count(*) FROM file_table WHERE uid = 0 AND size != -1 ")
+    Long getPublicFileCount();
+
+    /**
+     * 取公共网盘文件数
+     */
+    @Select("SELECT count(*) FROM file_table WHERE uid != 0 && size != -1 ")
+    Long getUserFileCount();
 
     @Select("SELECT SUM(size) FROM file_table WHERE size != -1 AND uid = 123123")
     Long test();

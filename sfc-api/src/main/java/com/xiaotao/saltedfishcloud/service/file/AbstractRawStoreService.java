@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -288,7 +289,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public boolean exist(int uid, String path) {
+    public boolean exist(int uid, String path) throws IOException {
         return handler.exist(getPath(uid, path));
     }
 
@@ -341,5 +342,10 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
             tempStoreService = new DefaultTempStoreService(handler, tempRoot);
         }
         return tempStoreService;
+    }
+
+    @Override
+    public List<FileSystemStatus> getStatus() {
+        return Collections.emptyList();
     }
 }

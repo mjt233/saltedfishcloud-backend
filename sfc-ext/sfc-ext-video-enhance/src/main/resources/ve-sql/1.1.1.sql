@@ -1,0 +1,1 @@
+ALTER TABLE encode_convert_task CHANGE task_id task_id CHAR(128) COMMENT '系统的异步任务id';

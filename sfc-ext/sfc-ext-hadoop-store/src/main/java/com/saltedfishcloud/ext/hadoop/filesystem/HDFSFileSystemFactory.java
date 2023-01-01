@@ -5,9 +5,7 @@ import com.saltedfishcloud.ext.hadoop.HDFSUtils;
 import com.saltedfishcloud.ext.hadoop.store.HDFSStoreHandler;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import lombok.Setter;
@@ -20,35 +18,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class HDFSFileSystemFactory implements DiskFileSystemFactory {
-    private static final String LOG_PREFIX = "[HDFS]";
+public class HDFSFileSystemFactory extends AbstractRawDiskFileSystemFactory<HDFSProperties, RawDiskFileSystem> {
     @Setter
     private ThumbnailService thumbnailService;
-
-    private final Map<HDFSProperties, HDFSFileSystem> cache = new ConcurrentHashMap<>();
-
-    @Override
-    public void clearCache(Collection<Map<String, Object>> params) {
-        Set<HDFSProperties> collect = params.stream().map(e -> {
-            try {
-                return this.checkAndGetProperties(e);
-            } catch (Exception err) {
-                log.error("{}清理缓存解析参数出错:{}", LOG_PREFIX, e);
-                return null;
-            }
-        }).filter(Objects::nonNull).collect(Collectors.toSet());
-        for (Map.Entry<HDFSProperties, HDFSFileSystem> entry : cache.entrySet()) {
-            try {
-                if(!collect.contains(entry.getKey())) {
-                    entry.getValue().close();
-                    cache.remove(entry.getKey());
-                }
-            } catch (IOException e) {
-                log.error("[HDFS分布式存储]关闭文件系统异常：" + entry.getKey(), e);
-            }
-        }
-    }
-
     private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
             .isPublic(true)
             .protocol("hdfs")
@@ -65,47 +37,10 @@ public class HDFSFileSystemFactory implements DiskFileSystemFactory {
                     .build()))
             .build();
 
-    @Override
-    public DiskFileSystem getFileSystem(Map<String, Object> params) throws FileSystemParameterException {
-        HDFSProperties properties = checkAndGetProperties(params);
-        HDFSFileSystem hdfsFileSystem = cache.get(properties);
-        if (hdfsFileSystem != null) {
-            return hdfsFileSystem;
-        }
-
-        FileSystem fileSystem = null;
-        try {
-            fileSystem = HDFSUtils.getFileSystem(properties);
-            HDFSStoreHandler storeHandler = new HDFSStoreHandler(fileSystem);
-            hdfsFileSystem = new HDFSFileSystem(storeHandler, properties.getRoot(), fileSystem);
-            hdfsFileSystem.setThumbnailService(thumbnailService);
-            cache.put(properties, hdfsFileSystem);
-            return hdfsFileSystem;
-        } catch (Exception e) {
-            if (fileSystem != null) {
-                try {
-                    fileSystem.close();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                    throw new FileSystemParameterException("异常：", ex);
-                }
-            }
-            throw new FileSystemParameterException("异常：" + e.getMessage(), e);
-        }
-    }
 
     @Override
-    public DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException {
-        return getFileSystem(params);
-    }
+    public HDFSProperties parseProperty(Map<String, Object> params) {
 
-    @Override
-    public DiskFileSystemDescribe getDescribe() {
-        return DESCRIBE;
-    }
-
-
-    public HDFSProperties checkAndGetProperties(Map<String, Object> params) {
         CollectionUtils.validMap(params)
                 .addField("url")
                 .addField("root")
@@ -116,5 +51,36 @@ public class HDFSFileSystemFactory implements DiskFileSystemFactory {
                 .root(params.get("root").toString())
                 .user(params.get("user").toString())
                 .build();
-    };
+    }
+
+    @Override
+    public RawDiskFileSystem generateDiskFileSystem(HDFSProperties property) throws IOException {
+
+        RawDiskFileSystem hdfsFileSystem;
+        FileSystem fileSystem = null;
+        try {
+            fileSystem = HDFSUtils.getFileSystem(property);
+            HDFSStoreHandler storeHandler = new HDFSStoreHandler(fileSystem);
+            hdfsFileSystem = new RawDiskFileSystem(storeHandler, property.getRoot());
+            hdfsFileSystem.setThumbnailService(thumbnailService);
+            return hdfsFileSystem;
+        } catch (Exception e) {
+            if (fileSystem != null) {
+                try {
+                    fileSystem.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    throw new IOException("异常：", ex);
+                }
+            }
+            throw new IOException("异常：" + e.getMessage(), e);
+        }
+    }
+
+
+    @Override
+    public DiskFileSystemDescribe getDescribe() {
+        return DESCRIBE;
+    }
+
 }

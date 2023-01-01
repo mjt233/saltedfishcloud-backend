@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
-import com.xiaotao.saltedfishcloud.utils.ByteSize;
+import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

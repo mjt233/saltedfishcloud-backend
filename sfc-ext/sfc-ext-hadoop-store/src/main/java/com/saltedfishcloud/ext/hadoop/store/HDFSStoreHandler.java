@@ -11,15 +11,21 @@ import org.apache.hadoop.fs.Path;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandler {
+public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandler, Closeable {
     private final FileSystem fs;
     public HDFSStoreHandler(FileSystem fs) {
         super(fs);
         this.fs = fs;
+    }
+
+    @Override
+    public void close() throws IOException {
+        fs.close();
     }
 
     @Override

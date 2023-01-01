@@ -28,7 +28,7 @@ public class DefaultTempStoreService implements TempStoreService {
     }
 
     @Override
-    public boolean exist(String path) {
+    public boolean exist(String path) throws IOException {
         return handler.exist(StringUtils.appendPath(tempRootDir, path));
     }
 

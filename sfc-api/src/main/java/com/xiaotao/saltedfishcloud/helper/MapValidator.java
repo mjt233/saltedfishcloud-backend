@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.helper;
 
 import com.xiaotao.saltedfishcloud.model.NameValueType;
+import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public class MapValidator<K,V> {
      * @param key       待校验的key
      * @param name      该key的含义
      */
-    public MapValidator<K,V> addField(K key, String name) {
+    public MapValidator<K,V> addAliasField(K key, String name) {
         validMap.put(key, name);
         return this;
     }
@@ -38,8 +39,12 @@ public class MapValidator<K,V> {
      * 添加校验信息字段
      * @param key       待校验的key
      */
-    public MapValidator<K,V> addField(K key) {
-        validMap.put(key, key.toString());
+    public MapValidator<K,V> addField(K ...key) {
+        if (key != null) {
+            for (K k : key) {
+                validMap.put(k, k.toString());
+            }
+        }
         return this;
     }
 
@@ -62,5 +67,22 @@ public class MapValidator<K,V> {
         if (!invalidPropertyList.isEmpty()) {
             throw new IllegalArgumentException("【" + String.join(",", invalidPropertyList) + "】不能为空");
         }
+    }
+
+    /**
+     * 执行校验，并将属性复制到bean对象中
+     */
+    public void validAndCopyToBean(Object obj) {
+        valid();
+        ObjectUtils.copyMapToBean(map, obj);
+    }
+
+    /**
+     * 执行校验，并将map转为bean
+     * @param clazz     待转换的bean class
+     */
+    public <T> T validAndToBean(Class<T> clazz) {
+        valid();
+        return ObjectUtils.mapToBean(map, clazz);
     }
 }

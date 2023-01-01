@@ -9,7 +9,7 @@ COPY . /saltedfish
 
 RUN mvn install package
 
-FROM openjdk:8-jre-alpine
+FROM openjdk:11-jre-alpine
 
 WORKDIR /saltedfish
 

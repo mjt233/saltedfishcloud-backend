@@ -17,7 +17,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
-import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
+import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;

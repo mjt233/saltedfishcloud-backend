@@ -1,8 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import io.jsonwebtoken.lang.Assert;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
 
 /**
  * 默认的唯一存储服务，适用于使用基类为{@link AbstractRawStoreService}的存储服务创建。
@@ -31,5 +34,10 @@ public class DefaultUniqueStoreService extends AbstractUniqueStoreService {
     @Override
     public String getStoreRoot() {
         return rawStoreService.getStoreRoot();
+    }
+
+    @Override
+    public List<FileSystemStatus> getStatus() {
+        return rawStoreService.getStatus();
     }
 }

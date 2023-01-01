@@ -13,7 +13,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
-import com.xiaotao.saltedfishcloud.service.share.entity.ShareInfo;
+import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;

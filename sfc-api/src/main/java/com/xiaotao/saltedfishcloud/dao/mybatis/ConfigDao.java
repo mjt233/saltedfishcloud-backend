@@ -1,12 +1,13 @@
 package com.xiaotao.saltedfishcloud.dao.mybatis;
 
-import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ConfigDao {
 
@@ -16,6 +17,8 @@ public interface ConfigDao {
     @Select("SELECT `value` FROM config WHERE `key` = #{key}")
     String getConfig(String key);
 
+    @MapKey("key")
+    List<Pair<String, String>> listConfig(@Param("operator") String operator,@Param("keyPattern") String keyPattern);
 
     /**
      * 读取一条配置

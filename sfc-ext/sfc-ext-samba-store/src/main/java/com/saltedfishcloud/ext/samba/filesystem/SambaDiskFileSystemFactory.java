@@ -2,11 +2,9 @@ package com.saltedfishcloud.ext.samba.filesystem;
 
 import com.saltedfishcloud.ext.samba.SambaDirectRawStoreHandler;
 import com.saltedfishcloud.ext.samba.SambaProperty;
-import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
@@ -14,11 +12,13 @@ import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
-public class SambaDiskFileSystemFactory implements DiskFileSystemFactory {
+public class SambaDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<SambaProperty, RawDiskFileSystem> {
     @Autowired
     private ThumbnailService thumbnailService;
     private final Map<SambaProperty, SambaDiskFileSystem> CACHE = new ConcurrentHashMap<>();
@@ -40,7 +40,8 @@ public class SambaDiskFileSystemFactory implements DiskFileSystemFactory {
                     .build()))
             .build();
 
-    private SambaProperty parseProperty(Map<String, Object> params) {
+    @Override
+    public SambaProperty parseProperty(Map<String, Object> params) {
 
         CollectionUtils.validMap(params)
                 .addField("path")
@@ -57,44 +58,12 @@ public class SambaDiskFileSystemFactory implements DiskFileSystemFactory {
                 .build();
     }
 
-    protected SambaDiskFileSystem generateDiskFileSystem(SambaProperty property) {
+    @Override
+    public RawDiskFileSystem generateDiskFileSystem(SambaProperty property) throws IOException {
         SambaDirectRawStoreHandler handler = new SambaDirectRawStoreHandler(property);
-        SambaDiskFileSystem fileSystem = new SambaDiskFileSystem(handler, property.getBasePath());
+        RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getBasePath());
         fileSystem.setThumbnailService(thumbnailService);
         return fileSystem;
-    }
-
-    @Override
-    public DiskFileSystem getFileSystem(Map<String, Object> params) throws FileSystemParameterException {
-        SambaProperty sambaProperty = parseProperty(params);
-        return CACHE.computeIfAbsent(sambaProperty, key -> generateDiskFileSystem(sambaProperty));
-    }
-
-    @Override
-    public DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException {
-        SambaProperty sambaProperty = parseProperty(params);
-        RawDiskFileSystem rawDiskFileSystem = generateDiskFileSystem(sambaProperty);
-        boolean exist = rawDiskFileSystem.exist(0, "/");
-        if (!exist) {
-            throw new FileSystemParameterException("路径不存在");
-        }
-        return rawDiskFileSystem;
-    }
-
-    @Override
-    public void clearCache(Collection<Map<String, Object>> params) {
-        Set<SambaProperty> paramSet = params.stream().map(this::parseProperty).collect(Collectors.toSet());
-        for (Map.Entry<SambaProperty, SambaDiskFileSystem> entry : CACHE.entrySet()) {
-            try {
-                if (!paramSet.contains(entry.getKey())) {
-                    entry.getValue().close();
-                    CACHE.remove(entry.getKey());
-                }
-            } catch (IOException err) {
-                err.printStackTrace();
-            }
-        }
-
     }
 
     @Override

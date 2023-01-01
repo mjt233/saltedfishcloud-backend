@@ -18,6 +18,11 @@ public interface TaskContext<T> {
      */
     void onFinish(AsyncTackCallback callback);
 
+    /**
+     * 任务被管理器调度执行时触发的时间回调
+     */
+    void onStart(AsyncTackCallback callback);
+
 
     /**
      * 任务执行是否已完成

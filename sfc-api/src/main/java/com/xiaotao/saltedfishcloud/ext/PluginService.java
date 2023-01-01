@@ -22,4 +22,10 @@ public interface PluginService {
      * @param path  静态资源路径（相对于的插件静态资源目录的路径）
      */
     Resource getPluginStaticResource(String name, String path) throws PluginNotFoundException;
+
+    /**
+     * 获取所有插件的自动加载资源的合并资源
+     * @param type  资源类型（后缀名）
+     */
+    Resource getMergeAutoLoadResource(String type);
 }

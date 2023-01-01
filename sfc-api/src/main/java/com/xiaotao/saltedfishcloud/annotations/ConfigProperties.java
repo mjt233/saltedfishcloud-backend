@@ -11,7 +11,7 @@ import java.lang.annotation.*;
 public @interface ConfigProperties {
 
     /**
-     * 配置标题
+     * 配置项
      */
     String value();
 
@@ -29,6 +29,16 @@ public @interface ConfigProperties {
      * 输入类型，可选text、select、checkbox
      */
     String inputType() default "text";
+
+    /**
+     * 是否必填
+     */
+    boolean required() default false;
+
+    /**
+     * 显示的标题名称
+     */
+    String title() default "";
 
     /**
      * 所在配置组

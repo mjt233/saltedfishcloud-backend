@@ -102,42 +102,7 @@ public class ExtUtils {
                             refClass = ExtUtils.class.getClassLoader().loadClass(e.getTypeRef());
                         }
 
-                        // 读取引用的类配置实体信息
-                        ConfigPropertiesEntity entity = refClass.getAnnotation(ConfigPropertiesEntity.class);
-
-                        // 读取所有声明的配置组信息
-                        List<ConfigNode> groupList = Arrays.stream(entity.groups()).map(g -> {
-                            ConfigNode node = new ConfigNode();
-                            node.setName(g.id());
-                            node.setTitle(g.name());
-                            return node;
-                        }).collect(Collectors.toList());
-                        Map<String, ConfigNode> groupMap = groupList.stream().collect(Collectors.toMap(ConfigNode::getName, Function.identity()));
-
-                        // 读取配置实体的各个字段信息，并按所属组进行分组后，设置到所属组下
-                        Map<String, List<ConfigNode>> subGroupMap = Arrays.stream(refClass.getDeclaredFields())
-                                .filter(f -> f.getAnnotation(ConfigProperties.class) != null)
-                                .map(f -> {
-                                    ConfigProperties p = f.getAnnotation(ConfigProperties.class);
-                                    ConfigNode configNode = new ConfigNode();
-                                    configNode.setDescribe(p.describe());
-                                    configNode.setDefaultValue(p.defaultValue());
-                                    configNode.setInputType(p.inputType());
-                                    configNode.setTitle(p.value());
-                                    configNode.setName(f.getName());
-                                    configNode.setGroupId(p.group());
-                                    configNode.setMask(p.isMask());
-                                    return configNode;
-                                }).collect(Collectors.groupingBy(ConfigNode::getGroupId));
-                        subGroupMap.forEach((groupId, nodes) -> {
-                            ConfigNode parent = groupMap.get(groupId);
-                            if (parent == null) {
-                                String member = nodes.stream().map(ConfigNode::getName).collect(Collectors.joining());
-                                throw new RuntimeException("找不到配置组：【" + groupId + "】 组成员：" + member);
-                            }
-                            parent.setNodes(nodes);
-                        });
-                        e.setNodes(groupList);
+                        e.setNodes(new ArrayList<>(PropertyUtils.getConfigNodeFromEntityClass(refClass).values()));
                     } catch (ClassNotFoundException ex) {
                         errMsg.append("找不到类型引用：").append(e.getTypeRef());
                     }

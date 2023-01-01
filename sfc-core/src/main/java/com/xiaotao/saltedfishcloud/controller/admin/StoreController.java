@@ -1,14 +1,17 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordSyncService;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -27,13 +30,13 @@ public class StoreController {
     @Resource
     private SysProperties sysProperties;
 
-    /**
-     * 获取存储状态
-     */
-    @GetMapping("state")
-    public JsonResult getStoreState() {
-        return JsonResultImpl.getInstance(adminService.getStoreState());
-    }
+//    /**
+//     * 获取存储状态
+//     */
+//    @GetMapping("state")
+//    public JsonResult getStoreState() {
+//        return JsonResultImpl.getInstance(adminService.getStoreState());
+//    }
 
     /**
      * 立即执行同步

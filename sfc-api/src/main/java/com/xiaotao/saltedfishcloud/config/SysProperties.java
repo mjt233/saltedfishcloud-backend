@@ -1,23 +1,15 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
-import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
-import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.Data;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-
-import java.io.IOException;
 
 @Configuration
 @ConfigurationProperties(prefix = "sys")
@@ -30,7 +22,6 @@ public class SysProperties implements InitializingBean {
     private Common common;
     private Store store;
     private Sync sync;
-    private Ftp ftp;
 
 
 
@@ -114,56 +105,6 @@ public class SysProperties implements InitializingBean {
         }
     }
 
-    @Data
-    @ConfigPropertiesEntity(groups = {
-        @ConfigPropertiesGroup(id = "base", name = "基本信息"),
-        @ConfigPropertiesGroup(id = "passive", name = "被动传输")
-    })
-    public static class Ftp {
-
-        /**
-         * 是否启用FTP服务
-         */
-        @ConfigProperties(value = "是否启用", inputType = "checkbox", defaultValue = "true")
-        private boolean ftpEnable = true;
-
-        /**
-         * FTP控制监听地址
-         */
-        @ConfigProperties(value = "控制端口监听地址", defaultValue = "21")
-        private String listenAddr = "0.0.0.0";
-
-        /**
-         * 主控制端口
-         */
-        @ConfigProperties(value = "主控制端口", defaultValue = "21", describe = "用于连接控制的端口")
-        private int controlPort = 21;
-
-        /**
-         * 被动传输地址
-         */
-        @ConfigProperties(value = "被动传输地址", defaultValue = "localhost",describe = "被动模式下客户端使用连接传输数据的地址", group = "passive")
-        private String passiveAddr = "localhost";
-
-        /**
-         * 被动传输端口范围
-         */
-        @ConfigProperties(
-                value = "被动传输端口范围",
-                defaultValue = "20000-30000",
-                describe = "被动模式下服务器开放的数据传输端口范围",
-                group = "passive"
-        )
-        private String passivePort = "20000-30000";
-
-        public void setFtpEnable(Object ftpEnable) {
-            this.ftpEnable = TypeUtils.toBoolean(ftpEnable);
-        }
-
-        public void setControlPort(Object controlPort) {
-            this.controlPort = TypeUtils.toNumber(Integer.class, controlPort);
-        }
-    }
 
     public void setVersion(String v) {
         version = Version.valueOf(v);

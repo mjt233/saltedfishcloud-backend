@@ -8,7 +8,7 @@ import java.io.IOException;
 
 public class SambaDiskFileSystem extends RawDiskFileSystem implements Closeable {
     private final SambaDirectRawStoreHandler handler;
-    public SambaDiskFileSystem(SambaDirectRawStoreHandler storeHandler, String basePath) {
+    public SambaDiskFileSystem(SambaDirectRawStoreHandler storeHandler, String basePath) throws IOException {
         super(storeHandler, basePath);
         this.handler = storeHandler;
     }

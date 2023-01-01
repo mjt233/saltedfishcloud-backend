@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>11</java.version>
-        <api.version>2.0.0</api.version>
+        <api.version>2.2.0</api.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -24,6 +24,10 @@
         <module>sfc-ext-mp3-thumbnail</module>
         <module>sfc-ext-minio-store</module>
         <module>sfc-ext-samba-store</module>
+        <module>sfc-ext-sftp-store</module>
+        <module>sfc-ext-ftp-store</module>
+        <module>sfc-ext-ftp-server</module>
+        <module>sfc-ext-video-enhance</module>
     </modules>
 
 
@@ -32,6 +36,12 @@
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
             <version>${api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.11.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -62,7 +72,24 @@
 
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.7</version>
+                <configuration>
+                    <delimiters>
+                        <delimiter>^*^</delimiter>
+                    </delimiters>
+                    <useDefaultDelimiters>false</useDefaultDelimiters>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>

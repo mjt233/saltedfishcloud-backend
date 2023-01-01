@@ -22,8 +22,8 @@
 | HDFS  | sfc-ext-hadoop-store |
 | MinIO | sfc-ext-minio-store  |
 | Samba | sfc-ext-samba-store  |
+| SFTP  | sfc-ext-sftp-store   |
 
-`ftp`、`sftp`待开发
 
 > 注：外部存储挂载功能为实验性功能，机制尚未完善，仅保证正常情况下的文件基本读写操作
 

@@ -17,10 +17,14 @@ nav:
     - 衍生项目: quick-start/other.md
   - 插件:
       - extension/index.md
+      - 插件：ftp-server: extension/ftp-server.md
       - 插件：mp3-thumbnail: extension/mp3-thumbnail.md
       - 插件：hadoop-store: extension/hadoop-store.md
       - 插件：minio-store: extension/minio-store.md
       - 插件：samba-store: extension/samba-store.md
+      - 插件：sftp-store: extension/sftp-store.md
+      - 插件：ftp-store: extension/ftp-store.md
+      - 插件：video-enhance: extension/video-enhance.md
   - 开发手册:
       - develop/index.md
       - 项目构建: develop/build.md

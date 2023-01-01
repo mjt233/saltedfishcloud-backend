@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem.factory;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
-import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalDirectRawStoreHandler;
@@ -10,6 +9,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class LocalFileSystemFactory implements DiskFileSystemFactory, InitializingBean {
+public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<String, RawDiskFileSystem> implements InitializingBean {
     private static final List<ConfigNode> CONFIG_NODE_LIST = new ArrayList<>();
     private static final DiskFileSystemDescribe DESCRIBE;
     static {
@@ -57,31 +57,19 @@ public class LocalFileSystemFactory implements DiskFileSystemFactory, Initializi
         }
     }
 
-    @Override
-    public DiskFileSystem getFileSystem(Map<String, Object> params) throws FileSystemParameterException {
-        checkParams(params);
-        String path = params.get("path").toString();
 
-        // todo 需要缓存失效策略
-        return CACHE.computeIfAbsent(path, key -> generateFileSystem(params));
+    @Override
+    public String parseProperty(Map<String, Object> params) {
+        checkParams(params);
+        return params.get("path").toString();
     }
 
-    protected RawDiskFileSystem generateFileSystem(Map<String, Object> params) {
-        checkParams(params);
-        String path = params.get("path").toString();
+    @Override
+    public RawDiskFileSystem generateDiskFileSystem(String path) throws IOException {
         LocalDirectRawStoreHandler handler = new LocalDirectRawStoreHandler();
         RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(handler, path);
         rawDiskFileSystem.setThumbnailService(thumbnailService);
         return rawDiskFileSystem;
-    }
-
-    @Override
-    public DiskFileSystem testGet(Map<String, Object> params) throws FileSystemParameterException {
-        RawDiskFileSystem fileSystem = generateFileSystem(params);
-        if(fileSystem.getStoreHandler().exist(fileSystem.getBasePath())) {
-            return fileSystem;
-        }
-        throw new FileSystemParameterException("找不到路径：" + fileSystem.getBasePath());
     }
 
     @Override

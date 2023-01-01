@@ -41,6 +41,10 @@ public class TypeUtils {
         return Number.class.isAssignableFrom(type);
     }
 
+    public static Long toLong(Object input) {
+        return toNumber(Long.class, input);
+    }
+
     /**
      * 数字类型之间相互转换
      * @param target    目标简单数字类型
@@ -104,7 +108,7 @@ public class TypeUtils {
      * @return      是boolean为true，否则false
      */
     public static boolean isBoolean(Class<?> type) {
-        return Boolean.class.isAssignableFrom(type);
+        return type == boolean.class || Boolean.class.isAssignableFrom(type);
     }
 
     /**

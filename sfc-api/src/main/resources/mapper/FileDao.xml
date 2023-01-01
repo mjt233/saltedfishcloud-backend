@@ -7,4 +7,37 @@
         VALUES
             (#{file.uid}, #{file.name}, #{file.node}, #{file.size}, #{file.md5}, #{file.mountId},#{file.createdAt}, #{file.updatedAt});
     </insert>
+
+    <select id="getFilesInfo" resultType="com.xiaotao.saltedfishcloud.model.po.file.FileInfo">
+        SELECT name, size, md5, node AS parent FROM file_table WHERE node=#{nodeId} AND name in
+        <foreach collection='names' item='name' open='(' separator=',' close=')'>
+            #{name}
+        </foreach>
+        AND uid=#{uid}
+    </select>
+
+    <delete id="deleteDirsRecord">
+        DELETE FROM file_table WHERE node IN
+        <foreach collection='nodes' item='node' open='(' separator=',' close=')'>
+            #{node}
+        </foreach>
+        AND uid = #{uid}
+    </delete>
+
+    <delete id="deleteRecords">
+
+        DELETE FROM file_table WHERE node = #{node} AND name in
+        <foreach collection='name' item='item' open='(' separator=',' close=')'>
+           #{item}
+        </foreach>
+        AND uid=#{uid}
+    </delete>
+
+    <select id="getValidFileMD5s" resultType="java.lang.String">
+        SELECT md5 FROM file_table WHERE md5 in
+        <foreach collection='md5s' item='md5' open='(' separator=',' close=')'>
+           #{md5},
+       </foreach>
+         GROUP BY md5
+    </select>
 </mapper>

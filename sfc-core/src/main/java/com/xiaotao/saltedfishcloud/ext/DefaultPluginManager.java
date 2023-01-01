@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.Result;
+import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.ClassUtils;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -277,6 +278,29 @@ public class DefaultPluginManager implements PluginManager {
         }
     }
 
+    private void validPluginInfo(PluginInfo pluginInfo) {
+        if (!StringUtils.hasText(pluginInfo.getVersion())) {
+            throw new RuntimeException("插件缺失有效的version");
+        }
+        try {
+            Version.valueOf(pluginInfo.getVersion());
+        } catch (RuntimeException e) {
+            log.error("插件version格式错误");
+            throw e;
+        }
+
+        if (!StringUtils.hasText(pluginInfo.getApiVersion())) {
+            throw new RuntimeException("插件缺失有效的apiVersion");
+        }
+        try {
+            Version.valueOf(pluginInfo.getApiVersion());
+        } catch (RuntimeException e) {
+            log.error("插件apiVersion格式错误");
+            throw e;
+        }
+
+    }
+
     @Override
     public void register(Resource pluginResource, ClassLoader classLoader) throws IOException {
         URL pluginUrl = pluginResource.getURL();
@@ -287,6 +311,7 @@ public class DefaultPluginManager implements PluginManager {
             // 读取插件基本信息
             log.info("{}加载插件：{}",LOG_PREFIX, StringUtils.getURLLastName(pluginUrl));
             pluginInfo  = getPluginInfoFromLoader(classLoader);
+            this.validPluginInfo(pluginInfo);
 
             // 读取配置项
             configNodeGroups = getPluginConfigNodeFromLoader(classLoader);
@@ -319,7 +344,7 @@ public class DefaultPluginManager implements PluginManager {
 
     @Override
     public void register(Resource pluginResource) throws IOException {
-        URLClassLoader loader = new URLClassLoader(new URL[]{pluginResource.getURL()}, null);
+        ClassLoader loader = PluginClassLoaderFactory.createPurePluginClassLoader(pluginResource.getURL());
         register(pluginResource, loader);
     }
 

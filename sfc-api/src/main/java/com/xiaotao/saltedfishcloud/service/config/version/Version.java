@@ -15,7 +15,7 @@ public final class Version implements Comparable<Version>{
     @Getter
     private int bugFixVer = 0;
     @Getter
-    private VersionTag tag = VersionTag.SNAPSHOT;
+    private VersionTag tag;
 
     private String stringCache;
 
@@ -24,6 +24,15 @@ public final class Version implements Comparable<Version>{
      */
     public static Version getEarliestVersion() {
         return valueOf("1.0.0.0-SNAPSHOT");
+    }
+
+    /**
+     * 0版本
+     */
+    private static final Version ZERO_VERSION = Version.valueOf("0.0.0");
+
+    public static Version getZeroVersion() {
+        return ZERO_VERSION;
     }
 
     /**
@@ -94,7 +103,7 @@ public final class Version implements Comparable<Version>{
      * @return
      */
     public int toInteger() {
-        return bigVer * 100000000 + mdVer * 100000 + smVer * 100 + bugFixVer;
+        return bigVer * 10000000 + mdVer * 100000 + smVer * 100 + bugFixVer;
     }
 
     /**

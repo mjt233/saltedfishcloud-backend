@@ -1,13 +1,13 @@
 package com.xiaotao.saltedfishcloud.controller;
 
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.context.HttpRequestResponseHolder;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -68,11 +69,19 @@ public class ControllerAdvice {
 
 
     @ExceptionHandler(JsonException.class)
-    public JsonResult handle(JsonException e) {
+    public JsonResult handle(JsonException e, HttpServletResponse response) {
         if (log.isDebugEnabled()) {
             log.error("{}错误：",LOG_PREFIX, e);
         }
-        setStatusCode(e.getRes().getCode());
+
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes != null) {
+            Boolean isThumbnail = TypeUtils.toBoolean(requestAttributes.getAttribute("isThumbnail", RequestAttributes.SCOPE_REQUEST));
+            if (isThumbnail) {
+                response.setStatus(404);
+                return null;
+            }
+        }
         return e.getRes();
     }
 
@@ -120,6 +129,14 @@ public class ControllerAdvice {
 
     private JsonResult responseError(int code, String message) {
         setStatusCode(code);
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes != null) {
+            Boolean isThumbnail = TypeUtils.toBoolean(requestAttributes.getAttribute("isThumbnail", RequestAttributes.SCOPE_REQUEST));
+            if (isThumbnail) {
+                return null;
+            }
+        }
+
         return JsonResultImpl.getInstance(code, null, message);
     }
 

@@ -1,12 +1,17 @@
 package com.xiaotao.saltedfishcloud.controller;
 
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -52,6 +57,22 @@ public class MountPointController {
     @GetMapping("listByUid")
     public JsonResult listByUid(@UID @RequestParam("uid") long uid) {
         return JsonResultImpl.getInstance(mountPointService.findByUid(uid));
+    }
+
+    /**
+     * 根据挂载点id获取挂载点信息
+     */
+    @GetMapping("getById")
+    public JsonResult getById(@RequestParam("id") long id) {
+        MountPoint mountPoint = mountPointService.findById(id);
+        if (mountPoint != null) {
+            if(!UIDValidator.validate(mountPoint.getUid(), true)) {
+                throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+            }
+        } else {
+            throw new JsonException(CommonError.RESOURCE_NOT_FOUND);
+        }
+        return JsonResultImpl.getInstance(mountPoint);
     }
 
     /**

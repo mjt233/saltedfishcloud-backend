@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.config;
 import com.xiaotao.saltedfishcloud.interceptor.ProtectBlocker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
