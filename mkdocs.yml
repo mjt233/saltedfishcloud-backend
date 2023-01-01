@@ -24,6 +24,7 @@ nav:
       - 插件：samba-store: extension/samba-store.md
       - 插件：sftp-store: extension/sftp-store.md
       - 插件：ftp-store: extension/ftp-store.md
+      - 插件：video-enhance: extension/video-enhance.md
   - 开发手册:
       - develop/index.md
       - 项目构建: develop/build.md

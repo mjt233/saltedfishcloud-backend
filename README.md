@@ -88,3 +88,4 @@ java -jar sfc-core.jar --spring.config.import=file:config.yml
 | sftp-store    | 提供基于SFTP文件传输的存储读写支持（挂载存储）               |
 | ftp-store     | 提供基于FTP文件传输的存储读写支持（挂载存储）                |
 | ftp-server    | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源             |
+| video-enhance | 基于ffmpeg的视频增强服务，支持播放选择字幕、视频转码功能         |
