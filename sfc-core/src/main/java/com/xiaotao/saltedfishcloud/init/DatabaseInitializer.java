@@ -52,7 +52,6 @@ public class DatabaseInitializer implements ApplicationRunner {
                 ScriptUtils.executeSqlScript(con, resource);
                 log.info("[数据库]数据表初始化完成（好耶）");
             }
-            con.close();
         }
 
 
