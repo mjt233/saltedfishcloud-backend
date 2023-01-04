@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.desktop;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.DesktopComponentConfigRepo;
-import com.xiaotao.saltedfishcloud.model.DesktopComponent;
 import com.xiaotao.saltedfishcloud.model.po.DesktopComponentConfig;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +9,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
 public class DesktopComponentConfigServiceImpl implements DesktopComponentConfigService {

@@ -1,0 +1,34 @@
+[
+  {
+    "name": "dateTip",
+    "title": "日期显示",
+    "describe": "显示问候语和当前时间",
+    "icon": "mdi-clock-outline",
+    "showOrder": 0,
+    "config": [
+      {
+        "name": "message",
+        "title": "问候语",
+        "inputType": "text",
+        "required": false,
+        "defaultValue": ""
+      }
+    ]
+  },
+  {
+    "name": "iframe",
+    "title": "网页嵌套",
+    "describe": "嵌套展示另一个网页",
+    "icon": "mdi-web",
+    "showOrder": 0,
+    "config": [
+      {
+        "name": "src",
+        "title": "网址",
+        "inputType": "text",
+        "required": false,
+        "defaultValue": ""
+      }
+    ]
+  }
+]
