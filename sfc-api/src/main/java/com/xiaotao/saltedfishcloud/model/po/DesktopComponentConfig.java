@@ -51,4 +51,9 @@ public class DesktopComponentConfig extends AuditModel {
      * 布局占用的单位高度
      */
     private Integer height;
+
+    /**
+     * 是否使用卡片样式
+     */
+    private Integer useCard;
 }
