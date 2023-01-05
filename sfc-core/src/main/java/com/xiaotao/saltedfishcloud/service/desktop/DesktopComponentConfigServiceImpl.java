@@ -17,7 +17,7 @@ public class DesktopComponentConfigServiceImpl implements DesktopComponentConfig
 
     @Override
     public List<DesktopComponentConfig> listByUid(Long uid) {
-        return Optional.ofNullable(repo.findByUid(uid)).orElseGet(Collections::emptyList);
+        return Optional.ofNullable(repo.findByUidOrderByShowOrder(uid)).orElseGet(Collections::emptyList);
     }
 
     @Override

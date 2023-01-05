@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 public interface DesktopComponentConfigRepo extends JpaRepository<DesktopComponentConfig, Long> {
-    List<DesktopComponentConfig> findByUid(Long uid);
+    List<DesktopComponentConfig> findByUidOrderByShowOrder(Long uid);
 
     DesktopComponentConfig findByName(String name);
 

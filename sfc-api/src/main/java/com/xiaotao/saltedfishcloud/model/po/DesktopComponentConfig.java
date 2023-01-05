@@ -56,4 +56,9 @@ public class DesktopComponentConfig extends AuditModel {
      * 是否使用卡片样式
      */
     private Integer useCard;
+
+    /**
+     * 是否启用
+     */
+    private Integer enabled;
 }
