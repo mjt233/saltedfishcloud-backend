@@ -30,5 +30,33 @@
         "defaultValue": ""
       }
     ]
+  },
+  {
+    "name": "custom-desktop-component",
+    "title": "自定义组件",
+    "describe": "高级自定义玩法~",
+    "icon": "mdi-tools",
+    "showOrder": 0,
+    "config": [
+      {
+        "name": "tag",
+        "title": "组件/标签",
+        "inputType": "text",
+        "required": false,
+        "defaultValue": ""
+      },
+      {
+        "name": "slotHtml",
+        "title": "插槽html",
+        "inputType": "template",
+        "template": "form-textarea",
+        "params": {
+          "title": "插槽html"
+        },
+        "isRow": true,
+        "required": false,
+        "defaultValue": ""
+      }
+    ]
   }
 ]

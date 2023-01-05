@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -124,6 +125,16 @@ public class ConfigNode {
      * 是否必填
      */
     private boolean required;
+
+    /**
+     * 额外参数，当类型为模板时会传递给模板
+     */
+    private Map<String, Object> params;
+
+    /**
+     * 是否独占一行
+     */
+    private Boolean isRow;
 
     public ConfigNode useTemplate(String template) {
         this.setInputType("template");
