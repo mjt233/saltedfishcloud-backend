@@ -49,9 +49,9 @@
         "name": "slotHtml",
         "title": "插槽html",
         "inputType": "template",
-        "template": "form-textarea",
+        "template": "form-code-editor",
         "params": {
-          "title": "插槽html"
+          "language": "html"
         },
         "isRow": true,
         "required": false,
