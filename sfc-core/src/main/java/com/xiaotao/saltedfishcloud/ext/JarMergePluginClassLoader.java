@@ -2,18 +2,12 @@ package com.xiaotao.saltedfishcloud.ext;
 
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.mina.util.ConcurrentHashSet;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
 /**
@@ -22,7 +16,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class JarMergePluginClassLoader extends PluginClassLoader {
     private final static String LOG_PREFIX = "[JarMerge]";
-    private final Set<URL> loaded = new ConcurrentHashSet<>();
+    private final Set<URL> loaded = new HashSet<>();
 
     public JarMergePluginClassLoader(ClassLoader parent) {
         super(new URL[0], parent);
@@ -36,13 +30,18 @@ public class JarMergePluginClassLoader extends PluginClassLoader {
 
     @Override
     public void loadFromUrl(URL url) {
-        if (loaded.contains(url)) {
-            log.info("{}重复加载拓展{},已忽略", LOG_PREFIX, url);
-            return;
+        synchronized (loaded) {
+            if (loaded.contains(url)) {
+                log.info("{}重复加载拓展{},已忽略", LOG_PREFIX, url);
+                return;
+            }
         }
 
         this.addURL(url);
-        loaded.add(url);
+        synchronized (loaded) {
+            loaded.add(url);
+        }
+
     }
 
 

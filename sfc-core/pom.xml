@@ -44,11 +44,6 @@
             <artifactId>sfc-api</artifactId>
             <version>${api.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-compress</artifactId>
-            <version>1.11.0.0-SNAPSHOT</version>
-        </dependency>
     </dependencies>
 
     <build>
