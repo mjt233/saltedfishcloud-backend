@@ -105,6 +105,27 @@
     ]
   },
   {
+    "name": "desktop",
+    "title": "桌面设置",
+    "nodes": [
+      {
+        "name": "",
+        "value": "",
+        "nodes": [
+          {
+            "name": "desktop-config",
+            "title": "公共桌面配置",
+            "describe": "配置公共的首页桌面小组件",
+            "defaultValue": "",
+            "inputType": "template",
+            "hide": true,
+            "template": "desktop-config-list"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "safe",
     "title": "安全",
     "nodes": [
