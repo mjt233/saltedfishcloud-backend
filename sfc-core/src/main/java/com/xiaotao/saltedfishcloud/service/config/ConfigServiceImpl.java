@@ -5,12 +5,14 @@ import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
+import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +29,15 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
-public class ConfigServiceImpl implements ConfigService {
+public class ConfigServiceImpl implements ConfigService, InitializingBean {
     @Resource
     private ConfigDao configDao;
     @Resource
     private StoreTypeSwitch storeTypeSwitch;
     @Resource
     private SysProperties sysProperties;
+    @Resource
+    private DatabaseInitializer databaseInitializer;
 
     @Resource
     private PluginManager pluginManager;
@@ -175,5 +179,10 @@ public class ConfigServiceImpl implements ConfigService {
             throw e;
         }
         return true;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        databaseInitializer.init();
     }
 }

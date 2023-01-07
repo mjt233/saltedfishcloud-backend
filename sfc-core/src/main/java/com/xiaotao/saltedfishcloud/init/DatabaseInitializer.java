@@ -15,10 +15,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+/**
+ * 数据库初始化器，在配置服务 {@link com.xiaotao.saltedfishcloud.service.config.ConfigService} Bean初始化完成后执行
+ */
 @Configuration
-@Order(1)
 @Slf4j
-public class DatabaseInitializer implements ApplicationRunner {
+public class DatabaseInitializer {
     @Resource
     private DataSource dataSource;
 
@@ -42,8 +44,7 @@ public class DatabaseInitializer implements ApplicationRunner {
         return ret;
     }
 
-    @Override
-    public void run(ApplicationArguments args) throws SQLException {
+    public void init() throws SQLException {
         try(Connection con = dataSource.getConnection()) {
             // 若数据库无数据表则先初始化
             if (!isTableExist(con)) {
