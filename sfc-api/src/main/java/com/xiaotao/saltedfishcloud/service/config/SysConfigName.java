@@ -23,6 +23,13 @@ public interface SysConfigName {
         String SYNC_INTERVAL = "sys.store.sync_interval";
     }
 
+    interface Bg {
+        /**
+         * 主背景图配置
+         */
+        String SYS_BG_MAIN = "sys.bg.main";
+    }
+
     /**
      * 常规设置
      */

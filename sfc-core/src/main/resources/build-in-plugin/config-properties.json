@@ -126,6 +126,54 @@
     ]
   },
   {
+    "name": "bg-img",
+    "title": "背景图设置",
+    "nodes": [
+      {
+        "name": "sys.bg",
+        "title": "背景图设置",
+        "value": "",
+        "nodes": [
+          {
+            "name": "sys.bg.main",
+            "title": "主背景图",
+            "describe": "默认的背景底图",
+            "defaultValue": "{}",
+            "value": "{}",
+            "inputType": "template",
+            "template": "bg-option-editor",
+            "params": {
+              "useJson": true
+            },
+            "nodes": [
+              {
+                "title": "主图配置",
+                "nodes": [
+                  {
+                    "name": "enabled",
+                    "title": "是否启用"
+                  },
+                  {
+                    "name": "url",
+                    "title": "图片url"
+                  },
+                  {
+                    "name": "operacity",
+                    "title": "不透明度"
+                  },
+                  {
+                    "name": "size",
+                    "title": "尺寸"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "safe",
     "title": "安全",
     "nodes": [

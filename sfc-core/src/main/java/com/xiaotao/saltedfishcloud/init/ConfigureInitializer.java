@@ -1,12 +1,15 @@
 package com.xiaotao.saltedfishcloud.init;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
+import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -31,6 +37,7 @@ public class ConfigureInitializer implements ApplicationRunner {
     private final ConfigDao configDao;
     private final ConfigService configService;
     private final SysProperties sysProperties;
+    private final HelloService helloService;
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
@@ -75,9 +82,22 @@ public class ConfigureInitializer implements ApplicationRunner {
         }
 
 
-        subscribeConfigureChange();
+        this.initBgMainOption();
+
+        // 订阅配置变更
+        this.subscribeConfigureChange();
     }
 
+    /**
+     * 初始化背景图信息
+     */
+    private void initBgMainOption() throws JsonProcessingException {
+        // 初始化背景图信息
+        Map<String, Object> bgMainOption = MapperHolder.parseJsonToMap(
+                Optional.ofNullable(configService.getConfig(SysConfigName.Bg.SYS_BG_MAIN)).orElse("{}")
+        );
+        helloService.setFeature("bgMain", bgMainOption);
+    }
 
     /**
      * 订阅配置变更并同步到配置类
@@ -94,5 +114,16 @@ public class ConfigureInitializer implements ApplicationRunner {
             }
         });
         configService.addAfterSetListener(SysConfigName.Safe.TOKEN, JwtUtils::setSecret);
+        configService.addAfterSetListener(SysConfigName.Bg.SYS_BG_MAIN, e -> {
+            try {
+                if (e != null && e.length() > 0) {
+                    helloService.setFeature("bgMain", MapperHolder.parseJsonToMap(e));
+                } else {
+                    helloService.setFeature("bgMain", Collections.emptyMap());
+                }
+            } catch (Exception err) {
+                err.printStackTrace();
+            }
+        });
     }
 }
