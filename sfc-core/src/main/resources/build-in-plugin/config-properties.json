@@ -145,29 +145,7 @@
             "params": {
               "useJson": true
             },
-            "nodes": [
-              {
-                "title": "主图配置",
-                "nodes": [
-                  {
-                    "name": "enabled",
-                    "title": "是否启用"
-                  },
-                  {
-                    "name": "url",
-                    "title": "图片url"
-                  },
-                  {
-                    "name": "operacity",
-                    "title": "不透明度"
-                  },
-                  {
-                    "name": "size",
-                    "title": "尺寸"
-                  }
-                ]
-              }
-            ]
+            "typeRef": "com.xiaotao.saltedfishcloud.model.BgOption"
           }
         ]
       },

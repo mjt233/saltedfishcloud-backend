@@ -85,7 +85,7 @@ public class ExtUtils {
 
         // form类型的参数对象属性组装
         allNodes.stream()
-                .filter(e -> e.getInputType().equals("form"))
+                .filter(e -> e.getTypeRef() != null || e.getInputType().equals("form"))
                 .forEach(e -> {
                     try {
                         if (!StringUtils.hasText(e.getTypeRef())) {
