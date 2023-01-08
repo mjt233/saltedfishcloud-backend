@@ -15,6 +15,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
@@ -391,6 +392,9 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long saveFile(int uid, MultipartFile file, String requestPath, String md5) throws IOException {
+        if(!FileNameValidator.valid(file.getName())) {
+            throw new IllegalArgumentException("非法文件名，不可包含/\\<>?|:换行符，回车符或文件名为..");
+        }
         FileSystemMatchResult matchResult = matchFileSystem(uid, requestPath);
         return matchResult.fileSystem.saveFile(uid, file, matchResult.resolvedPath, md5);
     }

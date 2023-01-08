@@ -90,9 +90,6 @@ public class FileController {
         if (file == null) {
             throw new JsonException(400, "文件为空");
         }
-        if(!FileNameValidator.valid(file.getName())) {
-            throw new IllegalArgumentException("非法文件名，不可包含/\\<>?|:换行符，回车符或文件名为..");
-        }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
         long i = fileSystemManager.getMainFileSystem().saveFile(uid, file, requestPath, md5);
         return JsonResultImpl.getInstance(i);
