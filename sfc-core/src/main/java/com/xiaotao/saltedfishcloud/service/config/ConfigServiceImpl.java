@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 /**
  * 配置服务实现类
  * TODO 监听机制实现线程安全
+ * TODO 支持集群更新
  */
 @Service
 @Slf4j

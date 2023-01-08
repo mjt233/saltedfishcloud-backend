@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.config;
+package com.xiaotao.saltedfishcloud.constant;
 
 // @TODO
 public interface SysConfigName {

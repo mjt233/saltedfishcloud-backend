@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
+import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import lombok.Getter;
@@ -103,8 +103,6 @@ public class SysRuntimeConfig implements ApplicationRunner {
             log.warn("[注册关闭]系统未开启任何用户注册方式");
         }
 
-        this.updateRegFeature();
-        this.listenRegChange();
         this.listenStoreTypeChange();
     }
 
@@ -120,33 +118,7 @@ public class SysRuntimeConfig implements ApplicationRunner {
         }, new PatternTopic(MQTopic.PROTECT_LEVEL_SWITCH));
     }
 
-    /**
-     * 监听注册方式变更
-     */
-    private void listenRegChange() {
-        // 监听配置改变，实时更新状态缓存
-        configService.addConfigSetListener(e -> {
-            String key = e.getKey();
-            boolean regChange = false;
-            if (SysConfigName.Register.ENABLE_EMAIL_REG.equals(key)) {
-                enableEmailReg = "true".equalsIgnoreCase(e.getValue());
-                regChange = true;
-            } else if (SysConfigName.Register.ENABLE_REG_CODE.equals(key)) {
-                enableRegCode = "true".equalsIgnoreCase(e.getValue());
-                regChange = true;
-            }
-            if (regChange) {
-                updateRegFeature();
-            }
 
-        });
-    }
-
-
-    public void updateRegFeature() {
-        helloService.setFeature("enableRegCode", isEnableRegCode());
-        helloService.setFeature("enableEmailReg", isEnableEmailReg());
-    }
 
     /**
      * 从数据库中抓取数据更新配置

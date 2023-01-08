@@ -29,6 +29,14 @@ public interface HelloService {
     Object getDetail(String name);
 
     /**
+     * 将一个配置项的值绑定到feature中。feature中的值将保持和配置项的值同步。
+     * @param configKey     配置项key
+     * @param mapKey        绑定映射的特性key
+     * @param type          数据类型
+     */
+    void bindConfigAsFeature(String configKey, String mapKey, Class<?> type);
+
+    /**
      * 获取所有特性详情
      * @return  key为特性名称，value为特性详情
      */

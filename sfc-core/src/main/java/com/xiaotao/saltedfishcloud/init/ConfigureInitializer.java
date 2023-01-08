@@ -2,10 +2,11 @@ package com.xiaotao.saltedfishcloud.init;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
+import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.*;
@@ -79,49 +80,36 @@ public class ConfigureInitializer implements ApplicationRunner {
         }
 
 
-        this.initBgMainOption();
-        this.initThemeOption();
 
-        // 订阅配置变更
+        // 将配置值直接绑定到系统特性描述
+        this.bindConfigToFeature();
+
+        // 订阅配置变更自定义策略
         this.subscribeConfigureChange();
     }
 
-    /**
-     * 初始化主题配置
-     */
-    private void initThemeOption() {
-        Boolean isDark = TypeUtils.toBoolean(configService.getConfig(SysConfigName.Theme.DARK));
-        configService.addAfterSetListener(SysConfigName.Theme.DARK, e -> {
-            helloService.setFeature("darkTheme", TypeUtils.toBoolean(e));
-        });
-        helloService.setFeature("darkTheme", isDark);
-    }
 
     /**
-     * 初始化背景图信息
+     * 将配置项与系统特性描述绑定
      */
-    private void initBgMainOption() throws JsonProcessingException {
-        Map<String, Object> bgMainOption = MapperHolder.parseJsonToMap(
-                Optional.ofNullable(configService.getConfig(SysConfigName.Bg.SYS_BG_MAIN)).orElse("{}")
-        );
-        helloService.setFeature("bgMain", bgMainOption);
-        configService.addAfterSetListener(SysConfigName.Bg.SYS_BG_MAIN, e -> {
-            try {
-                if (e != null && e.length() > 0) {
-                    helloService.setFeature("bgMain", MapperHolder.parseJsonToMap(e));
-                } else {
-                    helloService.setFeature("bgMain", Collections.emptyMap());
-                }
-            } catch (Exception err) {
-                err.printStackTrace();
-            }
-        });
+    private void bindConfigToFeature() {
+        // 是否默认黑暗主题
+        helloService.bindConfigAsFeature(SysConfigName.Theme.DARK, FeatureName.DARK_THEME, Boolean.class);
+
+        // 默认背景图配置
+        helloService.bindConfigAsFeature(SysConfigName.Bg.SYS_BG_MAIN, FeatureName.BG_MAIN, Map.class);
+
+        // 是否允许邮箱/注册码注册
+        helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_EMAIL_REG, FeatureName.ENABLE_EMAIL_REG, Boolean.class);
+        helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_REG_CODE, FeatureName.ENABLE_REG_CODE, Boolean.class);
     }
 
     /**
      * 订阅配置变更并同步到配置类
      */
     private void subscribeConfigureChange() {
+
+
         configService.addAfterSetListener(SysConfigName.Store.SYNC_INTERVAL, e -> sysProperties.getSync().setInterval(Integer.parseInt(e)));
         configService.addAfterSetListener(SysConfigName.Register.SYS_REGISTER_REG_CODE, e -> sysProperties.getCommon().setRegCode(e));
         configService.addAfterSetListener(SysConfigName.Store.SYS_STORE_TYPE, e -> {
