@@ -219,7 +219,10 @@ public interface DiskFileSystem {
      * @param file        接收到的文件对象
      * @param requestPath 请求的文件路径
      * @param md5         请求时传入的文件md5
-     * @return 新文件 - 1，旧文件覆盖 - 0，常量见{@link DiskFileSystem#SAVE_COVER}和{@link DiskFileSystem#SAVE_NEW_FILE}
+     * @return 新文件 - 1，旧文件覆盖 - 0，文件无变更 - 2
+     * 常量见{@link DiskFileSystem#SAVE_COVER}、
+     * {@link DiskFileSystem#SAVE_NEW_FILE}、
+     * {@link DiskFileSystem#SAVE_NOT_CHANGE}
      * @throws IOException 文件写入失败时抛出
      */
     long saveFile(int uid,
