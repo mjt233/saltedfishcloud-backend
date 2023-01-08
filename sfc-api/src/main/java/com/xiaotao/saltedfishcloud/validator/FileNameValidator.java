@@ -13,9 +13,8 @@ public class FileNameValidator implements ConstraintValidator<FileName, Object> 
     public void initialize(FileName constraintAnnotation) {
     }
 
-    @Override
     @SuppressWarnings("unchecked")
-    public boolean isValid(Object value, ConstraintValidatorContext context) {
+    public static boolean validFileName(Object value) {
         if (value instanceof List && ((List<Object>)value).get(0) instanceof CharSequence ) {
             for(CharSequence name : (List<CharSequence>)value) {
                 if (!valid(name)) {
@@ -28,12 +27,20 @@ public class FileNameValidator implements ConstraintValidator<FileName, Object> 
         return true;
     }
 
+    @Override
+    public boolean isValid(Object value, ConstraintValidatorContext context) {
+        return validFileName(value);
+    }
+
     /**
      * 判断文件名是否合法，合法返回true，否则返回false
      * @see RejectRegex#FILE_NAME
      * @param input 文件名
      */
     public static boolean valid(CharSequence input) {
+        if (input.length() == 0) {
+            return false;
+        }
         return !pattern.matcher(input).find();
     }
 }

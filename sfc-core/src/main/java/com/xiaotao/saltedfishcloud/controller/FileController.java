@@ -20,6 +20,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.Api;
@@ -88,6 +89,9 @@ public class FileController {
                              @RequestParam(value = "md5", required = false) String md5) throws JsonException, IOException {
         if (file == null) {
             throw new JsonException(400, "文件为空");
+        }
+        if(!FileNameValidator.valid(file.getName())) {
+            throw new IllegalArgumentException("非法文件名，不可包含/\\<>?|:换行符，回车符或文件名为..");
         }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
         long i = fileSystemManager.getMainFileSystem().saveFile(uid, file, requestPath, md5);
