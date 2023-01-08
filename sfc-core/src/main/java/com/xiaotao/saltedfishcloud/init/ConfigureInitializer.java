@@ -8,10 +8,7 @@ import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.config.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
-import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -83,20 +80,42 @@ public class ConfigureInitializer implements ApplicationRunner {
 
 
         this.initBgMainOption();
+        this.initThemeOption();
 
         // 订阅配置变更
         this.subscribeConfigureChange();
     }
 
     /**
+     * 初始化主题配置
+     */
+    private void initThemeOption() {
+        Boolean isDark = TypeUtils.toBoolean(configService.getConfig(SysConfigName.Theme.DARK));
+        configService.addAfterSetListener(SysConfigName.Theme.DARK, e -> {
+            helloService.setFeature("darkTheme", TypeUtils.toBoolean(e));
+        });
+        helloService.setFeature("darkTheme", isDark);
+    }
+
+    /**
      * 初始化背景图信息
      */
     private void initBgMainOption() throws JsonProcessingException {
-        // 初始化背景图信息
         Map<String, Object> bgMainOption = MapperHolder.parseJsonToMap(
                 Optional.ofNullable(configService.getConfig(SysConfigName.Bg.SYS_BG_MAIN)).orElse("{}")
         );
         helloService.setFeature("bgMain", bgMainOption);
+        configService.addAfterSetListener(SysConfigName.Bg.SYS_BG_MAIN, e -> {
+            try {
+                if (e != null && e.length() > 0) {
+                    helloService.setFeature("bgMain", MapperHolder.parseJsonToMap(e));
+                } else {
+                    helloService.setFeature("bgMain", Collections.emptyMap());
+                }
+            } catch (Exception err) {
+                err.printStackTrace();
+            }
+        });
     }
 
     /**
@@ -114,16 +133,5 @@ public class ConfigureInitializer implements ApplicationRunner {
             }
         });
         configService.addAfterSetListener(SysConfigName.Safe.TOKEN, JwtUtils::setSecret);
-        configService.addAfterSetListener(SysConfigName.Bg.SYS_BG_MAIN, e -> {
-            try {
-                if (e != null && e.length() > 0) {
-                    helloService.setFeature("bgMain", MapperHolder.parseJsonToMap(e));
-                } else {
-                    helloService.setFeature("bgMain", Collections.emptyMap());
-                }
-            } catch (Exception err) {
-                err.printStackTrace();
-            }
-        });
     }
 }

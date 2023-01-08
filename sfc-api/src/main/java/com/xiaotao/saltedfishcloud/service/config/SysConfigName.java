@@ -30,6 +30,14 @@ public interface SysConfigName {
         String SYS_BG_MAIN = "sys.bg.main";
     }
 
+    interface Theme {
+
+        /**
+         * 默认黑色主题
+         */
+        String DARK = "sys.theme.dark";
+    }
+
     /**
      * 常规设置
      */

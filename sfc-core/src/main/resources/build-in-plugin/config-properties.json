@@ -126,8 +126,8 @@
     ]
   },
   {
-    "name": "bg-img",
-    "title": "背景图设置",
+    "name": "style",
+    "title": "样式与主题",
     "nodes": [
       {
         "name": "sys.bg",
@@ -168,6 +168,18 @@
                 ]
               }
             ]
+          }
+        ]
+      },
+      {
+        "name": "sys.theme",
+        "title": "主题",
+        "nodes": [
+          {
+            "name": "sys.theme.dark",
+            "title": "默认黑暗模式",
+            "inputType": "switch",
+            "defaultValue": false
           }
         ]
       }
