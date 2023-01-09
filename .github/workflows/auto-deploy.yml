@@ -15,5 +15,5 @@ jobs:
           key: ${{ secrets.PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            cd ${{ WORK_DIRECTORY }};
-            bash ${{ SCRIPT_PATH }}
+            cd ${{ secrets.WORK_DIRECTORY }};
+            bash ${{ secrets.SCRIPT_PATH }}
