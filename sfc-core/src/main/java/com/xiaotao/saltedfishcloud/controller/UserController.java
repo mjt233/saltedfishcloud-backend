@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping(UserController.PREFIX)
@@ -239,22 +240,33 @@ public class UserController {
     })
     @AllowAnonymous
     public ResponseEntity<Resource>
-                getAvatar(HttpServletResponse response, @PathVariable(required = false) String username) throws IOException {
-        User currentUser = SecureUtils.getSpringSecurityUser();
-        if (currentUser == null && username == null) {
-            response.sendRedirect("/api/static/defaultAvatar.png");
-            return null;
-        }
-        if (username == null) {
-            return ResourceUtils.wrapResource(fileSystemFactory.getMainFileSystem().getAvatar(currentUser.getId()));
-        } else {
-            User user = userService.getUserByUser(username);
-            if (user == null) {
-                throw new JsonException(AccountError.USER_NOT_EXIST);
-            } else {
-                return ResourceUtils.wrapResource(fileSystemFactory.getMainFileSystem().getAvatar(user.getId()));
+                getAvatar(HttpServletResponse response,
+                          @RequestParam(required = false) Integer uid,
+                          @PathVariable(required = false) String username) throws IOException {
+        try {
+            User currentUser = SecureUtils.getSpringSecurityUser();
+            if (currentUser == null && username == null && uid == null) {
+                response.sendRedirect("/api/static/defaultAvatar.png");
+                return null;
             }
+            Integer finalUid = 0;
+
+            if (uid != null) {
+                finalUid = uid;
+            } else if (username != null) {
+                User user = userService.getUserByUser(username);
+                if (user != null) {
+                    finalUid = user.getId();
+                }
+            } else {
+                finalUid = currentUser.getId();
+            }
+            return ResourceUtils.wrapResource(fileSystemFactory.getMainFileSystem().getAvatar(finalUid));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        response.sendRedirect("/api/static/defaultAvatar.png");
+        return null;
     }
 
     /**

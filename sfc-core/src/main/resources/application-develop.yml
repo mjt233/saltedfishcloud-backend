@@ -1,6 +1,8 @@
 server:
   port: 8087
 spring:
+  jpa:
+    show-sql: true
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:

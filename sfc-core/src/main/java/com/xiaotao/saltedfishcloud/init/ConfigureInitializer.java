@@ -102,6 +102,9 @@ public class ConfigureInitializer implements ApplicationRunner {
         // 是否允许邮箱/注册码注册
         helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_EMAIL_REG, FeatureName.ENABLE_EMAIL_REG, Boolean.class);
         helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_REG_CODE, FeatureName.ENABLE_REG_CODE, Boolean.class);
+
+        // 匿名留言开关
+        helloService.bindConfigAsFeature(SysConfigName.Safe.ALLOW_ANONYMOUS_COMMENT, FeatureName.ALLOW_ANONYMOUS_COMMENT, Boolean.class);
     }
 
     /**

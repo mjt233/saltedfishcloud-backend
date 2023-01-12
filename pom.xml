@@ -22,7 +22,7 @@
         API或脚手架模块版本号仅使用数字加点（如：sfc-ext，sfc-api）
         功能组件或咸鱼云根模块需要使用RELEASE或SNAPSHOT后缀（如：sfc-core，sfc-ext-hadoop-store）
     -->
-    <version>2.2.2-SNAPSHOT</version>
+    <version>2.2.3-SNAPSHOT</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
@@ -30,7 +30,7 @@
         <!--  前端项目路径，配置后在package时自动打包到webapp/static -->
 <!--        <sfc.front-end-path>C:\Users\xiaotao\code\saltedfishcloud-frontend</sfc.front-end-path>-->
         <java.version>11</java.version>
-        <api.version>2.2.2</api.version>
+        <api.version>2.2.3</api.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>

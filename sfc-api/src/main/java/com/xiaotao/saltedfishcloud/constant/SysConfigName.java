@@ -81,6 +81,11 @@ public interface SysConfigName {
          * token密钥
          */
         String TOKEN = "sys.safe.token";
+
+        /**
+         * 是否允许匿名留言
+         */
+        String ALLOW_ANONYMOUS_COMMENT = "sys.safe.allow_anonymous_comments";
     }
 
 }
