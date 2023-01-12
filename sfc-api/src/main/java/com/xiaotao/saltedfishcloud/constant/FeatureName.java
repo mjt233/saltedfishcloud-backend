@@ -45,6 +45,11 @@ public interface FeatureName {
     String ENABLE_REG_CODE = "enableRegCode";
 
     /**
+     * 是否允许匿名留言
+     */
+    String ALLOW_ANONYMOUS_COMMENT = "allowAnonymousComments";
+
+    /**
      * 系统使用的主存储
      */
     String FILESYSTEM = "fileSystem";

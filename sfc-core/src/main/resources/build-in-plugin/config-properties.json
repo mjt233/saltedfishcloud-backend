@@ -172,6 +172,13 @@
         "value": "general",
         "nodes": [
           {
+            "name": "sys.safe.allow_anonymous_comments",
+            "title": "匿名留言",
+            "describe": "允许匿名留言",
+            "defaultValue": false,
+            "inputType": "switch"
+          },
+          {
             "name": "sys.safe.token",
             "title": "系统安全密钥",
             "describe": "系统的安全密钥，修改后会导致所有用户登录失效、直链失效",

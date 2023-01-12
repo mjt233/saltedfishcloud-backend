@@ -32,6 +32,21 @@
     ]
   },
   {
+    "name": "comment-board",
+    "title": "留言板",
+    "describe": "让大伙在桌面留言交流吧",
+    "icon": "mdi-clipboard-outline",
+    "showOrder": 0,
+    "config": [
+      {
+        "name": "maxMessageHeight",
+        "title": "最大留言列表高度",
+        "inputType": "text",
+        "defaultValue": "480px"
+      }
+    ]
+  },
+  {
     "name": "custom-desktop-component",
     "title": "自定义组件",
     "describe": "高级自定义玩法~",
