@@ -2,8 +2,10 @@ package com.xiaotao.saltedfishcloud.service.comment;
 
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.dao.jpa.CommentRepo;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.vo.CommentVo;
 import com.xiaotao.saltedfishcloud.service.BaseJpaService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -13,10 +15,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import javax.validation.constraints.NotNull;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 @Service
 public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements CommentService {
@@ -40,12 +38,10 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
     }
 
     @Override
-    public List<Comment> listByTopicId(@NotNull Long topicId, Integer page, Integer size) {
-        return Optional.ofNullable(
-                repo.findByTopicId(topicId, PageRequest.of(
+    public CommonPageInfo<CommentVo> listByTopicId(@NotNull Long topicId, Integer page, Integer size) {
+        return CommonPageInfo.of(repo.findByTopicId(topicId, PageRequest.of(
                     page == null ? 1 : page,
-                    size == null ? 20 : size))
-        ).orElseGet(Collections::emptyList);
+                    size == null ? 20 : size)));
     }
 
 }
