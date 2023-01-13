@@ -1,7 +1,9 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 
@@ -22,8 +24,5 @@ public class Comment extends AuditModel {
 
     private String content;
 
-    private Integer isDelete;
-
-    @Column(updatable = false, insertable = false)
-    private String username;
+    private Integer isDelete = 0;
 }
