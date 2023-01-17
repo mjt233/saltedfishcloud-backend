@@ -47,15 +47,13 @@ public class MailAutoConfigure implements ApplicationRunner {
         }
 
         // 监听发信服务器的配置信息修改，更新发信服务器配置bean信息
-        configService.addConfigSetListener(e -> {
-            if (e.getKey() == SysConfigName.Common.MAIL_PROPERTIES) {
-                try {
-                    MailProperties newVal = MapperHolder.mapper.readValue(e.getValue(), MailProperties.class);
-                    BeanUtils.copyProperties(newVal, this.mailProperties());
-                    log.debug("邮件发信服务器配置更改：{}", e.getValue());
-                } catch (JsonProcessingException ex) {
-                    ex.printStackTrace();
-                }
+        configService.addAfterSetListener(SysConfigName.Common.MAIL_PROPERTIES, e -> {
+            try {
+                MailProperties newVal = MapperHolder.mapper.readValue(e, MailProperties.class);
+                BeanUtils.copyProperties(newVal, this.mailProperties());
+                log.debug("邮件发信服务器配置更改：{}", e);
+            } catch (JsonProcessingException ex) {
+                ex.printStackTrace();
             }
         });
     }
