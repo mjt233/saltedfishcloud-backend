@@ -47,6 +47,22 @@
     ]
   },
   {
+    "name": "markdown-view",
+    "title": "Markdown展示板",
+    "describe": "使用markdown编辑和展示内容",
+    "icon": "mdi-language-markdown",
+    "showOrder": 0,
+    "config": [
+      {
+        "name": "content",
+        "title": "markdown内容",
+        "inputType": "template",
+        "template": "markdown-input",
+        "defaultValue": ""
+      }
+    ]
+  },
+  {
     "name": "custom-desktop-component",
     "title": "自定义组件",
     "describe": "高级自定义玩法~",
