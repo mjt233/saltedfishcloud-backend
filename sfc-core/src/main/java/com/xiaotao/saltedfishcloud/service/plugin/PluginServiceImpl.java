@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.plugin;
 
-import com.xiaotao.saltedfishcloud.common.ResponseResource;
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
@@ -12,13 +12,13 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
 public class PluginServiceImpl implements PluginService, SystemOverviewItemProvider {
     private final static String LOG_PREFIX = "[插件服务]";
     private final PluginManager pluginManager;
+
+    @Autowired
+    private SysProperties sysProperties;
 
     @Override
     public List<PluginInfo> listPlugins() {
@@ -51,7 +54,13 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
                 ConfigNode.builder()
                         .name("install-plugins")
                         .title("安装的插件")
-                        .nodes(listPlugins().stream().map(e -> new ConfigNode(e.getAlias(), e.getVersion())).collect(Collectors.toList()))
+                        .nodes(listPlugins().stream().map(e -> new ConfigNode(e.getAlias(), e.getVersion()).setName(e.getName()))
+                                .peek(e -> {
+                                    if ("sys".equals(e.getName())) {
+                                        e.setValue(sysProperties.getVersion().toString());
+                                    }
+                                })
+                                .collect(Collectors.toList()))
                         .build()
         );
     }
