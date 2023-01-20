@@ -52,6 +52,14 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
         store.put(name, detail);
     }
 
+    /**
+     * 移除特性
+     */
+    public void removeFeature(String name) {
+        log.debug("{}移除特性{}", LOG_TITLE, name);
+        store.remove(name);
+    }
+
     @Override
     public Object getDetail(String name) {
         return store.get(name);
@@ -67,6 +75,10 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
         Consumer<String> valueHandler = configValue -> {
             Object value;
             try {
+                if (configValue == null) {
+                    removeFeature(configKey);
+                    return;
+                }
                 if (Boolean.class.isAssignableFrom(type)) {
                     value = TypeUtils.toBoolean(configValue);
                 } else if (Number.class.isAssignableFrom(type)) {
@@ -74,11 +86,11 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
                 } else if (String.class.isAssignableFrom(type)) {
                     value = configValue;
                 } else if (Collection.class.isAssignableFrom(type)) {
-                    value = configValue == null ? null : MapperHolder.parseJsonToList(configValue, Map.class);
+                    value = MapperHolder.parseJsonToList(configValue, Map.class);
                 } else if (Map.class.isAssignableFrom(type)) {
-                    value = configValue == null ? null : MapperHolder.parseJsonToMap(configValue);
+                    value = MapperHolder.parseJsonToMap(configValue);
                 } else {
-                    value = configValue == null ? null : MapperHolder.parseJson(configValue, type);
+                    value = MapperHolder.parseJson(configValue, type);
                 }
                 setFeature(mapKey, value);
             } catch (Exception e) {
