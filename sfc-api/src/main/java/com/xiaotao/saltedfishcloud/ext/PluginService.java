@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import org.springframework.core.io.Resource;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -15,6 +16,16 @@ public interface PluginService {
      * 获取注册的插件列表
      */
     List<PluginInfo> listPlugins();
+
+    /**
+     * 获取所有可被识别的插件列表（包括未加载、已加载和待删除的）
+     */
+    List<PluginInfo> listAvailablePlugins() throws IOException;
+
+    /**
+     * 删除一个插件
+     */
+    void deletePlugin(String name) throws IOException;
 
     /**
      * 获取插件的静态文件资源

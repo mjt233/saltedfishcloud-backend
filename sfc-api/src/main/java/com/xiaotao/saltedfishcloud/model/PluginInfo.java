@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
 import com.xiaotao.saltedfishcloud.enums.PluginType;
 import lombok.Data;
@@ -13,6 +14,10 @@ import java.util.List;
 @Data
 @Accessors(chain = true)
 public class PluginInfo {
+    public static final int PLUGIN_UNLOADED = 0;
+    public static final int PLUGIN_LOADED = 1;
+    public static final int PLUGIN_WAIT_DELETE = 2;
+
     /**
      * 插件名称
      */
@@ -37,11 +42,6 @@ public class PluginInfo {
      * 插件描述
      */
     private String describe;
-
-    /**
-     * 路径
-     */
-    private String path;
 
     /**
      * 插件作者
@@ -72,4 +72,22 @@ public class PluginInfo {
      * 需要自动加载的静态资源
      */
     private List<String> autoLoad;
+
+    /**
+     * 状态，0 - 待加载，1 - 已加载，2 - 待删除
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Integer status;
+
+    /**
+     * 是否通过jar包在插件目录中加载的
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Boolean isJar;
+
+    /**
+     * 插件url
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String url;
 }

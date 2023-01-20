@@ -35,9 +35,21 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
         PluginManager pluginManager = new DefaultPluginManager(PluginInitializer.class.getClassLoader());
         context.setClassLoader(pluginManager.getJarMergeClassLoader());
         PluginProperty pluginProperty = PluginProperty.loadFromPropertyResolver(context.getEnvironment());
+
+        // 删除被标记的插件
         try {
+            pluginManager.deletePlugin();
+        } catch (IOException e) {
+            log.error("{}插件删除出错：", LOG_PREFIX, e);
+        }
+        try {
+            // 加载系统核心模块插件信息
             initBuildInPlugin(pluginManager);
+
+            // 从classpath和ext目录中加载jar包插件
             initPluginFromClassPath(pluginManager);
+
+            // 从外部目录中加载非jar包形式的插件
             initPluginFromExtraResource(pluginManager, pluginProperty);
             context.addBeanFactoryPostProcessor(beanFactory -> {
                 beanFactory.registerResolvableDependency(PluginManager.class, pluginManager);
@@ -77,9 +89,8 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
     public void initBuildInPlugin(PluginManager pluginManager) throws IOException {
         String buildInPath = "build-in-plugin";
         ClassLoader loader = PluginInitializer.class.getClassLoader();
-        PluginInfo pluginInfo = MapperHolder.parseJson(ExtUtils.getResourceText(loader, buildInPath + "/" + PluginManager.PLUGIN_INFO_FILE), PluginInfo.class);
+        PluginInfo pluginInfo = ExtUtils.getPluginInfo(this.getClass().getClassLoader(), buildInPath);
         List<ConfigNode> configNodes = ExtUtils.getPluginConfigNodeFromLoader(this.getClass().getClassLoader(), buildInPath);
-//        List<ConfigNode> configNodes = MapperHolder.parseJsonToList(ExtUtils.getResourceText(loader, buildInPath + "/" + PluginManager.CONFIG_PROPERTIES_FILE), ConfigNode.class);
         pluginManager.registerPluginResource("sys", pluginInfo, configNodes, buildInPath, loader);
     }
 

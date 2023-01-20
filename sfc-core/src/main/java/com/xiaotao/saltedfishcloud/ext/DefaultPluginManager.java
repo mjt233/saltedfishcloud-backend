@@ -7,11 +7,10 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.Result;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
-import com.xiaotao.saltedfishcloud.utils.ClassUtils;
-import com.xiaotao.saltedfishcloud.utils.ExtUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
@@ -19,16 +18,19 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
@@ -48,7 +50,12 @@ public class DefaultPluginManager implements PluginManager {
      * 依赖解包路径
      */
     private final static String DEP_EXPLODE_PATH = "ext/lib";
-    private final List<PluginInfo> pluginList = new CopyOnWriteArrayList<>();
+
+    private final static Pattern JAR_NAME_PATTERN = Pattern.compile("(?<=/).*?(?=.jar)");
+    private final static Pattern JAR_VERSION_PATTERN = Pattern.compile("(?<=-)\\d.*");
+
+
+    private List<PluginInfo> pluginList = new CopyOnWriteArrayList<>();
     private final Map<String, PluginInfo> pluginMap = new ConcurrentHashMap<>();
     private final Map<String, PluginInfo> pluginMapView = Collections.unmodifiableMap(pluginMap);
     private final Map<String, ClassLoader> pluginClassLoaderMap = new ConcurrentHashMap<>();
@@ -56,8 +63,7 @@ public class DefaultPluginManager implements PluginManager {
     private final Map<String, List<ConfigNode>> pluginConfigNodeGroupMap = new ConcurrentHashMap<>();
     private final Map<String, String> pluginResourceRootMap = new ConcurrentHashMap<>();
     private final PluginClassLoader jarMergeClassLoader;
-    private final Pattern JAR_NAME_PATTERN = Pattern.compile("(?<=/).*?(?=.jar)");
-    private final Pattern JAR_VERSION_PATTERN = Pattern.compile("(?<=-)\\d.*");
+
 
     /**
      * 已注册的外部依赖
@@ -279,8 +285,11 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     private void validPluginInfo(PluginInfo pluginInfo) {
+        if (!StringUtils.hasText(pluginInfo.getName())) {
+            throw new IllegalArgumentException("插件缺少name");
+        }
         if (!StringUtils.hasText(pluginInfo.getVersion())) {
-            throw new RuntimeException("插件缺失有效的version");
+            throw new IllegalArgumentException("插件缺失有效的version");
         }
         try {
             Version.valueOf(pluginInfo.getVersion());
@@ -290,7 +299,7 @@ public class DefaultPluginManager implements PluginManager {
         }
 
         if (!StringUtils.hasText(pluginInfo.getApiVersion())) {
-            throw new RuntimeException("插件缺失有效的apiVersion");
+            throw new IllegalArgumentException("插件缺失有效的apiVersion");
         }
         try {
             Version.valueOf(pluginInfo.getApiVersion());
@@ -298,7 +307,6 @@ public class DefaultPluginManager implements PluginManager {
             log.error("插件apiVersion格式错误");
             throw e;
         }
-
     }
 
     @Override
@@ -310,7 +318,7 @@ public class DefaultPluginManager implements PluginManager {
         try {
             // 读取插件基本信息
             log.info("{}加载插件：{}",LOG_PREFIX, StringUtils.getURLLastName(pluginUrl));
-            pluginInfo  = getPluginInfoFromLoader(classLoader);
+            pluginInfo = getPluginInfoFromLoader(classLoader);
             this.validPluginInfo(pluginInfo);
 
             // 读取配置项
@@ -341,6 +349,17 @@ public class DefaultPluginManager implements PluginManager {
         registerPluginResource(pluginInfo.getName(), pluginInfo, configNodeGroups, loader);
         pluginRawLoaderMap.put(pluginInfo.getName(), classLoader);
     }
+
+
+    @Override
+    public synchronized void remove(String name) {
+        pluginMap.remove(name);
+        pluginConfigNodeGroupMap.remove(name);
+        pluginClassLoaderMap.remove(name);
+        pluginList = pluginList.stream().filter(e -> !Objects.equals(name, e.getName())).collect(Collectors.toList());
+        pluginResourceRootMap.remove(name);
+    }
+
 
     @Override
     public void register(Resource pluginResource) throws IOException {
@@ -392,6 +411,135 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     @Override
+    public List<PluginInfo> listAvailablePlugins() throws IOException {
+        List<PluginInfo> pluginInfos = new ArrayList<>();
+        Set<String> processedPlugins = new HashSet<>();
+        Set<String> deletePlugin = new HashSet<>(listDeletePlugin());
+
+        // 从插件目录中获取插件
+        for (URL extUrl : ExtUtils.getExtUrls()) {
+            try (URLClassLoader classLoader = PluginClassLoaderFactory.createPurePluginClassLoader(extUrl)) {
+                PluginInfo pluginInfo = getPluginInfoFromLoader(classLoader);
+                if (pluginInfo.getName() == null) {
+                    continue;
+                }
+                pluginInfo.setIsJar(true);
+                processedPlugins.add(pluginInfo.getName());
+                pluginInfos.add(pluginInfo);
+
+                // 插件状态判断
+                if (deletePlugin.contains(pluginInfo.getName())) {
+                    pluginInfo.setStatus(PluginInfo.PLUGIN_WAIT_DELETE);
+                } else if (getPluginInfo(pluginInfo.getName()) != null) {
+                    pluginInfo.setStatus(PluginInfo.PLUGIN_LOADED);
+                } else {
+                    pluginInfo.setStatus(PluginInfo.PLUGIN_UNLOADED);
+                }
+            }
+        }
+
+        pluginInfos.addAll(
+                listAllPlugin().stream().filter(e -> !processedPlugins.contains(e.getName()))
+                .map(e -> {
+                    PluginInfo pluginInfo = new PluginInfo();
+                    processedPlugins.add(e.getName());
+                    BeanUtils.copyProperties(e, pluginInfo);
+                    pluginInfo.setStatus(PluginInfo.PLUGIN_LOADED);
+                    pluginInfo.setIsJar(false);
+                    return pluginInfo;
+                }).collect(Collectors.toList())
+        );
+        return pluginInfos;
+    }
+
+
+
+    /**
+     * 获取待删除的插件名称
+     */
+    @Override
+    public List<String> listDeletePlugin() {
+        Path deleteRecord = ExtUtils.getExtDir().resolve("delete.json");
+        if (!Files.exists(deleteRecord)) {
+            return Collections.emptyList();
+        }
+        try (InputStream inputStream = Files.newInputStream(deleteRecord)) {
+            return MapperHolder.parseJsonToList(StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8), String.class);
+        } catch (IOException e) {
+            log.error("{}获取待删除插件出错", LOG_PREFIX,e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public void deletePlugin() throws IOException {
+        // 获取被标记删除的插件
+        Path deleteRecordPath = ExtUtils.getExtDir().resolve("delete.json");
+        if (!Files.exists(deleteRecordPath) || Files.isDirectory(deleteRecordPath)) {
+            return;
+        }
+        List<String> names;
+        try (InputStream stream = Files.newInputStream(deleteRecordPath)) {
+            names = MapperHolder.parseJsonToList(StreamUtils.copyToString(stream, StandardCharsets.UTF_8), String.class);
+        }
+
+        // 获取待删除的插件信息
+        String loaded = names.stream().filter(e -> getPluginInfo(e) != null).collect(Collectors.joining(","));
+        if(StringUtils.hasText(loaded)) {
+            throw new IllegalArgumentException("已加载的插件无法删除:" + loaded);
+        }
+        Map<String, PluginInfo> pluginMap = listAvailablePlugins().stream().collect(Collectors.toMap(PluginInfo::getName, Function.identity()));
+
+        for (String name : names) {
+            try {
+                PluginInfo pluginInfo = pluginMap.get(name);
+                if (pluginInfo == null) {
+                    log.warn("{}插件 [{}]无法识别，跳过删除", LOG_PREFIX, name);
+                    continue;
+                }
+
+                // 删除插件本体
+                Path path = Paths.get(new URL(pluginInfo.getUrl()).getPath().replaceAll("^/+", ""));
+                log.info("{}删除插件: [{}]", LOG_PREFIX, path);
+                Files.deleteIfExists(path);
+
+                // 删除附带的依赖
+                Path dependencePath = Paths.get(StringUtils.appendPath(DEP_EXPLODE_PATH, name));
+                if (Files.exists(dependencePath) && Files.isDirectory(dependencePath)) {
+                    FileUtils.delete(dependencePath);
+                }
+            } catch (Exception e) {
+                log.error("{}删除插件失败：", LOG_PREFIX, e);
+            }
+        }
+
+        // 清空删除标记文件
+        Files.deleteIfExists(deleteRecordPath);
+    }
+
+    /**
+     * 标记插件为待删除
+     */
+    @Override
+    public void markPluginDelete(String name) throws IOException {
+        Map<String, PluginInfo> pluginMap = listAvailablePlugins().stream().collect(Collectors.toMap(PluginInfo::getName, Function.identity()));
+        PluginInfo plugin = pluginMap.get(name);
+        if (plugin == null) {
+            throw new IllegalArgumentException("该插件不存在");
+        } else if (plugin.getIsJar() == null || !plugin.getIsJar()) {
+            throw new IllegalArgumentException("该插件不是通过jar包加载，无法删除");
+        }
+
+        Path deleteRecord = ExtUtils.getExtDir().resolve("delete.json");
+        Set<String> deleteNameList = new HashSet<>(listDeletePlugin());
+        deleteNameList.add(name);
+        String json = MapperHolder.toJson(deleteNameList);
+        try (OutputStream outputStream = Files.newOutputStream(deleteRecord)) {
+            StreamUtils.copy(json, StandardCharsets.UTF_8, outputStream);
+        }
+    }
+
+    @Override
     public List<PluginInfo> listAllPlugin() {
         return pluginList;
     }
@@ -414,4 +562,49 @@ public class DefaultPluginManager implements PluginManager {
     public List<ConfigNode> getPluginConfigNodeGroup(String name) {
         return pluginConfigNodeGroupMap.get(name);
     }
+
+//    @Override
+//    public synchronized void loadPlugin(String name) throws IOException {
+//        if(getPluginInfo(name) != null) {
+//            throw new IllegalArgumentException("插件已加载");
+//        }
+//        Path jarPath = Paths.get(ExtUtils.getExtDir().getAbsolutePath()).resolve(name + ".jar");
+//        if (!Files.exists(jarPath) || Files.isDirectory(jarPath)) {
+//            throw new FileNotFoundException("插件 【" + name + "】 不存在");
+//        }
+//
+//        try (URLClassLoader classLoader = PluginClassLoaderFactory.createPurePluginClassLoader(jarPath.toUri().toURL())) {
+//            PluginInfo pluginInfo = getPluginInfoFromLoader(classLoader);
+//            jarMergeClassLoader.loadFromUrl(jarPath.toUri().toURL());
+//            List<Class<?>> classList = getAutoConfigurationClass(classLoader);
+//            for (Class<?> clazz : classList) {
+//                SpringContextUtils.registerBean(clazz);
+//            }
+//        } catch (IOException e) {
+//            throw new IOException("获取插件信息失败，请检查插件的plugin-info.json：{}", e);
+//        }
+//    }
+//
+//    private List<Class<?>> getAutoConfigurationClass(ClassLoader classLoader) throws IOException {
+//        Properties properties = new Properties();
+//        try (InputStream stream = classLoader.getResourceAsStream("META-INF/spring.factories")) {
+//            if (stream == null) {
+//                throw new IllegalArgumentException("未在META-INF/spring.factories中指定自动配置类");
+//            }
+//            properties.load(stream);
+//        }
+//        String autoConfigClass = properties.getProperty("org.springframework.boot.autoconfigure.EnableAutoConfiguration");
+//        if (!StringUtils.hasText(autoConfigClass)) {
+//            throw new IllegalArgumentException("未在META-INF/spring.factories中指定自动配置类");
+//        }
+//        return Arrays.stream(autoConfigClass.split(","))
+//                .map(clazz -> {
+//                    try {
+//                        return classLoader.loadClass(clazz);
+//                    } catch (ClassNotFoundException e) {
+//                        throw new IllegalArgumentException("无效的自动配置类：" + clazz, e);
+//                    }
+//                })
+//                .collect(Collectors.toList());
+//    }
 }

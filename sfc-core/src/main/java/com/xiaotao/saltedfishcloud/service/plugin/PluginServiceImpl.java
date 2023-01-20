@@ -17,6 +17,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -44,6 +45,16 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
     }
 
     @Override
+    public List<PluginInfo> listAvailablePlugins() throws IOException {
+        return pluginManager.listAvailablePlugins();
+    }
+
+    @Override
+    public void deletePlugin(String name) throws IOException {
+        pluginManager.markPluginDelete(name);
+    }
+
+    @Override
     public Resource getPluginStaticResource(String name, String path) throws PluginNotFoundException {
         return pluginManager.getPluginResource(name, StringUtils.appendPath("static", path));
     }
@@ -54,13 +65,7 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
                 ConfigNode.builder()
                         .name("install-plugins")
                         .title("安装的插件")
-                        .nodes(listPlugins().stream().map(e -> new ConfigNode(e.getAlias(), e.getVersion()).setName(e.getName()))
-                                .peek(e -> {
-                                    if ("sys".equals(e.getName())) {
-                                        e.setValue(sysProperties.getVersion().toString());
-                                    }
-                                })
-                                .collect(Collectors.toList()))
+                        .nodes(listPlugins().stream().map(e -> new ConfigNode(e.getAlias(), e.getVersion())).collect(Collectors.toList()))
                         .build()
         );
     }

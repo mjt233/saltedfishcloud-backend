@@ -17,6 +17,11 @@ public interface PluginManager {
     String CONFIG_PROPERTIES_FILE = "config-properties.json";
 
     /**
+     * 移除插件
+     */
+    void remove(String name);
+
+    /**
      * 注册插件
      * @param pluginResource 插件jar包资源
      */
@@ -70,6 +75,26 @@ public interface PluginManager {
     Map<String, PluginInfo> getAllPlugin();
 
     /**
+     * 获取所有可被识别的插件列表（包括未加载、已加载和待删除的）
+     */
+    List<PluginInfo> listAvailablePlugins() throws IOException;
+
+    /**
+     * 获取待删除的插件名称
+     */
+    List<String> listDeletePlugin();
+
+    /**
+     * 标记插件为待删除
+     */
+    void markPluginDelete(String name) throws IOException;
+
+    /**
+     * 删除所有未加载的被标记的插件
+     */
+    void deletePlugin() throws IOException;
+
+    /**
      * 获取所有注册的插件
      */
     List<PluginInfo> listAllPlugin();
@@ -90,4 +115,12 @@ public interface PluginManager {
      * 获取合并了各个插件的类加载器
      */
     ClassLoader getJarMergeClassLoader();
+
+
+
+//    /**
+//     * 从插件库或目录中动态加载插件
+//     * @param name  插件的资源名称（在ext目录下的jar包名称，如sfc-ext-demo.jar，那么就传入sfc-ext-demo）
+//     */
+//    void loadPlugin(String name) throws IOException;
 }
