@@ -245,6 +245,7 @@ CREATE TABLE desktop_component_config (
                                           create_at DATETIME,
                                           update_at DATETIME,
                                           use_card int COMMENT '是否使用卡片样式',
+                                          enabled int COMMENT '是否启用',
                                           key idx_name(name),
                                           key idx_uid(uid)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '桌面小组件使用配置表';
