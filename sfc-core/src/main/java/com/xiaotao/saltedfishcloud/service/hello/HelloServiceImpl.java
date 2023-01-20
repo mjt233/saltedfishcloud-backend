@@ -74,11 +74,11 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
                 } else if (String.class.isAssignableFrom(type)) {
                     value = configValue;
                 } else if (Collection.class.isAssignableFrom(type)) {
-                    value = MapperHolder.parseJsonToList(configValue, Map.class);
+                    value = configValue == null ? null : MapperHolder.parseJsonToList(configValue, Map.class);
                 } else if (Map.class.isAssignableFrom(type)) {
-                    value = MapperHolder.parseJsonToMap(configValue);
+                    value = configValue == null ? null : MapperHolder.parseJsonToMap(configValue);
                 } else {
-                    value = MapperHolder.parseJson(configValue, type);
+                    value = configValue == null ? null : MapperHolder.parseJson(configValue, type);
                 }
                 setFeature(mapKey, value);
             } catch (Exception e) {
