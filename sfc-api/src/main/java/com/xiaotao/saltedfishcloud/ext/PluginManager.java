@@ -31,7 +31,7 @@ public interface PluginManager {
     /**
      * 对待升级的插件进行升级
      */
-    void upgrade();
+    void upgrade() throws IOException;
 
     /**
      * 解析插件信息

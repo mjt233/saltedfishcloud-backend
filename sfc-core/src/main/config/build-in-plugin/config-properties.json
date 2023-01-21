@@ -172,7 +172,7 @@
           {
             "name": "plugin-manager",
             "title": "插件管理",
-            "describe": "对系统插件信息进行管理，注意：若需要删除插件，执行删除后需要重启服务后生效",
+            "describe": "对系统插件信息进行管理，注意：执行删除或安装新插件需要重启咸鱼云服务后生效",
             "inputType": "template",
             "template": "plugin-manager",
             "defaultValue": ""

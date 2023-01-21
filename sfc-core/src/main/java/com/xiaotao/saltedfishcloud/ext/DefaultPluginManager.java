@@ -23,9 +23,7 @@ import org.springframework.util.StreamUtils;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -617,7 +615,7 @@ public class DefaultPluginManager implements PluginManager {
 
     @Override
     public void installPlugin(Resource resource) throws IOException {
-        if (StringUtils.hasText(resource.getFilename())) {
+        if (!StringUtils.hasText(resource.getFilename())) {
             throw new IllegalArgumentException("文件名不能为空");
         }
         long id = IdUtil.getId();
@@ -645,12 +643,12 @@ public class DefaultPluginManager implements PluginManager {
         boolean exist = listAvailablePlugins().stream().anyMatch(e -> Objects.equals(pluginInfo.getName(), e.getName()));
         if (exist) {
             Path upgradeName = ExtUtils.getExtDir().resolve(resource.getFilename() + UPGRADE_SUFFIX);
-            Files.move(temp, upgradeName);
+            Files.move(temp, upgradeName, StandardCopyOption.REPLACE_EXISTING);
             Map<String, String> upgradeRecord = getUpgradeRecord();
-            upgradeRecord.put(pluginInfo.getName(), resource.getFilename() + UPGRADE_SUFFIX);
+            upgradeRecord.put(pluginInfo.getName(), resource.getFilename());
             saveUpgradeRecord(upgradeRecord);
         } else {
-            Files.move(temp, ExtUtils.getExtDir().resolve(resource.getFilename()));
+            Files.move(temp, ExtUtils.getExtDir().resolve(resource.getFilename()), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -690,15 +688,45 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     @Override
-    public void upgrade() {
+    public void upgrade() throws IOException {
+        Map<String, String> upgradeRecord = getUpgradeRecord();
+        Map<String, PluginInfo> pluginMap = listAvailablePlugins().stream().collect(Collectors.toMap(PluginInfo::getName, Function.identity()));
+        upgradeRecord.forEach((name, fileName) -> {
+            try {
+                PluginInfo pluginInfo = pluginMap.get(name);
+                if (pluginInfo == null) {
+                    log.warn("{}插件升级未找到原插件", LOG_PREFIX);
+                } else {
+                    Path pluginPath = getPluginPath(pluginInfo);
+                    Files.deleteIfExists(pluginPath);
+                    log.info("{}插件 【{}】升级，删除原插件：{}", LOG_PREFIX, name, pluginPath.getFileName());
+                }
+                Path originPath = ExtUtils.getExtDir().resolve(fileName + UPGRADE_SUFFIX);
+                Path targetPath = ExtUtils.getExtDir().resolve(fileName);
+                Files.move(originPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                log.info("{}插件升级: 【{}】", LOG_PREFIX, name);
 
+            } catch (IOException e) {
+                log.error("{}插件 【{}】升级出错：", LOG_PREFIX, name, e);
+            }
+        });
+        Files.deleteIfExists(ExtUtils.getExtDir().resolve(UPGRADE_JSON));
     }
 
     @Override
     public PluginInfo parsePlugin(URL url) throws IOException {
         try (URLClassLoader classLoader = PluginClassLoaderFactory.createPurePluginClassLoader(url)) {
-            PluginInfo pluginInfo = getPluginInfoFromLoader(classLoader);
+            PluginInfo pluginInfo;
+            try {
+                pluginInfo = getPluginInfoFromLoader(classLoader);
+            } catch (IOException e) {
+                throw new IllegalArgumentException("插件信息获取失败，请检查插件文件格式是否正确或该插件是否未配置信息");
+            }
+
             validPluginInfo(pluginInfo);
+            if (url.getPath().endsWith(".jar")) {
+                pluginInfo.setIsJar(true);
+            }
             return pluginInfo;
         }
     }

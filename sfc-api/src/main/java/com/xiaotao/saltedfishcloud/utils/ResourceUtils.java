@@ -5,13 +5,13 @@ import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StreamUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +31,18 @@ public class ResourceUtils {
      */
     public static ResponseEntity<Resource> wrapResource(Resource resource) throws UnsupportedEncodingException {
         return ResourceUtils.wrapResource(resource, resource.getFilename(), null);
+    }
+
+    /**
+     * 读取资源数据保存到本地文件系统
+     * @param resource  待保存的资源
+     * @param path      保存路径，若目录不存在则自动创建
+     */
+    public static void saveToFile(Resource resource, Path path) throws IOException {
+        FileUtils.createParentDirectory(path);
+        try (InputStream is = resource.getInputStream(); OutputStream os = Files.newOutputStream(path)) {
+            StreamUtils.copy(is, os);
+        }
     }
 
     /**
