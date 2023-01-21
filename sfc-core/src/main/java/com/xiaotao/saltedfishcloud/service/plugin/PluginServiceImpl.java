@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.plugin;
 
-import com.xiaotao.saltedfishcloud.common.ResponseResource;
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
@@ -12,13 +12,14 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,9 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
     private final static String LOG_PREFIX = "[插件服务]";
     private final PluginManager pluginManager;
 
+    @Autowired
+    private SysProperties sysProperties;
+
     @Override
     public List<PluginInfo> listPlugins() {
         return pluginManager.getAllPlugin().values().stream().map(e -> {
@@ -38,6 +42,16 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
             BeanUtils.copyProperties(e, newObj);
             return newObj;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PluginInfo> listAvailablePlugins() throws IOException {
+        return pluginManager.listAvailablePlugins();
+    }
+
+    @Override
+    public void deletePlugin(String name) throws IOException {
+        pluginManager.markPluginDelete(name);
     }
 
     @Override

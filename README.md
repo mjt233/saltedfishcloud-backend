@@ -28,7 +28,8 @@
 - 支持docker部署（文档待补充）
 - 插件化动态功能拓展
 - 支持存储集群（需要MinIO或HDFS存储插件）
-- 外部存储目录挂载（除本地文件系统存储外，需要通过插件可提供MinIO,HDFS,Samba,SFTP协议的外部存储读写支持）
+- 外部存储目录挂载（除本地文件系统存储外，需要通过插件可提供MinIO,HDFS,Samba,SFTP协议的外部存储读写支持）、
+- 自定义配置桌面组件
 
 ## 杂杂念
 
@@ -42,30 +43,32 @@
 
 ### 0. 打包与编译
 
-对根项目执行maven的package，执行成功后会在release目录下创建程序主程序jar包和相关文件
-
-### 1. 准备环境
-
-项目依赖以下组件：
-- MySQL
-- Redis
-
-### 2. 运行项目
-
-#### 2.1 启动程序
-
-将主程序jar包同目录下的config.yml配置完成后，直接执行下面的命令即可启动。
-
-当然你也可以修改file:config.yml这个参数指定任意路径的yml配置文件。
+全模块打包直接使用package命令即可
 
 ```shell
-# 最简单的启动命令
-java -jar sfc-core.jar --spring.config.import=file:config.yml
+$ mvn package
 ```
 
-配置文件config.yml的配置内容与spring的application.yml完全一致且会覆盖默认的application.yml的内容。而config.yml中未配置的项将取application.yml的配置项作为默认值
+如果单独是对某个拓展模块打包，需要先install sfc-api模块。（若全模块打包失败也可先install sfc-api模块）
+```shell
+$ cd sfc-api; mvn install;
+$ cd ../sfc-ext/sfc-ext-demo; mvn package
+```
+输出目录：
+- 主程序: `release/sfc-core.jar`
+- 拓展插件：`release/ext-available/*.jar`
 
-### 3 关于数据表
+### 1. 运行程序
+
+启动前需要在配置文件`config.yml`确认MySQL数据库与Redis连接配置，确认或修改无误后
+
+基础启动命令：
+```shell
+$ java -jar sfc-core.jar --spring.config.import=file:config.yml
+```
+
+
+### 2 关于数据表
 
 - 项目启动后会自动初始化数据库。若初始化失败，可尝试手动给数据库执行初始化脚本，脚本位于`sfc-core/src/main/resource/sql/full.sql`
 - 目前只在MySQL上测试过系统，不确保其他数据库管理系统可以正常运行
@@ -89,3 +92,32 @@ java -jar sfc-core.jar --spring.config.import=file:config.yml
 | ftp-store     | 提供基于FTP文件传输的存储读写支持（挂载存储）                |
 | ftp-server    | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源             |
 | video-enhance | 基于ffmpeg的视频增强服务，支持播放选择字幕、视频转码功能         |
+
+
+### 4. 插件的加载
+
+#### jar包模式
+
+如果有已经打包好的插件（jar包），那么直接把插件放到`运行目录/ext`后，启动主程序即可
+
+
+#### 开发模式
+
+在maven的`develop`配置文件环境下，对`application-develop.yml`的`plugin.extra-resource`数组补充`sfc-ext/插件项目`，如：
+```yaml
+plugin:
+  extra-resource:
+    - sfc-ext/sfc-ext-demo
+    - sfc-ext/sfc-ext-ftp-server
+```
+
+tips：
+1. 插件项目需要使用`sfc-ext`作为父级，并确保本地仓库安装了`sfc-api`
+2. 插件项目初创或修改了`pom.xml`后，需要执行`mvn clean compile`。
+3. 启动主程序之前，若修改了插件项目的代码，需要手动构建后再启动主程序，否则加载插件时不会加载到修改后的代码
+4. 不要把插件项目添加到主项目的maven依赖中
+5. 在IntelliJ IDEA中，插件的代码编译修改后，支持热重载class（其他IDE未测试）
+
+### 5. 插件的开发
+
+文档未完成

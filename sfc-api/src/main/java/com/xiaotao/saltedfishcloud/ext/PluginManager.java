@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,29 @@ import java.util.Map;
 public interface PluginManager {
     String PLUGIN_INFO_FILE = "plugin-info.json";
     String CONFIG_PROPERTIES_FILE = "config-properties.json";
+
+    /**
+     * 移除插件
+     */
+    void remove(String name);
+
+    /**
+     * 安装插件
+     * @param resource 插件资源
+     */
+    void installPlugin(Resource resource) throws IOException;
+
+    /**
+     * 对待升级的插件进行升级
+     */
+    void upgrade();
+
+    /**
+     * 解析插件信息
+     * @param url   插件url
+     */
+    PluginInfo parsePlugin(URL url) throws IOException;
+
 
     /**
      * 注册插件
@@ -70,6 +94,26 @@ public interface PluginManager {
     Map<String, PluginInfo> getAllPlugin();
 
     /**
+     * 获取所有可被识别的插件列表（包括未加载、已加载和待删除的）
+     */
+    List<PluginInfo> listAvailablePlugins() throws IOException;
+
+    /**
+     * 获取待删除的插件名称
+     */
+    List<String> listDeletePlugin();
+
+    /**
+     * 标记插件为待删除
+     */
+    void markPluginDelete(String name) throws IOException;
+
+    /**
+     * 删除所有未加载的被标记的插件
+     */
+    void deletePlugin() throws IOException;
+
+    /**
      * 获取所有注册的插件
      */
     List<PluginInfo> listAllPlugin();
@@ -90,4 +134,12 @@ public interface PluginManager {
      * 获取合并了各个插件的类加载器
      */
     ClassLoader getJarMergeClassLoader();
+
+
+
+//    /**
+//     * 从插件库或目录中动态加载插件
+//     * @param name  插件的资源名称（在ext目录下的jar包名称，如sfc-ext-demo.jar，那么就传入sfc-ext-demo）
+//     */
+//    void loadPlugin(String name) throws IOException;
 }

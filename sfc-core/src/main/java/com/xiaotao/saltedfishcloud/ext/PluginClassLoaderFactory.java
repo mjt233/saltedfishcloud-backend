@@ -26,7 +26,7 @@ public class PluginClassLoaderFactory {
      * @param url   插件资源URL
      * @return      插件类加载器
      */
-    public static ClassLoader createPurePluginClassLoader(URL url) {
+    public static URLClassLoader createPurePluginClassLoader(URL url) {
         return new URLClassLoader(new URL[]{url}, null) {
             @Override
             protected Class<?> findClass(String name) throws ClassNotFoundException {

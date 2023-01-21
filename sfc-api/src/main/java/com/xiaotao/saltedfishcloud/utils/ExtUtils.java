@@ -1,7 +1,5 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
@@ -14,8 +12,9 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,7 +31,16 @@ public class ExtUtils {
     public static PluginInfo getPluginInfo(ClassLoader loader, String prefix) throws IOException {
         String file = prefix == null ? PluginManager.PLUGIN_INFO_FILE : StringUtils.appendPath(prefix, PluginManager.PLUGIN_INFO_FILE);
         String infoJson = ExtUtils.getResourceText(loader, file);
-        return MapperHolder.parseJson(infoJson, PluginInfo.class);
+        PluginInfo pluginInfo = MapperHolder.parseJson(infoJson, PluginInfo.class);
+        if (pluginInfo == null) {
+            return null;
+        }
+
+        URL url = loader.getResource(file);
+        if (url != null) {
+            pluginInfo.setUrl(url.toString().replaceAll("(!/)?" + file, "").replaceAll("^jar:", ""));
+        }
+        return pluginInfo;
     }
 
     /**
@@ -113,6 +121,13 @@ public class ExtUtils {
             throw new RuntimeException(errMsg.toString());
         }
         return configNodeGroups;
+    }
+
+    /**
+     * 获取插件jar包目录
+     */
+    public static Path getExtDir() {
+        return Paths.get(EXTENSION_DIRECTORY);
     }
 
     /**

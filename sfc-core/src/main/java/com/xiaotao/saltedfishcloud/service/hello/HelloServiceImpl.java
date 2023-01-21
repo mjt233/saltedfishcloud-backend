@@ -52,6 +52,14 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
         store.put(name, detail);
     }
 
+    /**
+     * 移除特性
+     */
+    public void removeFeature(String name) {
+        log.debug("{}移除特性{}", LOG_TITLE, name);
+        store.remove(name);
+    }
+
     @Override
     public Object getDetail(String name) {
         return store.get(name);
@@ -67,6 +75,10 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
         Consumer<String> valueHandler = configValue -> {
             Object value;
             try {
+                if (configValue == null) {
+                    removeFeature(configKey);
+                    return;
+                }
                 if (Boolean.class.isAssignableFrom(type)) {
                     value = TypeUtils.toBoolean(configValue);
                 } else if (Number.class.isAssignableFrom(type)) {

@@ -30,9 +30,6 @@ public class SysRuntimeConfig implements ApplicationRunner {
     private static SysRuntimeConfig GLOBAL_HOLD_INST;
 
     @Autowired
-    private HelloService helloService;
-
-    @Autowired
     private ConfigService configService;
 
     @Autowired

@@ -12,16 +12,13 @@ import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -32,10 +29,17 @@ public class PluginController {
     @Autowired
     private PluginService pluginService;
 
-    @GetMapping("/getAllPlugins")
+    @GetMapping("/listAvailablePlugins")
     @RolesAllowed({"ADMIN"})
-    public JsonResult getAllPlugins() {
-        return JsonResultImpl.getInstance(pluginService.listPlugins());
+    public JsonResult getAllPlugins() throws IOException {
+        return JsonResultImpl.getInstance(pluginService.listAvailablePlugins());
+    }
+
+    @PostMapping("/deletePlugin")
+    @RolesAllowed({"ADMIN"})
+    public JsonResult deletePlugin(@RequestParam("name") String name) throws IOException {
+        pluginService.deletePlugin(name);
+        return JsonResult.emptySuccess();
     }
 
     @AllowAnonymous

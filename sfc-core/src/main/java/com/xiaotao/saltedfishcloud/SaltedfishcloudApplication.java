@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud;
 
 import com.xiaotao.saltedfishcloud.init.PluginInitializer;
+import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
@@ -47,7 +48,7 @@ public class SaltedfishcloudApplication {
         sa.addInitializers(new PluginInitializer());
 
         // 启动SpringBoot
-        sa.run(args);
+        SpringContextUtils.setContext(sa.run(args));
 
         // 打印启动信息
         printLaunchInfo(begin);
