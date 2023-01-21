@@ -58,7 +58,7 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
             log.info("{}启动时加载的插件清单：{}",LOG_PREFIX, pluginLists);
             log.info("{}插件初始化耗时：{}s",LOG_PREFIX, (System.currentTimeMillis() - begin)/1000d);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("{}插件信息初始化失败", LOG_PREFIX, e);
             throw new RuntimeException(e);
         }
     }

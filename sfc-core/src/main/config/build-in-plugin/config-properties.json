@@ -164,6 +164,24 @@
     ]
   },
   {
+    "name": "plugin",
+    "title": "插件管理",
+    "nodes": [
+      {
+        "nodes": [
+          {
+            "name": "plugin-manager",
+            "title": "插件管理",
+            "describe": "对系统插件信息进行管理，注意：若需要删除插件，执行删除后需要重启服务后生效",
+            "inputType": "template",
+            "template": "plugin-manager",
+            "defaultValue": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "safe",
     "title": "安全",
     "nodes": [
