@@ -7,19 +7,27 @@ import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -95,5 +103,36 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
                 });
         return ResourceUtils.stringToResource(sb.toString())
                 .setResponseFilename("autoLoad" + suffix);
+    }
+
+    @Override
+    public PluginInfoVo uploadPlugin(Resource resource) throws IOException {
+        // 临时保存
+        long tempId = IdUtil.getId();
+        Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
+        ResourceUtils.saveToFile(resource, tempPath);
+
+        // 解析插件
+        PluginInfo pluginInfo = pluginManager.parsePlugin(tempPath.toUri().toURL());
+        PluginInfoVo pluginInfoVo = new PluginInfoVo();
+        BeanUtils.copyProperties(pluginInfo, pluginInfoVo);
+        pluginInfoVo.setTempId(tempId);
+        return pluginInfoVo;
+    }
+
+    @Override
+    public void installPlugin(Long tempId, String fileName) throws IOException {
+        Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
+        if (!Files.exists(tempPath)) {
+            throw new IllegalArgumentException("无效的临时id");
+        }
+        PathResource pathResource = new PathResource(tempPath){
+            @Override
+            public String getFilename() {
+                return fileName;
+            }};
+
+        pluginManager.installPlugin(pathResource);
+        Files.deleteIfExists(tempPath);
     }
 }

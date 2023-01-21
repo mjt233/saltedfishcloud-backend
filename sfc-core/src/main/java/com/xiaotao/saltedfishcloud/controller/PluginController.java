@@ -7,12 +7,14 @@ import com.xiaotao.saltedfishcloud.ext.PluginService;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
@@ -81,5 +83,19 @@ public class PluginController {
             throw new JsonException(404, "资源不存在");
         }
         return ResourceUtils.wrapResource(resource);
+    }
+
+    @PostMapping("/uploadPlugin")
+    @RolesAllowed({"ADMIN"})
+    public JsonResult uploadPlugin(@RequestParam("file") MultipartFile file) throws IOException {
+        PluginInfoVo pluginInfoVo = pluginService.uploadPlugin(file.getResource());
+        return JsonResultImpl.getInstance(pluginInfoVo);
+    }
+
+    @PostMapping("/installPlugin")
+    @RolesAllowed({"ADMIN"})
+    public JsonResult installPlugin(@RequestParam("tempId") Long tempId, @RequestParam("fileName") String fileName) throws IOException {
+        pluginService.installPlugin(tempId, fileName);
+        return JsonResult.emptySuccess();
     }
 }

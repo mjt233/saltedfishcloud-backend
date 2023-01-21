@@ -46,6 +46,9 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
             // 加载系统核心模块插件信息
             initBuildInPlugin(pluginManager);
 
+            // 执行插件升级替换
+            pluginManager.upgrade();
+
             // 从classpath和ext目录中加载jar包插件
             initPluginFromClassPath(pluginManager);
 
