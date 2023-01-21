@@ -90,4 +90,10 @@ public class PluginInfo {
      */
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String url;
+
+    /**
+     * 待升级版本
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String upgradeVersion;
 }

@@ -59,6 +59,10 @@ public class MapperHolder {
         return mapper.readValue(json, mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
     }
 
+    public static <K,V> Map<K, V> parseJsonToMap(String json, Class<K> keyClass, Class<V> valueClass) throws JsonProcessingException {
+        return mapper.readValue(json, mapper.getTypeFactory().constructMapType(Map.class, keyClass, valueClass));
+    }
+
     public static String toJson(Object val) throws JsonProcessingException {
         return mapper.writeValueAsString(val);
     }

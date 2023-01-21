@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,24 @@ public interface PluginManager {
      * 移除插件
      */
     void remove(String name);
+
+    /**
+     * 安装插件
+     * @param resource 插件资源
+     */
+    void installPlugin(Resource resource) throws IOException;
+
+    /**
+     * 对待升级的插件进行升级
+     */
+    void upgrade();
+
+    /**
+     * 解析插件信息
+     * @param url   插件url
+     */
+    PluginInfo parsePlugin(URL url) throws IOException;
+
 
     /**
      * 注册插件

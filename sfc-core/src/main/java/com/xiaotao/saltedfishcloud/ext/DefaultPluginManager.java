@@ -6,8 +6,10 @@ import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.Result;
+import com.xiaotao.saltedfishcloud.model.po.PathInfo;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -18,10 +20,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -50,6 +49,12 @@ public class DefaultPluginManager implements PluginManager {
      * 依赖解包路径
      */
     private final static String DEP_EXPLODE_PATH = "ext/lib";
+
+    private final static String DELETE_JSON = "delete.json";
+
+    private final static String UPGRADE_JSON = "upgrade.json";
+
+    private final static String UPGRADE_SUFFIX = ".upgrade";
 
     private final static Pattern JAR_NAME_PATTERN = Pattern.compile("(?<=/).*?(?=.jar)");
     private final static Pattern JAR_VERSION_PATTERN = Pattern.compile("(?<=-)\\d.*");
@@ -438,6 +443,7 @@ public class DefaultPluginManager implements PluginManager {
             }
         }
 
+        // 追加插件目录中没有但已加载的插件（系统插件、开发模式加载的插件）
         pluginInfos.addAll(
                 listAllPlugin().stream().filter(e -> !processedPlugins.contains(e.getName()))
                 .map(e -> {
@@ -449,6 +455,24 @@ public class DefaultPluginManager implements PluginManager {
                     return pluginInfo;
                 }).collect(Collectors.toList())
         );
+
+        // 识别和整合插件升级信息
+        Map<String, String> upgradeRecord = getUpgradeRecord();
+        for (PluginInfo pluginInfo : pluginInfos) {
+            String upgradeName = upgradeRecord.get(pluginInfo.getName());
+            if (upgradeName == null) {
+                continue;
+            }
+
+            try {
+                URL url = ExtUtils.getExtDir().resolve(upgradeName).toUri().toURL();
+                PluginInfo upgradeInfo = parsePlugin(url);
+                pluginInfo.setUpgradeVersion(upgradeInfo.getVersion());
+            } catch (Exception e) {
+                log.error("{}识别插件升级信息出错：", LOG_PREFIX, e);
+            }
+
+        }
         return pluginInfos;
     }
 
@@ -459,22 +483,22 @@ public class DefaultPluginManager implements PluginManager {
      */
     @Override
     public List<String> listDeletePlugin() {
-        Path deleteRecord = ExtUtils.getExtDir().resolve("delete.json");
+        Path deleteRecord = ExtUtils.getExtDir().resolve(DELETE_JSON);
         if (!Files.exists(deleteRecord)) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
         try (InputStream inputStream = Files.newInputStream(deleteRecord)) {
             return MapperHolder.parseJsonToList(StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8), String.class);
         } catch (IOException e) {
             log.error("{}获取待删除插件出错", LOG_PREFIX,e);
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
     }
 
     @Override
     public void deletePlugin() throws IOException {
         // 获取被标记删除的插件
-        Path deleteRecordPath = ExtUtils.getExtDir().resolve("delete.json");
+        Path deleteRecordPath = ExtUtils.getExtDir().resolve(DELETE_JSON);
         if (!Files.exists(deleteRecordPath) || Files.isDirectory(deleteRecordPath)) {
             return;
         }
@@ -499,7 +523,7 @@ public class DefaultPluginManager implements PluginManager {
                 }
 
                 // 删除插件本体
-                Path path = Paths.get(new URL(pluginInfo.getUrl()).getPath().replaceAll("^/+", ""));
+                Path path = getPluginPath(pluginInfo);
                 log.info("{}删除插件: [{}]", LOG_PREFIX, path);
                 Files.deleteIfExists(path);
 
@@ -517,6 +541,10 @@ public class DefaultPluginManager implements PluginManager {
         Files.deleteIfExists(deleteRecordPath);
     }
 
+    private Path getPluginPath(PluginInfo pluginInfo) throws MalformedURLException {
+        return Paths.get(new URL(pluginInfo.getUrl()).getPath().replaceAll("^/+", ""));
+    }
+
     /**
      * 标记插件为待删除
      */
@@ -530,10 +558,34 @@ public class DefaultPluginManager implements PluginManager {
             throw new IllegalArgumentException("该插件不是通过jar包加载，无法删除");
         }
 
-        Path deleteRecord = ExtUtils.getExtDir().resolve("delete.json");
+        // 如果插件还没被加载，直接删掉文件完事
+        if (PluginInfo.PLUGIN_UNLOADED == Optional.ofNullable(plugin.getStatus()).orElse(PluginInfo.PLUGIN_LOADED)) {
+            Path existPath = getPluginPath(plugin);
+            Files.deleteIfExists(existPath);
+            return;
+        }
+
+        // 如果文件处于待更新状态，则取消更新标记
+        Map<String, String> upgradeRecord = getUpgradeRecord();
+        String upgradeName = upgradeRecord.get(name);
+        if (upgradeName != null) {
+            upgradeRecord.remove(name);
+            saveUpgradeRecord(upgradeRecord);
+            Files.deleteIfExists(ExtUtils.getExtDir().resolve(upgradeName));
+        }
+
+
         Set<String> deleteNameList = new HashSet<>(listDeletePlugin());
         deleteNameList.add(name);
+        saveDeleteList(deleteNameList);
+    }
+
+    /**
+     * 保存待删除的插件列表
+     */
+    private synchronized void saveDeleteList(Collection<String> deleteNameList) throws IOException {
         String json = MapperHolder.toJson(deleteNameList);
+        Path deleteRecord = ExtUtils.getExtDir().resolve(DELETE_JSON);
         try (OutputStream outputStream = Files.newOutputStream(deleteRecord)) {
             StreamUtils.copy(json, StandardCharsets.UTF_8, outputStream);
         }
@@ -563,7 +615,95 @@ public class DefaultPluginManager implements PluginManager {
         return pluginConfigNodeGroupMap.get(name);
     }
 
-//    @Override
+    @Override
+    public void installPlugin(Resource resource) throws IOException {
+        if (StringUtils.hasText(resource.getFilename())) {
+            throw new IllegalArgumentException("文件名不能为空");
+        }
+        long id = IdUtil.getId();
+        Path path = ExtUtils.getExtDir();
+        if (!Files.exists(path)) {
+            Files.createDirectories(path);
+        }
+
+        // 暂存并校验插件
+        Path temp = path.resolve(id + ".temp");
+        try (InputStream is = resource.getInputStream(); OutputStream os = Files.newOutputStream(temp)) {
+            StreamUtils.copy(is, os);
+        }
+        PluginInfo pluginInfo = parsePlugin(temp.toUri().toURL());
+
+        // 如果已经被标记了删除，则移除删除标记
+        List<String> deleteList = listDeletePlugin();
+        boolean markDelete = deleteList.stream().anyMatch(e -> pluginInfo.getName().equals(e));
+        if (markDelete) {
+            saveDeleteList(new HashSet<>(deleteList){{remove(pluginInfo.getName());}});
+        }
+
+        // 如果已存在同名插件，则标记为本次为升级操作，在下次启动时执行升级程序。
+        // 否则直接复制文件到插件目录
+        boolean exist = listAvailablePlugins().stream().anyMatch(e -> Objects.equals(pluginInfo.getName(), e.getName()));
+        if (exist) {
+            Path upgradeName = ExtUtils.getExtDir().resolve(resource.getFilename() + UPGRADE_SUFFIX);
+            Files.move(temp, upgradeName);
+            Map<String, String> upgradeRecord = getUpgradeRecord();
+            upgradeRecord.put(pluginInfo.getName(), resource.getFilename() + UPGRADE_SUFFIX);
+            saveUpgradeRecord(upgradeRecord);
+        } else {
+            Files.move(temp, ExtUtils.getExtDir().resolve(resource.getFilename()));
+        }
+    }
+
+    /**
+     * 获取待升级的插件记录
+     * @return  key - 插件名称，value - 待升级文件名
+     */
+    private Map<String, String> getUpgradeRecord() {
+        Path path = ExtUtils.getExtDir().resolve(UPGRADE_JSON);
+        if (!Files.exists(path)) {
+            return new HashMap<>();
+        } else {
+            try (InputStream is = Files.newInputStream(path)) {
+                String json = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+                return MapperHolder.parseJsonToMap(json, String.class, String.class);
+            } catch (IOException e) {
+                log.error("{}读取升级记录失败：", LOG_PREFIX, e);
+                return new HashMap<>();
+            }
+        }
+    }
+
+    /**
+     * 保存升级记录
+     * @param record    升级记录map key - 插件名称，value - 待升级文件名
+     */
+    private synchronized void saveUpgradeRecord(Map<String, String> record) throws IOException {
+        Path extDir = ExtUtils.getExtDir();
+        if (!Files.exists(extDir)) {
+            Files.createDirectories(extDir);
+        }
+        Path path = extDir.resolve(UPGRADE_JSON);
+        String json = MapperHolder.toJson(record);
+        try (OutputStream os = Files.newOutputStream(path)) {
+            StreamUtils.copy(json, StandardCharsets.UTF_8, os);
+        }
+    }
+
+    @Override
+    public void upgrade() {
+
+    }
+
+    @Override
+    public PluginInfo parsePlugin(URL url) throws IOException {
+        try (URLClassLoader classLoader = PluginClassLoaderFactory.createPurePluginClassLoader(url)) {
+            PluginInfo pluginInfo = getPluginInfoFromLoader(classLoader);
+            validPluginInfo(pluginInfo);
+            return pluginInfo;
+        }
+    }
+
+    //    @Override
 //    public synchronized void loadPlugin(String name) throws IOException {
 //        if(getPluginInfo(name) != null) {
 //            throw new IllegalArgumentException("插件已加载");
