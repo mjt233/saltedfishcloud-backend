@@ -468,7 +468,7 @@ public class DefaultPluginManager implements PluginManager {
             }
 
             try {
-                URL url = ExtUtils.getExtDir().resolve(upgradeName).toUri().toURL();
+                URL url = ExtUtils.getExtDir().resolve(upgradeName + UPGRADE_SUFFIX).toUri().toURL();
                 PluginInfo upgradeInfo = parsePlugin(url);
                 pluginInfo.setUpgradeVersion(upgradeInfo.getVersion());
             } catch (Exception e) {
