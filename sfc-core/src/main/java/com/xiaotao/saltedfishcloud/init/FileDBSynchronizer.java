@@ -27,9 +27,10 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
 
     @Override
     public void run(ApplicationArguments args) {
-        Thread thread = new Thread(this);
-        thread.start();
-        this.thread = thread;
+//        暂时停用该功能
+//        Thread thread = new Thread(this);
+//        thread.start();
+//        this.thread = thread;
     }
 
     public void doAction() throws Exception {
