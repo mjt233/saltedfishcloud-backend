@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import org.springframework.core.io.Resource;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.Map;
 /**
  * 拓展插件管理器
  */
-public interface PluginManager {
+public interface PluginManager extends Closeable {
     String PLUGIN_INFO_FILE = "plugin-info.json";
     String CONFIG_PROPERTIES_FILE = "config-properties.json";
 

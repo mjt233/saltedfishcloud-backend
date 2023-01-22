@@ -42,10 +42,13 @@ public class SaltedfishcloudApplication {
         long begin = System.currentTimeMillis();
 
 
-        // 配置SpringBoot，注册插件管理器
         SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
+        SpringContextUtils.setMainApplication(sa);
+        SpringContextUtils.setLaunchArgs(args);
+
+        // 配置SpringBoot，注册插件管理器
         sa.addInitializers(c -> log.info("[Boot]程序运行目录: {}", Paths.get("").toAbsolutePath()));
-        sa.addInitializers(new PluginInitializer());
+        sa.addInitializers(ctx -> new PluginInitializer().initialize(ctx));
 
         // 启动SpringBoot
         SpringContextUtils.setContext(sa.run(args));

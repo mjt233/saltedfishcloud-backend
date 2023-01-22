@@ -731,6 +731,19 @@ public class DefaultPluginManager implements PluginManager {
         }
     }
 
+    @Override
+    public void close() throws IOException {
+        for (Map.Entry<String, ClassLoader> entry : pluginRawLoaderMap.entrySet()) {
+            String plugin = entry.getKey();
+            ClassLoader classLoader = entry.getValue();
+            if (classLoader instanceof Closeable) {
+                log.info("{}关闭插件:{}", LOG_PREFIX, plugin);
+                ((Closeable) classLoader).close();
+            }
+        }
+        jarMergeClassLoader.close();
+    }
+
     //    @Override
 //    public synchronized void loadPlugin(String name) throws IOException {
 //        if(getPluginInfo(name) != null) {
