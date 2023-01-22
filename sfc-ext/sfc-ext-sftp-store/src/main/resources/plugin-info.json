@@ -4,6 +4,7 @@
   "describe": "为系统提供SFTP协议的文件挂载存储",
   "loadType": "merge",
   "type": "jar",
+  "icon": "mdi-database",
   "author": "xiaotao233",
   "email": "mjt233@qq.com",
   "apiVersion": "^api.version^",
