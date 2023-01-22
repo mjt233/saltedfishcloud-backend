@@ -545,7 +545,11 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     private Path getPluginPath(PluginInfo pluginInfo) throws MalformedURLException {
-        return Paths.get(new URL(pluginInfo.getUrl()).getPath().replaceAll("^/+", ""));
+        if (OSInfo.isWindows()) {
+            return Paths.get(new URL(pluginInfo.getUrl()).getPath().replaceAll("^/+", ""));
+        } else {
+            return Paths.get(new URL(pluginInfo.getUrl()).getPath());
+        }
     }
 
     /**
