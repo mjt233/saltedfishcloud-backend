@@ -742,6 +742,7 @@ public class DefaultPluginManager implements PluginManager {
 
     @Override
     public void close() throws IOException {
+        jarMergeClassLoader.close();
         for (Map.Entry<String, ClassLoader> entry : pluginRawLoaderMap.entrySet()) {
             String plugin = entry.getKey();
             ClassLoader classLoader = entry.getValue();
@@ -750,7 +751,6 @@ public class DefaultPluginManager implements PluginManager {
                 ((Closeable) classLoader).close();
             }
         }
-        jarMergeClassLoader.close();
     }
 
     //    @Override
