@@ -23,7 +23,13 @@ public class SpringContextUtils {
     private static ConfigurableApplicationContext context;
     private static DefaultListableBeanFactory beanFactory;
 
+    @Setter
+    @Getter
     private static Supplier<SpringApplication> applicationFactory;
+
+    @Setter
+    @Getter
+    private static Supplier<SpringApplication> emergencyApplicationFactory;
 
     @Setter
     @Getter
@@ -34,8 +40,28 @@ public class SpringContextUtils {
         beanFactory = (DefaultListableBeanFactory) context.getBeanFactory();
     }
 
-    public static void setApplicationFactory(Supplier<SpringApplication> factory) {
-        applicationFactory = factory;
+    /**
+     * 进入紧急模式
+     */
+    public static ConfigurableApplicationContext startEmergencyMode() {
+        log.info("====== 进入紧急模式 ======");
+        Thread thread = new Thread(() -> {
+            long begin = System.currentTimeMillis();
+            context = null;
+            log.info("====== 系统启动紧急模式 ======");
+            setContext(emergencyApplicationFactory.get().run(launchArgs));
+            log.info("====== 紧急模式重启完成，耗时：{}s =======", (System.currentTimeMillis() - begin)/1000D);
+        });
+
+        thread.setDaemon(false);
+        try {
+            thread.start();
+            thread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        return context;
     }
 
     /**
