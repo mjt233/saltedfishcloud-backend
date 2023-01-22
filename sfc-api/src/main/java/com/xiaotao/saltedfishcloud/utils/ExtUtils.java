@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.xiaotao.saltedfishcloud.ext.PluginDependenceConflictException;
+import com.xiaotao.saltedfishcloud.ext.PluginInfoException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
@@ -31,6 +33,9 @@ public class ExtUtils {
     public static PluginInfo getPluginInfo(ClassLoader loader, String prefix) throws IOException {
         String file = prefix == null ? PluginManager.PLUGIN_INFO_FILE : StringUtils.appendPath(prefix, PluginManager.PLUGIN_INFO_FILE);
         String infoJson = ExtUtils.getResourceText(loader, file);
+        if (!StringUtils.hasText(infoJson)) {
+            throw new IllegalArgumentException("plugin-info.json为空");
+        }
         PluginInfo pluginInfo = MapperHolder.parseJson(infoJson, PluginInfo.class);
         if (pluginInfo == null) {
             return null;

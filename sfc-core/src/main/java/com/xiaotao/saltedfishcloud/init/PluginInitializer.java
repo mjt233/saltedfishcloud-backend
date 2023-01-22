@@ -55,14 +55,15 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
             // 从外部目录中加载非jar包形式的插件
             initPluginFromExtraResource(pluginManager, pluginProperty);
             context.addBeanFactoryPostProcessor(beanFactory -> {
-                beanFactory.registerResolvableDependency(PluginManager.class, pluginManager);
+                beanFactory.registerSingleton("pluginManager", pluginManager);
+//                beanFactory.registerResolvableDependency(PluginManager.class, pluginManager);
             });
             String pluginLists = "[" + String.join(",", pluginManager.getAllPlugin().keySet()) + "]";
             log.info("{}启动时加载的插件清单：{}",LOG_PREFIX, pluginLists);
             log.info("{}插件初始化耗时：{}s",LOG_PREFIX, (System.currentTimeMillis() - begin)/1000d);
         } catch (IOException e) {
             log.error("{}插件信息初始化失败", LOG_PREFIX, e);
-            throw new RuntimeException(e);
+            throw new RuntimeException("插件信息初始化失败", e);
         }
     }
 

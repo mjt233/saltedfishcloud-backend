@@ -422,7 +422,12 @@ public class DefaultPluginManager implements PluginManager {
         // 从插件目录中获取插件
         for (URL extUrl : ExtUtils.getExtUrls()) {
             try (URLClassLoader classLoader = PluginClassLoaderFactory.createPurePluginClassLoader(extUrl)) {
-                PluginInfo pluginInfo = getPluginInfoFromLoader(classLoader);
+                PluginInfo pluginInfo;
+                try {
+                    pluginInfo = getPluginInfoFromLoader(classLoader);
+                } catch (Exception e) {
+                    throw new PluginInfoException("无法读取插件信息:" + extUrl + " 异常:", e);
+                }
                 if (pluginInfo.getName() == null) {
                     continue;
                 }
@@ -729,6 +734,19 @@ public class DefaultPluginManager implements PluginManager {
             }
             return pluginInfo;
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        for (Map.Entry<String, ClassLoader> entry : pluginRawLoaderMap.entrySet()) {
+            String plugin = entry.getKey();
+            ClassLoader classLoader = entry.getValue();
+            if (classLoader instanceof Closeable) {
+                log.info("{}关闭插件:{}", LOG_PREFIX, plugin);
+                ((Closeable) classLoader).close();
+            }
+        }
+        jarMergeClassLoader.close();
     }
 
     //    @Override
