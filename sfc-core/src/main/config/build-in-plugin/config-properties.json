@@ -54,7 +54,7 @@
           {
             "name": "sys.store.sync_interval",
             "inputType": "text",
-            "title": "自动同步间隔",
+            "title": "自动同步间隔(该功能已暂时弃用)",
             "describe": "文件记录服务与存储服务文件信息自动执行同步的间隔。\n单位：分钟，-1关闭",
             "defaultValue": "-1"
           }
