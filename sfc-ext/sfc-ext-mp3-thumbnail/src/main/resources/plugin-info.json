@@ -3,6 +3,7 @@
   "alias": "mp3缩略图封面",
   "loadType": "merge",
   "type": "jar",
+  "icon": "mdi-image",
   "author": "xiaotao233",
   "email": "mjt233@qq.com",
   "apiVersion": "^api.version^",

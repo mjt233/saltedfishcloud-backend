@@ -5,6 +5,7 @@
   "type": "jar",
   "author": "xiaotao233",
   "email": "mjt233@qq.com",
+  "icon": "mdi-server-network",
   "apiVersion": "^api.version^",
   "version": "^project.version^"
 }

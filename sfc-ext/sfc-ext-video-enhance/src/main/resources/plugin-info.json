@@ -1,8 +1,10 @@
 {
   "name": "video-enhance",
   "alias": "视频增强",
+  "describe": "提供视频字幕解析和播放、视频转码和视频编码信息查看",
   "loadType": "merge",
   "type": "jar",
+  "icon": "mdi-video-input-svideo",
   "author": "xiaotao233",
   "email": "mjt233@qq.com",
   "apiVersion": "^api.version^",

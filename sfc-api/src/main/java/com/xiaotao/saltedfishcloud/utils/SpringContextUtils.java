@@ -64,6 +64,16 @@ public class SpringContextUtils {
         return context;
     }
 
+    public static PluginManager getPluginManager() {
+        try {
+            // 先关闭原来的插件管理器
+            return getContext().getBean(PluginManager.class);
+        } catch (NoSuchBeanDefinitionException e) {
+            log.warn("没能获取到插件管理器");
+            return null;
+        }
+    }
+
     /**
      * 根据启动参数和启动程序工厂执行快速重启
      */
@@ -71,20 +81,19 @@ public class SpringContextUtils {
         log.info("====== 服务重启 ======");
         Thread thread = new Thread(() -> {
             long begin = System.currentTimeMillis();
-            try {
-                log.info("====== 插件系统关闭 ======");
-                // 先关闭原来的插件管理器
-                PluginManager pluginManager = getContext().getBean(PluginManager.class);
-                pluginManager.close();
-            } catch (NoSuchBeanDefinitionException e) {
-                log.warn("没能获取到插件管理器");
-            }
-            catch (IOException e) {
-                log.error("插件关闭出错：", e);
-            }
+            PluginManager pluginManager = getPluginManager();
             log.info("====== 系统上下文关闭 ======");
             context.close();
             context = null;
+
+            if (pluginManager != null) {
+                try {
+                    log.info("====== 插件系统关闭 ======");
+                    pluginManager.close();
+                } catch (IOException e) {
+                    log.error("插件系统关闭异常: ", e);
+                }
+            }
 
             log.info("====== 系统重新启动 ======");
             setContext(applicationFactory.get().run(launchArgs));
