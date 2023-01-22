@@ -14,8 +14,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.util.ClassUtils;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.util.function.Supplier;
 
 @UtilityClass
 @Slf4j
@@ -23,9 +23,7 @@ public class SpringContextUtils {
     private static ConfigurableApplicationContext context;
     private static DefaultListableBeanFactory beanFactory;
 
-    @Getter
-    @Setter
-    private static SpringApplication mainApplication;
+    private static Supplier<SpringApplication> applicationFactory;
 
     @Setter
     @Getter
@@ -36,6 +34,13 @@ public class SpringContextUtils {
         beanFactory = (DefaultListableBeanFactory) context.getBeanFactory();
     }
 
+    public static void setApplicationFactory(Supplier<SpringApplication> factory) {
+        applicationFactory = factory;
+    }
+
+    /**
+     * 根据启动参数和启动程序工厂执行快速重启
+     */
     public static ConfigurableApplicationContext restart() {
         log.info("====== 服务重启 ======");
         Thread thread = new Thread(() -> {
@@ -56,7 +61,7 @@ public class SpringContextUtils {
             context = null;
 
             log.info("====== 系统重新启动 ======");
-            setContext(mainApplication.run(launchArgs));
+            setContext(applicationFactory.get().run(launchArgs));
             log.info("====== 系统重启完成，耗时：{}s =======", (System.currentTimeMillis() - begin)/1000D);
         });
 

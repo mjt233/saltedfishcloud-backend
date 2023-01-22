@@ -10,8 +10,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.function.Supplier;
 
 @SpringBootApplication(
         exclude= {DataSourceAutoConfiguration.class, GsonAutoConfiguration.class},
@@ -38,24 +42,38 @@ import java.nio.file.Paths;
 public class SaltedfishcloudApplication {
 
     public static void main(String[] args) throws IOException {
-
-        long begin = System.currentTimeMillis();
-
-
-        SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
-        SpringContextUtils.setMainApplication(sa);
+        // 记录启动参数
         SpringContextUtils.setLaunchArgs(args);
 
-        // 配置SpringBoot，注册插件管理器
-        sa.addInitializers(c -> log.info("[Boot]程序运行目录: {}", Paths.get("").toAbsolutePath()));
-        sa.addInitializers(ctx -> new PluginInitializer().initialize(ctx));
+        // 获取启动程序工厂
+        SpringContextUtils.setApplicationFactory(getLaunchFactory());
 
-        // 启动SpringBoot
-        SpringContextUtils.setContext(sa.run(args));
+        // 启动
+        ConfigurableApplicationContext context = getLaunchFactory().get().run(args);
 
-        // 打印启动信息
-        printLaunchInfo(begin);
-        System.out.println("=========咸鱼云已启动(oﾟvﾟ)ノ==========");
+        // 记录上下文
+        SpringContextUtils.setContext(context);
+    }
+
+    public static Supplier<SpringApplication> getLaunchFactory() {
+        return () -> {
+
+            long begin = System.currentTimeMillis();
+
+
+            SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
+
+            // 配置SpringBoot，注册插件管理器
+            sa.addInitializers(c -> log.info("[Boot]程序运行目录: {}", Paths.get("").toAbsolutePath()));
+            sa.addInitializers(ctx -> new PluginInitializer().initialize(ctx));
+
+            sa.addListeners((ApplicationListener<ApplicationReadyEvent>) applicationEvent -> {
+                // 打印启动信息
+                printLaunchInfo(begin);
+                System.out.println("=========咸鱼云已启动(oﾟvﾟ)ノ==========");
+            });
+            return sa;
+        };
     }
 
     public static void printLaunchInfo(long beginTime) {
