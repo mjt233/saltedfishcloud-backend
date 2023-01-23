@@ -104,7 +104,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
                 .flatMap(e -> e.getNodes().stream())
                 .collect(Collectors.toMap(
                         ConfigNode::getName,
-                        e -> dbConfig.getOrDefault(e.getName(), e.getDefaultValue())
+                        e -> dbConfig.getOrDefault(e.getName(), Optional.ofNullable(e.getDefaultValue()).orElse(""))
                 ));
 
     }
