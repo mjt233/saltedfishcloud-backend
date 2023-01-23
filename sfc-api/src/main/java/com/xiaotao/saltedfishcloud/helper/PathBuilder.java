@@ -71,10 +71,12 @@ public class PathBuilder {
 
         Iterator<String> iterator = this.path.listIterator(finalIndex);
         while (iterator.hasNext()) {
-            if (++cnt > finalLength) break;
-            if (forcePrefix ||
-                    ( !first || !OSInfo.isWindows())
-            )sb.append("/");
+            if (++cnt > finalLength) {
+                break;
+            }
+            if (forcePrefix || ( !first || !OSInfo.isWindows())) {
+                sb.append("/");
+            }
 
             sb.append(iterator.next());
 

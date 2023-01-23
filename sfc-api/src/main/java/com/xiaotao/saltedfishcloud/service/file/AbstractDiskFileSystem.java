@@ -127,6 +127,7 @@ public abstract class AbstractDiskFileSystem implements DiskFileSystem {
         lock.lock();
         try(OutputStream output = Files.newOutputStream(temp)) {
             PathBuilder pb = new PathBuilder();
+            pb.setForcePrefix(true);
             pb.append(dest);
             compressAndWriteOut(uid, path, names, ArchiveType.ZIP, output);
             final FileInfo fileInfo = FileInfo.getLocal(temp.toString());
