@@ -4,8 +4,6 @@
     "title": "基础配置",
     "nodes": [
       {
-        "name": "ftp-server.base",
-        "title": "基础配置",
         "nodes": [
           {
             "name": "sys.common.ftp_properties",
