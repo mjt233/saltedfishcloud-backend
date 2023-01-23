@@ -85,6 +85,23 @@
     ]
   },
   {
+    "name": "user-manager",
+    "title": "用户管理",
+    "nodes": [
+      {
+        "nodes": [
+          {
+            "name": "user-manager",
+            "title": "用户管理",
+            "inputType": "template",
+            "template": "user-manager",
+            "defaultValue": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "proxy-node",
     "title": "代理节点",
     "nodes": [
