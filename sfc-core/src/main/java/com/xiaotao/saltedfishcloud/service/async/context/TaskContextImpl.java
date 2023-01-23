@@ -1,7 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.async.context;
 
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.Getter;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.UUID;
 
@@ -39,9 +42,11 @@ public class TaskContextImpl<T> implements TaskContext<T> {
             throw new IllegalArgumentException(task.getClass().getName() + " 不是一个有效的 AsyncTask");
         }
         this.task = (AsyncTask) task;
+        SecurityContext securityContext = SecurityContextHolder.getContext();
         this.thread = new Thread(() -> {
             boolean r;
             try {
+                SecurityContextHolder.setContext(securityContext);
                 r = this.task.start();
             } catch (Throwable e) {
                 e.printStackTrace();
