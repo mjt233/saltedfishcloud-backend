@@ -1,0 +1,14 @@
+{
+  "name": "jntm",
+  "loadType": "merge",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "describe": "彩蛋插件，连续按下5次j开启及鸡你太美模式，输入j n t m触发音效",
+  "icon": "mdi-food-drumstick",
+  "alias": "鸡你太美",
+  "autoLoad": [
+    "index.umd.js"
+  ],
+  "apiVersion": "^api.version^",
+  "version": "^project.version^"
+}

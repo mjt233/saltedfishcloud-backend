@@ -28,6 +28,7 @@
         <module>sfc-ext-ftp-store</module>
         <module>sfc-ext-ftp-server</module>
         <module>sfc-ext-video-enhance</module>
+        <module>sfc-ext-jntm</module>
     </modules>
 
 
