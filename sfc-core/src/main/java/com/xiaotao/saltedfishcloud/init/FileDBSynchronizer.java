@@ -13,6 +13,7 @@ import javax.annotation.Resource;
 
 /**
  * 用于同步本地网盘文件的信息到数据库
+ * todo 改为使用专门的定时任务机制，不自己造轮子了
  */
 @Component
 @Slf4j
@@ -41,7 +42,9 @@ public class FileDBSynchronizer implements ApplicationRunner, Runnable {
      * 关闭同步
      */
     public void stop() {
-        this.thread.interrupt();
+        if (this.thread != null) {
+            this.thread.interrupt();
+        }
     }
 
     @Override
