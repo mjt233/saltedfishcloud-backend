@@ -287,15 +287,15 @@ public class UserController {
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
         User user = SecureUtils.getSpringSecurityUser();
         if (force) {
-            if ( user.getType() != User.TYPE_ADMIN) {
+            if (user == null || user.getType() != User.TYPE_ADMIN) {
                 throw new AccessDeniedException("非管理员不允许使用force参数");
             } else {
                 userDao.modifyPassword(uid, SecureUtils.getPassswd(newPasswd));
-                tokenDao.cleanUserToken(user.getId());
+                tokenDao.cleanUserToken(uid);
                 return JsonResultImpl.getInstance(200, null, "force reset");
             }
         } else {
-            tokenDao.cleanUserToken(user.getId());
+            tokenDao.cleanUserToken(uid);
             int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
             return JsonResultImpl.getInstance(200, i, "ok");
         }
