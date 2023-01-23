@@ -1,11 +1,15 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -28,7 +32,10 @@ import javax.mail.MessagingException;
 import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -62,6 +69,14 @@ public class UserServiceImp implements UserService {
             user = userDao.getUserByUser(account);
         }
         return user;
+    }
+
+    @Override
+    public CommonPageInfo<User> listUsers(PageableRequest request) {
+        PageHelper.startPage(request.getPage(), request.getSize());
+        List<User> userList = Optional.ofNullable(userDao.getUserList()).orElseGet(Collections::emptyList);
+        PageInfo<User> pageInfo = new PageInfo<>(userList);
+        return CommonPageInfo.of(pageInfo);
     }
 
     @Override

@@ -1,18 +1,17 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
-import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.constant.error.AccountError;
+import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
-import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
@@ -22,7 +21,6 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
-
 import org.hibernate.validator.constraints.Length;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -44,8 +42,6 @@ import javax.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
 
 @Controller
 @RequestMapping(UserController.PREFIX)
@@ -314,7 +310,7 @@ public class UserController {
     @RolesAllowed({"ADMIN"})
     public JsonResult grant(@PathVariable("uid") int uid,
                             @PathVariable("typeCode") int type) {
-        User user = userDao.getUserById(uid);
+        User user = userService.getUserById(uid);
         if (user == null) {
             throw new UserNoExistException();
         }
@@ -331,11 +327,9 @@ public class UserController {
     @RolesAllowed({"ADMIN"})
     public JsonResult getUserList(@RequestParam(value = "page", defaultValue = "1") int page,
                                   @RequestParam(value = "size", defaultValue = "10") @Max(50) @Min(5) @Valid int size) {
-        PageHelper.startPage(page, 10);
-        List<User> userList = userDao.getUserList();
-        userList.forEach(e -> e.setPwd(null));
-        PageInfo<User> pageInfo = new PageInfo<>(userList);
-        return JsonResultImpl.getInstance(pageInfo);
+        CommonPageInfo<User> res = userService.listUsers(new PageableRequest().setPage(page).setSize(size));
+        res.getContent().forEach(e -> e.setPwd(null));
+        return JsonResultImpl.getInstance(res);
     }
 
 }
