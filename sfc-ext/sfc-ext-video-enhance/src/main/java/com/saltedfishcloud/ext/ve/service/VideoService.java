@@ -184,6 +184,8 @@ public class VideoService {
             encodeConvertTaskRepo.save(taskPo);
         });
         context.onFailed(() -> {
+            log.error("{}视频编码失败:{}", LOG_PREFIX, taskPo);
+
             taskPo.setTaskStatus(TaskStatus.FAILED);
             encodeConvertTaskRepo.save(taskPo);
         });
