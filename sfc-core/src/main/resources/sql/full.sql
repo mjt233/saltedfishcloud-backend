@@ -143,6 +143,7 @@ CREATE TABLE `node_list` (
                              `uid` int unsigned DEFAULT NULL,
                              `collecting` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于收集文件中',
                              `sharing` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于分享状态',
+                             mount_id bigint COMMENT '挂载点id',
                              UNIQUE KEY `node_name_index` (`parent`,`name`),
                              KEY `id_index` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

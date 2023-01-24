@@ -115,7 +115,7 @@ public class ConfigureInitializer implements ApplicationRunner {
 
         configService.addAfterSetListener(SysConfigName.Store.SYNC_INTERVAL, e -> sysProperties.getSync().setInterval(Integer.parseInt(e)));
         configService.addAfterSetListener(SysConfigName.Register.SYS_REGISTER_REG_CODE, e -> sysProperties.getCommon().setRegCode(e));
-        configService.addAfterSetListener(SysConfigName.Store.SYS_STORE_TYPE, e -> {
+        configService.addBeforeSetListener(SysConfigName.Store.SYS_STORE_TYPE, e -> {
             try {
                 configService.setStoreType(StoreMode.valueOf(e));
                 sysProperties.getStore().setMode(e);
