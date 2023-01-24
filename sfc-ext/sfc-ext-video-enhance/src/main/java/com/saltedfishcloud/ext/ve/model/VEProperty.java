@@ -38,7 +38,7 @@ public class VEProperty {
             describe = "是否启用视频缩略图总开关",
             group = "feature",
             defaultValue = "false",
-            inputType = "checkbox"
+            inputType = "switch"
     )
     private boolean enableThumbnail;
 
@@ -48,7 +48,7 @@ public class VEProperty {
             describe = "控制是否为挂载目录中的视频创建缩略图",
             group = "feature",
             defaultValue = "false",
-            inputType = "checkbox"
+            inputType = "switch"
     )
     private boolean enableThumbnailOnMount;
 

@@ -10,7 +10,9 @@ import com.xiaotao.saltedfishcloud.service.async.io.impl.StringMessageIOPair;
 import com.xiaotao.saltedfishcloud.service.async.task.AbstractAsyncTask;
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTaskResult;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +21,10 @@ import org.springframework.core.io.Resource;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -47,6 +51,8 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
 
     private final ProgressRecord status;
 
+    private Process process = null;
+
     private boolean isFinish = false;
 
     public EncodeConvertAsyncTask() {
@@ -66,8 +72,12 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
 
     @Override
     protected AsyncTaskResult execute() {
-        Process process = null;
-        try {
+        Path logDirectory = PathUtils.getLogDirectory();
+        if (logDirectory == null) {
+            throw new RuntimeException("日志目录获取失败");
+        }
+        Path logPath = logDirectory.resolve("ffmpeg_" + param.getSource().getName() + "_" + System.currentTimeMillis() + ".log");
+        try(OutputStream logOutput = Files.newOutputStream(logPath)) {
             initInputFile();
             // 获取视频基础信息，记录总长
             VideoInfo videoInfo = ffMpegHelper.getVideoInfo(inputFile);
@@ -82,7 +92,8 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
             String line;
             try {
                 while ((line = scanner.nextLine()) != null) {
-//                    outputProducer.write(line);
+                    logOutput.write(line.getBytes(StandardCharsets.UTF_8));
+                    logOutput.write('\n');
                     Double progress = StringParser.parseTimeProgress(line);
                     if (progress != null) {
                         status.setLoaded(progress.longValue());
@@ -126,5 +137,12 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
     @Override
     public boolean isStop() {
         return isFinish;
+    }
+
+    @Override
+    protected void doInterrupt() {
+        if (process != null) {
+            process.destroy();
+        }
     }
 }

@@ -1,15 +1,42 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PathUtils {
+    private static boolean isLogDirectoryExist = false;
+
+    private static final Path LOG_PATH;
+
+    static {
+        LOG_PATH = Paths.get("log");
+        if (!Files.exists(LOG_PATH)) {
+            try {
+                Files.createDirectories(LOG_PATH);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     /**
      * 获取系统临时目录
      */
     public static String getTempDirectory() {
         return System.getProperty("java.io.tmpdir");
+    }
+
+    /**
+     * 获取日志目录
+     */
+    public static Path getLogDirectory() {
+        return LOG_PATH;
     }
 
     /**

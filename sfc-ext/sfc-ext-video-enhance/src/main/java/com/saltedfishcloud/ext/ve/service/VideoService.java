@@ -10,7 +10,6 @@ import com.saltedfishcloud.ext.ve.model.EncodeConvertRule;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -19,11 +18,7 @@ import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -189,12 +184,14 @@ public class VideoService {
             encodeConvertTaskRepo.save(taskPo);
         });
         context.onFailed(() -> {
+            log.error("{}视频编码失败:{}", LOG_PREFIX, taskPo);
+
             taskPo.setTaskStatus(TaskStatus.FAILED);
             encodeConvertTaskRepo.save(taskPo);
         });
         context.onFinish(() -> {
             try {
-                Files.deleteIfExists(tempDir);
+                FileUtils.delete(tempDir);
                 log.info("{}移除临时目录：{}", LOG_PREFIX, tempDir);
             } catch (IOException e) {
                 log.error("{}临时目录移除失败：", LOG_PREFIX, e);

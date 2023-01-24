@@ -70,7 +70,6 @@ public class ExtUtils {
         }
     }
 
-
     /**
      * 从类加载器中读取加载并解析插件的配置节点信息
      * @param loader    类加载器
@@ -85,46 +84,7 @@ public class ExtUtils {
             return Collections.emptyList();
         }
         List<ConfigNode> configNodeGroups = MapperHolder.parseJsonToList(json, ConfigNode.class);
-        List<ConfigNode> allNodes = configNodeGroups.stream().flatMap(e -> e.getNodes().stream()).flatMap(e -> e.getNodes().stream()).collect(Collectors.toList());
-        StringBuilder errMsg = new StringBuilder();
-        // 默认值缺失检测
-        errMsg.append(
-            allNodes
-                .stream()
-                .filter(e -> e.getDefaultValue() == null)
-                .map(e -> "配置项【" + e.getName() + "】缺少默认值;")
-                .collect(Collectors.joining())
-        );
-
-        // form类型的参数对象属性组装
-        allNodes.stream()
-                .filter(e -> e.getTypeRef() != null || e.getInputType().equals("form"))
-                .forEach(e -> {
-                    try {
-                        if (!StringUtils.hasText(e.getTypeRef())) {
-                            errMsg.append("配置节点【").append(e.getName()).append("】缺少类型引用typeRef;");
-                            return;
-                        }
-                        Class<?> refClass = null;
-
-                        // 先从插件的直接加载器类型引用
-                        try {
-                            refClass = loader.loadClass(e.getTypeRef());
-                        } catch (ClassNotFoundException ex) {
-                            // 找不到则使用默认的加载器加载（类型引用未在插件jar包中声明而是引用系统核心的类）
-                            refClass = ExtUtils.class.getClassLoader().loadClass(e.getTypeRef());
-                        }
-
-                        e.setNodes(new ArrayList<>(PropertyUtils.getConfigNodeFromEntityClass(refClass).values()));
-                    } catch (ClassNotFoundException ex) {
-                        errMsg.append("找不到类型引用：").append(e.getTypeRef());
-                    }
-                });
-
-
-        if (errMsg.length() > 0) {
-            throw new RuntimeException(errMsg.toString());
-        }
+        PropertyUtils.dereferenceNodes(configNodeGroups, loader);
         return configNodeGroups;
     }
 
