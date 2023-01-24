@@ -78,8 +78,8 @@ public final class Version implements Comparable<Version>{
                 if (c < '0' || c > '9' ) {
                     vt = VersionTag.valueOf(s[3]);
                 } else {
-                    // 缺少版本标签类型，默认SNAPSHOT
-                    vt = VersionTag.SNAPSHOT;
+                    // 缺少版本标签类型，默认RELEASE
+                    vt = VersionTag.RELEASE;
                     if (s.length == 4) {
                         fixVer = Integer.parseInt(s[s.length - 1]);
                     }

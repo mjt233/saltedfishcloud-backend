@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface EncodeConvertTaskRepo extends JpaRepository<EncodeConvertTask, Long> {
     EncodeConvertTask findByTaskId(String taskId);
 
-    Page<EncodeConvertTask> findByUidAndTaskStatus(Long uid, Integer status, Pageable pageable);
+    Page<EncodeConvertTask> findByUidAndTaskStatusOrderByCreateAtDesc(Long uid, Integer status, Pageable pageable);
 }
