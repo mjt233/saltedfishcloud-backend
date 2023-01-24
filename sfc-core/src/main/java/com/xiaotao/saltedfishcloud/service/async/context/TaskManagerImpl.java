@@ -60,12 +60,15 @@ public class TaskManagerImpl implements TaskManager {
 
     @EventListener(ContextClosedEvent.class)
     public void interruptAll() {
-        for (Map.Entry<String, TaskContext<? extends AsyncTask>> entry : tasks.entrySet()) {
-            try {
-                remove(entry.getKey());
-            } catch (Throwable e) {
-                log.error("{}任务中断失败", LOG_TITLE, e);
+        synchronized (tasks) {
+            for (Map.Entry<String, TaskContext<? extends AsyncTask>> entry : tasks.entrySet()) {
+                try {
+                    entry.getValue().interrupt();
+                } catch (Throwable e) {
+                    log.error("{}任务中断失败", LOG_TITLE, e);
+                }
             }
         }
+        tasks.clear();
     }
 }
