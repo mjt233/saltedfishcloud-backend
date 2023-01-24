@@ -42,6 +42,13 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
     @Setter
     private EncodeConvertTaskParam param;
 
+    /**
+     * 转码任务记录id（不是异步任务id）
+     */
+    @Setter
+    @Getter
+    private Long id;
+
     @Setter
     private FFMpegHelper ffMpegHelper;
 
@@ -89,7 +96,7 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
             return "";
         }
         try (InputStream inputStream = Files.newInputStream(logPath)) {
-            return "命令：" + Strings.join(processWrap.getArgs(), ' ') + '\n' + StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
+            return StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
         } catch (IOException e) {
             log.error("{}读取日志失败：", LOG_PREFIX, e);
             return "读取日志失败：" + e.getMessage();
@@ -98,8 +105,12 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
 
     @Override
     protected AsyncTaskResult execute() {
-        logPath = PathUtils.getLogDirectory().resolve("ffmpeg_" + param.getSource().getName() + "_" + System.currentTimeMillis() + ".log");
+        if (id == null) {
+            throw new IllegalArgumentException("未设置id");
+        }
+        logPath = PathUtils.getLogDirectory().resolve("ffmpeg_" + id + ".log");
         try(OutputStream logOutput = Files.newOutputStream(logPath)) {
+            log.info("{}创建ffmpeg日志文件: {}", LOG_PREFIX, logPath.toAbsolutePath());
             initInputFile();
             // 获取视频基础信息，记录总长
             VideoInfo videoInfo = ffMpegHelper.getVideoInfo(inputFile);
@@ -113,6 +124,7 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
             scanner.useDelimiter("\r\n?");
             String line;
             try {
+                logOutput.write(("command: " + Strings.join(processWrap.getArgs(), ' ') + "\n\n").getBytes(StandardCharsets.UTF_8));
                 while ((line = scanner.nextLine()) != null) {
                     logOutput.write(line.getBytes(StandardCharsets.UTF_8));
                     logOutput.write('\n');
@@ -125,12 +137,18 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
                     }
                 }
             } catch (NoSuchElementException ignore) { }
+            logOutput.write("子进程控制台输出结束\n".getBytes(StandardCharsets.UTF_8));
             int ret = processWrap.getProcess().waitFor();
             if (ret != 0) {
+                logOutput.write(("子进程异常退出，代码: " + ret +"\n").getBytes(StandardCharsets.UTF_8));
                 throw new RuntimeException("ffmpeg异常退出：" + ret);
             }
+
             log.info("{}{}转码完成，保存中", LOG_PREFIX, inputFile);
+            logOutput.write("转码完成，保存中\n".getBytes(StandardCharsets.UTF_8));
             resourceService.writeResource(param.getTarget(), new PathResource(outputFile));
+
+            logOutput.write("保存完毕\n".getBytes(StandardCharsets.UTF_8));
             log.info("{}保存完毕：{}", LOG_PREFIX, param.getTarget().getPath() + File.separator + param.getTarget().getName());
             Files.deleteIfExists(Paths.get(outputFile));
             log.info("{}删除临时输出文件：{}", LOG_PREFIX, outputFile);
