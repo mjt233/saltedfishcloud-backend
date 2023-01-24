@@ -47,6 +47,8 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
 
     private final ProgressRecord status;
 
+    private Process process = null;
+
     private boolean isFinish = false;
 
     public EncodeConvertAsyncTask() {
@@ -66,7 +68,6 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
 
     @Override
     protected AsyncTaskResult execute() {
-        Process process = null;
         try {
             initInputFile();
             // 获取视频基础信息，记录总长
@@ -126,5 +127,13 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
     @Override
     public boolean isStop() {
         return isFinish;
+    }
+
+    @Override
+    protected void doInterrupt() {
+        if (process != null) {
+            process.destroy();
+        }
+        super.interrupt();
     }
 }

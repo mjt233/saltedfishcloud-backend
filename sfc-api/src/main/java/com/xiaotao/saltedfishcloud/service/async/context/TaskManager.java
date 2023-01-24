@@ -16,7 +16,7 @@ public interface TaskManager {
     }
 
     /**
-     * 移除指定的任务
+     * 移除并中断指定的任务的执行
      * @param id 任务ID
      * @return 移除成功为true，否则为false（无效的任务ID时为false）
      */

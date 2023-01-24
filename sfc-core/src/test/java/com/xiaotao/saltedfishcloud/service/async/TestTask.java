@@ -34,4 +34,9 @@ public class TestTask extends AbstractAsyncTask<String, String> {
         System.out.println("收到中断");
         super.interrupt();
     }
+
+    @Override
+    protected void doInterrupt() {
+
+    }
 }

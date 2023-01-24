@@ -19,4 +19,9 @@ public class CustomConstructorTask extends AbstractAsyncTask<String, String> {
     public String getStatus() {
         return "啦啦啦";
     }
+
+    @Override
+    protected void doInterrupt() {
+
+    }
 }
