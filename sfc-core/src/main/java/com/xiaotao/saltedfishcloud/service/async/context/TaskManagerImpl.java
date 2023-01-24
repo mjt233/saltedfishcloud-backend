@@ -32,7 +32,9 @@ public class TaskManagerImpl implements TaskManager {
             }
         }
         if (task != null) {
-            task.interrupt();
+            if (!task.isFinish()) {
+                task.interrupt();
+            }
             return true;
         }
         return false;
