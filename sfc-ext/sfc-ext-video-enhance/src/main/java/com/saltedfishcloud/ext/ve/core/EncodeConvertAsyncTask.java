@@ -134,6 +134,5 @@ public class EncodeConvertAsyncTask extends AbstractAsyncTask<String, ProgressRe
         if (process != null) {
             process.destroy();
         }
-        super.interrupt();
     }
 }
