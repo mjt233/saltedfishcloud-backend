@@ -5,11 +5,13 @@ import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.EncodeConvertAsyncTask;
 import com.saltedfishcloud.ext.ve.core.EncodeConvertAsyncTaskFactory;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
+import com.saltedfishcloud.ext.ve.dao.EncodeConvertTaskLogRepo;
 import com.saltedfishcloud.ext.ve.dao.EncodeConvertTaskRepo;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertRule;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
+import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTaskLog;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -22,7 +24,6 @@ import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -52,7 +53,9 @@ public class VideoService {
     private EncodeConvertTaskRepo encodeConvertTaskRepo;
 
     @Autowired
-    @Lazy
+    private EncodeConvertTaskLogRepo logRepo;
+
+    @Autowired
     private ResourceService resourceService;
 
     @Autowired
@@ -73,7 +76,7 @@ public class VideoService {
      */
     public CommonPageInfo<EncodeConvertTask> listTask(Long uid, Integer status, Integer page, Integer pageSize) {
         PageRequest pageRequest = PageRequest.of(page, pageSize);
-        Page<EncodeConvertTask> tasks = encodeConvertTaskRepo.findByUidAndTaskStatus(uid, status, pageRequest);
+        Page<EncodeConvertTask> tasks = encodeConvertTaskRepo.findByUidAndTaskStatusOrderByCreateAtDesc(uid, status, pageRequest);
 
         // 针对运行中的任务获取相关进度
         tasks.forEach(e -> {
@@ -185,20 +188,32 @@ public class VideoService {
         });
         context.onFailed(() -> {
             log.error("{}视频编码失败:{}", LOG_PREFIX, taskPo);
-
             taskPo.setTaskStatus(TaskStatus.FAILED);
             encodeConvertTaskRepo.save(taskPo);
         });
         context.onFinish(() -> {
             try {
                 FileUtils.delete(tempDir);
+                logRepo.save(EncodeConvertTaskLog.builder()
+                                .taskId(taskPo.getId())
+                                .taskLog(task.getLog())
+                        .build());
                 log.info("{}移除临时目录：{}", LOG_PREFIX, tempDir);
+                asyncTaskManager.remove(taskId);
             } catch (IOException e) {
                 log.error("{}临时目录移除失败：", LOG_PREFIX, e);
             }
         });
         asyncTaskManager.submit(context);
         return taskId;
+    }
+
+    /**
+     * 获取编码转换任务的日志
+     * @param taskId    任务id（不是异步任务id）
+     */
+    public EncodeConvertTaskLog getTaskLog(Long taskId) {
+        return logRepo.findByTaskId(taskId);
     }
 
     private EncodeConvertTask createTaskPo(EncodeConvertTaskParam param) throws JsonProcessingException {
