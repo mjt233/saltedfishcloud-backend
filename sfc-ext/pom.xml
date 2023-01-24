@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>11</java.version>
-        <api.version>2.2.1</api.version>
+        <api.version>2.2.5</api.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -28,6 +28,7 @@
         <module>sfc-ext-ftp-store</module>
         <module>sfc-ext-ftp-server</module>
         <module>sfc-ext-video-enhance</module>
+        <module>sfc-ext-jntm</module>
     </modules>
 
 

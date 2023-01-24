@@ -110,9 +110,14 @@ public abstract class AbstractAsyncTask<MT, ST> implements AsyncTask<MT, ST> {
         return finish;
     }
 
+    protected abstract void doInterrupt();
+
     @Override
     public void interrupt() {
         if (finish) {
+            setExpire(true);
+        } else {
+            doInterrupt();
             setExpire(true);
         }
     }

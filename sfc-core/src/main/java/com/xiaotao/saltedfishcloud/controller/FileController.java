@@ -20,6 +20,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.Api;
@@ -86,7 +87,7 @@ public class FileController {
                              @PathVariable @UID(true) int uid,
                              @RequestParam(value = "file", required = false) @MergeFile MultipartFile file,
                              @RequestParam(value = "md5", required = false) String md5) throws JsonException, IOException {
-        if (file == null || file.isEmpty()) {
+        if (file == null) {
             throw new JsonException(400, "文件为空");
         }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);

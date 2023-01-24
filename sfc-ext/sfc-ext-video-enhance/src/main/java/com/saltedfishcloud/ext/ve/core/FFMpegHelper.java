@@ -14,7 +14,7 @@ public interface FFMpegHelper {
      */
     String executeProbe(String localFilePath) throws IOException;
 
-    Process executeConvert(String input, String output, EncodeConvertParam param) throws IOException;
+    ProcessWrap executeConvert(String input, String output, EncodeConvertParam param) throws IOException;
 
     /**
      * 提取视频字幕

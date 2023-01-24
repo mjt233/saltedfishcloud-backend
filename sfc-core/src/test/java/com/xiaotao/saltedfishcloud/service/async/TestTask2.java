@@ -26,4 +26,9 @@ public class TestTask2 extends AbstractAsyncTask<String, String> {
     public synchronized void interrupt() {
         super.interrupt();
     }
+
+    @Override
+    protected void doInterrupt() {
+
+    }
 }

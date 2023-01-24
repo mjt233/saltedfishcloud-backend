@@ -4,8 +4,6 @@
     "title": "基础配置",
     "nodes": [
       {
-        "name": "ve.base",
-        "title": "基础配置",
         "nodes": [
           {
             "name": "ve.property",

@@ -42,7 +42,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
                 "-print_format", "json",
                 "-i", localFilePath,
                 "-show_streams", "-show_chapters", "-show_format"
-        );
+        ).getProcess();
         try (InputStream is = process.getInputStream()) {
             return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
         }
@@ -76,7 +76,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
     public String extractSubtitle(String localFile, String streamNo, String type) throws IOException {
         String realStreamNo = streamNo.contains(":") ? streamNo : "0:" + streamNo;
         List<String> args = Stream.of(property.getFFMpegExecPath(), "-i", localFile, "-map", realStreamNo, "-f", type, "-loglevel", "error", "-").collect(Collectors.toList());
-        Process process = executeCmd(args);
+        Process process = executeCmd(args).getProcess();
         try (InputStream is = process.getInputStream()) {
             String output = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
             int i = process.waitFor();
@@ -93,26 +93,33 @@ public class FFMpegHelperImpl implements FFMpegHelper {
     /**
      * 执行命令行
      */
-    private Process executeCmd(List<String> args) throws IOException {
+    private ProcessWrap executeCmd(List<String> args) throws IOException {
+        return executeCmd(args, null);
+    }
 
+    private ProcessWrap executeCmd(List<String> argList, String[] argArr) throws IOException {
         ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.command(args);
-        processBuilder.redirectErrorStream(true);
-        if (log.isDebugEnabled()) {
-            log.debug("[FFMPEG]执行命令：" + Strings.join(args, ' '));
+        if (argList != null) {
+            processBuilder.command(argList);
+        } else {
+            processBuilder.command(argArr);
         }
-        return processBuilder.start();
+        if (log.isDebugEnabled()) {
+            log.debug("[FFMPEG]执行命令：" + Strings.join(processBuilder.command(), ' '));
+        }
+        processBuilder.redirectErrorStream(true);
+
+        ProcessWrap processWrap = new ProcessWrap();
+        processWrap.setProcess(processBuilder.start());
+        processWrap.setArgs(processBuilder.command());
+        return processWrap;
     }
 
     /**
      * 执行命令行
      */
-    private Process executeCmd(String... args) throws IOException {
-
-        ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.command(args);
-        processBuilder.redirectErrorStream(true);
-        return processBuilder.start();
+    private ProcessWrap executeCmd(String... args) throws IOException {
+        return executeCmd(null, args);
     }
 
     /**
@@ -131,7 +138,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
      */
     @Override
     public FFMpegInfo getFFMpegInfo() throws IOException {
-        Process process = this.executeCmd(property.getFFMpegExecPath(), "-encoders", "-v", "quiet");
+        Process process = this.executeCmd(property.getFFMpegExecPath(), "-encoders", "-v", "quiet").getProcess();
         String output = readOutput(process);
         String[] outputArr = output.split("\r?\n");
 
@@ -144,7 +151,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
         ffMpegInfo.setSubtitleEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.SUBTITLE, Collections.emptyList()));
         ffMpegInfo.setOtherEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.OTHER, Collections.emptyList()));
 
-        String[] versionInfoArr = readOutput(this.executeCmd(property.getFFMpegExecPath(), "-version")).split("\r?\n");
+        String[] versionInfoArr = readOutput(this.executeCmd(property.getFFMpegExecPath(), "-version").getProcess()).split("\r?\n");
         ffMpegInfo.setVersion(versionInfoArr[0].split("\\s+")[2]);
         ffMpegInfo.setBuilt(versionInfoArr[1].split("\\s+", 3)[2]);
         ffMpegInfo.setConfiguration(versionInfoArr[2].split(": ")[1]);
@@ -184,7 +191,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
     }
 
     @Override
-    public Process executeConvert(String input, String output, EncodeConvertParam param) throws IOException {
+    public ProcessWrap executeConvert(String input, String output, EncodeConvertParam param) throws IOException {
         List<EncodeConvertRule> rules = param.getRules();
         List<String> args = new ArrayList<>();
         args.add(property.getFFMpegExecPath());

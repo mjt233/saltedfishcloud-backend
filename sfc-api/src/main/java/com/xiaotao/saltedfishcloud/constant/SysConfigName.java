@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.config;
+package com.xiaotao.saltedfishcloud.constant;
 
 // @TODO
 public interface SysConfigName {
@@ -21,6 +21,21 @@ public interface SysConfigName {
          * 自动同步间隔
          */
         String SYNC_INTERVAL = "sys.store.sync_interval";
+    }
+
+    interface Bg {
+        /**
+         * 主背景图配置
+         */
+        String SYS_BG_MAIN = "sys.bg.main";
+    }
+
+    interface Theme {
+
+        /**
+         * 默认黑色主题
+         */
+        String DARK = "sys.theme.dark";
     }
 
     /**
@@ -66,6 +81,11 @@ public interface SysConfigName {
          * token密钥
          */
         String TOKEN = "sys.safe.token";
+
+        /**
+         * 是否允许匿名留言
+         */
+        String ALLOW_ANONYMOUS_COMMENT = "sys.safe.allow_anonymous_comments";
     }
 
 }

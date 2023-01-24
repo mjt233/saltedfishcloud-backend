@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
+import com.xiaotao.saltedfishcloud.ext.PluginDependenceConflictException;
+import com.xiaotao.saltedfishcloud.ext.PluginInfoException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
@@ -14,8 +14,9 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,7 +33,19 @@ public class ExtUtils {
     public static PluginInfo getPluginInfo(ClassLoader loader, String prefix) throws IOException {
         String file = prefix == null ? PluginManager.PLUGIN_INFO_FILE : StringUtils.appendPath(prefix, PluginManager.PLUGIN_INFO_FILE);
         String infoJson = ExtUtils.getResourceText(loader, file);
-        return MapperHolder.parseJson(infoJson, PluginInfo.class);
+        if (!StringUtils.hasText(infoJson)) {
+            throw new IllegalArgumentException("plugin-info.json为空");
+        }
+        PluginInfo pluginInfo = MapperHolder.parseJson(infoJson, PluginInfo.class);
+        if (pluginInfo == null) {
+            return null;
+        }
+
+        URL url = loader.getResource(file);
+        if (url != null) {
+            pluginInfo.setUrl(url.toString().replaceAll("(!/)?" + file, "").replaceAll("^jar:", ""));
+        }
+        return pluginInfo;
     }
 
     /**
@@ -57,7 +70,6 @@ public class ExtUtils {
         }
     }
 
-
     /**
      * 从类加载器中读取加载并解析插件的配置节点信息
      * @param loader    类加载器
@@ -72,47 +84,15 @@ public class ExtUtils {
             return Collections.emptyList();
         }
         List<ConfigNode> configNodeGroups = MapperHolder.parseJsonToList(json, ConfigNode.class);
-        List<ConfigNode> allNodes = configNodeGroups.stream().flatMap(e -> e.getNodes().stream()).flatMap(e -> e.getNodes().stream()).collect(Collectors.toList());
-        StringBuilder errMsg = new StringBuilder();
-        // 默认值缺失检测
-        errMsg.append(
-            allNodes
-                .stream()
-                .filter(e -> e.getDefaultValue() == null)
-                .map(e -> "配置项【" + e.getName() + "】缺少默认值;")
-                .collect(Collectors.joining())
-        );
-
-        // form类型的参数对象属性组装
-        allNodes.stream()
-                .filter(e -> e.getInputType().equals("form"))
-                .forEach(e -> {
-                    try {
-                        if (!StringUtils.hasText(e.getTypeRef())) {
-                            errMsg.append("配置节点【").append(e.getName()).append("】缺少类型引用typeRef;");
-                            return;
-                        }
-                        Class<?> refClass = null;
-
-                        // 先从插件的直接加载器类型引用
-                        try {
-                            refClass = loader.loadClass(e.getTypeRef());
-                        } catch (ClassNotFoundException ex) {
-                            // 找不到则使用默认的加载器加载（类型引用未在插件jar包中声明而是引用系统核心的类）
-                            refClass = ExtUtils.class.getClassLoader().loadClass(e.getTypeRef());
-                        }
-
-                        e.setNodes(new ArrayList<>(PropertyUtils.getConfigNodeFromEntityClass(refClass).values()));
-                    } catch (ClassNotFoundException ex) {
-                        errMsg.append("找不到类型引用：").append(e.getTypeRef());
-                    }
-                });
-
-
-        if (errMsg.length() > 0) {
-            throw new RuntimeException(errMsg.toString());
-        }
+        PropertyUtils.dereferenceNodes(configNodeGroups, loader);
         return configNodeGroups;
+    }
+
+    /**
+     * 获取插件jar包目录
+     */
+    public static Path getExtDir() {
+        return Paths.get(EXTENSION_DIRECTORY);
     }
 
     /**

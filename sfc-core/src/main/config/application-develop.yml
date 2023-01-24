@@ -1,6 +1,8 @@
 server:
   port: 8087
 spring:
+  jpa:
+    show-sql: true
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
@@ -32,7 +34,7 @@ plugin:
 #    - sfc-ext/sfc-ext-mp3-thumbnail
 #    - sfc-ext/sfc-ext-sftp-store
 #    - sfc-ext/sfc-ext-ftp-store
-    - sfc-ext/sfc-ext-video-enhance
+#    - sfc-ext/sfc-ext-video-enhance
 
 
 sys:

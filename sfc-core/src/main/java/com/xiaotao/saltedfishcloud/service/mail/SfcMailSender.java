@@ -20,7 +20,7 @@ public class SfcMailSender extends JavaMailSenderImpl {
 
     @Override
     protected void doSend(MimeMessage[] mimeMessages, Object[] originalMessages) throws MailException {
-        this.setProtocol(configuration.getProtocol());
+        this.setProtocol(configuration.getProtocol().toLowerCase());
         this.setHost(configuration.getHost());
         this.setUsername(configuration.getUsername());
         this.setPassword(configuration.getPassword());

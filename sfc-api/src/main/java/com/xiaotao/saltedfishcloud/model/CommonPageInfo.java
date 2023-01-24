@@ -24,7 +24,7 @@ public class CommonPageInfo<T> {
     public static <T> CommonPageInfo<T> of(PageInfo<T> page) {
         return new CommonPageInfo<T>()
                 .setContent(page.getList())
-                .setTotalPage(page.getPageNum())
-                .setTotalCount(page.getSize());
+                .setTotalPage(page.getPages())
+                .setTotalCount(page.getTotal());
     }
 }

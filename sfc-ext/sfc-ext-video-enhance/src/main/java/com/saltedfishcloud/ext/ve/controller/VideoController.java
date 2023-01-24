@@ -38,6 +38,11 @@ public class VideoController {
         return JsonResultImpl.getInstance(videoService.listTask(uid, status, page, pageSize));
     }
 
+    @GetMapping("getLog")
+    public JsonResult getLog(@RequestParam("taskId") Long taskId) {
+        return JsonResultImpl.getInstance(videoService.getTaskLog(taskId));
+    }
+
     /**
      * 获取ffmpeg信息
      */

@@ -16,7 +16,7 @@ public class FTPServerProperty {
     /**
      * 是否启用FTP服务
      */
-    @ConfigProperties(value = "是否启用", inputType = "checkbox", defaultValue = "false")
+    @ConfigProperties(value = "是否启用", inputType = "switch", defaultValue = "false")
     private boolean ftpEnable = false;
 
     /**

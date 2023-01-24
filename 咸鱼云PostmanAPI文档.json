@@ -4490,46 +4490,106 @@
 			"name": "插件模块",
 			"item": [
 				{
-					"name": "获取插件资源文件",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/plugin/sys/resource/test.txt",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"plugin",
-								"sys",
-								"resource",
-								"test.txt"
-							]
+					"name": "插件管理",
+					"item": [
+						{
+							"name": "获取插件资源文件",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/plugin/sys/resource/test.txt",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"plugin",
+										"sys",
+										"resource",
+										"test.txt"
+									]
+								},
+								"description": "获取插件的静态资源文件\n\n* URI: `/api/plugin/{插件名}/resource/{资源路径}`\n* 动作：GET\n    \n\n直接响应文件二进制内容，或404\n\n示例：\n\n获取插件sys的资源文件test.txt，则URL为：\n\n`/api/plugin/sys/resource/test.txt`"
+							},
+							"response": []
 						},
-						"description": "获取插件的静态资源文件\n\n* URI: `/api/plugin/{插件名}/resource/{资源路径}`\n* 动作：GET\n    \n\n直接响应文件二进制内容，或404\n\n示例：\n\n获取插件sys的资源文件test.txt，则URL为：\n\n`/api/plugin/sys/resource/test.txt`"
-					},
-					"response": []
+						{
+							"name": "获取需要自动加载的资源",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/plugin/listPluginAutoLoadList",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"plugin",
+										"listPluginAutoLoadList"
+									]
+								},
+								"description": "列出所有autoLoad不为空的插件列表，前端可以根据这个列表选择加载这些资源实现前端部分的动态拓展"
+							},
+							"response": []
+						}
+					]
 				},
 				{
-					"name": "获取需要自动加载的资源",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{addr}}/api/plugin/listPluginAutoLoadList",
-							"host": [
-								"{{addr}}"
-							],
-							"path": [
-								"api",
-								"plugin",
-								"listPluginAutoLoadList"
-							]
+					"name": "视频插件",
+					"item": [
+						{
+							"name": "获取视频信息",
+							"request": {
+								"method": "GET",
+								"header": []
+							},
+							"response": []
 						},
-						"description": "列出所有autoLoad不为空的插件列表，前端可以根据这个列表选择加载这些资源实现前端部分的动态拓展"
-					},
-					"response": []
+						{
+							"name": "获取视频字幕内容",
+							"request": {
+								"method": "GET",
+								"header": []
+							},
+							"response": []
+						},
+						{
+							"name": "获取编码转换任务列表",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/video/listConvertTask?uid=1&status=1&page=0",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"video",
+										"listConvertTask"
+									],
+									"query": [
+										{
+											"key": "uid",
+											"value": "1"
+										},
+										{
+											"key": "status",
+											"value": "1"
+										},
+										{
+											"key": "page",
+											"value": "0",
+											"description": "首页为0"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
 				}
 			]
 		},
@@ -4676,6 +4736,96 @@
 							"body": "{\n    \"msg\": \"OK\",\n    \"data\": {\n        \"id\": \"787131762953158656\",\n        \"uid\": \"0\",\n        \"nid\": \"0\",\n        \"protocol\": \"hdfs\",\n        \"params\": \"{\\\"url\\\":\\\"hdfs://localhost:9000\\\",\\\"root\\\":\\\"/xyy\\\",\\\"user\\\":\\\"xiaotao\\\"}\",\n        \"name\": \"hadoop\",\n        \"createAt\": \"2022-11-07T15:01:42.000+00:00\",\n        \"path\": null,\n        \"parentPath\": null\n    },\n    \"code\": 200\n}"
 						}
 					]
+				}
+			]
+		},
+		{
+			"name": "桌面小组件",
+			"item": [
+				{
+					"name": "获取可配置组件",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/desktop/listAllComponent",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"desktop",
+								"listAllComponent"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "评论",
+			"item": [
+				{
+					"name": "发送匿名留言",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"你好\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/comment/sendAnonymousComment",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"comment",
+								"sendAnonymousComment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "获取评论列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/comment/listByTopicId?topicId=0&size=10&page=0",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"comment",
+								"listByTopicId"
+							],
+							"query": [
+								{
+									"key": "topicId",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},

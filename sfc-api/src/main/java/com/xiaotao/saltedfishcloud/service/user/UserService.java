@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import org.springframework.validation.annotation.Validated;
@@ -11,6 +13,11 @@ import java.io.UnsupportedEncodingException;
 
 @Validated
 public interface UserService {
+
+
+
+    CommonPageInfo<User> listUsers(PageableRequest request);
+
     /**
      * 通过账号标识字段获取用户
      * @param account   邮箱或用户名

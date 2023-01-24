@@ -2,6 +2,8 @@ package com.xiaotao.saltedfishcloud.service.async.context;
 
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,9 +21,23 @@ public class TaskManagerImpl implements TaskManager {
     }
 
     @Override
-    public synchronized boolean remove(String id) {
+    public boolean remove(String id) {
         log.debug("{}移除了任务{}",LOG_TITLE, id);
-        return tasks.remove(id) != null;
+        TaskContext<? extends AsyncTask> task = null;
+        synchronized (tasks) {
+            task = tasks.get(id);
+            if (task != null) {
+                log.info("{}中断异步任务: {}", LOG_TITLE, id);
+                tasks.remove(id);
+            }
+        }
+        if (task != null) {
+            if (!task.isFinish()) {
+                task.interrupt();
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -42,5 +58,19 @@ public class TaskManagerImpl implements TaskManager {
     @Override
     public synchronized void gc() {
         tasks.entrySet().removeIf(stringTaskContextEntry -> stringTaskContextEntry.getValue().isExpire());
+    }
+
+    @EventListener(ContextClosedEvent.class)
+    public void interruptAll() {
+        synchronized (tasks) {
+            for (Map.Entry<String, TaskContext<? extends AsyncTask>> entry : tasks.entrySet()) {
+                try {
+                    entry.getValue().interrupt();
+                } catch (Throwable e) {
+                    log.error("{}任务中断失败", LOG_TITLE, e);
+                }
+            }
+        }
+        tasks.clear();
     }
 }

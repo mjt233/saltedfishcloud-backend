@@ -18,4 +18,9 @@ public class FailedTask extends AbstractAsyncTask<String, String> {
     public String getStatus() {
         return null;
     }
+
+    @Override
+    protected void doInterrupt() {
+
+    }
 }

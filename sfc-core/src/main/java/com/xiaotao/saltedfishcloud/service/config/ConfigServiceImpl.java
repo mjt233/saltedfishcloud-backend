@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 /**
  * 配置服务实现类
  * TODO 监听机制实现线程安全
+ * TODO 支持集群更新
  */
 @Service
 @Slf4j
@@ -103,7 +104,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
                 .flatMap(e -> e.getNodes().stream())
                 .collect(Collectors.toMap(
                         ConfigNode::getName,
-                        e -> dbConfig.getOrDefault(e.getName(), e.getDefaultValue())
+                        e -> dbConfig.getOrDefault(e.getName(), Optional.ofNullable(e.getDefaultValue()).orElse(""))
                 ));
 
     }

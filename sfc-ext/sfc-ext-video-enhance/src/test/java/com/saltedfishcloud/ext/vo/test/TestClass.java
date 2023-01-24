@@ -60,7 +60,7 @@ public class TestClass {
         Process process = ffmpegHelper.executeConvert(VIDEO_PATH2, "C:\\\\DATA\\\\output.mkv", EncodeConvertParam
                 .builder()
                 .rules(ruleList)
-                .build());
+                .build()).getProcess();
 
         // 输出解析与进度计算
         try (InputStream in = process.getInputStream()) {

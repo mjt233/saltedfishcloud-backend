@@ -143,6 +143,7 @@ CREATE TABLE `node_list` (
                              `uid` int unsigned DEFAULT NULL,
                              `collecting` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于收集文件中',
                              `sharing` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于分享状态',
+                             mount_id bigint COMMENT '挂载点id',
                              UNIQUE KEY `node_name_index` (`parent`,`name`),
                              KEY `id_index` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -196,7 +197,7 @@ DROP TABLE IF EXISTS `user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user` (
-                        `id` int unsigned NOT NULL AUTO_INCREMENT,
+                        `id` BIGINT NOT NULL AUTO_INCREMENT,
                         `user` varchar(32) DEFAULT NULL,
                         `pwd` varchar(32) DEFAULT NULL,
                         `email` varchar(256) DEFAULT NULL,
@@ -245,6 +246,7 @@ CREATE TABLE desktop_component_config (
                                           create_at DATETIME,
                                           update_at DATETIME,
                                           use_card int COMMENT '是否使用卡片样式',
+                                          enabled int COMMENT '是否启用',
                                           key idx_name(name),
                                           key idx_uid(uid)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '桌面小组件使用配置表';

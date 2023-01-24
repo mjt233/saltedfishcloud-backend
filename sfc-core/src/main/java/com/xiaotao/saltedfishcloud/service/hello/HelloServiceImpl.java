@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.hello;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * 问好服务默认实现类
@@ -25,6 +27,9 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
     @Autowired(required = false)
     @Lazy
     private List<FeatureProvider> providers;
+
+    @Autowired
+    private ConfigService configService;
 
     @Override
     public void appendFeatureDetail(String name, Object detail) {
@@ -47,6 +52,14 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
         store.put(name, detail);
     }
 
+    /**
+     * 移除特性
+     */
+    public void removeFeature(String name) {
+        log.debug("{}移除特性{}", LOG_TITLE, name);
+        store.remove(name);
+    }
+
     @Override
     public Object getDetail(String name) {
         return store.get(name);
@@ -55,6 +68,41 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
     @Override
     public Map<String, Object> getAllFeatureDetail() {
         return store;
+    }
+
+    @Override
+    public void bindConfigAsFeature(String configKey, String mapKey, Class<?> type) {
+        Consumer<String> valueHandler = configValue -> {
+            Object value;
+            try {
+                if (configValue == null) {
+                    removeFeature(configKey);
+                    return;
+                }
+                if (Boolean.class.isAssignableFrom(type)) {
+                    value = TypeUtils.toBoolean(configValue);
+                } else if (Number.class.isAssignableFrom(type)) {
+                    value = TypeUtils.toNumber(type, configValue);
+                } else if (String.class.isAssignableFrom(type)) {
+                    value = configValue;
+                } else if (Collection.class.isAssignableFrom(type)) {
+                    value = MapperHolder.parseJsonToList(configValue, Map.class);
+                } else if (Map.class.isAssignableFrom(type)) {
+                    value = MapperHolder.parseJsonToMap(configValue);
+                } else {
+                    value = MapperHolder.parseJson(configValue, type);
+                }
+                setFeature(mapKey, value);
+            } catch (Exception e) {
+                log.error("{}绑定更新错误，key：{} mapKey:{}", LOG_TITLE, configKey, mapKey, e);
+            }
+        };
+
+        // 立即获取值
+        valueHandler.accept(configService.getConfig(configKey));
+
+        // 添加监听
+        configService.addAfterSetListener(configKey, valueHandler);
     }
 
     protected void refresh() {

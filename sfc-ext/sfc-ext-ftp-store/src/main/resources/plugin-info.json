@@ -1,8 +1,10 @@
 {
   "name": "ftp-store",
-  "alias": "FTP文件传输",
+  "alias": "FTP文件存储",
+  "describe": "提供远程FTP目录挂载存储功能",
   "loadType": "merge",
   "type": "jar",
+  "icon": "mdi-database",
   "author": "xiaotao233",
   "email": "mjt233@qq.com",
   "apiVersion": "^api.version^",
