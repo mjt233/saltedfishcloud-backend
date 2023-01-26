@@ -3,6 +3,9 @@ package com.sfc.job;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+/**
+ * 异步任务的执行进度
+ */
 @Data
 @Accessors(chain = true)
 public class AsyncTaskProgress {

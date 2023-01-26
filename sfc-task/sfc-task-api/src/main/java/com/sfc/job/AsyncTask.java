@@ -1,14 +1,17 @@
 package com.sfc.job;
 
+import java.io.OutputStream;
+
 /**
  * 异步任务
  */
 public interface AsyncTask {
 
     /**
-     * 开始执行
+     * 开始执行任务。
+     * @param logOutputStream 本次执行时可用于日志采集的输出流
      */
-    void execute();
+    void execute(OutputStream logOutputStream);
 
     /**
      * 发起任务中断执行请求
