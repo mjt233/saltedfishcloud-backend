@@ -85,15 +85,22 @@ public class RPCManager {
     /**
      * 发送响应
      */
-    private void sendResponse(RPCRequest request, RPCResponse result) {
-        redisTemplate.opsForList().leftPush(request.getResponseKey(), result);
+    private <T> void sendResponse(RPCRequest request, RPCResponse response) throws JsonProcessingException {
+        if (response.getIsSuccess() == null) {
+            response.setIsSuccess(true);
+        }
+        Object result = response.getResult();
+        if (result != null) {
+            response.setResult(MapperHolder.toJson(result));
+        }
+        redisTemplate.opsForList().leftPush(request.getResponseKey(), MapperHolder.toJson(response));
         redisTemplate.expire(request.getResponseKey(), Duration.ofMinutes(1));
     }
 
     /**
      * 等待响应
      */
-    private <T> T waitResponse(RPCRequest request, Class<T> resultType, Duration timeout) throws JsonProcessingException {
+    private <T> RPCResponse<T> waitResponse(RPCRequest request, Class<T> resultType, Duration timeout) throws JsonProcessingException {
         Object o = redisTemplate.opsForList().rightPop(request.getResponseKey(), timeout);
         if (o == null) {
             return null;
@@ -101,23 +108,27 @@ public class RPCManager {
         if (!(o instanceof String)) {
             throw new IllegalArgumentException("无法处理的redis rpc响应数据类型：" + o.getClass());
         }
-        return MapperHolder.parseJson((String) o, resultType);
+        RPCResponse rpcResponse = MapperHolder.parseJson((String) o, RPCResponse.class);
+        if (rpcResponse.getResult() != null) {
+            rpcResponse.setResult(MapperHolder.parseJson(rpcResponse.getResult().toString(), resultType));
+        }
+        return rpcResponse;
     }
 
 
     /**
      * 发起RPC请求
      */
-    public <T> T call(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException {
+    public <T> RPCResponse<T> call(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException {
         request.generateIdIfAbsent();
-        redisTemplate.convertAndSend(ASYNC_TASK_RPC, request);
+        redisTemplate.convertAndSend(ASYNC_TASK_RPC,MapperHolder.toJson(request));
         return waitResponse(request, resultType, timeout);
     }
 
     /**
      * 发起RPC请求
      */
-    public <T> T call(RPCRequest request, Class<T> resultType) throws IOException {
+    public <T> RPCResponse<T> call(RPCRequest request, Class<T> resultType) throws IOException {
         return call(request, resultType, Duration.ofMinutes(2));
     }
 

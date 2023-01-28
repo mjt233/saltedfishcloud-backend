@@ -1,5 +1,5 @@
 package com.sfc.job;
 
-public interface RPCHandler {
-    RPCResponse handleRpcRequest(RPCRequest request);
+public interface RPCHandler<T> {
+    RPCResponse<T> handleRpcRequest(RPCRequest request);
 }

@@ -1,0 +1,47 @@
+server:
+  port: 8087
+  servlet:
+    encoding:
+      charset: utf-8
+      enabled: true
+      force: true
+  tomcat:
+    remoteip:
+      remote-ip-header: X-Real-IP
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath:mapper/*.xml
+spring:
+  jpa:
+    database: mysql
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
+      username: root
+      password: test
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    lettuce:
+      pool:
+        min-idle: 0
+        max-idle: 8
+        max-active: 8
+  servlet:
+    multipart:
+      max-file-size: 8192MB
+      max-request-size: 8192MB
+logging:
+  level:
+    org: warn
+    com: warn
+    com.sfc: info

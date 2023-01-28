@@ -1,9 +1,15 @@
 package com.sfc.job;
 
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class RPCRequest {
 
     private Long requestId;
