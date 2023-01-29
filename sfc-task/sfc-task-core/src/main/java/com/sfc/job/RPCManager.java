@@ -2,10 +2,14 @@ package com.sfc.job;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -17,22 +21,34 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class RPCManager {
-    private final static String LOG_PREFIX = "[Redis RPC]";
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final RedisMessageListenerContainer redisMessageListenerContainer;
+    private String log_prefix;
+    private final RedisConnectionFactory redisConnectionFactory;
+
+    private RedisTemplate<String, Object> redisTemplate;
+
+    private RedisMessageListenerContainer redisMessageListenerContainer;
     private final static String ASYNC_TASK_RPC = "ASYNC_TASK_RPC";
 
-    private final Map<String, RPCHandler> handlerMap = new ConcurrentHashMap<>();
+    private final Map<String, RPCHandler<?>> handlerMap = new ConcurrentHashMap<>();
+
+    @Getter
+    private int idCode;
 
     /**
      * 实例化一个基于Redis的RPC管理器
-     * @param redisTemplate                     用于redis基础操作
-     * @param redisMessageListenerContainer     用于redis消息监听
      */
-    public RPCManager(RedisTemplate<String, Object> redisTemplate,
-                      RedisMessageListenerContainer redisMessageListenerContainer) {
-        this.redisTemplate = redisTemplate;
-        this.redisMessageListenerContainer = redisMessageListenerContainer;
+    public RPCManager(RedisConnectionFactory redisConnectionFactory) {
+        this.redisConnectionFactory = redisConnectionFactory;
+
+        init();
+    }
+
+    public void init() {
+        initRedisTemplate();
+        initRedisMessageListenerContainer();
+        this.idCode = this.hashCode() % 10000;
+        this.log_prefix = "[Redis RPC@" + idCode + "]";
+
         registerRedisChannelHandler();
     }
 
@@ -60,24 +76,28 @@ public class RPCManager {
     protected void registerRedisChannelHandler() {
         redisMessageListenerContainer.addMessageListener((message, pattern) -> {
             try {
-                log.debug("{}收到RPC请求, pattern: {}, message: {}", LOG_PREFIX, pattern, message);
                 // 解析rpc参数
                 Object requestRawObj = redisTemplate.getValueSerializer().deserialize(message.getBody());
                 RPCRequest request = toRpcRequest(requestRawObj);
+                log.debug("{}收到RPC请求: {}, request id: {}", log_prefix, request.getFunctionName(), request.getRequestId());
 
                 // 调用对应函数的处理器
-                RPCHandler rpcHandler = handlerMap.get(request.getFunctionName());
+                RPCHandler<?> rpcHandler = handlerMap.get(request.getFunctionName());
                 if (rpcHandler == null) {
-                    throw new IllegalArgumentException("没有关于RPC函数 " + request.getFunctionName() + " 的处理方法");
+                    log.debug("{}忽略了RPC请求: {}, request id: {}", log_prefix, request.getFunctionName(), request.getRequestId());
+                    return;
                 }
 
                 // 发送响应（由于RPC会广播到每个客户端，节点不一定响应了这个RPC请求，因此还需要判断请求是否被处理）
-                RPCResponse response = rpcHandler.handleRpcRequest(request);
+                RPCResponse<?> response = rpcHandler.handleRpcRequest(request);
                 if (response.getIsHandled() != null && response.getIsHandled()) {
+                    log.debug("{}响应了RPC请求: {}, request id: {}", log_prefix, request.getFunctionName(), request.getRequestId());
                     sendResponse(request, response);
+                } else {
+                    log.debug("{}忽略了RPC请求: {}, request id: {}", log_prefix, request.getFunctionName(), request.getRequestId());
                 }
             } catch (Exception e) {
-                log.error("{}请求处理出错：", LOG_PREFIX, e);
+                log.error("{}请求处理出错：", log_prefix, e);
             }
         }, new PatternTopic(ASYNC_TASK_RPC));
     }
@@ -85,7 +105,8 @@ public class RPCManager {
     /**
      * 发送响应
      */
-    private <T> void sendResponse(RPCRequest request, RPCResponse response) throws JsonProcessingException {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void sendResponse(RPCRequest request, RPCResponse response) throws JsonProcessingException {
         if (response.getIsSuccess() == null) {
             response.setIsSuccess(true);
         }
@@ -100,7 +121,8 @@ public class RPCManager {
     /**
      * 等待响应
      */
-    private <T> RPCResponse<T> waitResponse(RPCRequest request, Class<T> resultType, Duration timeout) throws JsonProcessingException {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public  <T> RPCResponse<T> waitResponse(RPCRequest request, Class<T> resultType, Duration timeout) throws JsonProcessingException {
         Object o = redisTemplate.opsForList().rightPop(request.getResponseKey(), timeout);
         if (o == null) {
             return null;
@@ -120,9 +142,13 @@ public class RPCManager {
      * 发起RPC请求
      */
     public <T> RPCResponse<T> call(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException {
+        sendRequest(request);
+        return waitResponse(request, resultType, timeout);
+    }
+
+    public void sendRequest(RPCRequest request) throws JsonProcessingException {
         request.generateIdIfAbsent();
         redisTemplate.convertAndSend(ASYNC_TASK_RPC,MapperHolder.toJson(request));
-        return waitResponse(request, resultType, timeout);
     }
 
     /**
@@ -137,9 +163,29 @@ public class RPCManager {
      * @param functionName  函数名称
      * @param handler       操作器
      */
-    public void registerRpcHandler(String functionName, RPCHandler handler) {
+    public <T> void registerRpcHandler(String functionName, RPCHandler<T> handler) {
         handlerMap.put(functionName, handler);
     }
 
+
+
+    private void initRedisTemplate() {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
+        serializer.setObjectMapper(MapperHolder.mapper);
+
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(serializer);
+        template.setConnectionFactory(redisConnectionFactory);
+        template.afterPropertiesSet();
+        this.redisTemplate = template;
+    }
+
+    private void initRedisMessageListenerContainer() {
+        this.redisMessageListenerContainer = new RedisMessageListenerContainer();
+        this.redisMessageListenerContainer.setConnectionFactory(redisConnectionFactory);
+        this.redisMessageListenerContainer.afterPropertiesSet();
+        this.redisMessageListenerContainer.start();
+    }
 
 }

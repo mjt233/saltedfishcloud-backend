@@ -42,6 +42,7 @@ spring:
       max-request-size: 8192MB
 logging:
   level:
+    root: info
     org: warn
     com: warn
-    com.sfc: info
+    com.sfc: debug
