@@ -1,8 +1,7 @@
 package com.sfc.job;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.Entity;
 import java.util.Date;
@@ -13,6 +12,9 @@ import java.util.Date;
 @Entity
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AsyncTaskRecord extends AuditModel {
 
     /**

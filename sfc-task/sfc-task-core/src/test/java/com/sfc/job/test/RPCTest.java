@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @EntityScan("com.sfc.job")
 @EnableJpaRepositories(basePackages = "com.sfc.job")
 @ActiveProfiles("test")
-public class TaskTest {
+public class RPCTest {
     @Autowired
     private RPCManager rpcManager;
 
