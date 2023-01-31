@@ -1,8 +1,8 @@
-package com.sfc.job.test;
+package com.sfc.task.test;
 
-import com.sfc.job.RPCManager;
-import com.sfc.job.RPCRequest;
-import com.sfc.job.RPCResponse;
+import com.sfc.task.rpc.RPCManager;
+import com.sfc.task.rpc.RPCRequest;
+import com.sfc.task.rpc.RPCResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,18 +33,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SpringBootApplication(
         exclude= {DataSourceAutoConfiguration.class, GsonAutoConfiguration.class},
         scanBasePackages = {
-                "com.sfc.job"
+                "com.sfc.task"
         }
 )
 @EnableTransactionManagement
-@MapperScan("com.sfc.job")
+@MapperScan("com.sfc.job.dao")
 @EnableScheduling
 @EnableCaching
 @EnableJpaAuditing
 @EnableConfigurationProperties
 @Slf4j
-@EntityScan("com.sfc.job")
-@EnableJpaRepositories(basePackages = "com.sfc.job")
+@EntityScan("com.sfc.task")
+@EnableJpaRepositories(basePackages = "com.sfc.task")
 @ActiveProfiles("test")
 public class RPCTest {
     @Autowired

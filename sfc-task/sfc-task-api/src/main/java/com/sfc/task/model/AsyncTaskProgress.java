@@ -1,4 +1,4 @@
-package com.sfc.job;
+package com.sfc.task.model;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

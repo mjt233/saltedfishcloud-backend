@@ -1,5 +1,8 @@
-package com.sfc.job;
+package com.sfc.task;
 
+import com.sfc.task.model.AsyncTaskRecord;
+
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -8,17 +11,16 @@ import java.io.InputStream;
 public interface AsyncTaskManager {
     /**
      * 注册一个任务工厂
-     * @param type 任务类型
      * @param factory 该类型对应的任务工厂
      */
-    void registerFactory(String type, AsyncTaskFactory factory);
+    void registerFactory(AsyncTaskFactory factory);
 
     /**
      * 提交异步任务到系统执行
      * @param type      任务类型
      * @param record    任务记录
      */
-    void submitAsyncTask(String type, AsyncTaskRecord record);
+    void submitAsyncTask(AsyncTaskRecord record) throws IOException;
 
     /**
      * 获取任务的执行日志流
@@ -27,4 +29,9 @@ public interface AsyncTaskManager {
      * @return              日志数据的输入流
      */
     InputStream getTaskLog(Long taskId, boolean withHistory);
+
+    /**
+     * 获取异步任务执行器
+     */
+    AsyncTaskExecutor getExecutor();
 }

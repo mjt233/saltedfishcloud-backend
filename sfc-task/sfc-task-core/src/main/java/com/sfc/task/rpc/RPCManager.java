@@ -1,4 +1,4 @@
-package com.sfc.job;
+package com.sfc.task.rpc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;

@@ -1,47 +1,54 @@
-package com.sfc.job.test;
+package com.sfc.task.test;
 
-import com.sfc.job.AsyncTask;
-import com.sfc.job.AsyncTaskExecutor;
-import com.sfc.job.AsyncTaskProgress;
-import com.sfc.job.AsyncTaskRecord;
+import com.sfc.task.*;
+import com.sfc.task.model.AsyncTaskProgress;
+import com.sfc.task.model.AsyncTaskRecord;
 import org.junit.jupiter.api.Test;
 
 import java.io.OutputStream;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.function.Supplier;
 
 public class TaskExecuteTest {
     @Test
     public void test() throws InterruptedException {
-        AsyncTaskExecutor executor = new AsyncTaskExecutor(getTaskRecordList(), new HashMap<>() {{
-            put("test", params -> new AsyncTask() {
-                @Override
-                public void execute(OutputStream logOutputStream) {
-                    System.out.println(params);
-                }
+        AsyncTaskExecutor executor = new DefaultAsyncTaskExecutor(getTaskRecordList());
+        executor.registerFactory(new AsyncTaskFactory() {
+            @Override
+            public AsyncTask createTask(String params) {
+                return new AsyncTask() {
+                    @Override
+                    public void execute(OutputStream logOutputStream) {
+                        System.out.println(params);
+                    }
+                    @Override
+                    public void interrupt() { }
 
-                @Override
-                public void interrupt() {
+                    @Override
+                    public boolean isRunning() {
+                        return false;
+                    }
 
-                }
+                    @Override
+                    public String getParams() {
+                        return params;
+                    }
 
-                @Override
-                public boolean isRunning() {
-                    return false;
-                }
+                    @Override
+                    public AsyncTaskProgress getProgress() {
+                        return null;
+                    }
+                };
+            }
 
-                @Override
-                public String getParams() {
-                    return params;
-                }
-
-                @Override
-                public AsyncTaskProgress getProgress() {
-                    return null;
-                }
-            });
-        }});
+            @Override
+            public String getTaskType() {
+                return null;
+            }
+        });
+        executor.addTaskStartListener(r -> {
+            System.out.println("任务[" + r.getName() + "]开始执行了");
+        });
 
         executor.start();
         try {

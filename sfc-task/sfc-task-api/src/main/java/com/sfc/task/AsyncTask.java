@@ -1,4 +1,6 @@
-package com.sfc.job;
+package com.sfc.task;
+
+import com.sfc.task.model.AsyncTaskProgress;
 
 import java.io.OutputStream;
 

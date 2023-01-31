@@ -1,5 +1,6 @@
-package com.sfc.job;
+package com.sfc.task.model;
 
+import com.sfc.task.AsyncTaskConstants;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 
@@ -54,6 +55,7 @@ public class AsyncTaskRecord extends AuditModel {
 
     /**
      * 运行状态
+     * @see AsyncTaskConstants.Status
      */
     private Integer status;
 
