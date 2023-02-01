@@ -122,9 +122,9 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
                 // 处理jar包作为classpath发现的资源
                 String strUrl = url.toString();
                 String jarUrl;
-                int jarIndex = strUrl.indexOf("!/");
+                int jarIndex = strUrl.lastIndexOf("!/");
                 if (jarIndex != -1) {
-                    jarUrl = strUrl.substring(4, jarIndex);
+                    jarUrl = strUrl.substring(0, jarIndex);
                     log.info("{}加载classpath中的jar包插件：{}",LOG_PREFIX, jarUrl);
                     pluginManager.register(new UrlResource(jarUrl));
                 }

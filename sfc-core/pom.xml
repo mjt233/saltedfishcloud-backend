@@ -44,6 +44,16 @@
             <artifactId>sfc-api</artifactId>
             <version>${api.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-task-api</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-task-core</artifactId>
+            <version>0.0.1</version>
+        </dependency>
     </dependencies>
 
     <build>

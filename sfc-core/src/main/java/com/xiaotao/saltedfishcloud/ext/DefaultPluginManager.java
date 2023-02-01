@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
 
 /**
  * 默认的插件管理器
@@ -366,8 +367,50 @@ public class DefaultPluginManager implements PluginManager {
 
     @Override
     public void register(Resource pluginResource) throws IOException {
-        ClassLoader loader = PluginClassLoaderFactory.createPurePluginClassLoader(pluginResource.getURL());
+        URL url = extraNestingJarUrl(pluginResource.getURL());
+        ClassLoader loader = PluginClassLoaderFactory.createPurePluginClassLoader(url);
         register(pluginResource, loader);
+    }
+
+    /**
+     * 提取嵌套jar的url
+     */
+    private URL extraNestingJarUrl(URL url) throws IOException {
+        // 检测是否有嵌套jar
+        if (!url.getProtocol().equals("jar")) {
+            return url;
+        }
+        int i = url.toString().indexOf("!");
+        if (i != -1 && i == url.toString().length() - 1) {
+            return url;
+        }
+
+        // 拆分最外层jar 和 嵌套jar的内部路径
+        URL main = new URL(url.toString().substring(0, i) + "!/");
+        String substring = url.toString().substring(i + 2);
+
+        // 读取最外层jar
+        URLConnection connection = main.openConnection();
+        if (!(connection instanceof JarURLConnection)) {
+            return url;
+        }
+
+        // 从最外层jar提取嵌套jar到硬盘中
+        try (JarFile jar = ((JarURLConnection) connection).getJarFile()) {
+            ZipEntry entry = jar.getEntry(substring);
+            if (entry != null) {
+                String fileName = PathUtils.getLastNode(entry.getName());
+                Path extraPath = Paths.get(DEP_EXPLODE_PATH).resolve("extra").resolve(fileName);
+                FileUtils.createParentDirectory(extraPath);
+                try (InputStream is = jar.getInputStream(entry);
+                    OutputStream os = Files.newOutputStream(extraPath)) {
+                    StreamUtils.copy(is, os);
+                }
+                // 返回提取出来的jar url
+                return extraPath.toUri().toURL();
+            }
+        }
+        return url;
     }
 
     protected List<ConfigNode> getPluginConfigNodeFromLoader(ClassLoader loader) throws IOException {
