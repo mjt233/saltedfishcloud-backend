@@ -2,6 +2,7 @@ package com.sfc.task.upgrade;
 
 import com.xiaotao.saltedfishcloud.annotations.update.InitAction;
 import com.xiaotao.saltedfishcloud.annotations.update.Updater;
+import com.xiaotao.saltedfishcloud.common.update.VersionUpdateManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;

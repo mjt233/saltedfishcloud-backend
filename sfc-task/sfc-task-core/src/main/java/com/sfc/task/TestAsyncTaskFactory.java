@@ -1,11 +1,13 @@
 package com.sfc.task;
 
 import com.sfc.task.model.AsyncTaskProgress;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+@Component
 public class TestAsyncTaskFactory implements AsyncTaskFactory {
     @Override
     public AsyncTask createTask(String params) {

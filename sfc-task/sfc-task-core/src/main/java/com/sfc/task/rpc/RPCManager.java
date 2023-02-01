@@ -4,12 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -20,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 基于Redis发布/订阅模型和brpop命令的简易集群RPC管理器
  */
 @Slf4j
+@Component
 public class RPCManager {
     private String log_prefix;
     private final RedisConnectionFactory redisConnectionFactory;
@@ -37,6 +40,7 @@ public class RPCManager {
     /**
      * 实例化一个基于Redis的RPC管理器
      */
+    @Autowired
     public RPCManager(RedisConnectionFactory redisConnectionFactory) {
         this.redisConnectionFactory = redisConnectionFactory;
 

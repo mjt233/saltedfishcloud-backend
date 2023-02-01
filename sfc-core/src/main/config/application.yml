@@ -46,6 +46,7 @@ logging:
   level:
     org: warn
     com: warn
+    com.sfc: info
     com.xiaotao: info
     com.saltedfishcloud: info
     com.xiaotao.saltedfishcloud.dao.mybatis: warn

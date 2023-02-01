@@ -3,6 +3,7 @@ package com.sfc.task;
 
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -24,12 +30,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * 异步任务执行器
  */
 @Slf4j
+@Component
 public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, InitializingBean {
     /**
      * 系统最大负载
@@ -45,7 +51,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     private final AtomicInteger currentLoad = new AtomicInteger(0);
 
     @Getter
-    private final Supplier<AsyncTaskRecord> taskReceiver;
+    private final AsyncTaskReceiver taskReceiver;
 
     private final Map<String, AsyncTaskFactory> taskFactories = new ConcurrentHashMap<>();
 
@@ -56,11 +62,11 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
 
     private final Lock lock = new ReentrantLock();
 
-    private boolean started = false;
+    private boolean running = false;
 
     private int threadCount = 0;
     private final Executor threadPool = new ThreadPoolExecutor(
-            10,
+            1,
             1024,
             10,
             TimeUnit.SECONDS,
@@ -81,8 +87,52 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     /**
      * @param taskReceiver      任务接收函数（接收下发到的任务）
      */
-    public DefaultAsyncTaskExecutor(Supplier<AsyncTaskRecord> taskReceiver) {
+    public DefaultAsyncTaskExecutor(AsyncTaskReceiver taskReceiver) {
         this.taskReceiver = taskReceiver;
+    }
+
+    /**
+     * 创建一个基于redis的List作为消息队列接受任务的执行器
+     */
+    @Autowired
+    public DefaultAsyncTaskExecutor(RedisTemplate<String, Object> redisTemplate) {
+         this(new AsyncTaskReceiver() {
+             private boolean isInterrupt = false;
+             @Override
+             public AsyncTaskRecord get() {
+                 while (true) {
+                     if (isInterrupt) {
+                         return null;
+                     }
+                     try {
+                         Object o = redisTemplate.opsForList().rightPop(AsyncTaskConstants.RedisKey.TASK_QUEUE, 3, TimeUnit.SECONDS);
+                         if (o == null) {
+                             Thread.sleep(100);
+                             continue;
+                         }
+                         if (o instanceof String) {
+                             return MapperHolder.parseJson((String) o, AsyncTaskRecord.class);
+                         } else if (o instanceof AsyncTaskRecord) {
+                             return (AsyncTaskRecord) o;
+                         } else {
+                             throw new IllegalArgumentException("任务反序列化失败");
+                         }
+                     } catch (Throwable e) {
+                         throw new RuntimeException("任务接受出错:" + e.getMessage(), e);
+                     }
+                 }
+             }
+
+             @Override
+             public void start() {
+                 isInterrupt = false;
+             }
+
+             @Override
+             public void interrupt() {
+                 isInterrupt = true;
+             }
+         });
     }
 
     @Override
@@ -115,11 +165,12 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
      */
     @Override
     public synchronized void start() {
-        if (started) {
+        if (running) {
             throw new IllegalArgumentException("已经启动了");
         }
-        started = true;
+        running = true;
         threadPool.execute(() -> {
+            taskReceiver.start();
             while (true) {
                 try {
                     try {
@@ -131,7 +182,16 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                     }
 
                     // 接受一个任务
+                    if (!isRunning()) {
+                        return;
+                    }
                     TaskContext taskContext = receiveTask();
+                    if (taskContext == null) {
+                        return;
+                    }
+                    if (!isRunning()) {
+                        return;
+                    }
 
                     // 提交执行
                     submitExecute(taskContext);
@@ -275,8 +335,35 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        if (!started) {
+        if (!running) {
+            log.info("任务执行器启动");
             start();
         }
+    }
+
+    @Override
+    @EventListener(ContextClosedEvent.class)
+    public synchronized void stop() {
+        if (running) {
+            log.info("任务执行器停止");
+            running = false;
+            taskReceiver.interrupt();
+            synchronized (runningTask) {
+                for (Map.Entry<Long, AsyncTask> entry : runningTask.entrySet()) {
+                    try {
+                        log.info("任务停止: {}", entry.getKey());
+                        entry.getValue().interrupt();
+                    } catch (Throwable e) {
+                        log.error("任务停止出错", e);
+                    }
+                }
+            }
+        }
+
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
     }
 }

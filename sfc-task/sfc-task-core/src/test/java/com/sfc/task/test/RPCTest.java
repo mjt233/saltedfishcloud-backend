@@ -37,14 +37,11 @@ import java.util.concurrent.atomic.AtomicInteger;
         }
 )
 @EnableTransactionManagement
-@MapperScan("com.sfc.job.dao")
 @EnableScheduling
 @EnableCaching
 @EnableJpaAuditing
 @EnableConfigurationProperties
 @Slf4j
-@EntityScan("com.sfc.task")
-@EnableJpaRepositories(basePackages = "com.sfc.task")
 @ActiveProfiles("test")
 public class RPCTest {
     @Autowired

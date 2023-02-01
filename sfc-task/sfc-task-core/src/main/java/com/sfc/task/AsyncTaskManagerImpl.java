@@ -6,6 +6,7 @@ import com.sfc.task.rpc.RPCManager;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +21,7 @@ import java.util.List;
  * todo 实现任务自动发布队列机制
  * todo 实现RPC日志获取
  */
+@Component
 public class AsyncTaskManagerImpl implements AsyncTaskManager {
 
     @Autowired
@@ -33,6 +35,7 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager {
 
     private AsyncTaskExecutor executor;
 
+    @Autowired
     public AsyncTaskManagerImpl(AsyncTaskExecutor executor) {
         this.executor = executor;
         initExecutor();

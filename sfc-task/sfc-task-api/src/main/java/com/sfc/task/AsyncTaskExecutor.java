@@ -16,6 +16,16 @@ public interface AsyncTaskExecutor {
     void start();
 
     /**
+     * 停止全部任务并停止接受任务
+     */
+    void stop();
+
+    /**
+     * 是否处于运行中
+     */
+    boolean isRunning();
+
+    /**
      * 获取系统最大负载
      */
     int getMaxLoad();

@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.OutputStream;
 import java.util.LinkedList;
-import java.util.function.Supplier;
 
 public class TaskExecuteTest {
     @Test
@@ -43,7 +42,7 @@ public class TaskExecuteTest {
 
             @Override
             public String getTaskType() {
-                return null;
+                return "test";
             }
         });
         executor.addTaskStartListener(r -> {
@@ -60,7 +59,7 @@ public class TaskExecuteTest {
 
     }
 
-    public Supplier<AsyncTaskRecord> getTaskRecordList() {
+    public AsyncTaskReceiver getTaskRecordList() {
         Thread mainThread = Thread.currentThread();
         LinkedList<AsyncTaskRecord> result = new LinkedList<>();
         int taskCount = Runtime.getRuntime().availableProcessors() * 2;
