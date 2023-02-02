@@ -1,17 +1,27 @@
 package com.sfc.task;
 
+import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
+import com.sfc.task.repo.AsyncTaskLogRecordRepo;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.sfc.task.rpc.RPCManager;
+import com.sfc.task.rpc.RPCRequest;
+import com.sfc.task.rpc.RPCResponse;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 
@@ -22,7 +32,8 @@ import java.util.List;
  * todo 实现RPC日志获取
  */
 @Component
-public class AsyncTaskManagerImpl implements AsyncTaskManager {
+@Slf4j
+public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean {
 
     @Autowired
     private RPCManager rpcManager;
@@ -33,14 +44,11 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager {
     @Autowired
     private AsyncTaskRecordRepo repo;
 
-    private AsyncTaskExecutor executor;
+    @Autowired
+    private AsyncTaskLogRecordRepo logRepo;
 
     @Autowired
-    public AsyncTaskManagerImpl(AsyncTaskExecutor executor) {
-        this.executor = executor;
-        initExecutor();
-    }
-
+    private AsyncTaskExecutor executor;
 
     @Autowired(required = false)
     public void setFactories(List<AsyncTaskFactory> factories) {
@@ -51,6 +59,29 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager {
         }
     }
 
+    public void initRPCHandler() {
+        rpcManager.registerRpcHandler("getLog", request -> {
+            Resource resource = executor.getLog(Long.parseLong(request.getParam()), false);
+            if (resource == null) {
+                return RPCResponse.ingore();
+            } else {
+                try(InputStream inputStream = resource.getInputStream()) {
+                    return RPCResponse.<String>builder()
+                            .isHandled(true)
+                            .isSuccess(true)
+                            .result(StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8))
+                            .build();
+                } catch (IOException e) {
+                    log.error("获取异步任务日志出错: {}", request, e);
+                    return RPCResponse.<String>builder()
+                            .isHandled(true)
+                            .isSuccess(false)
+                            .error(e.getMessage())
+                            .build();
+                }
+            }
+        });
+    }
 
     public void initExecutor() {
         executor.addTaskStartListener(record -> {
@@ -93,13 +124,32 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager {
     }
 
     @Override
-    public InputStream getTaskLog(Long taskId, boolean withHistory) {
-
+    public Resource getTaskLog(Long taskId, boolean withHistory) throws IOException {
+        AsyncTaskLogRecord logRecord = logRepo.findByTaskId(taskId);
+        if (logRecord != null) {
+            return ResourceUtils.stringToResource(logRecord.getLogInfo());
+        } else {
+            RPCRequest request = RPCRequest.builder()
+                    .taskId(taskId)
+                    .functionName("getLog")
+                    .param(taskId + "")
+                    .build();
+            RPCResponse<String> response = rpcManager.call(request, String.class);
+            if (response != null && response.getIsSuccess()) {
+                return ResourceUtils.stringToResource(response.getResult());
+            }
+        }
         return null;
     }
 
     @Override
     public AsyncTaskExecutor getExecutor() {
         return executor;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        initExecutor();
+        initRPCHandler();
     }
 }

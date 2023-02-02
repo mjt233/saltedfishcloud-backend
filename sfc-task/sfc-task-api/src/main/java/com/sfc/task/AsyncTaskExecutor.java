@@ -1,6 +1,7 @@
 package com.sfc.task;
 
 import com.sfc.task.model.AsyncTaskRecord;
+import org.springframework.core.io.Resource;
 
 import java.util.function.Consumer;
 
@@ -40,6 +41,13 @@ public interface AsyncTaskExecutor {
      * 设置系统最大负载
      */
     void setMaxLoad(int maxLoad);
+
+    /**
+     * 获取任务的日志
+     * @param taskId     任务id
+     * @param withHistory 是否包含历史日志
+     */
+    Resource getLog(Long taskId, boolean withHistory);
 
     /**
      * 注册一个任务工厂

@@ -29,4 +29,10 @@ public class RPCResponse<T> {
      * 处理结果
      */
     private T result;
+
+    public static <T> RPCResponse<T> ingore() {
+        return RPCResponse.<T>builder()
+                .isHandled(false)
+                .build();
+    }
 }

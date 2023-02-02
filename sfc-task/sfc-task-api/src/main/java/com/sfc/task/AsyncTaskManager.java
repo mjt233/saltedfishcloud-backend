@@ -1,9 +1,9 @@
 package com.sfc.task;
 
 import com.sfc.task.model.AsyncTaskRecord;
+import org.springframework.core.io.Resource;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * 异步任务管理器
@@ -28,7 +28,7 @@ public interface AsyncTaskManager {
      * @param withHistory   是否需要包含该任务的历史日志数据。若不包含则表示只获取实时产生的日志数据。（目前暂不支持实时流）
      * @return              日志数据的输入流
      */
-    InputStream getTaskLog(Long taskId, boolean withHistory);
+    Resource getTaskLog(Long taskId, boolean withHistory) throws IOException;
 
     /**
      * 获取异步任务执行器

@@ -14,4 +14,16 @@ CREATE TABLE async_task_record
     status       INT          NULL COMMENT '状态',
     cpu_overhead INT          NULL COMMENT 'CPU开销',
     CONSTRAINT pk_asynctaskrecord PRIMARY KEY (id)
-)ENGINE=InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '异步任务记录';
+)CHARSET = utf8mb4 COMMENT = '异步任务记录';
+
+CREATE TABLE async_task_log_record
+(
+    id        BIGINT       NOT NULL,
+    uid       BIGINT       NULL,
+    create_at datetime     NULL,
+    update_at datetime     NULL,
+    task_id   BIGINT       NULL,
+    log_info  longtext     NULL,
+    CONSTRAINT pk_asynctasklogrecord PRIMARY KEY (id),
+    key idx_task_id(task_id)
+)CHARSET = utf8mb4 COMMENT = '异步任务日志记录';

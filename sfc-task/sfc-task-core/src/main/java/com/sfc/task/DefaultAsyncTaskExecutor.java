@@ -10,10 +10,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.io.PathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -206,6 +210,10 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
         });
     }
 
+    private Path getLogPath(Long taskId) {
+        return PathUtils.getLogDirectory().resolve("async_task_" + taskId + ".log").toAbsolutePath();
+    }
+
     /**
      * 提交任务执行
      */
@@ -224,7 +232,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
 
             runningTask.put(taskContext.record.getId(), asyncTask);
 
-            Path logPath = PathUtils.getLogDirectory().resolve("async_task_" + record.getId() + ".log").toAbsolutePath();
+            Path logPath = getLogPath(record.getId());
             log.info("创建任务日志: {}", logPath);
             try {
                 FileUtils.createParentDirectory(logPath);
@@ -232,7 +240,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                 log.error("创建日志目录失败: ", e);
             }
             try (OutputStream logOutput = Files.newOutputStream(logPath)) {
+                Logger a = LoggerFactory.getILoggerFactory().getLogger("a");
                 asyncTask.execute(logOutput);
+                logOutput.close();
                 emit(finishListener, record);
             } catch (Throwable e) {
                 emit(failedListener, record);
@@ -278,6 +288,15 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
         } finally {
             lock.unlock();
         }
+    }
+
+    @Override
+    public Resource getLog(Long taskId, boolean withHistory) {
+        Path logPath = getLogPath(taskId);
+        if (Files.exists(logPath)) {
+            return new PathResource(logPath);
+        }
+        return null;
     }
 
     /**

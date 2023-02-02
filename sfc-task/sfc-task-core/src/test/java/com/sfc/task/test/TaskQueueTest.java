@@ -5,16 +5,20 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.utils.DBUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.StreamUtils;
 
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Random;
@@ -54,5 +58,22 @@ public class TaskQueueTest {
                     .build());
         }
         Thread.sleep(5000);
+    }
+
+    @Test
+    public void testGetLog() throws SQLException, IOException, InterruptedException {
+        initDB();
+        AsyncTaskRecord record = AsyncTaskRecord.builder()
+                .cpuOverhead(0)
+                .taskType("test")
+                .params(100 + "")
+                .name("测试日志:延迟执行100ms")
+                .build();
+        asyncTaskManager.submitAsyncTask(record);
+        Thread.sleep(200);
+        Resource taskLog = asyncTaskManager.getTaskLog(record.getId(), true);
+        Assertions.assertNotNull(taskLog);
+        String s = StreamUtils.copyToString(taskLog.getInputStream(), StandardCharsets.UTF_8);
+        System.out.println(s);
     }
 }
