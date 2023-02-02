@@ -2,6 +2,7 @@ package emergency;
 
 import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -17,7 +18,8 @@ import java.util.Date;
         DataSourceAutoConfiguration.class,
         GsonAutoConfiguration.class,
         SecurityAutoConfiguration.class,
-        ManagementWebSecurityAutoConfiguration.class
+        ManagementWebSecurityAutoConfiguration.class,
+        RedisAutoConfiguration.class
     },
     scanBasePackages = {
         "emergency"

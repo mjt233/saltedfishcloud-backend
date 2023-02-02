@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>咸鱼云验证码</title>
+</head>
+<body>
+<div>系统启动异常，请联系管理员</div>
+<div>异常日期：<span th:text="${date}"></span></div>
+<hr>
+<div>异常信息如下：</div>
+<pre th:text="${message}"></pre>
+</body>
+</html>
