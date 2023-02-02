@@ -41,3 +41,4 @@ sfc-web/src/main/resources/application.yml
 /ext
 
 log/**
+.log

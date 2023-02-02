@@ -1,22 +1,21 @@
 package com.sfc.task.test;
 
+import com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure;
+import com.sfc.task.AsyncTaskExecutor;
 import com.sfc.task.rpc.RPCManager;
 import com.sfc.task.rpc.RPCRequest;
 import com.sfc.task.rpc.RPCResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.test.context.ActiveProfiles;
@@ -31,7 +30,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SpringBootTest
 @RunWith(SpringRunner.class)
 @SpringBootApplication(
-        exclude= {DataSourceAutoConfiguration.class, GsonAutoConfiguration.class},
+        exclude= {
+                DataSourceAutoConfiguration.class,
+                GsonAutoConfiguration.class
+        },
         scanBasePackages = {
                 "com.sfc.task"
         }
@@ -49,6 +51,9 @@ public class RPCTest {
 
     @Autowired
     private RedisConnectionFactory factory;
+
+    @Autowired
+    private AsyncTaskExecutor executor;
 
     /**
      * 测试多个管理器监听时
@@ -112,6 +117,8 @@ public class RPCTest {
             }).start();
         }
         barrier.await();
+        executor.stop();
+        Thread.sleep(5000);
         System.out.println("a处理次数:" + aCount + " b处理次数:" + bCount);
     }
 }

@@ -183,14 +183,14 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
 
                     // 接受一个任务
                     if (!isRunning()) {
-                        return;
+                        break;
                     }
                     TaskContext taskContext = receiveTask();
                     if (taskContext == null) {
-                        return;
+                        break;
                     }
                     if (!isRunning()) {
-                        return;
+                        break;
                     }
 
                     // 提交执行
@@ -202,6 +202,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                     } catch (InterruptedException ignore) {}
                 }
             }
+            log.info("任务接收线程退出");
         });
     }
 
@@ -288,6 +289,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
 
     protected TaskContext receiveTask() {
         AsyncTaskRecord record = taskReceiver.get();
+        if (record == null) {
+            return null;
+        }
         if (record.getId() == null) {
             record.setId(IdUtil.getId());
         }

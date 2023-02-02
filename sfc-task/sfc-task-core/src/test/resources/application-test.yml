@@ -22,7 +22,7 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
+      url: jdbc:mysql://127.0.0.1/t_xyy?useSSL=false&serverTimezone=UTC
       username: root
       password: test
       test-while-idle: true

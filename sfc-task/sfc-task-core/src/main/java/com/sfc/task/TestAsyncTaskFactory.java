@@ -24,7 +24,6 @@ public class TestAsyncTaskFactory implements AsyncTaskFactory {
                     try {
                         executeThread = Thread.currentThread();
                         Thread.sleep(i);
-                        System.out.println("睡醒了");
                         writer.write("执行完成：" + System.currentTimeMillis() + "\n");
                     } catch (InterruptedException e) {
                         writer.write("执行被打断，执行完成：" + System.currentTimeMillis() + "\n");

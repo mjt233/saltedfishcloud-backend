@@ -13,7 +13,6 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-@Inheritance
 @MappedSuperclass
 public class BaseModel {
 
