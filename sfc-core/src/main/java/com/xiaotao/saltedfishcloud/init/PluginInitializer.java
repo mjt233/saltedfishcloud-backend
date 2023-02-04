@@ -1,13 +1,9 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.ext.DefaultPluginManager;
-import com.xiaotao.saltedfishcloud.ext.DirPathClassLoader;
-import com.xiaotao.saltedfishcloud.ext.PluginManager;
-import com.xiaotao.saltedfishcloud.ext.PluginProperty;
+import com.xiaotao.saltedfishcloud.ext.*;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -82,8 +78,9 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
 
             PathResource pathResource = new PathResource(path);
             log.info("{}从额外资源路径加载插件：{}",LOG_PREFIX, path);
-            DirPathClassLoader classLoader = new DirPathClassLoader(path, this.getClass().getClassLoader());
-            pluginManager.register(pathResource, classLoader);
+
+//            DirPathClassLoader classLoader = new DirPathClassLoader(path, null);
+            pluginManager.register(pathResource, PluginClassLoaderFactory.createPurePluginClassLoader(path.toUri().toURL()));
         }
     }
 

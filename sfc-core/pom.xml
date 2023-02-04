@@ -29,16 +29,6 @@
         </profile>
     </profiles>
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>com.xiaotao</groupId>-->
-<!--            <artifactId>sfc-ext-minio-store</artifactId>-->
-<!--            <version>1.0.0</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>com.xiaotao</groupId>-->
-<!--            <artifactId>sfc-ext-hadoop-store</artifactId>-->
-<!--            <version>1.0.0-RELEASE</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
@@ -47,7 +37,7 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-task-api</artifactId>
-            <version>0.0.1</version>
+            <version>${task.version}</version>
         </dependency>
         <dependency>
             <groupId>com.xiaotao</groupId>
