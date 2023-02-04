@@ -50,6 +50,9 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
     @Autowired
     private AsyncTaskExecutor executor;
 
+    /**
+     * 将spring容器中所有实现了AsyncTaskFactory的bean都注册到任务管理器中
+     */
     @Autowired(required = false)
     public void setFactories(List<AsyncTaskFactory> factories) {
         if (factories != null && !factories.isEmpty()) {
