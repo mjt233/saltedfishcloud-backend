@@ -1,7 +1,9 @@
 package com.sfc.task;
 
 
+import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
+import com.sfc.task.repo.AsyncTaskLogRecordRepo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -10,8 +12,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextClosedEvent;
@@ -20,9 +20,12 @@ import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,6 +50,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     @Getter
     @Setter
     private int maxLoad = Runtime.getRuntime().availableProcessors() * 100 - 10;
+
+    @Autowired
+    private AsyncTaskLogRecordRepo logRepo;
 
     private final List<Consumer<AsyncTaskRecord>> finishListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> failedListener = new ArrayList<>();
@@ -240,7 +246,6 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                 log.error("创建日志目录失败: ", e);
             }
             try (OutputStream logOutput = Files.newOutputStream(logPath)) {
-                Logger a = LoggerFactory.getILoggerFactory().getLogger("a");
                 asyncTask.execute(logOutput);
                 logOutput.close();
                 emit(finishListener, record);
@@ -253,8 +258,34 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                     loadCleanQueue.add(cpuOverhead);
                 }
                 runningTask.remove(taskContext.record.getId());
+
+                // 保存任务日志
+                this.saveLog(record, logPath);
             }
         });
+    }
+
+    /**
+     * 保存日志到数据库
+     * @param record    任务记录
+     * @param logPath   日志路径
+     */
+    private void saveLog(AsyncTaskRecord record, Path logPath) {
+        try {
+            AsyncTaskLogRecord logRecord = new AsyncTaskLogRecord();
+            logRecord.setUid(record.getUid());
+            logRecord.setTaskId(record.getId());
+            try (InputStream is = Files.newInputStream(logPath)) {
+                logRecord.setLogInfo(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                logRecord.setLogInfo("日志获取出错：" + e.getMessage());
+                log.error("日志获取出错：", e);
+            }
+            logRepo.save(logRecord);
+            Files.deleteIfExists(logPath);
+        } catch (Exception e) {
+            log.error("日志保存出错：", e);
+        }
     }
 
     /**

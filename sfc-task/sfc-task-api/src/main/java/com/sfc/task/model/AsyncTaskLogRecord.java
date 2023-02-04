@@ -1,8 +1,7 @@
 package com.sfc.task.model;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.Entity;
 
