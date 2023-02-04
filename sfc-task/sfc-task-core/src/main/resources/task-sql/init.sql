@@ -6,7 +6,7 @@ CREATE TABLE async_task_record
     update_at    datetime     NULL,
     task_type    VARCHAR(255) NULL COMMENT '任务类型',
     name         VARCHAR(255) NULL COMMENT '任务名称',
-    params       VARCHAR(255) NULL COMMENT '任务参数',
+    params       longtext     NULL COMMENT '任务参数',
     execute_date datetime     NULL COMMENT '执行日期',
     finish_date  datetime     NULL COMMENT '完成日期',
     failed_date  datetime     NULL COMMENT '失败日期',
