@@ -31,7 +31,9 @@
         <!--  前端项目路径，配置后在package时自动打包到webapp/static -->
 <!--        <sfc.front-end-path>C:\Users\xiaotao\code\saltedfishcloud-frontend</sfc.front-end-path>-->
         <java.version>11</java.version>
+        <!--   系统核心api模块版本     -->
         <api.version>2.3.0</api.version>
+        <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>

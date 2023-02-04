@@ -11,7 +11,7 @@
 
     <artifactId>sfc-task</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.1</version>
+    <version>${task.version}</version>
     <description>咸鱼云异步任务和定时任务调度系统模块</description>
     <modules>
         <module>sfc-task-api</module>

@@ -52,7 +52,7 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-task-core</artifactId>
-            <version>0.0.1</version>
+            <version>${task.version}</version>
         </dependency>
     </dependencies>
 

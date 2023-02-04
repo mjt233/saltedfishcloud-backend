@@ -23,7 +23,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.function.Supplier;
