@@ -11,7 +11,7 @@
 
     <artifactId>sfc-task</artifactId>
     <packaging>pom</packaging>
-    <version>${task.version}</version>
+    <version>1.0.0</version>
     <description>咸鱼云异步任务和定时任务调度系统模块</description>
     <modules>
         <module>sfc-task-api</module>
@@ -21,6 +21,7 @@
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <task.version>1.0.0</task.version>
     </properties>
 
     <dependencies>
