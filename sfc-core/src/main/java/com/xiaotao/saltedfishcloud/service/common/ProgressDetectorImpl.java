@@ -51,7 +51,9 @@ public class ProgressDetectorImpl implements ProgressDetector {
     @Override
     public boolean removeObserve(String id) {
         log.debug("{}移除进度速度检测任务：{}", LOG_TITLE, id);
-        return Boolean.TRUE.equals(redisTemplate.delete(id));
+        boolean res = Boolean.TRUE.equals(redisTemplate.delete(id));
+        entityMap.remove(id);
+        return res;
     }
 
     /**
