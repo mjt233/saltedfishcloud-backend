@@ -1,0 +1,1 @@
+ALTER TABLE download_task ADD task_id BIGINT COMMENT '异步任务id'
