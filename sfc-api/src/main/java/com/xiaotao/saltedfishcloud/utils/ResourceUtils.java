@@ -109,4 +109,13 @@ public class ResourceUtils {
             }
         };
     }
+
+    /**
+     * 读取资源转为字符串
+     */
+    public static String resourceToString(Resource resource) throws IOException {
+        try (InputStream is = resource.getInputStream()) {
+            return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+        }
+    }
 }
