@@ -1,8 +1,8 @@
 package com.sfc.task.test;
 
 import com.sfc.task.*;
-import com.sfc.task.model.AsyncTaskProgress;
 import com.sfc.task.model.AsyncTaskRecord;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import org.junit.jupiter.api.Test;
 
 import java.io.OutputStream;
@@ -34,7 +34,7 @@ public class TaskExecuteTest {
                     }
 
                     @Override
-                    public AsyncTaskProgress getProgress() {
+                    public ProgressRecord getProgress() {
                         return null;
                     }
                 };

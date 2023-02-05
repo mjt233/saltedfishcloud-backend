@@ -1,8 +1,10 @@
 package com.sfc.task;
 
 import com.sfc.task.model.AsyncTaskRecord;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import org.springframework.core.io.Resource;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 
 public interface AsyncTaskExecutor {
@@ -50,10 +52,21 @@ public interface AsyncTaskExecutor {
     Resource getLog(Long taskId, boolean withHistory);
 
     /**
+     * 获取运行中的任务实例
+     * @param taskId 任务id
+     */
+    AsyncTask getTask(Long taskId);
+
+    /**
      * 注册一个任务工厂
      * @param factory 该类型对应的任务工厂
      */
     void registerFactory(AsyncTaskFactory factory);
+
+    /**
+     * 获取任务进度
+     */
+    ProgressRecord getProgress(Long taskId) throws IOException;
 
     /**
      * 添加任务开始执行的监听器

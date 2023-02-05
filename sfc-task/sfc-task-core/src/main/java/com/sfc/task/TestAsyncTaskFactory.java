@@ -1,6 +1,6 @@
 package com.sfc.task;
 
-import com.sfc.task.model.AsyncTaskProgress;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -53,7 +53,7 @@ public class TestAsyncTaskFactory implements AsyncTaskFactory {
             }
 
             @Override
-            public AsyncTaskProgress getProgress() {
+            public ProgressRecord getProgress() {
                 return null;
             }
         };

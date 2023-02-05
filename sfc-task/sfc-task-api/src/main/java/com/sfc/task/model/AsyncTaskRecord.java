@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * 异步任务记录
  */
-@Entity
+@Entity(name = "async_task_record")
 @Getter
 @Setter
 @Builder
@@ -54,7 +54,14 @@ public class AsyncTaskRecord extends AuditModel {
     private String executor;
 
     /**
-     * 运行状态
+     * 运行状态<br>
+     * <ul>
+     *     <li>等待中 - 0</li>
+     *     <li>运行中 - 1</li>
+     *     <li>执行完成 - 2</li>
+     *     <li>任务失败 - 3</li>
+     * </ul>
+     *
      * @see AsyncTaskConstants.Status
      */
     private Integer status;

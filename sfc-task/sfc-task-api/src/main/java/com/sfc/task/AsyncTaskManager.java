@@ -1,6 +1,7 @@
 package com.sfc.task;
 
 import com.sfc.task.model.AsyncTaskRecord;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -17,7 +18,6 @@ public interface AsyncTaskManager {
 
     /**
      * 提交异步任务到系统执行
-     * @param type      任务类型
      * @param record    任务记录
      */
     void submitAsyncTask(AsyncTaskRecord record) throws IOException;
@@ -29,6 +29,12 @@ public interface AsyncTaskManager {
      * @return              日志数据的输入流
      */
     Resource getTaskLog(Long taskId, boolean withHistory) throws IOException;
+
+    /**
+     * 获取任务进度
+     * @param taskId 任务id
+     */
+    ProgressRecord getProgress(Long taskId) throws IOException;
 
     /**
      * 获取异步任务执行器

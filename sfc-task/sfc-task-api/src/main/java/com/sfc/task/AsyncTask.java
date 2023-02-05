@@ -1,6 +1,6 @@
 package com.sfc.task;
 
-import com.sfc.task.model.AsyncTaskProgress;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 
 import java.io.OutputStream;
 
@@ -33,5 +33,5 @@ public interface AsyncTask {
     /**
      * 获取任务执行进度
      */
-    AsyncTaskProgress getProgress();
+    ProgressRecord getProgress();
 }

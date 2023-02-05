@@ -4,9 +4,13 @@ package com.sfc.task;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskLogRecordRepo;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -53,6 +57,12 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
 
     @Autowired
     private AsyncTaskLogRecordRepo logRepo;
+
+    @Autowired
+    private ProgressDetector progressDetector;
+
+    @Autowired
+    private UserService userService;
 
     private final List<Consumer<AsyncTaskRecord>> finishListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> failedListener = new ArrayList<>();
@@ -234,9 +244,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
         }
 
         threadPool.execute(() -> {
+            runningTask.put(taskContext.record.getId(), asyncTask);
             emit(startListener, record);
 
-            runningTask.put(taskContext.record.getId(), asyncTask);
 
             Path logPath = getLogPath(record.getId());
             log.info("创建任务日志: {}", logPath);
@@ -246,6 +256,10 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                 log.error("创建日志目录失败: ", e);
             }
             try (OutputStream logOutput = Files.newOutputStream(logPath)) {
+                // 绑定上下文用户信息
+                SecureUtils.bindUser(userService.getUserById(record.getUid().intValue()));
+                // 添加进度事件监听
+                progressDetector.addObserve(asyncTask::getProgress, record.getId() + "");
                 asyncTask.execute(logOutput);
                 logOutput.close();
                 emit(finishListener, record);
@@ -257,12 +271,23 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                 if (cpuOverhead > 0) {
                     loadCleanQueue.add(cpuOverhead);
                 }
+                // 移除任务实例
                 runningTask.remove(taskContext.record.getId());
-
+                // 移除进度监听
+                this.removeProgressDetect(record);
                 // 保存任务日志
                 this.saveLog(record, logPath);
             }
         });
+    }
+
+    private void removeProgressDetect(AsyncTaskRecord record) {
+        try {
+            progressDetector.removeObserve(record.getId() + "");
+        } catch (Exception e) {
+            log.error("移除进度监听出错: ", e);
+        }
+
     }
 
     /**
@@ -376,6 +401,12 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
         failedListener.add(listener);
     }
 
+
+    @Override
+    public ProgressRecord getProgress(Long taskId) throws IOException {
+        return progressDetector.getRecord(taskId + "");
+    }
+
     @Override
     public void addTaskFinishListener(Consumer<AsyncTaskRecord> listener) {
         finishListener.add(listener);
@@ -413,11 +444,15 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                 }
             }
         }
-
     }
 
     @Override
     public boolean isRunning() {
         return running;
+    }
+
+    @Override
+    public AsyncTask getTask(Long taskId) {
+        return runningTask.get(taskId);
     }
 }

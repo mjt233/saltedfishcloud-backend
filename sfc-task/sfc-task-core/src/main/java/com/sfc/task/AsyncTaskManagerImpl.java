@@ -7,6 +7,7 @@ import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.sfc.task.rpc.RPCManager;
 import com.sfc.task.rpc.RPCRequest;
 import com.sfc.task.rpc.RPCResponse;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 
@@ -62,8 +64,13 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
         }
     }
 
+    @Override
+    public ProgressRecord getProgress(Long taskId) throws IOException {
+        return executor.getProgress(taskId);
+    }
+
     public void initRPCHandler() {
-        rpcManager.registerRpcHandler("getLog", request -> {
+        rpcManager.registerRpcHandler(RPCFunction.TASK_GET_LOG, request -> {
             Resource resource = executor.getLog(Long.parseLong(request.getParam()), false);
             if (resource == null) {
                 return RPCResponse.ingore();
@@ -134,10 +141,10 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
         } else {
             RPCRequest request = RPCRequest.builder()
                     .taskId(taskId)
-                    .functionName("getLog")
+                    .functionName(RPCFunction.TASK_GET_LOG)
                     .param(taskId + "")
                     .build();
-            RPCResponse<String> response = rpcManager.call(request, String.class);
+            RPCResponse<String> response = rpcManager.call(request, String.class, Duration.ofMinutes(500));
             if (response != null && response.getIsSuccess()) {
                 return ResourceUtils.stringToResource(response.getResult());
             }
