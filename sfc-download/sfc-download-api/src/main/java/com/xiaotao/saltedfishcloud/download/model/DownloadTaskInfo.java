@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.model.po;
+package com.xiaotao.saltedfishcloud.download.model;
 
 import lombok.Data;
 import org.hibernate.annotations.Proxy;

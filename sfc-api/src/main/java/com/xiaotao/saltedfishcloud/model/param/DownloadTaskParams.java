@@ -19,6 +19,10 @@ public class DownloadTaskParams {
     public HttpMethod method = HttpMethod.GET;
     public String proxy;
 
+
+    public int connectTimeout = 10000;
+    public int readTimeout = 60000;
+
     @NotEmpty
     public String savePath;
 

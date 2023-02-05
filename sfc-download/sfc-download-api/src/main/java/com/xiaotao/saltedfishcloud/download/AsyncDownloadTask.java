@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.download;
+package com.xiaotao.saltedfishcloud.download;
 
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.service.async.task.AsyncTask;

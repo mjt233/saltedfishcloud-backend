@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.download;
+package com.xiaotao.saltedfishcloud.download;
 
 import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import org.springframework.beans.factory.annotation.Autowired;

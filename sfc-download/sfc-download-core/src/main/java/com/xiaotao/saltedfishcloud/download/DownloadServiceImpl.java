@@ -1,16 +1,18 @@
-package com.xiaotao.saltedfishcloud.service.download;
+package com.xiaotao.saltedfishcloud.download;
 
+import com.sfc.task.AsyncTaskManager;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.constant.MQTopic;
-import com.xiaotao.saltedfishcloud.dao.jpa.DownloadTaskRepo;
+import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
-import com.xiaotao.saltedfishcloud.model.po.DownloadTaskInfo;
-import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.download.service.AsyncDownloadTaskImpl;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.param.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
@@ -84,6 +86,9 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
 
     @Autowired
     private TaskManager taskManager;
+
+    @Autowired
+    private AsyncTaskManager asyncTaskManager;
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -235,7 +240,7 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
                 fileService.moveToSaveFile(params.uid, tempFile, params.savePath, fileInfo);
             } catch (FileAlreadyExistsException e) {
                 // 处理用户删除了目录且指定目录路径中存在同名文件的情况
-                info.setSavePath("/download" + System.currentTimeMillis() + info.getSavePath());
+                info.setSavePath("/com/xiaotao/saltedfishcloud/download" + System.currentTimeMillis() + info.getSavePath());
                 try {
                     fileService.mkdirs(params.uid, info.getSavePath());
                     fileService.moveToSaveFile(params.uid, tempFile, params.savePath, fileInfo);

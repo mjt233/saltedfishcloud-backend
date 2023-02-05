@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.download;
+package com.xiaotao.saltedfishcloud.download.service;
 
 import com.xiaotao.saltedfishcloud.common.prog.ProgressProvider;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;

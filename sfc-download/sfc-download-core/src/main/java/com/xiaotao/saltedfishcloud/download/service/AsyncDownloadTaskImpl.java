@@ -1,7 +1,8 @@
-package com.xiaotao.saltedfishcloud.service.download;
+package com.xiaotao.saltedfishcloud.download.service;
 
 import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.download.*;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
@@ -12,7 +13,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.util.Map;
 import java.util.Optional;

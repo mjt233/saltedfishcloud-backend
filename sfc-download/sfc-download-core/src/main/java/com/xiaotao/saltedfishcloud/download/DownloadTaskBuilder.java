@@ -1,6 +1,7 @@
-package com.xiaotao.saltedfishcloud.service.download;
+package com.xiaotao.saltedfishcloud.download;
 
 import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
+import com.xiaotao.saltedfishcloud.download.service.AsyncDownloadTaskImpl;
 import com.xiaotao.saltedfishcloud.service.async.context.AsyncTackCallback;
 import com.xiaotao.saltedfishcloud.service.async.context.EmptyCallback;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;

@@ -1,13 +1,13 @@
-package com.xiaotao.saltedfishcloud.controller.task;
+package com.xiaotao.saltedfishcloud.download.controller;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.model.po.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.model.param.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.service.download.DownloadService;
+import com.xiaotao.saltedfishcloud.download.DownloadService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;

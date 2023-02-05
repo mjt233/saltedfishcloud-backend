@@ -1,6 +1,6 @@
-package com.xiaotao.saltedfishcloud.service.download;
+package com.xiaotao.saltedfishcloud.download;
 
-import com.xiaotao.saltedfishcloud.model.po.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.model.param.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import org.springframework.data.domain.Page;

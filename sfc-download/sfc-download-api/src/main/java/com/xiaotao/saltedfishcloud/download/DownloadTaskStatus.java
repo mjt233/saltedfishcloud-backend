@@ -1,15 +1,7 @@
-package com.xiaotao.saltedfishcloud.service.download;
+package com.xiaotao.saltedfishcloud.download;
 
 import lombok.ToString;
 
-enum TaskStatus {
-    DOWNLOADING,
-    FAILED,
-    FINISH,
-    READY,
-    CANCEL,
-    ERROR
-}
 
 @ToString
 public class DownloadTaskStatus {

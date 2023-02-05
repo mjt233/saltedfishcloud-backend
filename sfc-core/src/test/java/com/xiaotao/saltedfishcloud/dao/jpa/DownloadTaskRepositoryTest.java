@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
-import com.xiaotao.saltedfishcloud.model.po.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
+import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;

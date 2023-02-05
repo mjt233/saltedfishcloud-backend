@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.download;
+package com.xiaotao.saltedfishcloud.download;
 
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
