@@ -10,6 +10,13 @@ import java.io.IOException;
  * 异步任务管理器
  */
 public interface AsyncTaskManager {
+
+    /**
+     * 中断一个任务执行
+     * @param taskId    任务id
+     */
+    void interrupt(Long taskId) throws IOException;
+
     /**
      * 注册一个任务工厂
      * @param factory 该类型对应的任务工厂

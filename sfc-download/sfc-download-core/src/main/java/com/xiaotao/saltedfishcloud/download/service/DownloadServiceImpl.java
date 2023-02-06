@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.download;
+package com.xiaotao.saltedfishcloud.download.service;
 
 import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskManager;
@@ -7,8 +7,9 @@ import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.download.AsyncDownloadTask;
+import com.xiaotao.saltedfishcloud.download.DownloadService;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
-import com.xiaotao.saltedfishcloud.download.service.AsyncDownloadTaskImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
@@ -53,9 +54,9 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
 
     @Resource
     private DownloadTaskRepo downloadDao;
+
     @Resource
     private DiskFileSystemManager fileSystemProvider;
-
 
     @Resource
     private ProgressDetector detector;
@@ -103,18 +104,16 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
     }
 
     @Override
-    public void interrupt(String id) {
-        try {
-            final DownloadTaskInfo info = downloadDao.getOne(id);
-
-            info.setState(DownloadTaskInfo.State.CANCEL);
-            downloadDao.save(info);
-
-            log.debug("{}发送中断任务请求：{}", LOG_TITLE, id);
-            redisTemplate.convertAndSend(MQTopic.DOWNLOAD_TASK_INTERRUPT, id);
-        } catch (JpaObjectRetrievalFailureException e) {
-            throw new JsonException(404, "找不到id为" + id + "的下载任务");
+    public void interrupt(String id) throws IOException {
+        final DownloadTaskInfo info = downloadDao.getOne(id);
+        AsyncTaskRecord asyncTaskRecord = info.getAsyncTaskRecord();
+        if (asyncTaskRecord == null) {
+            throw new IllegalArgumentException("没有关联异步任务id");
         }
+        if (!DOWNLOADING_TYPE.contains(asyncTaskRecord.getStatus())) {
+            throw new IllegalArgumentException("只能对下载中或等待中的下载任务操作");
+        }
+        asyncTaskManager.interrupt(asyncTaskRecord.getId());
     }
 
     @Override
@@ -129,28 +128,16 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
             tasks = downloadDao.findByUidAndState(uid, FINISH_TYPE, pageRequest);
         }
 
-
         tasks.forEach(e -> {
-            // 对于下载中的任务，先判断是否在当前实例进程中执行异步下载。如果是则直接从异步任务实例中获取进度。
-            // 通过任务id获取不到异步任务实例时，有两种情况：1. 分布式部署的情况下，任务在其他实例中下载 2. 负责下载的进程或实例退出了
-            // 对于情况1，可以通过ProgressDetector获取进度。若获取不到进度，那就是下载的进程或实例退出了，下载失败。
-            if (e.getState() == DownloadTaskInfo.State.DOWNLOADING ) {
-                TaskContext<AsyncDownloadTaskImpl> context = taskManager.getContext(e.getId(), AsyncDownloadTaskImpl.class);
-                if (context == null) {
-                    final ProgressRecord record = detector.getRecord(e.getId());
-                    if (record == null) {
-                        e.setState(DownloadTaskInfo.State.FAILED);
-                        e.setMessage("interrupt");
-                        e.setFinishAt(new Date());
-                        downloadDao.save(e);
-                    } else {
-                        e.setLoaded(record.getLoaded());
-                        e.setSpeed(record.getSpeed()*1000);
-                    }
-                } else {
-                    AsyncDownloadTaskImpl task = context.getTask();
-                    e.setLoaded(task.getStatus().loaded);
-                    e.setSpeed(task.getStatus().speed*1000);
+            AsyncTaskRecord asyncTaskRecord = e.getAsyncTaskRecord();
+            if (asyncTaskRecord != null && AsyncTaskConstants.Status.RUNNING.equals(asyncTaskRecord.getStatus())) {
+                try {
+                    ProgressRecord progress = asyncTaskManager.getProgress(asyncTaskRecord.getId());
+                    e.setLoaded(progress.getLoaded());
+                    e.setSize(progress.getTotal());
+                    e.setSpeed(progress.getSpeed());
+                } catch (IOException ex) {
+                    log.error("{}获取离线下载任务进度失败", LOG_TITLE, ex);
                 }
             }
         });

@@ -13,7 +13,7 @@ public interface DownloadService {
      * 中断任务下载
      * @param id    要中断的下载任务ID
      */
-    void interrupt(String id);
+    void interrupt(String id) throws IOException;
 
     /**
      * 获取用户的所有下载任务

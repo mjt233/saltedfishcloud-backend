@@ -65,11 +65,21 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
     }
 
     @Override
+    public void interrupt(Long taskId) throws IOException {
+        RPCRequest request = RPCRequest.builder()
+                .taskId(taskId)
+                .functionName(RPCFunction.TASK_INTERRUPT)
+                .build();
+        rpcManager.call(request, Boolean.class, Duration.ofSeconds(30));
+    }
+
+    @Override
     public ProgressRecord getProgress(Long taskId) throws IOException {
         return executor.getProgress(taskId);
     }
 
     public void initRPCHandler() {
+        // 注册获取任务日志方法
         rpcManager.registerRpcHandler(RPCFunction.TASK_GET_LOG, request -> {
             Resource resource = executor.getLog(Long.parseLong(request.getParam()), false);
             if (resource == null) {
@@ -90,6 +100,24 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
                             .build();
                 }
             }
+        });
+
+        // 注册中断任务方法
+        // todo 若任务未开始，则从任务队列中移除
+        rpcManager.registerRpcHandler(RPCFunction.TASK_INTERRUPT, request -> {
+            Long taskId = request.getTaskId();
+            AsyncTask task = executor.getTask(taskId);
+            if (task == null) {
+                return RPCResponse.ingore();
+            } else {
+                try {
+                    task.interrupt();
+                } catch (Exception e) {
+                    log.error("任务中断出错: ", e);
+                    return RPCResponse.error(e.getMessage());
+                }
+            }
+            return RPCResponse.success(true);
         });
     }
 

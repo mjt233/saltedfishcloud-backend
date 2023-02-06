@@ -40,7 +40,7 @@ public class DownloadController {
     }
 
     @DeleteMapping
-    public JsonResult interrupt(@RequestParam String taskId) {
+    public JsonResult interrupt(@RequestParam String taskId) throws IOException {
         downloadService.interrupt(taskId);
         return JsonResult.emptySuccess();
     }
