@@ -81,8 +81,7 @@ public class FileInfo extends BasicFileInfo{
             fileInfo.streamSource = new PathResource(Paths.get(path));
             return fileInfo;
         } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException(e);
         }
     }
 

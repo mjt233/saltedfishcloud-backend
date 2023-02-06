@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.download;
 
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
-import com.xiaotao.saltedfishcloud.model.param.DownloadTaskParams;
+import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import org.springframework.data.domain.Page;
 
-import java.nio.file.NoSuchFileException;
+import java.io.IOException;
 
 public interface DownloadService {
 
@@ -27,5 +27,5 @@ public interface DownloadService {
      * @TODO 使用队列限制同时下载的任务数
      * @return 下载任务ID
      */
-    String createTask(DownloadTaskParams params, int creator) throws NoSuchFileException;
+    String createTask(DownloadTaskParams params, int creator) throws IOException;
 }

@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
-import com.xiaotao.saltedfishcloud.model.param.DownloadTaskParams;
+import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.download.DownloadService;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import java.nio.file.NoSuchFileException;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -46,7 +46,7 @@ public class DownloadController {
     }
 
     @PostMapping
-    public JsonResult createTask(@RequestBody @Validated DownloadTaskParams info) throws NoSuchFileException {
+    public JsonResult createTask(@RequestBody @Validated DownloadTaskParams info) throws IOException {
         return JsonResultImpl.getInstance(downloadService.createTask(info, SecureUtils.getSpringSecurityUser().getId()));
     }
 

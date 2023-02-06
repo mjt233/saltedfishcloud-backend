@@ -1,24 +1,23 @@
 package com.xiaotao.saltedfishcloud.download;
 
+import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskManager;
+import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
-import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.download.service.AsyncDownloadTaskImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.param.DownloadTaskParams;
+import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
-import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
-import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
 import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,14 +31,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
+import java.util.*;
 
 /**
  * 离线下载服务实现类
@@ -48,32 +40,22 @@ import java.util.Date;
 @Slf4j
 @Service
 public class DownloadServiceImpl implements DownloadService, InitializingBean {
-    static final private Collection<DownloadTaskInfo.State> FINISH_TYPE = Arrays.asList(
-            DownloadTaskInfo.State.FINISH,
-            DownloadTaskInfo.State.CANCEL,
-            DownloadTaskInfo.State.FAILED
+    static final private Collection<Integer> FINISH_TYPE = Arrays.asList(
+            AsyncTaskConstants.Status.FAILED,
+            AsyncTaskConstants.Status.FINISH
     );
-    static final private Collection<DownloadTaskInfo.State> DOWNLOADING_TYPE = Collections.singleton(DownloadTaskInfo.State.DOWNLOADING);
+    static final private Collection<Integer> DOWNLOADING_TYPE = Arrays.asList(
+            AsyncTaskConstants.Status.RUNNING,
+            AsyncTaskConstants.Status.WAITING
+    );
 
     public static final String LOG_TITLE = "[Download]";
 
     @Resource
     private DownloadTaskRepo downloadDao;
-
-    @Resource
-    private ProxyDao proxyDao;
-
-    @Resource
-    private TaskContextFactory taskContextFactory;
-
-    @Resource
-    private NodeService nodeService;
-
     @Resource
     private DiskFileSystemManager fileSystemProvider;
 
-    @Resource
-    private DownloadTaskBuilderFactory builderFactory;
 
     @Resource
     private ProgressDetector detector;
@@ -140,11 +122,11 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
         Page<DownloadTaskInfo> tasks;
         PageRequest pageRequest = PageRequest.of(page, size);
         if (type == null || type == TaskType.ALL) {
-            tasks = downloadDao.findByUidOrderByCreatedAtDesc(uid, pageRequest);
+            tasks = downloadDao.findByUid(uid, pageRequest);
         } else if (type == TaskType.DOWNLOADING) {
-            tasks = downloadDao.findByUidAndStateInOrderByCreatedAtDesc(uid, DOWNLOADING_TYPE, pageRequest);
+            tasks = downloadDao.findByUidAndState(uid, DOWNLOADING_TYPE, pageRequest);
         } else {
-            tasks = downloadDao.findByUidAndStateInOrderByCreatedAtDesc(uid, FINISH_TYPE, pageRequest);
+            tasks = downloadDao.findByUidAndState(uid, FINISH_TYPE, pageRequest);
         }
 
 
@@ -176,108 +158,29 @@ public class DownloadServiceImpl implements DownloadService, InitializingBean {
     }
 
     @Override
-    public String createTask(DownloadTaskParams params, int creator) throws NoSuchFileException {
-        // 初始化下载任务和上下文
-        DownloadTaskBuilder builder = builderFactory.getBuilder()
-                .setUrl(params.url)
-                .setHeaders(params.headers)
-                .setMethod(params.method);
-        if (params.proxy != null && params.proxy.length() != 0) {
-            ProxyInfo proxy = proxyDao.getProxyByName(params.proxy);
-            if (proxy == null) {
-                throw new JsonException(400, "无效的代理：" + params.proxy);
-            }
-            builder.setProxy(proxy.toProxy());
-            log.debug("{}使用代理创建下载任务：{}", LOG_TITLE, proxy);
-        }
-
-        // 校验参数合法性
-        nodeService.getPathNodeByPath(params.uid, params.savePath);
+    public String createTask(DownloadTaskParams params, int creator) throws IOException {
 
         // 初始化下载任务信息和录入数据库
         DownloadTaskInfo info = new DownloadTaskInfo();
-        AsyncDownloadTaskImpl task = builder.build();
-        TaskContext<AsyncDownloadTask> context = taskContextFactory.createContextFromAsyncTask(task);
-        task.setTaskId(context.getId());
-        info.setId(context.getId());
+        AsyncTaskRecord asyncTaskRecord = AsyncTaskRecord.builder()
+                .name("离线下载")
+                .taskType(AsyncTaskType.OFFLINE_DOWNLOAD)
+                .cpuOverhead(20)
+                .build();
+        asyncTaskRecord.setId(IdUtil.getId());
+        asyncTaskRecord.setUid((long)creator);
+
         info.setUrl(params.url);
         info.setProxy(params.proxy);
         info.setUid(params.uid);
-        info.setState(DownloadTaskInfo.State.DOWNLOADING);
         info.setCreatedBy(creator);
         info.setSavePath(params.savePath);
-        info.setCreatedAt(new Date());
+        info.setAsyncTaskRecord(asyncTaskRecord);
         downloadDao.save(info);
 
-        // 绑定事件回调
-        task.onReady(() -> {
-            info.setSize(task.getStatus().total);
-            info.setName(task.getStatus().name);
-            downloadDao.save(info);
-            log.debug("{}任务已就绪,文件名:{} 大小：{}", LOG_TITLE, info.getName(), info.getSize());
-        });
-        DiskFileSystem fileService = this.fileSystemProvider.getMainFileSystem();
-
-        context.onSuccess(() -> {
-            info.setState(DownloadTaskInfo.State.FINISH);
-            // 获取文件信息（包括md5）
-            Path tempFile = Paths.get(task.getSavePath());
-            FileInfo fileInfo = FileInfo.getLocal(tempFile.toString());
-            try {
-                // 创建预期的保存目录以应对下载完成前用户删除目录的情况
-                fileService.mkdirs(params.uid, params.savePath);
-
-
-                // 更改文件名为下载任务的文件名
-                if (task.getStatus().name != null) {
-                    fileInfo.setName(task.getStatus().name);
-                    info.setName(task.getStatus().name);
-                } else {
-                    info.setName(fileInfo.getName());
-                }
-
-                // 保存文件到网盘目录
-                fileService.moveToSaveFile(params.uid, tempFile, params.savePath, fileInfo);
-            } catch (FileAlreadyExistsException e) {
-                // 处理用户删除了目录且指定目录路径中存在同名文件的情况
-                info.setSavePath("/com/xiaotao/saltedfishcloud/download" + System.currentTimeMillis() + info.getSavePath());
-                try {
-                    fileService.mkdirs(params.uid, info.getSavePath());
-                    fileService.moveToSaveFile(params.uid, tempFile, params.savePath, fileInfo);
-                    info.setState(DownloadTaskInfo.State.FINISH);
-                } catch (IOException ex) {
-                    // 依旧失败那莫得办法咯
-                    info.setMessage(e.getMessage());
-                    info.setState(DownloadTaskInfo.State.FAILED);
-                }
-            } catch (Exception e) {
-                // 文件保存失败
-                e.printStackTrace();
-                info.setMessage(e.getMessage());
-                info.setState(DownloadTaskInfo.State.FAILED);
-            }
-            info.setFinishAt(new Date());
-            info.setSize(task.getStatus().total);
-            info.setLoaded(info.getSize());
-            downloadDao.save(info);
-        });
-        context.onFailed(() -> {
-            if (task.isInterrupted()) {
-                info.setState(DownloadTaskInfo.State.CANCEL);
-                info.setMessage("has been interrupted");
-            } else {
-                info.setState(DownloadTaskInfo.State.FAILED);
-                info.setMessage(task.getStatus().error);
-            }
-            info.setLoaded(task.getStatus().loaded);
-            info.setSize(task.getStatus().total != -1 ? task.getStatus().total : task.getStatus().loaded);
-            info.setFinishAt(new Date());
-            downloadDao.save(info);
-        });
-
-        // 提交任务执行
-        taskManager.submit(context);
-
-        return context.getId();
+        params.downloadId = info.getId();
+        asyncTaskRecord.setParams(MapperHolder.toJson(params));
+        asyncTaskManager.submitAsyncTask(asyncTaskRecord);
+        return params.downloadId;
     }
 }

@@ -35,6 +35,7 @@
         <!--   系统核心api模块版本     -->
         <api.version>2.3.0</api.version>
         <task.version>1.0.0</task.version>
+        <download.version>1.0.0</download.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
