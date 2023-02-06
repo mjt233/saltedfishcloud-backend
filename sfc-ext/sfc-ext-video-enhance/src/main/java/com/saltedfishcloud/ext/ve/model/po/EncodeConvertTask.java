@@ -4,6 +4,8 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 import javax.persistence.*;
 
@@ -28,6 +30,7 @@ public class EncodeConvertTask extends AuditModel {
 
     @OneToOne
     @JoinColumn(name = "task_id", referencedColumnName = "id")
+    @NotFound(action = NotFoundAction.IGNORE)
     private AsyncTaskRecord asyncTaskRecord;
 
     @Transient
