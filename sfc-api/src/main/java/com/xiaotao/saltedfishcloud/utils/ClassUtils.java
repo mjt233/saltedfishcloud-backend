@@ -4,15 +4,19 @@ import com.xiaotao.saltedfishcloud.model.Result;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class ClassUtils {
+    private static final Map<Class<?>, List<Field>> FIELD_CACHE = new ConcurrentHashMap<>();
 
     public static List<URL> getAllResources(ClassLoader loader, String prefix) throws IOException {
         List<URL> res = new ArrayList<>();
@@ -26,6 +30,22 @@ public class ClassUtils {
             URL url = resources.nextElement();
             res.add(url);
         }
+    }
+
+    /**
+     * 获取类的所有字段，包括父类
+     */
+    public static List<Field> getAllFields(Class<?> clazz) {
+        Class<?> curClass = clazz;
+        List<Field> res = new ArrayList<>();
+        while (curClass != Object.class) {
+            Class<?> finalCurClass = curClass;
+            List<Field> fieldList = FIELD_CACHE.computeIfAbsent(curClass, k -> List.of(finalCurClass.getFields()));
+
+            res.addAll(fieldList);
+            curClass = clazz.getSuperclass();
+        }
+        return res;
     }
 
 
