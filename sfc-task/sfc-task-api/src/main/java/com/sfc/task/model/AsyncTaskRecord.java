@@ -3,6 +3,7 @@ package com.sfc.task.model;
 import com.sfc.task.AsyncTaskConstants;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
+import org.hibernate.annotations.Proxy;
 
 import javax.persistence.Entity;
 import java.util.Date;
@@ -16,6 +17,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Proxy(lazy = false)
 public class AsyncTaskRecord extends AuditModel {
 
     /**

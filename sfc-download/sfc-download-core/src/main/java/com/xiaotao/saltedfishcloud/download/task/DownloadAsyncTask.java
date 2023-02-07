@@ -129,7 +129,12 @@ public class DownloadAsyncTask implements AsyncTask {
             if (isCancel) {
                 logger.error("下载被取消导致中断");
             }
-            throw new RuntimeException(e);
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeException(e);
+            }
+
         } finally {
             if (tempFilePath != null && Files.exists(tempFilePath)) {
                 logger.info("清理临时文件: " + tempFilePath);
@@ -251,13 +256,19 @@ public class DownloadAsyncTask implements AsyncTask {
                             this.progressRecord.appendLoaded(s);
                         }
 
-                        // 文件传输完成
+                        // 文件传输完整时记录已下载量为总量
                         if (!isCancel) {
                             this.progressRecord.setTotal(this.progressRecord.getLoaded());
                         }
 
                         // 更新大小和文件名
                         this.updateSizeAndName();
+
+                        // 抛出异常以便让判定失败
+                        if (isCancel) {
+                            throw new RuntimeException("下载被中断");
+                        }
+
                     } finally {
                         receiverInputStream = null;
                     }

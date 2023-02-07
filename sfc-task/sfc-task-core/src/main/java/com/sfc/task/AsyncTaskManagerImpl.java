@@ -66,6 +66,23 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
 
     @Override
     public void interrupt(Long taskId) throws IOException {
+        AsyncTaskRecord record = repo.getOne(taskId);
+
+        // 若任务等待中，则直接修改数据库的任务状态
+        if (AsyncTaskConstants.Status.WAITING.equals(record.getStatus())) {
+            // 乐观锁机制下若修改失败，则任务可能在修改前被调度执行，状态被更新为执行中了。此时需要发起RPC通知执行的节点中断任务
+            boolean success = repo.updateStatus(taskId, AsyncTaskConstants.Status.CANCEL, AsyncTaskConstants.Status.WAITING) > 0;
+            if (success) {
+                saveCancelLog(record);
+                return;
+            }
+        }
+
+        if (!AsyncTaskConstants.Status.WAITING.equals(record.getStatus()) && !AsyncTaskConstants.Status.RUNNING.equals(record.getStatus())) {
+            throw new IllegalArgumentException("任务不在可中断的状态中");
+        }
+
+        // 发起RPC让正在执行该任务的节点中断执行
         RPCRequest request = RPCRequest.builder()
                 .taskId(taskId)
                 .functionName(RPCFunction.TASK_INTERRUPT)
@@ -103,7 +120,6 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
         });
 
         // 注册中断任务方法
-        // todo 若任务未开始，则从任务队列中移除
         rpcManager.registerRpcHandler(RPCFunction.TASK_INTERRUPT, request -> {
             Long taskId = request.getTaskId();
             AsyncTask task = executor.getTask(taskId);
@@ -121,8 +137,30 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
         });
     }
 
+    /**
+     * 保存一个异步任务日志，记录被取消
+     */
+    private void saveCancelLog(AsyncTaskRecord record) {
+        AsyncTaskLogRecord logRecord = new AsyncTaskLogRecord();
+        logRecord.setLogInfo("[" + new Date() +  "]任务被取消");
+        logRecord.setTaskId(record.getId());
+        logRecord.setUid(record.getUid());
+        logRepo.save(logRecord);
+    }
+
     public void initExecutor() {
         executor.addTaskStartListener(record -> {
+            // 乐观锁，切换任务状态为运行中，并用于检查该任务是否被取消
+            boolean isCancel = repo.updateStatus(record.getId(), AsyncTaskConstants.Status.RUNNING, AsyncTaskConstants.Status.WAITING) == 0;
+            if (isCancel) {
+                // 标记为已取消
+                record.setStatus(AsyncTaskConstants.Status.CANCEL);
+
+                // 日志标记为已取消
+                saveCancelLog(record);
+                return;
+            }
+
             String hostName;
             try {
                 hostName = InetAddress.getLocalHost().getHostName();

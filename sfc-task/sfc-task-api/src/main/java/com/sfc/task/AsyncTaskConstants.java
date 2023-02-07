@@ -12,6 +12,7 @@ public interface AsyncTaskConstants {
         Integer RUNNING = 1;
         Integer FINISH = 2;
         Integer FAILED = 3;
+        Integer CANCEL = 4;
     }
 
     interface RedisKey {

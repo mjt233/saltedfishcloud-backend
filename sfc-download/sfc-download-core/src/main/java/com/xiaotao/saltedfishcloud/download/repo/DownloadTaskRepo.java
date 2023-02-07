@@ -12,11 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 
 public interface DownloadTaskRepo extends JpaRepository<DownloadTaskInfo, String> {
-    @Query("SELECT info FROM DownloadTaskInfo info WHERE info.uid = :uid")
+    @Query("SELECT info FROM DownloadTaskInfo info WHERE info.uid = :uid ORDER BY info.createdAt DESC")
     Page<DownloadTaskInfo> findByUid(@Param("uid") Integer uid, Pageable pageable);
 
 
-    @Query("SELECT info FROM DownloadTaskInfo info WHERE info.uid = :uid AND info.asyncTaskRecord.status IN :status")
+    @Query("SELECT info FROM DownloadTaskInfo info WHERE info.uid = :uid AND info.asyncTaskRecord.status IN :status ORDER BY info.createdAt DESC")
     Page<DownloadTaskInfo> findByUidAndState(@Param("uid") Integer uid, @Param("status") Collection<Integer> status, Pageable pageable);
 
     @Query("UPDATE DownloadTaskInfo SET size = :size, name = :name WHERE id = :id")

@@ -43,7 +43,8 @@ import java.util.*;
 public class DownloadServiceImpl implements DownloadService, InitializingBean {
     static final private Collection<Integer> FINISH_TYPE = Arrays.asList(
             AsyncTaskConstants.Status.FAILED,
-            AsyncTaskConstants.Status.FINISH
+            AsyncTaskConstants.Status.FINISH,
+            AsyncTaskConstants.Status.CANCEL
     );
     static final private Collection<Integer> DOWNLOADING_TYPE = Arrays.asList(
             AsyncTaskConstants.Status.RUNNING,

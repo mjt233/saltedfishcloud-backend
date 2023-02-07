@@ -236,16 +236,28 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     private void submitExecute(TaskContext taskContext) {
         AsyncTask asyncTask = taskContext.task;
         AsyncTaskRecord record = taskContext.record;
+        record.setStatus(AsyncTaskConstants.Status.RUNNING);
 
         // 更新负载记录值
         int cpuOverhead = Optional.ofNullable(record.getCpuOverhead()).orElse(0);
         if (cpuOverhead > 0) {
             currentLoad.addAndGet(cpuOverhead);
         }
-
+        Long recordId = taskContext.record.getId();
         threadPool.execute(() -> {
-            runningTask.put(taskContext.record.getId(), asyncTask);
+            runningTask.put(recordId, asyncTask);
             emit(startListener, record);
+
+            // 若任务记录状态被修改为已取消，则说明该任务是个之前停留在队列中排队但现在已经被取消的任务
+            if (AsyncTaskConstants.Status.CANCEL.equals(record.getStatus())) {
+                log.info("忽略处理任务队列中被取消的任务: {}-{}",record.getName(), recordId);
+                runningTask.remove(recordId);
+                // 任务完成，添加负载值到待清算的队列
+                if (cpuOverhead > 0) {
+                    loadCleanQueue.add(cpuOverhead);
+                }
+                return;
+            }
 
 
             Path logPath = getLogPath(record.getId());
@@ -272,7 +284,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                     loadCleanQueue.add(cpuOverhead);
                 }
                 // 移除任务实例
-                runningTask.remove(taskContext.record.getId());
+                runningTask.remove(recordId);
                 // 移除进度监听
                 this.removeProgressDetect(record);
                 // 保存任务日志
@@ -381,6 +393,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
 
     }
 
+    /**
+     * 处理事件
+     */
     private void emit(List<Consumer<AsyncTaskRecord>> listener, AsyncTaskRecord record) {
         for (Consumer<AsyncTaskRecord> consumer : listener) {
             try {
