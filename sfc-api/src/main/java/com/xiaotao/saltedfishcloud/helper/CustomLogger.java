@@ -61,7 +61,7 @@ public class CustomLogger {
                 paddingZeroTo10(now.get(Calendar.DATE)) + " " +
                 paddingZeroTo10(now.get(Calendar.HOUR_OF_DAY)) + ":" +
                 paddingZeroTo10 (now.get(Calendar.MINUTE)) + ":" +
-                paddingZeroTo10(now.get(Calendar.SECOND)) + ":" +
+                paddingZeroTo10(now.get(Calendar.SECOND)) + "." +
                 paddingZeroTo10(now.get(Calendar.MILLISECOND));
     }
 
