@@ -68,6 +68,7 @@ public class DefaultPluginManager implements PluginManager {
     private final Map<String, String> pluginResourceRootMap = new ConcurrentHashMap<>();
     private final PluginClassLoader jarMergeClassLoader;
 
+    private final Map<String, URL> pluginOriginUrl = new ConcurrentHashMap<>();
 
     /**
      * 已注册的外部依赖
@@ -352,6 +353,7 @@ public class DefaultPluginManager implements PluginManager {
         loader.loadFromUrl(pluginUrl);
         registerPluginResource(pluginInfo.getName(), pluginInfo, configNodeGroups, loader);
         pluginRawLoaderMap.put(pluginInfo.getName(), classLoader);
+        pluginOriginUrl.put(pluginInfo.getName(), pluginUrl);
     }
 
 
@@ -498,6 +500,11 @@ public class DefaultPluginManager implements PluginManager {
                     BeanUtils.copyProperties(e, pluginInfo);
                     pluginInfo.setStatus(PluginInfo.PLUGIN_LOADED);
                     pluginInfo.setIsJar(false);
+                    // url取原始url
+                    URL url = pluginOriginUrl.get(pluginInfo.getName());
+                    if (url != null) {
+                        pluginInfo.setUrl(url.toString());
+                    }
                     return pluginInfo;
                 }).collect(Collectors.toList())
         );
