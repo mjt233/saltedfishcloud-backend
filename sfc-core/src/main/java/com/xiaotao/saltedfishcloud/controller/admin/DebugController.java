@@ -24,9 +24,6 @@ public class DebugController {
     @Resource
     private SysProperties sysProperties;
 
-    /**
-     * @TODO 修改路由readOnly为protectMode
-     */
     @PutMapping("readOnly")
     public JsonResult setReadOnlyLevel(@RequestParam String level) {
         ProtectLevel r;

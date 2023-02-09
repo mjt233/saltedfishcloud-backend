@@ -31,7 +31,6 @@ import java.util.List;
  * 默认的异步任务管理器实现
  * todo 实现咸鱼云进程退出后，任务自动失败并重发布机制（实现高可用）
  * todo 实现任务自动发布队列机制
- * todo 实现RPC日志获取
  */
 @Component
 @Slf4j

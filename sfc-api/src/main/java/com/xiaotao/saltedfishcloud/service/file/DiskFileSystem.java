@@ -57,7 +57,7 @@ public interface DiskFileSystem {
 
     /**
      * 创建压缩文件并直接输出到输出流中，可用于多文件打包下载
-     * @TODO 实现异步执行和通知机制
+     * todo 实现异步执行和通知机制
      * @param uid           用户ID
      * @param path          被打包压缩的文件所在路径
      * @param names         被压缩的文件名
@@ -69,7 +69,7 @@ public interface DiskFileSystem {
 
     /**
      * 创建一个压缩文件
-     * @TODO 实现异步执行和通知机制
+     * todo 实现异步执行和通知机制
      * @param uid   用户ID
      * @param path  输入的文件所在的网盘目录
      * @param names 要被压缩的文件名集合
@@ -80,7 +80,7 @@ public interface DiskFileSystem {
 
     /**
      * 解压一个压缩包到指定目录下
-     * @TODO 实现异步执行和通知机制
+     * todo 实现异步执行和通知机制
      * @param uid   用户ID
      * @param path  压缩包所在路径
      * @param name  压缩包名称
@@ -190,8 +190,8 @@ public interface DiskFileSystem {
 
     /**
      * 通过移动本地文件的方式存储文件
-     * @TODO 编写默认实现
-     * @TODO fileInfo改为filename
+     * todo 编写默认实现
+     * todo fileInfo改为filename
      * @param uid               用户ID
      * @param nativeFilePath    本地文件路径
      * @param path              网盘路径

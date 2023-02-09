@@ -75,7 +75,6 @@ public class RPCManager {
 
     /**
      * 在Redis订阅RPC请求广播
-     * todo 使用线程池
      */
     protected void registerRedisChannelHandler() {
         redisMessageListenerContainer.addMessageListener((message, pattern) -> {

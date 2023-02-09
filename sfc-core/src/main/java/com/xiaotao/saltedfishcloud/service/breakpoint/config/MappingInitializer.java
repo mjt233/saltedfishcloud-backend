@@ -13,7 +13,7 @@ import java.lang.reflect.Method;
 
 /**
  * 初始化断点续传管理API，注册路由
- * @TODO 通过读取外部配置实现动态配置断点续传URL
+ * todo 通过读取外部配置实现动态配置断点续传URL
  */
 public class MappingInitializer implements FeatureProvider {
     private static final String PREFIX = "/api/breakpoint";

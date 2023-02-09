@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * 默认的文件记录同步服务
- * @TODO 编写文件记录同步服务的自动配置类
+ * todo 编写文件记录同步服务的自动配置类
  */
 @Service
 @Slf4j

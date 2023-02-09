@@ -25,7 +25,7 @@ import java.util.Optional;
 
 /**
  * 配置信息初始化器
- * @TODO 优化代码，封装每个配置项的配置和初始化流程
+ * todo 优化代码，封装每个配置项的配置和初始化流程
  */
 @Component
 @Slf4j
