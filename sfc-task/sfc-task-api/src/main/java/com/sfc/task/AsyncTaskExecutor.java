@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.function.Consumer;
 
 public interface AsyncTaskExecutor {
@@ -20,8 +21,21 @@ public interface AsyncTaskExecutor {
 
     /**
      * 停止全部任务并停止接受任务
+     * @return 被中断的任务id
      */
-    void stop();
+    Collection<Long> stop();
+
+    /**
+     * 获取正在执行的任务id
+     */
+    Collection<Long> getRunningTask();
+
+    /**
+     * 放弃一个任务的执行。中断任务执行，不更新状态和触发正常事件。<br>
+     * 用于故障转移，任务执行期间节点掉线后，任务被其他节点接管。
+     * @param taskId    要放弃的任务id
+     */
+    void giveUp(Long taskId);
 
     /**
      * 是否处于运行中

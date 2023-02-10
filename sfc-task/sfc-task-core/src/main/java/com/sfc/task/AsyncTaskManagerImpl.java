@@ -13,6 +13,8 @@ import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -24,6 +26,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -200,7 +203,7 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
 
     @Override
     public Resource getTaskLog(Long taskId, boolean withHistory) throws IOException {
-        AsyncTaskLogRecord logRecord = logRepo.findByTaskId(taskId);
+        AsyncTaskLogRecord logRecord = logRepo.findFirstByTaskIdOrderByIdDesc(taskId);
         if (logRecord != null) {
             return ResourceUtils.stringToResource(logRecord.getLogInfo());
         } else {
@@ -226,5 +229,13 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
     public void afterPropertiesSet() throws Exception {
         initExecutor();
         initRPCHandler();
+    }
+
+    @EventListener(ContextClosedEvent.class)
+    public void stop() {
+        Collection<Long> stopIds = executor.stop();
+        if (!stopIds.isEmpty()) {
+            repo.setTaskOffline(stopIds);
+        }
     }
 }

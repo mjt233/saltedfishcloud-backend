@@ -32,10 +32,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -77,10 +74,10 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
 
     private final Map<Long, AsyncTask> runningTask = new ConcurrentHashMap<>();
 
+    private final Set<Long> giveUpRecord = new HashSet<>();
+
     // 负载清算队列，当异步任务完成时
     private final BlockingQueue<Integer> loadCleanQueue = new LinkedBlockingQueue<>();
-
-    private final Lock lock = new ReentrantLock();
 
     private boolean running = false;
 
@@ -138,7 +135,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                              throw new IllegalArgumentException("任务反序列化失败");
                          }
                      } catch (Throwable e) {
-                         throw new RuntimeException("任务接受出错:" + e.getMessage(), e);
+                         if (!this.isInterrupt) {
+                             throw new RuntimeException("任务接受出错:" + e.getMessage(), e);
+                         }
                      }
                  }
              }
@@ -218,7 +217,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                 } catch (Throwable e) {
                     log.error("任务接受与提交出错", e);
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(1000);
                     } catch (InterruptedException ignore) {}
                 }
             }
@@ -274,21 +273,35 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                 progressDetector.addObserve(asyncTask::getProgress, record.getId() + "");
                 asyncTask.execute(logOutput);
                 logOutput.close();
-                emit(finishListener, record);
+                if (!giveUpRecord.contains(recordId)) {
+                    emit(finishListener, record);
+                }
             } catch (Throwable e) {
-                emit(failedListener, record);
+                if (!giveUpRecord.contains(recordId)) {
+                    emit(failedListener, record);
+                }
                 log.error("异步任务{}执行出错", record.getId(), e);
             } finally {
-                // 任务完成，添加负载值到待清算的队列
-                if (cpuOverhead > 0) {
-                    loadCleanQueue.add(cpuOverhead);
+                try {
+                    // 任务完成，添加负载值到待清算的队列
+                    if (cpuOverhead > 0) {
+                        loadCleanQueue.add(cpuOverhead);
+                    }
+
+                    // 若任务未被因故障转移而放弃，则保存任务日志
+                    if (!giveUpRecord.contains(recordId)) {
+                        this.saveLog(record, logPath);
+                    }
+
+                    // 移除任务实例
+                    runningTask.remove(recordId);
+                    // 移除进度监听
+                    this.removeProgressDetect(record);
+                } finally {
+                    synchronized (giveUpRecord) {
+                        giveUpRecord.remove(recordId);
+                    }
                 }
-                // 移除任务实例
-                runningTask.remove(recordId);
-                // 移除进度监听
-                this.removeProgressDetect(record);
-                // 保存任务日志
-                this.saveLog(record, logPath);
             }
         });
     }
@@ -345,16 +358,13 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     /**
      * 更新当前负载值
      */
-    private void updateCurrentLoad() {
-        lock.lock();
+    private synchronized void updateCurrentLoad() {
         try {
             while (!loadCleanQueue.isEmpty()) {
                 Integer take = loadCleanQueue.take();
                 currentLoad.addAndGet(take * -1);
             }
         } catch (InterruptedException ignore) {
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -442,8 +452,8 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     }
 
     @Override
-    @EventListener(ContextClosedEvent.class)
-    public synchronized void stop() {
+    public synchronized List<Long> stop() {
+        List<Long> interruptIds = new ArrayList<>();
         if (running) {
             log.info("任务执行器停止");
             running = false;
@@ -451,14 +461,16 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
             synchronized (runningTask) {
                 for (Map.Entry<Long, AsyncTask> entry : runningTask.entrySet()) {
                     try {
-                        log.info("任务停止: {}", entry.getKey());
-                        entry.getValue().interrupt();
+                        log.info("任务放弃: {}", entry.getKey());
+                        giveUp(entry.getKey());
+                        interruptIds.add(entry.getKey());
                     } catch (Throwable e) {
-                        log.error("任务停止出错", e);
+                        log.error("任务放弃出错", e);
                     }
                 }
             }
         }
+        return interruptIds;
     }
 
     @Override
@@ -469,5 +481,27 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     @Override
     public AsyncTask getTask(Long taskId) {
         return runningTask.get(taskId);
+    }
+
+    @Override
+    public Collection<Long> getRunningTask() {
+        return runningTask.keySet();
+    }
+
+    @Override
+    public void giveUp(Long taskId) {
+        AsyncTask asyncTask = runningTask.get(taskId);
+        if (asyncTask == null) {
+            return;
+        }
+        synchronized (giveUpRecord) {
+            giveUpRecord.add(taskId);
+        }
+        try {
+            asyncTask.interrupt();
+        } catch (Throwable e) {
+            log.error("任务放弃时中断异常：", e);
+        }
+
     }
 }
