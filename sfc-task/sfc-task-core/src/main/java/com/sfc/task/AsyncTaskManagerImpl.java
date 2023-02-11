@@ -8,6 +8,8 @@ import com.sfc.task.rpc.RPCManager;
 import com.sfc.task.rpc.RPCRequest;
 import com.sfc.task.rpc.RPCResponse;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -26,14 +28,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 默认的异步任务管理器实现
- * todo 实现咸鱼云进程退出后，任务自动失败并重发布机制（实现高可用）
- * todo 实现任务自动发布队列机制
  */
 @Component
 @Slf4j
@@ -203,21 +202,34 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
 
     @Override
     public Resource getTaskLog(Long taskId, boolean withHistory) throws IOException {
-        AsyncTaskLogRecord logRecord = logRepo.findFirstByTaskIdOrderByIdDesc(taskId);
-        if (logRecord != null) {
-            return ResourceUtils.stringToResource(logRecord.getLogInfo());
-        } else {
+        // 任务可能会被多次重试执行，从而产生多比日志记录，这里需要拼接起来
+        List<AsyncTaskLogRecord> logs = logRepo.findByTaskId(taskId);
+        String allLog = Optional.ofNullable(logs)
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .map(e -> "----------------[历史日志][ " + e.getCreateAt() + "]----------------\n" + e.getLogInfo())
+                .collect(Collectors.joining("\n"));
+        AsyncTaskRecord task = repo.findById(taskId).orElseThrow(() -> new JsonException(CommonError.RESOURCE_NOT_FOUND.getCode(), "任务id不存在"));
+
+        // 如果任务是运行中的，则再获取最新的日志
+        if (AsyncTaskConstants.Status.RUNNING.equals(task.getStatus())) {
             RPCRequest request = RPCRequest.builder()
                     .taskId(taskId)
                     .functionName(RPCFunction.TASK_GET_LOG)
                     .param(taskId + "")
                     .build();
             RPCResponse<String> response = rpcManager.call(request, String.class, Duration.ofMinutes(500));
-            if (response != null && response.getIsSuccess()) {
-                return ResourceUtils.stringToResource(response.getResult());
+            if (response != null) {
+                if(response.getIsSuccess()) {
+                    allLog += "[运行中最新日志]:\n" + response.getResult();
+                } else {
+                    allLog += "[运行中最新日志获取失败]:\n" + response.getError();
+                }
+            } else {
+                allLog += "[运行中最新日志无响应]\n";
             }
         }
-        return null;
+        return ResourceUtils.stringToResource(allLog);
     }
 
     @Override
