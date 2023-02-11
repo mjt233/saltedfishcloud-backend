@@ -4,6 +4,7 @@ import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
+import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,7 @@ public class VideoConvertTaskFactory implements AsyncTaskFactory {
     private ResourceService resourceService;
 
     @Override
-    public AsyncTask createTask(String params) {
+    public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
         return new VideoConvertTask(params, resourceService, ffMpegHelper);
     }
 

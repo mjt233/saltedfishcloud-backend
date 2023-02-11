@@ -64,6 +64,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     private final List<Consumer<AsyncTaskRecord>> finishListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> failedListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> startListener = new ArrayList<>();
+    private final List<Consumer<AsyncTaskRecord>> unsupportedListener = new ArrayList<>();
 
     private final AtomicInteger currentLoad = new AtomicInteger(0);
 
@@ -395,10 +396,11 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
         AsyncTaskFactory asyncTaskFactory = taskFactories.get(record.getTaskType());
 
         if (asyncTaskFactory == null) {
+            emit(unsupportedListener, record);
             throw new IllegalArgumentException("找不到任务类型为 " + record.getTaskType() + " 的任务工厂");
         }
 
-        AsyncTask task = asyncTaskFactory.createTask(record.getParams());
+        AsyncTask task = asyncTaskFactory.createTask(record.getParams(), record);
         return new TaskContext(task, record);
 
     }
@@ -502,6 +504,10 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
         } catch (Throwable e) {
             log.error("任务放弃时中断异常：", e);
         }
+    }
 
+    @Override
+    public void addUnsupportedListener(Consumer<AsyncTaskRecord> listener) {
+        this.unsupportedListener.add(listener);
     }
 }

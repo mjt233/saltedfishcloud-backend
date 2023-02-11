@@ -150,11 +150,12 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
     }
 
     public void initExecutor() {
+        // 任务开始时，记录执行节点信息，并确保获得执行权（确保任务排队、任务取消、任务执行三者操作互斥）
         executor.addTaskStartListener(record -> {
             // 乐观锁，切换任务状态为运行中，并用于检查该任务是否被取消
             boolean isCancel = repo.updateStatus(record.getId(), AsyncTaskConstants.Status.RUNNING, AsyncTaskConstants.Status.WAITING) == 0;
             if (isCancel) {
-                // 标记为已取消
+                // 标记为已取消，执行器在执行完事件后会判断这个状态，如果为已取消则不会执行任务
                 record.setStatus(AsyncTaskConstants.Status.CANCEL);
 
                 // 日志标记为已取消
@@ -175,16 +176,27 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
             repo.save(record);
         });
 
+        // 记录任务失败/成功信息
         executor.addTaskFailedListener(record -> {
             record.setStatus(AsyncTaskConstants.Status.FAILED);
             record.setFailedDate(new Date());
             repo.save(record);
         });
-
         executor.addTaskFinishListener(record -> {
             record.setStatus(AsyncTaskConstants.Status.FINISH);
             record.setFinishDate(new Date());
             repo.save(record);
+        });
+
+        // 收到不支持的任务类型时，重新发布
+        executor.addUnsupportedListener(record -> {
+            try {
+                Thread.sleep(1000);
+                log.warn("不支持的任务类型:{}，重新发布", record.getTaskType());
+                this.submitAsyncTask(record);
+            } catch (Exception e) {
+                log.error("不受支持的任务重释放失败", e);
+            }
         });
     }
 

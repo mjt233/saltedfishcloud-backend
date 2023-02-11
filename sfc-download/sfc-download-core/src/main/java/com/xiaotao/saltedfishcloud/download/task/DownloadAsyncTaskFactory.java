@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.download.task;
 
 import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
+import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
@@ -25,7 +26,7 @@ public class DownloadAsyncTaskFactory implements AsyncTaskFactory {
     private NodeService nodeService;
 
     @Override
-    public AsyncTask createTask(String params) {
+    public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
         DownloadAsyncTask task = new DownloadAsyncTask(params);
         task.setProxyDao(proxyDao);
         task.setDownloadTaskRepo(downloadTaskRepo);

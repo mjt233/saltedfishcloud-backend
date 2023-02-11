@@ -14,7 +14,7 @@ public class TaskExecuteTest {
         AsyncTaskExecutor executor = new DefaultAsyncTaskExecutor(getTaskRecordList());
         executor.registerFactory(new AsyncTaskFactory() {
             @Override
-            public AsyncTask createTask(String params) {
+            public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
                 return new AsyncTask() {
                     @Override
                     public void execute(OutputStream logOutputStream) {

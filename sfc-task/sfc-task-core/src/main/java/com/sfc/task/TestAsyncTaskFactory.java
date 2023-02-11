@@ -1,5 +1,6 @@
 package com.sfc.task;
 
+import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +11,7 @@ import java.io.OutputStreamWriter;
 @Component
 public class TestAsyncTaskFactory implements AsyncTaskFactory {
     @Override
-    public AsyncTask createTask(String params) {
+    public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
         return new AsyncTask() {
             private Thread executeThread;
 

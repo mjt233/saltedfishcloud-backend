@@ -96,4 +96,9 @@ public interface AsyncTaskExecutor {
      * 添加任务执行完成的监听器
      */
     void addTaskFinishListener(Consumer<AsyncTaskRecord> listener);
+
+    /**
+     * 添加一个不支持的任务异常监听器。当执行器收到了一个不支持的任务时会触发。这个原因通常是因为执行器未注册对应的任务工厂导致。
+     */
+    void addUnsupportedListener(Consumer<AsyncTaskRecord> listener);
 }
