@@ -7,7 +7,7 @@ import java.io.InputStream;
 
 /**
  * 用户档案配置服务，用于管理用户头像，背景图等数据
- * @TODO 编写实现类
+ * todo 编写实现类
  */
 public interface UserProfileService {
 

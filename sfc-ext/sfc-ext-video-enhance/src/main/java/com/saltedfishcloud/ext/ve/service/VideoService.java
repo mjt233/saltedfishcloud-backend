@@ -2,25 +2,25 @@ package com.saltedfishcloud.ext.ve.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
-import com.saltedfishcloud.ext.ve.core.EncodeConvertAsyncTask;
-import com.saltedfishcloud.ext.ve.core.EncodeConvertAsyncTaskFactory;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
-import com.saltedfishcloud.ext.ve.dao.EncodeConvertTaskLogRepo;
 import com.saltedfishcloud.ext.ve.dao.EncodeConvertTaskRepo;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertRule;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTaskLog;
+import com.sfc.task.AsyncTaskConstants;
+import com.sfc.task.AsyncTaskManager;
+import com.sfc.task.model.AsyncTaskRecord;
+import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.service.async.context.TaskContext;
-import com.xiaotao.saltedfishcloud.service.async.context.TaskContextFactory;
-import com.xiaotao.saltedfishcloud.service.async.context.TaskManager;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,14 +29,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -45,18 +39,11 @@ import static com.saltedfishcloud.ext.ve.constant.VEConstants.*;
 @Service
 @Slf4j
 public class VideoService {
-    private final static String LOG_PREFIX = "[视频增强服务]";
     @Autowired
     private FFMpegHelper ffMpegHelper;
 
     @Autowired
-    private EncodeConvertAsyncTaskFactory encodeConvertAsyncTaskFactory;
-
-    @Autowired
     private EncodeConvertTaskRepo encodeConvertTaskRepo;
-
-    @Autowired
-    private EncodeConvertTaskLogRepo logRepo;
 
     @Autowired
     private ResourceService resourceService;
@@ -65,10 +52,7 @@ public class VideoService {
     private DiskFileSystemManager diskFileSystemManager;
 
     @Autowired
-    private TaskManager asyncTaskManager;
-
-    @Autowired
-    private TaskContextFactory taskContextFactory;
+    private AsyncTaskManager asyncTaskManager;
 
     /**
      * 获取视频编码转换任务列表
@@ -79,15 +63,18 @@ public class VideoService {
      */
     public CommonPageInfo<EncodeConvertTask> listTask(Long uid, Integer status, Integer page, Integer pageSize) {
         PageRequest pageRequest = PageRequest.of(page, pageSize);
-        Page<EncodeConvertTask> tasks = encodeConvertTaskRepo.findByUidAndTaskStatusOrderByCreateAtDesc(uid, status, pageRequest);
+        Page<EncodeConvertTask> tasks = encodeConvertTaskRepo.findByUidAndTaskStatus(uid, status, pageRequest);
 
         // 针对运行中的任务获取相关进度
-        // todo 针对运行中但异常退出的情况做修正，需要使用或实现一个类似Celery的异步任务调度处理框架针对性处理，并使所有异步任务支持在咸鱼云集群部署中运行和统一管理
         tasks.forEach(e -> {
-            if (Objects.equals(TaskStatus.RUNNING, e.getTaskStatus())) {
-                TaskContext<EncodeConvertAsyncTask> taskContext = asyncTaskManager.getContext(e.getTaskId(), EncodeConvertAsyncTask.class);
-                if (taskContext != null) {
-                    e.setProgress(taskContext.getTask().getProgressRecord());
+            if (Objects.equals(AsyncTaskConstants.Status.RUNNING, e.getAsyncTaskRecord().getStatus())) {
+                try {
+                    ProgressRecord progress = asyncTaskManager.getProgress(e.getAsyncTaskRecord().getId());
+                    if (progress != null) {
+                        e.setProgress(progress);
+                    }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
                 }
             }
         });
@@ -169,79 +156,41 @@ public class VideoService {
      */
     public String createEncodeConvertTask(EncodeConvertTaskParam param) throws IOException {
         Integer uid = SecureUtils.getSpringSecurityUser().getId();
-        EncodeConvertAsyncTask task = encodeConvertAsyncTaskFactory.createTask(param);
-        TaskContext<EncodeConvertAsyncTask> context = taskContextFactory.createContextFromAsyncTask(task);
-
-        Path tempDir = Paths.get(StringUtils.appendSystemPath(PathUtils.getTempDirectory(), context.getId()));
-        Files.createDirectories(tempDir);
-        task.setOutputFile(StringUtils.appendSystemPath(PathUtils.getTempDirectory(), context.getId(), param.getTarget().getName()));
-        log.info("{}创建临时目录：{}", LOG_PREFIX, tempDir);
-
-        String taskId = context.getId();
         EncodeConvertTask taskPo = createTaskPo(param);
-        taskPo.setUid(Long.valueOf(uid));
+        boolean isHandleVideo = param.getRules().stream().anyMatch(e -> ConvertTaskType.VIDEO.equals(e.getType()) && EncodeMethod.CONVERT.equals(e.getMethod()));
+        AsyncTaskRecord record = AsyncTaskRecord.builder()
+                .name("视频编码转换")
+                .taskType(VEConstants.TASK_TYPE)
+                .params(MapperHolder.toJson(param))
+                .status(AsyncTaskConstants.Status.WAITING)
+                // 涉及到视频重编码时，开销设定跑16个CPU核心以便让多核CPU平台上能同时运行多个视频转换，非多核平台上最多只能运行一个视频编码转换任务，且运行期间不再接收其他任务
+                .cpuOverhead(isHandleVideo ? 1600 : 100)
+                .build();
+        record.setUid(uid.longValue());
 
+        asyncTaskManager.submitAsyncTask(record);
+
+        taskPo.setAsyncTaskRecord(record);
+        taskPo.setUid(uid.longValue());
         encodeConvertTaskRepo.save(taskPo);
-        task.setId(taskPo.getId());
-        context.onStart(() -> {
-            taskPo.setTaskId(taskId);
-            taskPo.setTaskStatus(TaskStatus.RUNNING);
-            encodeConvertTaskRepo.save(taskPo);
-        });
-        context.onSuccess(() -> {
-            taskPo.setTaskStatus(TaskStatus.SUCCESS);
-            encodeConvertTaskRepo.save(taskPo);
-        });
-        context.onFailed(() -> {
-            log.error("{}视频编码失败:{}", LOG_PREFIX, taskPo);
-            taskPo.setTaskStatus(TaskStatus.FAILED);
-            encodeConvertTaskRepo.save(taskPo);
-        });
-        context.onFinish(() -> {
-            try {
-                log.info("{}移除临时目录：{}", LOG_PREFIX, tempDir);
-                FileUtils.delete(tempDir);
-
-                log.info("{}保存日志文件到数据库: {}", LOG_PREFIX, task.getLogPath());
-                logRepo.save(EncodeConvertTaskLog.builder().taskId(taskPo.getId()).taskLog(task.getLog()).build());
-
-                log.info("{}移除本地日志文件: {}", LOG_PREFIX, task.getLogPath());
-                Files.deleteIfExists(task.getLogPath());
-
-                asyncTaskManager.remove(taskId);
-            } catch (IOException e) {
-                log.error("{}临时目录移除失败：", LOG_PREFIX, e);
-            }
-        });
-        asyncTaskManager.submit(context);
-        return taskId;
+        return record.getId() + "";
     }
 
     /**
      * 获取编码转换任务的日志
-     * @param taskId    任务id（不是异步任务id）
+     * @param taskId    编码转换任务的异步任务id
      */
-    public EncodeConvertTaskLog getTaskLog(Long taskId) {
-        EncodeConvertTaskLog taskLog = logRepo.findByTaskId(taskId);
-
-        // 数据库查不到就从日志目录查，查到了就记录到数据库
-        if (taskLog == null) {
-            Path logPath = PathUtils.getLogDirectory().resolve("ffmpeg_" + taskId + ".log");
-            if (Files.exists(logPath)) {
-                try (InputStream is = Files.newInputStream(logPath)) {
-                    String taskLogText = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-                    taskLog = EncodeConvertTaskLog.builder().taskId(taskId).taskLog(taskLogText).build();
-                } catch (IOException e) {
-                    log.error("{}获取日志出错：", LOG_PREFIX, e);
-                }
-            }
-        }
-        return taskLog;
+    public EncodeConvertTaskLog getTaskLog(Long taskId) throws IOException {
+        Resource taskLog = asyncTaskManager.getTaskLog(taskId, true);
+        String logStr = ResourceUtils.resourceToString(taskLog);
+        return EncodeConvertTaskLog.builder()
+                .taskId(taskId)
+                .taskLog(logStr)
+                .build();
     }
 
     private EncodeConvertTask createTaskPo(EncodeConvertTaskParam param) throws JsonProcessingException {
         EncodeConvertTask task = new EncodeConvertTask();
-        task.setTaskStatus(TaskStatus.WAITING);
         task.setParams(MapperHolder.toJson(param));
 
         Map<String, List<EncodeConvertRule>> typeMap = param.getRules().stream().collect(Collectors.groupingBy(EncodeConvertRule::getType));

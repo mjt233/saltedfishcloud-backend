@@ -166,7 +166,7 @@ public class DiskFtpFile implements FtpFile {
     }
 
     /**
-     * @TODO 针对目录进行日期处理
+     * todo 针对目录进行日期处理
      */
     @Override
     public long getLastModified() {

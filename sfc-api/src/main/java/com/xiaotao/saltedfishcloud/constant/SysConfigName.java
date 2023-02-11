@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.constant;
 
-// @TODO
 public interface SysConfigName {
 
     /**

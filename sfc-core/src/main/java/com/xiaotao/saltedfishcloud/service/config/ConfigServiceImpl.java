@@ -121,7 +121,6 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
 
     /**
      * 设置一个配置项
-     * TODO 将写死的配置响应事件使用监听器功能重构
      * @param key       配置项
      * @param value     配置值
      */
@@ -130,7 +129,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     public boolean setConfig(String key, String value) {
 
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
-        // @TODO 允许抛出异常中断执行
+        // todo 允许抛出异常中断执行
         for (Consumer<Pair<String, String>> listener : listeners) {
             listener.accept(new Pair<>(key, value));
         }

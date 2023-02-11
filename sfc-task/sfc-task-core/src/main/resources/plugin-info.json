@@ -1,0 +1,12 @@
+{
+  "name": "sfc-task",
+  "alias": "异步任务模块",
+  "describe": "系统内置模块-支持集群的自治异步任务调度与执行系统",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^"
+}

@@ -256,11 +256,10 @@ public class FileController {
 
     /**
      * 同网盘内的文件移动
-     * todo 支持跨网盘移动
      * @param uid       源文件所在用户id
      * @param info      复制参数
      */
-    @ApiOperation("网盘文件移动（不支持跨用户网盘）")
+    @ApiOperation("网盘文件移动")
     @PostMapping("move")
     public JsonResult move( @PathVariable("uid") @UID(true) long uid,
                             @RequestBody @Validated FileTransferParam info) throws IOException {

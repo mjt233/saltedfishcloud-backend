@@ -69,5 +69,10 @@ public interface VEConstants {
         int FAILED = 3;
     }
 
+    /**
+     * 视频编码转换的异步任务类型
+     */
+    String TASK_TYPE = "video-convert";
+
 
 }

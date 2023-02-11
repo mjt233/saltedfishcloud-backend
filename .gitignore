@@ -39,3 +39,6 @@ sfc-web/src/main/resources/application.yml
 /release
 /release/*
 /ext
+
+log/**
+.log
