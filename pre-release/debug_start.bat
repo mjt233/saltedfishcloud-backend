@@ -1,0 +1,1 @@
+java -Xdebug -Xrunjdwp:transport=dt_socket,address=127.0.0.1:6654,server=y,suspend=y -jar -Xmx1G sfc-core.jar --spring.config.import=file:./config.yml

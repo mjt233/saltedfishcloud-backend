@@ -51,7 +51,9 @@ public class ProgressDetectorImpl implements ProgressDetector {
     @Override
     public boolean removeObserve(String id) {
         log.debug("{}移除进度速度检测任务：{}", LOG_TITLE, id);
-        return Boolean.TRUE.equals(redisTemplate.delete(id));
+        boolean res = Boolean.TRUE.equals(redisTemplate.delete(id));
+        entityMap.remove(id);
+        return res;
     }
 
     /**
@@ -74,13 +76,13 @@ public class ProgressDetectorImpl implements ProgressDetector {
             if (record != null) {
                 final long newLoaded = record.getLoaded() - (lastRecord == null ? 0 : lastRecord.getLoaded());
                 final long useTime = System.currentTimeMillis() - record.getLastUpdateTime();
-                final long speedPreMs = newLoaded / useTime;
-                provider.updateSpeed(speedPreMs);
+                final long speedPreSecond = (newLoaded / useTime)*1000;
+                provider.updateSpeed(speedPreSecond);
                 if (log.isDebugEnabled()) {
                     log.debug("{}任务进度速度更新{}：{}/s 进度：{}%",
                             LOG_TITLE,
                             id,
-                            StringUtils.getFormatSize(speedPreMs*1000),
+                            StringUtils.getFormatSize(speedPreSecond),
                             String.format("%.2f", (provider.getProgressRecord().getLoaded() / (double)provider.getProgressRecord().getTotal()) * 100)
                     );
                 }

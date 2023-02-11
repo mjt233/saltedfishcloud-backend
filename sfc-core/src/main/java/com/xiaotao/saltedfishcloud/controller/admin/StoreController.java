@@ -40,7 +40,7 @@ public class StoreController {
 
     /**
      * 立即执行同步
-     * @TODO 支持精准同步参数控制
+     * todo 支持精准同步参数控制
      */
     @PostMapping("sync")
     public JsonResult sync(@RequestParam(name = "all", defaultValue = "false") Boolean all) throws Exception {

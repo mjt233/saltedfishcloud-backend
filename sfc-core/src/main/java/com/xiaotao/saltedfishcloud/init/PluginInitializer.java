@@ -1,13 +1,9 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.ext.DefaultPluginManager;
-import com.xiaotao.saltedfishcloud.ext.DirPathClassLoader;
-import com.xiaotao.saltedfishcloud.ext.PluginManager;
-import com.xiaotao.saltedfishcloud.ext.PluginProperty;
+import com.xiaotao.saltedfishcloud.ext.*;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -82,8 +78,9 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
 
             PathResource pathResource = new PathResource(path);
             log.info("{}从额外资源路径加载插件：{}",LOG_PREFIX, path);
-            DirPathClassLoader classLoader = new DirPathClassLoader(path, this.getClass().getClassLoader());
-            pluginManager.register(pathResource, classLoader);
+
+//            DirPathClassLoader classLoader = new DirPathClassLoader(path, null);
+            pluginManager.register(pathResource, PluginClassLoaderFactory.createPurePluginClassLoader(path.toUri().toURL()));
         }
     }
 
@@ -122,9 +119,9 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
                 // 处理jar包作为classpath发现的资源
                 String strUrl = url.toString();
                 String jarUrl;
-                int jarIndex = strUrl.indexOf("!/");
+                int jarIndex = strUrl.lastIndexOf("!/");
                 if (jarIndex != -1) {
-                    jarUrl = strUrl.substring(4, jarIndex);
+                    jarUrl = strUrl.substring(0, jarIndex);
                     log.info("{}加载classpath中的jar包插件：{}",LOG_PREFIX, jarUrl);
                     pluginManager.register(new UrlResource(jarUrl));
                 }

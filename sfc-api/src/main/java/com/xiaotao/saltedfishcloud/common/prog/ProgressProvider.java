@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.common.prog;
 /**
  * 可获取进度数据和更新速度数据的接口，如下载进度，加载进度，解压进度等并能获取任务的处理进度，也可由外部检测从而更新速度数据。
  */
+@FunctionalInterface
 public interface ProgressProvider {
     /**
      * 获取任务的当前处理进度数据
@@ -25,5 +26,5 @@ public interface ProgressProvider {
      * 返回值将决定速度是否还应该被继续探测速度。
      * @return  为true时表示任务已停止，将不再更新速度。
      */
-    boolean isStop();
+    default boolean isStop() { return false; }
 }

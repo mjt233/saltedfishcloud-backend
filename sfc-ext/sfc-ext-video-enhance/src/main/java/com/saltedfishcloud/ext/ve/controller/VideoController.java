@@ -39,7 +39,7 @@ public class VideoController {
     }
 
     @GetMapping("getLog")
-    public JsonResult getLog(@RequestParam("taskId") Long taskId) {
+    public JsonResult getLog(@RequestParam("taskId") Long taskId) throws IOException {
         return JsonResultImpl.getInstance(videoService.getTaskLog(taskId));
     }
 

@@ -1,0 +1,12 @@
+{
+  "name": "offline-download",
+  "alias": "离线下载",
+  "describe": "离线下载模块",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-download",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^"
+}
