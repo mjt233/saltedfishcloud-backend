@@ -6,9 +6,11 @@ import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.xiaotao.saltedfishcloud.annotations.ClusterScheduleJob;
+import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -16,16 +18,17 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * 任务状态保持器，确保任务执行状态在线。并实现异步任务故障转移。
+ * 任务状态检查器，确保任务执行状态在线。并实现异步任务故障转移。
  */
 @Component
 @Slf4j
-public class TaskStatusHolder  {
+public class AsyncTaskScheduleChecker implements InitializingBean {
+    private final static String HOLD_KEY_PREFIX = "async_task_hold_";
+
     @Autowired
     private AsyncTaskExecutor executor;
 
@@ -38,7 +41,25 @@ public class TaskStatusHolder  {
     @Autowired
     private AsyncTaskManager asyncTaskManager;
 
+    @Autowired
+    private RedisDao redisDao;
+
     private final Long nodeId = IdUtil.getId();
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        // 任务开始时打上保持标记
+        executor.addTaskStartListener(record -> {
+            boolean success = setHold(record.getId());
+            log.warn("任务{}-{}启动被忽略，未取得执行权", record.getId(), record.getName());
+            if (!success) {
+                record.setStatus(AsyncTaskConstants.Status.CANCEL);
+            }
+        });
+
+        // 任务退出时移除保持标记
+        executor.addTaskExitListener(record -> redisTemplate.delete(getHoldKey(record.getId())));
+    }
 
     /**
      * 保持任务在线，并剔除离线任务
@@ -80,7 +101,7 @@ public class TaskStatusHolder  {
         if (asyncTaskRecords == null || asyncTaskRecords.isEmpty()) {
 
             // 重新发布离线的任务
-            republishOfflineTask();
+            republishTask();
             return;
         }
         List<Long> taskId = new ArrayList<>();
@@ -98,22 +119,56 @@ public class TaskStatusHolder  {
             asyncTaskRecordRepo.setTaskOffline(taskId);
         }
 
-        // 重新发布离线的任务
-        republishOfflineTask();
+        // 重新发布离线和未在队列中的任务
+        republishTask();
     }
 
     /**
-     * 重新发布离线任务
+     * 重新发布需要再次执行的任务到队列中
      */
-    public void republishOfflineTask() {
-        List<AsyncTaskRecord> asyncTaskRecords = asyncTaskRecordRepo.listOfflineTask();
-        if (asyncTaskRecords == null || asyncTaskRecords.isEmpty()) {
+    public void republishTask() {
+        // 1. 获取离线任务
+        List<AsyncTaskRecord> republishTaskList = new ArrayList<>(
+                Optional.ofNullable(asyncTaskRecordRepo.listOfflineTask())
+                        .orElseGet(Collections::emptyList)
+        );
+
+        // 2. 获取未在队列中的任务，若队列为空，则获取数据库中状态为等待中的任务重新发布。
+        // 这些任务可能是曾经发布到队列但队列数据丢失了。
+        List<AsyncTaskRecord> queue = executor.getReceiver().listQueue();
+        if (queue == null || queue.isEmpty()) {
+            // 获取半分钟之前创建的任务重新发布到队列
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.SECOND, -30);
+            List<AsyncTaskRecord> waitingTasks = asyncTaskRecordRepo.findByStatusAndCreateAt(AsyncTaskConstants.Status.WAITING, calendar.getTime());
+
+            // 获取存在运行标记的任务id，有运行标记的任务暂时不重新发布
+            Set<Long> runningKeyIdSet = Optional
+                    .ofNullable(redisDao.scanKeys(HOLD_KEY_PREFIX))
+                    .orElseGet(Collections::emptySet)
+                    .stream()
+                    .map(e -> e.substring(HOLD_KEY_PREFIX.length()))
+                    .map(Long::parseLong)
+                    .collect(Collectors.toSet());
+
+            if (waitingTasks != null && !waitingTasks.isEmpty()) {
+                republishTaskList.addAll(waitingTasks.stream()
+                        .filter(e -> !runningKeyIdSet.contains(e.getId()))
+                        .collect(Collectors.toList())
+                );
+            }
+        }
+
+
+        if (republishTaskList.isEmpty()) {
             return;
         }
-        for (AsyncTaskRecord asyncTaskRecord : asyncTaskRecords) {
+
+        // 3. 重新发布
+        for (AsyncTaskRecord asyncTaskRecord : republishTaskList) {
             asyncTaskRecord.setStatus(AsyncTaskConstants.Status.WAITING);
             try {
-                log.info("重新发布离线任务: {}", asyncTaskRecord.getId());
+                log.info("重新发布任务: {}", asyncTaskRecord.getId());
                 asyncTaskManager.submitAsyncTask(asyncTaskRecord);
             } catch (Throwable e) {
                 log.error("任务{}重发布失败", asyncTaskRecord.getId(), e);
@@ -127,6 +182,6 @@ public class TaskStatusHolder  {
     }
 
     private String getHoldKey(long taskId) {
-        return "async_task_hold_" + taskId;
+        return HOLD_KEY_PREFIX + taskId;
     }
 }

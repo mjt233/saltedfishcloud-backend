@@ -1,13 +1,14 @@
 package com.sfc.task.repo;
 
 import com.sfc.task.model.AsyncTaskRecord;
-import org.apache.ibatis.annotations.Param;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 public interface AsyncTaskRecordRepo extends JpaRepository<AsyncTaskRecord, Long> {
@@ -39,5 +40,8 @@ public interface AsyncTaskRecordRepo extends JpaRepository<AsyncTaskRecord, Long
 
     @Query(value = "SELECT * FROM async_task_record WHERE status = 1",nativeQuery = true)
     List<AsyncTaskRecord> listRunningTask();
+
+    @Query("SELECT r FROM async_task_record r WHERE r.status = :status AND r.createAt <= :createAt")
+    List<AsyncTaskRecord> findByStatusAndCreateAt(@Param("status") Integer status,@Param("createAt") Date createAt);
 
 }
