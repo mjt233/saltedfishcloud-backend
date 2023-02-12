@@ -6,7 +6,9 @@ import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import org.junit.jupiter.api.Test;
 
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 
 public class TaskExecuteTest {
     @Test
@@ -71,20 +73,28 @@ public class TaskExecuteTest {
                             .name("第" + i + "个test任务")
                     .build());
         }
-        return () -> {
-         if (!result.isEmpty()) {
-             return result.pop();
-         } else {
-             try {
-                 Thread.sleep(3000);
-                 mainThread.interrupt();
-                 Thread.sleep(3000);
-                 return null;
-             } catch (InterruptedException e) {
-                 e.printStackTrace();
-                 return null;
-             }
-         }
+        return new AsyncTaskReceiver() {
+            @Override
+            public AsyncTaskRecord get() {
+                if (!result.isEmpty()) {
+                    return result.pop();
+                } else {
+                    try {
+                        Thread.sleep(3000);
+                        mainThread.interrupt();
+                        Thread.sleep(3000);
+                        return null;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }
+            }
+
+            @Override
+            public List<AsyncTaskRecord> listQueue() {
+                return Collections.emptyList();
+            }
         };
     }
 }
