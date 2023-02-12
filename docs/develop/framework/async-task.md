@@ -251,7 +251,7 @@ public class SleepService {
 
         // asyncTaskRecord.setId(IdUtil.getId());
         // 可选择手动指定id，也可任务提交后，使用asyncTaskRecord自动生成的id字段
-        // 如果你的离线下载有单独的数据表，则可使用这个id字段进行关联
+        // 如果你的异步任务有单独的数据表，则可使用这个id字段进行关联
 
         // 提交任务
         asyncTaskManager.submitAsyncTask(asyncTaskRecord);
