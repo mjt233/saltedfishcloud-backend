@@ -152,6 +152,10 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
     public void initExecutor() {
         // 任务开始时，记录执行节点信息，并确保获得执行权（确保任务排队、任务取消、任务执行三者操作互斥）
         executor.addTaskStartListener(record -> {
+            if (AsyncTaskConstants.Status.CANCEL.equals(record.getStatus())) {
+                return;
+            }
+
             // 乐观锁，切换任务状态为运行中，并用于检查该任务是否被取消
             boolean isCancel = repo.updateStatus(record.getId(), AsyncTaskConstants.Status.RUNNING, AsyncTaskConstants.Status.WAITING) == 0;
             if (isCancel) {

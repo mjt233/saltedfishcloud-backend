@@ -101,4 +101,14 @@ public interface AsyncTaskExecutor {
      * 添加一个不支持的任务异常监听器。当执行器收到了一个不支持的任务时会触发。这个原因通常是因为执行器未注册对应的任务工厂导致。
      */
     void addUnsupportedListener(Consumer<AsyncTaskRecord> listener);
+
+    /**
+     * 添加一个任务退出监听器。无论任务因何种原因退出或结束时会触发。
+     */
+    void addTaskExitListener(Consumer<AsyncTaskRecord> listener);
+
+    /**
+     * 获取任务接收器
+     */
+    AsyncTaskReceiver getReceiver();
 }

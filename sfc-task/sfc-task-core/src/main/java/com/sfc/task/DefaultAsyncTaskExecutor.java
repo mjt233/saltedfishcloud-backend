@@ -61,6 +61,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     private final List<Consumer<AsyncTaskRecord>> failedListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> startListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> unsupportedListener = new ArrayList<>();
+    private final List<Consumer<AsyncTaskRecord>> taskExitListener = new ArrayList<>();
 
     private final AtomicInteger currentLoad = new AtomicInteger(0);
 
@@ -110,45 +111,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
      */
     @Autowired
     public DefaultAsyncTaskExecutor(RedisTemplate<String, Object> redisTemplate) {
-         this(new AsyncTaskReceiver() {
-             private boolean isInterrupt = false;
-             @Override
-             public AsyncTaskRecord get() {
-                 while (true) {
-                     if (isInterrupt) {
-                         return null;
-                     }
-                     try {
-                         Object o = redisTemplate.opsForList().rightPop(AsyncTaskConstants.RedisKey.TASK_QUEUE, 3, TimeUnit.SECONDS);
-                         if (o == null) {
-                             Thread.sleep(100);
-                             continue;
-                         }
-                         if (o instanceof String) {
-                             return MapperHolder.parseJson((String) o, AsyncTaskRecord.class);
-                         } else if (o instanceof AsyncTaskRecord) {
-                             return (AsyncTaskRecord) o;
-                         } else {
-                             throw new IllegalArgumentException("任务反序列化失败");
-                         }
-                     } catch (Throwable e) {
-                         if (!this.isInterrupt) {
-                             throw new RuntimeException("任务接受出错:" + e.getMessage(), e);
-                         }
-                     }
-                 }
-             }
-
-             @Override
-             public void start() {
-                 isInterrupt = false;
-             }
-
-             @Override
-             public void interrupt() {
-                 isInterrupt = true;
-             }
-         });
+         this(RedisTaskReceiver.builder()
+                 .redisTemplate(redisTemplate)
+                 .build());
     }
 
     @Override
@@ -241,8 +206,8 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
         }
         Long recordId = taskContext.record.getId();
         threadPool.execute(() -> {
-            runningTask.put(recordId, asyncTask);
             emit(startListener, record);
+            runningTask.put(recordId, asyncTask);
 
             // 若任务记录状态被修改为已取消，则说明该任务是个之前停留在队列中排队但现在已经被取消的任务
             if (AsyncTaskConstants.Status.CANCEL.equals(record.getStatus())) {
@@ -298,6 +263,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
                     synchronized (giveUpRecord) {
                         giveUpRecord.remove(recordId);
                     }
+                    emit(taskExitListener, record);
                 }
             }
         });
@@ -505,5 +471,15 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     @Override
     public void addUnsupportedListener(Consumer<AsyncTaskRecord> listener) {
         this.unsupportedListener.add(listener);
+    }
+
+    @Override
+    public AsyncTaskReceiver getReceiver() {
+        return taskReceiver;
+    }
+
+    @Override
+    public void addTaskExitListener(Consumer<AsyncTaskRecord> listener) {
+        taskExitListener.add(listener);
     }
 }
