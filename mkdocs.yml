@@ -42,3 +42,4 @@ nav:
       - 系统架构:
           - 集群兼容: develop/framework/cluster.md
           - 异步任务: develop/framework/async-task.md
+          - 定时任务: develop/framework/schedule.md
