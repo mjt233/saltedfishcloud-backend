@@ -7,7 +7,17 @@ theme:
     - navigation.expand
 #    - navigation.sections
 #    - navigation.indexes
-
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 nav:
   - 运维手册:
     - 简介: index.md
@@ -31,3 +41,4 @@ nav:
       - 项目构建: develop/build.md
       - 系统架构:
           - 集群兼容: develop/framework/cluster.md
+          - 异步任务: develop/framework/async-task.md
