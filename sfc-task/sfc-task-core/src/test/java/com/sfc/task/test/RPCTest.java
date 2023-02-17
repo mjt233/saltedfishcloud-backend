@@ -1,10 +1,10 @@
 package com.sfc.task.test;
 
-import com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure;
 import com.sfc.task.AsyncTaskExecutor;
-import com.sfc.task.rpc.RPCManager;
-import com.sfc.task.rpc.RPCRequest;
-import com.sfc.task.rpc.RPCResponse;
+import com.xiaotao.saltedfishcloud.rpc.RPCManager;
+import com.xiaotao.saltedfishcloud.rpc.RPCRequest;
+import com.xiaotao.saltedfishcloud.rpc.RPCResponse;
+import com.xiaotao.saltedfishcloud.rpc.RedisRPCManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,6 +15,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -46,7 +47,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @ActiveProfiles("test")
 public class RPCTest {
-    @Autowired
     private RPCManager rpcManager;
 
     @Autowired
@@ -63,7 +63,7 @@ public class RPCTest {
     public void testHandleOnce() throws IOException, BrokenBarrierException, InterruptedException {
         AtomicInteger aCount = new AtomicInteger();
         AtomicInteger bCount = new AtomicInteger();
-        RPCManager rpcManager2 = new RPCManager(factory);
+        RPCManager rpcManager2 = new RedisRPCManager(factory);
         this.rpcManager.registerRpcHandler("testFunc", request -> {
             boolean isHandled = Integer.parseInt(request.getParam()) % 2 == 0;
             try {
