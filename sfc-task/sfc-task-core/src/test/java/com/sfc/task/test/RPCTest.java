@@ -1,10 +1,10 @@
 package com.sfc.task.test;
 
 import com.sfc.task.AsyncTaskExecutor;
-import com.xiaotao.saltedfishcloud.rpc.RPCManager;
-import com.xiaotao.saltedfishcloud.rpc.RPCRequest;
-import com.xiaotao.saltedfishcloud.rpc.RPCResponse;
-import com.xiaotao.saltedfishcloud.rpc.RedisRPCManager;
+import com.sfc.rpc.RPCManager;
+import com.sfc.rpc.RPCRequest;
+import com.sfc.rpc.RPCResponse;
+import com.sfc.rpc.RedisRPCManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,7 +15,6 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.scheduling.annotation.EnableScheduling;

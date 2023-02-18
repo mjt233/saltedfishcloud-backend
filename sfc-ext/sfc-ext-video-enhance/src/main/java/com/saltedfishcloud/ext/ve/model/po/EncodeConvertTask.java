@@ -1,7 +1,7 @@
 package com.saltedfishcloud.ext.ve.model.po;
 
 import com.sfc.task.model.AsyncTaskRecord;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 import org.hibernate.annotations.NotFound;

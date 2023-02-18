@@ -2,7 +2,7 @@ package com.sfc.task.test;
 
 import com.sfc.task.*;
 import com.sfc.task.model.AsyncTaskRecord;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.sfc.task.prog.ProgressRecord;
 import org.junit.jupiter.api.Test;
 
 import java.io.OutputStream;

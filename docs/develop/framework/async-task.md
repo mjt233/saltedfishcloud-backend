@@ -71,7 +71,7 @@ graph LR
 package com.sfc.task.demo;
 
 import com.sfc.task.AsyncTask;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 
 import java.io.OutputStream;

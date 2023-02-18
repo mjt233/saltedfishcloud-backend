@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.rpc;
+package com.sfc.rpc;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

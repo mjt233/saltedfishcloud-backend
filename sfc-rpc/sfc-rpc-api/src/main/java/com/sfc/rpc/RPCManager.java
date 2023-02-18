@@ -1,8 +1,4 @@
-package com.xiaotao.saltedfishcloud.rpc;
-
-import com.xiaotao.saltedfishcloud.rpc.RPCHandler;
-import com.xiaotao.saltedfishcloud.rpc.RPCRequest;
-import com.xiaotao.saltedfishcloud.rpc.RPCResponse;
+package com.sfc.rpc;
 
 import java.io.IOException;
 import java.time.Duration;

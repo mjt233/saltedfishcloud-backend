@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.common.prog;
+package com.sfc.task.prog;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

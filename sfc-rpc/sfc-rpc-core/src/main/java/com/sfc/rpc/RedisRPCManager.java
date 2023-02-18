@@ -1,10 +1,6 @@
-package com.xiaotao.saltedfishcloud.rpc;
+package com.sfc.rpc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.rpc.RPCHandler;
-import com.xiaotao.saltedfishcloud.rpc.RPCManager;
-import com.xiaotao.saltedfishcloud.rpc.RPCRequest;
-import com.xiaotao.saltedfishcloud.rpc.RPCResponse;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

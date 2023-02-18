@@ -1,7 +1,7 @@
 package com.sfc.task.config;
 
-import com.xiaotao.saltedfishcloud.rpc.RPCManager;
-import com.xiaotao.saltedfishcloud.rpc.RedisRPCManager;
+import com.sfc.rpc.RPCManager;
+import com.sfc.rpc.RedisRPCManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;

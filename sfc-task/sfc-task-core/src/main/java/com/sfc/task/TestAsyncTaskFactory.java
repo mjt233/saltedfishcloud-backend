@@ -1,7 +1,7 @@
 package com.sfc.task;
 
 import com.sfc.task.model.AsyncTaskRecord;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.sfc.task.prog.ProgressRecord;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;

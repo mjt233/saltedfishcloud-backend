@@ -15,6 +15,7 @@
         <module>sfc-ext</module>
         <module>sfc-task</module>
         <module>sfc-download</module>
+        <module>sfc-rpc</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
@@ -35,6 +36,7 @@
         <!--   系统核心api模块版本     -->
         <api.version>2.4.1</api.version>
         <task.version>1.0.0</task.version>
+        <rpc.version>1.0.0</rpc.version>
         <download.version>1.0.0</download.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>

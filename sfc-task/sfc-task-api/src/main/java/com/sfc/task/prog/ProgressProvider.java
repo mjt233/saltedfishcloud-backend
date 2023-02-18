@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.common.prog;
+package com.sfc.task.prog;
 
 /**
  * 可获取进度数据和更新速度数据的接口，如下载进度，加载进度，解压进度等并能获取任务的处理进度，也可由外部检测从而更新速度数据。

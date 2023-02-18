@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud;
 
+import com.sfc.rpc.annotation.EnableRpc;
 import com.sfc.task.annocation.EnableAsyncTask;
 import com.xiaotao.saltedfishcloud.init.PluginInitializer;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
@@ -43,8 +44,9 @@ import java.util.function.Supplier;
 @Slf4j
 @EntityScan("com.xiaotao.saltedfishcloud.model")
 @EnableJpaRepositories(basePackages = "com.xiaotao.saltedfishcloud.dao.jpa")
-@EnableAsyncTask
 @EnableAsync
+@EnableAsyncTask
+@EnableRpc
 public class SaltedfishcloudApplication {
 
     public static void main(String[] args) {
