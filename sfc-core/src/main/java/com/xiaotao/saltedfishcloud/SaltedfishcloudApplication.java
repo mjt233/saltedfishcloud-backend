@@ -23,6 +23,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.stereotype.Indexed;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.nio.file.Paths;
@@ -47,6 +48,7 @@ import java.util.function.Supplier;
 @EnableAsync
 @EnableAsyncTask
 @EnableRpc
+@Indexed
 public class SaltedfishcloudApplication {
 
     public static void main(String[] args) {
