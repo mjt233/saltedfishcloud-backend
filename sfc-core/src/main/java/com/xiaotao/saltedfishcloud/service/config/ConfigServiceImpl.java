@@ -96,17 +96,21 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
                 Pair::getValue
         ));
 
-         return pluginManager.getAllPlugin()
+        Map<String, String> res = new ConcurrentHashMap<>();
+        pluginManager.getAllPlugin()
                 .keySet()
                 .stream()
                 .flatMap(e -> Optional.ofNullable(pluginManager.getPluginConfigNodeGroup(e)).orElse(Collections.emptyList()).stream())
                 .flatMap(e -> e.getNodes().stream())
                 .flatMap(e -> e.getNodes().stream())
-                .collect(Collectors.toMap(
-                        ConfigNode::getName,
-                        e -> dbConfig.getOrDefault(e.getName(), Optional.ofNullable(e.getDefaultValue()).orElse(""))
-                ));
-
+                 .forEach(e -> {
+                     if (res.containsKey(e.getName())) {
+                         throw new IllegalArgumentException("存在同名配置项 - " + e.getName() );
+                     } else {
+                         res.put(e.getName(), dbConfig.getOrDefault(e.getName(), Optional.ofNullable(e.getDefaultValue()).orElse("")));
+                     }
+                 });
+        return res;
     }
 
     /**
@@ -125,7 +129,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
      * @param value     配置值
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean setConfig(String key, String value) {
 
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
