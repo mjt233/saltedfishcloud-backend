@@ -74,6 +74,7 @@ public class PropertyUtils {
             ConfigNode node = new ConfigNode();
             node.setName(g.id());
             node.setTitle(g.name());
+            node.setDescribe(g.describe());
             return node;
         }).collect(Collectors.toList());
         Map<String, ConfigNode> groupMap = groupList
