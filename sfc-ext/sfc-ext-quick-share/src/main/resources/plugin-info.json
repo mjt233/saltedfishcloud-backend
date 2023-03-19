@@ -1,0 +1,16 @@
+{
+  "name": "quick-share",
+  "alias": "文件快速分享",
+  "describe": "为系统提供无需登录的临时文件快速上传与下载的分享功能",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-flash",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
+}

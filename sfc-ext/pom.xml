@@ -30,6 +30,7 @@
         <module>sfc-ext-ftp-server</module>
         <module>sfc-ext-video-enhance</module>
         <module>sfc-ext-jntm</module>
+        <module>sfc-ext-quick-share</module>
     </modules>
 
 
