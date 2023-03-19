@@ -6,7 +6,7 @@ import com.saltedfishcloud.ext.ve.model.ProcessWrap;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.utils.StringParser;
 import com.sfc.task.AsyncTask;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;

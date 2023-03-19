@@ -12,7 +12,7 @@ import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTaskLog;
 import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;

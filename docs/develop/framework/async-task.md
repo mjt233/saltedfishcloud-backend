@@ -71,7 +71,7 @@ graph LR
 package com.sfc.task.demo;
 
 import com.sfc.task.AsyncTask;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 
 import java.io.OutputStream;
@@ -251,7 +251,7 @@ public class SleepService {
 
         // asyncTaskRecord.setId(IdUtil.getId());
         // 可选择手动指定id，也可任务提交后，使用asyncTaskRecord自动生成的id字段
-        // 如果你的离线下载有单独的数据表，则可使用这个id字段进行关联
+        // 如果你的异步任务有单独的数据表，则可使用这个id字段进行关联
 
         // 提交任务
         asyncTaskManager.submitAsyncTask(asyncTaskRecord);

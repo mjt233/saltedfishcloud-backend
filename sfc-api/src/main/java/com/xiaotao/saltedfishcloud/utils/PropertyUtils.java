@@ -74,6 +74,7 @@ public class PropertyUtils {
             ConfigNode node = new ConfigNode();
             node.setName(g.id());
             node.setTitle(g.name());
+            node.setDescribe(g.describe());
             return node;
         }).collect(Collectors.toList());
         Map<String, ConfigNode> groupMap = groupList
@@ -95,7 +96,7 @@ public class PropertyUtils {
                     configNode.setDefaultValue(p.defaultValue());
                     configNode.setInputType(p.inputType());
                     configNode.setTitle(StringUtils.hasText(p.title()) ? p.title() : p.value() );
-                    configNode.setName(f.getName());
+                    configNode.setName(p.value());
                     configNode.setGroupId(p.group());
                     configNode.setMask(p.isMask());
                     configNode.setRequired(p.required());

@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+/**
+ * 系统统一配置服务
+ * todo 实现配置项与实体类的绑定功能
+ */
 public interface ConfigService {
 
     /**
