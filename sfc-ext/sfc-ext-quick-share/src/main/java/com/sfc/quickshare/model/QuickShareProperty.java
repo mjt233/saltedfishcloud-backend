@@ -3,7 +3,6 @@ package com.sfc.quickshare.model;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
-import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import lombok.Data;
 
 @Data
