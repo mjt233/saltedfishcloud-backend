@@ -1,7 +1,7 @@
 package com.saltedfishcloud.ext.ve.model;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
+import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
+import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import lombok.AllArgsConstructor;
@@ -18,7 +18,7 @@ import java.nio.file.Paths;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ConfigPropertiesEntity(
+@ConfigPropertyEntity(
         groups = {
                 @ConfigPropertiesGroup(name = "基础配置", id="base"),
                 @ConfigPropertiesGroup(name = "功能", id="feature")
@@ -28,11 +28,11 @@ public class VEProperty {
     /**
      * ffmpeg
      */
-    @ConfigProperties(value = "ffmpegPath", title = "ffmpeg目录", describe = "ffmpeg可执行程序的所在目录")
+    @ConfigProperty(value = "ffmpegPath", title = "ffmpeg目录", describe = "ffmpeg可执行程序的所在目录")
     private String ffmpegPath;
 
 
-    @ConfigProperties(
+    @ConfigProperty(
             value = "enableThumbnail",
             title = "启用视频缩略图",
             describe = "是否启用视频缩略图总开关",
@@ -42,7 +42,7 @@ public class VEProperty {
     )
     private boolean enableThumbnail;
 
-    @ConfigProperties(
+    @ConfigProperty(
             value = "enableThumbnailOnMount",
             title = "在挂载目录中启用视频缩略图",
             describe = "控制是否为挂载目录中的视频创建缩略图",

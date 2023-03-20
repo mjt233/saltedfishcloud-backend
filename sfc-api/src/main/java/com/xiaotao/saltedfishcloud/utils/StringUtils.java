@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.utils;
 import org.springframework.lang.Nullable;
 
 import java.io.File;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 import java.util.Random;
@@ -252,6 +251,44 @@ public class StringUtils {
         return input.substring(prefix.length());
     }
 
+    /**
+     * 解析驼峰命名为短横杠命名
+     * @param str   待转换字符串
+     */
+    public static String camelToKebab(String str) {
+        return parseCamelAndJoin(str, '-');
+    }
+
+    /**
+     * 驼峰命名转为下划线命名
+     * @param str   待转换字符串
+     */
+    public static String camelToUnder(String str) {
+        return parseCamelAndJoin(str, '_');
+    }
+
+    /**
+     * 解析驼峰命名，并将各单词转为小写后用参数连接
+     * @param str   待解析字符串
+     * @param ch    连接字符
+     * @return      处理结果
+     */
+    public static String parseCamelAndJoin(String str, char ch) {
+        int length = str.length();
+        StringBuilder sb = new StringBuilder(str.length() + 6);
+        for (int i = 0; i < length; i++) {
+            char c = str.charAt(i);
+            if (c < 'a') {
+                if (sb.length() != 0) {
+                    sb.append(ch);
+                }
+                sb.append((char)(c + 32));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
 
     public static boolean hasText(@Nullable CharSequence str) {
         return str != null && str.length() > 0 && containsText(str);

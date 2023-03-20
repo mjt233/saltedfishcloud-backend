@@ -1,16 +1,20 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
+import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
+import com.xiaotao.saltedfishcloud.utils.ClassUtils;
+import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
@@ -18,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -31,6 +36,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class ConfigServiceImpl implements ConfigService, InitializingBean {
+    private static final String LOG_PREFIX = "[配置服务]";
     @Resource
     private ConfigDao configDao;
     @Resource
@@ -189,4 +195,34 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     public void afterPropertiesSet() throws Exception {
         databaseInitializer.init();
     }
+
+    @Override
+    public void bindPropertyEntity(Object bean) {
+        ConfigPropertyEntity entity = bean.getClass().getAnnotation(ConfigPropertyEntity.class);
+        for (Field field : ClassUtils.getAllFields(bean.getClass())) {
+            ConfigProperty property = field.getAnnotation(ConfigProperty.class);
+            if (property == null) {
+                continue;
+            }
+            String configName = PropertyUtils.getConfigName(entity, property, field.getName());
+            field.setAccessible(true);
+            Consumer<String> configConsumer = newVal -> {
+                try {
+                    if (newVal == null) {
+                        String defaultValue = property.defaultValue();
+                        log.warn("{}配置项{}设置了null值，将设定回默认值：{}", LOG_PREFIX, configName, defaultValue);
+                        field.set(bean, TypeUtils.convert(field.getType(), defaultValue));
+                    } else {
+                        field.set(bean, TypeUtils.convert(field.getType(), newVal));
+                    }
+                } catch (IllegalAccessException e) {
+                    log.error("{}绑定配置实体字段 [{}] 值设置失败, 配置项:{}", LOG_PREFIX, field.getName(), configName, e);
+                }
+            };
+
+            addAfterSetListener(configName, configConsumer);
+            configConsumer.accept(getConfig(configName));
+        }
+    }
 }
+

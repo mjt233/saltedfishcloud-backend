@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
+import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
+import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 
 import java.util.*;
@@ -57,14 +57,31 @@ public class PropertyUtils {
     }
 
     /**
+     * 获取配置项名称
+     * @param entity    配置实体注解
+     * @param property  配置实体字段注解
+     * @param fieldName 字段名
+     */
+    public static String getConfigName(ConfigPropertyEntity entity, ConfigProperty property, String fieldName) {
+        String prefix = "".equals(entity.prefix()) ? null : entity.prefix();
+        String name;
+        if ("".equals(property.value())) {
+            name = StringUtils.camelToKebab(fieldName);
+        } else {
+            name = property.value();
+        }
+        return prefix == null ? name : prefix + "." + name;
+    }
+
+    /**
      * 从配置实体类中获取配置节点
-     * @param refClass     要读取的配置类，需要使用{@link com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity ConfigPropertiesEntity} 标注类，并在各个字段中标注对应的{@link com.xiaotao.saltedfishcloud.annotations.ConfigProperties ConfigProperties}
+     * @param refClass     要读取的配置类，需要使用{@link ConfigPropertyEntity ConfigPropertiesEntity} 标注类，并在各个字段中标注对应的{@link ConfigProperty ConfigProperties}
      * @return          key - 配置节点集名称，value - 节点集下的配置节点
      */
     public static Map<String, ConfigNode> getConfigNodeFromEntityClass(Class<?> refClass) {
 
         // 读取引用的类配置实体信息
-        ConfigPropertiesEntity entity = refClass.getAnnotation(ConfigPropertiesEntity.class);
+        ConfigPropertyEntity entity = refClass.getAnnotation(ConfigPropertyEntity.class);
         if (entity == null) {
             throw new IllegalArgumentException(refClass + "上没有@ConfigPropertiesEntity注解");
         }
@@ -88,15 +105,16 @@ public class PropertyUtils {
 
         // 读取配置实体的各个字段信息，并按所属组进行分组后，设置到所属组下
         Map<String, List<ConfigNode>> subGroupMap = Arrays.stream(refClass.getDeclaredFields())
-                .filter(f -> f.getAnnotation(ConfigProperties.class) != null)
+                .filter(f -> f.getAnnotation(ConfigProperty.class) != null)
                 .map(f -> {
-                    ConfigProperties p = f.getAnnotation(ConfigProperties.class);
+                    ConfigProperty p = f.getAnnotation(ConfigProperty.class);
                     ConfigNode configNode = new ConfigNode();
                     configNode.setDescribe(p.describe());
                     configNode.setDefaultValue(p.defaultValue());
                     configNode.setInputType(p.inputType());
                     configNode.setTitle(StringUtils.hasText(p.title()) ? p.title() : p.value() );
-                    configNode.setName(p.value());
+
+                    configNode.setName(getConfigName(entity, p, f.getName()));
                     configNode.setGroupId(p.group());
                     configNode.setMask(p.isMask());
                     configNode.setRequired(p.required());

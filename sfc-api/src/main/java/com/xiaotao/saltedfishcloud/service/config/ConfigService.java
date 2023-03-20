@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.config;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
@@ -19,6 +20,14 @@ import java.util.function.Consumer;
  * todo 实现配置项与实体类的绑定功能
  */
 public interface ConfigService {
+
+    /**
+     * 将一个配置实体类Bean的各字段与配置项进行绑定，当配置被更新时会自动更新该对象对应的字段值。<br>
+     * 绑定的对象需要使用{@link  ConfigPropertyEntity @ConfigPropertiesEntity}注解<br>
+     * 执行绑定后会立即同步所有参数配置项到对象中<br>
+     * @param bean    待绑定实体
+     */
+    void bindPropertyEntity(Object bean);
 
     /**
      * 获取所有插件下的配置信息
