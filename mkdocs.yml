@@ -19,7 +19,7 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
 nav:
-  - 运维手册:
+  - 用户手册:
     - 简介: index.md
     - 快速开始:
       - 运行部署: quick-start/index.md
@@ -36,6 +36,7 @@ nav:
         - 插件：sftp-store: extension/sftp-store.md
         - 插件：ftp-store: extension/ftp-store.md
         - 插件：video-enhance: extension/video-enhance.md
+        - 插件：quick-share: extension/quick-share.md
   - 开发手册:
       - 简介: develop/index.md
       - 项目构建: develop/build.md
