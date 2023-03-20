@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.ext;
 
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperties;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesEntity;
+import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
+import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,8 +16,8 @@ import java.util.stream.Stream;
 @Slf4j
 public class PluginClassLoaderFactory {
     private final static Map<String, Class<?>> API_ANNOTATIONS_MAP = Stream.of(
-            ConfigPropertiesEntity.class,
-            ConfigProperties.class,
+            ConfigPropertyEntity.class,
+            ConfigProperty.class,
             ConfigPropertiesGroup.class
     ).collect(Collectors.toMap(Class::getName, Function.identity()));
 

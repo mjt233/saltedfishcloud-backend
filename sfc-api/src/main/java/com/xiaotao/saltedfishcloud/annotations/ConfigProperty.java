@@ -8,7 +8,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface ConfigProperties {
+public @interface ConfigProperty {
 
     /**
      * 配置项名称，若ConfigPropertiesEntity注解中配置了prefix，则会默认添加prefix前缀。<br>
