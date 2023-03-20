@@ -68,6 +68,7 @@ public class PropertyUtils {
         if (entity == null) {
             throw new IllegalArgumentException(refClass + "上没有@ConfigPropertiesEntity注解");
         }
+        String prefix = "".equals(entity.prefix()) ? null : entity.prefix();
 
         // 读取所有声明的配置组信息
         List<ConfigNode> groupList = Arrays.stream(entity.groups()).map(g -> {
@@ -96,7 +97,14 @@ public class PropertyUtils {
                     configNode.setDefaultValue(p.defaultValue());
                     configNode.setInputType(p.inputType());
                     configNode.setTitle(StringUtils.hasText(p.title()) ? p.title() : p.value() );
-                    configNode.setName(p.value());
+
+                    String name;
+                    if ("".equals(p.value())) {
+                        name = StringUtils.camelToKebab(f.getName());
+                    } else {
+                        name = p.value();
+                    }
+                    configNode.setName(prefix == null ? name : prefix + "." + name);
                     configNode.setGroupId(p.group());
                     configNode.setMask(p.isMask());
                     configNode.setRequired(p.required());

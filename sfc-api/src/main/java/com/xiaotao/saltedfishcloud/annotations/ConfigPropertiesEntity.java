@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.annotations;
 
 import java.lang.annotation.*;
-import java.util.Collections;
 
 /**
  * 配置参数实体类
@@ -10,5 +9,10 @@ import java.util.Collections;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface ConfigPropertiesEntity {
+    /**
+     * 配置前缀，会统一添加到字段的属性中，并自动以.结尾
+     */
+    String prefix() default "";
+
     ConfigPropertiesGroup[] groups() default { @ConfigPropertiesGroup(id = "base", name = "配置信息")};
 }
