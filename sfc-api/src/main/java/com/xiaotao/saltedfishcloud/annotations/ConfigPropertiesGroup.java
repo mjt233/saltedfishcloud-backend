@@ -16,4 +16,9 @@ public @interface ConfigPropertiesGroup {
      * 配置组名称
      */
     String name();
+
+    /**
+     * 描述
+     */
+    String describe() default "";
 }

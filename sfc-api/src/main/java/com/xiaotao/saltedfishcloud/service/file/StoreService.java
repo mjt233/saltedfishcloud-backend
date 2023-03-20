@@ -59,7 +59,6 @@ public interface StoreService {
 
     /**
      * 是否支持目录浏览，不支持则意味着lists方法永远返回空集合，同时也不支持记录同步机制
-     * todo 同步机制使用canBrowse判断能否同步
      * @return 支持为true，否则为false
      */
     boolean canBrowse();

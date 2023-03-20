@@ -1,4 +1,4 @@
-package com.sfc.task.rpc;
+package com.sfc.rpc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Component
-public class RPCManager {
+public class RedisRPCManager implements RPCManager {
     private String log_prefix;
     private final RedisConnectionFactory redisConnectionFactory;
 
@@ -41,7 +41,7 @@ public class RPCManager {
      * 实例化一个基于Redis的RPC管理器
      */
     @Autowired
-    public RPCManager(RedisConnectionFactory redisConnectionFactory) {
+    public RedisRPCManager(RedisConnectionFactory redisConnectionFactory) {
         this.redisConnectionFactory = redisConnectionFactory;
 
         init();
@@ -144,6 +144,7 @@ public class RPCManager {
     /**
      * 发起RPC请求
      */
+    @Override
     public <T> RPCResponse<T> call(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException {
         sendRequest(request);
         return waitResponse(request, resultType, timeout);
@@ -157,6 +158,7 @@ public class RPCManager {
     /**
      * 发起RPC请求
      */
+    @Override
     public <T> RPCResponse<T> call(RPCRequest request, Class<T> resultType) throws IOException {
         return call(request, resultType, Duration.ofMinutes(2));
     }
@@ -166,6 +168,7 @@ public class RPCManager {
      * @param functionName  函数名称
      * @param handler       操作器
      */
+    @Override
     public <T> void registerRpcHandler(String functionName, RPCHandler<T> handler) {
         handlerMap.put(functionName, handler);
     }

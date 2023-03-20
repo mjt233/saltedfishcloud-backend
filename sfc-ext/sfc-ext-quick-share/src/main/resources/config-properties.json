@@ -1,0 +1,9 @@
+[
+  {
+    "name": "quick-share",
+    "title": "基础配置",
+    "describe": "快速分享基础配置",
+    "defaultValue": "{}",
+    "typeRef": "com.sfc.quickshare.model.QuickShareProperty"
+  }
+]

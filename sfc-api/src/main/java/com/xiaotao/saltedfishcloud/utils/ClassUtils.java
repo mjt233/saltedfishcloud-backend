@@ -40,7 +40,7 @@ public class ClassUtils {
         List<Field> res = new ArrayList<>();
         while (curClass != Object.class) {
             Class<?> finalCurClass = curClass;
-            List<Field> fieldList = FIELD_CACHE.computeIfAbsent(curClass, k -> List.of(finalCurClass.getFields()));
+            List<Field> fieldList = FIELD_CACHE.computeIfAbsent(curClass, k -> List.of(finalCurClass.getDeclaredFields()));
 
             res.addAll(fieldList);
             curClass = clazz.getSuperclass();

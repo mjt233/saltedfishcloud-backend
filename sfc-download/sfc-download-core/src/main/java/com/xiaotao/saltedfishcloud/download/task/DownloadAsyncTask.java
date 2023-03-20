@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.download.task;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sfc.task.AsyncTask;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.download.IgnoreSSLHttpRequestFactory;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;

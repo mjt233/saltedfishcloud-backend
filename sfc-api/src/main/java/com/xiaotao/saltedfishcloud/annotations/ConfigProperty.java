@@ -8,12 +8,13 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface ConfigProperties {
+public @interface ConfigProperty {
 
     /**
-     * 配置项
+     * 配置项名称，若ConfigPropertiesEntity注解中配置了prefix，则会默认添加prefix前缀。<br>
+     * 若未设定该值，则默认使用字段名的短横线命名作为配置项名。如：isEnable会自动转为is-enable。若存在prefix如quickshare，则组合后为：quickshare.is-enable
      */
-    String value();
+    String value() default "";
 
     /**
      * 默认值

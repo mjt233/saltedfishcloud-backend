@@ -1,6 +1,6 @@
 package com.sfc.task;
 
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
+import com.sfc.task.prog.ProgressRecord;
 
 import java.io.OutputStream;
 

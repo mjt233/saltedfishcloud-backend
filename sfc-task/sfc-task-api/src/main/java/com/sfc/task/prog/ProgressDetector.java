@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.common.prog;
+package com.sfc.task.prog;
 
 /**
  * 速度检测器

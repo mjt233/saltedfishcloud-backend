@@ -87,7 +87,10 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
                 log.error("异步任务状态保持出错: ", e);
             }
         }
-        asyncTaskRecordRepo.setTaskOffline(offlineIds);
+        if (!offlineIds.isEmpty()) {
+            asyncTaskRecordRepo.setTaskOffline(offlineIds);
+        }
+
     }
 
     /**

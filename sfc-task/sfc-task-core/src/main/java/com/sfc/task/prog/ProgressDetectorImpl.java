@@ -1,10 +1,6 @@
-package com.xiaotao.saltedfishcloud.service.common;
+package com.sfc.task.prog;
 
-import com.xiaotao.saltedfishcloud.common.prog.ProgressDetector;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressProvider;
-import com.xiaotao.saltedfishcloud.common.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

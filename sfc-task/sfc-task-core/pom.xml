@@ -22,6 +22,17 @@
             <artifactId>sfc-task-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-rpc-api</artifactId>
+            <version>${rpc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-rpc-core</artifactId>
+            <version>${rpc.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -1,4 +1,4 @@
-package com.sfc.task.rpc;
+package com.sfc.rpc;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

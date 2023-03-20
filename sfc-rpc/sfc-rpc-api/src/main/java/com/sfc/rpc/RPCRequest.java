@@ -1,4 +1,4 @@
-package com.sfc.task.rpc;
+package com.sfc.rpc;
 
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.AllArgsConstructor;
