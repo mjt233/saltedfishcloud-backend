@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import org.springframework.security.core.parameters.P;
 
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,16 @@ public class MapperHolder {
 
     public static <T> T parseJson(String json, Class<T> clazz) throws JsonProcessingException {
         return mapper.readValue(json, clazz);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T parseAsJson(Object jsonObj, Class<T> clazz) throws JsonProcessingException {
+        if (clazz.isAssignableFrom(jsonObj.getClass())) {
+            return (T)jsonObj;
+        } else {
+            return mapper.readValue(jsonObj.toString(), clazz);
+        }
+
     }
 
     public static <T> T parseSnakeJson(String json, Class<T> clazz) throws JsonProcessingException {
