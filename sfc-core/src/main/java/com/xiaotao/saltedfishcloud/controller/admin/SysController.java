@@ -5,9 +5,11 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -25,15 +27,9 @@ public class SysController {
     private AdminService adminService;
 
     @GetMapping("restart")
-    public JsonResult restart() {
-        Thread thread = new Thread(() -> {
-            try {
-                Thread.sleep(500);
-                SpringContextUtils.restart();
-            } catch (InterruptedException ignore) {
-            }
-        });
-        thread.start();
+    @ApiOperation("重启咸鱼云系统")
+    public JsonResult restart(@RequestParam(value = "withCluster", defaultValue = "true", required = false) Boolean withCluster) {
+        adminService.restart(withCluster);
         return JsonResult.emptySuccess();
     }
 

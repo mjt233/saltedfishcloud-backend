@@ -9,4 +9,10 @@ public interface AdminService {
      * @return
      */
     SystemOverviewVO getOverviewData();
+
+    /**
+     * 重启系统
+     * @param withCluster 是否整个集群重启
+     */
+    void restart(boolean withCluster);
 }
