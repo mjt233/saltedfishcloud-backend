@@ -18,6 +18,10 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.context.event.ApplicationStartedEvent;
+import org.springframework.context.event.ContextStartedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -40,7 +44,7 @@ import java.util.function.Consumer;
  */
 @Slf4j
 @Component
-public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, InitializingBean {
+public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     /**
      * 系统最大负载
      */
@@ -145,6 +149,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
      * 开始接受任务
      */
     @Override
+    @EventListener(ApplicationReadyEvent.class)
     public synchronized void start() {
         if (running) {
             throw new IllegalArgumentException("已经启动了");
@@ -405,14 +410,6 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor, Initializing
     private static class TaskContext {
         public AsyncTask task;
         public AsyncTaskRecord record;
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        if (!running) {
-            log.info("任务执行器启动");
-            start();
-        }
     }
 
     @Override

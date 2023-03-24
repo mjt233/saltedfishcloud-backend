@@ -38,7 +38,7 @@ plugin:
 #    - sfc-ext/sfc-ext-video-enhance
 
   # 开发模式关闭插件前端资源的自动加载
-  use-auto-load-resource: true
+  use-auto-load-resource: false
 
 
 sys:
