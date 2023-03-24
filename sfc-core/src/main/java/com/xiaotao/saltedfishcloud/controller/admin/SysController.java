@@ -41,5 +41,16 @@ public class SysController {
         return JsonResultImpl.getInstance(adminService.getOverviewData());
     }
 
+    @ApiOperation("获取当前系统信息")
+    @GetMapping("getCurSystemInfo")
+    public JsonResult getCurSystemInfo() {
+        return JsonResultImpl.getInstance(adminService.getCurSystemInfo(true));
+    }
+
+    @ApiOperation("列出系统一段时间范围内的信息采集集合")
+    @GetMapping("listSystemInfo")
+    public JsonResult listSystemInfo() {
+        return JsonResultImpl.getInstance(adminService.listSystemInfo());
+    }
 
 }
