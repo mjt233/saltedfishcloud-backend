@@ -1,15 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.manager;
 
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
+import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
 import com.xiaotao.saltedfishcloud.model.TimestampRecord;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
 import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -21,11 +18,9 @@ import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
 import oshi.hardware.HardwareAbstractionLayer;
+import oshi.software.os.OperatingSystem;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -66,7 +61,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
         long idle = ticks[CentralProcessor.TickType.IDLE.getIndex()] - prevTicks[CentralProcessor.TickType.IDLE.getIndex()];
         long totalCpu = user + nice + cSys + idle + iowait + irq + softirq + steal;
         if (totalCpu <= 0) {
-            return -1;
+            return 0;
         } else {
             return (1.0-(idle * 1.0 / totalCpu)) * 100;
         }
@@ -82,12 +77,22 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
         long memoryTotal = memory.getTotal();
         long memoryAvailable = memory.getAvailable();
 
-        return SystemInfoVO.builder()
+        SystemInfoVO result = SystemInfoVO.builder()
                 .cpuLoad(getCpuAvgLoad(processor))
                 .totalMemory(memoryTotal)
                 .usedMemory(memoryTotal - memoryAvailable)
-                .memoryUsedRate((long)(((memoryTotal - memoryAvailable)/(double)memoryTotal)*100))
+                .memoryUsedRate((long) (((memoryTotal - memoryAvailable) / (double) memoryTotal) * 100))
                 .build();
+        if (!full) {
+            return result;
+        }
+
+        OperatingSystem os = systemInfo.getOperatingSystem();
+        result.setOs(os.getFamily() + " " + os.getVersionInfo());
+        result.setCpu(processor.getProcessorIdentifier().getName().trim());
+        result.setCpuLogicCount(processor.getLogicalProcessorCount());
+        result.setCpuPhysicalCount(processor.getPhysicalProcessorCount());
+        return result;
     }
 
     @Override

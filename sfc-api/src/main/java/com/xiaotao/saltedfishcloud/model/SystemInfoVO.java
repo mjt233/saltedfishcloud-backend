@@ -32,4 +32,24 @@ public class SystemInfoVO {
      * 内存使用率
      */
     private long memoryUsedRate;
+
+    /**
+     * 操作系统
+     */
+    private String os;
+
+    /**
+     * cpu名称
+     */
+    private String cpu;
+
+    /**
+     * cpu逻辑核心数
+     */
+    private int cpuLogicCount;
+
+    /**
+     * cpu物理核心数
+     */
+    private int cpuPhysicalCount;
 }
