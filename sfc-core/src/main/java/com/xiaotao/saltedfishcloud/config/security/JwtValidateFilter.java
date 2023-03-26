@@ -56,7 +56,7 @@ public class JwtValidateFilter extends OncePerRequestFilter {
                 // 将其token的负载数据json反序列化为User对象
             try {
                 User user = MAPPER.readValue(JwtUtils.parse(token), User.class);
-
+                user.setToken(token);
                 // 判断token是否有效（是否存在redis）
                 if (tokenDao.isTokenValid(user.getId(), token)) {
                     // token有效，设置SpringSecurity鉴权上下文

@@ -1,19 +1,36 @@
 package com.xiaotao.saltedfishcloud.service.manager;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
 import com.xiaotao.saltedfishcloud.model.TimestampRecord;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.xiaotao.saltedfishcloud.model.json.JsonResultModel;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
+import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
@@ -34,16 +51,14 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
     private DiskFileSystemManager diskFileSystemManager;
     @Resource
     private MQService mqService;
+    @Resource
+    private ClusterService clusterService;
 
     private final ConcurrentLinkedQueue<TimestampRecord<SystemInfoVO>> systemInfoRecords = new ConcurrentLinkedQueue<>();
 
     @Autowired(required = false)
     private List<SystemOverviewItemProvider> itemProviderList;
 
-    @Override
-    public Collection<TimestampRecord<SystemInfoVO>> listSystemInfo() {
-        return Collections.unmodifiableCollection(systemInfoRecords);
-    }
 
     private double getCpuAvgLoad(CentralProcessor processor) {
         long[] prevTicks = processor.getSystemCpuLoadTicks();
@@ -68,8 +83,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
 
     }
 
-    @Override
-    public SystemInfoVO getCurSystemInfo(boolean full) {
+    private SystemInfoVO getSelfCurSystemInfo(boolean full) {
         SystemInfo systemInfo = new SystemInfo();
         HardwareAbstractionLayer hardware = systemInfo.getHardware();
         CentralProcessor processor = hardware.getProcessor();
@@ -96,10 +110,63 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
     }
 
     @Override
+    public Collection<TimestampRecord<SystemInfoVO>> listSystemInfo(Long nodeId) {
+        if (nodeId == null) {
+            return Collections.unmodifiableCollection(systemInfoRecords);
+        }
+        ClusterNodeInfo node = clusterService.getNodeById(nodeId);
+        if (node == null) {
+            throw new IllegalArgumentException("节点不存在");
+        }
+        ResponseEntity<String> response = request(node.getRequestUrl("/api/admin/sys/listSystemInfo"), HttpMethod.GET);
+        try {
+            return MapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<List<TimestampRecord<SystemInfoVO>>>>(){}).getData();
+        } catch (JsonProcessingException e) {
+            throw new JsonException("json解析错误" + e.getMessage());
+        }
+
+    }
+
+    @Override
+    public SystemInfoVO getCurSystemInfo(Long nodeId, boolean full) {
+        // todo 实现一个专门用于节点间服务调用的服务，或者干脆直接玩一下Spring Cloud那一套
+        if (nodeId == null) {
+            return getSelfCurSystemInfo(full);
+        }
+
+        ClusterNodeInfo node = clusterService.getNodeById(nodeId);
+        if (node == null) {
+            throw new IllegalArgumentException("节点不存在");
+        }
+        ResponseEntity<String> response = request(node.getRequestUrl("/api/admin/sys/getCurSystemInfo"), HttpMethod.GET);
+        try {
+            return MapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<SystemInfoVO>>() {}).getData();
+        } catch (JsonProcessingException e) {
+            throw new JsonException("json解析错误" + e.getMessage());
+        }
+    }
+
+    private <T> ResponseEntity<String> request(String url, HttpMethod method) {
+        HttpHeaders headers = new HttpHeaders();
+        User user = SecureUtils.getSpringSecurityUser();
+        if (user != null) {
+            headers.put(JwtUtils.AUTHORIZATION, Collections.singletonList(user.getToken()));
+        }
+        HttpEntity<JsonResult<T>> httpEntity = new HttpEntity<>(headers);
+        RestTemplate restTemplate = new RestTemplate();
+        return restTemplate.exchange(
+                url,
+                method,
+                httpEntity,
+                new ParameterizedTypeReference<String>() {}
+        );
+    }
+
+    @Override
     public synchronized void addSystemInfoRecord() {
         systemInfoRecords.add(TimestampRecord.<SystemInfoVO>builder()
                 .timestamp(System.currentTimeMillis())
-                .data(getCurSystemInfo(false))
+                .data(getCurSystemInfo(null, false))
                 .build()
         );
 

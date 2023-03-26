@@ -46,6 +46,9 @@ public class User implements UserDetails {
     private int quota;
     private String email;
 
+    @JsonIgnore
+    private String token;
+
     private static final User PUBLIC_USER_INST;
 
     static {
@@ -118,7 +121,7 @@ public class User implements UserDetails {
     }
 
     @JsonIgnore
-    public String getToken() {
+    public String toToken() {
         try {
             String json = MapperHolder.mapper.writeValueAsString(this);
             return JwtUtils.generateToken(json);
