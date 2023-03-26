@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.model;
 
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,6 +32,11 @@ public class ClusterNodeInfo {
     private String ip;
 
     /**
+     * http服务端口
+     */
+    private Integer httpPort;
+
+    /**
      * 内存字节容量
      */
     private Long memory;
@@ -44,6 +50,15 @@ public class ClusterNodeInfo {
      * 临时空间大小
      */
     private Long tempSpace;
+
+    /**
+     * 获取请求该节点http服务的url
+     * @param url   接口路径
+     * @return      完整url
+     */
+    public String getRequestUrl(String url) {
+        return StringUtils.appendPath("http://" + this.getHost() + ":" + this.getHttpPort(), url);
+    }
 
     @Override
     public boolean equals(Object o) {

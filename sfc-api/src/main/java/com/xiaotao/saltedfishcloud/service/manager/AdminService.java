@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.manager;
 import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
 import com.xiaotao.saltedfishcloud.model.TimestampRecord;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -32,12 +33,14 @@ public interface AdminService {
 
     /**
      * 获取系统一段时间范围内的信息
+     * @param nodeId 目标节点id，若为null则表示当前节点
      */
-    Collection<TimestampRecord<SystemInfoVO>> listSystemInfo();
+    Collection<TimestampRecord<SystemInfoVO>> listSystemInfo(Long nodeId);
 
     /**
      * 获取系统当前信息
+     * @param nodeId 目标节点id，若为null则表示当前节点
      * @param full  是否获取全部完整数据（若为false则只获取cpu和内存）
      */
-    SystemInfoVO getCurSystemInfo(boolean full);
+    SystemInfoVO getCurSystemInfo(Long nodeId, boolean full);
 }

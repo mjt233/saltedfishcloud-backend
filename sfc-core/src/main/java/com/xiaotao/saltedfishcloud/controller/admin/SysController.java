@@ -43,14 +43,14 @@ public class SysController {
 
     @ApiOperation("获取当前系统信息")
     @GetMapping("getCurSystemInfo")
-    public JsonResult getCurSystemInfo() {
-        return JsonResultImpl.getInstance(adminService.getCurSystemInfo(true));
+    public JsonResult getCurSystemInfo(@RequestParam(value = "nodeId", required = false) Long nodeId) {
+        return JsonResultImpl.getInstance(adminService.getCurSystemInfo(nodeId, true));
     }
 
     @ApiOperation("列出系统一段时间范围内的信息采集集合")
     @GetMapping("listSystemInfo")
-    public JsonResult listSystemInfo() {
-        return JsonResultImpl.getInstance(adminService.listSystemInfo());
+    public JsonResult listSystemInfo(@RequestParam(value = "nodeId", required = false) Long nodeId) {
+        return JsonResultImpl.getInstance(adminService.listSystemInfo(nodeId));
     }
 
 }

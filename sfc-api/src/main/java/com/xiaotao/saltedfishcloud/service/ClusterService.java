@@ -20,6 +20,11 @@ public interface ClusterService {
     ClusterNodeInfo getSelf();
 
     /**
+     * 根据节点id获取节点对应的信息
+     */
+    ClusterNodeInfo getNodeById(Long id);
+
+    /**
      * 注册自身信息
      */
     void registerSelf();

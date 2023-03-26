@@ -6,10 +6,12 @@ import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +38,9 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
     @Autowired
     private RedisDao redisDao;
 
+    @Autowired
+    private Environment environment;
+
     private final static String KEY_PREFIX = "cluster::";
 
     private String getKey() {
@@ -57,6 +62,20 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
     }
 
     @Override
+    public ClusterNodeInfo getNodeById(Long id) {
+        try {
+            Object obj = redisTemplate.opsForValue().get(KEY_PREFIX + id);
+            if (obj == null) {
+                return null;
+            }
+            return MapperHolder.parseAsJson(obj, ClusterNodeInfo.class);
+        } catch (JsonProcessingException e) {
+            log.error("节点信息解析错误：",e);
+            return null;
+        }
+    }
+
+    @Override
     public ClusterNodeInfo getSelf() {
         Runtime runtime = Runtime.getRuntime();
         String host = null;
@@ -74,10 +93,12 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
             e.printStackTrace();
             ip = e.getMessage();
         }
+        String port = environment.getProperty("server.port");
         return ClusterNodeInfo.builder()
                 .cpu(runtime.availableProcessors())
                 .id(selfId)
                 .host(host)
+                .httpPort(port == null ? null : Integer.valueOf(port))
                 .ip(ip)
                 .memory(runtime.maxMemory())
                 .tempSpace(new File(PathUtils.getTempDirectory()).getFreeSpace())
