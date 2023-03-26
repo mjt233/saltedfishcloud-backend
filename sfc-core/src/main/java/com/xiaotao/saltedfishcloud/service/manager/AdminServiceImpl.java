@@ -103,7 +103,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
                 .build()
         );
 
-        if (systemInfoRecords.size() > 60) {
+        if (systemInfoRecords.size() > 360) {
             systemInfoRecords.poll();
         }
 
