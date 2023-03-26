@@ -2457,6 +2457,66 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "重启系统",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/admin/sys/restart",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"sys",
+										"restart"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "获取系统当前信息",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/admin/sys/getCurSystemInfo",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"sys",
+										"getCurSystemInfo"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "列出时间范围系统信息",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/admin/sys/listSystemInfo",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"admin",
+										"sys",
+										"listSystemInfo"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				},
@@ -2562,6 +2622,30 @@
 										"api",
 										"plugin",
 										"getAllPlugins"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "New Folder",
+					"item": [
+						{
+							"name": "获取节点列表",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/cluster/listNodes",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"cluster",
+										"listNodes"
 									]
 								}
 							},
@@ -4533,6 +4617,88 @@
 								"description": "列出所有autoLoad不为空的插件列表，前端可以根据这个列表选择加载这些资源实现前端部分的动态拓展"
 							},
 							"response": []
+						},
+						{
+							"name": "插件需要加载的js",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/plugin/autoLoad.js",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"plugin",
+										"autoLoad.js"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "插件需要加载的css",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/plugin/autoLoad.css",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"plugin",
+										"autoLoad.css"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "获取所有可用插件",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/plugin/listAvailablePlugins",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"plugin",
+										"listAvailablePlugins"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "删除插件",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/plugin/deletePlugin?name=samba-store",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"plugin",
+										"deletePlugin"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "samba-store"
+										}
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				},
@@ -4773,7 +4939,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"content\": \"你好\"\r\n}",
+							"raw": "{\r\n    \"content\": \"嘿嘿嘿~~\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"

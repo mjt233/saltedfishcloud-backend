@@ -5,11 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 时间戳记录
+ * @param <T>
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class NameValueType<T> {
-    private String name;
-    private T value;
+public class TimestampRecord<T> {
+    private long timestamp;
+    private T data;
 }

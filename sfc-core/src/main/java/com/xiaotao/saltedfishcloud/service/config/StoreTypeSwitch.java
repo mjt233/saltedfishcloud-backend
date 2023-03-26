@@ -23,6 +23,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 存储类型切换器
+ * todo 切换前备份数据
+ */
 @Component
 @Slf4j
 public class StoreTypeSwitch {

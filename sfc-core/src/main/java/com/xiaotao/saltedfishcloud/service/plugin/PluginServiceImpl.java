@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.plugin;
 
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
-import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
+import com.xiaotao.saltedfishcloud.ext.PluginProperty;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
@@ -23,7 +23,6 @@ import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +40,7 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
     private final PluginManager pluginManager;
 
     @Autowired
-    private SysProperties sysProperties;
+    private PluginProperty pluginProperty;
 
     @Override
     public List<PluginInfo> listPlugins() {
@@ -80,29 +79,43 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
 
     @Override
     public Resource getMergeAutoLoadResource(String type) {
-        // todo 缓存
-        StringBuilder sb = new StringBuilder();
+
         String suffix = "." + type;
+        String fileName = "autoLoad" + suffix;
+
+        // 若关闭了自动加载资源，则返回空字符串
+        if(Boolean.FALSE.equals(pluginProperty.getUseAutoLoadResource())) {
+            return ResourceUtils.stringToResource("").setResponseFilename(fileName);
+        }
+
+        // todo 缓存
+        StringBuilder mergeResult = new StringBuilder();
+
+        // 获取所有插件，筛选出配置了自动加载的插件
         this.listPlugins()
                 .stream()
                 .filter(e -> e.getAutoLoad() != null && !e.getAutoLoad().isEmpty())
                 .forEach(plugin -> {
+                    // 遍历插件，读取插件名称，作为注释添加到autoLoad.js(.css)
                     String pluginName = plugin.getName();
-                    sb.append("/* ").append(pluginName).append(" */\n");
+                    mergeResult.append("/* ").append(pluginName).append(" */\n");
+
+                    // 遍历插件配置的自动加载静态文件，按后缀名匹配
                     plugin.getAutoLoad()
                             .stream()
                             .filter(e -> e.endsWith(suffix))
+                            // 读取每个静态文件内容，追加合并内容
                             .forEach(resourceName -> {
                                 try (InputStream in = getPluginStaticResource(pluginName, resourceName).getInputStream()) {
-                                    sb.append(StreamUtils.copyToString(in, StandardCharsets.UTF_8)).append("\n");
+                                    mergeResult.append(StreamUtils.copyToString(in, StandardCharsets.UTF_8)).append("\n");
                                 } catch (Exception e) {
                                     log.error("{}插件资源{}-{}合并错误：",LOG_PREFIX, pluginName, resourceName, e);
                                 }
                             });
 
                 });
-        return ResourceUtils.stringToResource(sb.toString())
-                .setResponseFilename("autoLoad" + suffix);
+        return ResourceUtils.stringToResource(mergeResult.toString())
+                .setResponseFilename(fileName);
     }
 
     @Override

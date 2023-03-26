@@ -15,6 +15,12 @@ import java.util.List;
 public class PluginProperty {
 
     /**
+     * 是否使用插件的自动加载资源。<br>
+     * 若开发前端
+     */
+    private Boolean useAutoLoadResource = true;
+
+    /**
      * 额外的资源路径
      */
     private String[] extraResource = new String[0];
