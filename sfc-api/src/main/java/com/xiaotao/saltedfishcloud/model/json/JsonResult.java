@@ -12,7 +12,7 @@ public interface JsonResult<T> {
     @JsonIgnore
     String getJsonStr();
 
-    static JsonResult emptySuccess() {
+    static JsonResult<Object> emptySuccess() {
         return EmptySuccessJsonResult.INST;
     }
 }

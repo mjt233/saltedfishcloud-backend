@@ -12,6 +12,12 @@ import java.util.List;
  * 插件服务接口
  */
 public interface PluginService {
+    /**
+     * 获取插件的本身资源（只能获取从外部加载的jar包插件）
+     * @param name  插件名
+     * @return  插件资源
+     */
+    Resource getPluginFile(String name) throws IOException;
 
     /**
      * 获取注册的插件列表
