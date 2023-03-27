@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.plugin;
 
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.ext.PluginProperty;
@@ -18,6 +19,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
@@ -41,6 +43,15 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
 
     @Autowired
     private PluginProperty pluginProperty;
+
+    @Override
+    public Resource getPluginFile(String name) throws IOException {
+        PluginInfo pluginInfo = pluginManager.getPluginInfo(name);
+        if (pluginInfo == null) {
+            throw new JsonException("插件不存在");
+        }
+        return new UrlResource(pluginInfo.getUrl());
+    }
 
     @Override
     public List<PluginInfo> listPlugins() {
