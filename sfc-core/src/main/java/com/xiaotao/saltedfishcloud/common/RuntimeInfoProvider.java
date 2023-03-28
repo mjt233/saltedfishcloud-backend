@@ -2,8 +2,11 @@ package com.xiaotao.saltedfishcloud.common;
 
 import com.sun.management.OperatingSystemMXBean;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
+import com.xiaotao.saltedfishcloud.service.manager.AdminService;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.lang.management.ManagementFactory;

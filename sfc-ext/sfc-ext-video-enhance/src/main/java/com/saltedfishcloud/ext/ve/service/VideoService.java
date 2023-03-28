@@ -6,6 +6,7 @@ import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.dao.EncodeConvertTaskRepo;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertRule;
 import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
+import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTaskLog;
@@ -13,6 +14,7 @@ import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -21,6 +23,7 @@ import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +56,21 @@ public class VideoService {
 
     @Autowired
     private AsyncTaskManager asyncTaskManager;
+
+    /**
+     * 检查配置是否正确
+     */
+    public void check() {
+        VEProperty property = ffMpegHelper.getProperty();
+        if (!StringUtils.hasText(property.getFfmpegPath())) {
+            throw new JsonException("未配置ffmpeg路径");
+        }
+        try {
+            ffMpegHelper.getFFMpegInfo();
+        } catch (IOException e) {
+            throw new JsonException("检查失败，错误：" + e.getMessage());
+        }
+    }
 
     /**
      * 获取视频编码转换任务列表

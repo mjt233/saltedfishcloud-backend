@@ -12,6 +12,14 @@
             "defaultValue": "{}",
             "typeRef": "com.saltedfishcloud.ext.ve.model.VEProperty",
             "inputType": "form"
+          },
+          {
+            "name": "ve.check",
+            "title": "检查配置",
+            "describe": "检查ffmpeg能否正常被调用",
+            "defaultValue": "{}",
+            "inputType": "template",
+            "template": "video-enhance-check"
           }
         ]
       }
