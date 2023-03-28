@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.manager;
 import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
 import com.xiaotao.saltedfishcloud.model.TimestampRecord;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -11,9 +10,10 @@ public interface AdminService {
     /**
      * 获取系统的预览数据
      *
-     * @return
+     * @param nodeId 指定节点id，若为null则为当前节点
+     * @return  系统预览VO
      */
-    SystemOverviewVO getOverviewData();
+    SystemOverviewVO getOverviewData(Long nodeId);
 
     /**
      * 重启系统

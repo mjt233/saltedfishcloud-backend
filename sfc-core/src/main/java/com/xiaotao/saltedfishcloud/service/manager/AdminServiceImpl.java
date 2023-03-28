@@ -53,6 +53,8 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
     private MQService mqService;
     @Resource
     private ClusterService clusterService;
+    @Resource
+    private RestTemplate restTemplate;
 
     private final ConcurrentLinkedQueue<TimestampRecord<SystemInfoVO>> systemInfoRecords = new ConcurrentLinkedQueue<>();
 
@@ -127,6 +129,10 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
 
     }
 
+    private ClusterNodeInfo getNode(Long nodeId) {
+        return Optional.ofNullable(clusterService.getNodeById(nodeId)).orElseThrow(() -> new IllegalArgumentException("节点不存在"));
+    }
+
     @Override
     public SystemInfoVO getCurSystemInfo(Long nodeId, boolean full) {
         // todo 实现一个专门用于节点间服务调用的服务，或者干脆直接玩一下Spring Cloud那一套
@@ -134,10 +140,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
             return getSelfCurSystemInfo(full);
         }
 
-        ClusterNodeInfo node = clusterService.getNodeById(nodeId);
-        if (node == null) {
-            throw new IllegalArgumentException("节点不存在");
-        }
+        ClusterNodeInfo node = this.getNode(nodeId);
         ResponseEntity<String> response = request(node.getRequestUrl("/api/admin/sys/getCurSystemInfo"), HttpMethod.GET);
         try {
             return MapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<SystemInfoVO>>() {}).getData();
@@ -153,7 +156,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
             headers.put(JwtUtils.AUTHORIZATION, Collections.singletonList(user.getToken()));
         }
         HttpEntity<JsonResult<T>> httpEntity = new HttpEntity<>(headers);
-        RestTemplate restTemplate = new RestTemplate();
+
         return restTemplate.exchange(
                 url,
                 method,
@@ -181,8 +184,10 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
         systemInfoRecords.clear();
     }
 
-    @Override
-    public SystemOverviewVO getOverviewData() {
+    /**
+     * 获取系统当前预览数据
+     */
+    private SystemOverviewVO getCurOverviewData() {
         SystemOverviewVO vo = new SystemOverviewVO();
         vo.setFileSystemStatus(diskFileSystemManager.getMainFileSystem().getStatus());
         if (itemProviderList == null || itemProviderList.isEmpty()) {
@@ -210,6 +215,21 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
                         })
                 );
         return vo;
+    }
+
+    @Override
+    public SystemOverviewVO getOverviewData(Long nodeId) {
+        if (nodeId == null) {
+            return getCurOverviewData();
+        }
+
+        ClusterNodeInfo node = getNode(nodeId);
+        ResponseEntity<String> response = request(node.getRequestUrl("/api/admin/sys/overview"), HttpMethod.GET);
+        try {
+            return MapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<SystemOverviewVO>>() {}).getData();
+        } catch (JsonProcessingException e) {
+            throw new JsonException("json解析错误" + e.getMessage());
+        }
     }
 
     /**
