@@ -343,9 +343,8 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
     private int saveFileWithDelete(int uid, InputStream file, String path, FileInfo fileInfo) throws IOException {
         String nid;
         // 判断目录是否存在，若不存在则尝试创建
-        try {
-            nid = nodeService.getNodeIdByPath(uid, path);
-        } catch (NoSuchFileException e) {
+        nid = nodeService.getNodeIdByPathNoEx(uid, path);
+        if (nid == null) {
             nid = mkdirs(uid, path);
         }
 

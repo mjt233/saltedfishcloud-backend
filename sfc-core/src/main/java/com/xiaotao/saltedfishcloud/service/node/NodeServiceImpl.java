@@ -31,6 +31,7 @@ import java.util.*;
 @Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class NodeServiceImpl implements NodeService {
+    private final static String LOG_PREFIX = "[Node]";
     private final NodeDao nodeDao;
     @Autowired
     private NodeInfoRepo nodeInfoRepo;
@@ -71,8 +72,8 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    public LinkedList<NodeInfo> getPathNodeByPath(int uid, String path) throws NoSuchFileException {
-        log.debug("[Node]<<==== 开始解析路径途径节点 uid: {} 路径: {}", uid, path);
+    public LinkedList<NodeInfo> getPathNodeByPathNoEx(int uid, String path) {
+        log.debug("{}<<==== 开始解析路径途径节点 uid: {} 路径: {}",LOG_PREFIX, uid, path);
         LinkedList<NodeInfo> link = new LinkedList<>();
         PathBuilder pb = new PathBuilder();
         pb.append(path);
@@ -80,24 +81,21 @@ public class NodeServiceImpl implements NodeService {
         Set<String> visited = new HashSet<>();
 
         String strId = "" + uid;
-        try {
-            for (String node : paths) {
-                String parent = link.isEmpty() ? strId : link.getLast().getId();
-                NodeInfo info = self.getNodeByParentId(uid, parent, node);
-                if (info == null) {
-                    throw new NoSuchFileException("路径 " + path + " 不存在，或目标节点信息已丢失");
-                }
-                if (visited.contains(info.getId())) {
-                    throw new JsonException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + info.getId() + " => " + node);
-                } else {
-                    visited.add(node);
-                    link.add(info);
-                }
+        for (String node : paths) {
+            String parent = link.isEmpty() ? strId : link.getLast().getId();
+            NodeInfo info = self.getNodeByParentId(uid, parent, node);
+            if (info == null) {
+                log.warn("{}路径不存在:{}", LOG_PREFIX, path);
+                return null;
             }
-            if (link.isEmpty()) {
-                throw new NullPointerException();
+            if (visited.contains(info.getId())) {
+                throw new JsonException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + info.getId() + " => " + node);
+            } else {
+                visited.add(node);
+                link.add(info);
             }
-        } catch (NullPointerException e) {
+        }
+        if (link.isEmpty()) {
             NodeInfo info = new NodeInfo();
             info.setId(strId);
             info.setUid((long) uid);
@@ -107,12 +105,21 @@ public class NodeServiceImpl implements NodeService {
             StringBuilder sb = new StringBuilder();
             int cnt = 0;
             for (NodeInfo nodeInfo : link) {
-                log.debug("[Node]途径节点[{}]: {}",cnt++, nodeInfo);
+                log.debug("{}途径节点[{}]: {}", LOG_PREFIX, cnt++, nodeInfo);
                 sb.append("/").append(nodeInfo.getName() == null ? "" : nodeInfo.getName()).append('[').append(nodeInfo.getId()).append(']');
             }
-            log.debug("[Node]====>> 解析成功 路径节点信息: {}", sb.toString());
+            log.debug("{}====>> 解析成功 路径节点信息: {}",LOG_PREFIX, sb);
         }
         return link;
+    }
+
+    @Override
+    public LinkedList<NodeInfo> getPathNodeByPath(int uid, String path) throws NoSuchFileException {
+        LinkedList<NodeInfo> list = getPathNodeByPathNoEx(uid, path);
+        if (list == null) {
+            throw new NoSuchFileException("路径" + path + "不存在，或节点信息已丢失");
+        }
+        return list;
     }
 
     @Override
@@ -166,6 +173,15 @@ public class NodeServiceImpl implements NodeService {
     @Override
     public String getNodeIdByPath(int uid, String path) throws NoSuchFileException {
         return self.getPathNodeByPath(uid, path).getLast().getId();
+    }
+
+    @Override
+    public String getNodeIdByPathNoEx(int uid, String path) {
+        LinkedList<NodeInfo> list = self.getPathNodeByPathNoEx(uid, path);
+        if (list == null) {
+            return null;
+        }
+        return list.getLast().getId();
     }
 
     @Override

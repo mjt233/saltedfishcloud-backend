@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -23,11 +24,11 @@ public class FileResourceMd5ResolverImpl implements FileResourceMd5Resolver {
 
     @Override
     public String getResourceMd5(int uid, String path) {
-        try {
-            return fileRecordService.getFileInfo(uid, PathUtils.getParentPath(path), PathUtils.getLastNode(path)).getMd5();
-        } catch (NoSuchFileException e) {
+        FileInfo fileInfo = fileRecordService.getFileInfo(uid, PathUtils.getParentPath(path), PathUtils.getLastNode(path));
+        if (fileInfo == null) {
             return null;
         }
+        return fileInfo.getMd5();
     }
 
     @Override

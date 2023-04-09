@@ -35,7 +35,7 @@ plugin:
 #    - sfc-ext/sfc-ext-mp3-thumbnail
 #    - sfc-ext/sfc-ext-sftp-store
 #    - sfc-ext/sfc-ext-ftp-store
-#    - sfc-ext/sfc-ext-video-enhance
+    - sfc-ext/sfc-ext-video-enhance
 
   # 开发模式关闭插件前端资源的自动加载
   use-auto-load-resource: false
