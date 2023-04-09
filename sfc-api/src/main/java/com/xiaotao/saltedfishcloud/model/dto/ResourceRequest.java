@@ -12,6 +12,11 @@ import java.util.Map;
 @Data
 public class ResourceRequest {
     /**
+     * 特殊参数 - 资源创建人id
+     */
+    public static final String CREATE_UID = "createUId";
+
+    /**
      * 请求的资源所在路径
      */
     @NotNull

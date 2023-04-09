@@ -37,8 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.net.URLDecoder;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * 浏览控制器，提供浏览功能
@@ -182,10 +181,15 @@ public class FileController {
 
     }
 
+    @ApiOperation("获取指定文件的信息")
+    @GetMapping("getFileInfo")
     @AllowAnonymous
-    @GetMapping("getFileList")
-    public JsonResult getFileList(@PathVariable String uid, @RequestParam("path") String path) {
-        return JsonResult.emptySuccess();
+    public JsonResult<FileInfo> getFileInfo(@PathVariable @UID int uid, @RequestParam("path") String path, @RequestParam("name") String name) throws IOException {
+        List<FileInfo>[] fileList = fileSystemManager.getMainFileSystem().getUserFileList(uid, path);
+        FileInfo fileInfo = Optional.ofNullable(fileList[1]).orElse(Collections.emptyList()).stream().filter(e -> Objects.equals(e.getName(), name))
+                .findAny()
+                .orElse(null);
+        return JsonResultImpl.getInstance(fileInfo);
     }
 
     /**

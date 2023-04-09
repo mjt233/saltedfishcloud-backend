@@ -46,14 +46,12 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
-    public FileInfo getFileInfo(int uid, String dirPath, String name) throws NoSuchFileException {
-        final String nodeId = nodeService.getNodeIdByPath(uid, dirPath);
-        final FileInfo info = fileDao.getFileInfo(uid, name, nodeId);
-        if (info == null) {
-            throw new NoSuchFileException(StringUtils.appendPath(dirPath, name));
-        } else {
-            return info;
+    public FileInfo getFileInfo(int uid, String dirPath, String name) {
+        final String nodeId = nodeService.getNodeIdByPathNoEx(uid, dirPath);
+        if (nodeId == null) {
+            return null;
         }
+        return fileDao.getFileInfo(uid, name, nodeId);
     }
 
     @Override

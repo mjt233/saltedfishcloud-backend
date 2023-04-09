@@ -11,22 +11,24 @@ import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -51,15 +53,48 @@ public class ResourceController {
     private final ResourceService resourceService;
     private final ThumbnailService thumbnailService;
 
-    @GetMapping("get")
+    @ApiOperation("上传文件到目标资源")
+    @PutMapping("upload")
     @AllowAnonymous
-    public HttpEntity<Resource> getResource(@Validated ResourceRequest resourceRequest, HttpServletRequest request) throws UnsupportedProtocolException, IOException {
-        // 读取所有请求参数，设置到params中
+    public JsonResult<Object> uploadResource(@Validated ResourceRequest resourceRequest,
+                                             HttpServletRequest request,
+                                             @MergeFile MultipartFile file
+                                             ) throws UnsupportedProtocolException, IOException {
+        this.mergeParams(resourceRequest, request);
+        ResourceProtocolHandler handler = resourceService.getResourceHandler(resourceRequest.getProtocol());
+        if (handler == null) {
+            throw new UnsupportedProtocolException(resourceRequest.getProtocol());
+        }
+        if (!handler.isWriteable()) {
+            throw new IllegalArgumentException("目标资源不支持数据写入");
+        }
+        if (file == null) {
+            throw new IllegalArgumentException("缺少文件");
+        }
+        if (resourceRequest.getParams().containsKey(ResourceRequest.CREATE_UID)) {
+            throw new IllegalArgumentException("不允许的特殊参数：createUId");
+        }
+        handler.writeResource(resourceRequest, file.getResource());
+        return JsonResult.emptySuccess();
+    }
+
+    /**
+     * 读取所有请求参数，设置到params中
+     * @param resourceRequest   通用资源请求参数
+     * @param request           http请求对象
+     */
+    private void mergeParams(ResourceRequest resourceRequest, HttpServletRequest request) {
         Map<String, String> paramsMap = new HashMap<>();
         for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
             paramsMap.put(entry.getKey(), entry.getValue()[0]);
         }
         resourceRequest.setParams(paramsMap);
+    }
+
+    @GetMapping("get")
+    @AllowAnonymous
+    public HttpEntity<Resource> getResource(@Validated ResourceRequest resourceRequest, HttpServletRequest request) throws UnsupportedProtocolException, IOException {
+        this.mergeParams(resourceRequest, request);
 
         // 根据请求对象获取资源
         Resource resource = resourceService.getResource(resourceRequest);
@@ -83,7 +118,7 @@ public class ResourceController {
     @GetMapping({"node/**", "node"})
     @AllowAnonymous
     @NotBlock
-    public JsonResult pathToNodeList(@PathVariable("uid") @UID int uid, HttpServletRequest request) throws NoSuchFileException {
+    public JsonResult<Object> pathToNodeList(@PathVariable("uid") @UID int uid, HttpServletRequest request) throws NoSuchFileException {
         String path = URLUtils.getRequestFilePath(PREFIX + "/" + uid + "/node", request);
         return JsonResultImpl.getInstance(nodeService.getPathNodeByPath(uid, "/" + path));
     }
@@ -96,7 +131,7 @@ public class ResourceController {
     @GetMapping("path/{node}")
     @AllowAnonymous
     @NotBlock
-    public JsonResult getPath(@PathVariable("uid") @UID int uid,
+    public JsonResult<Object> getPath(@PathVariable("uid") @UID int uid,
                               @PathVariable("node") String node) {
         return JsonResultImpl.getInstance(nodeService.getPathByNode(uid, node));
     }
@@ -107,7 +142,7 @@ public class ResourceController {
     @GetMapping("FDC/**")
     @AllowAnonymous
     @NotBlock
-    public JsonResult getFDC(@PathVariable @UID int uid,
+    public JsonResult<Object> getFDC(@PathVariable @UID int uid,
                              HttpServletRequest request,
                              @RequestParam(value = "md5", required = false) String md5,
                              @RequestParam("name") @Valid @FileName String name,

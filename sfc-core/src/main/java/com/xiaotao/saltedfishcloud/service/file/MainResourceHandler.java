@@ -71,10 +71,12 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         int uid = Integer.parseInt(param.getTargetId());
         User user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
-            String createUid = Objects.requireNonNull(param.getParams().get("createUId"), "缺失权限上下文会话或创建人id");
+            String createUid = Objects.requireNonNull(param.getParams().get(ResourceRequest.CREATE_UID), "缺失权限上下文会话或创建人id");
             user = Objects.requireNonNull(userService.getUserById(Integer.parseInt(createUid)), "无效的创建人id");
         }
-        UIDValidator.validate(user, uid, false);
+        if(!UIDValidator.validate(user, uid, true)) {
+            throw new IllegalArgumentException("访问拒绝");
+        }
     }
 
     @Override
