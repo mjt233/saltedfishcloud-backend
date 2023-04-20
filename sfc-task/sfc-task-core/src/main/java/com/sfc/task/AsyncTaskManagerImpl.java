@@ -8,7 +8,7 @@ import com.sfc.rpc.RPCManager;
 import com.sfc.rpc.RPCRequest;
 import com.sfc.rpc.RPCResponse;
 import com.sfc.task.prog.ProgressRecord;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.store;
 
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.sfc.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;

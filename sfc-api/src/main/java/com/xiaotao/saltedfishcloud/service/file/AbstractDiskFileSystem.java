@@ -1,7 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.sfc.archive.comporessor.ArchiveCompressor;
+import com.sfc.archive.comporessor.ArchiveResourceEntry;
+import com.sfc.archive.comporessor.impl.ZipArchiveCompressor;
+import com.sfc.archive.extractor.ArchiveExtractorVisitor;
+import com.sfc.archive.extractor.impl.ZipArchiveExtractor;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.sfc.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -10,11 +15,6 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.compress.creator.ArchiveCompressor;
-import com.xiaotao.saltedfishcloud.utils.compress.creator.ArchiveResourceEntry;
-import com.xiaotao.saltedfishcloud.utils.compress.creator.ZipCompressor;
-import com.xiaotao.saltedfishcloud.utils.compress.reader.ArchiveReaderVisitor;
-import com.xiaotao.saltedfishcloud.utils.compress.reader.impl.ZipArchiveReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -31,6 +31,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipException;
 
+/**
+ * 抽象文件系统，初步实现了文件解压缩操作
+ * todo 文件解压缩需要从文件系统中解耦，由继承改为组合，并通过另外的接口单独维护解压缩功能。
+ */
 @Slf4j
 public abstract class AbstractDiskFileSystem implements DiskFileSystem {
 
@@ -40,7 +44,7 @@ public abstract class AbstractDiskFileSystem implements DiskFileSystem {
 
     @Override
     public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {
-        try(ZipCompressor compressor = new ZipCompressor(outputStream, getSysProperties().getStore().getArchiveEncoding())) {
+        try(ZipArchiveCompressor compressor = new ZipArchiveCompressor(outputStream, getSysProperties().getStore().getArchiveEncoding())) {
             compress(uid, path, path, names, compressor);
         }
     }
@@ -95,16 +99,6 @@ public abstract class AbstractDiskFileSystem implements DiskFileSystem {
             compressor.addFile(new ArchiveResourceEntry(curPath + "/" + file.getName() + "/", 0, null));
             compressDir(uid, root, path + "/" + file.getName(), compressor, depth + 1);
         }
-    }
-
-    /**
-     * 获取写文件时用到分布式锁key
-     * @param uid   用户id
-     * @param path  文件所在路径
-     * @param name  文件名
-     */
-    private static String getStoreLockKey(int uid, String path, String name) {
-        return uid + ":" + StringUtils.appendPath(path, name);
     }
 
     /**
@@ -188,7 +182,7 @@ public abstract class AbstractDiskFileSystem implements DiskFileSystem {
         }
 
         try(
-                ZipArchiveReader fileSystem = new ZipArchiveReader(zipFile)
+                ZipArchiveExtractor fileSystem = new ZipArchiveExtractor(zipFile)
         ) {
 
             Files.createDirectories(tempBasePath);
@@ -205,7 +199,7 @@ public abstract class AbstractDiskFileSystem implements DiskFileSystem {
                             log.debug("解压文件：{}", localTemp);
                             Files.copy(stream, localTemp);
                         }
-                        return ArchiveReaderVisitor.Result.CONTINUE;
+                        return ArchiveExtractorVisitor.Result.CONTINUE;
                     }))
             ) {
                 Files.walkFileTree(tempBasePath, new SimpleFileVisitor<Path>() {

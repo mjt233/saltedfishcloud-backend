@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.share;
 
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.constant.error.ShareError;
+import com.sfc.constant.error.CommonError;
+import com.sfc.constant.error.FileSystemError;
+import com.sfc.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ShareRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
