@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
+import com.sfc.archive.ArchiveManager;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.sfc.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
@@ -96,6 +97,10 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
 
     @Autowired
     private SysProperties sysProperties;
+
+    @Autowired
+    @Getter
+    private ArchiveManager archiveManager;
 
     @Override
     protected RedissonClient getRedissonClient() {

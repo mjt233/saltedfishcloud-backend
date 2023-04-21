@@ -1,4 +1,4 @@
-package com.sfc.archive.comporessor.impl;
+package com.sfc.archive.composer.impl;
 
 import com.sfc.archive.comporessor.AbstractCompressor;
 import com.sfc.archive.model.ArchiveFile;
@@ -11,6 +11,9 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * Zip压缩器
+ */
 public class ZipArchiveCompressor extends AbstractCompressor {
     private final OutputStream outputStream;
     private final String encoding;

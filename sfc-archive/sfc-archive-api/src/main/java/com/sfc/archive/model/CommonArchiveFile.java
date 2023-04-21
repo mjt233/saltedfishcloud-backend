@@ -5,6 +5,9 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 
 import java.util.regex.Pattern;
 
+/**
+ * 通用压缩文件信息
+ */
 public class CommonArchiveFile extends ArchiveFile {
 
     private final static Pattern pattern = Pattern.compile(RejectRegex.PATH);

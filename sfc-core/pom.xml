@@ -49,6 +49,11 @@
             <artifactId>sfc-rpc-core</artifactId>
             <version>${rpc.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-archive-core</artifactId>
+            <version>${version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.xiaotao</groupId>

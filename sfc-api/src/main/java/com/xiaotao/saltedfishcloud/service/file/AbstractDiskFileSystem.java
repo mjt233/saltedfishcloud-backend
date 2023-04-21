@@ -1,14 +1,15 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.sfc.archive.ArchiveManager;
 import com.sfc.archive.comporessor.ArchiveCompressor;
 import com.sfc.archive.comporessor.ArchiveResourceEntry;
-import com.sfc.archive.comporessor.impl.ZipArchiveCompressor;
+import com.sfc.archive.extractor.ArchiveExtractor;
 import com.sfc.archive.extractor.ArchiveExtractorVisitor;
-import com.sfc.archive.extractor.impl.ZipArchiveExtractor;
+import com.sfc.archive.model.ArchiveParam;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.sfc.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.enums.ArchiveError;
-import com.xiaotao.saltedfishcloud.enums.ArchiveType;
+import com.sfc.enums.ArchiveError;
+import com.sfc.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -20,6 +21,7 @@ import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -42,9 +44,15 @@ public abstract class AbstractDiskFileSystem implements DiskFileSystem {
 
     protected abstract SysProperties getSysProperties();
 
+    protected abstract ArchiveManager getArchiveManager();
+
     @Override
     public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {
-        try(ZipArchiveCompressor compressor = new ZipArchiveCompressor(outputStream, getSysProperties().getStore().getArchiveEncoding())) {
+        ArchiveParam archiveParam = ArchiveParam.builder()
+                .encoding(getSysProperties().getStore().getArchiveEncoding())
+                .type("zip")
+                .build();
+        try(ArchiveCompressor compressor = getArchiveManager().getCompressor(archiveParam, outputStream)) {
             compress(uid, path, path, names, compressor);
         }
     }
@@ -182,7 +190,12 @@ public abstract class AbstractDiskFileSystem implements DiskFileSystem {
         }
 
         try(
-                ZipArchiveExtractor fileSystem = new ZipArchiveExtractor(zipFile)
+
+                ArchiveExtractor fileSystem = getArchiveManager()
+                        .getExtractor(
+                            ArchiveParam.builder().type("zip").encoding(getSysProperties().getStore().getArchiveEncoding()).build(),
+                            new PathResource(Paths.get(zipFile.getPath()))
+                        )
         ) {
 
             Files.createDirectories(tempBasePath);

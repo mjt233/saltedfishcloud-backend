@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
+import com.sfc.archive.ArchiveManager;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
@@ -16,6 +17,7 @@ import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -79,6 +81,10 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
 
     @Autowired
     private DiskFileSystemManager diskFileSystemManager;
+
+    @Autowired
+    @Getter
+    private ArchiveManager archiveManager;
 
     @Override
     public void afterPropertiesSet() throws Exception {

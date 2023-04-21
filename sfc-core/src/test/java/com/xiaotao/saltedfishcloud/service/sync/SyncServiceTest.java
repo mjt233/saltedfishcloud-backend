@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.sync;
 
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.sfc.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.service.config.ConfigServiceImpl;
 import org.junit.jupiter.api.Test;
