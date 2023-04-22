@@ -26,4 +26,16 @@ public interface ArchiveManager {
      * @return          解压缩器
      */
     ArchiveExtractor getExtractor(ArchiveParam param, Resource resource);
+
+    /**
+     * 注册压缩器
+     * @param provider  压缩器提供者
+     */
+    void registerCompressor(ArchiveCompressorProvider provider);
+
+    /**
+     * 注册解压缩器
+     * @param provider  解压缩器提供者
+     */
+    void registerExtractor(ArchiveExtractorProvider provider);
 }

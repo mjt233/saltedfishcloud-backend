@@ -1,4 +1,4 @@
-package com.sfc.archive.composer.impl;
+package com.sfc.archive.composer.impl.zip;
 
 import com.sfc.archive.comporessor.AbstractCompressor;
 import com.sfc.archive.model.ArchiveFile;
@@ -17,7 +17,7 @@ import java.io.OutputStream;
 public class ZipArchiveCompressor extends AbstractCompressor {
     private final OutputStream outputStream;
     private final String encoding;
-    public ZipArchiveCompressor(OutputStream out, String encoding) {
+    public ZipArchiveCompressor(String encoding, OutputStream out) {
         this.encoding = encoding;
         this.outputStream = out;
     }

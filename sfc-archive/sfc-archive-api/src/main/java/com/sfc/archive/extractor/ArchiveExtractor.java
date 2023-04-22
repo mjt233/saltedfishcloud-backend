@@ -1,5 +1,6 @@
 package com.sfc.archive.extractor;
 
+import com.sfc.archive.ArchiveEventListenable;
 import com.sfc.archive.model.ArchiveFile;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -10,7 +11,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 
-public interface ArchiveExtractor extends Closeable {
+public interface ArchiveExtractor extends Closeable, ArchiveEventListenable {
 
     /**
      * 访问压缩包内的文件

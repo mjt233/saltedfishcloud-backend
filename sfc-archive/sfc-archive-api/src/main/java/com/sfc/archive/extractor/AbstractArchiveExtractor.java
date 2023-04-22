@@ -1,5 +1,6 @@
 package com.sfc.archive.extractor;
 
+import com.sfc.archive.ArchiveHandleEventListener;
 import com.sfc.archive.model.ArchiveFile;
 import com.sfc.archive.extractor.ArchiveEntryInputStream;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -22,6 +24,12 @@ import java.util.List;
  */
 @Slf4j
 public abstract class AbstractArchiveExtractor implements ArchiveExtractor {
+    protected List<ArchiveHandleEventListener> listeners = new ArrayList<>();
+
+    @Override
+    public void addEventListener(ArchiveHandleEventListener listener) {
+        listeners.add(listener);
+    }
 
     @Override
     public ArchiveInputStream walk(ArchiveExtractorVisitor visitor) throws Exception {

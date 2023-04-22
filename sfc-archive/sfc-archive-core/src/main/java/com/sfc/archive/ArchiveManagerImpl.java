@@ -1,44 +1,58 @@
 package com.sfc.archive;
 
 import com.sfc.archive.comporessor.ArchiveCompressor;
-import com.sfc.archive.composer.impl.ZipArchiveCompressor;
 import com.sfc.archive.extractor.ArchiveExtractor;
-import com.sfc.archive.extractor.impl.ZipArchiveExtractor;
 import com.sfc.archive.model.ArchiveParam;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 
-import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 @Slf4j
 public class ArchiveManagerImpl implements ArchiveManager {
+    private final Map<String, ArchiveCompressorProvider> compressorMap = new ConcurrentHashMap<>();
+    private final Map<String, ArchiveExtractorProvider> extractorMap = new ConcurrentHashMap<>();
+
     @Override
     public ArchiveCompressor getCompressor(ArchiveParam param, OutputStream outputStream) {
-        if ("zip".equals(param.getType())) {
-            return new ZipArchiveCompressor(outputStream, param.getEncoding());
+        ArchiveCompressorProvider compressorProvider = compressorMap.get(param.getType().toLowerCase());
+        if (compressorProvider != null) {
+            return compressorProvider.getCompressor(param, outputStream);
         } else {
-            throw new IllegalArgumentException("目前仅支持zip");
+            throw new IllegalArgumentException("不支持压缩的类型: " + param.getType());
         }
     }
 
     @Override
     public ArchiveExtractor getExtractor(ArchiveParam param, Resource resource) {
-        if ("zip".equals(param.getType())) {
-            if (resource instanceof PathResource) {
-                try {
-                    return new ZipArchiveExtractor(resource.getFile());
-                } catch (IOException e) {
-                    log.error("获取解压器出错", e);
-                    throw new RuntimeException(e);
-                }
-            } else {
-                throw new IllegalArgumentException("目前仅支持本地文件资源");
-            }
+        ArchiveExtractorProvider extractorProvider = extractorMap.get(param.getType().toLowerCase());
+        if (extractorProvider != null) {
+            return extractorProvider.getExtractor(param, resource);
         } else {
-            throw new IllegalArgumentException("目前仅支持zip");
+            throw new IllegalArgumentException("不支持解压的类型: " + param.getType());
+        }
+    }
+
+    @Override
+    public void registerCompressor(ArchiveCompressorProvider provider) {
+        for (String type : provider.getSupportsType()) {
+            ArchiveCompressorProvider exist = compressorMap.putIfAbsent(type.toLowerCase(), provider);
+            if (exist != provider) {
+                log.warn("压缩器类型冲突: {}，提供者将被忽略: {}", type, provider);
+            }
+        }
+    }
+
+    @Override
+    public void registerExtractor(ArchiveExtractorProvider provider) {
+        for (String type : provider.getSupportsType()) {
+            ArchiveExtractorProvider exist = extractorMap.putIfAbsent(type.toLowerCase(), provider);
+            if (exist != provider) {
+                log.warn("解压缩器类型冲突: {}，提供者将被忽略: {}", type, provider);
+            }
         }
     }
 }

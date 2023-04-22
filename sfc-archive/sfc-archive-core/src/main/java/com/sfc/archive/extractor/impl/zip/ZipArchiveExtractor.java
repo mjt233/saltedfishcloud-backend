@@ -1,5 +1,6 @@
-package com.sfc.archive.extractor.impl;
+package com.sfc.archive.extractor.impl.zip;
 
+import com.sfc.archive.model.ArchiveParam;
 import com.sfc.archive.model.CommonArchiveFile;
 import com.sfc.archive.extractor.AbstractArchiveExtractor;
 import com.sfc.archive.extractor.ArchiveExtractorVisitor;
@@ -18,15 +19,14 @@ import java.util.List;
 import java.util.zip.ZipException;
 
 /**
- * todo 兼容多种编码（或用户指定）
  * todo 防御ZIP炸弹
  */
 public class ZipArchiveExtractor extends AbstractArchiveExtractor {
     private final ZipFile zip;
 
-    public ZipArchiveExtractor(File file) throws IOException {
+    public ZipArchiveExtractor(ArchiveParam param, File file) throws IOException {
         try {
-            this.zip = new ZipFile(file, "GBK");
+            this.zip = new ZipFile(file, param.getEncoding());
         } catch (IOException e) {
             if (e.getCause() instanceof ZipException) {
                 throw (ZipException)e.getCause();
@@ -58,8 +58,6 @@ public class ZipArchiveExtractor extends AbstractArchiveExtractor {
             ZipArchiveEntry entry = entries.nextElement();
             try (InputStream in = zip.getInputStream(entry)){
                  res = visitor.walk(new CommonArchiveFile(entry), in);
-            } catch (Exception e) {
-                throw e;
             }
         }
         return null;
