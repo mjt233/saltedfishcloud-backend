@@ -11,7 +11,7 @@ import java.util.Collections;
 public class ZipArchiveCompressorProvider implements ArchiveCompressorProvider {
     @Override
     public ArchiveCompressor getCompressor(ArchiveParam param, OutputStream outputStream) {
-        return new ZipArchiveCompressor(param.getEncoding(), outputStream);
+        return new ZipArchiveCompressor(param, outputStream);
     }
 
     @Override

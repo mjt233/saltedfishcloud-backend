@@ -5,14 +5,19 @@ import com.sfc.archive.model.CommonArchiveFile;
 import com.sfc.archive.extractor.AbstractArchiveExtractor;
 import com.sfc.archive.extractor.ArchiveExtractorVisitor;
 import com.sfc.archive.model.ArchiveFile;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.springframework.core.io.Resource;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -21,25 +26,35 @@ import java.util.zip.ZipException;
 /**
  * todo 防御ZIP炸弹
  */
+@Slf4j
 public class ZipArchiveExtractor extends AbstractArchiveExtractor {
-    private final ZipFile zip;
+    private ZipFile zip;
 
-    public ZipArchiveExtractor(ArchiveParam param, File file) throws IOException {
-        try {
-            this.zip = new ZipFile(file, param.getEncoding());
-        } catch (IOException e) {
-            if (e.getCause() instanceof ZipException) {
-                throw (ZipException)e.getCause();
-            } else {
-                throw e;
-            }
+    private final ArchiveParam archiveParam;
+    private final Resource resource;
+
+    public ZipArchiveExtractor(ArchiveParam archiveParam, Resource resource) {
+        this.archiveParam = archiveParam;
+        this.resource = resource;
+    }
+
+    private void initZip() throws IOException {
+        if (this.zip == null) {
+            this.zip = new ZipFile(resourceToFile(resource) , archiveParam.getEncoding());
         }
+
     }
 
     @Override
     public void close() {
         try {
-            zip.close();
+            if (zip != null) {
+                zip.close();
+            }
+            if (tempArchivePath != null) {
+                log.info("待解压缩的临时文件移除：{}", tempArchivePath);
+                Files.deleteIfExists(tempArchivePath);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -52,6 +67,7 @@ public class ZipArchiveExtractor extends AbstractArchiveExtractor {
 
     @Override
     public ArchiveInputStream walk(ArchiveExtractorVisitor visitor) throws Exception {
+        initZip();
         Enumeration<ZipArchiveEntry> entries = zip.getEntries();
         ArchiveExtractorVisitor.Result res = ArchiveExtractorVisitor.Result.CONTINUE;
         while (entries.hasMoreElements() && res == ArchiveExtractorVisitor.Result.CONTINUE) {
@@ -65,11 +81,13 @@ public class ZipArchiveExtractor extends AbstractArchiveExtractor {
 
     @Override
     public InputStream getInputStream(String name) throws IOException, ArchiveException {
+        initZip();
         return this.zip.getInputStream(this.zip.getEntry(name));
     }
 
     @Override
-    public List<? extends ArchiveFile> listFiles() {
+    public List<? extends ArchiveFile> listFiles() throws IOException {
+        initZip();
         Enumeration<ZipArchiveEntry> entries = zip.getEntries();
         ArrayList<ArchiveFile> res = new ArrayList<>();
         while (entries.hasMoreElements()) {

@@ -46,8 +46,7 @@ import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PUBLIC;
 
 @Slf4j
 @Component
-public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFileSystem, ApplicationRunner, FeatureProvider, InitializingBean {
-    private final static String LOG_TITLE = "FileSystem";
+public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, InitializingBean {
 
     @Autowired
     private StoreServiceFactory storeServiceFactory;
@@ -71,9 +70,6 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
     private FileResourceMd5Resolver md5Resolver;
 
     @Autowired
-    private SysProperties sysProperties;
-
-    @Autowired
     private RedissonClient redisson;
 
     @Autowired
@@ -82,23 +78,10 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
     @Autowired
     private DiskFileSystemManager diskFileSystemManager;
 
-    @Autowired
-    @Getter
-    private ArchiveManager archiveManager;
 
     @Override
     public void afterPropertiesSet() throws Exception {
         diskFileSystemManager.setMainFileSystem(this);
-    }
-
-    @Override
-    protected RedissonClient getRedissonClient() {
-        return redisson;
-    }
-
-    @Override
-    protected SysProperties getSysProperties() {
-        return sysProperties;
     }
 
     /**
@@ -132,11 +115,6 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
     @Override
     public void saveAvatar(int uid, Resource resource) throws IOException {
         customStoreService.saveAvatar(uid, resource);
-    }
-
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
-        log.info("[{}]Archive File Encoding: {}", LOG_TITLE, sysProperties.getStore().getArchiveEncoding());
     }
 
 

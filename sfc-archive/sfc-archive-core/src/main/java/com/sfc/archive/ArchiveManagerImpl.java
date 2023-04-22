@@ -16,6 +16,7 @@ public class ArchiveManagerImpl implements ArchiveManager {
     private final Map<String, ArchiveCompressorProvider> compressorMap = new ConcurrentHashMap<>();
     private final Map<String, ArchiveExtractorProvider> extractorMap = new ConcurrentHashMap<>();
 
+
     @Override
     public ArchiveCompressor getCompressor(ArchiveParam param, OutputStream outputStream) {
         ArchiveCompressorProvider compressorProvider = compressorMap.get(param.getType().toLowerCase());

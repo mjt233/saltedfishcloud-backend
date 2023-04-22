@@ -51,38 +51,6 @@ public interface DiskFileSystem {
     boolean quickSave(int uid, String path, String name, String md5) throws IOException;
 
     /**
-     * 创建压缩文件并直接输出到输出流中，可用于多文件打包下载
-     * todo 实现异步执行和通知机制
-     * @param uid           用户ID
-     * @param path          被打包压缩的文件所在路径
-     * @param names         被压缩的文件名
-     * @param type          压缩类型
-     * @param outputStream  接收压缩数据的输出流
-     */
-    void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream)
-            throws IOException;
-
-    /**
-     * 创建一个压缩文件
-     * todo 实现异步执行和通知机制
-     * @param uid   用户ID
-     * @param path  输入的文件所在的网盘目录
-     * @param names 要被压缩的文件名集合
-     * @param dest  输出文件网盘路径
-     * @param type  压缩类型
-     */
-    void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException;
-
-    /**
-     * 解压一个压缩包到指定目录下
-     * todo 实现异步执行和通知机制
-     * @param uid   用户ID
-     * @param path  压缩包所在路径
-     * @param name  压缩包名称
-     * @param dest  解压目的地
-     */
-    void extractArchive(int uid, String path, String name, String dest) throws IOException;
-    /**
      * 判断给定的路径是否存在
      * @param uid   用户ID
      * @param path  要判断的文件路径

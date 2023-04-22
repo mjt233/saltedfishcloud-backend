@@ -20,12 +20,12 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-archive-api</artifactId>
-            <version>${version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-constants</artifactId>
-            <version>${version}</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

@@ -30,7 +30,7 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-constants</artifactId>
-            <version>${version}</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

@@ -94,21 +94,6 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {
-        throw new UnsupportedOperationException("不支持的操作");
-    }
-
-    @Override
-    public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException {
-        throw new UnsupportedOperationException("不支持的操作");
-    }
-
-    @Override
-    public void extractArchive(int uid, String path, String name, String dest) throws IOException {
-        throw new UnsupportedOperationException("不支持的操作");
-    }
-
-    @Override
     public boolean exist(int uid, String path) throws IOException {
         return storeHandler.exist(StringUtils.appendPath(basePath, path));
     }

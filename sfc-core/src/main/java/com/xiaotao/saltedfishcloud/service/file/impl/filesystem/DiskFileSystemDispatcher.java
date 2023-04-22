@@ -1,15 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
-import com.sfc.archive.ArchiveManager;
-import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.sfc.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.AbstractDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
@@ -80,7 +78,7 @@ class FileSystemMatchResult {
  */
 @Slf4j
 @Component
-public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements DiskFileSystem {
+public class DiskFileSystemDispatcher implements DiskFileSystem {
     private final static String LOG_PREFIX = "[FileSystemDispatcher]";
 
     @Getter
@@ -98,19 +96,6 @@ public class DiskFileSystemDispatcher extends AbstractDiskFileSystem implements 
     @Autowired
     private SysProperties sysProperties;
 
-    @Autowired
-    @Getter
-    private ArchiveManager archiveManager;
-
-    @Override
-    protected RedissonClient getRedissonClient() {
-        return redisson;
-    }
-
-    @Override
-    protected SysProperties getSysProperties() {
-        return sysProperties;
-    }
 
     public void setMainFileSystem(DiskFileSystem mainFileSystem) {
         if (this.mainFileSystem != null) {

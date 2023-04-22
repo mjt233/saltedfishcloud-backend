@@ -33,7 +33,7 @@ plugin:
 #    - sfc-ext/sfc-ext-samba-store
 #    - sfc-ext/sfc-ext-hadoop-store
 #    - sfc-ext/sfc-ext-mp3-thumbnail
-#    - sfc-ext/sfc-ext-sftp-store
+    - sfc-ext/sfc-ext-sftp-store
 #    - sfc-ext/sfc-ext-ftp-store
     - sfc-ext/sfc-ext-video-enhance
 
