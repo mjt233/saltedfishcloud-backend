@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.sfc.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
@@ -17,10 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;

@@ -2,25 +2,26 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.sfc.archive.service.DiskFileSystemArchiveService;
+import com.sfc.constant.error.FileSystemError;
+import com.sfc.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
-import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.sfc.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.*;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.sfc.enums.ArchiveType;
-import com.sfc.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.DiskFileSystemArchiveService;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
-import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.Api;
@@ -115,7 +116,7 @@ public class FileController {
     @PostMapping("compress")
     public JsonResult<Object> compress(@PathVariable @UID int uid,
                                @RequestBody FileTransferInfo files) throws IOException {
-        archiveService.compress(uid, files.getSource(), files.getFilenames(), files.getDest(), ArchiveType.ZIP);
+        archiveService.compress(uid, files.getSource(), files.getFilenames(), files.getDest());
         return JsonResult.emptySuccess();
     }
 

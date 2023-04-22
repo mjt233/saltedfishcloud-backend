@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.sfc.archive.ArchiveManager;
+import com.sfc.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
@@ -422,8 +423,8 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     public void registerFeature(HelloService helloService) {
-        helloService.appendFeatureDetail("archiveType", "zip");
-        helloService.appendFeatureDetail("extractArchiveType", "zip");
+        helloService.appendFeatureDetail(FeatureName.ARCHIVE_TYPE, "zip");
+        helloService.appendFeatureDetail(FeatureName.EXTRACT_ARCHIVE_TYPE, "zip");
     }
 
     @Override

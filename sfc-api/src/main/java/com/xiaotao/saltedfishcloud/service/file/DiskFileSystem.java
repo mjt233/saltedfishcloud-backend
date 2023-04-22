@@ -1,19 +1,15 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.sfc.archive.comporessor.ArchiveCompressor;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.sfc.enums.ArchiveType;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;

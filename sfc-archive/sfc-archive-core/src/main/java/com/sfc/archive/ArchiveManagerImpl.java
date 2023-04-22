@@ -41,7 +41,7 @@ public class ArchiveManagerImpl implements ArchiveManager {
     public void registerCompressor(ArchiveCompressorProvider provider) {
         for (String type : provider.getSupportsType()) {
             ArchiveCompressorProvider exist = compressorMap.putIfAbsent(type.toLowerCase(), provider);
-            if (exist != provider) {
+            if (exist != null) {
                 log.warn("压缩器类型冲突: {}，提供者将被忽略: {}", type, provider);
             }
         }
@@ -51,7 +51,7 @@ public class ArchiveManagerImpl implements ArchiveManager {
     public void registerExtractor(ArchiveExtractorProvider provider) {
         for (String type : provider.getSupportsType()) {
             ArchiveExtractorProvider exist = extractorMap.putIfAbsent(type.toLowerCase(), provider);
-            if (exist != provider) {
+            if (exist != null) {
                 log.warn("解压缩器类型冲突: {}，提供者将被忽略: {}", type, provider);
             }
         }

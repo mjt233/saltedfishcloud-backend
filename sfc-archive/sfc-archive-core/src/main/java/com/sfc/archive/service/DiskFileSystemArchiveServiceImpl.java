@@ -1,40 +1,37 @@
-package com.xiaotao.saltedfishcloud.service;
+package com.sfc.archive.service;
 
 import com.sfc.archive.ArchiveManager;
 import com.sfc.archive.comporessor.ArchiveCompressor;
-import com.sfc.archive.comporessor.ArchiveResourceEntry;
 import com.sfc.archive.extractor.ArchiveExtractor;
 import com.sfc.archive.extractor.ArchiveExtractorVisitor;
 import com.sfc.archive.model.ArchiveParam;
-import com.sfc.constant.error.FileSystemError;
+import com.sfc.archive.model.DiskFileSystemCompressParam;
+import com.sfc.archive.DiskFileSystemArchiveHelper;
+import com.sfc.constant.AsyncTaskType;
 import com.sfc.enums.ArchiveError;
-import com.sfc.enums.ArchiveType;
+import com.sfc.task.AsyncTaskManager;
+import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StreamUtils;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 import java.util.zip.ZipException;
 
 /**
@@ -42,8 +39,8 @@ import java.util.zip.ZipException;
  *
  * todo 对接异步任务系统
  */
-@Service
 @Slf4j
+@Service
 public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveService {
     @Autowired
     private DiskFileSystemManager diskFileSystemManager;
@@ -54,96 +51,63 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
     @Autowired
     private ArchiveManager archiveManager;
 
+    @Autowired
+    private AsyncTaskManager asyncTaskManager;
+
     @Override
-    public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {
-        ArchiveParam archiveParam = ArchiveParam.builder()
-                .encoding(sysProperties.getStore().getArchiveEncoding())
-                .type("zip")
+    public void compressAndWriteOut(int uid, String path, Collection<String> names, OutputStream outputStream) throws IOException {
+        DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
+        DiskFileSystemCompressParam param = DiskFileSystemCompressParam.builder()
+                .archiveParam(ArchiveParam.builder()
+                        .encoding(sysProperties.getStore().getArchiveEncoding())
+                        .type("zip")
+                        .build())
+                .sourceNames(names)
+                .sourceUid((long) uid)
+                .sourcePath(path)
                 .build();
-        try(ArchiveCompressor compressor = archiveManager.getCompressor(archiveParam, outputStream)) {
-            compress(uid, path, path, names, compressor);
+
+        try(ArchiveCompressor compressor = DiskFileSystemArchiveHelper.compressAndWriteOut(fileSystem, archiveManager, param, outputStream)) {
             compressor.start();
         }
     }
 
-    /**
-     * 压缩目录下指定的文件
-     * @param uid       用户ID
-     * @param root      压缩根
-     * @param path      路径
-     * @param names     文件名集合
-     * @param compressor    压缩器
-     */
-    private void compress(int uid, String root, String path, Collection<String> names, ArchiveCompressor compressor) throws IOException {
-        String curDir = StringUtils.removePrefix(root, path).replaceAll("//+", "").replaceAll("^/+", "");
-        for (String name : names) {
-            Resource resource = diskFileSystemManager.getMainFileSystem().getResource(uid, path, name);
-            if (resource == null) {
-                compressDir(uid, root, StringUtils.appendPath(path, name), compressor, 1);
-            } else {
-                compressor.addFile(new ArchiveResourceEntry(
-                        curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name),
-                        resource.contentLength(),
-                        resource
-                ));
-            }
-        }
-    }
-
-    /**
-     * 压缩目标文件夹内的所有内容
-     * @param uid   用户ID
-     * @param root  压缩根路径
-     * @param path  要压缩的完整目录路径
-     * @param compressor    压缩器
-     * @param depth         当前压缩深度
-     */
-    private void compressDir(int uid, String root, String path, ArchiveCompressor compressor, int depth) throws IOException {
-        DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
-        List<FileInfo>[] list = fileSystem.getUserFileList(uid, path);
-        String curPath = StringUtils.removePrefix(root, path).replaceAll("//+", "/").replaceAll("^/+", "");
-        compressor.addFile(new ArchiveResourceEntry(
-                curPath + "/",
-                0,
-                null
-        ));
-        for (FileInfo file : list[1]) {
-            compressor.addFile(new ArchiveResourceEntry(
-                    curPath + "/" + file.getName(), file.getSize(), fileSystem.getResource(uid, path, file.getName()))
-            );
-        }
-
-        for (FileInfo file : list[0]) {
-            compressor.addFile(new ArchiveResourceEntry(curPath + "/" + file.getName() + "/", 0, null));
-            compressDir(uid, root, path + "/" + file.getName(), compressor, depth + 1);
-        }
-    }
 
     @Override
-    public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException {
+    public void compress(int uid, String path, Collection<String> names, String dest) throws IOException {
         DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
-        boolean exist = fileSystem.exist(uid, dest);
-        if (exist && fileSystem.getResource(uid, dest, "") == null) {
-            throw new JsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
-        }
+        DiskFileSystemArchiveHelper.testIsFileWritable(fileSystem, uid, dest);
         Path temp = Paths.get(PathUtils.getTempDirectory() + "/temp_zip" + System.currentTimeMillis());
         try(OutputStream output = Files.newOutputStream(temp)) {
+            compressAndWriteOut(uid, path, names, output);
+
+            final FileInfo fileInfo = FileInfo.getLocal(temp.toString());
+
             PathBuilder pb = new PathBuilder();
             pb.setForcePrefix(true);
             pb.append(dest);
-            compressAndWriteOut(uid, path, names, ArchiveType.ZIP, output);
-            final FileInfo fileInfo = FileInfo.getLocal(temp.toString());
+
             fileInfo.setName(pb.range(1, -1).replace("/", ""));
 
-            if (exist) {
-                fileSystem.deleteFile(uid, PathUtils.getParentPath(dest), Collections.singletonList(PathUtils.getLastNode(dest)));
-            }
             fileSystem.moveToSaveFile(uid, temp, pb.range(-1), fileInfo);
         } finally {
             Files.deleteIfExists(temp);
         }
     }
 
+    @Override
+    public long asyncCompress(DiskFileSystemCompressParam param) throws IOException {
+        AsyncTaskRecord record = new AsyncTaskRecord();
+        record.setName(AsyncTaskType.ARCHIVE_COMPRESS + "-" + param.getArchiveParam().getType());
+        record.setTaskType(AsyncTaskType.ARCHIVE_COMPRESS);
+        record.setCpuOverhead(10);
+        record.setParams(MapperHolder.toJson(param));
+        User curUser = SecureUtils.getSpringSecurityUser();
+        record.setUid(Optional.ofNullable(curUser).map(e -> e.getId().longValue()).orElse(param.getSourceUid()));
+
+        asyncTaskManager.submitAsyncTask(record);
+        return 0;
+    }
 
     /**
      * todo 使用任务队列控制同时进行解压缩的数量

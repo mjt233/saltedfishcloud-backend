@@ -1,6 +1,6 @@
-package com.xiaotao.saltedfishcloud.service;
+package com.sfc.archive.service;
 
-import com.sfc.enums.ArchiveType;
+import com.sfc.archive.model.DiskFileSystemCompressParam;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -19,7 +19,7 @@ public interface DiskFileSystemArchiveService {
      * @param outputStream  接收压缩数据的输出流
      * @return 任务id
      */
-    void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream)
+    void compressAndWriteOut(int uid, String path, Collection<String> names, OutputStream outputStream)
             throws IOException;
 
     /**
@@ -31,7 +31,14 @@ public interface DiskFileSystemArchiveService {
      * @param type  压缩类型
      * @return 任务id
      */
-    void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException;
+    void compress(int uid, String path, Collection<String> names, String dest) throws IOException;
+
+    /**
+     * 通过异步任务进行压缩文件操作
+     * @param param     任务参数
+     * @return          任务id
+     */
+    long asyncCompress(DiskFileSystemCompressParam param) throws IOException;
 
     /**
      * 解压一个压缩包到指定目录下
