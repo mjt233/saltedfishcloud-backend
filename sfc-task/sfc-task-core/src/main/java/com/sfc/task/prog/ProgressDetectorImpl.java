@@ -72,7 +72,7 @@ public class ProgressDetectorImpl implements ProgressDetector {
             if (record != null) {
                 final long newLoaded = record.getLoaded() - (lastRecord == null ? 0 : lastRecord.getLoaded());
                 final long useTime = System.currentTimeMillis() - record.getLastUpdateTime();
-                final long speedPreSecond = (newLoaded / useTime)*1000;
+                final long speedPreSecond = (newLoaded / useTime == 0 ? 1 : useTime)*1000;
                 provider.updateSpeed(speedPreSecond);
                 if (log.isDebugEnabled()) {
                     log.debug("{}任务进度速度更新{}：{}/s 进度：{}%",

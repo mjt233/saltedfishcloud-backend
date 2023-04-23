@@ -106,7 +106,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
         record.setUid(Optional.ofNullable(curUser).map(e -> e.getId().longValue()).orElse(param.getSourceUid()));
 
         asyncTaskManager.submitAsyncTask(record);
-        return 0;
+        return record.getId();
     }
 
     /**

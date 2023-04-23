@@ -22,7 +22,7 @@ public class ArchiveUtils {
             } else {
 
                 // 找到了（如：新建文件夹/子文件夹/
-                res = full.substring(pos + 1, full.length() - 1);
+                res = full.substring(p2 + 1, full.length() - 1);
             }
         } else {
 

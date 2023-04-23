@@ -159,6 +159,7 @@ public class CompressAsyncTask implements AsyncTask {
             saveToFileSystem(localPath);
 
         } catch (RuntimeException | Error | IOException e) {
+            log.error("任务异常",e);
             taskLog.error("任务异常：" + e.getMessage());
             taskLog.error(e);
         } finally {
