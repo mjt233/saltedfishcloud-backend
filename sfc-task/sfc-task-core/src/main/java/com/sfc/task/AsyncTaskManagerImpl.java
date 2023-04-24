@@ -29,6 +29,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -63,6 +64,15 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
                 registerFactory(factory);
             }
         }
+    }
+
+    @Override
+    public AsyncTaskRecord waitTaskExit(Long taskId, long timeout) throws IOException {
+        return null;
+    }
+
+    @Override
+    public void onTaskExit(Long taskId, long timeout, Consumer<AsyncTaskRecord> consumer) throws IOException {
     }
 
     @Override

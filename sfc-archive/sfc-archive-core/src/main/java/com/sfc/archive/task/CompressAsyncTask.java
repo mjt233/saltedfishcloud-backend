@@ -91,16 +91,18 @@ public class CompressAsyncTask implements AsyncTask {
             @Override
             public void onFinishCompress(long consumeTime) {
                 taskLog.info("压缩任务完成，总耗时: %.2f s" + consumeTime / 1000.0);
+                log.debug("压缩任务完成，总耗时:{} s", consumeTime / 1000.0);
             }
 
             @Override
             public void onFileBeginHandle(ArchiveFile archiveFile) {
+                log.debug("压缩文件:{}", archiveFile.getName());
                 taskLog.info("开始压缩文件: " + archiveFile.getName() + "...");
             }
 
             @Override
             public void onFileFinishCompress(ArchiveFile archiveFile, long consumeTime) {
-                progressRecord.setLoaded(progressRecord.getLoaded());
+                progressRecord.setLoaded(compressor.getLoaded());
                 taskLog.info("文件压缩完成: " + archiveFile.getName() + " - 耗时 " + consumeTime + " ms");
             }
         });
@@ -138,27 +140,27 @@ public class CompressAsyncTask implements AsyncTask {
 
         taskLog.info("正在读取待压缩文件列表...");
         long begin = System.currentTimeMillis();
-        try(
-                OutputStream outputStream = Files.newOutputStream(localPath);
-                ArchiveCompressor compressor = DiskFileSystemArchiveHelper.compressAndWriteOut(fileSystem, archiveManager, compressParam, outputStream)
-        ) {
-            this.compressor = compressor;
+        try {
+            try (OutputStream outputStream = Files.newOutputStream(localPath);
+                 ArchiveCompressor compressor = DiskFileSystemArchiveHelper.compressAndWriteOut(fileSystem, archiveManager, compressParam, outputStream)
+            ) {
 
-            // 输出初始化信息
-            logBasicInfo(System.currentTimeMillis() - begin);
-            progressRecord.setLoaded(compressor.getLoaded());
-            progressRecord.setTotal(compressor.getTotal());
+                this.compressor = compressor;
 
-            // 绑定事件处理
-            initEventHandler();
+                // 输出初始化信息
+                logBasicInfo(System.currentTimeMillis() - begin);
+                progressRecord.setLoaded(compressor.getLoaded());
+                progressRecord.setTotal(compressor.getTotal());
 
-            // 开始压缩
-            compressor.start();
+                // 绑定事件处理
+                initEventHandler();
 
+                // 开始压缩
+                compressor.start();
+            }
             // 保存压缩结果到网盘
             saveToFileSystem(localPath);
-
-        } catch (RuntimeException | Error | IOException e) {
+        }  catch (RuntimeException | Error | IOException e) {
             log.error("任务异常",e);
             taskLog.error("任务异常：" + e.getMessage());
             taskLog.error(e);

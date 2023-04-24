@@ -167,7 +167,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
             throw exception;
         } catch (IOException e) {
             e.printStackTrace();
-            throw new JsonException(500, "存储出错或可能存在冲突的文件与文件夹名");
+            throw new JsonException(500, "解压缩出错: " + e.getCause().getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             throw new JsonException(e.getMessage());

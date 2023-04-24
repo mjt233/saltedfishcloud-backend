@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.Proxy;
 
 import javax.persistence.Entity;
+import javax.persistence.Transient;
 import java.util.Date;
 
 /**
@@ -73,5 +74,8 @@ public class AsyncTaskRecord extends AuditModel {
      * 如100表示该任务可能会耗尽1个CPU核心的计算能力
      */
     private Integer cpuOverhead;
+
+    @Transient
+    private Boolean isFailed;
 
 }
