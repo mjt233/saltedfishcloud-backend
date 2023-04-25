@@ -1,12 +1,11 @@
 package com.sfc.archive.service;
 
 import com.sfc.archive.ArchiveManager;
+import com.sfc.archive.DiskFileSystemArchiveHelper;
 import com.sfc.archive.comporessor.ArchiveCompressor;
 import com.sfc.archive.extractor.ArchiveExtractor;
-import com.sfc.archive.extractor.ArchiveExtractorVisitor;
 import com.sfc.archive.model.ArchiveParam;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
-import com.sfc.archive.DiskFileSystemArchiveHelper;
 import com.sfc.constant.AsyncTaskType;
 import com.sfc.enums.ArchiveError;
 import com.sfc.task.AsyncTaskManager;
@@ -21,7 +20,6 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -132,33 +130,27 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
 
         try(ArchiveExtractor extractor = archiveManager.getExtractor(archiveParam,resource)) {
 
-
             // 先解压文件到本地，并在网盘中先创建好文件夹
-            try(
-                    final ArchiveInputStream ignored = extractor.walk(((file, stream) -> {
-                        Path localTemp = Paths.get(tempBasePath + "/" + file.getPath());
-                        if (file.isDirectory()) {
-                            log.debug("创建文件夹：{}", localTemp);
-                            Files.createDirectories(localTemp);
-                            fileSystem.mkdirs(uid, dest + "/" + file.getPath());
-                        } else {
-                            log.debug("解压文件：{}", localTemp);
-                            Files.copy(stream, localTemp);
-                        }
-                        return ArchiveExtractorVisitor.Result.CONTINUE;
-                    }))
-            ) {
-                Files.walkFileTree(tempBasePath, new SimpleFileVisitor<>() {
-                    final int tempLen = tempBasePath.toString().length();
+            extractor.extractAll(tempBasePath);
+            Files.walkFileTree(tempBasePath, new SimpleFileVisitor<>() {
+                final int tempLen = tempBasePath.toString().length();
 
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        String diskPath = dest + "/" + file.getParent().toString().substring(tempLen);
-                        fileSystem.moveToSaveFile(uid, file, diskPath, FileInfo.getLocal(file.toString()));
-                        return FileVisitResult.CONTINUE;
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    String diskPath = StringUtils.appendPath(dest, (dir.toString().substring(tempLen)).replaceAll("\\\\+", "/"));
+                    if(!fileSystem.exist(uid, diskPath)) {
+                        fileSystem.mkdirs(uid, diskPath);
                     }
-                });
-            }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    String diskPath = StringUtils.appendPath(dest, (file.getParent().toString().substring(tempLen)).replaceAll("\\\\+", "/"));
+                    fileSystem.moveToSaveFile(uid, file, diskPath, FileInfo.getLocal(file.toString()));
+                    return FileVisitResult.CONTINUE;
+                }
+            });
         } catch (ZipException | ArchiveException e) {
             JsonException exception = new JsonException(ArchiveError.ARCHIVE_FORMAT_UNSUPPORTED);
             exception.initCause(e);
@@ -167,7 +159,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
             throw exception;
         } catch (IOException e) {
             e.printStackTrace();
-            throw new JsonException(500, "解压缩出错: " + e.getCause().getMessage());
+            throw new JsonException(500, "解压缩出错: " + Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse(e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             throw new JsonException(e.getMessage());

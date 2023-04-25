@@ -2,9 +2,6 @@ package com.sfc.archive;
 
 import com.sfc.archive.model.ArchiveFile;
 
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
 /**
  * 压缩文件处理事件监听器
  */
@@ -22,7 +19,7 @@ public interface ArchiveHandleEventListener {
      * @param archiveFile 处理完成的文件
      * @param consumeTime 为耗时（ms）
      */
-    default void onFileFinishCompress(ArchiveFile archiveFile, long consumeTime) {
+    default void onFileFinishHandle(ArchiveFile archiveFile, long consumeTime) {
 
     }
 
@@ -38,7 +35,7 @@ public interface ArchiveHandleEventListener {
      * 整个压缩文件处理任务开始时的回调，表示文件压缩或文件解压缩任务开始执行
      * @param runnable 事件处理回调函数，借用Runnable无参数无返回的函数时接口
      */
-    default void onBeginHandle() {
+    default void onBegin() {
 
     }
 
@@ -46,7 +43,7 @@ public interface ArchiveHandleEventListener {
      * 整个文件处理任务完成时的回调，表示文件压缩或文件解压缩任务执行完成执行
      * @param consumeTime  整个任务的处理耗时(ms)
      */
-    default void onFinishCompress(long consumeTime) {
+    default void onFinish(long consumeTime) {
 
     }
 

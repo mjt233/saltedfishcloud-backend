@@ -18,6 +18,7 @@ public interface ArchiveExtractor extends Closeable, ArchiveEventListenable {
     /**
      * 访问压缩包内的文件
      * @param visitor  访问器
+     * @return 压缩文件流，未关闭状态
      */
     ArchiveInputStream walk(ArchiveExtractorVisitor visitor) throws Exception;
 

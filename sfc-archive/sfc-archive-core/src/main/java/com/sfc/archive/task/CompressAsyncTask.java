@@ -89,7 +89,7 @@ public class CompressAsyncTask implements AsyncTask {
             }
 
             @Override
-            public void onFinishCompress(long consumeTime) {
+            public void onFinish(long consumeTime) {
                 taskLog.info("压缩任务完成，总耗时: %.2f s" + consumeTime / 1000.0);
                 log.debug("压缩任务完成，总耗时:{} s", consumeTime / 1000.0);
             }
@@ -101,7 +101,7 @@ public class CompressAsyncTask implements AsyncTask {
             }
 
             @Override
-            public void onFileFinishCompress(ArchiveFile archiveFile, long consumeTime) {
+            public void onFileFinishHandle(ArchiveFile archiveFile, long consumeTime) {
                 progressRecord.setLoaded(compressor.getLoaded());
                 taskLog.info("文件压缩完成: " + archiveFile.getName() + " - 耗时 " + consumeTime + " ms");
             }

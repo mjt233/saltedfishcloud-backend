@@ -17,12 +17,14 @@ import org.springframework.util.StreamUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -156,19 +158,42 @@ public abstract class AbstractArchiveExtractor implements ArchiveExtractor {
 
     @Override
     public void extractAll(Path dest) throws IOException {
-        try(InputStream ignore = walk(((file, stream) -> {
+        long taskBegin = System.currentTimeMillis();
+        AtomicReference<ArchiveFile> curFile = new AtomicReference<>();
+        try(InputStream ignored = walk(((file, stream) -> {
+            curFile.set(file);
+            listeners.forEach(ArchiveHandleEventListener::onBegin);
+
             Path target = Paths.get(dest + "/" + file.getPath());
             if (file.isDirectory()) {
+                listeners.forEach(e -> e.onDirCreate(file));
                 Files.createDirectories(target);
             } else {
+                listeners.forEach(e -> e.onFileBeginHandle(file));
                 if (!Files.exists(target.getParent())) Files.createDirectories(target.getParent());
-                StreamUtils.copy(stream, Files.newOutputStream(target));
+                long begin = System.currentTimeMillis();
+
+                try(OutputStream targetOutput = Files.newOutputStream(target)) {
+                    StreamUtils.copy(stream, targetOutput);
+                }
+
+                long end = System.currentTimeMillis() - begin;
+                listeners.forEach(e -> e.onFileFinishHandle(file, end));
             }
             return ArchiveExtractorVisitor.Result.CONTINUE;
         }))) {
+            long taskEnd = System.currentTimeMillis();
             log.debug("完成解压：{}", dest);
-        } catch (Exception e) {
-            e.printStackTrace();
+            listeners.forEach(e -> e.onFinish(taskEnd - taskBegin));
+        } catch (Throwable e) {
+            log.error("解压出错:", e);
+            listeners.forEach(el -> {
+                try {
+                    el.onError(curFile.get(), e);
+                } catch (Throwable err) {
+                    log.error("onError事件处理出错: ", err);
+                }
+            });
             throw new IOException(e.getCause());
         }
     }

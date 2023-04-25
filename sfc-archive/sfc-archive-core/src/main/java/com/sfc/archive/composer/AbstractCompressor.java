@@ -15,9 +15,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * 抽象压缩器，基于apache-commons-compress的压缩工具，使用addFile添加完文件后即可进行压缩。<br>
@@ -95,7 +93,7 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
         archiveOutputStream = initArchiveOutputStream();
 
         taskBeginTime = System.currentTimeMillis();
-        listeners.forEach(ArchiveHandleEventListener::onBeginHandle);
+        listeners.forEach(ArchiveHandleEventListener::onBegin);
 
         for (ArchiveResourceEntry entry : entryList) {
             compressFile(entry);
@@ -103,7 +101,7 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
 
         if (taskEndTime == 0) {
             taskEndTime = System.currentTimeMillis();
-            listeners.forEach(listener -> listener.onFinishCompress(taskEndTime - taskBeginTime));
+            listeners.forEach(listener -> listener.onFinish(taskEndTime - taskBeginTime));
         }
     }
 
@@ -122,7 +120,7 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
                 listeners.forEach(listener -> listener.onFileBeginHandle(entry));
                 try(InputStream in = entry.getInputStream()) {
                     loaded += StreamUtils.copy(in, archiveOutputStream);
-                    listeners.forEach(listener -> listener.onFileFinishCompress(entry, System.currentTimeMillis() - fileBeginTime));
+                    listeners.forEach(listener -> listener.onFileFinishHandle(entry, System.currentTimeMillis() - fileBeginTime));
                 } catch (IOException e) {
                     archiveOutputStream.close();
                     throw e;
