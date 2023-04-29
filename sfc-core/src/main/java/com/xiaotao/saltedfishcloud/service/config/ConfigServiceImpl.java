@@ -163,7 +163,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
             c.accept(value);
         }
         configDao.setConfigure(key, value);
-        mqService.send(MQTopic.CONFIG_CHANGE, new NameValueType<>(key, value));
+        mqService.sendBroadcast(MQTopic.CONFIG_CHANGE, new NameValueType<>(key, value));
         return true;
     }
 
@@ -174,9 +174,9 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     @EventListener(ApplicationStartedEvent.class)
     @SuppressWarnings("unchecked")
     public void subscribeConfigSetEvent() {
-        mqService.subscribe(MQTopic.CONFIG_CHANGE, msg -> {
+        mqService.subscribeBroadcast(MQTopic.CONFIG_CHANGE, msg -> {
             try {
-                NameValueType<String> nameValue = (NameValueType<String>)MapperHolder.parseAsJson(msg, NameValueType.class);
+                NameValueType<String> nameValue = (NameValueType<String>)MapperHolder.parseAsJson(msg.getBody(), NameValueType.class);
                 log.info("{}配置项{}设置值：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue());
                 for (Consumer<String> c : configAfterSetListeners.getOrDefault(nameValue.getName(), Collections.emptyList())) {
                     try {
@@ -185,7 +185,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
                         log.error("{}配置项{}值设置后置处理出错，变更内容：{}，错误：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue(), e);
                     }
                 }
-            } catch (JsonProcessingException e) {
+            } catch (IOException e) {
                 log.error("{}配置项值设置后置处理json解析出错，变更内容：{}，错误：{}", LOG_PREFIX, msg, e);
             }
         });

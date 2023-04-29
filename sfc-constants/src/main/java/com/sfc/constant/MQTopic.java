@@ -28,4 +28,14 @@ public interface MQTopic {
      * 系统重启
      */
     String RESTART = "restart";
+
+    /**
+     * 前缀类型的消息主题
+     */
+    interface Prefix {
+        /**
+         * 异步任务执行退出消息
+         */
+        String ASYNC_TASK_EXIT = "async_task_exit/";
+    }
 }

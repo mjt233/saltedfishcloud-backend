@@ -5,6 +5,7 @@ import com.sfc.task.prog.ProgressRecord;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -21,18 +22,11 @@ public interface AsyncTaskManager {
     /**
      * 阻塞等待任务完成
      * @param taskId        任务id
-     * @param timeout       最长超时等待时间（ms），负数表示不限制
+     * @param timeout       最长超时等待时间
+     * @param timeUnit      超时等待时间单位
      * @return              任务信息，包含是否失败字段
      */
-    AsyncTaskRecord waitTaskExit(Long taskId, long timeout) throws IOException;
-
-    /**
-     * 监听任务完成，当任务完成时触发回调
-     * @param taskId        任务id
-     * @param timeout       最长超时等待时间（ms），负数表示不限制
-     * @param consumer      任务完成时触发的消费函数，参数为任务信息，包含是否失败字段
-     */
-    void onTaskExit(Long taskId, long timeout, Consumer<AsyncTaskRecord> consumer) throws IOException;
+    AsyncTaskRecord waitTaskExit(Long taskId, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException;
 
     /**
      * 注册一个任务工厂

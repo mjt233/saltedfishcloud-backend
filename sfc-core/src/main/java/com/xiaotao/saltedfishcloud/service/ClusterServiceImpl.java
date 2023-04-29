@@ -15,6 +15,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -54,7 +55,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
                 .map(obj -> {
                     try {
                         return MapperHolder.parseAsJson(obj, ClusterNodeInfo.class);
-                    } catch (JsonProcessingException e) {
+                    } catch (IOException e) {
                         throw new IllegalArgumentException(e);
                     }
                 }).collect(Collectors.toList());
@@ -68,7 +69,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
                 return null;
             }
             return MapperHolder.parseAsJson(obj, ClusterNodeInfo.class);
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             log.error("节点信息解析错误：",e);
             return null;
         }
@@ -110,14 +111,14 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
         Boolean success = redisTemplate.opsForValue().setIfAbsent(getKey(), self);
         redisTemplate.expire(getKey(), Duration.ofSeconds(30));
         if (Boolean.TRUE.equals(success)) {
-            mqService.send(MQTopic.CLUSTER_NODE_ONLINE, self);
+            mqService.sendBroadcast(MQTopic.CLUSTER_NODE_ONLINE, self);
         }
 
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        mqService.subscribe(MQTopic.CLUSTER_NODE_ONLINE, msg -> log.info("[集群管理]集群节点上线:{}", msg.toString()));
+        mqService.subscribeBroadcast(MQTopic.CLUSTER_NODE_ONLINE, msg -> log.info("[集群管理]集群节点上线:{}", msg.getBody().toString()));
         registerSelf();
     }
 }

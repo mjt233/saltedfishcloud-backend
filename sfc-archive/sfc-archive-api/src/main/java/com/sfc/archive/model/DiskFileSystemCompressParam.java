@@ -46,4 +46,8 @@ public class DiskFileSystemCompressParam {
      */
     private ArchiveParam archiveParam;
 
+    /**
+     * 若通过异步任务方式执行，是否阻塞等待任务完成
+     */
+    private Boolean waitExit;
 }

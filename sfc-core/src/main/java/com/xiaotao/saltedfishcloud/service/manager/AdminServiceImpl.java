@@ -248,7 +248,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        mqService.subscribe(MQTopic.RESTART, msg -> doRestart());
+        mqService.subscribeBroadcast(MQTopic.RESTART, msg -> doRestart());
     }
 
     @Override
@@ -256,7 +256,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
         if (!withCluster) {
             doRestart();
         } else {
-            mqService.send(MQTopic.RESTART, "");
+            mqService.sendBroadcast(MQTopic.RESTART, "");
         }
     }
 }

@@ -30,6 +30,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipException;
 
 /**
@@ -104,6 +105,16 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
         record.setUid(Optional.ofNullable(curUser).map(e -> e.getId().longValue()).orElse(param.getSourceUid()));
 
         asyncTaskManager.submitAsyncTask(record);
+
+        if (Boolean.TRUE.equals(param.getWaitExit())) {
+            try {
+                return Optional.ofNullable(asyncTaskManager.waitTaskExit(record.getId(), 1, TimeUnit.HOURS))
+                        .orElse(record)
+                        .getId();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            }
+        }
         return record.getId();
     }
 

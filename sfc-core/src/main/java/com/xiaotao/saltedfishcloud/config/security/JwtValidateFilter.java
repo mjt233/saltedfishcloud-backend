@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,7 +23,6 @@ import java.io.IOException;
  */
 @Slf4j
 public class JwtValidateFilter extends OncePerRequestFilter {
-    private final static ObjectMapper MAPPER = new ObjectMapper();
     private final TokenServiceImpl tokenDao;
 
     public JwtValidateFilter(TokenServiceImpl tokenDao) {
@@ -55,7 +55,7 @@ public class JwtValidateFilter extends OncePerRequestFilter {
             // 获取到token
                 // 将其token的负载数据json反序列化为User对象
             try {
-                User user = MAPPER.readValue(JwtUtils.parse(token), User.class);
+                User user = MapperHolder.mapper.readValue(JwtUtils.parse(token), User.class);
                 user.setToken(token);
                 // 判断token是否有效（是否存在redis）
                 if (tokenDao.isTokenValid(user.getId(), token)) {

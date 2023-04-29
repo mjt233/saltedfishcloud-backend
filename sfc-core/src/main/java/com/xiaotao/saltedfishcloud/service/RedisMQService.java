@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service;
 
 
+import com.xiaotao.saltedfishcloud.model.MQMessage;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,13 +11,14 @@ import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 @Service
 @Slf4j
-public class MQServiceImpl implements MQService {
+public class RedisMQService implements MQService {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -27,14 +29,19 @@ public class MQServiceImpl implements MQService {
 
 
     @Override
-    public void send(String topic, Object msg) {
+    public void sendBroadcast(String topic, Object msg) {
         redisTemplate.convertAndSend(topic, msg);
     }
 
     @Override
-    public long subscribe(String topic, Consumer<Object> consumer) {
+    public long subscribeBroadcast(String topic, Consumer<MQMessage> consumer) {
         long id = IdUtil.getId();
-        MessageListener listener = (message, pattern) -> consumer.accept(message);
+        MessageListener listener = (message, pattern) -> consumer.accept(
+                MQMessage.builder()
+                        .topic(new String(message.getChannel(), StandardCharsets.UTF_8))
+                        .body(new String(message.getBody(), StandardCharsets.UTF_8))
+                        .build()
+        );
         redisMessageListenerContainer.addMessageListener(listener, new PatternTopic(topic));
         listenerMap.put(id, listener);
         return id;

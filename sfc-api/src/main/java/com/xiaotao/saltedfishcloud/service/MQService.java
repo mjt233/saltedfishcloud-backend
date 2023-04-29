@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service;
 
+import com.xiaotao.saltedfishcloud.model.MQMessage;
+
 import java.util.function.Consumer;
 
 /**
@@ -8,19 +10,19 @@ import java.util.function.Consumer;
 public interface MQService {
 
     /**
-     * 发送消息
+     * 发送消息广播
      * @param topic 主题
      * @param msg   消息内容
      */
-    void send(String topic, Object msg);
+    void sendBroadcast(String topic, Object msg);
 
     /**
-     * 订阅
+     * 订阅消息广播
      * @param topic 订阅主题
      * @param consumer  消费函数
      * @return  订阅者id
      */
-    long subscribe(String topic, Consumer<Object> consumer);
+    long subscribeBroadcast(String topic, Consumer<MQMessage> consumer);
 
     /**
      * 取消订阅
