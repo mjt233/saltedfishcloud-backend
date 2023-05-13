@@ -46,8 +46,8 @@ public class MapperHolder {
         mapper.registerModule(simpleModule);
     }
 
-    public static <T> T parseJson(String json, Class<T> clazz) throws JsonProcessingException {
-        return mapper.readValue(json, clazz);
+    public static <T> T parseJson(String json, Class<T> clazz) throws IOException {
+        return parseAsJson(json, clazz);
     }
 
     @SuppressWarnings("unchecked")

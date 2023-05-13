@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SFTPProperty {
     private String host;
+    @Builder.Default
     private Integer port = 22;
     private String username;
     private String password;

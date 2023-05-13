@@ -53,7 +53,7 @@ public interface ConfigService {
      */
     String getConfig(String key);
 
-    default <T> T getJsonConfig(String key, Class<T> clazz) throws JsonProcessingException {
+    default <T> T getJsonConfig(String key, Class<T> clazz) throws IOException {
         String config = getConfig(key);
         if (config == null) {
             return null;

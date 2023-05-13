@@ -49,6 +49,20 @@ public interface AsyncTaskManager {
     Resource getTaskLog(Long taskId, boolean withHistory) throws IOException;
 
     /**
+     * 监听任务的日志
+     * @param taskId        任务id
+     * @param consumer      日志消费函数
+     * @return              监听id
+     */
+    long listenLog(Long taskId, Consumer<String> consumer);
+
+    /**
+     * 移除日志的监听
+     * @param listenId  监听id
+     */
+    void removeLogListen(Long listenId);
+
+    /**
      * 获取任务进度
      * @param taskId 任务id
      */

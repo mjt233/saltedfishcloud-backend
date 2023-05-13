@@ -67,7 +67,13 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-<!--        <dependency>-->
+
+        <!--   WebSocket     -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <!--        <dependency>-->
 <!--            <groupId>net.java.dev.jna</groupId>-->
 <!--            <artifactId>jna</artifactId>-->
 <!--            <version>${jna.version}</version>-->

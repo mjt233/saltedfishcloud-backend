@@ -13,6 +13,8 @@ import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+
 /**
  * 压缩文件任务工厂
  */
@@ -32,7 +34,7 @@ public class CompressAsyncTaskFactory implements AsyncTaskFactory {
             asyncTask.setArchiveManager(archiveManager);
             asyncTask.setFileSystem(diskFileSystemManager.getMainFileSystem());
             return asyncTask;
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

@@ -33,9 +33,20 @@ public interface MQTopic {
      * 前缀类型的消息主题
      */
     interface Prefix {
+
+        /**
+         * Redis Stream前缀
+         */
+        String STREAM_PREFIX = "stream_";
+
         /**
          * 异步任务执行退出消息
          */
         String ASYNC_TASK_EXIT = "async_task_exit/";
+
+        /**
+         * 异步任务日志更新
+         */
+        String ASYNC_TASK_LOG = "async_task_log/";
     }
 }

@@ -93,7 +93,7 @@ public class DownloadAsyncTask implements AsyncTask {
             this.originParams = originParams;
             this.params = MapperHolder.parseJson(originParams, DownloadTaskParams.class);
 
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("参数解析失败", e);
         }
 

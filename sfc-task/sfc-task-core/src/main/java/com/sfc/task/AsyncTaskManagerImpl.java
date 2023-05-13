@@ -15,6 +15,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -331,5 +333,23 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
         if (!stopIds.isEmpty()) {
             repo.setTaskOffline(stopIds);
         }
+    }
+
+    @Override
+    public long listenLog(Long taskId, Consumer<String> consumer) {
+        long listenId = IdUtil.getId();
+        mqService.subscribeMessageQueue(MQTopic.Prefix.ASYNC_TASK_LOG + taskId, listenId + "", msg -> {
+            try {
+                consumer.accept(MapperHolder.parseAsJson(msg.getBody(), String.class));
+            } catch (IOException e) {
+                log.error("[异步任务管理器]监听任务{}的日志出错", taskId, e);
+            }
+        });
+        return listenId;
+    }
+
+    @Override
+    public void removeLogListen(Long listenId) {
+        mqService.unsubscribeMessageQueue(listenId);
     }
 }
