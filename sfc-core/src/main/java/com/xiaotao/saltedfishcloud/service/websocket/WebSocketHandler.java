@@ -57,7 +57,7 @@ public class WebSocketHandler {
             }
             RemoteEndpoint.Async remote = session.getAsyncRemote();
             long listenId = getAsyncTaskManager().listenLog(taskId, logMessage -> {
-                log.debug("[WebSocket]向用户{}的连接发送消息...", session.getUserPrincipal().getName());
+//                log.debug("[WebSocket]向用户{}的连接发送消息...", session.getUserPrincipal().getName());
                 try {
                     remote.sendText(MapperHolder.toJson(WebSocketResponse.builder()
                             .id(taskId)

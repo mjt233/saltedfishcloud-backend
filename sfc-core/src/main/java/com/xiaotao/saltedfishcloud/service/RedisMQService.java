@@ -54,7 +54,6 @@ public class RedisMQService implements MQService {
                 .ofMap(Collections.singletonMap("msg", messageBody))
                 .withStreamKey(MQTopic.Prefix.STREAM_PREFIX + topic);
         redisTemplate.opsForStream().add(record);
-        log.debug("{}发送消息到队列{} 内容:{}", LOG_PREFIX, topic, messageBody);
     }
 
     @Override
@@ -70,7 +69,6 @@ public class RedisMQService implements MQService {
                 org.springframework.data.redis.connection.stream.Consumer.from(group, id + ""),
                 StreamOffset.create(MQTopic.Prefix.STREAM_PREFIX + topic, ReadOffset.lastConsumed()),
                 message -> {
-                    log.debug("{}收到队列{}的消息: {}", LOG_PREFIX, topic, message);
                     MQMessage msg = MQMessage.builder()
                             .topic(topic)
                             .body(message.getValue().get("msg"))
