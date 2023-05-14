@@ -86,8 +86,8 @@ public class RedisMQService implements MQService {
     @Override
     public void unsubscribeMessageQueue(Long id) {
         Tuple3<String, String, Subscription> tuple = topicGroupMap.get(id);
-        redisTemplate.opsForStream().destroyGroup(tuple.getT1(), tuple.getT2());
         stringStreamMessageListenerContainer.remove(tuple.getT3());
+        redisTemplate.opsForStream().destroyGroup(MQTopic.Prefix.STREAM_PREFIX + tuple.getT1(), tuple.getT2());
     }
 
     @Override

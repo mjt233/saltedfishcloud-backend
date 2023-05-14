@@ -337,15 +337,14 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
 
     @Override
     public long listenLog(Long taskId, Consumer<String> consumer) {
-        long listenId = IdUtil.getId();
-        mqService.subscribeMessageQueue(MQTopic.Prefix.ASYNC_TASK_LOG + taskId, listenId + "", msg -> {
+        String group = "log_group_" + IdUtil.getId();
+        return mqService.subscribeMessageQueue(MQTopic.Prefix.ASYNC_TASK_LOG + taskId, group, msg -> {
             try {
                 consumer.accept(MapperHolder.parseAsJson(msg.getBody(), String.class));
             } catch (IOException e) {
                 log.error("[异步任务管理器]监听任务{}的日志出错", taskId, e);
             }
         });
-        return listenId;
     }
 
     @Override

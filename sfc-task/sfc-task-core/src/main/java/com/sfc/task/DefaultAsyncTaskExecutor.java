@@ -259,6 +259,12 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                         log.error("[异步任务执行器]推送异步任务日志出错", e);
                     } finally {
                         semaphore.release();
+                        try {
+                            // 消息队列日志保留5秒后销毁
+                            Thread.sleep(5000);
+                            mqService.destroyQueue(MQTopic.Prefix.ASYNC_TASK_LOG + recordId);
+                        } catch (InterruptedException ignore) {
+                        }
                     }
                 }).start();
 
@@ -268,6 +274,8 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 // 关闭流
                 po.close();
                 pi.close();
+
+                // 确保日志写入文件完成后再关闭文件流
                 semaphore.acquire();
                 logOutput.close();
                 if (!giveUpRecord.contains(recordId)) {
