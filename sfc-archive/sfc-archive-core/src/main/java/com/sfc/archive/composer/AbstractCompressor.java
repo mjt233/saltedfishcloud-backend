@@ -62,6 +62,11 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
     protected ArchiveParam archiveParam;
     protected OutputStream originOutput;
 
+    /**
+     * 当前正在被压缩的文件的输入流
+     */
+    private InputStream curInputStream;
+
 
     public AbstractCompressor(ArchiveParam archiveParam, OutputStream originOutput) {
         this.archiveParam = archiveParam;
@@ -119,6 +124,7 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
             if (!entry.isDirectory()) {
                 listeners.forEach(listener -> listener.onFileBeginHandle(entry));
                 try(InputStream in = entry.getInputStream()) {
+                    curInputStream = in;
                     loaded += StreamUtils.copy(in, archiveOutputStream);
                     listeners.forEach(listener -> listener.onFileFinishHandle(entry, System.currentTimeMillis() - fileBeginTime));
                 } catch (IOException e) {
@@ -156,11 +162,14 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
     public void close() throws IOException {
 
         if (archiveOutputStream != null) {
-            try {
-                archiveOutputStream.closeArchiveEntry();
-            } catch (IOException ignore) { }
-            archiveOutputStream.finish();
-            archiveOutputStream.close();
+            curInputStream.close();
+            synchronized (archiveOutputStream) {
+                try {
+                    archiveOutputStream.closeArchiveEntry();
+                } catch (IOException ignore) { }
+                archiveOutputStream.finish();
+                archiveOutputStream.close();
+            }
         }
         if (originOutput != null) {
             originOutput.close();

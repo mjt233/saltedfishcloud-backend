@@ -273,7 +273,6 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
 
                 // 关闭流
                 po.close();
-                pi.close();
 
                 // 确保日志写入文件完成后再关闭文件流
                 semaphore.acquire();
