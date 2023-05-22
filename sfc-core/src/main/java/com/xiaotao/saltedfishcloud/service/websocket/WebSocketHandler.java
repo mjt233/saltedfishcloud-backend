@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WebSocketHandler {
     @Autowired
     private AsyncTaskManager asyncTaskManager;
-//    private final AsyncTaskManager asyncTaskManager = SpringContextUtils.getContext().getBean(AsyncTaskManager.class);
 
+    private static final String LOG_PREFIX = "[WebSocket]";
 
     /**
      * 已订阅的主题
@@ -66,7 +66,7 @@ public class WebSocketHandler {
                             .build()
                     ));
                 } catch (JsonProcessingException e) {
-                    log.error("[WebSocket]向用户{}的连接发送消息失败，消息:{}...", session.getUserPrincipal().getName(), logMessage, e);
+                    log.error("{}向用户{}的连接发送消息失败，消息:{}...", LOG_PREFIX, session.getUserPrincipal().getName(), logMessage, e);
                 }
             });
             subscribedTopic.put(topic, listenId);
@@ -88,7 +88,13 @@ public class WebSocketHandler {
 
     @OnClose
     public void onClose(Session session) {
-        log.debug("用户{}断开WebSocket连接", session.getUserPrincipal().getName());
-        subscribedTopic.values().forEach(getAsyncTaskManager()::removeLogListen);
+        log.debug("{}用户{}断开WebSocket连接", LOG_PREFIX, session.getUserPrincipal().getName());
+        subscribedTopic.values().forEach(topic -> {
+            try {
+                getAsyncTaskManager().removeLogListen(topic);
+            } catch (Throwable e) {
+                log.error("{}主题{}取消订阅异常：", LOG_PREFIX, topic, e);
+            }
+        });
     }
 }
