@@ -6,6 +6,7 @@ import com.sfc.archive.comporessor.ArchiveResourceEntry;
 import com.sfc.archive.model.ArchiveFile;
 import com.sfc.archive.model.ArchiveParam;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.springframework.util.StreamUtils;
@@ -22,6 +23,7 @@ import java.util.List;
  * 默认实现了事件处理、进度统计、
  *
  */
+@Slf4j
 public abstract class AbstractCompressor implements ArchiveCompressor {
     private ArchiveOutputStream archiveOutputStream;
     private long count = 0;
@@ -167,8 +169,12 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
                 try {
                     archiveOutputStream.closeArchiveEntry();
                 } catch (IOException ignore) { }
-                archiveOutputStream.finish();
-                archiveOutputStream.close();
+                try {
+                    archiveOutputStream.finish();
+                } finally {
+                    archiveOutputStream.close();
+                }
+
             }
         }
         if (originOutput != null) {
