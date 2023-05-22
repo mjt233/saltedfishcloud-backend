@@ -90,7 +90,7 @@ public class CompressAsyncTask implements AsyncTask {
 
             @Override
             public void onFinish(long consumeTime) {
-                taskLog.info("压缩任务完成，总耗时: %.2f s" + consumeTime / 1000.0);
+                taskLog.info("压缩任务完成，总耗时: " + consumeTime / 1000.0 + " s");
                 log.debug("压缩任务完成，总耗时:{} s", consumeTime / 1000.0);
             }
 
