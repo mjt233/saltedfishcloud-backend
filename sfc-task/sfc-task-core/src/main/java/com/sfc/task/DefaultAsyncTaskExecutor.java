@@ -60,6 +60,8 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     @Autowired
     private MQService mqService;
 
+    private final static byte[] WRAP_BYTES = "\n".getBytes(StandardCharsets.UTF_8);
+
     private final List<Consumer<AsyncTaskRecord>> finishListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> failedListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> startListener = new ArrayList<>();
@@ -253,6 +255,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             logOutput.write(line.getBytes(StandardCharsets.UTF_8));
+                            logOutput.write(WRAP_BYTES);
                             mqService.push(MQTopic.Prefix.ASYNC_TASK_LOG + recordId, line);
                         }
                     } catch (IOException e) {
