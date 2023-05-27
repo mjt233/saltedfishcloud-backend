@@ -101,7 +101,12 @@ public class ResourceController {
         if (resource == null) {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
-        return ResourceUtils.wrapResource(resource, resourceRequest.getName());
+
+        if (Boolean.TRUE.equals(resourceRequest.getIsCache())) {
+            return ResourceUtils.wrapResourceWithCache(resource, resourceRequest.getName());
+        } else {
+            return ResourceUtils.wrapResource(resource, resourceRequest.getName());
+        }
     }
 
     @GetMapping("thumbnail/{md5}")

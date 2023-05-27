@@ -41,6 +41,11 @@ public class ResourceRequest {
     private String targetId;
 
     /**
+     * 是否让前端缓存
+     */
+    private Boolean isCache;
+
+    /**
      * 额外参数
      */
     private Map<String, String> params = new HashMap<>();
