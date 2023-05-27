@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Collection;
 import java.util.List;
 
-public abstract class CurdServiceImpl<T, R extends JpaRepository<T, Long>> implements CurdService<T> {
+public abstract class CrudServiceImpl<T, R extends JpaRepository<T, Long>> implements CrudService<T> {
     @Autowired
     protected R repository;
 

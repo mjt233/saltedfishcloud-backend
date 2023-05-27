@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import java.util.Collection;
 import java.util.List;
 
-public interface CurdService<T> {
+public interface CrudService<T> {
     T findById(Long id);
 
     void save(T entity);

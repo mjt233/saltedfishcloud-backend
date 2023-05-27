@@ -1,8 +1,11 @@
 package com.sfc.task.controller;
 
 import com.sfc.task.AsyncTaskManager;
+import com.sfc.task.AsyncTaskRecordService;
+import com.sfc.task.model.AsyncTaskQueryParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
@@ -24,6 +27,19 @@ public class AsyncTaskController {
 
     @Autowired
     private AsyncTaskRecordRepo asyncTaskRecordRepo;
+
+    @Autowired
+    private AsyncTaskRecordService asyncTaskRecordService;
+
+    @GetMapping("listRecord")
+    public JsonResult<CommonPageInfo<AsyncTaskRecord>> listRecord(AsyncTaskQueryParam param) {
+        return JsonResultImpl.getInstance(asyncTaskRecordService.listRecord(param));
+    }
+
+    @GetMapping("getById")
+    public JsonResult<AsyncTaskRecord> getById(@RequestParam("taskId") Long taskId) {
+        return JsonResultImpl.getInstance(asyncTaskRecordRepo.getOne(taskId));
+    }
 
     /**
      * 阻塞等待执行完成。

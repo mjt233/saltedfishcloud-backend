@@ -63,6 +63,8 @@ public class AsyncTaskRecord extends AuditModel {
      *     <li>运行中 - 1</li>
      *     <li>执行完成 - 2</li>
      *     <li>任务失败 - 3</li>
+     *     <li>已取消 - 4</li>
+     *     <li>任务离线 - 5</li>
      * </ul>
      *
      * @see AsyncTaskConstants.Status
