@@ -271,17 +271,19 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                     }
                 }).start();
 
-                // 执行任务本体
-                asyncTask.execute(po);
+                try {
+                    // 执行任务本体
+                    asyncTask.execute(po);
+                } finally {
+                    // 关闭流
+                    po.close();
 
-                // 关闭流
-                po.close();
-
-                // 确保日志写入文件完成后再关闭文件流
-                semaphore.acquire();
-                logOutput.close();
-                if (!giveUpRecord.contains(recordId)) {
-                    emit(finishListener, record);
+                    // 确保日志写入文件完成后再关闭文件流
+                    semaphore.acquire();
+                    logOutput.close();
+                    if (!giveUpRecord.contains(recordId)) {
+                        emit(finishListener, record);
+                    }
                 }
             } catch (Throwable e) {
                 if (!giveUpRecord.contains(recordId)) {
