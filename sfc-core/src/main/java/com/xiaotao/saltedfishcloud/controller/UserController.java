@@ -14,10 +14,7 @@ import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MultipartFileResource;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +39,8 @@ import javax.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping(UserController.PREFIX)
@@ -63,6 +62,12 @@ public class UserController {
     public JsonResult<Boolean> validResetPasswordEmailCode(@RequestParam("account") String account,
                                                   @RequestParam("code") String code) {
         return JsonResultImpl.getInstance(userService.validResetPasswordEmailCode(account, code));
+    }
+
+    @PostMapping("findBaseUserInfo")
+    @AllowAnonymous
+    public JsonResult<List<User>> findBaseUserInfo(@RequestBody List<Long> ids) {
+        return JsonResultImpl.getInstance(userService.findBaseInfoByIds(ids));
     }
 
     /**

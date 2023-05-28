@@ -32,10 +32,7 @@ import javax.mail.MessagingException;
 import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 @Service
@@ -77,6 +74,11 @@ public class UserServiceImp implements UserService {
         List<User> userList = Optional.ofNullable(userDao.getUserList()).orElseGet(Collections::emptyList);
         PageInfo<User> pageInfo = new PageInfo<>(userList);
         return CommonPageInfo.of(pageInfo);
+    }
+
+    @Override
+    public List<User> findBaseInfoByIds(Collection<Long> ids) {
+        return userDao.findBaseInfoByIds(ids);
     }
 
     @Override
