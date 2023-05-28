@@ -3,8 +3,8 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.sfc.constant.error.FileSystemError;
+import com.sfc.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -101,7 +101,12 @@ public class ResourceController {
         if (resource == null) {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
-        return ResourceUtils.wrapResource(resource, resourceRequest.getName());
+
+        if (Boolean.TRUE.equals(resourceRequest.getIsCache())) {
+            return ResourceUtils.wrapResourceWithCache(resource, resourceRequest.getName());
+        } else {
+            return ResourceUtils.wrapResource(resource, resourceRequest.getName());
+        }
     }
 
     @GetMapping("thumbnail/{md5}")

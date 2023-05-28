@@ -1,12 +1,11 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.constant.FeatureName;
+import com.sfc.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.sfc.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.constant.SysConfigName;
+import com.sfc.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.*;
@@ -18,9 +17,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 
 
 /**

@@ -35,6 +35,10 @@ public class User implements UserDetails {
     private static final long serialVersionUID = -2530285292010387981L;
     public static final int TYPE_ADMIN = 1;
     public static final int TYPE_COMMON = 0;
+
+    /**
+     * 用户id，后续将改为Long类型
+     */
     private Integer id;
     @Username
     private String user;

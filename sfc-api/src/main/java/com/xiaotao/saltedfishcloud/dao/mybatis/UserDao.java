@@ -7,9 +7,17 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface UserDao {
+
+    /**
+     * 查询用户基本信息（仅包含id和用户名）
+     * @param ids   用户id集合
+     * @return      查询结果
+     */
+    List<User> findBaseInfoByIds(@Param("ids") Collection<Long> ids);
 
     /**
      * 修改用户的邮箱

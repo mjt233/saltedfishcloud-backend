@@ -1063,6 +1063,53 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "通用文件资源上传接口",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/resource/0/upload?targetId=0&protocol=main&path=/&name=aaa.jpg&xxx=自定义参数",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"resource",
+								"0",
+								"upload"
+							],
+							"query": [
+								{
+									"key": "targetId",
+									"value": "0",
+									"description": "目标资源所有者id"
+								},
+								{
+									"key": "protocol",
+									"value": "main",
+									"description": "资源协议"
+								},
+								{
+									"key": "path",
+									"value": "/",
+									"description": "文件所在位置"
+								},
+								{
+									"key": "name",
+									"value": "aaa.jpg",
+									"description": "文件名"
+								},
+								{
+									"key": "xxx",
+									"value": "自定义参数",
+									"description": "其他自定义参数"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -1973,6 +2020,35 @@
 								"description": "# 直接在网盘上创建一个压缩包\n- URL: `/api/diskFile/{uid}/compress`\n- 方法：POST\n\n## URL参数\n- uid - 资源所属用户ID\n\n## 注意\n接口产生的任务不是异步任务，响应会一直等待到压缩完成\n\n## JSON请求体\n```json\n{\n    \"source\": \"/被压缩的/文件所在/的目录\",\n    \"filenames\": [\n        \"文件1\",\n        \"文件2\",\n        \"文件或目录都可以\",\n        \"数组加加加\"\n    ],\n    \"dest\": \"/压缩文件/在/网盘里/保存的/位置.zip\"\n}\n```"
 							},
 							"response": []
+						},
+						{
+							"name": "创建异步压缩任务",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"sourceUid\": 1,\r\n    \"sourcePath\": \"/\",\r\n    \"sourceNames\": [\r\n        \"文件夹1\"\r\n    ],\r\n    \"targetUid\": 1,\r\n    \"targetFilePath\": \"/test.zip\",\r\n    \"archiveParam\": {\r\n        \"type\": \"zip\",\r\n        \"encoding\": \"gbk\"\r\n    }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/diskFile/0/asyncCompress",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"diskFile",
+										"0",
+										"asyncCompress"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				}
@@ -2464,7 +2540,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/admin/sys/restart",
+									"raw": "{{addr}}/api/admin/sys/restart?withCluster=true",
 									"host": [
 										"{{addr}}"
 									],
@@ -2473,6 +2549,13 @@
 										"admin",
 										"sys",
 										"restart"
+									],
+									"query": [
+										{
+											"key": "withCluster",
+											"value": "true",
+											"description": "是否重启整个集群，默认缺省为true"
+										}
 									]
 								}
 							},
@@ -2484,7 +2567,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/admin/sys/getCurSystemInfo",
+									"raw": "{{addr}}/api/admin/sys/getCurSystemInfo?nodeId=837513836872335360",
 									"host": [
 										"{{addr}}"
 									],
@@ -2493,6 +2576,13 @@
 										"admin",
 										"sys",
 										"getCurSystemInfo"
+									],
+									"query": [
+										{
+											"key": "nodeId",
+											"value": "837513836872335360",
+											"description": "可选，获取当前节点则不传该参数。节点id可通过/api/cluster/listNodes获取"
+										}
 									]
 								}
 							},
@@ -2504,7 +2594,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/admin/sys/listSystemInfo",
+									"raw": "{{addr}}/api/admin/sys/listSystemInfo?nodeId=837513836872335360",
 									"host": [
 										"{{addr}}"
 									],
@@ -2513,6 +2603,13 @@
 										"admin",
 										"sys",
 										"listSystemInfo"
+									],
+									"query": [
+										{
+											"key": "nodeId",
+											"value": "837513836872335360",
+											"description": "可选，获取当前节点则不传该参数。节点id可通过/api/cluster/listNodes获取"
+										}
 									]
 								}
 							},
@@ -2630,7 +2727,7 @@
 					]
 				},
 				{
-					"name": "New Folder",
+					"name": "集群管理",
 					"item": [
 						{
 							"name": "获取节点列表",
@@ -2679,121 +2776,55 @@
 			"name": "任务",
 			"item": [
 				{
-					"name": "下载任务",
-					"item": [
-						{
-							"name": "创建下载任务",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n    \"savePath\": \"/\",\r\n    \"url\": \"https://bigota.d.miui.com/V11.0.5.0.PCACNXM/miui_MI6_V11.0.5.0.PCACNXM_996ffd2660_9.0.zip\",\r\n    \"headers\": {\r\n        \"ua\": \"a\",\r\n        \"name\": \"xiaotao\"\r\n    },\r\n    \"method\": \"GET\",\r\n    \"uid\": 1\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{addr}}/api/task/download",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"task",
-										"download"
-									]
-								},
-								"description": "## 创建一个下载任务  \n异步API，请求后在data中返回异步任务ID\n\n### 请求体json参数\n- savePath: 必填，下载后保存的目录\n- url: 必填，文件下载地址\n- headers: 选填，附加的请求header，key-value类型对象\n- method： 选填，请求方法，默认GET,可选：[HEAD, TRACE, GET, PATCH, DELETE, OPTIONS, PUT, POST]，必须全大写\n请求体（Body）示例\n- proxy： 选填，代理节点名称\n\n### 请求体示例\n```json\n{\n    \"savePath\": \"/\",\n    \"url\": \"www.baidu.com\",\n    \"headers\": {\n        \"key\": \"value\",\n        \"token\": \"123123123\"\n    },\n    \"method\": \"GET\",\n    \"proxy\": \"local1\"\n}\n```"
-							},
-							"response": []
-						},
-						{
-							"name": "获取下载任务列表",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/api/task/download?uid=1&page=1&size=40&type=FINISH",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"task",
-										"download"
-									],
-									"query": [
-										{
-											"key": "uid",
-											"value": "1"
-										},
-										{
-											"key": "page",
-											"value": "1"
-										},
-										{
-											"key": "size",
-											"value": "40"
-										},
-										{
-											"key": "type",
-											"value": "FINISH"
-										}
-									]
-								},
-								"description": "## 查询参数\n- uid：要查询的用户\n- page：选填，页数，从1开始，默认1\n- size：选填，每页大小，每页大小，5-400之间，默认10\n\n## 响应data数组元素\n- id：下载任务的ID\n- uid：目标用户\n- url：文件URL\n- proxy：使用的代理名称\n- state: 任务状态，FINISH - 任务完成， FAILED - 任务失败， DOWNLOADING - 下载中，WAITING - 等待中\n- message：任务消息，一般为null，当任务失败时为失败消息\n- size：文件大小\n- name：文件名\n- savePath：保存到的网盘位置\n- createdAt：创建日期\n- finishAt：完成日期\n- createdBy：创建者\n\n## 响应体其他字段\n- totalItem：总数量\n- totalPage：当前分页大小下的总页数"
-							},
-							"response": []
-						},
-						{
-							"name": "中止下载任务",
-							"request": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/api/task/download?taskId=2ecf7de0-46d8-4e0c-b77f-2153772b3266",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"task",
-										"download"
-									],
-									"query": [
-										{
-											"key": "taskId",
-											"value": "2ecf7de0-46d8-4e0c-b77f-2153772b3266"
-										}
-									]
+					"name": "获取任务日志",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/asyncTask/getLog?taskId=847654180750360576",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"asyncTask",
+								"getLog"
+							],
+							"query": [
+								{
+									"key": "taskId",
+									"value": "847654180750360576"
 								}
-							},
-							"response": []
-						},
-						{
-							"name": "获取可用代理名称",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{addr}}/api/task/download/proxy",
-									"host": [
-										"{{addr}}"
-									],
-									"path": [
-										"api",
-										"task",
-										"download",
-										"proxy"
-									]
-								}
-							},
-							"response": []
+							]
 						}
-					]
+					},
+					"response": []
+				},
+				{
+					"name": "中断任务",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/asyncTask/interrupt?taskId=1111",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"asyncTask",
+								"interrupt"
+							],
+							"query": [
+								{
+									"key": "taskId",
+									"value": "1111",
+									"description": "任务id"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -4988,6 +5019,123 @@
 									"key": "page",
 									"value": "0"
 								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "离线下载",
+			"item": [
+				{
+					"name": "创建下载任务",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"savePath\": \"/\",\r\n    \"url\": \"https://bigota.d.miui.com/V11.0.5.0.PCACNXM/miui_MI6_V11.0.5.0.PCACNXM_996ffd2660_9.0.zip\",\r\n    \"headers\": {\r\n        \"ua\": \"a\",\r\n        \"name\": \"xiaotao\"\r\n    },\r\n    \"method\": \"GET\",\r\n    \"uid\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/task/download",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"task",
+								"download"
+							]
+						},
+						"description": "## 创建一个下载任务  \n异步API，请求后在data中返回异步任务ID\n\n### 请求体json参数\n- savePath: 必填，下载后保存的目录\n- url: 必填，文件下载地址\n- headers: 选填，附加的请求header，key-value类型对象\n- method： 选填，请求方法，默认GET,可选：[HEAD, TRACE, GET, PATCH, DELETE, OPTIONS, PUT, POST]，必须全大写\n请求体（Body）示例\n- proxy： 选填，代理节点名称\n\n### 请求体示例\n```json\n{\n    \"savePath\": \"/\",\n    \"url\": \"www.baidu.com\",\n    \"headers\": {\n        \"key\": \"value\",\n        \"token\": \"123123123\"\n    },\n    \"method\": \"GET\",\n    \"proxy\": \"local1\"\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "获取下载任务列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/task/download?uid=1&page=1&size=40&type=FINISH",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"task",
+								"download"
+							],
+							"query": [
+								{
+									"key": "uid",
+									"value": "1"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "40"
+								},
+								{
+									"key": "type",
+									"value": "FINISH"
+								}
+							]
+						},
+						"description": "## 查询参数\n- uid：要查询的用户\n- page：选填，页数，从1开始，默认1\n- size：选填，每页大小，每页大小，5-400之间，默认10\n\n## 响应data数组元素\n- id：下载任务的ID\n- uid：目标用户\n- url：文件URL\n- proxy：使用的代理名称\n- state: 任务状态，FINISH - 任务完成， FAILED - 任务失败， DOWNLOADING - 下载中，WAITING - 等待中\n- message：任务消息，一般为null，当任务失败时为失败消息\n- size：文件大小\n- name：文件名\n- savePath：保存到的网盘位置\n- createdAt：创建日期\n- finishAt：完成日期\n- createdBy：创建者\n\n## 响应体其他字段\n- totalItem：总数量\n- totalPage：当前分页大小下的总页数"
+					},
+					"response": []
+				},
+				{
+					"name": "中止下载任务",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/task/download?taskId=2c92e0818631a746018631a7efb80000",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"task",
+								"download"
+							],
+							"query": [
+								{
+									"key": "taskId",
+									"value": "2c92e0818631a746018631a7efb80000"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "获取可用代理名称",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/task/download/proxy",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"task",
+								"download",
+								"proxy"
 							]
 						}
 					},

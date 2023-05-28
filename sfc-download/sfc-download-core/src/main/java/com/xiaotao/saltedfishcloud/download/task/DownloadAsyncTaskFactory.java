@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.download.task;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
 import com.sfc.task.model.AsyncTaskRecord;
-import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
+import com.sfc.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;

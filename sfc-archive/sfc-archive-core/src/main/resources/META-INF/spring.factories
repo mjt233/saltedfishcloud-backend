@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.sfc.archive.config.ArchiveAutoConfiguration

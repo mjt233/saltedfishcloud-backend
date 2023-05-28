@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.xiaotao.saltedfishcloud.constant.SysConfigName;
+import com.sfc.constant.SysConfigName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

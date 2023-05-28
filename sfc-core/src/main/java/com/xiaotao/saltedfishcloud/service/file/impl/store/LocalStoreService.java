@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.sfc.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStoreService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;

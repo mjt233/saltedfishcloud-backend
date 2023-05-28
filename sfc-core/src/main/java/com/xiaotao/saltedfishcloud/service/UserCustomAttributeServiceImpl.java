@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class UserCustomAttributeServiceImpl extends CurdServiceImpl<UserCustomAttribute, UserCustomAttributeRepo> implements UserCustomAttributeService {
+public class UserCustomAttributeServiceImpl extends CrudServiceImpl<UserCustomAttribute, UserCustomAttributeRepo> implements UserCustomAttributeService {
 
     @Override
     public CommonPageInfo<UserCustomAttribute> findByUid(Long uid, PageableRequest pageableRequest) {

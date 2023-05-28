@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.enums.ArchiveType;
 import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
@@ -17,10 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -91,21 +88,6 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     @Override
     public boolean quickSave(int uid, String path, String name, String md5) throws IOException {
         return false;
-    }
-
-    @Override
-    public void compressAndWriteOut(int uid, String path, Collection<String> names, ArchiveType type, OutputStream outputStream) throws IOException {
-        throw new UnsupportedOperationException("不支持的操作");
-    }
-
-    @Override
-    public void compress(int uid, String path, Collection<String> names, String dest, ArchiveType type) throws IOException {
-        throw new UnsupportedOperationException("不支持的操作");
-    }
-
-    @Override
-    public void extractArchive(int uid, String path, String name, String dest) throws IOException {
-        throw new UnsupportedOperationException("不支持的操作");
     }
 
     @Override

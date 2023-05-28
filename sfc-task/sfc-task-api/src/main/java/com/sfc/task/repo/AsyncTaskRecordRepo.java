@@ -1,6 +1,8 @@
 package com.sfc.task.repo;
 
 import com.sfc.task.model.AsyncTaskRecord;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -11,7 +13,16 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-public interface AsyncTaskRecordRepo extends JpaRepository<AsyncTaskRecord, Long> {
+public interface AsyncTaskRecordRepo extends JpaRepository<AsyncTaskRecord, Long>, JpaSpecificationExecutor<AsyncTaskRecord> {
+
+    /**
+     * 根据用户id和状态查询任务记录
+     * @param uid       用户id
+     * @param status    任务状态
+     * @param pageable  分页信息
+     * @return          查询结果
+     */
+    List<AsyncTaskRecord> findByUidAndStatusIn(Long uid, List<Integer> status, Pageable pageable);
 
     /**
      * 修改任务状态。

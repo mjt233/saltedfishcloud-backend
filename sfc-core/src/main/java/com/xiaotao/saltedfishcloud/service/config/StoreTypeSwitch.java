@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.config;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.sfc.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;

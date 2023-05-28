@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.Builder;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -71,7 +72,7 @@ public class RedisTaskReceiver implements AsyncTaskReceiver {
                         } else if (e instanceof String) {
                             try {
                                 return MapperHolder.parseJson((String) e, AsyncTaskRecord.class);
-                            } catch (JsonProcessingException ex) {
+                            } catch (IOException ex) {
                                 ex.printStackTrace();
                                 return null;
                             }

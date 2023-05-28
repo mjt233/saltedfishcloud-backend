@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.sfc.enums.ProtectLevel;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;

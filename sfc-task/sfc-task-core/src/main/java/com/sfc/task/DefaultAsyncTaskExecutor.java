@@ -1,14 +1,15 @@
 package com.sfc.task;
 
 
+import com.sfc.constant.MQTopic;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
-import com.sfc.task.repo.AsyncTaskLogRecordRepo;
 import com.sfc.task.prog.ProgressDetector;
 import com.sfc.task.prog.ProgressRecord;
+import com.sfc.task.repo.AsyncTaskLogRecordRepo;
+import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
@@ -16,11 +17,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.boot.context.event.ApplicationStartedEvent;
-import org.springframework.context.event.ContextStartedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -28,9 +26,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,6 +56,11 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private MQService mqService;
+
+    private final static byte[] WRAP_BYTES = "\n".getBytes(StandardCharsets.UTF_8);
 
     private final List<Consumer<AsyncTaskRecord>> finishListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> failedListener = new ArrayList<>();
@@ -225,7 +226,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 return;
             }
 
-
+            // 初始化日志输出目录
             Path logPath = getLogPath(record.getId());
             log.info("创建任务日志: {}", logPath);
             try {
@@ -233,15 +234,56 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
             } catch (IOException e) {
                 log.error("创建日志目录失败: ", e);
             }
-            try (OutputStream logOutput = Files.newOutputStream(logPath)) {
+
+            // 创建日志输出流
+            try (OutputStream logOutput = Files.newOutputStream(logPath);
+                PipedInputStream pi = new PipedInputStream(8192);
+                PipedOutputStream po = new PipedOutputStream()
+            ) {
+                pi.connect(po);
+                Semaphore semaphore = new Semaphore(1);
+
                 // 绑定上下文用户信息
                 SecureUtils.bindUser(userService.getUserById(record.getUid().intValue()));
                 // 添加进度事件监听
                 progressDetector.addObserve(asyncTask::getProgress, record.getId() + "");
-                asyncTask.execute(logOutput);
-                logOutput.close();
-                if (!giveUpRecord.contains(recordId)) {
-                    emit(finishListener, record);
+
+                // 将获取到的日志推送到消息队列和写到文件
+                semaphore.acquire();
+                new Thread(() -> {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(pi, StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            logOutput.write(line.getBytes(StandardCharsets.UTF_8));
+                            logOutput.write(WRAP_BYTES);
+                            mqService.push(MQTopic.Prefix.ASYNC_TASK_LOG + recordId, line);
+                        }
+                    } catch (IOException e) {
+                        log.error("[异步任务执行器]推送异步任务日志出错", e);
+                    } finally {
+                        semaphore.release();
+                        try {
+                            // 消息队列日志保留5秒后销毁
+                            Thread.sleep(5000);
+                            mqService.destroyQueue(MQTopic.Prefix.ASYNC_TASK_LOG + recordId);
+                        } catch (InterruptedException ignore) {
+                        }
+                    }
+                }).start();
+
+                try {
+                    // 执行任务本体
+                    asyncTask.execute(po);
+                } finally {
+                    // 关闭流
+                    po.close();
+
+                    // 确保日志写入文件完成后再关闭文件流
+                    semaphore.acquire();
+                    logOutput.close();
+                    if (!giveUpRecord.contains(recordId)) {
+                        emit(finishListener, record);
+                    }
                 }
             } catch (Throwable e) {
                 if (!giveUpRecord.contains(recordId)) {

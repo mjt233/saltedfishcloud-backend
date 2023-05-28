@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.constant.error.CollectionError;
+import com.sfc.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;

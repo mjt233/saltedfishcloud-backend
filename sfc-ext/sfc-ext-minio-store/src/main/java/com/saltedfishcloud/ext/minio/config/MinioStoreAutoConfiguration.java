@@ -5,7 +5,7 @@ import com.saltedfishcloud.ext.minio.MinioProperties;
 import com.saltedfishcloud.ext.minio.MinioStoreService;
 import com.saltedfishcloud.ext.minio.utils.MinioUtils;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.sfc.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import io.minio.BucketExistsArgs;

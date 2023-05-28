@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
+import com.sfc.archive.ArchiveManager;
+import com.sfc.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
@@ -16,6 +18,7 @@ import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -44,8 +47,7 @@ import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PUBLIC;
 
 @Slf4j
 @Component
-public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFileSystem, ApplicationRunner, FeatureProvider, InitializingBean {
-    private final static String LOG_TITLE = "FileSystem";
+public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, InitializingBean {
 
     @Autowired
     private StoreServiceFactory storeServiceFactory;
@@ -69,9 +71,6 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
     private FileResourceMd5Resolver md5Resolver;
 
     @Autowired
-    private SysProperties sysProperties;
-
-    @Autowired
     private RedissonClient redisson;
 
     @Autowired
@@ -80,19 +79,10 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
     @Autowired
     private DiskFileSystemManager diskFileSystemManager;
 
+
     @Override
     public void afterPropertiesSet() throws Exception {
         diskFileSystemManager.setMainFileSystem(this);
-    }
-
-    @Override
-    protected RedissonClient getRedissonClient() {
-        return redisson;
-    }
-
-    @Override
-    protected SysProperties getSysProperties() {
-        return sysProperties;
     }
 
     /**
@@ -126,11 +116,6 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
     @Override
     public void saveAvatar(int uid, Resource resource) throws IOException {
         customStoreService.saveAvatar(uid, resource);
-    }
-
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
-        log.info("[{}]Archive File Encoding: {}", LOG_TITLE, sysProperties.getStore().getArchiveEncoding());
     }
 
 
@@ -438,8 +423,8 @@ public class DefaultFileSystem extends AbstractDiskFileSystem implements DiskFil
 
     @Override
     public void registerFeature(HelloService helloService) {
-        helloService.appendFeatureDetail("archiveType", "zip");
-        helloService.appendFeatureDetail("extractArchiveType", "zip");
+        helloService.appendFeatureDetail(FeatureName.ARCHIVE_TYPE, "zip");
+        helloService.appendFeatureDetail(FeatureName.EXTRACT_ARCHIVE_TYPE, "zip");
     }
 
     @Override

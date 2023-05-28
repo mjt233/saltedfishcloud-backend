@@ -21,6 +21,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -52,7 +53,7 @@ public class VEAutoConfiguration implements SystemOverviewItemProvider {
     }
 
     @Bean
-    public FFMpegHelper ffMpegHelper() throws JsonProcessingException {
+    public FFMpegHelper ffMpegHelper() throws IOException {
         VEProperty property = configService.getJsonConfig(VEConstants.PROPERTY_KEY, VEProperty.class);
         if (property == null) {
             property = new VEProperty();
@@ -65,7 +66,7 @@ public class VEAutoConfiguration implements SystemOverviewItemProvider {
                 VEProperty newProperty = MapperHolder.parseJson(json, VEProperty.class);
                 BeanUtils.copyProperties(newProperty, ffMpegHelper.getProperty());
 
-            } catch (JsonProcessingException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         });

@@ -18,6 +18,7 @@ logging:
     test: info
     org: warn
     com: warn
+    com.sfc: debug
     com.xiaotao: debug
     com.saltedfishcloud: debug
     com.xiaotao.saltedfishcloud.dao.mybatis: warn
@@ -33,7 +34,7 @@ plugin:
 #    - sfc-ext/sfc-ext-samba-store
 #    - sfc-ext/sfc-ext-hadoop-store
 #    - sfc-ext/sfc-ext-mp3-thumbnail
-#    - sfc-ext/sfc-ext-sftp-store
+    - sfc-ext/sfc-ext-sftp-store
 #    - sfc-ext/sfc-ext-ftp-store
     - sfc-ext/sfc-ext-video-enhance
 

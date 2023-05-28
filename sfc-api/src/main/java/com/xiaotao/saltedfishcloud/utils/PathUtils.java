@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PathUtils {
-    private static boolean isLogDirectoryExist = false;
 
     private static final Path LOG_PATH;
     private static final Path TEMP_PATH;
