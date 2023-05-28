@@ -3,10 +3,12 @@ package com.xiaotao.saltedfishcloud.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sfc.constant.MQTopic;
+import com.sfc.enums.MQOffsetStrategy;
 import com.xiaotao.saltedfishcloud.model.MQMessage;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.stream.*;
@@ -22,6 +24,7 @@ import reactor.util.function.Tuples;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -63,11 +66,27 @@ public class RedisMQService implements MQService {
 
     @Override
     public long subscribeMessageQueue(String topic, String group, Consumer<MQMessage> consumer) {
-        redisTemplate.opsForStream().createGroup(MQTopic.Prefix.STREAM_PREFIX + topic, group);
+        return this.subscribeMessageQueue(topic, group, MQOffsetStrategy.AT_TAIL, null, consumer);
+    }
+
+    @Override
+    public long subscribeMessageQueue(String topic, String group, MQOffsetStrategy offsetStrategy, @Nullable String offsetPoint, Consumer<MQMessage> consumer) {
+        ReadOffset offset;
+        if (offsetStrategy == MQOffsetStrategy.AT_HEAD) {
+            offset = ReadOffset.from("0-0");
+        } else if (offsetStrategy == MQOffsetStrategy.AT_TAIL) {
+            offset = ReadOffset.lastConsumed();
+        } else {
+            offset = ReadOffset.from(Objects.requireNonNull(offsetPoint, "offsetPoint不能为null"));
+        }
+
+        String key = MQTopic.Prefix.STREAM_PREFIX + topic;
+        log.error("{}新增对流{} 的订阅组: {}", LOG_PREFIX, key, group);
+        redisTemplate.opsForStream().createGroup(key, group);
         long id = IdUtil.getId();
         Subscription subscription = stringStreamMessageListenerContainer.receive(
                 org.springframework.data.redis.connection.stream.Consumer.from(group, id + ""),
-                StreamOffset.create(MQTopic.Prefix.STREAM_PREFIX + topic, ReadOffset.lastConsumed()),
+                StreamOffset.create(key, offset),
                 message -> {
                     MQMessage msg = MQMessage.builder()
                             .topic(topic)

@@ -305,7 +305,12 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
             RPCResponse<String> response = rpcManager.call(request, String.class, Duration.ofMinutes(500));
             if (response != null) {
                 if(response.getIsSuccess()) {
-                    allLog += "[运行中最新日志]:\n" + response.getResult();
+                    String originResult = response.getResult();
+                    if (originResult.startsWith("\"") && originResult.endsWith("\"")) {
+                        allLog += "[运行中最新日志]:\n" + MapperHolder.mapper.readValue(originResult, String.class);
+                    } else {
+                        allLog += "[运行中最新日志]:\n" + originResult;
+                    }
                 } else {
                     allLog += "[运行中最新日志获取失败]:\n" + response.getError();
                 }

@@ -147,9 +147,6 @@ public class VideoConvertTask implements AsyncTask {
             logger.info(inputFile + "转码完成，保存中");
             resourceService.writeResource(param.getTarget(), new PathResource(outputFile));
             logger.info("保存完毕" + param.getTarget().getPath() + File.separator + param.getTarget().getName());
-            logger.info("删除临时输出文件: " + outputFile);
-            Files.deleteIfExists(Paths.get(outputFile));
-            logger.info("临时文件删除完成: " + outputFile);
         } catch (Exception e) {
             logger.error("编码转换失败:", e);
             if (e instanceof RuntimeException) {
@@ -159,6 +156,14 @@ public class VideoConvertTask implements AsyncTask {
             }
 
         } finally {
+            logger.info("删除临时输出文件: " + outputFile);
+            try {
+                Files.deleteIfExists(Paths.get(outputFile));
+                logger.info("临时文件删除完成: " + outputFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("删除临时文件出错", e);
+            }
             if (processWrap != null) {
                 processWrap.getProcess().destroy();
             }
