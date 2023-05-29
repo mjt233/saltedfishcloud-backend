@@ -2,17 +2,17 @@ package com.xiaotao.saltedfishcloud.model.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public interface JsonResult {
+public interface JsonResult<T> {
     int getCode();
 
-    Object getData();
+    T getData();
 
     String getMsg();
 
     @JsonIgnore
     String getJsonStr();
 
-    static JsonResult emptySuccess() {
+    static JsonResult<Object> emptySuccess() {
         return EmptySuccessJsonResult.INST;
     }
 }

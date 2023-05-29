@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class JsonResultImpl extends AbstractJsonResult {
+public class JsonResultImpl<T> extends AbstractJsonResult<T> {
     private static final long serialVersionUID = 1537580038140716422L;
     private final Map<String, Object> map = new HashMap<>();
 
@@ -12,21 +12,21 @@ public class JsonResultImpl extends AbstractJsonResult {
         this(200, null, "OK");
     }
 
-    public JsonResultImpl(int code, Object data, String msg) {
+    public JsonResultImpl(int code, T data, String msg) {
         this.put("code", code);
         this.put("data", data);
         this.put("msg", msg);
     }
 
-    public JsonResultImpl put(String key, Object obj) {
+    public JsonResultImpl<T> put(String key, Object obj) {
         map.put(key, obj);
         return this;
     }
 
-    public static JsonResultImpl getInstance(int code, Object data, String msg) {
-        return new JsonResultImpl(code, data, msg);
+    public static <T> JsonResultImpl<T> getInstance(int code, T data, String msg) {
+        return new JsonResultImpl<>(code, data, msg);
     }
-    public static JsonResultImpl getInstance(Object data) {
+    public static <T> JsonResultImpl<T> getInstance(T data) {
         return getInstance(200, data, "OK");
     }
 
@@ -42,17 +42,18 @@ public class JsonResultImpl extends AbstractJsonResult {
         return (int)map.get("code");
     }
 
-    public JsonResultImpl setCode(int code) {
+    public JsonResultImpl<T> setCode(int code) {
         this.put("code", code);
         return this;
     }
 
     @Override
-    public Object getData() {
-        return map.get("data");
+    @SuppressWarnings("unchecked")
+    public T getData() {
+        return (T)map.get("data");
     }
 
-    public JsonResultImpl setData(Object data) {
+    public JsonResultImpl<T> setData(Object data) {
         this.put("data", data);
         return this;
     }
@@ -62,7 +63,7 @@ public class JsonResultImpl extends AbstractJsonResult {
         return (String)map.get("msg");
     }
 
-    public JsonResultImpl setMsg(String msg) {
+    public JsonResultImpl<T> setMsg(String msg) {
         this.put("msg", msg);
         return this;
     }

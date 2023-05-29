@@ -35,6 +35,10 @@ public class User implements UserDetails {
     private static final long serialVersionUID = -2530285292010387981L;
     public static final int TYPE_ADMIN = 1;
     public static final int TYPE_COMMON = 0;
+
+    /**
+     * 用户id，后续将改为Long类型
+     */
     private Integer id;
     @Username
     private String user;
@@ -45,6 +49,9 @@ public class User implements UserDetails {
     private Integer type = User.TYPE_COMMON;
     private int quota;
     private String email;
+
+    @JsonIgnore
+    private String token;
 
     private static final User PUBLIC_USER_INST;
 
@@ -118,7 +125,7 @@ public class User implements UserDetails {
     }
 
     @JsonIgnore
-    public String getToken() {
+    public String toToken() {
         try {
             String json = MapperHolder.mapper.writeValueAsString(this);
             return JwtUtils.generateToken(json);

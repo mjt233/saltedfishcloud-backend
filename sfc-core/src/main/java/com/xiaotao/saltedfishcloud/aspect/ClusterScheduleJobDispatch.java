@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -34,7 +35,7 @@ public class ClusterScheduleJobDispatch {
 
     @Around("@annotation(clusterScheduleJob)")
     @Async
-    public Object checkIsExecutable(ProceedingJoinPoint joinPoint, ClusterScheduleJob clusterScheduleJob) throws Throwable {
+    public CompletableFuture<Object> checkIsExecutable(ProceedingJoinPoint joinPoint, ClusterScheduleJob clusterScheduleJob) throws Throwable {
 
         String jobName = clusterScheduleJob.value();
         Long lastDate = lastExecuteRecord.get(jobName);
@@ -59,13 +60,13 @@ public class ClusterScheduleJobDispatch {
         if (!isSuccess) {
             log.debug("{}没能获得定时任务{}的执行权, 跳过", LOG_PREFIX, jobName);
             fetchNewestExecuteDate(jobName);
-            return null;
+            return CompletableFuture.completedFuture(null);
         } else {
             log.debug("{}成功获得定时任务{}的执行权", LOG_PREFIX, jobName);
         }
 
         lastExecuteRecord.put(jobName, now);
-        return joinPoint.proceed(joinPoint.getArgs());
+        return CompletableFuture.completedFuture(joinPoint.proceed(joinPoint.getArgs()));
     }
 
     /**

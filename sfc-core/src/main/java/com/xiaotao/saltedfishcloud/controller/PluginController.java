@@ -9,9 +9,11 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +44,13 @@ public class PluginController {
     public JsonResult deletePlugin(@RequestParam("name") String name) throws IOException {
         pluginService.deletePlugin(name);
         return JsonResult.emptySuccess();
+    }
+
+    @GetMapping("getPlugin")
+    @RolesAllowed({"ADMIN"})
+    public HttpEntity<Resource> getPlugin(@RequestParam("name") String name) throws IOException {
+        Resource pluginFile = pluginService.getPluginFile(name);
+        return ResourceUtils.wrapResource(pluginFile, StringUtils.getURLLastName(pluginFile.getURL()));
     }
 
     @AllowAnonymous

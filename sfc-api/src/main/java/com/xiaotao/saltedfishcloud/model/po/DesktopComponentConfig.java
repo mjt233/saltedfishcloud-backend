@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.xiaotao.saltedfishcloud.constant.ComponentType;
+import com.sfc.constant.ComponentType;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.Getter;
 import lombok.Setter;

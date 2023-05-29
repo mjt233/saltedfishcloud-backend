@@ -54,6 +54,10 @@ public class SecureUtils {
     }
 
 
+    /**
+     * 将指定的用户对象作为当前操作用户绑定到当前线程上下文
+     * @param user  用户
+     */
     static public void bindUser(User user) {
         SecurityContextHolder.setContext(new SecurityContextImpl(
                 new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities())

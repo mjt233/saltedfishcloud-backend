@@ -1,17 +1,21 @@
 package com.sfc.task;
 
-import com.sfc.task.model.AsyncTaskLogRecord;
-import com.sfc.task.model.AsyncTaskRecord;
-import com.sfc.task.repo.AsyncTaskLogRecordRepo;
-import com.sfc.task.repo.AsyncTaskRecordRepo;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sfc.constant.MQTopic;
+import com.sfc.constant.error.CommonError;
 import com.sfc.rpc.RPCManager;
 import com.sfc.rpc.RPCRequest;
 import com.sfc.rpc.RPCResponse;
+import com.sfc.task.model.AsyncTaskLogRecord;
+import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.task.repo.AsyncTaskLogRecordRepo;
+import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +33,12 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +63,9 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
     @Autowired
     private AsyncTaskExecutor executor;
 
+    @Autowired
+    private MQService mqService;
+
     /**
      * 将spring容器中所有实现了AsyncTaskFactory的bean都注册到任务管理器中
      */
@@ -62,6 +75,51 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
             for (AsyncTaskFactory factory : factories) {
                 registerFactory(factory);
             }
+        }
+    }
+
+    @Override
+    public AsyncTaskRecord waitTaskExit(Long taskId, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException {
+        // 获取任务当前状态，如果是已经完成的状态则直接返回
+        AsyncTaskRecord asyncTaskRecord = repo.findById(taskId).orElseThrow(() -> new IllegalArgumentException("任务不存在"));
+        Integer status = asyncTaskRecord.getStatus();
+        if (AsyncTaskConstants.Status.FAILED.equals(status)) {
+            asyncTaskRecord.setIsFailed(true);
+            return asyncTaskRecord;
+        } else if (AsyncTaskConstants.Status.CANCEL.equals(status) || AsyncTaskConstants.Status.OFFLINE.equals(status)) {
+            return asyncTaskRecord;
+        }
+
+        // 信号量，默认占用1个，收到任务完成信号时释放
+        Semaphore semaphore = new Semaphore(1);
+        semaphore.acquire();
+
+
+        // 订阅异步任务完成事件，收到该事件后则对锁进行解锁
+        AtomicReference<AsyncTaskRecord> resRef = new AtomicReference<>();
+        AtomicReference<IOException> exceptionRef = new AtomicReference<>();
+        long subscribeId = mqService.subscribeBroadcast(MQTopic.Prefix.ASYNC_TASK_EXIT + taskId, msg -> {
+            try {
+                resRef.set(MapperHolder.parseAsJson(msg.getBody(), AsyncTaskRecord.class));
+            } catch (IOException e) {
+                exceptionRef.set(e);
+            } finally {
+                semaphore.release();
+            }
+        });
+
+        try {
+            // 信号量要求阻塞操作，需要等待任务完成
+            if (!semaphore.tryAcquire(timeout, timeUnit)) {
+                throw new InterruptedException("wait task exit timeout");
+            }
+            IOException exception = exceptionRef.get();
+            if (exception != null) {
+                throw exception;
+            }
+            return resRef.get();
+        } finally {
+            mqService.unsubscribe(subscribeId);
         }
     }
 
@@ -182,14 +240,24 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
 
         // 记录任务失败/成功信息
         executor.addTaskFailedListener(record -> {
-            record.setStatus(AsyncTaskConstants.Status.FAILED);
-            record.setFailedDate(new Date());
-            repo.save(record);
+            try {
+                record.setStatus(AsyncTaskConstants.Status.FAILED);
+                record.setFailedDate(new Date());
+                record.setIsFailed(true);
+                repo.save(record);
+            } finally {
+                mqService.sendBroadcast(MQTopic.Prefix.ASYNC_TASK_EXIT + record.getId(), record);
+            }
         });
         executor.addTaskFinishListener(record -> {
-            record.setStatus(AsyncTaskConstants.Status.FINISH);
-            record.setFinishDate(new Date());
-            repo.save(record);
+            try {
+                record.setStatus(AsyncTaskConstants.Status.FINISH);
+                record.setFinishDate(new Date());
+                record.setFailedDate(null);
+                repo.save(record);
+            } finally {
+                mqService.sendBroadcast(MQTopic.Prefix.ASYNC_TASK_EXIT + record.getId(), record);
+            }
         });
 
         // 收到不支持的任务类型时，重新发布
@@ -237,7 +305,12 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
             RPCResponse<String> response = rpcManager.call(request, String.class, Duration.ofMinutes(500));
             if (response != null) {
                 if(response.getIsSuccess()) {
-                    allLog += "[运行中最新日志]:\n" + response.getResult();
+                    String originResult = response.getResult();
+                    if (originResult.startsWith("\"") && originResult.endsWith("\"")) {
+                        allLog += "[运行中最新日志]:\n" + MapperHolder.mapper.readValue(originResult, String.class);
+                    } else {
+                        allLog += "[运行中最新日志]:\n" + originResult;
+                    }
                 } else {
                     allLog += "[运行中最新日志获取失败]:\n" + response.getError();
                 }
@@ -265,5 +338,22 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
         if (!stopIds.isEmpty()) {
             repo.setTaskOffline(stopIds);
         }
+    }
+
+    @Override
+    public long listenLog(Long taskId, Consumer<String> consumer) {
+        String group = "log_group_" + IdUtil.getId();
+        return mqService.subscribeMessageQueue(MQTopic.Prefix.ASYNC_TASK_LOG + taskId, group, msg -> {
+            try {
+                consumer.accept(MapperHolder.parseAsJson(msg.getBody(), String.class));
+            } catch (IOException e) {
+                log.error("[异步任务管理器]监听任务{}的日志出错", taskId, e);
+            }
+        });
+    }
+
+    @Override
+    public void removeLogListen(Long listenId) {
+        mqService.unsubscribeMessageQueue(listenId);
     }
 }

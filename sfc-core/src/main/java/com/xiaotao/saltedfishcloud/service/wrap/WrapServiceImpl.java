@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.wrap;
 
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.constant.error.ShareError;
-import com.xiaotao.saltedfishcloud.enums.ArchiveType;
+import com.sfc.constant.error.FileSystemError;
+import com.sfc.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
+import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
@@ -30,6 +30,7 @@ public class WrapServiceImpl implements WrapService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final NodeService nodeService;
     private final DiskFileSystemManager fileSystemProvider;
+    private final DiskFileSystemArchiveService archiveService;
 
     @Autowired
     @Lazy
@@ -106,7 +107,7 @@ public class WrapServiceImpl implements WrapService {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
         FileTransferInfo files = wrapInfo.getFiles();
-        fileSystemProvider.getMainFileSystem().compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), ArchiveType.ZIP, outputStream);
+        archiveService.compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), outputStream);
 
     }
 
@@ -126,7 +127,7 @@ public class WrapServiceImpl implements WrapService {
         );
         response.setContentType(FileUtils.getContentType("a.ab123c"));
         OutputStream output = response.getOutputStream();
-        fileSystemProvider.getMainFileSystem().compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), ArchiveType.ZIP, output);
+        archiveService.compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), output);
 
     }
 }

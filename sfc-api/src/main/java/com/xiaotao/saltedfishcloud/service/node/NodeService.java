@@ -27,13 +27,22 @@ public interface NodeService {
     NodeInfo getNodeByParentId(int uid, String parentId, String nodeName);
 
     /**
-     * 获取某个路径中途径的节点信息
+     * 获取某个路径中途径的节点信息<br>
+     *  <b>注意：</b>若路径不存在抛出异常可能会导致事务中断后不可再操作数据库
      * @param uid   用户ID
      * @param path  路径
      * @throws NoSuchFileException 请求的路径不存在时抛出此异常
      * @return  节点信息列表
      */
     LinkedList<NodeInfo> getPathNodeByPath(int uid, String path) throws NoSuchFileException;
+
+    /**
+     * 获取某个路径中途径的节点信息，若路径不存在则返回null而不是抛出异常
+     * @param uid   用户ID
+     * @param path  路径
+     * @return  节点信息列表
+     */
+    LinkedList<NodeInfo> getPathNodeByPathNoEx(int uid, String path);
 
     /**
      * 添加一个节点
@@ -61,7 +70,8 @@ public interface NodeService {
     int deleteNodes(int uid, Collection<String> ids);
 
     /**
-     * 获取路径对应的节点ID
+     * 获取路径对应的节点ID<br>
+     * <b>注意：</b>若路径不存在抛出异常可能会导致事务中断后不可再操作数据库
      * @param uid   用户ID
      * @param path  请求的路径
      * @return  节点ID
@@ -70,7 +80,15 @@ public interface NodeService {
     String getNodeIdByPath(int uid, String path) throws NoSuchFileException;
 
     /**
-     * 通过节点ID 获取节点所在的完整路径位置
+     * 获取路径对应的节点ID，若路径不存在则返回null而不是抛出异常
+     * @param uid   用户ID
+     * @param path  请求的路径
+     * @return  节点ID
+     */
+    String getNodeIdByPathNoEx(int uid, String path);
+
+    /**
+     * 通过节点ID 获取节点所在的完整路径位置。
      * @param uid       用户ID
      * @param nodeId    节点ID
      * @return          完整路径

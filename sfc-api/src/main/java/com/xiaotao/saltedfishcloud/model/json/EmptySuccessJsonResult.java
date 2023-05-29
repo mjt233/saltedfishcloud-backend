@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.model.json;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
-public enum EmptySuccessJsonResult implements JsonResult {
+public enum EmptySuccessJsonResult implements JsonResult<Object> {
     INST;
     @Override
     public int getCode() {

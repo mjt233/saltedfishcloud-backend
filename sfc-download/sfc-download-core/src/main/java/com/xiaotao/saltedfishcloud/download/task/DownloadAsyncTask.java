@@ -5,6 +5,7 @@ import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.download.IgnoreSSLHttpRequestFactory;
+import com.xiaotao.saltedfishcloud.download.model.DownloadProgressRecord;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
@@ -79,16 +80,20 @@ public class DownloadAsyncTask implements AsyncTask {
     @Setter
     private DownloadTaskRepo downloadTaskRepo;
 
-    private final ProgressRecord progressRecord = new ProgressRecord()
-            .setTotal(-1)
-            .setLoaded(0);
+    private final DownloadProgressRecord progressRecord = new DownloadProgressRecord();
+
+    {
+        progressRecord.setFilename("unknown");
+        progressRecord.setLoaded(0);
+        progressRecord.setTotal(-1);
+    }
 
     public DownloadAsyncTask(String originParams) {
         try {
             this.originParams = originParams;
             this.params = MapperHolder.parseJson(originParams, DownloadTaskParams.class);
 
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("参数解析失败", e);
         }
 
@@ -215,6 +220,7 @@ public class DownloadAsyncTask implements AsyncTask {
         } else {
             logger.info("通过URL获取的默认文件名：" + filename);
         }
+        progressRecord.setFilename(this.filename);
     }
 
     /**

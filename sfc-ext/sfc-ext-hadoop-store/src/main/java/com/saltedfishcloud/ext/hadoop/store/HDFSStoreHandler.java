@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.hadoop.store;
 
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.sfc.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;

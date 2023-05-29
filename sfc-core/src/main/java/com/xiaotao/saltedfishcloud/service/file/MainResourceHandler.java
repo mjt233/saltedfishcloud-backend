@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.constant.ResourceProtocol;
+import com.sfc.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
@@ -10,7 +10,6 @@ import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,10 +70,12 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         int uid = Integer.parseInt(param.getTargetId());
         User user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
-            String createUid = Objects.requireNonNull(param.getParams().get("createUId"), "缺失权限上下文会话或创建人id");
+            String createUid = Objects.requireNonNull(param.getParams().get(ResourceRequest.CREATE_UID), "缺失权限上下文会话或创建人id");
             user = Objects.requireNonNull(userService.getUserById(Integer.parseInt(createUid)), "无效的创建人id");
         }
-        UIDValidator.validate(user, uid, false);
+        if(!UIDValidator.validate(user, uid, true)) {
+            throw new IllegalArgumentException("访问拒绝");
+        }
     }
 
     @Override

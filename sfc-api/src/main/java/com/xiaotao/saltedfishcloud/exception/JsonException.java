@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.exception;
 
-import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
+import com.sfc.constant.error.ErrorInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import lombok.Getter;

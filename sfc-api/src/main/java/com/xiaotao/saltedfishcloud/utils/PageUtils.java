@@ -7,11 +7,11 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import org.springframework.data.domain.Page;
 
 public class PageUtils {
-    public static <T> JsonResult getInstanceWithPage(Page<T> page) {
+    public static <T> JsonResult<CommonPageInfo<T>> getInstanceWithPage(Page<T> page) {
         return JsonResultImpl.getInstance(CommonPageInfo.of(page));
     }
 
-    public static <T> JsonResult getInstanceWithPage(PageInfo<T> page) {
+    public static <T> JsonResult<CommonPageInfo<T>> getInstanceWithPage(PageInfo<T> page) {
         return JsonResultImpl.getInstance(CommonPageInfo.of(page));
     }
 }

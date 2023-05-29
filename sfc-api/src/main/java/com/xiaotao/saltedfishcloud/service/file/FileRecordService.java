@@ -31,7 +31,7 @@ public interface FileRecordService {
      * @param dirPath   文件所在的目录路径
      * @param name      文件名
      */
-    FileInfo getFileInfo(int uid, String dirPath, String name) throws NoSuchFileException;
+    FileInfo getFileInfo(int uid, String dirPath, String name);
 
     /**
      * 通过MD5获取文件

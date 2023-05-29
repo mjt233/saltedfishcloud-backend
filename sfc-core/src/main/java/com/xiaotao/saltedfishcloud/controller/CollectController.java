@@ -1,15 +1,17 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.constant.error.CollectionError;
+import com.sfc.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfoId;
+import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -40,9 +42,9 @@ public class CollectController {
     private final Sort SORT_BY_EXPIRED_AT_DESC = Sort.by("expiredAt").descending();
 
     @GetMapping("/record/{cid}")
-    public JsonResult getRecords(@PathVariable("cid") Long cid,
-                                 @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
-                                 @RequestParam(value = "size", defaultValue = "10") @Min(5) @Valid Integer size) {
+    public JsonResult<CommonPageInfo<CollectionRecord>> getRecords(@PathVariable("cid") Long cid,
+                                                                                   @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
+                                                                                   @RequestParam(value = "size", defaultValue = "10") @Min(5) @Valid Integer size) {
         CollectionInfo info = collectionService.getCollection(cid);
         User u = SecureUtils.getSpringSecurityUser();
         assert u != null;
@@ -53,7 +55,7 @@ public class CollectController {
     }
 
     @DeleteMapping("{cid}")
-    public JsonResult delete(@PathVariable("cid") Long cid) {
+    public JsonResult<Object> delete(@PathVariable("cid") Long cid) {
         User user = SecureUtils.getSpringSecurityUser();
         assert user != null;
         collectionService.deleteCollection(user.getId(), cid);
@@ -61,7 +63,7 @@ public class CollectController {
     }
 
     @PutMapping("{cid}/state/{state}")
-    public JsonResult setState(@PathVariable("cid") Long cid,
+    public JsonResult<CollectionInfo> setState(@PathVariable("cid") Long cid,
                                @PathVariable("state") CollectionInfo.State state) {
         User user = SecureUtils.getSpringSecurityUser();
         assert user != null;
@@ -69,7 +71,7 @@ public class CollectController {
     }
 
     @PostMapping
-    public JsonResult createCollection(@Valid @RequestBody CollectionDTO data) {
+    public JsonResult<CollectionInfoId> createCollection(@Valid @RequestBody CollectionDTO data) {
         User u = SecureUtils.getSpringSecurityUser();
         assert u != null;
         if (data.getNickname() == null) data.setNickname(u.getUsername());
@@ -79,7 +81,7 @@ public class CollectController {
     @PostMapping("{cid}/{verification}")
     @BreakPoint
     @AllowAnonymous
-    public JsonResult submitCollection(@PathVariable Long cid,
+    public JsonResult<Object> submitCollection(@PathVariable Long cid,
                                        @PathVariable String verification,
                                        @MergeFile @RequestPart("file") MultipartFile file,
                                        @RequestPart("submitInfo") @Valid SubmitFile submitFile,

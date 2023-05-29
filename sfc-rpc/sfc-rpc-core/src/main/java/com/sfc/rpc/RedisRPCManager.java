@@ -59,7 +59,7 @@ public class RedisRPCManager implements RPCManager {
     /**
      * 将redis订阅处理函数拿到的数据转化为RPC请求对象
      */
-    private RPCRequest toRpcRequest(Object requestRawObj) throws JsonProcessingException {
+    private RPCRequest toRpcRequest(Object requestRawObj) throws IOException {
         RPCRequest request;
         if (requestRawObj == null) {
             throw new NullPointerException("请求参数为null");
@@ -125,7 +125,7 @@ public class RedisRPCManager implements RPCManager {
      * 等待响应
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public  <T> RPCResponse<T> waitResponse(RPCRequest request, Class<T> resultType, Duration timeout) throws JsonProcessingException {
+    public  <T> RPCResponse<T> waitResponse(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException {
         Object o = redisTemplate.opsForList().rightPop(request.getResponseKey(), timeout);
         if (o == null) {
             return null;

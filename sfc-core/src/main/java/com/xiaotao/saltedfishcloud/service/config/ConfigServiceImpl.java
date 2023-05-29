@@ -1,22 +1,29 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
+import com.sfc.constant.MQTopic;
+import com.sfc.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.sfc.enums.ProtectLevel;
+import com.sfc.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
+import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.utils.ClassUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.event.ApplicationStartedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +55,15 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
 
     @Resource
     private PluginManager pluginManager;
+
+    @Resource
+    private MQService mqService;
+
+    /**
+     * 当配置key被修改后，抑制事件广播的key以确保某些操作只由单个节点执行。
+     *
+     */
+    private final static List<String> suppressBroadcastKeys = List.of(SysConfigName.Store.SYS_STORE_TYPE);
 
     private final ArrayList<Consumer<Pair<String, String>>> listeners = new ArrayList<>();
     private final Map<String, List<Consumer<String>>> configBeforeSetListeners = new ConcurrentHashMap<>();
@@ -147,10 +163,32 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
             c.accept(value);
         }
         configDao.setConfigure(key, value);
-        for (Consumer<String> c : configAfterSetListeners.getOrDefault(key, Collections.emptyList())) {
-            c.accept(value);
-        }
+        mqService.sendBroadcast(MQTopic.CONFIG_CHANGE, new NameValueType<>(key, value));
         return true;
+    }
+
+    /**
+     * 订阅配置变更事件处理
+     * todo 处理泛型json解析
+     */
+    @EventListener(ApplicationStartedEvent.class)
+    @SuppressWarnings("unchecked")
+    public void subscribeConfigSetEvent() {
+        mqService.subscribeBroadcast(MQTopic.CONFIG_CHANGE, msg -> {
+            try {
+                NameValueType<String> nameValue = (NameValueType<String>)MapperHolder.parseAsJson(msg.getBody(), NameValueType.class);
+                log.info("{}配置项{}设置值：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue());
+                for (Consumer<String> c : configAfterSetListeners.getOrDefault(nameValue.getName(), Collections.emptyList())) {
+                    try {
+                        c.accept(nameValue.getValue());
+                    } catch (Throwable e) {
+                        log.error("{}配置项{}值设置后置处理出错，变更内容：{}，错误：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue(), e);
+                    }
+                }
+            } catch (IOException e) {
+                log.error("{}配置项值设置后置处理json解析出错，变更内容：{}，错误：{}", LOG_PREFIX, msg, e);
+            }
+        });
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.annotations;
 
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.sfc.enums.ProtectLevel;
 
 import java.lang.annotation.*;
 
