@@ -2028,7 +2028,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"sourceUid\": 1,\r\n    \"sourcePath\": \"/\",\r\n    \"sourceNames\": [\r\n        \"文件夹1\"\r\n    ],\r\n    \"targetUid\": 1,\r\n    \"targetFilePath\": \"/test.zip\",\r\n    \"archiveParam\": {\r\n        \"type\": \"zip\",\r\n        \"encoding\": \"gbk\"\r\n    }\r\n}",
+									"raw": "{\r\n    \"sourceUid\": 1,\r\n    \"sourcePath\": \"/\",\r\n    \"sourceNames\": [\r\n        \"文件夹1\"\r\n    ],\r\n    \"targetUid\": 1,\r\n    \"targetFilePath\": \"/test.zip\",\r\n    \"archiveParam\": {\r\n        \"type\": \"zip\",\r\n        \"encoding\": \"gbk\"\r\n    },\r\n    \"waitExit\": true\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -2781,7 +2781,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{addr}}/api/asyncTask/getLog?taskId=847654180750360576",
+							"raw": "{{addr}}/api/asyncTask/getLog?taskId=848042512181362688",
 							"host": [
 								"{{addr}}"
 							],
@@ -2793,7 +2793,7 @@
 							"query": [
 								{
 									"key": "taskId",
-									"value": "847654180750360576"
+									"value": "848042512181362688"
 								}
 							]
 						}
@@ -5136,6 +5136,113 @@
 								"task",
 								"download",
 								"proxy"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "网络工具",
+			"item": [
+				{
+					"name": "WOL网络唤醒",
+					"item": [
+						{
+							"name": "获取用户WOL设备列表",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/nwt/findByUid?uid=1",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"nwt",
+										"findByUid"
+									],
+									"query": [
+										{
+											"key": "uid",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "添加/保存WOL设备",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"我的设备\",\r\n    \"mac\": \"AA:BB:CC:DD:EE:FF\",\r\n    \"ip\": \"255.255.255.255\",\r\n    \"port\": 9,\r\n    \"uid\": 1\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{addr}}/api/nwt/saveWolDevice",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"nwt",
+										"saveWolDevice"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "使用WOL唤醒设备",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{addr}}/api/nwt/wakeWolDevice?id=864334797651050496",
+									"host": [
+										"{{addr}}"
+									],
+									"path": [
+										"api",
+										"nwt",
+										"wakeWolDevice"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "864334797651050496"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "获取所有已连接网络接口",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/nwt/getAllInterface",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"nwt",
+								"getAllInterface"
 							]
 						}
 					},

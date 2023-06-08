@@ -18,6 +18,7 @@
         <module>sfc-rpc</module>
         <module>sfc-archive</module>
         <module>sfc-constants</module>
+        <module>sfc-common</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>
