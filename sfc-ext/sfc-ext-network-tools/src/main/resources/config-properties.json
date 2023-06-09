@@ -1,0 +1,32 @@
+[
+  {
+    "name": "network-tools-wol",
+    "title": "WOL网络唤醒",
+    "nodes": [{
+      "nodes": [
+        {
+          "name": "network-tools-wol-list",
+          "title": "网络唤醒",
+          "describe": "",
+          "defaultValue": "{}",
+          "inputType": "template",
+          "template": "wol-device-list"
+        }
+      ]
+    }]
+  },
+  {
+    "name": "network-tools-interface-info",
+    "title": "网络接口信息",
+    "nodes": [{
+      "nodes": [
+        {
+          "name": "network-tools-interface-info-list",
+          "title": "接口列表",
+          "inputType": "template",
+          "template": "network-interface-list"
+        }
+      ]
+    }]
+  }
+]
