@@ -31,7 +31,7 @@ public class NwtController {
      * @param uid   用户id
      * @return      WOL设备列表
      */
-    @GetMapping("findByUid")
+    @GetMapping("findWolByUid")
     @AllowAnonymous
     public JsonResult<List<WolDevice>> findByUid(@RequestParam("uid") @UID Long uid) {
         return JsonResultImpl.getInstance(wolDeviceService.findByUid(uid));

@@ -5155,14 +5155,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/nwt/findByUid?uid=1",
+									"raw": "{{addr}}/api/nwt/findWolByUid?uid=1",
 									"host": [
 										"{{addr}}"
 									],
 									"path": [
 										"api",
 										"nwt",
-										"findByUid"
+										"findWolByUid"
 									],
 									"query": [
 										{

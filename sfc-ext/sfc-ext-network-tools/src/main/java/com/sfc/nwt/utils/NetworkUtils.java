@@ -124,10 +124,11 @@ public class NetworkUtils {
      * @throws IOException      IO错误
      */
     public static void wakeOnLan(String targetMac, int port) throws IOException {
-        DatagramSocket socket = new DatagramSocket(port);
-        byte[] magicPacketBytes = getMagicPacket(targetMac);
-        InetAddress inetAddress = InetAddress.getByName("255.255.255.255");
-        DatagramPacket packet = new DatagramPacket(magicPacketBytes, magicPacketBytes.length, inetAddress, port);
-        socket.send(packet);
+        try (DatagramSocket socket = new DatagramSocket(port)) {
+            byte[] magicPacketBytes = getMagicPacket(targetMac);
+            InetAddress inetAddress = InetAddress.getByName("255.255.255.255");
+            DatagramPacket packet = new DatagramPacket(magicPacketBytes, magicPacketBytes.length, inetAddress, port);
+            socket.send(packet);
+        };
     }
 }
