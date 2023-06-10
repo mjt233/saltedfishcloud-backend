@@ -5155,7 +5155,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{addr}}/api/nwt/findWolByUid?uid=1",
+									"raw": "{{addr}}/api/nwt/findWolByUid?uid=1&checkOnline=true",
 									"host": [
 										"{{addr}}"
 									],
@@ -5168,6 +5168,11 @@
 										{
 											"key": "uid",
 											"value": "1"
+										},
+										{
+											"key": "checkOnline",
+											"value": "true",
+											"description": "是否检查设备在线状态"
 										}
 									]
 								}

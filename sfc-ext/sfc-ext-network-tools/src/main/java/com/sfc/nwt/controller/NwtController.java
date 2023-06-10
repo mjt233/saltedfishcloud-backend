@@ -33,8 +33,12 @@ public class NwtController {
      */
     @GetMapping("findWolByUid")
     @AllowAnonymous
-    public JsonResult<List<WolDevice>> findByUid(@RequestParam("uid") @UID Long uid) {
-        return JsonResultImpl.getInstance(wolDeviceService.findByUid(uid));
+    public JsonResult<List<WolDevice>> findByUid(@RequestParam("uid") @UID Long uid, @RequestParam(value = "checkOnline", defaultValue = "false") Boolean checkOnline) {
+        if (checkOnline) {
+            return JsonResultImpl.getInstance(wolDeviceService.findByUidAndCheckOnline(uid));
+        } else {
+            return JsonResultImpl.getInstance(wolDeviceService.findByUid(uid));
+        }
     }
 
     @PostMapping("saveWolDevice")

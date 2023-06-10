@@ -4,6 +4,7 @@ package com.sfc.nwt.model.po;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -26,6 +27,8 @@ public class WolDevice extends AuditModel {
     /**
      * mac地址
      */
+    @Length(max = 17, min = 17)
+    @Column(length = 17)
     private String mac;
 
     /**
@@ -37,6 +40,11 @@ public class WolDevice extends AuditModel {
      * 端口
      */
     private Integer port;
+
+    /**
+     * WOL魔术包发送的IP（公网下唤醒需要指定目标公网IP，局域网下使用广播地址即可）
+     */
+    private String sendIp;
 
     /**
      * 上次发送唤醒的时间

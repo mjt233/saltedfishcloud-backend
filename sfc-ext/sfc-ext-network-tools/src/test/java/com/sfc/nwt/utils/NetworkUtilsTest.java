@@ -5,7 +5,10 @@ import org.junit.jupiter.api.Test;
 
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 
 class NetworkUtilsTest {
 
@@ -31,5 +34,16 @@ class NetworkUtilsTest {
             Assertions.assertArrayEquals(macBytes, Arrays.copyOfRange(magicPacket, magicPacket.length - 6, magicPacket.length));
             Assertions.assertEquals(6 + 6*16, magicPacket.length);
         }
+    }
+
+    @Test
+    void testIpAlive() {
+        String ipPrefix = "192.168.5.";
+        List<String> ips = new ArrayList<>();
+        for (int i = 0; i < 254; i++) {
+            ips.add(ipPrefix + (i + 1));
+        }
+        Set<String> result = NetworkUtils.testIpAlive(ips);
+        System.out.println(result);
     }
 }
