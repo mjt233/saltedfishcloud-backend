@@ -60,4 +60,9 @@ public abstract class CrudServiceImpl<T extends AuditModel, R extends BaseRepo<T
     public List<T> findByUid(Long uid) {
         return repository.findAll((Specification<T>)(root, query, cb) -> query.where(cb.equal(root.get("uid"), uid)).getRestriction());
     }
+
+    @Override
+    public int batchDelete(Collection<Long> ids) {
+        return repository.batchDelete(ids);
+    }
 }

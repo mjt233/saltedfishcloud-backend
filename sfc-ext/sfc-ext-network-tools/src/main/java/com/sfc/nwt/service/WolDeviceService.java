@@ -57,4 +57,12 @@ public class WolDeviceService extends CrudServiceImpl<WolDevice, WolDeviceRepo> 
         device.setLastWakeAt(new Date());
         save(device);
     }
+
+    public int batchDelete(Collection<Long> ids) {
+        List<WolDevice> deviceList = repository.findAllById(ids);
+        for (WolDevice wolDevice : deviceList) {
+            UIDValidator.validate(wolDevice.getUid(), true);
+        }
+        return repository.batchDelete(ids);
+    }
 }
