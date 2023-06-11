@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.security.RolesAllowed;
 import java.io.IOException;
 import java.net.SocketException;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,8 +34,12 @@ public class NwtController {
      */
     @GetMapping("findWolByUid")
     @AllowAnonymous
-    public JsonResult<List<WolDevice>> findByUid(@RequestParam("uid") @UID Long uid) {
-        return JsonResultImpl.getInstance(wolDeviceService.findByUid(uid));
+    public JsonResult<List<WolDevice>> findByUid(@RequestParam("uid") @UID Long uid, @RequestParam(value = "checkOnline", defaultValue = "false") Boolean checkOnline) {
+        if (checkOnline) {
+            return JsonResultImpl.getInstance(wolDeviceService.findByUidAndCheckOnline(uid));
+        } else {
+            return JsonResultImpl.getInstance(wolDeviceService.findByUid(uid));
+        }
     }
 
     @PostMapping("saveWolDevice")
@@ -51,6 +56,16 @@ public class NwtController {
     public JsonResult<?> wakeWolDevice(Long id) throws IOException {
         wolDeviceService.wake(id);
         return JsonResult.emptySuccess();
+    }
+
+    /**
+     * 批量删除WOL设备
+     * @param ids   待删除的WOL涉笔ids
+     * @return      删除数量
+     */
+    @PostMapping("batchDeleteWol")
+    public JsonResult<Integer> batchDeleteWol(@RequestBody Collection<Long> ids) {
+        return JsonResultImpl.getInstance(wolDeviceService.batchDelete(ids));
     }
 
     @GetMapping("getAllInterface")

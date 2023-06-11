@@ -1,19 +1,28 @@
 package com.sfc.nwt.utils;
 
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 /**
  * 网络接口工具类
  */
 @UtilityClass
+@Slf4j
 public class NetworkUtils {
+    private static final ExecutorService IP_TEST_POOL = new ThreadPoolExecutor(
+            0,
+            5000,
+            5, TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            r -> new Thread(r,"ip-test-thread-" + System.currentTimeMillis())
+    );
+
     /**
      * 获取所有已连接网络设备
      */
@@ -124,11 +133,67 @@ public class NetworkUtils {
      * @throws IOException      IO错误
      */
     public static void wakeOnLan(String targetMac, int port) throws IOException {
+        wakeOnLan(targetMac, "255.255.255.255", port);
+    }
+
+    /**
+     * 发送WOL包，远程开机
+     * @param targetMac         目标mc地址
+     * @param sendIpAddress     目标ip地址
+     * @throws IOException      IO错误
+     */
+    public static void wakeOnLan(String targetMac, String sendIpAddress, int port) throws IOException {
         try (DatagramSocket socket = new DatagramSocket()) {
             byte[] magicPacketBytes = getMagicPacket(targetMac);
-            InetAddress inetAddress = InetAddress.getByName("255.255.255.255");
+            InetAddress inetAddress = InetAddress.getByName(sendIpAddress);
             DatagramPacket packet = new DatagramPacket(magicPacketBytes, magicPacketBytes.length, inetAddress, port);
             socket.send(packet);
-        };
+        }
+    }
+
+    /**
+     * 测试IP地址是否有效
+     * @param ipList    待测试IP列表
+     * @return          有效IP列表
+     */
+    public static Set<String> testIpAlive(Collection<String> ipList) {
+        Set<String> availableIpSet = new HashSet<>();
+        testIpAlive(ipList, ip -> {
+            synchronized (availableIpSet) {
+                availableIpSet.add(ip);
+            }
+        });
+        return availableIpSet;
+    }
+
+    /**
+     * 测试IP地址是否有效
+     * @param ipList    待测试IP列表
+     * @param consumer  有效IP消费函数
+     */
+    public static void testIpAlive(Collection<String> ipList, Consumer<String> consumer) {
+        Semaphore semaphore = new Semaphore(ipList.size());
+        try {
+            semaphore.acquire(ipList.size());
+        } catch (InterruptedException ignore) { }
+        for (String ip : ipList) {
+            IP_TEST_POOL.submit(() -> {
+                try {
+                    InetAddress inetAddress = InetAddress.getByName(ip);
+                    log.debug("正在测试ip: {} ...", ip);
+                    boolean reachable = inetAddress.isReachable(500);
+                    log.debug("测试ip: {} 结果: {}", ip, reachable);
+                    if (reachable) {
+                        consumer.accept(ip);
+                    }
+                } catch (IOException ignore) { }
+                finally {
+                    semaphore.release();
+                }
+            });
+        }
+        try {
+            semaphore.acquire(ipList.size());
+        } catch (InterruptedException ignore) { }
     }
 }
