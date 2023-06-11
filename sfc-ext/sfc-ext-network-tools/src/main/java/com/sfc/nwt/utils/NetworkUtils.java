@@ -15,7 +15,13 @@ import java.util.function.Consumer;
 @UtilityClass
 @Slf4j
 public class NetworkUtils {
-    private static final ExecutorService IP_TEST_POOL = new ThreadPoolExecutor(0, 1000, 5, TimeUnit.SECONDS, new SynchronousQueue<>());
+    private static final ExecutorService IP_TEST_POOL = new ThreadPoolExecutor(
+            0,
+            5000,
+            5, TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            r -> new Thread(r,"ip-test-thread-" + System.currentTimeMillis())
+    );
 
     /**
      * 获取所有已连接网络设备
