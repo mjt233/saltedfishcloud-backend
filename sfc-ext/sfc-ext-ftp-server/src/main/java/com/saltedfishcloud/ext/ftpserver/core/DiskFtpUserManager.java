@@ -1,5 +1,6 @@
 package com.saltedfishcloud.ext.ftpserver.core;
 
+import com.saltedfishcloud.ext.ftpserver.FTPServerProperty;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.apache.ftpserver.ftplet.*;
@@ -17,6 +18,9 @@ import java.util.List;
 public class DiskFtpUserManager implements UserManager {
     @Autowired
     private UserDao userDao;
+
+    @Autowired
+    private FTPServerProperty ftpServerProperty;
 
     @Override
     public BaseUser getUserByName(String username) {
@@ -58,6 +62,9 @@ public class DiskFtpUserManager implements UserManager {
     @Override
     public User authenticate(Authentication authentication) throws AuthenticationFailedException {
         if (authentication instanceof AnonymousAuthentication) {
+            if (!ftpServerProperty.isEnableAnonymous()) {
+                return null;
+            }
             return getUserByName(com.xiaotao.saltedfishcloud.model.po.User.SYS_NAME_PUBLIC);
         }
         if (authentication instanceof UsernamePasswordAuthentication) {
