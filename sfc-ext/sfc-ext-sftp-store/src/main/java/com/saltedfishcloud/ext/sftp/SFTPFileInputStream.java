@@ -1,6 +1,7 @@
 package com.saltedfishcloud.ext.sftp;
 
 import net.schmizz.sshj.sftp.RemoteFile;
+import net.schmizz.sshj.sftp.SFTPClient;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -9,10 +10,12 @@ import java.io.InputStream;
 public class SFTPFileInputStream extends InputStream {
     private final RemoteFile file;
     private final InputStream is;
+    private final SFTPClient client;
 
-    public SFTPFileInputStream(RemoteFile file) {
+    public SFTPFileInputStream(RemoteFile file, SFTPClient client) {
         this.file = file;
         is = this.file.new RemoteFileInputStream();
+        this.client = client;
     }
 
     @Override
@@ -57,7 +60,11 @@ public class SFTPFileInputStream extends InputStream {
 
     @Override
     public void close() throws IOException {
-        is.close();
-        file.close();
+        try {
+            is.close();
+            file.close();
+        } finally {
+            client.close();
+        }
     }
 }
