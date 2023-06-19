@@ -32,6 +32,7 @@
         <module>sfc-ext-jntm</module>
         <module>sfc-ext-quick-share</module>
         <module>sfc-ext-network-tools</module>
+        <module>sfc-ext-web-shell</module>
     </modules>
 
 
