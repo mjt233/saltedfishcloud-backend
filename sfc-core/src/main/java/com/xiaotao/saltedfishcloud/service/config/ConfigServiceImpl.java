@@ -16,10 +16,7 @@ import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
 import com.xiaotao.saltedfishcloud.service.MQService;
-import com.xiaotao.saltedfishcloud.utils.ClassUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
@@ -60,6 +57,11 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     private MQService mqService;
 
     /**
+     * 是否为开发环境
+     */
+    private Boolean isInDevelop = null;
+
+    /**
      * 当配置key被修改后，抑制事件广播的key以确保某些操作只由单个节点执行。
      *
      */
@@ -89,6 +91,10 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     @Override
     public List<PluginConfigNodeInfo> listPluginConfig() {
         Map<String, String> allConfig = getAllConfig();
+        if (getIsInDevelop()) {
+            pluginManager.refreshPluginConfig();
+        }
+
         return pluginManager.listAllPlugin().stream().map(e -> {
             PluginConfigNodeInfo configNodeInfo = new PluginConfigNodeInfo();
             configNodeInfo.setAlias(e.getAlias());
@@ -232,6 +238,15 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         databaseInitializer.init();
+    }
+
+
+    private boolean getIsInDevelop() {
+        if (isInDevelop == null) {
+            isInDevelop = Arrays.asList(SpringContextUtils.getContext().getEnvironment().getActiveProfiles())
+                    .contains("develop");
+        }
+        return isInDevelop;
     }
 
     @Override

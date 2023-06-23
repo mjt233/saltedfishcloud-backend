@@ -136,7 +136,10 @@ public interface PluginManager extends Closeable {
      */
     ClassLoader getJarMergeClassLoader();
 
-
+    /**
+     * 刷新插件配置项信息
+     */
+    void refreshPluginConfig();
 
 //    /**
 //     * 从插件库或目录中动态加载插件
