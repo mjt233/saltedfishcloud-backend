@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.ext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sfc.enums.PluginLoadType;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
@@ -798,6 +799,21 @@ public class DefaultPluginManager implements PluginManager {
                 ((Closeable) classLoader).close();
             }
         }
+    }
+
+    @Override
+    public void refreshPluginConfig() {
+        pluginRawLoaderMap.forEach((pluginName, loader) -> {
+            try {
+                log.info("{}刷新插件{}的配置信息", LOG_PREFIX, pluginName);
+                String prefix = pluginResourceRootMap.getOrDefault(pluginName, "");
+                List<ConfigNode> nodes = ExtUtils.getPluginConfigNodeFromLoader(loader, prefix);
+                pluginConfigNodeGroupMap.put(pluginName, nodes);
+            } catch (IOException e) {
+                log.error("{}更新插件配置项失败", LOG_PREFIX);
+                throw new JsonException(500, e.getMessage());
+            }
+        });
     }
 
     //    @Override

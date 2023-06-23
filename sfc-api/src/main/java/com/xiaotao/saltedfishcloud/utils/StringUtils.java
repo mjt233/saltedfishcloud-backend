@@ -3,6 +3,9 @@ package com.xiaotao.saltedfishcloud.utils;
 import org.springframework.lang.Nullable;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URL;
 import java.util.Objects;
 import java.util.Random;
@@ -216,6 +219,21 @@ public class StringUtils {
             showSize = size;
         }
         return String.format("%.2f%s", showSize, suffix);
+    }
+
+    /**
+     * 获取调用栈字符串文本消息
+     * @param throwable 抛出的对象
+     * @return          调用栈消息字符串文本
+     */
+    public static String getInvokeStackMsg(Throwable throwable) {
+
+        try (StringWriter stringWriter = new StringWriter(); PrintWriter printWriter = new PrintWriter(stringWriter)) {
+            throwable.printStackTrace(printWriter);
+            return stringWriter.toString();
+        } catch (IOException error) {
+            return "获取调用栈信息出错" + getInvokeStackMsg(error);
+        }
     }
 
     /**

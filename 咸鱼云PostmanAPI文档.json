@@ -5256,6 +5256,45 @@
 			]
 		},
 		{
+			"name": "WebShell",
+			"item": [
+				{
+					"name": "快捷执行命令(仅限管理员)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"cmd\": \"ping 127.0.0.1\",\r\n    \"charset\": \"GBK\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/webShell/executeCommand?nodeId=868330023155662848",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"webShell",
+								"executeCommand"
+							],
+							"query": [
+								{
+									"key": "nodeId",
+									"value": "868330023155662848"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "获取系统特性",
 			"request": {
 				"method": "GET",
