@@ -27,6 +27,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 @Service
 @Slf4j
@@ -52,6 +54,31 @@ public class ShellExecutorImpl implements ShellExecutor {
                 .start();
         log.debug("命令{} pid为: {}", originCmd, process.toHandle().pid());
         return process;
+    }
+
+    /**
+     * 监控进程执行超时
+     * @param process   待监控进程
+     * @param timeout   等待时间，若小于等于0表示不监控，单位: 秒
+     * @param onTimeoutCallback 超时回调
+     */
+    private void watchTimeout(Process process, long timeout, Consumer<Process> onTimeoutCallback) {
+        if (timeout <= 0) {
+            return;
+        }
+        new Thread(() -> {
+            long begin = System.currentTimeMillis();
+            while (process.isAlive()) {
+                try {
+                    Thread.sleep(1000);
+                    long duration = (System.currentTimeMillis() - begin) / 1000;
+                    if (duration >= timeout) {
+                        onTimeoutCallback.accept(process);
+                        return;
+                    }
+                } catch (InterruptedException ignore) { }
+            }
+        }).start();
     }
 
     @Override
@@ -81,32 +108,40 @@ public class ShellExecutorImpl implements ShellExecutor {
 
         long begin = System.currentTimeMillis();
         ShellExecuteResult result = new ShellExecuteResult();
-        StringBuilder sb = new StringBuilder();
+        StringBuilder processOutput = new StringBuilder();
 
         try {
+            AtomicBoolean isTimeout = new AtomicBoolean();
             // 创建进程并执行
             Process process = createProcess(workDir, cmd);
             long pid = process.toHandle().pid();
             Charset charset = Optional.ofNullable(parameter.getCharset())
                     .map(Charset::forName)
                     .orElse(StandardCharsets.UTF_8);
+            watchTimeout(process, parameter.getTimeout(), p -> {
+                isTimeout.set(true);
+                p.destroy();
+            });
 
             // 记录输出日志
             try(BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), charset))) {
                 String line;
                 while ((line =reader.readLine()) != null) {
-                    sb.append(line).append('\n');
+                    processOutput.append(line).append('\n');
                     log.debug("[{}]命令执行中输出: {}", pid, line);
                 }
                 result.setExitCode(process.waitFor());
             }
-            log.info("命令执行完成，输出为: \n{}", sb);
+            log.info("命令执行完成，输出为: \n{}", processOutput);
+            if (isTimeout.get()) {
+                processOutput.append("\n[警告]命令执行超时，已被kill\n");
+            }
         } catch (Throwable throwable) {
             log.error("命令执行出错", throwable);
-            sb.append("命令执行出错:").append(throwable.getMessage());
+            processOutput.append("命令执行出错:").append(throwable.getMessage());
         }
 
-        result.setOutput(sb.toString());
+        result.setOutput(processOutput.toString());
         result.setTime(System.currentTimeMillis() - begin);
         return result;
     }

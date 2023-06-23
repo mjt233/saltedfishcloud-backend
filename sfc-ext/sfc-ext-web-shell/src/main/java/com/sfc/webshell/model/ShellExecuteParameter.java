@@ -26,4 +26,9 @@ public class ShellExecuteParameter {
      * 编码
      */
     private String charset;
+
+    /**
+     * 限制执行超时(秒)，若小于等于0表示无限制
+     */
+    private long timeout;
 }
