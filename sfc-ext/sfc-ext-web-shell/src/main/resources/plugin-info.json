@@ -1,6 +1,6 @@
 {
   "name": "web-shell",
-  "alias": "web-shell",
+  "alias": "WebShell",
   "describe": "提供执行和管理shell命令进程的接口",
   "loadType": "merge",
   "type": "jar",
@@ -8,5 +8,9 @@
   "author": "xiaotao233",
   "email": "mjt233@qq.com",
   "apiVersion": "^api.version^",
-  "version": "^project.version^"
+  "version": "^project.version^",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
 }
