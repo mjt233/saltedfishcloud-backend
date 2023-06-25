@@ -8,11 +8,7 @@ import com.sfc.webshell.utils.ProcessUtils;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.CommonResult;
 import com.xiaotao.saltedfishcloud.model.RequestParam;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
-import com.xiaotao.saltedfishcloud.utils.OSInfo;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,8 +19,6 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,11 +33,9 @@ public class ShellExecutorImpl implements ShellExecutor {
     @Autowired
     private ClusterService clusterService;
 
-    private final static List<String> WINDOWS_EXECUTABLE_SUFFIX_LIST = List.of(".exe", ".EXE", ".bat", ".BAT", ".cmd", ".CMD");
-
     private Process createProcess(String workDir, String originCmd) throws IOException {
         log.debug("执行命令：{}", originCmd);
-        String executablePath = resolveCmdExecutablePath(workDir, originCmd);
+        String executablePath = ProcessUtils.resolveCmdExecutablePath(workDir, originCmd);
         List<String> args = ProcessUtils.parseCommandArgs(originCmd);
         args.set(0, executablePath);
 
@@ -83,7 +75,7 @@ public class ShellExecutorImpl implements ShellExecutor {
 
     @Override
     public ShellExecuteResult executeCommand(Long nodeId, ShellExecuteParameter parameter) throws IOException {
-        if (nodeId != null) {
+        if (nodeId != null && !clusterService.getSelf().getId().equals(nodeId)) {
             ClusterNodeInfo node = Optional
                     .ofNullable(clusterService.getNodeById(nodeId))
                     .orElseThrow(() -> new IllegalArgumentException("无效的节点id:" + nodeId));
@@ -146,43 +138,4 @@ public class ShellExecutorImpl implements ShellExecutor {
         return result;
     }
 
-    /**
-     * 通过环境变量PATH解析命令行主命令的可执行命令路径
-     * @param workDir   工作目录
-     * @param cmd       命令
-     * @return          命令的可执行路径
-     */
-    private String resolveCmdExecutablePath(String workDir, String cmd) {
-        String[] cmds = cmd.split("\\s+", 2);
-        if (Files.isExecutable(Paths.get(cmds[0]))) {
-            return cmd;
-        }
-
-        Path curPathFile = Paths.get(workDir).resolve(cmds[0]);
-        if (Files.exists(curPathFile)) {
-            return curPathFile.toAbsolutePath().toString();
-        }
-        return Arrays.stream(Optional.ofNullable(System.getenv("PATH")).orElse("")
-                .split(";"))
-                .map(envPath -> {
-                    Path path = Paths.get(StringUtils.appendPath(envPath, cmds[0]));
-                    if (Files.isExecutable(path)) {
-                        return path.toString();
-                    }
-                    if (OSInfo.isWindows()) {
-                        return WINDOWS_EXECUTABLE_SUFFIX_LIST
-                                .stream()
-                                .map(suffix -> path + suffix)
-                                .filter(windowsPath -> Files.isExecutable(Paths.get(windowsPath)))
-                                .findAny()
-                                .orElse(null);
-                    } else {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .findAny()
-                .orElseThrow(() -> new IllegalArgumentException("找不到命令 " + cmds[0]));
-
-    }
 }

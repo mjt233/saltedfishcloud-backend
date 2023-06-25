@@ -68,4 +68,15 @@ class ProcessUtilsTest {
     }
 
 
+    @Test
+    @DisplayName("命令行参数解析-Unix风格")
+    public void testUnixStyle() {
+        List<String> args = ProcessUtils.parseCommandArgs("/bin/ping 127.0.0.1");
+        assertArrayEquals(
+                new String[]{"/bin/ping", "127.0.0.1"},
+                args.toArray()
+        );
+    }
+
+
 }
