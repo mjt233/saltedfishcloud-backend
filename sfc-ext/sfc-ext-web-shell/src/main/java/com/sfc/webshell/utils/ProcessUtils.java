@@ -94,9 +94,10 @@ public class ProcessUtils {
      * 通过环境变量PATH解析命令行主命令的可执行命令路径
      * @param workDir   工作目录
      * @param cmd       命令
+     * @param pathEnvValue 指定PATH变量，若为null则使用系统环境变量PATH
      * @return          命令的可执行路径
      */
-    public static String resolveCmdExecutablePath(String workDir, String cmd) {
+    public static String resolveCmdExecutablePath(String workDir, String cmd, String pathEnvValue) {
         String[] cmds = cmd.split("\\s+", 2);
         if (Files.isExecutable(Paths.get(cmds[0]))) {
             return cmds[0];
@@ -107,8 +108,11 @@ public class ProcessUtils {
             return curPathFile.toAbsolutePath().toString();
         }
         String splitter = OSInfo.isWindows() ? ";" : ":";
-        return Arrays.stream(Optional.ofNullable(System.getenv("PATH")).orElse("")
-                .split(splitter))
+        return Arrays.stream(Optional.ofNullable(pathEnvValue)
+                        .orElse(
+                                Optional.ofNullable(System.getenv("PATH")).orElse("")
+                        )
+                        .split(splitter))
                 .map(envPath -> {
                     Path path = Paths.get(StringUtils.appendPath(envPath, cmds[0]));
                     if (Files.isExecutable(path)) {
@@ -129,5 +133,15 @@ public class ProcessUtils {
                 .findAny()
                 .orElseThrow(() -> new IllegalArgumentException("找不到命令 " + cmds[0]));
 
+    }
+
+    /**
+     * 通过环境变量PATH解析命令行主命令的可执行命令路径
+     * @param workDir   工作目录
+     * @param cmd       命令
+     * @return          命令的可执行路径
+     */
+    public static String resolveCmdExecutablePath(String workDir, String cmd) {
+        return resolveCmdExecutablePath(workDir, cmd, System.getenv("PATH"));
     }
 }

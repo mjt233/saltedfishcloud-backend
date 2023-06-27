@@ -31,4 +31,9 @@ public class ShellExecuteParameter {
      * 限制执行超时(秒)，若小于等于0表示无限制
      */
     private long timeout;
+
+    /**
+     * 工作目录
+     */
+    private String workDirectory;
 }

@@ -33,17 +33,31 @@ public class ShellExecutorImpl implements ShellExecutor {
     @Autowired
     private ClusterService clusterService;
 
-    private Process createProcess(String workDir, String originCmd) throws IOException {
-        log.debug("执行命令：{}", originCmd);
-        String executablePath = ProcessUtils.resolveCmdExecutablePath(workDir, originCmd);
+    private Process createProcess(ShellExecuteParameter parameter) throws IOException {
+        String originCmd = parameter.getCmd();
+        String workDir = parameter.getWorkDirectory();
+
+        log.debug("在{}执行命令：{}", workDir, originCmd);
+        Map<String, String> envMap = parameter.getEnv();
+        String executablePath = ProcessUtils.resolveCmdExecutablePath(
+                workDir,
+                originCmd,
+                Optional.ofNullable(envMap).map(e -> e.get("PATH")).orElse(null)
+        );
         List<String> args = ProcessUtils.parseCommandArgs(originCmd);
         args.set(0, executablePath);
 
-        Process process = new ProcessBuilder()
+        ProcessBuilder processBuilder = new ProcessBuilder()
                 .command(args)
                 .redirectErrorStream(true)
-                .directory(new File(workDir))
-                .start();
+                .directory(new File(workDir));
+
+        if (envMap != null) {
+            processBuilder.environment().putAll(envMap);
+        }
+
+
+        Process process = processBuilder.start();
         log.debug("命令{} pid为: {}", originCmd, process.toHandle().pid());
         return process;
     }
@@ -94,9 +108,11 @@ public class ShellExecutorImpl implements ShellExecutor {
         }
 
         // 记录执行命令
-        String workDir = Paths.get("").toAbsolutePath().toString();
+        if (parameter.getWorkDirectory() == null) {
+            parameter.setWorkDirectory(Paths.get("").toAbsolutePath().toString());
+        }
         String cmd = parameter.getCmd();
-        shellExecuteRecordService.addCmdRecord(workDir, cmd);
+        shellExecuteRecordService.addCmdRecord(parameter.getWorkDirectory(), cmd);
 
         long begin = System.currentTimeMillis();
         ShellExecuteResult result = new ShellExecuteResult();
@@ -105,7 +121,7 @@ public class ShellExecutorImpl implements ShellExecutor {
         try {
             AtomicBoolean isTimeout = new AtomicBoolean();
             // 创建进程并执行
-            Process process = createProcess(workDir, cmd);
+            Process process = createProcess(parameter);
             long pid = process.toHandle().pid();
             Charset charset = Optional.ofNullable(parameter.getCharset())
                     .map(Charset::forName)
