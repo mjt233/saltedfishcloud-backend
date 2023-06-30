@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud;
 
+import com.sfc.archive.annocation.EnableArchive;
+import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.rpc.annotation.EnableRpc;
 import com.sfc.task.annocation.EnableAsyncTask;
 import com.xiaotao.saltedfishcloud.init.PluginInitializer;
@@ -19,6 +21,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -47,6 +50,7 @@ import java.util.function.Supplier;
 @EnableJpaRepositories(basePackages = "com.xiaotao.saltedfishcloud.dao.jpa")
 @EnableAsync
 @EnableAsyncTask
+@EnableArchive
 @EnableRpc
 @Indexed
 public class SaltedfishcloudApplication {
