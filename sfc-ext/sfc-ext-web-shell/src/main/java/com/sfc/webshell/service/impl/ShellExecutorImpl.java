@@ -1,15 +1,28 @@
 package com.sfc.webshell.service.impl;
 
+import com.sfc.rpc.RPCManager;
+import com.sfc.rpc.RPCRequest;
+import com.sfc.rpc.RPCResponse;
+import com.sfc.webshell.constans.WebShellMQTopic;
+import com.sfc.webshell.constans.WebShellRpcFunction;
+import com.sfc.webshell.helper.BlockStringBuffer;
 import com.sfc.webshell.model.ShellExecuteParameter;
 import com.sfc.webshell.model.ShellExecuteResult;
+import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecuteRecordService;
 import com.sfc.webshell.service.ShellExecutor;
 import com.sfc.webshell.utils.ProcessUtils;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.CommonResult;
 import com.xiaotao.saltedfishcloud.model.RequestParam;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
+import com.xiaotao.saltedfishcloud.service.MQService;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -21,23 +34,78 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 @Service
 @Slf4j
-public class ShellExecutorImpl implements ShellExecutor {
+public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
+    private final static String LOG_PREFIX = "[WebShell]";
     @Autowired
     private ShellExecuteRecordService shellExecuteRecordService;
 
     @Autowired
     private ClusterService clusterService;
 
+    @Autowired
+    private RPCManager rpcManager;
+
+    @Autowired
+    private MQService mqService;
+
+    private final Map<Long, Process> processMap = new ConcurrentHashMap<>();
+
+    private final Map<Long, BlockStringBuffer> outputMap = new ConcurrentHashMap<>();
+
+    private final Map<Long, ShellSessionRecord> sessionMap = new ConcurrentHashMap<>();
+
+    private final AtomicInteger threadCnt = new AtomicInteger(0);
+
+    private final Executor forceKillPool = new ThreadPoolExecutor(
+            0,
+            10,
+            10, TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(10),
+            (r) -> new Thread(r, "web-shell-killer")
+    );
+
+    private final Executor threadPool = new ThreadPoolExecutor(
+            0,
+            1024,
+            1,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            (r) -> new Thread(r, "web-shell-io-" + threadCnt.getAndIncrement()),
+            (r, executor) -> {
+                throw new RejectedExecutionException("节点 [" + clusterService.getSelf().getHost() + "] 的WebShell执行线程池已满");
+            }
+    );
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        rpcManager.registerRpcHandler(WebShellRpcFunction.KILL, request -> {
+            Long sessionId = request.getTaskId();
+            try {
+                killLocal(sessionId, 60000);
+                return RPCResponse.success(null);
+            } catch (JsonException e) {
+                return RPCResponse.ingore();
+            }
+        });
+    }
+
+    /**
+     * 创建进程
+     * @param parameter 参数
+     * @return          进程
+     */
     private Process createProcess(ShellExecuteParameter parameter) throws IOException {
-        String originCmd = parameter.getCmd();
+        String originCmd = Optional.ofNullable(parameter.getShell()).orElse(parameter.getCmd());
         String workDir = parameter.getWorkDirectory();
 
-        log.debug("在{}执行命令：{}", workDir, originCmd);
+        log.debug("{}在{}执行命令：{}", LOG_PREFIX, workDir, originCmd);
         Map<String, String> envMap = parameter.getEnv();
         String executablePath = ProcessUtils.resolveCmdExecutablePath(
                 workDir,
@@ -58,7 +126,7 @@ public class ShellExecutorImpl implements ShellExecutor {
 
 
         Process process = processBuilder.start();
-        log.debug("命令{} pid为: {}", originCmd, process.toHandle().pid());
+        log.debug("{}命令{} pid为: {}", LOG_PREFIX, originCmd, process.toHandle().pid());
         return process;
     }
 
@@ -89,22 +157,9 @@ public class ShellExecutorImpl implements ShellExecutor {
 
     @Override
     public ShellExecuteResult executeCommand(Long nodeId, ShellExecuteParameter parameter) throws IOException {
-        if (nodeId != null && !clusterService.getSelf().getId().equals(nodeId)) {
-            ClusterNodeInfo node = Optional
-                    .ofNullable(clusterService.getNodeById(nodeId))
-                    .orElseThrow(() -> new IllegalArgumentException("无效的节点id:" + nodeId));
-            RequestParam requestParam = RequestParam.builder()
-                    .method(HttpMethod.POST)
-                    .url("/api/webShell/executeCommand")
-                    .body(parameter)
-                    .build();
-
-            ResponseEntity<CommonResult<ShellExecuteResult>> httpCallResult = clusterService.request(
-                    node.getId(),
-                    requestParam,
-                    new ParameterizedTypeReference<>() {}
-            );
-            return Objects.requireNonNull(httpCallResult.getBody()).getData();
+        CommonResult<ShellExecuteResult> rpcResult = invokeNodeService(nodeId, parameter, HttpMethod.POST, "/api/webShell/executeCommand");
+        if (rpcResult != null) {
+            return rpcResult.getData();
         }
 
         // 记录执行命令
@@ -136,16 +191,16 @@ public class ShellExecutorImpl implements ShellExecutor {
                 String line;
                 while ((line =reader.readLine()) != null) {
                     processOutput.append(line).append('\n');
-                    log.debug("[{}]命令执行中输出: {}", pid, line);
+                    log.debug("{}[{}]命令执行中输出: {}",LOG_PREFIX, pid, line);
                 }
                 result.setExitCode(process.waitFor());
             }
-            log.info("命令执行完成，输出为: \n{}", processOutput);
+            log.info("{}命令执行完成，输出为: \n{}",LOG_PREFIX, processOutput);
             if (isTimeout.get()) {
                 processOutput.append("\n[警告]命令执行超时，已被kill\n");
             }
         } catch (Throwable throwable) {
-            log.error("命令执行出错", throwable);
+            log.error("{}命令执行出错",LOG_PREFIX, throwable);
             processOutput.append("命令执行出错:").append(throwable.getMessage());
         }
 
@@ -154,4 +209,186 @@ public class ShellExecutorImpl implements ShellExecutor {
         return result;
     }
 
+    /**
+     * 调用集群节点接口的服务方法，若指定的节点为自己则返回null
+     * @param nodeId    节点id
+     * @param body      请求体
+     * @param method    请求方法
+     * @param url       url
+     * @param <R>       返回值
+     * @param <T>       参数类型
+     * @return          调用返回值，若为null表示为当前节点，未发起远程调用
+     */
+    private <R, T> CommonResult<R> invokeNodeService(Long nodeId, T body, HttpMethod method, String url) {
+        if(clusterService.getSelf().getId().equals(nodeId)) {
+            return null;
+        }
+        ClusterNodeInfo node = Optional
+                .ofNullable(clusterService.getNodeById(nodeId))
+                .orElseThrow(() -> new IllegalArgumentException("无效的节点id:" + nodeId));
+        RequestParam requestParam = RequestParam.builder()
+                .method(method)
+                .url(url)
+                .body(body)
+                .build();
+
+        ResponseEntity<CommonResult<R>> httpCallResult = clusterService.request(
+                node.getId(),
+                requestParam,
+                new ParameterizedTypeReference<>() {}
+        );
+        return httpCallResult.getBody();
+    }
+
+    @Override
+    public ShellSessionRecord createSession(Long nodeId, ShellExecuteParameter parameter) throws IOException {
+        CommonResult<ShellSessionRecord> rpcResult = invokeNodeService(nodeId, parameter, HttpMethod.POST, "/api/webShell/createSession");
+        if (rpcResult != null) {
+            return rpcResult.getData();
+        }
+
+
+        Process process = createProcess(parameter);
+        Charset charset = Optional.ofNullable(parameter.getCharset())
+                .map(Charset::forName)
+                .orElse(StandardCharsets.UTF_8);
+
+        process.getOutputStream().write(parameter.getCmd().getBytes(charset));
+        ShellSessionRecord session = ShellSessionRecord.builder()
+                .host(clusterService.getSelf().getHost())
+                .build();
+        Date now = new Date();
+        session.setId(IdUtil.getId());
+        session.setCreateAt(now);
+        session.setUpdateAt(now);
+        session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId().longValue()).orElse((long)User.PUBLIC_USER_ID));
+
+        processMap.put(session.getId(), process);
+        sessionMap.put(session.getId(), session);
+        BlockStringBuffer outputBuffer = new BlockStringBuffer();
+        outputMap.put(session.getId(), outputBuffer);
+
+        String topic = WebShellMQTopic.Prefix.INPUT + session.getId();
+        long subscribeId = mqService.subscribeMessageQueue(topic, WebShellMQTopic.DEFAULT_GROUP, mqMessage -> {
+            if (process.isAlive()) {
+                try {
+                    process.getOutputStream().write(mqMessage.getBody().toString().getBytes());
+                } catch (Throwable e) {
+                    log.error("{}shell会话输入错误, id: {} input: {}",LOG_PREFIX, session.getId(), mqMessage, e);
+                }
+            }
+        });
+
+        threadPool.execute(() -> {
+            char[] buffer = new char[8192];
+            int cnt;
+            try (InputStreamReader reader = new InputStreamReader(process.getInputStream(), charset)){
+                while ( (cnt = reader.read(buffer, 0, buffer.length)) != -1) {
+                    outputBuffer.append(buffer, 0, cnt);
+                    mqService.push(topic, String.valueOf(buffer, 0, cnt));
+                }
+            } catch (IOException e) {
+                log.error("{}读取WebShell进程输出异常, id: {} ", LOG_PREFIX, session.getId(), e);
+            } finally {
+                mqService.unsubscribeMessageQueue(subscribeId);
+            }
+        });
+        return session;
+    }
+
+    @Override
+    public Process getProcess(Long sessionId) {
+        return processMap.get(sessionId);
+    }
+
+    @Override
+    public void killLocal(Long sessionId, long forceDelay) {
+        Process process = getProcess(sessionId);
+        if (process == null) {
+            throw new JsonException("会话id" + sessionId + "不存在");
+        }
+        process.destroy();
+
+        if (forceDelay <= 0) {
+            return;
+        }
+
+        forceKillPool.execute(() -> {
+            if (!process.isAlive()) {
+                return;
+            }
+            try {
+                Thread.sleep(forceDelay);
+            } catch (InterruptedException e) {
+                log.error("{}强制kill等待中断", LOG_PREFIX, e);
+            } finally {
+                sessionMap.remove(sessionId);
+                processMap.remove(sessionId);
+                if (process.isAlive()) {
+                    process.destroyForcibly();
+                }
+            }
+        });
+    }
+
+    @Override
+    public void kill(Long sessionId, long forceDelay) throws IOException {
+        boolean inLocal = processMap.get(sessionId) != null;
+        if (inLocal) {
+            killLocal(sessionId, forceDelay);
+        } else {
+            rpcManager.call(RPCRequest.builder()
+                    .functionName(WebShellRpcFunction.KILL)
+                    .param(String.valueOf(forceDelay))
+                    .taskId(sessionId)
+                    .build(), null);
+        }
+    }
+
+    @Override
+    public List<ShellSessionRecord> getLocalSession() {
+        return new ArrayList<>(sessionMap.values());
+    }
+
+    @Override
+    public List<ShellSessionRecord> getAllLocalSession() {
+        // todo 实现RPC调用支持集群响应收集合并
+        return new ArrayList<>();
+    }
+
+    @Override
+    public void rename(Long sessionId, String newName) {
+        ShellSessionRecord session = sessionMap.get(sessionId);
+        if (session != null) {
+            session.setName(newName);
+        }
+    }
+
+    @Override
+    public String getSessionCurOutput(Long sessionId) {
+        // todo 支持集群调用
+        BlockStringBuffer buffer = outputMap.get(sessionId);
+        if (buffer == null) {
+            return null;
+        } else {
+            return buffer.toString();
+        }
+    }
+
+    @Override
+    public void writeInput(Long sessionId, String input) throws IOException {
+        mqService.push(WebShellMQTopic.Prefix.INPUT + sessionId, input);
+    }
+
+    @Override
+    public long subscribeOutput(Long sessionId, Consumer<String> consumer) {
+        return mqService.subscribeMessageQueue(WebShellMQTopic.Prefix.OUTPUT + sessionId, System.currentTimeMillis() + "", msg -> {
+            consumer.accept(msg.getBody().toString());
+        });
+    }
+
+    @Override
+    public void unsubscribeOutput(Long subscribeId) {
+        mqService.unsubscribe(subscribeId);
+    }
 }

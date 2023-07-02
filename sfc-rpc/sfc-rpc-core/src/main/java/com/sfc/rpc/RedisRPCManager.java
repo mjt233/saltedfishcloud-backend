@@ -134,12 +134,17 @@ public class RedisRPCManager implements RPCManager {
             throw new IllegalArgumentException("无法处理的redis rpc响应数据类型：" + o.getClass());
         }
         RPCResponse rpcResponse = MapperHolder.parseJson((String) o, RPCResponse.class);
-        if (rpcResponse.getResult() != null) {
+        if (resultType != null && rpcResponse.getResult() != null) {
             rpcResponse.setResult(MapperHolder.parseJson(rpcResponse.getResult().toString(), resultType));
         }
         return rpcResponse;
     }
 
+
+    @Override
+    public <T> RPCResponse<T> call(RPCRequest request) throws IOException {
+        return call(request, null);
+    }
 
     /**
      * 发起RPC请求
@@ -150,7 +155,7 @@ public class RedisRPCManager implements RPCManager {
         return waitResponse(request, resultType, timeout);
     }
 
-    public void sendRequest(RPCRequest request) throws JsonProcessingException {
+    private void sendRequest(RPCRequest request) throws JsonProcessingException {
         request.generateIdIfAbsent();
         redisTemplate.convertAndSend(ASYNC_TASK_RPC,MapperHolder.toJson(request));
     }
@@ -173,8 +178,6 @@ public class RedisRPCManager implements RPCManager {
         handlerMap.put(functionName, handler);
     }
 
-
-
     private void initRedisTemplate() {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
@@ -193,5 +196,6 @@ public class RedisRPCManager implements RPCManager {
         this.redisMessageListenerContainer.afterPropertiesSet();
         this.redisMessageListenerContainer.start();
     }
+
 
 }

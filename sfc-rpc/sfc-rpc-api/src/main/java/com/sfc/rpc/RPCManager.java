@@ -6,10 +6,25 @@ import java.time.Duration;
 public interface RPCManager {
     /**
      * 发起RPC请求
+     * @param request 请求参数
+     * @param timeout 等待超时
+     * @param resultType 响应结果数据类型
      */
     <T> RPCResponse<T> call(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException;
 
+    /**
+     * 发起RPC请求，默认2分钟超时
+     * @param request 请求参数
+     * @param resultType 响应结果数据类型
+     */
     <T> RPCResponse<T> call(RPCRequest request, Class<T> resultType) throws IOException;
+
+
+    /**
+     * 发起RPC请求，默认2分钟超时，不处理响应结果数据
+     * @param request 请求参数
+     */
+    <T> RPCResponse<T> call(RPCRequest request) throws IOException;
 
     /**
      * 注册RPC请求处理器

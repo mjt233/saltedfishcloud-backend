@@ -18,6 +18,11 @@ public class ShellExecuteParameter {
     private String cmd;
 
     /**
+     * 使用的交互式shell解释器
+     */
+    private String shell;
+
+    /**
      * 环境变量
      */
     private Map<String, String> env;

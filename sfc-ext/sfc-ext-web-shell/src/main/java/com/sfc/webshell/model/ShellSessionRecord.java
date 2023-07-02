@@ -1,5 +1,7 @@
 package com.sfc.webshell.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 
@@ -17,5 +19,13 @@ public class ShellSessionRecord extends AuditModel {
      */
     private String host;
 
+    /**
+     * 是否运行中
+     */
+    private Boolean running;
 
+    /**
+     * 会话名称
+     */
+    private String name;
 }
