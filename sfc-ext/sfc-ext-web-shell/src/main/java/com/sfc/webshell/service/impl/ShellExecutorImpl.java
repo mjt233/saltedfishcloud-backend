@@ -103,7 +103,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
      */
     private Process createProcess(ShellExecuteParameter parameter) throws IOException {
         String originCmd = Optional.ofNullable(parameter.getShell()).orElse(parameter.getCmd());
-        String workDir = parameter.getWorkDirectory();
+        String workDir = Optional.ofNullable(parameter.getWorkDirectory()).orElseGet(() -> Paths.get("").toAbsolutePath().toString());
 
         log.debug("{}在{}执行命令：{}", LOG_PREFIX, workDir, originCmd);
         Map<String, String> envMap = parameter.getEnv();
@@ -220,7 +220,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
      * @return          调用返回值，若为null表示为当前节点，未发起远程调用
      */
     private <R, T> CommonResult<R> invokeNodeService(Long nodeId, T body, HttpMethod method, String url) {
-        if(clusterService.getSelf().getId().equals(nodeId)) {
+        if(nodeId == null || clusterService.getSelf().getId().equals(nodeId)) {
             return null;
         }
         ClusterNodeInfo node = Optional
@@ -253,7 +253,8 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                 .map(Charset::forName)
                 .orElse(StandardCharsets.UTF_8);
 
-        process.getOutputStream().write(parameter.getCmd().getBytes(charset));
+        OutputStream processOutputStream = process.getOutputStream();
+        processOutputStream.write(parameter.getCmd().getBytes(charset));
         ShellSessionRecord session = ShellSessionRecord.builder()
                 .host(clusterService.getSelf().getHost())
                 .build();
@@ -268,11 +269,13 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         BlockStringBuffer outputBuffer = new BlockStringBuffer();
         outputMap.put(session.getId(), outputBuffer);
 
-        String topic = WebShellMQTopic.Prefix.INPUT + session.getId();
-        long subscribeId = mqService.subscribeMessageQueue(topic, WebShellMQTopic.DEFAULT_GROUP, mqMessage -> {
+        String inputTopic = WebShellMQTopic.Prefix.INPUT_STREAM + session.getId();
+        String outputTopic = WebShellMQTopic.Prefix.OUTPUT_STREAM + session.getId();
+        long inputSubscribeId = mqService.subscribeMessageQueue(inputTopic, WebShellMQTopic.DEFAULT_GROUP, mqMessage -> {
             if (process.isAlive()) {
                 try {
-                    process.getOutputStream().write(mqMessage.getBody().toString().getBytes());
+                    processOutputStream.write(mqMessage.getBody().toString().getBytes());
+                    processOutputStream.flush();
                 } catch (Throwable e) {
                     log.error("{}shell会话输入错误, id: {} input: {}",LOG_PREFIX, session.getId(), mqMessage, e);
                 }
@@ -285,12 +288,15 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             try (InputStreamReader reader = new InputStreamReader(process.getInputStream(), charset)){
                 while ( (cnt = reader.read(buffer, 0, buffer.length)) != -1) {
                     outputBuffer.append(buffer, 0, cnt);
-                    mqService.push(topic, String.valueOf(buffer, 0, cnt));
+                    mqService.push(outputTopic, String.valueOf(buffer, 0, cnt));
                 }
             } catch (IOException e) {
                 log.error("{}读取WebShell进程输出异常, id: {} ", LOG_PREFIX, session.getId(), e);
             } finally {
-                mqService.unsubscribeMessageQueue(subscribeId);
+                mqService.unsubscribeMessageQueue(inputSubscribeId);
+                log.info("{}会话{}-{}已结束", LOG_PREFIX, session.getId(), session.getName());
+                mqService.destroyQueue(inputTopic);
+                mqService.destroyQueue(outputTopic);
             }
         });
         return session;
@@ -347,13 +353,13 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
 
     @Override
     public List<ShellSessionRecord> getLocalSession() {
-        return new ArrayList<>(sessionMap.values());
+        // todo 实现RPC调用支持集群响应收集合并
+        return new ArrayList<>();
     }
 
     @Override
     public List<ShellSessionRecord> getAllLocalSession() {
-        // todo 实现RPC调用支持集群响应收集合并
-        return new ArrayList<>();
+        return new ArrayList<>(sessionMap.values());
     }
 
     @Override
@@ -377,18 +383,18 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
 
     @Override
     public void writeInput(Long sessionId, String input) throws IOException {
-        mqService.push(WebShellMQTopic.Prefix.INPUT + sessionId, input);
+        mqService.push(WebShellMQTopic.Prefix.INPUT_STREAM + sessionId, input);
     }
 
     @Override
     public long subscribeOutput(Long sessionId, Consumer<String> consumer) {
-        return mqService.subscribeMessageQueue(WebShellMQTopic.Prefix.OUTPUT + sessionId, System.currentTimeMillis() + "", msg -> {
+        return mqService.subscribeMessageQueue(WebShellMQTopic.Prefix.OUTPUT_STREAM + sessionId, System.currentTimeMillis() + "", msg -> {
             consumer.accept(msg.getBody().toString());
         });
     }
 
     @Override
     public void unsubscribeOutput(Long subscribeId) {
-        mqService.unsubscribe(subscribeId);
+        mqService.unsubscribeMessageQueue(subscribeId);
     }
 }

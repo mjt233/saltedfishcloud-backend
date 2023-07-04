@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.security.RolesAllowed;
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/webShell")
@@ -42,4 +43,9 @@ public class WebShellController {
         return JsonResultImpl.getInstance(shellExecutor.createSession(nodeId, parameter));
     }
 
+    @PostMapping("/listSession")
+    @RolesAllowed("ADMIN")
+    public JsonResult<List<ShellSessionRecord>> listSession() {
+        return JsonResultImpl.getInstance(shellExecutor.getAllLocalSession());
+    }
 }
