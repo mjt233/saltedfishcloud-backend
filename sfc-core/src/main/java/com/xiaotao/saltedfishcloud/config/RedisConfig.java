@@ -41,7 +41,7 @@ public class RedisConfig {
         StreamMessageListenerContainer<String, MapRecord<String, String, String>> container = StreamMessageListenerContainer.create(factory, StreamMessageListenerContainer.StreamMessageListenerContainerOptions.builder()
                 .batchSize(10)
                 .errorHandler(t -> log.error("[消息队列]监听出现错误: ", t))
-                .pollTimeout(Duration.ZERO)
+                .pollTimeout(Duration.ofSeconds(10))
                 .executor(Executors.newCachedThreadPool())
                 .build());
         container.start();

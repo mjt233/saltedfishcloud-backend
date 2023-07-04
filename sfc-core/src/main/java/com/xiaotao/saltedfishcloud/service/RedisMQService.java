@@ -11,10 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,9 @@ public class RedisMQService implements MQService {
 
     private final Map<Long, MessageListener> listenerMap = new ConcurrentHashMap<>();
 
+    /**
+     * key - 订阅id，value - [ topic, group, subscription ]
+     */
     private final Map<Long, Tuple3<String, String, Subscription>> topicGroupMap = new ConcurrentHashMap<>();
 
     @Override
@@ -51,12 +56,19 @@ public class RedisMQService implements MQService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void push(String topic, Object message) throws JsonProcessingException {
         String messageBody = message instanceof CharSequence ? message.toString() : MapperHolder.toJson(message);
         MapRecord<String, String, String> record = StreamRecords.newRecord()
                 .ofMap(Collections.singletonMap("msg", messageBody))
                 .withStreamKey(MQTopic.Prefix.STREAM_PREFIX + topic);
-        redisTemplate.opsForStream().add(record);
+        ByteRecord byteRecord = record.serialize(
+                (RedisSerializer<? super String>)redisTemplate.getKeySerializer(),
+                (RedisSerializer<? super String>)redisTemplate.getHashKeySerializer(),
+                (RedisSerializer<? super String>)redisTemplate.getHashValueSerializer()
+        );
+        RedisStreamCommands.XAddOptions options = RedisStreamCommands.XAddOptions.maxlen(4096);
+        Objects.requireNonNull(redisTemplate.getConnectionFactory()).getConnection().xAdd(byteRecord, options);
     }
 
     @Override
@@ -81,7 +93,7 @@ public class RedisMQService implements MQService {
         }
 
         String key = MQTopic.Prefix.STREAM_PREFIX + topic;
-        log.error("{}新增对流{} 的订阅组: {}", LOG_PREFIX, key, group);
+        log.debug("{}新增对流{} 的订阅组: {}", LOG_PREFIX, key, group);
         redisTemplate.opsForStream().createGroup(key, group);
         long id = IdUtil.getId();
         Subscription subscription = stringStreamMessageListenerContainer.receive(
@@ -104,6 +116,7 @@ public class RedisMQService implements MQService {
     public void unsubscribeMessageQueue(Long id) {
         Tuple3<String, String, Subscription> tuple = topicGroupMap.get(id);
         stringStreamMessageListenerContainer.remove(tuple.getT3());
+        log.debug("{}移除对流{}的订阅组: {}", LOG_PREFIX, MQTopic.Prefix.STREAM_PREFIX + tuple.getT1(), tuple.getT2());
         redisTemplate.opsForStream().destroyGroup(MQTopic.Prefix.STREAM_PREFIX + tuple.getT1(), tuple.getT2());
     }
 
