@@ -161,7 +161,7 @@ public class RedisRPCManager implements RPCManager {
             RPCResponse<T> response = waitResponse(request, resultType, timeout);
             if (response != null) {
                 res.add(response);
-                exceptCount++;
+                getCount++;
             } else {
                 return res;
             }
