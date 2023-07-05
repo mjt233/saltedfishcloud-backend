@@ -43,9 +43,15 @@ public class WebShellController {
         return JsonResultImpl.getInstance(shellExecutor.createSession(nodeId, parameter));
     }
 
-    @PostMapping("/listSession")
+    @GetMapping("/listSession")
     @RolesAllowed("ADMIN")
-    public JsonResult<List<ShellSessionRecord>> listSession() {
-        return JsonResultImpl.getInstance(shellExecutor.getAllLocalSession());
+    public JsonResult<List<ShellSessionRecord>> listSession() throws IOException {
+        return JsonResultImpl.getInstance(shellExecutor.getAllSession());
+    }
+
+    @GetMapping("/getLog")
+    @RolesAllowed("ADMIN")
+    public JsonResult<String> getLog(@RequestParam("sessionId") Long sessionId) throws IOException {
+        return JsonResultImpl.getInstance(shellExecutor.getLog(sessionId));
     }
 }

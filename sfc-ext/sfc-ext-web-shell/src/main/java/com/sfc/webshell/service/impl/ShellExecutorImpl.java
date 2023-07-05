@@ -33,11 +33,13 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -85,6 +87,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        // 注册结束进程RPC方法
         rpcManager.registerRpcHandler(WebShellRpcFunction.KILL, request -> {
             Long sessionId = request.getTaskId();
             try {
@@ -93,6 +96,19 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             } catch (JsonException e) {
                 return RPCResponse.ingore();
             }
+        });
+
+        // 注册获取会话列表RPC方法
+        rpcManager.registerRpcHandler(WebShellRpcFunction.LIST_SESSION, request -> RPCResponse.success(new ArrayList<>(sessionMap.values())));
+
+        // 注册获取日志RPC方法
+        rpcManager.registerRpcHandler(WebShellRpcFunction.GET_OUTPUT_LOG, request -> {
+            Long sessionId = Long.valueOf(request.getParam());
+            String localResult = getLocalOutputLog(sessionId);
+            if (localResult == null) {
+                return RPCResponse.ingore();
+            }
+            return RPCResponse.success(localResult);
         });
     }
 
@@ -353,13 +369,21 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
 
     @Override
     public List<ShellSessionRecord> getLocalSession() {
-        // todo 实现RPC调用支持集群响应收集合并
-        return new ArrayList<>();
+        return new ArrayList<>(sessionMap.values());
     }
 
     @Override
-    public List<ShellSessionRecord> getAllLocalSession() {
-        return new ArrayList<>(sessionMap.values());
+    @SuppressWarnings("unchecked")
+    public List<ShellSessionRecord> getAllSession() throws IOException {
+        return rpcManager.call(
+                        RPCRequest.builder().functionName(WebShellRpcFunction.LIST_SESSION).build(),
+                        List.class,
+                        Duration.ofSeconds(5),
+                        clusterService.listNodes().size()
+                )
+                .stream()
+                .flatMap(e -> ((List<ShellSessionRecord>)e.getResult()).stream())
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -391,6 +415,33 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         return mqService.subscribeMessageQueue(WebShellMQTopic.Prefix.OUTPUT_STREAM + sessionId, System.currentTimeMillis() + "", msg -> {
             consumer.accept(msg.getBody().toString());
         });
+    }
+
+    private String getLocalOutputLog(Long sessionId) {
+        BlockStringBuffer buffer = outputMap.get(sessionId);
+        if (buffer != null) {
+            return buffer.toString();
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public String getLog(Long sessionId) throws IOException {
+        String localResult = getLocalOutputLog(sessionId);
+        if (localResult != null) {
+            return localResult;
+        }
+
+        RPCResponse<String> callResult = rpcManager.call(
+                RPCRequest.builder().functionName(WebShellRpcFunction.GET_OUTPUT_LOG).param(sessionId.toString()).build(),
+                String.class
+        );
+        if (callResult != null) {
+            return callResult.getResult();
+        } else {
+            return null;
+        }
     }
 
     @Override

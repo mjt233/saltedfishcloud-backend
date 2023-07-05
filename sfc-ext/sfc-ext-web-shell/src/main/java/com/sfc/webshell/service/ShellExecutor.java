@@ -55,7 +55,14 @@ public interface ShellExecutor {
     /**
      * 获取当前集群所有节点运行的webShell进程会话信息
      */
-    List<ShellSessionRecord> getAllLocalSession();
+    List<ShellSessionRecord> getAllSession() throws IOException;
+
+    /**
+     * 获取会话最近的输出日志
+     * @param sessionId     会话id
+     * @return              日志
+     */
+    String getLog(Long sessionId) throws IOException;
 
     /**
      * 修改会话名称
