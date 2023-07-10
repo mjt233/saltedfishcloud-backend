@@ -18,4 +18,9 @@ public interface WebShellRpcFunction {
      * 获取会话最近的历史输出
      */
     String GET_OUTPUT_LOG = "web_shell__get_output_log";
+
+    /**
+     * 对会话进行重命名操作
+     */
+    String RENAME_SESSION = "web_shell__rename_session";
 }

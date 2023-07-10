@@ -41,4 +41,9 @@ public class ShellExecuteParameter {
      * 工作目录
      */
     private String workDirectory;
+
+    /**
+     * 会话初始名称
+     */
+    private String name;
 }

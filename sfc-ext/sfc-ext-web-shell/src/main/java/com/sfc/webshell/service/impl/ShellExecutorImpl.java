@@ -20,6 +20,7 @@ import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -109,6 +110,17 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                 return RPCResponse.ingore();
             }
             return RPCResponse.success(localResult);
+        });
+
+        // 注册重命名会话RPC方法
+        rpcManager.registerRpcHandler(WebShellRpcFunction.RENAME_SESSION, request -> {
+            Long sessionId = request.getTaskId();
+            String newName = request.getParam();
+            if(localRename(sessionId, newName)) {
+                return RPCResponse.success(null);
+            } else {
+                return RPCResponse.ingore();
+            }
         });
     }
 
@@ -276,6 +288,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                 .build();
         Date now = new Date();
         session.setId(IdUtil.getId());
+        session.setName(StringUtils.hasText(parameter.getName()) ? parameter.getName() : "会话" + session.getId());
         session.setCreateAt(now);
         session.setUpdateAt(now);
         session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId().longValue()).orElse((long)User.PUBLIC_USER_ID));
@@ -386,11 +399,28 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public void rename(Long sessionId, String newName) {
+    private boolean localRename(Long sessionId, String newName) {
         ShellSessionRecord session = sessionMap.get(sessionId);
         if (session != null) {
             session.setName(newName);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public void rename(Long sessionId, String newName) {
+        if (localRename(sessionId, newName)) {
+            return;
+        }
+        try {
+            RPCResponse<Object> result = rpcManager.call(RPCRequest.builder().param(newName).taskId(sessionId).functionName(WebShellRpcFunction.RENAME_SESSION).build());
+            if (result == null) {
+                throw new JsonException("重命名失败, 服务操作无响应");
+            }
+        } catch (IOException e) {
+            throw new JsonException(e.getMessage());
         }
     }
 

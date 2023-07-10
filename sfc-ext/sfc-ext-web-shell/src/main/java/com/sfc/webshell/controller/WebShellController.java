@@ -54,4 +54,11 @@ public class WebShellController {
     public JsonResult<String> getLog(@RequestParam("sessionId") Long sessionId) throws IOException {
         return JsonResultImpl.getInstance(shellExecutor.getLog(sessionId));
     }
+
+    @GetMapping("/rename")
+    @RolesAllowed("ADMIN")
+    public JsonResult<?> rename(@RequestParam("sessionId") Long sessionId, @RequestParam("name") String newName) {
+        shellExecutor.rename(sessionId, newName);
+        return JsonResult.emptySuccess();
+    }
 }
