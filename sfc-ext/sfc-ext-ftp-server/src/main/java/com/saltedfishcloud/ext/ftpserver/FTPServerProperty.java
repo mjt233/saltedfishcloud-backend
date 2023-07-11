@@ -19,6 +19,9 @@ public class FTPServerProperty {
     @ConfigProperty(value = "ftpEnable", title = "是否启用", inputType = "switch", defaultValue = "false")
     private boolean ftpEnable = false;
 
+    @ConfigProperty(value = "enableAnonymous", title = "是否允许匿名登录", inputType = "switch", defaultValue = "false")
+    private boolean enableAnonymous = false;
+
     /**
      * FTP控制监听地址
      */

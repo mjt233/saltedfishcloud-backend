@@ -52,7 +52,7 @@ public class DiskFileSystemArchiveHelper {
     private static void compress(DiskFileSystemCompressParam param, ArchiveCompressor compressor, DiskFileSystem fileSystem) throws IOException {
         String curDir = param.getSourcePath().replaceAll("//+", "").replaceAll("^/+", "");
         int uid = param.getSourceUid().intValue();
-        String root = param.getSourcePath();
+        String root = param.getSourcePath().replaceAll("//+", "");
 
         for (String name : param.getSourceNames()) {
 
@@ -61,7 +61,7 @@ public class DiskFileSystemArchiveHelper {
                 compressDir(uid, root, StringUtils.appendPath(root, name), compressor, fileSystem,1);
             } else {
                 compressor.addFile(new ArchiveResourceEntry(
-                        curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name),
+                        StringUtils.removePrefix(root, curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name)),
                         resource.contentLength(),
                         resource
                 ));

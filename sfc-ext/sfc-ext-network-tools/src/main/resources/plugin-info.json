@@ -1,0 +1,16 @@
+{
+  "name": "network-tools",
+  "alias": "网络工具",
+  "describe": "提供简单的网络工具功能",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-network",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
+}

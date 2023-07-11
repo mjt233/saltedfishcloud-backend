@@ -14,10 +14,15 @@ public class TypeUtils {
     private static final Map<Class<?>, String> NUMBER_TYPE = new HashMap<>();
     static {
         NUMBER_TYPE.put(Integer.class, "int");
+        NUMBER_TYPE.put(Integer.TYPE, "int");
         NUMBER_TYPE.put(Long.class, "long");
+        NUMBER_TYPE.put(Long.TYPE, "long");
         NUMBER_TYPE.put(Short.class, "short");
+        NUMBER_TYPE.put(Short.TYPE, "short");
         NUMBER_TYPE.put(Double.class, "double");
+        NUMBER_TYPE.put(Double.TYPE, "double");
         NUMBER_TYPE.put(Float.class, "float");
+        NUMBER_TYPE.put(Float.TYPE, "float");
         NUMBER_TYPE.put(BigDecimal.class, "bigDecimal");
         NUMBER_TYPE.put(BigInteger.class, "bigInteger");
     }
@@ -38,7 +43,12 @@ public class TypeUtils {
      * @return      数字类型为true，否则为false
      */
     public static boolean isNumber(Class<?> type) {
-        return Number.class.isAssignableFrom(type);
+        return Number.class.isAssignableFrom(type) ||
+                Integer.TYPE.isAssignableFrom(type) ||
+                Long.TYPE.isAssignableFrom(type) ||
+                Double.TYPE.isAssignableFrom(type) ||
+                Float.TYPE.isAssignableFrom(type) ||
+                Short.TYPE.isAssignableFrom(type);
     }
 
     public static Long toLong(Object input) {

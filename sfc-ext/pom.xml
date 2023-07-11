@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>11</java.version>
-        <api.version>2.6.0</api.version>
+        <api.version>2.6.4</api.version>
         <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -31,6 +31,8 @@
         <module>sfc-ext-video-enhance</module>
         <module>sfc-ext-jntm</module>
         <module>sfc-ext-quick-share</module>
+        <module>sfc-ext-network-tools</module>
+        <module>sfc-ext-web-shell</module>
     </modules>
 
 
@@ -38,6 +40,12 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
+            <version>${api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-common</artifactId>
             <version>${api.version}</version>
             <scope>provided</scope>
         </dependency>

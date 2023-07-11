@@ -1,18 +1,26 @@
 package com.xiaotao.saltedfishcloud.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sfc.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
+import com.xiaotao.saltedfishcloud.model.RequestParam;
+import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +48,9 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
 
     @Autowired
     private Environment environment;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     private final static String KEY_PREFIX = "cluster::";
 
@@ -120,5 +131,47 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
     public void afterPropertiesSet() throws Exception {
         mqService.subscribeBroadcast(MQTopic.CLUSTER_NODE_ONLINE, msg -> log.info("[集群管理]集群节点上线:{}", msg.getBody().toString()));
         registerSelf();
+    }
+
+    @Override
+    public <T> ResponseEntity<T> request(Long nodeId, RequestParam param, ParameterizedTypeReference<T> typeReference) {
+        ClusterNodeInfo node = getNodeById(nodeId);
+
+        // 构造Header，并添加当前用户token
+        HttpHeaders headers = new HttpHeaders();
+        User user = SecureUtils.getSpringSecurityUser();
+        if (user != null) {
+            headers.put(JwtUtils.AUTHORIZATION, Collections.singletonList(user.getToken()));
+        }
+        if (param.getHeaders() != null) {
+            headers.putAll(param.getHeaders());
+        }
+        HttpEntity<Object> requestEntity = new HttpEntity<>(param.getBody(), headers);
+
+//        // 构造QueryString到URL中
+//        String url;
+//        if (param.getParameters() != null && !param.getParameters().isEmpty()) {
+//            StringBuilder qs = new StringBuilder();
+//            param.getParameters().forEach((k,v) -> {
+//                qs.append(URLEncoder.encode(k, StandardCharsets.UTF_8))
+//                        .append('=')
+//                        .append(URLEncoder.encode(v, StandardCharsets.UTF_8))
+//                        .append('&');
+//            });
+//            qs.setLength(qs.length() - 1);
+//            if (param.getUrl().contains("?")) {
+//                url = param.getUrl() + "&" + qs;
+//            } else {
+//                url = param.getUrl() + "?" + qs;
+//            }
+//        }
+
+        return restTemplate.exchange(
+                node.getRequestUrl(param.getUrl()),
+                param.getMethod(),
+                requestEntity,
+                typeReference,
+                Optional.ofNullable(param.getParameters()).orElse(Collections.emptyMap())
+        );
     }
 }

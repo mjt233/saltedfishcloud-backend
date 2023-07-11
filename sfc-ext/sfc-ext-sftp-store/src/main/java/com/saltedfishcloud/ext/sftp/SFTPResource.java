@@ -1,14 +1,11 @@
 package com.saltedfishcloud.ext.sftp;
 
-import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
 import lombok.*;
-import org.springframework.beans.BeanUtils;
+import net.schmizz.sshj.sftp.SFTPClient;
 import org.springframework.core.io.AbstractResource;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -44,6 +41,7 @@ public class SFTPResource extends AbstractResource {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        return new SFTPFileInputStream(handler.getSFTPClient().open(path));
+        SFTPClient sftpClient = handler.getSFTPClient();
+        return new SFTPFileInputStream(sftpClient.open(path), sftpClient);
     }
 }

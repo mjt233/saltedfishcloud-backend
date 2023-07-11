@@ -1,0 +1,31 @@
+[
+  {
+    "name": "simple",
+    "title": "简单执行",
+    "nodes": [{
+      "nodes": [
+          {
+            "name": "web-shell",
+            "title": "简单执行",
+            "defaultValue": "{}",
+            "inputType": "template",
+            "template": "ws-simple-exec-view"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "interactive",
+    "title": "交互式Shell",
+    "nodes": [{
+      "nodes": [{
+        "title": "交互式Shell",
+        "name": "web-shell.interactive-execute",
+        "defaultValue": "{}",
+        "inputType": "template",
+        "template": "ws-interactive-exec-view"
+      }]
+    }]
+  }
+]

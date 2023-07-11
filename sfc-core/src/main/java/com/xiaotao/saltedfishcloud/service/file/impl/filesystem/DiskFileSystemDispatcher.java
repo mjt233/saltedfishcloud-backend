@@ -374,7 +374,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Transactional(rollbackFor = Exception.class)
     public long saveFile(int uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
-        return matchResult.fileSystem.saveFile(uid, stream, path, fileInfo);
+        return matchResult.fileSystem.saveFile(uid, stream, matchResult.resolvedPath, fileInfo);
     }
 
     @Override

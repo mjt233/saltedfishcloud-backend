@@ -34,6 +34,10 @@ import java.io.OutputStream;
 import java.net.SocketException;
 import java.util.*;
 
+/**
+ * Samba文件共享存储操作器
+ * todo 使用对象池管理连接对象
+ */
 @Slf4j
 public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closeable {
     private static final String LOG_PREFIX = "[Samba]";

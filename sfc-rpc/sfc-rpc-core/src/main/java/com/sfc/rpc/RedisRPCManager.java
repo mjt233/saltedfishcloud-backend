@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,13 +26,15 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 public class RedisRPCManager implements RPCManager {
+    private final static String ASYNC_TASK_RPC = "ASYNC_TASK_RPC";
+    private final static Duration DEFAULT_TIMEOUT = Duration.ofMinutes(2);
+
     private String log_prefix;
     private final RedisConnectionFactory redisConnectionFactory;
 
     private RedisTemplate<String, Object> redisTemplate;
 
     private RedisMessageListenerContainer redisMessageListenerContainer;
-    private final static String ASYNC_TASK_RPC = "ASYNC_TASK_RPC";
 
     private final Map<String, RPCHandler<?>> handlerMap = new ConcurrentHashMap<>();
 
@@ -118,7 +122,7 @@ public class RedisRPCManager implements RPCManager {
             response.setResult(MapperHolder.toJson(result));
         }
         redisTemplate.opsForList().leftPush(request.getResponseKey(), MapperHolder.toJson(response));
-        redisTemplate.expire(request.getResponseKey(), Duration.ofMinutes(1));
+        redisTemplate.expire(request.getResponseKey(), DEFAULT_TIMEOUT);
     }
 
     /**
@@ -134,12 +138,41 @@ public class RedisRPCManager implements RPCManager {
             throw new IllegalArgumentException("无法处理的redis rpc响应数据类型：" + o.getClass());
         }
         RPCResponse rpcResponse = MapperHolder.parseJson((String) o, RPCResponse.class);
-        if (rpcResponse.getResult() != null) {
+        if (resultType != null && rpcResponse.getResult() != null) {
             rpcResponse.setResult(MapperHolder.parseJson(rpcResponse.getResult().toString(), resultType));
         }
         return rpcResponse;
     }
 
+    @Override
+    public <T> List<RPCResponse<T>> call(RPCRequest request, Class<T> resultType, long exceptCount) throws IOException {
+        return call(request, resultType, DEFAULT_TIMEOUT, exceptCount);
+    }
+
+    @Override
+    public <T> List<RPCResponse<T>> call(RPCRequest request, Class<T> resultType, Duration timeout, long exceptCount) throws IOException {
+        if (exceptCount <= 0) {
+            throw new IllegalArgumentException("rpc exceptCount 必须 > 0");
+        }
+        List<RPCResponse<T>> res = new ArrayList<>();
+        sendRequest(request);
+        int getCount = 0;
+        do {
+            RPCResponse<T> response = waitResponse(request, resultType, timeout);
+            if (response != null) {
+                res.add(response);
+                getCount++;
+            } else {
+                return res;
+            }
+        } while (exceptCount > getCount);
+        return res;
+    }
+
+    @Override
+    public <T> RPCResponse<T> call(RPCRequest request) throws IOException {
+        return call(request, null);
+    }
 
     /**
      * 发起RPC请求
@@ -150,7 +183,7 @@ public class RedisRPCManager implements RPCManager {
         return waitResponse(request, resultType, timeout);
     }
 
-    public void sendRequest(RPCRequest request) throws JsonProcessingException {
+    private void sendRequest(RPCRequest request) throws JsonProcessingException {
         request.generateIdIfAbsent();
         redisTemplate.convertAndSend(ASYNC_TASK_RPC,MapperHolder.toJson(request));
     }
@@ -160,7 +193,7 @@ public class RedisRPCManager implements RPCManager {
      */
     @Override
     public <T> RPCResponse<T> call(RPCRequest request, Class<T> resultType) throws IOException {
-        return call(request, resultType, Duration.ofMinutes(2));
+        return call(request, resultType, DEFAULT_TIMEOUT);
     }
 
     /**
@@ -172,8 +205,6 @@ public class RedisRPCManager implements RPCManager {
     public <T> void registerRpcHandler(String functionName, RPCHandler<T> handler) {
         handlerMap.put(functionName, handler);
     }
-
-
 
     private void initRedisTemplate() {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -193,5 +224,6 @@ public class RedisRPCManager implements RPCManager {
         this.redisMessageListenerContainer.afterPropertiesSet();
         this.redisMessageListenerContainer.start();
     }
+
 
 }
