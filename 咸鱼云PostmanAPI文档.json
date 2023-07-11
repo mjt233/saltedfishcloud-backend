@@ -5265,7 +5265,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"cmd\": \"ping 127.0.0.1\",\r\n    \"charset\": \"GBK\"\r\n}",
+							"raw": "{\r\n    \"cmd\": \"ping\",\r\n    \"charset\": \"GBK\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -5273,7 +5273,7 @@
 							}
 						},
 						"url": {
-							"raw": "{{addr}}/api/webShell/executeCommand?nodeId=868330023155662848",
+							"raw": "{{addr}}/api/webShell/executeCommand",
 							"host": [
 								"{{addr}}"
 							],
@@ -5281,11 +5281,78 @@
 								"api",
 								"webShell",
 								"executeCommand"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "创建交互式Shell会话(仅限管理员)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"cmd\": \"\",\r\n    \"shell\": \"powershell\",\r\n    \"charset\": \"GBK\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{addr}}/api/webShell/createSession",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"webShell",
+								"createSession"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "列出所有交互会话(仅限管理员)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/webShell/listSession",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"webShell",
+								"listSession"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "获取会话最近的输出(仅限管理员)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{addr}}/api/webShell/getLog?sessionId=874123101577674752",
+							"host": [
+								"{{addr}}"
+							],
+							"path": [
+								"api",
+								"webShell",
+								"getLog"
 							],
 							"query": [
 								{
-									"key": "nodeId",
-									"value": "868330023155662848"
+									"key": "sessionId",
+									"value": "874123101577674752",
+									"description": "会话id"
 								}
 							]
 						}

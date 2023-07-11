@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import jodd.util.ThreadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.Executors;
 
 @Configuration
 @Slf4j
@@ -39,7 +41,8 @@ public class RedisConfig {
         StreamMessageListenerContainer<String, MapRecord<String, String, String>> container = StreamMessageListenerContainer.create(factory, StreamMessageListenerContainer.StreamMessageListenerContainerOptions.builder()
                 .batchSize(10)
                 .errorHandler(t -> log.error("[消息队列]监听出现错误: ", t))
-                .pollTimeout(Duration.ZERO)
+                .pollTimeout(Duration.ofSeconds(10))
+                .executor(Executors.newCachedThreadPool())
                 .build());
         container.start();
         return container;

@@ -18,6 +18,11 @@ public class ShellExecuteParameter {
     private String cmd;
 
     /**
+     * 使用的交互式shell解释器
+     */
+    private String shell;
+
+    /**
      * 环境变量
      */
     private Map<String, String> env;
@@ -31,4 +36,14 @@ public class ShellExecuteParameter {
      * 限制执行超时(秒)，若小于等于0表示无限制
      */
     private long timeout;
+
+    /**
+     * 工作目录
+     */
+    private String workDirectory;
+
+    /**
+     * 会话初始名称
+     */
+    private String name;
 }

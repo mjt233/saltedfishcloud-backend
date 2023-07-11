@@ -33,7 +33,7 @@ public class RPCResponse<T> {
     /**
      * 忽略处理，不响应
      */
-    public static <T> RPCResponse<T> ingore() {
+    public static <T> RPCResponse<T> ignore() {
         return RPCResponse.<T>builder()
                 .isHandled(false)
                 .build();
