@@ -1,6 +1,5 @@
 package com.sfc.task;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sfc.constant.MQTopic;
 import com.sfc.constant.error.CommonError;
 import com.sfc.rpc.RPCManager;
@@ -36,8 +35,6 @@ import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -159,7 +156,7 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
         rpcManager.registerRpcHandler(RPCFunction.TASK_GET_LOG, request -> {
             Resource resource = executor.getLog(Long.parseLong(request.getParam()), false);
             if (resource == null) {
-                return RPCResponse.ingore();
+                return RPCResponse.ignore();
             } else {
                 try(InputStream inputStream = resource.getInputStream()) {
                     return RPCResponse.<String>builder()
@@ -183,7 +180,7 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
             Long taskId = request.getTaskId();
             AsyncTask task = executor.getTask(taskId);
             if (task == null) {
-                return RPCResponse.ingore();
+                return RPCResponse.ignore();
             } else {
                 try {
                     task.interrupt();

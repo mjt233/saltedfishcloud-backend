@@ -104,7 +104,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                 killLocal(sessionId, DEFAULT_FORCE_KILL_DELAY);
                 return RPCResponse.success(null);
             } catch (JsonException e) {
-                return RPCResponse.ingore();
+                return RPCResponse.ignore();
             }
         });
 
@@ -116,7 +116,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             Long sessionId = Long.valueOf(request.getParam());
             String localResult = getLocalOutputLog(sessionId);
             if (localResult == null) {
-                return RPCResponse.ingore();
+                return RPCResponse.ignore();
             }
             return RPCResponse.success(localResult);
         });
@@ -128,7 +128,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             if(localRename(sessionId, newName)) {
                 return RPCResponse.success(null);
             } else {
-                return RPCResponse.ingore();
+                return RPCResponse.ignore();
             }
         });
 
@@ -137,7 +137,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             Long sessionId = request.getTaskId();
             ShellSessionRecord session = sessionMap.get(sessionId);
             if (session == null) {
-                return RPCResponse.ingore();
+                return RPCResponse.ignore();
             }
             try {
                 killLocal(sessionId, DEFAULT_FORCE_KILL_DELAY);
@@ -153,7 +153,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             Long sessionId = request.getTaskId();
             ShellSessionRecord session = sessionMap.get(sessionId);
             if (session == null) {
-                return RPCResponse.ingore();
+                return RPCResponse.ignore();
             }
             try {
                 createProcessFromSession(session);
