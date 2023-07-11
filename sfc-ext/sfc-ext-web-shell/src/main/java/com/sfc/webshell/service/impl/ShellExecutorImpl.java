@@ -46,6 +46,11 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
     private final static String LOG_PREFIX = "[WebShell]";
+    /**
+     * 默认的强制kill延迟
+     */
+    private final static int DEFAULT_FORCE_KILL_DELAY = 60000;
+
     @Autowired
     private ShellExecuteRecordService shellExecuteRecordService;
 
@@ -88,11 +93,15 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        registerRpcFunction();
+    }
+
+    private void registerRpcFunction() {
         // 注册结束进程RPC方法
         rpcManager.registerRpcHandler(WebShellRpcFunction.KILL, request -> {
             Long sessionId = request.getTaskId();
             try {
-                killLocal(sessionId, 60000);
+                killLocal(sessionId, DEFAULT_FORCE_KILL_DELAY);
                 return RPCResponse.success(null);
             } catch (JsonException e) {
                 return RPCResponse.ingore();
@@ -120,6 +129,38 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                 return RPCResponse.success(null);
             } else {
                 return RPCResponse.ingore();
+            }
+        });
+
+        // 注册移除会话RPC方法
+        rpcManager.registerRpcHandler(WebShellRpcFunction.REMOVE, request -> {
+            Long sessionId = request.getTaskId();
+            ShellSessionRecord session = sessionMap.get(sessionId);
+            if (session == null) {
+                return RPCResponse.ingore();
+            }
+            try {
+                killLocal(sessionId, DEFAULT_FORCE_KILL_DELAY);
+            } catch (Throwable ignore) { } finally {
+                sessionMap.remove(sessionId);
+                processMap.remove(sessionId);
+                outputMap.remove(sessionId);
+            }
+            return RPCResponse.success(null);
+        });
+
+        rpcManager.registerRpcHandler(WebShellRpcFunction.RESTART, request -> {
+            Long sessionId = request.getTaskId();
+            ShellSessionRecord session = sessionMap.get(sessionId);
+            if (session == null) {
+                return RPCResponse.ingore();
+            }
+            try {
+                createProcessFromSession(session);
+                return RPCResponse.success(session);
+            } catch (Throwable err) {
+                log.error("{}重启会话失败: ", LOG_PREFIX, err);
+                return RPCResponse.error(err.getMessage());
             }
         });
     }
@@ -268,36 +309,48 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         return httpCallResult.getBody();
     }
 
-    @Override
-    public ShellSessionRecord createSession(Long nodeId, ShellExecuteParameter parameter) throws IOException {
-        CommonResult<ShellSessionRecord> rpcResult = invokeNodeService(nodeId, parameter, HttpMethod.POST, "/api/webShell/createSession");
-        if (rpcResult != null) {
-            return rpcResult.getData();
+    /**
+     * 根据初始会话信息创建进程
+     * @param session   会话
+     * @return          会话（与参数是相同引用）
+     */
+    protected ShellSessionRecord createProcessFromSession(ShellSessionRecord session) throws IOException {
+        // 更新会话初始信息
+        ShellExecuteParameter parameter = session.getParameter();
+        Date now = new Date();
+        if (session.getId() == null) {
+            session.setId(IdUtil.getId());
+        } else if(processMap.containsKey(session.getId())) {
+            throw new IllegalArgumentException("会话已在运行中");
         }
+        if (session.getCreateAt() == null) {
+            session.setCreateAt(now);
+        }
+        if (session.getName() == null) {
+            session.setName(StringUtils.hasText(parameter.getName()) ? parameter.getName() : "会话" + session.getId());
+        }
+        session.setRunning(true);
+        session.setUpdateAt(now);
+        session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId().longValue()).orElse((long)User.PUBLIC_USER_ID));
 
-
+        // 根据参数创建进程
+        long begin = System.currentTimeMillis();
         Process process = createProcess(parameter);
         Charset charset = Optional.ofNullable(parameter.getCharset())
                 .map(Charset::forName)
                 .orElse(StandardCharsets.UTF_8);
 
+        // 执行默认cmd
         OutputStream processOutputStream = process.getOutputStream();
         processOutputStream.write(Optional.ofNullable(parameter.getCmd()).orElse("").getBytes(charset));
-        ShellSessionRecord session = ShellSessionRecord.builder()
-                .host(clusterService.getSelf().getHost())
-                .build();
-        Date now = new Date();
-        session.setId(IdUtil.getId());
-        session.setName(StringUtils.hasText(parameter.getName()) ? parameter.getName() : "会话" + session.getId());
-        session.setCreateAt(now);
-        session.setUpdateAt(now);
-        session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId().longValue()).orElse((long)User.PUBLIC_USER_ID));
 
-        processMap.put(session.getId(), process);
-        sessionMap.put(session.getId(), session);
+        // 记录会话相关资源
         BlockStringBuffer outputBuffer = new BlockStringBuffer();
         outputMap.put(session.getId(), outputBuffer);
+        processMap.put(session.getId(), process);
+        sessionMap.put(session.getId(), session);
 
+        // 进程标准IO消息队列订阅与推送
         String inputTopic = WebShellMQTopic.Prefix.INPUT_STREAM + session.getId();
         String outputTopic = WebShellMQTopic.Prefix.OUTPUT_STREAM + session.getId();
         long inputSubscribeId = mqService.subscribeMessageQueue(inputTopic, WebShellMQTopic.DEFAULT_GROUP, mqMessage -> {
@@ -322,13 +375,47 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             } catch (IOException e) {
                 log.error("{}读取WebShell进程输出异常, id: {} ", LOG_PREFIX, session.getId(), e);
             } finally {
-                mqService.unsubscribeMessageQueue(inputSubscribeId);
-                log.info("{}会话{}-{}已结束", LOG_PREFIX, session.getId(), session.getName());
-                mqService.destroyQueue(inputTopic);
-                mqService.destroyQueue(outputTopic);
+                try {
+                    // 等待进程退出
+                    session.setExitCode(process.waitFor());
+                } catch (InterruptedException ignore) { }
+                finally {
+                    // 推送进程退出消息
+                    log.info("{}会话{}-{}已结束", LOG_PREFIX, session.getId(), session.getName());
+                    session.setRunning(false);
+                    String exitCodeStr = Optional.ofNullable(session.getExitCode()).map(Object::toString).orElse("未知");
+                    String exitMessage = "\n\n进程已退出，退出代码:" + exitCodeStr + " 运行时长: " + (System.currentTimeMillis() - begin)/1000.0 + "s";
+                    outputBuffer.append(exitMessage);
+                    try {
+                        mqService.push(outputTopic, exitMessage);
+                        Thread.sleep(2000);
+                    } catch (Throwable e) {
+                        log.error("{}退出消息推送出错: ", LOG_PREFIX, e);
+                    } finally {
+                        // 移除相关资源关联
+                        processMap.remove(session.getId());
+                        mqService.unsubscribeMessageQueue(inputSubscribeId);
+                        mqService.destroyQueue(inputTopic);
+                        mqService.destroyQueue(outputTopic);
+                    }
+                }
             }
         });
         return session;
+    }
+
+    @Override
+    public ShellSessionRecord createSession(Long nodeId, ShellExecuteParameter parameter) throws IOException {
+        CommonResult<ShellSessionRecord> rpcResult = invokeNodeService(nodeId, parameter, HttpMethod.POST, "/api/webShell/createSession");
+        if (rpcResult != null) {
+            return rpcResult.getData();
+        }
+
+        ShellSessionRecord session = ShellSessionRecord.builder()
+                .host(clusterService.getSelf().getHost())
+                .parameter(parameter)
+                .build();
+        return createProcessFromSession(session);
     }
 
     @Override
@@ -477,5 +564,29 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
     @Override
     public void unsubscribeOutput(Long subscribeId) {
         mqService.unsubscribeMessageQueue(subscribeId);
+    }
+
+    @Override
+    public void restart(Long sessionId) throws IOException {
+        rpcManager.call(
+                RPCRequest.builder().functionName(WebShellRpcFunction.RESTART).taskId(sessionId).build(),
+                ShellSessionRecord.class,
+                clusterService.listNodes().size()
+        ).stream()
+                .filter(RPCResponse::getIsHandled)
+                .findAny()
+                .orElseThrow(() -> new IllegalArgumentException("找不到shell会话:" + sessionId));
+    }
+
+    @Override
+    public void remove(Long sessionId) throws IOException {
+        rpcManager.call(
+                        RPCRequest.builder().functionName(WebShellRpcFunction.REMOVE).taskId(sessionId).build(),
+                        Object.class,
+                        clusterService.listNodes().size()
+                ).stream()
+                .filter(RPCResponse::getIsHandled)
+                .findAny()
+                .orElseThrow(() -> new IllegalArgumentException("找不到shell会话:" + sessionId));
     }
 }

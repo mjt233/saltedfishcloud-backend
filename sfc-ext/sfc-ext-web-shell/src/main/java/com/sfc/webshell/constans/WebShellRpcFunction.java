@@ -23,4 +23,14 @@ public interface WebShellRpcFunction {
      * 对会话进行重命名操作
      */
     String RENAME_SESSION = "web_shell__rename_session";
+
+    /**
+     * 重启会话
+     */
+    String RESTART = "web_shell__restart";
+
+    /**
+     * 移除会话
+     */
+    String REMOVE = "web_shell__remove";
 }

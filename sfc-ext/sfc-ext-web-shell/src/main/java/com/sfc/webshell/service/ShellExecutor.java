@@ -98,4 +98,16 @@ public interface ShellExecutor {
      * @param subscribeId   订阅id
      */
     void unsubscribeOutput(Long subscribeId);
+
+    /**
+     * 重启会话
+     * @param sessionId 会话id
+     */
+    void restart(Long sessionId) throws IOException;
+
+    /**
+     * 移除会话。若会话运行中则会先对其执行kill。
+     * @param sessionId 会话id
+     */
+    void remove(Long sessionId) throws IOException;
 }

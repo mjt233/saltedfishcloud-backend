@@ -26,4 +26,14 @@ public class ShellSessionRecord extends AuditModel {
      * 会话名称
      */
     private String name;
+
+    /**
+     * 进程退出代码
+     */
+    private Integer exitCode;
+
+    /**
+     * 会话初始化参数
+     */
+    private ShellExecuteParameter parameter;
 }

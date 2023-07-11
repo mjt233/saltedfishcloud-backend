@@ -35,18 +35,18 @@ public class BlockStringBuffer {
         return (long) queue.size() * blockSize - (blockSize - curBlockIndex);
     }
 
-    public synchronized void append(char[] chars) {
-        append(chars, 0, chars.length);
+    public synchronized BlockStringBuffer append(char[] chars) {
+        return append(chars, 0, chars.length);
     }
 
-    public synchronized void append(String str) {
-        append(str.toCharArray());
+    public synchronized BlockStringBuffer append(String str) {
+        return append(str.toCharArray());
     }
 
     /**
      * 添加字符数组
      */
-    public synchronized void append(char[] chars, int offset, int length) {
+    public synchronized BlockStringBuffer append(char[] chars, int offset, int length) {
         int readIndex = offset;
         int curBlockFreeSize;
         int needRead = length;
@@ -64,6 +64,7 @@ public class BlockStringBuffer {
             needRead -= copySize;
             curBlockIndex += copySize;
         }
+        return this;
     }
 
     /**

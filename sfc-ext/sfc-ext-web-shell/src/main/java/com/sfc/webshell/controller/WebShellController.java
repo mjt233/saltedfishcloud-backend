@@ -61,4 +61,27 @@ public class WebShellController {
         shellExecutor.rename(sessionId, newName);
         return JsonResult.emptySuccess();
     }
+
+    @GetMapping("/restart")
+    @RolesAllowed("ADMIN")
+    public JsonResult<?> restart(@RequestParam("sessionId") Long sessionId) throws IOException {
+        shellExecutor.restart(sessionId);
+        return JsonResult.emptySuccess();
+    }
+
+    @GetMapping("/remove")
+    @RolesAllowed("ADMIN")
+    public JsonResult<?> remove(@RequestParam("sessionId") Long sessionId) throws IOException {
+        shellExecutor.remove(sessionId);
+        return JsonResult.emptySuccess();
+    }
+
+    @GetMapping("/kill")
+    @RolesAllowed("ADMIN")
+    public JsonResult<?> kill(@RequestParam("sessionId") Long sessionId) throws IOException {
+        shellExecutor.kill(sessionId, 60000);
+        return JsonResult.emptySuccess();
+    }
+
+
 }
