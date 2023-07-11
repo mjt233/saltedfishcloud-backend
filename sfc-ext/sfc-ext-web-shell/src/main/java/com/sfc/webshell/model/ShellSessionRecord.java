@@ -1,7 +1,5 @@
 package com.sfc.webshell.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 

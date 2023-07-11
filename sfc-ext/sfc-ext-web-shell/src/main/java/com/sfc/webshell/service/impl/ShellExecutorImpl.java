@@ -282,7 +282,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                 .orElse(StandardCharsets.UTF_8);
 
         OutputStream processOutputStream = process.getOutputStream();
-        processOutputStream.write(parameter.getCmd().getBytes(charset));
+        processOutputStream.write(Optional.ofNullable(parameter.getCmd()).orElse("").getBytes(charset));
         ShellSessionRecord session = ShellSessionRecord.builder()
                 .host(clusterService.getSelf().getHost())
                 .build();
