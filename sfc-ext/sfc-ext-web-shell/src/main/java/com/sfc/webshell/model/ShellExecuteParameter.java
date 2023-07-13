@@ -46,4 +46,9 @@ public class ShellExecuteParameter {
      * 会话初始名称
      */
     private String name;
+
+    /**
+     * 是否使用pty终端
+     */
+    private boolean isPty = true;
 }

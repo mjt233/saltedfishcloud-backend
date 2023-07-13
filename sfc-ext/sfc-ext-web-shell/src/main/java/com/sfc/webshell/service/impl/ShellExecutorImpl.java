@@ -1,5 +1,6 @@
 package com.sfc.webshell.service.impl;
 
+import com.pty4j.PtyProcessBuilder;
 import com.sfc.rpc.RPCManager;
 import com.sfc.rpc.RPCRequest;
 import com.sfc.rpc.RPCResponse;
@@ -165,8 +166,9 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         });
     }
 
+
     /**
-     * 创建进程
+     * 创建pty进程
      * @param parameter 参数
      * @return          进程
      */
@@ -174,7 +176,6 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         String originCmd = Optional.ofNullable(parameter.getShell()).orElse(parameter.getCmd());
         String workDir = Optional.ofNullable(parameter.getWorkDirectory()).orElseGet(() -> Paths.get("").toAbsolutePath().toString());
 
-        log.debug("{}在{}执行命令：{}", LOG_PREFIX, workDir, originCmd);
         Map<String, String> envMap = parameter.getEnv();
         String executablePath = ProcessUtils.resolveCmdExecutablePath(
                 workDir,
@@ -184,19 +185,37 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         List<String> args = ProcessUtils.parseCommandArgs(originCmd);
         args.set(0, executablePath);
 
-        ProcessBuilder processBuilder = new ProcessBuilder()
-                .command(args)
-                .redirectErrorStream(true)
-                .directory(new File(workDir));
-
+        Map<String, String> processEnv = new HashMap<>();
         if (envMap != null) {
-            processBuilder.environment().putAll(envMap);
+            processEnv.putAll(parameter.getEnv());
+        }
+        if (parameter.isPty()) {
+            PtyProcessBuilder ptyProcessBuilder = new PtyProcessBuilder()
+                    .setCommand(args.toArray(new String[0]))
+                    .setRedirectErrorStream(true)
+                    .setInitialRows(30)
+                    .setInitialColumns(160)
+                    .setWindowsAnsiColorEnabled(true)
+                    .setDirectory(workDir);
+            processEnv.putAll(System.getenv());
+            processEnv.put("TERM", "xterm-256color");
+            if (envMap != null) {
+                processEnv.putAll(envMap);
+            }
+            ptyProcessBuilder.setEnvironment(processEnv);
+            return ptyProcessBuilder.start();
+        } else {
+            ProcessBuilder processBuilder = new ProcessBuilder()
+                    .command(args)
+                    .redirectErrorStream(true)
+                    .directory(new File(workDir));
+            if (envMap != null) {
+                processEnv.putAll(envMap);
+            }
+            processBuilder.environment().putAll(processEnv);
+            return processBuilder.start();
         }
 
-
-        Process process = processBuilder.start();
-        log.debug("{}命令{} pid为: {}", LOG_PREFIX, originCmd, process.toHandle().pid());
-        return process;
     }
 
     /**
@@ -246,7 +265,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             AtomicBoolean isTimeout = new AtomicBoolean();
             // 创建进程并执行
             Process process = createProcess(parameter);
-            long pid = process.toHandle().pid();
+            long pid = process.pid();
             Charset charset = Optional.ofNullable(parameter.getCharset())
                     .map(Charset::forName)
                     .orElse(StandardCharsets.UTF_8);
@@ -384,7 +403,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                     log.info("{}会话{}-{}已结束", LOG_PREFIX, session.getId(), session.getName());
                     session.setRunning(false);
                     String exitCodeStr = Optional.ofNullable(session.getExitCode()).map(Object::toString).orElse("未知");
-                    String exitMessage = "\n\n进程已退出，退出代码:" + exitCodeStr + " 运行时长: " + (System.currentTimeMillis() - begin)/1000.0 + "s";
+                    String exitMessage = "\r\n\r\n进程已退出，退出代码:" + exitCodeStr + " 运行时长: " + (System.currentTimeMillis() - begin)/1000.0 + "s";
                     outputBuffer.append(exitMessage);
                     try {
                         mqService.push(outputTopic, exitMessage);
@@ -508,17 +527,6 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             }
         } catch (IOException e) {
             throw new JsonException(e.getMessage());
-        }
-    }
-
-    @Override
-    public String getSessionCurOutput(Long sessionId) {
-        // todo 支持集群调用
-        BlockStringBuffer buffer = outputMap.get(sessionId);
-        if (buffer == null) {
-            return null;
-        } else {
-            return buffer.toString();
         }
     }
 

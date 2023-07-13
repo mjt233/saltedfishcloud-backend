@@ -58,9 +58,9 @@ public interface ShellExecutor {
     List<ShellSessionRecord> getAllSession() throws IOException;
 
     /**
-     * 获取会话最近的输出日志
+     * 获取会话最近的输出日志（若消息过长，较老的输出会可能被丢弃）
      * @param sessionId     会话id
-     * @return              日志
+     * @return              近期历史输出
      */
     String getLog(Long sessionId) throws IOException;
 
@@ -70,13 +70,6 @@ public interface ShellExecutor {
      * @param newName 新名称
      */
     void rename(Long sessionId, String newName);
-
-    /**
-     * 获取会话当前的控制台输出信息（若消息过长，较老的输出会可能被丢弃）
-     * @param sessionId 会话id
-     * @return          近期历史输出
-     */
-    String getSessionCurOutput(Long sessionId);
 
     /**
      * 向shell会话输入写入内容
