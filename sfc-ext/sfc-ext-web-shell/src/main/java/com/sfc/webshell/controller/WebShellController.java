@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.security.RolesAllowed;
+import javax.validation.constraints.Min;
 import java.io.IOException;
 import java.util.List;
 
@@ -66,6 +67,15 @@ public class WebShellController {
     @RolesAllowed("ADMIN")
     public JsonResult<?> restart(@RequestParam("sessionId") Long sessionId) throws IOException {
         shellExecutor.restart(sessionId);
+        return JsonResult.emptySuccess();
+    }
+
+    @GetMapping("/resizePty")
+    @RolesAllowed("ADMIN")
+    public JsonResult<?> resizePty(@RequestParam("sessionId") Long sessionId,
+                                   @RequestParam("rows") @Min(1) Integer rows,
+                                   @RequestParam("cols") @Min(1) Integer cols) throws IOException {
+        shellExecutor.resizePty(sessionId, rows, cols);
         return JsonResult.emptySuccess();
     }
 

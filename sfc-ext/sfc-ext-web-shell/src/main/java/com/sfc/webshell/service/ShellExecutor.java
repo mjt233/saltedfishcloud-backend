@@ -48,6 +48,14 @@ public interface ShellExecutor {
     void kill(Long sessionId, long forceDelay) throws IOException;
 
     /**
+     * 修改shell会话的pty终端尺寸
+     * @param sessionId 会话id
+     * @param rows      行
+     * @param cols      列
+     */
+    void resizePty(Long sessionId, int rows, int cols) throws IOException;
+
+    /**
      * 获取所有当前主机运行的webShell进程会话信息
      */
     List<ShellSessionRecord> getLocalSession();

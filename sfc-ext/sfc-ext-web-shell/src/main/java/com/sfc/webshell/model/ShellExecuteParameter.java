@@ -51,4 +51,14 @@ public class ShellExecuteParameter {
      * 是否使用pty终端
      */
     private boolean isPty = true;
+
+    /**
+     * pty终端初始行高
+     */
+    private int initRows = 40;
+
+    /**
+     * pty终端初始列宽
+     */
+    private int initCols = 160;
 }

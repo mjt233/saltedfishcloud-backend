@@ -1,6 +1,8 @@
 package com.sfc.webshell.service.impl;
 
+import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessBuilder;
+import com.pty4j.WinSize;
 import com.sfc.rpc.RPCManager;
 import com.sfc.rpc.RPCRequest;
 import com.sfc.rpc.RPCResponse;
@@ -20,6 +22,7 @@ import com.xiaotao.saltedfishcloud.model.RequestParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.MQService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
@@ -97,6 +100,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         registerRpcFunction();
     }
 
+    @SuppressWarnings("unchecked")
     private void registerRpcFunction() {
         // 注册结束进程RPC方法
         rpcManager.registerRpcHandler(WebShellRpcFunction.KILL, request -> {
@@ -150,6 +154,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             return RPCResponse.success(null);
         });
 
+        // 注册重启RPC方法
         rpcManager.registerRpcHandler(WebShellRpcFunction.RESTART, request -> {
             Long sessionId = request.getTaskId();
             ShellSessionRecord session = sessionMap.get(sessionId);
@@ -162,6 +167,29 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             } catch (Throwable err) {
                 log.error("{}重启会话失败: ", LOG_PREFIX, err);
                 return RPCResponse.error(err.getMessage());
+            }
+        });
+
+        rpcManager.registerRpcHandler(WebShellRpcFunction.RESIZE_PTY, request -> {
+            Long sessionId = request.getTaskId();
+            try {
+                Map<String, Integer> param = (Map<String, Integer>)MapperHolder.parseJson(request.getParam(), Map.class);
+                Integer rows = param.get("rows");
+                Integer cols = param.get("cols");
+                boolean isSuccess = doResizePty(sessionId, rows, cols);
+                if (isSuccess) {
+                    return RPCResponse.success(null);
+                } else {
+                    return RPCResponse.ignore();
+                }
+            } catch (IOException e) {
+                log.error("{}重置窗口大小反序列化失败: {} ", LOG_PREFIX, request.getParam(), e);
+                return RPCResponse.error(e.getMessage());
+            } catch (JsonException e) {
+                return RPCResponse.error(e.getMessage());
+            } catch (Throwable e) {
+                log.error("{}重置窗口大小失败: {} ", LOG_PREFIX, request.getParam(), e);
+                return RPCResponse.error(e.getMessage());
             }
         });
     }
@@ -193,8 +221,8 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             PtyProcessBuilder ptyProcessBuilder = new PtyProcessBuilder()
                     .setCommand(args.toArray(new String[0]))
                     .setRedirectErrorStream(true)
-                    .setInitialRows(30)
-                    .setInitialColumns(160)
+                    .setInitialRows(parameter.getInitRows())
+                    .setInitialColumns(parameter.getInitCols())
                     .setWindowsAnsiColorEnabled(true)
                     .setDirectory(workDir);
             processEnv.putAll(System.getenv());
@@ -358,6 +386,11 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         Charset charset = Optional.ofNullable(parameter.getCharset())
                 .map(Charset::forName)
                 .orElse(StandardCharsets.UTF_8);
+        if (process instanceof PtyProcess) {
+            WinSize winSize = ((PtyProcess) process).getWinSize();
+            session.setRows(winSize.getRows());
+            session.setCols(winSize.getColumns());
+        }
 
         // 执行默认cmd
         OutputStream processOutputStream = process.getOutputStream();
@@ -484,6 +517,42 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                     .taskId(sessionId)
                     .build(), null);
         }
+    }
+
+    @Override
+    public void resizePty(Long sessionId, int rows, int cols) throws IOException {
+        Map<String, Integer> param = new HashMap<>();
+        param.put("rows", rows);
+        param.put("cols", cols);
+        RPCResponse<Object> result = rpcManager.call(RPCRequest.builder()
+                .taskId(sessionId)
+                .functionName(WebShellRpcFunction.RESIZE_PTY)
+                .param(MapperHolder.toJson(param))
+                .build());
+        if (!result.getIsSuccess()) {
+            throw new JsonException(result.getError());
+        }
+    }
+
+    private boolean doResizePty(Long sessionId, int rows, int cols) throws IOException {
+        ShellSessionRecord session = sessionMap.get(sessionId);
+        // 本地不持有该会话
+        if (session == null) {
+            return false;
+        }
+
+        if (!session.getParameter().isPty()) {
+            throw new JsonException("不是一个pty模拟终端会话");
+        }
+        Process process = processMap.get(sessionId);
+        if (process == null) {
+            throw new JsonException("会话进程已结束");
+        }
+        ((PtyProcess) process).setWinSize(new WinSize(cols, rows));
+        WinSize winSize = ((PtyProcess) process).getWinSize();
+        session.setRows(winSize.getRows());
+        session.setCols(winSize.getColumns());
+        return true;
     }
 
     @Override

@@ -30,6 +30,11 @@ public interface WebShellRpcFunction {
     String RESTART = "web_shell__restart";
 
     /**
+     * 重置pty终端大小
+     */
+    String RESIZE_PTY = "web_shell__resize";
+
+    /**
      * 移除会话
      */
     String REMOVE = "web_shell__remove";
