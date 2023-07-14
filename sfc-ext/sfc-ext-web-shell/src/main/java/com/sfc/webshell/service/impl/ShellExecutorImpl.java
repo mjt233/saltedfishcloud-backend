@@ -529,11 +529,16 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
             } catch (InterruptedException e) {
                 log.error("{}强制kill等待中断", LOG_PREFIX, e);
             } finally {
-                sessionMap.remove(sessionId);
-                processMap.remove(sessionId);
                 if (process.isAlive()) {
                     log.error("{}kill超时，强制kill", sessionId);
                     process.destroyForcibly();
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignore) { }
+                if (!process.isAlive()) {
+                    sessionMap.remove(sessionId);
+                    processMap.remove(sessionId);
                 }
             }
         });
