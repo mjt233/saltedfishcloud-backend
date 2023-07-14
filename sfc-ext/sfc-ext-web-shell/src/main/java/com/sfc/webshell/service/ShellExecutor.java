@@ -6,9 +6,16 @@ import com.sfc.webshell.model.ShellSessionRecord;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public interface ShellExecutor {
+    /**
+     * 根据会话id获取会话信息
+     * @param sessionId 会话id
+     * @return          会话信息
+     */
+    Optional<ShellSessionRecord> getSessionById(Long sessionId) throws IOException;
 
     /**
      * 简单执行shell命令

@@ -9,6 +9,12 @@ public interface WebShellRpcFunction {
      */
     String KILL = "web_shell__kill";
 
+
+    /**
+     * 根据会话id获取可交互shell的会话信息
+     */
+    String GET_SESSION_BY_ID = "web_shell__get_session_by_id";
+
     /**
      * 获取会话列表
      */

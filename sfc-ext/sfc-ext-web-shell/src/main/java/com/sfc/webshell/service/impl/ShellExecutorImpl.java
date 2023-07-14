@@ -100,8 +100,39 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         registerRpcFunction();
     }
 
+    @Override
+    public Optional<ShellSessionRecord> getSessionById(Long sessionId) throws IOException {
+        ShellSessionRecord localResult = localGetSessionById(sessionId);
+        if (localResult != null) {
+            return Optional.of(localResult);
+        }
+        List<RPCResponse<ShellSessionRecord>> callResult = rpcManager.call(RPCRequest.builder()
+                        .functionName(WebShellRpcFunction.GET_SESSION_BY_ID)
+                        .taskId(sessionId)
+                        .build(),
+                ShellSessionRecord.class,
+                clusterService.listNodes().size()
+        );
+        return callResult.stream()
+                .filter(e -> e.getIsHandled() && e.getIsSuccess())
+                .map(RPCResponse::getResult)
+                .filter(Objects::nonNull)
+                .findAny();
+    }
+
+    private ShellSessionRecord localGetSessionById(Long sessionId) {
+        return sessionMap.get(sessionId);
+    }
+
     @SuppressWarnings("unchecked")
     private void registerRpcFunction() {
+        // 注册获取会话RPC方法
+        rpcManager.registerRpcHandler(WebShellRpcFunction.GET_SESSION_BY_ID, request -> {
+            Long sessionId = request.getTaskId();
+            ShellSessionRecord session = localGetSessionById(sessionId);
+            return RPCResponse.success(session);
+        });
+
         // 注册结束进程RPC方法
         rpcManager.registerRpcHandler(WebShellRpcFunction.KILL, request -> {
             Long sessionId = request.getTaskId();

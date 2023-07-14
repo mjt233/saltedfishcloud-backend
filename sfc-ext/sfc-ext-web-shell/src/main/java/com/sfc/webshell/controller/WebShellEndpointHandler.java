@@ -1,15 +1,18 @@
 package com.sfc.webshell.controller;
 
+import com.sfc.constant.error.CommonError;
 import com.sfc.webshell.constans.WebShellMQTopic;
+import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecutor;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 
-import javax.websocket.OnClose;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
+import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
@@ -45,8 +48,28 @@ public class WebShellEndpointHandler {
         return shellExecutor;
     }
 
+    private void auth(Session wsSession, Long sessionId) throws IOException {
+        User user = (User) ((UsernamePasswordAuthenticationToken) wsSession.getUserPrincipal()).getPrincipal();
+        ShellSessionRecord sessionRecord = getShellExecutor()
+                .getSessionById(sessionId)
+                .orElseThrow(() -> new JsonException("找不到id为" + sessionId + "的webShell交互会话"));
+        Long shellSessionUid = sessionRecord.getUid();
+        if (!UIDValidator.validate(user, shellSessionUid, true)) {
+            throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+        }
+
+    }
+
     @OnOpen
-    public void onOpen(Session session, @PathParam("sessionId") Long sessionId) {
+    public void onOpen(Session session, @PathParam("sessionId") Long sessionId) throws IOException {
+        try {
+            auth(session, sessionId);
+        } catch (Throwable e) {
+            session.getAsyncRemote().sendText(e.getMessage());
+            session.close();
+            return;
+        }
+
         long mqSubscribeId = getShellExecutor().subscribeOutput(sessionId,  msg ->  {
             synchronized (session) {
                 session.getAsyncRemote().sendText(msg);
