@@ -25,7 +25,6 @@ public class WebShellEndpointHandler {
 
     private MQService getMqService() {
         if (mqService == null) {
-            System.out.println("获取mqservice");
             mqService = SpringContextUtils.getContext().getBean(MQService.class);
         }
         return mqService;
