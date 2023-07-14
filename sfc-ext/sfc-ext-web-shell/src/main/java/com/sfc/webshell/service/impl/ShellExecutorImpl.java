@@ -440,6 +440,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                     outputBuffer.append(exitMessage);
                     try {
                         mqService.push(outputTopic, exitMessage);
+                        mqService.sendBroadcast(WebShellMQTopic.Prefix.EXIT_BROADCAST + session.getId(), session.getId());
                         Thread.sleep(2000);
                     } catch (Throwable e) {
                         log.error("{}退出消息推送出错: ", LOG_PREFIX, e);
@@ -449,6 +450,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                         mqService.unsubscribeMessageQueue(inputSubscribeId);
                         mqService.destroyQueue(inputTopic);
                         mqService.destroyQueue(outputTopic);
+
                     }
                 }
             }
