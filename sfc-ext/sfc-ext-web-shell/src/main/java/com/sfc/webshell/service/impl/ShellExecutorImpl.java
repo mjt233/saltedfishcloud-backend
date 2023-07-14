@@ -532,6 +532,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                 sessionMap.remove(sessionId);
                 processMap.remove(sessionId);
                 if (process.isAlive()) {
+                    log.error("{}kill超时，强制kill", sessionId);
                     process.destroyForcibly();
                 }
             }

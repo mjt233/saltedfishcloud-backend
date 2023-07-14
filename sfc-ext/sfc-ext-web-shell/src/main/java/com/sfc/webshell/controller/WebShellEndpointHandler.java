@@ -72,7 +72,9 @@ public class WebShellEndpointHandler {
 
         long mqSubscribeId = getShellExecutor().subscribeOutput(sessionId,  msg ->  {
             synchronized (session) {
-                session.getAsyncRemote().sendText(msg);
+                try {
+                    session.getBasicRemote().sendText(msg);
+                } catch (IOException ignore) { }
             }
         });
         long broadcastSubscribeId = getMqService().subscribeBroadcast(WebShellMQTopic.Prefix.EXIT_BROADCAST + sessionId, msg -> {
