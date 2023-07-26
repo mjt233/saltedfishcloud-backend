@@ -3,17 +3,14 @@ package com.sfc.webshell.service.impl;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessBuilder;
 import com.pty4j.WinSize;
-import com.sfc.rpc.RPCManager;
-import com.sfc.rpc.RPCRequest;
-import com.sfc.rpc.RPCResponse;
+import com.sfc.rpc.support.RPCContextHolder;
 import com.sfc.webshell.constans.WebShellMQTopic;
-import com.sfc.webshell.constans.WebShellRpcFunction;
 import com.sfc.webshell.helper.BlockStringBuffer;
 import com.sfc.webshell.model.ShellExecuteParameter;
 import com.sfc.webshell.model.ShellExecuteResult;
 import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecuteRecordService;
-import com.sfc.webshell.service.ShellExecutor;
+import com.sfc.webshell.service.ShellExecuteService;
 import com.sfc.webshell.utils.ProcessUtils;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
@@ -22,12 +19,10 @@ import com.xiaotao.saltedfishcloud.model.RequestParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.MQService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -38,17 +33,15 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-@Service
 @Slf4j
-public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
+@Service
+public class ShellExecuteServiceImpl implements ShellExecuteService {
     private final static String LOG_PREFIX = "[WebShell]";
     /**
      * 默认的强制kill延迟
@@ -60,9 +53,6 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
 
     @Autowired
     private ClusterService clusterService;
-
-    @Autowired
-    private RPCManager rpcManager;
 
     @Autowired
     private MQService mqService;
@@ -96,135 +86,13 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
     );
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        registerRpcFunction();
-    }
-
-    @Override
-    public Optional<ShellSessionRecord> getSessionById(Long sessionId) throws IOException {
-        ShellSessionRecord localResult = localGetSessionById(sessionId);
-        if (localResult != null) {
-            return Optional.of(localResult);
+    public ShellSessionRecord getSessionById(Long sessionId) throws IOException {
+        ShellSessionRecord shellSessionRecord = sessionMap.get(sessionId);
+        if (shellSessionRecord == null) {
+            RPCContextHolder.setIsIgnore(true);
         }
-        List<RPCResponse<ShellSessionRecord>> callResult = rpcManager.call(RPCRequest.builder()
-                        .functionName(WebShellRpcFunction.GET_SESSION_BY_ID)
-                        .taskId(sessionId)
-                        .build(),
-                ShellSessionRecord.class,
-                clusterService.listNodes().size()
-        );
-        return callResult.stream()
-                .filter(e -> e.getIsHandled() && e.getIsSuccess())
-                .map(RPCResponse::getResult)
-                .filter(Objects::nonNull)
-                .findAny();
+        return shellSessionRecord;
     }
-
-    private ShellSessionRecord localGetSessionById(Long sessionId) {
-        return sessionMap.get(sessionId);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void registerRpcFunction() {
-        // 注册获取会话RPC方法
-        rpcManager.registerRpcHandler(WebShellRpcFunction.GET_SESSION_BY_ID, request -> {
-            Long sessionId = request.getTaskId();
-            ShellSessionRecord session = localGetSessionById(sessionId);
-            return RPCResponse.success(session);
-        });
-
-        // 注册结束进程RPC方法
-        rpcManager.registerRpcHandler(WebShellRpcFunction.KILL, request -> {
-            Long sessionId = request.getTaskId();
-            try {
-                killLocal(sessionId, DEFAULT_FORCE_KILL_DELAY);
-                return RPCResponse.success(null);
-            } catch (JsonException e) {
-                return RPCResponse.ignore();
-            }
-        });
-
-        // 注册获取会话列表RPC方法
-        rpcManager.registerRpcHandler(WebShellRpcFunction.LIST_SESSION, request -> RPCResponse.success(new ArrayList<>(sessionMap.values())));
-
-        // 注册获取日志RPC方法
-        rpcManager.registerRpcHandler(WebShellRpcFunction.GET_OUTPUT_LOG, request -> {
-            Long sessionId = Long.valueOf(request.getParam());
-            String localResult = getLocalOutputLog(sessionId);
-            if (localResult == null) {
-                return RPCResponse.ignore();
-            }
-            return RPCResponse.success(localResult);
-        });
-
-        // 注册重命名会话RPC方法
-        rpcManager.registerRpcHandler(WebShellRpcFunction.RENAME_SESSION, request -> {
-            Long sessionId = request.getTaskId();
-            String newName = request.getParam();
-            if(localRename(sessionId, newName)) {
-                return RPCResponse.success(null);
-            } else {
-                return RPCResponse.ignore();
-            }
-        });
-
-        // 注册移除会话RPC方法
-        rpcManager.registerRpcHandler(WebShellRpcFunction.REMOVE, request -> {
-            Long sessionId = request.getTaskId();
-            ShellSessionRecord session = sessionMap.get(sessionId);
-            if (session == null) {
-                return RPCResponse.ignore();
-            }
-            try {
-                killLocal(sessionId, DEFAULT_FORCE_KILL_DELAY);
-            } catch (Throwable ignore) { } finally {
-                sessionMap.remove(sessionId);
-                processMap.remove(sessionId);
-                outputMap.remove(sessionId);
-            }
-            return RPCResponse.success(null);
-        });
-
-        // 注册重启RPC方法
-        rpcManager.registerRpcHandler(WebShellRpcFunction.RESTART, request -> {
-            Long sessionId = request.getTaskId();
-            ShellSessionRecord session = sessionMap.get(sessionId);
-            if (session == null) {
-                return RPCResponse.ignore();
-            }
-            try {
-                createProcessFromSession(session);
-                return RPCResponse.success(session);
-            } catch (Throwable err) {
-                log.error("{}重启会话失败: ", LOG_PREFIX, err);
-                return RPCResponse.error(err.getMessage());
-            }
-        });
-
-        rpcManager.registerRpcHandler(WebShellRpcFunction.RESIZE_PTY, request -> {
-            Long sessionId = request.getTaskId();
-            try {
-                Map<String, Integer> param = (Map<String, Integer>)MapperHolder.parseJson(request.getParam(), Map.class);
-                Integer rows = param.get("rows");
-                Integer cols = param.get("cols");
-                boolean isSuccess = doResizePty(sessionId, rows, cols);
-                if (isSuccess) {
-                    return RPCResponse.success(null);
-                } else {
-                    return RPCResponse.ignore();
-                }
-            } catch (IOException e) {
-                log.error("{}重置窗口大小反序列化失败: {} ", LOG_PREFIX, request.getParam(), e);
-                return RPCResponse.error(e.getMessage());
-            } catch (JsonException e) {
-                return RPCResponse.error(e.getMessage());
-            } catch (Throwable e) {
-                log.error("{}重置窗口大小失败: {} ", LOG_PREFIX, request.getParam(), e);
-                return RPCResponse.error(e.getMessage());
-            }
-        });
-    }
-
 
     /**
      * 创建pty进程
@@ -304,7 +172,13 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
 
     @Override
     public ShellExecuteResult executeCommand(Long nodeId, ShellExecuteParameter parameter) throws IOException {
-        CommonResult<ShellExecuteResult> rpcResult = invokeNodeService(nodeId, parameter, HttpMethod.POST, "/api/webShell/executeCommand");
+        CommonResult<ShellExecuteResult> rpcResult = invokeNodeService(
+                nodeId,
+                parameter,
+                HttpMethod.POST,
+                "/api/webShell/executeCommand",
+                new ParameterizedTypeReference<>() {}
+        );
         if (rpcResult != null) {
             return rpcResult.getData();
         }
@@ -366,7 +240,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
      * @param <T>       参数类型
      * @return          调用返回值，若为null表示为当前节点，未发起远程调用
      */
-    private <R, T> CommonResult<R> invokeNodeService(Long nodeId, T body, HttpMethod method, String url) {
+    private <R, T> R invokeNodeService(Long nodeId, T body, HttpMethod method, String url, ParameterizedTypeReference<R> typeRef) {
         if(nodeId == null || clusterService.getSelf().getId().equals(nodeId)) {
             return null;
         }
@@ -378,11 +252,10 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
                 .url(url)
                 .body(body)
                 .build();
-
-        ResponseEntity<CommonResult<R>> httpCallResult = clusterService.request(
+        ResponseEntity<R> httpCallResult = clusterService.request(
                 node.getId(),
                 requestParam,
-                new ParameterizedTypeReference<>() {}
+                typeRef
         );
         return httpCallResult.getBody();
     }
@@ -491,7 +364,13 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
 
     @Override
     public ShellSessionRecord createSession(Long nodeId, ShellExecuteParameter parameter) throws IOException {
-        CommonResult<ShellSessionRecord> rpcResult = invokeNodeService(nodeId, parameter, HttpMethod.POST, "/api/webShell/createSession");
+        CommonResult<ShellSessionRecord> rpcResult = invokeNodeService(
+                nodeId,
+                parameter,
+                HttpMethod.POST,
+                "/api/webShell/createSession",
+                new ParameterizedTypeReference<>() {}
+        );
         if (rpcResult != null) {
             return rpcResult.getData();
         }
@@ -509,7 +388,7 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
     }
 
     @Override
-    public void killLocal(Long sessionId, long forceDelay) {
+    public void kill(Long sessionId, long forceDelay) {
         Process process = getProcess(sessionId);
         if (process == null) {
             throw new JsonException("会话id" + sessionId + "不存在");
@@ -545,97 +424,45 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
     }
 
     @Override
-    public void kill(Long sessionId, long forceDelay) throws IOException {
-        boolean inLocal = processMap.get(sessionId) != null;
-        if (inLocal) {
-            killLocal(sessionId, forceDelay);
-        } else {
-            rpcManager.call(RPCRequest.builder()
-                    .functionName(WebShellRpcFunction.KILL)
-                    .param(String.valueOf(forceDelay))
-                    .taskId(sessionId)
-                    .build(), null);
-        }
-    }
-
-    @Override
     public void resizePty(Long sessionId, int rows, int cols) throws IOException {
-        Map<String, Integer> param = new HashMap<>();
-        param.put("rows", rows);
-        param.put("cols", cols);
-        RPCResponse<Object> result = rpcManager.call(RPCRequest.builder()
-                .taskId(sessionId)
-                .functionName(WebShellRpcFunction.RESIZE_PTY)
-                .param(MapperHolder.toJson(param))
-                .build());
-        if (!result.getIsSuccess()) {
-            throw new JsonException(result.getError());
-        }
-    }
+        try {
+            ShellSessionRecord session = sessionMap.get(sessionId);
+            // 本地不持有该会话
+            if (session == null) {
+                return;
+            }
 
-    private boolean doResizePty(Long sessionId, int rows, int cols) throws IOException {
-        ShellSessionRecord session = sessionMap.get(sessionId);
-        // 本地不持有该会话
-        if (session == null) {
-            return false;
+            if (!session.getParameter().isPty()) {
+                throw new JsonException("不是一个pty模拟终端会话");
+            }
+            Process process = processMap.get(sessionId);
+            if (process == null) {
+                throw new JsonException("会话进程已结束");
+            }
+            ((PtyProcess) process).setWinSize(new WinSize(cols, rows));
+            WinSize winSize = ((PtyProcess) process).getWinSize();
+            session.setRows(winSize.getRows());
+            session.setCols(winSize.getColumns());
+        } catch (IOException e) {
+            log.error("{}重置窗口大小反序列化失败: ", LOG_PREFIX, e);
+        } catch (Throwable e) {
+            log.error("{}重置窗口大小失败: ", LOG_PREFIX, e);
         }
-
-        if (!session.getParameter().isPty()) {
-            throw new JsonException("不是一个pty模拟终端会话");
-        }
-        Process process = processMap.get(sessionId);
-        if (process == null) {
-            throw new JsonException("会话进程已结束");
-        }
-        ((PtyProcess) process).setWinSize(new WinSize(cols, rows));
-        WinSize winSize = ((PtyProcess) process).getWinSize();
-        session.setRows(winSize.getRows());
-        session.setCols(winSize.getColumns());
-        return true;
     }
 
     @Override
-    public List<ShellSessionRecord> getLocalSession() {
+    public List<ShellSessionRecord> getAllSession() throws IOException {
         return new ArrayList<>(sessionMap.values());
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List<ShellSessionRecord> getAllSession() throws IOException {
-        return rpcManager.call(
-                        RPCRequest.builder().functionName(WebShellRpcFunction.LIST_SESSION).build(),
-                        List.class,
-                        Duration.ofSeconds(5),
-                        clusterService.listNodes().size()
-                )
-                .stream()
-                .flatMap(e -> ((List<ShellSessionRecord>)e.getResult()).stream())
-                .collect(Collectors.toList());
-    }
-
-    private boolean localRename(Long sessionId, String newName) {
-        ShellSessionRecord session = sessionMap.get(sessionId);
-        if (session != null) {
-            session.setName(newName);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
     public void rename(Long sessionId, String newName) {
-        if (localRename(sessionId, newName)) {
+        ShellSessionRecord session = sessionMap.get(sessionId);
+        if (session == null) {
+            RPCContextHolder.setIsIgnore(true);
             return;
         }
-        try {
-            RPCResponse<Object> result = rpcManager.call(RPCRequest.builder().param(newName).taskId(sessionId).functionName(WebShellRpcFunction.RENAME_SESSION).build());
-            if (result == null) {
-                throw new JsonException("重命名失败, 服务操作无响应");
-            }
-        } catch (IOException e) {
-            throw new JsonException(e.getMessage());
-        }
+        session.setName(newName);
     }
 
     @Override
@@ -664,15 +491,8 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
         String localResult = getLocalOutputLog(sessionId);
         if (localResult != null) {
             return localResult;
-        }
-
-        RPCResponse<String> callResult = rpcManager.call(
-                RPCRequest.builder().functionName(WebShellRpcFunction.GET_OUTPUT_LOG).param(sessionId.toString()).build(),
-                String.class
-        );
-        if (callResult != null) {
-            return callResult.getResult();
         } else {
+            RPCContextHolder.setIsIgnore(true);
             return null;
         }
     }
@@ -684,25 +504,31 @@ public class ShellExecutorImpl implements ShellExecutor, InitializingBean {
 
     @Override
     public void restart(Long sessionId) throws IOException {
-        rpcManager.call(
-                RPCRequest.builder().functionName(WebShellRpcFunction.RESTART).taskId(sessionId).build(),
-                ShellSessionRecord.class,
-                clusterService.listNodes().size()
-        ).stream()
-                .filter(RPCResponse::getIsHandled)
-                .findAny()
-                .orElseThrow(() -> new IllegalArgumentException("找不到shell会话:" + sessionId));
+        ShellSessionRecord session = sessionMap.get(sessionId);
+        if (session == null) {
+            RPCContextHolder.setIsIgnore(true);
+            return;
+        }
+        try {
+            createProcessFromSession(session);
+        } catch (Throwable err) {
+            log.error("{}重启会话失败: ", LOG_PREFIX, err);
+        }
     }
 
     @Override
     public void remove(Long sessionId) throws IOException {
-        rpcManager.call(
-                        RPCRequest.builder().functionName(WebShellRpcFunction.REMOVE).taskId(sessionId).build(),
-                        Object.class,
-                        clusterService.listNodes().size()
-                ).stream()
-                .filter(RPCResponse::getIsHandled)
-                .findAny()
-                .orElseThrow(() -> new IllegalArgumentException("找不到shell会话:" + sessionId));
+        ShellSessionRecord session = sessionMap.get(sessionId);
+        if (session == null) {
+            RPCContextHolder.setIsIgnore(true);
+            return;
+        }
+        try {
+            kill(sessionId, DEFAULT_FORCE_KILL_DELAY);
+        } catch (Throwable ignore) { } finally {
+            sessionMap.remove(sessionId);
+            processMap.remove(sessionId);
+            outputMap.remove(sessionId);
+        }
     }
 }

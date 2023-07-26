@@ -62,7 +62,7 @@ public class RPCTest {
     public void testHandleOnce() throws IOException, BrokenBarrierException, InterruptedException {
         AtomicInteger aCount = new AtomicInteger();
         AtomicInteger bCount = new AtomicInteger();
-        RPCManager rpcManager2 = new RedisRPCManager(factory);
+        RPCManager rpcManager2 = new RedisRPCManager(factory, null);
         this.rpcManager.registerRpcHandler("testFunc", request -> {
             boolean isHandled = Integer.parseInt(request.getParam()) % 2 == 0;
             try {

@@ -61,7 +61,7 @@ public class ControllerAdvice {
     @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class})
     public JsonResult paramsError(Exception e) {
         if (log.isDebugEnabled()) {
-            log.debug("{}校验错误：{}",LOG_PREFIX, e);
+            log.debug("{}校验错误：",LOG_PREFIX, e);
         }
         return responseError(422, e.getMessage());
     }

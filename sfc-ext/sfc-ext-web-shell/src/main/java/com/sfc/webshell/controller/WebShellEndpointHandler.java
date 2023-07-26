@@ -1,9 +1,11 @@
 package com.sfc.webshell.controller;
 
 import com.sfc.constant.error.CommonError;
+import com.sfc.rpc.RPCManager;
 import com.sfc.webshell.constans.WebShellMQTopic;
 import com.sfc.webshell.model.ShellSessionRecord;
-import com.sfc.webshell.service.ShellExecutor;
+import com.sfc.webshell.service.ShellExecuteRPCService;
+import com.sfc.webshell.service.ShellExecuteService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.MQService;
@@ -22,7 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 @ServerEndpoint("/api/webshell/{sessionId}")
 public class WebShellEndpointHandler {
-    private ShellExecutor shellExecutor;
+    private ShellExecuteService shellExecuteService;
+    private RPCManager rpcManager;
 
     private MQService mqService;
 
@@ -41,18 +44,28 @@ public class WebShellEndpointHandler {
     private static final Map<String, Long> subscribeIdMap = new ConcurrentHashMap<>();
     private static final Map<String, Long> broadcastSubscribeIdMap = new ConcurrentHashMap<>();
 
-    private ShellExecutor getShellExecutor() {
-        if (shellExecutor == null) {
-            shellExecutor = SpringContextUtils.getContext().getBean(ShellExecutor.class);
+    private ShellExecuteService getShellExecutor() {
+        if (shellExecuteService == null) {
+            shellExecuteService = SpringContextUtils.getContext().getBean(ShellExecuteService.class);
         }
-        return shellExecutor;
+        return shellExecuteService;
+    }
+
+    private RPCManager getRpcManager() {
+        if (rpcManager == null) {
+            rpcManager = SpringContextUtils.getContext().getBean(RPCManager.class);
+        }
+        return rpcManager;
     }
 
     private void auth(Session wsSession, Long sessionId) throws IOException {
         User user = (User) ((UsernamePasswordAuthenticationToken) wsSession.getUserPrincipal()).getPrincipal();
-        ShellSessionRecord sessionRecord = getShellExecutor()
-                .getSessionById(sessionId)
-                .orElseThrow(() -> new JsonException("找不到id为" + sessionId + "的webShell交互会话"));
+        ShellSessionRecord sessionRecord = getRpcManager()
+                .getRPCService(ShellExecuteRPCService.class)
+                .getSessionById(sessionId);
+        if (sessionRecord == null) {
+            throw  new JsonException("找不到id为" + sessionId + "的webShell交互会话");
+        }
         Long shellSessionUid = sessionRecord.getUid();
         if (!UIDValidator.validate(user, shellSessionUid, true)) {
             throw new JsonException(CommonError.SYSTEM_FORBIDDEN);

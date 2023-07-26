@@ -1,8 +1,10 @@
 package com.sfc.webshell.controller;
 
+import com.sfc.rpc.annotation.RPCResource;
 import com.sfc.webshell.model.ShellExecuteParameter;
 import com.sfc.webshell.model.ShellSessionRecord;
-import com.sfc.webshell.service.ShellExecutor;
+import com.sfc.webshell.service.ShellExecuteRPCService;
+import com.sfc.webshell.service.ShellExecuteService;
 import com.sfc.webshell.model.ShellExecuteResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
@@ -17,8 +19,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/webShell")
 public class WebShellController {
+    @RPCResource
+    private ShellExecuteRPCService rpcService;
+
     @Autowired
-    private ShellExecutor shellExecutor;
+    private ShellExecuteService service;
 
     /**
      * 直接执行简单命令
@@ -29,7 +34,7 @@ public class WebShellController {
     @RolesAllowed("ADMIN")
     public JsonResult<ShellExecuteResult> executeCommand(@RequestParam(value = "nodeId", required = false) Long nodeId,
                                                          @RequestBody ShellExecuteParameter parameter) throws IOException {
-        return JsonResultImpl.getInstance(shellExecutor.executeCommand(nodeId, parameter));
+        return JsonResultImpl.getInstance(service.executeCommand(nodeId, parameter));
     }
 
     /**
@@ -41,32 +46,32 @@ public class WebShellController {
     @RolesAllowed("ADMIN")
     public JsonResult<ShellSessionRecord> createSession(@RequestParam(value = "nodeId", required = false) Long nodeId,
                                                         @RequestBody ShellExecuteParameter parameter) throws IOException {
-        return JsonResultImpl.getInstance(shellExecutor.createSession(nodeId, parameter));
+        return JsonResultImpl.getInstance(service.createSession(nodeId, parameter));
     }
 
     @GetMapping("/listSession")
     @RolesAllowed("ADMIN")
     public JsonResult<List<ShellSessionRecord>> listSession() throws IOException {
-        return JsonResultImpl.getInstance(shellExecutor.getAllSession());
+        return JsonResultImpl.getInstance(rpcService.getAllSession());
     }
 
     @GetMapping("/getLog")
     @RolesAllowed("ADMIN")
     public JsonResult<String> getLog(@RequestParam("sessionId") Long sessionId) throws IOException {
-        return JsonResultImpl.getInstance(shellExecutor.getLog(sessionId));
+        return JsonResultImpl.getInstance(rpcService.getLog(sessionId));
     }
 
     @GetMapping("/rename")
     @RolesAllowed("ADMIN")
     public JsonResult<?> rename(@RequestParam("sessionId") Long sessionId, @RequestParam("name") String newName) {
-        shellExecutor.rename(sessionId, newName);
+        rpcService.rename(sessionId, newName);
         return JsonResult.emptySuccess();
     }
 
     @GetMapping("/restart")
     @RolesAllowed("ADMIN")
     public JsonResult<?> restart(@RequestParam("sessionId") Long sessionId) throws IOException {
-        shellExecutor.restart(sessionId);
+        rpcService.restart(sessionId);
         return JsonResult.emptySuccess();
     }
 
@@ -75,21 +80,21 @@ public class WebShellController {
     public JsonResult<?> resizePty(@RequestParam("sessionId") Long sessionId,
                                    @RequestParam("rows") @Min(1) Integer rows,
                                    @RequestParam("cols") @Min(1) Integer cols) throws IOException {
-        shellExecutor.resizePty(sessionId, rows, cols);
+        rpcService.resizePty(sessionId, rows, cols);
         return JsonResult.emptySuccess();
     }
 
     @GetMapping("/remove")
     @RolesAllowed("ADMIN")
     public JsonResult<?> remove(@RequestParam("sessionId") Long sessionId) throws IOException {
-        shellExecutor.remove(sessionId);
+        rpcService.remove(sessionId);
         return JsonResult.emptySuccess();
     }
 
     @GetMapping("/kill")
     @RolesAllowed("ADMIN")
     public JsonResult<?> kill(@RequestParam("sessionId") Long sessionId) throws IOException {
-        shellExecutor.kill(sessionId, 60000);
+        rpcService.kill(sessionId, 60000);
         return JsonResult.emptySuccess();
     }
 
