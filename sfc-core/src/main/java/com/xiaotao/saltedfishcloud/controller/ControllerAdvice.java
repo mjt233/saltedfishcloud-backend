@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.exception.MessageException;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
@@ -105,7 +106,12 @@ public class ControllerAdvice {
     @ExceptionHandler(Exception.class)
     public JsonResult defaultHandle(Exception e) {
         log.error("异常", e);
-        return responseError(500, e.getClass().getCanonicalName() + " " + e.getMessage());
+        if (e instanceof MessageException) {
+            return responseError(500, e.getMessage());
+        } else {
+            return responseError(500, e.getClass().getCanonicalName() + " " + e.getMessage());
+        }
+
     }
 
     @ExceptionHandler(DuplicateKeyException.class)

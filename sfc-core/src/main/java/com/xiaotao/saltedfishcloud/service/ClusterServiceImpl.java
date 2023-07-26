@@ -58,18 +58,52 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
         return KEY_PREFIX + selfId;
     }
 
+    /**
+     * 下次需要执行抓取集群节点信息的时间点
+     */
+    private long nextFetchTime = 0;
+
+    /**
+     * 缓存的集群节点信息列表
+     */
+    private List<ClusterNodeInfo> cacheNodeList = Collections.emptyList();
+
     @Override
     public List<ClusterNodeInfo> listNodes() {
+        long now = System.currentTimeMillis();
+        if (now <= nextFetchTime) {
+            return cacheNodeList;
+        }
+        fetchNodes();
+        return cacheNodeList;
+    }
+
+    /**
+     * 抓取最新的集群节点信息列表
+     */
+    private synchronized void fetchNodes() {
+        long now = System.currentTimeMillis();
+        if (now <= nextFetchTime) {
+            return;
+        }
         Set<String> keys = redisDao.scanKeys(KEY_PREFIX + "*");
 
-        return keys.stream().map(key -> redisTemplate.opsForValue().get(key)).filter(Objects::nonNull)
+        cacheNodeList = keys.stream().map(key -> redisTemplate.opsForValue().get(key)).filter(Objects::nonNull)
                 .map(obj -> {
                     try {
                         return MapperHolder.parseAsJson(obj, ClusterNodeInfo.class);
                     } catch (IOException e) {
                         throw new IllegalArgumentException(e);
                     }
-                }).collect(Collectors.toList());
+                }).collect(Collectors.toUnmodifiableList());
+
+        // 更新下次需要抓取节点信息的时间为 5~10秒钟后
+        nextFetchTime = System.currentTimeMillis() + (5 + (new Random()).nextInt()%10 * 1000L);
+    }
+
+    @Override
+    public int getNodeCount() {
+        return listNodes().size();
     }
 
     @Override
@@ -90,7 +124,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
     public ClusterNodeInfo getSelf() {
         Runtime runtime = Runtime.getRuntime();
         String host = null;
-        String ip = null;
+        String ip;
         try {
             host = InetAddress.getLocalHost().getHostName();
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
@@ -120,7 +154,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
     public void registerSelf() {
         ClusterNodeInfo self = getSelf();
         Boolean success = redisTemplate.opsForValue().setIfAbsent(getKey(), self);
-        redisTemplate.expire(getKey(), Duration.ofSeconds(30));
+        redisTemplate.expire(getKey(), Duration.ofSeconds(10));
         if (Boolean.TRUE.equals(success)) {
             mqService.sendBroadcast(MQTopic.CLUSTER_NODE_ONLINE, self);
         }
@@ -147,24 +181,6 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
             headers.putAll(param.getHeaders());
         }
         HttpEntity<Object> requestEntity = new HttpEntity<>(param.getBody(), headers);
-
-//        // 构造QueryString到URL中
-//        String url;
-//        if (param.getParameters() != null && !param.getParameters().isEmpty()) {
-//            StringBuilder qs = new StringBuilder();
-//            param.getParameters().forEach((k,v) -> {
-//                qs.append(URLEncoder.encode(k, StandardCharsets.UTF_8))
-//                        .append('=')
-//                        .append(URLEncoder.encode(v, StandardCharsets.UTF_8))
-//                        .append('&');
-//            });
-//            qs.setLength(qs.length() - 1);
-//            if (param.getUrl().contains("?")) {
-//                url = param.getUrl() + "&" + qs;
-//            } else {
-//                url = param.getUrl() + "?" + qs;
-//            }
-//        }
 
         return restTemplate.exchange(
                 node.getRequestUrl(param.getUrl()),

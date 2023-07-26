@@ -32,4 +32,9 @@ public @interface RPCAction {
      * 在一些需要马上得知请求在整个集群上是否得到被处理的功能时会有用，能通知到发起者系统所有节点都无法处理本次请求。
      */
     boolean reportIgnore() default true;
+
+    /**
+     * 作为客户端时，当请求被所有集群节点忽略后的异常提示语。
+     */
+    String ignoreMessage() default "请求的资源不存在或系统拒绝处理";
 }

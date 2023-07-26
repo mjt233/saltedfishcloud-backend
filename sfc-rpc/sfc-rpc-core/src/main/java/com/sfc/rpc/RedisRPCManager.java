@@ -1,6 +1,9 @@
 package com.sfc.rpc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sfc.rpc.exception.RPCException;
+import com.sfc.rpc.exception.RPCIgnoreException;
+import com.sfc.rpc.support.RPCContextHolder;
 import com.sfc.rpc.util.RPCServiceProxyUtils;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.utils.ClassUtils;
@@ -28,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 基于Redis发布/订阅模型和brpop命令的简易集群RPC管理器
+ * todo 支持身份鉴权
  */
 @Slf4j
 @Component
@@ -138,6 +142,7 @@ public class RedisRPCManager implements RPCManager {
                 // 解析rpc参数
                 Object requestRawObj = redisTemplate.getValueSerializer().deserialize(message.getBody());
                 RPCRequest request = toRpcRequest(requestRawObj);
+                RPCContextHolder.setRequest(request);
                 log.debug("{}收到RPC请求: {}, request id: {}", logPrefix, request.getFunctionName(), request.getRequestId());
 
                 // 调用对应函数的处理器
@@ -147,16 +152,21 @@ public class RedisRPCManager implements RPCManager {
                     return;
                 }
 
-                // 发送响应（由于RPC会广播到每个客户端，节点不一定响应了这个RPC请求，因此还需要判断请求是否被处理）
+                // 发送响应
                 RPCResponse<?> response = rpcHandler.handleRpcRequest(request);
                 if (response.getIsHandled() != null && response.getIsHandled()) {
                     log.debug("{}响应了RPC请求: {}, request id: {}", logPrefix, request.getFunctionName(), request.getRequestId());
                     sendResponse(request, response);
                 } else {
                     log.debug("{}忽略了RPC请求: {}, request id: {}", logPrefix, request.getFunctionName(), request.getRequestId());
+                    if (Boolean.TRUE.equals(request.getIsReportIgnore())) {
+                        sendResponse(request, response);
+                    }
                 }
             } catch (Exception e) {
                 log.error("{}请求处理出错：", logPrefix, e);
+            } finally {
+                RPCContextHolder.remove();
             }
         }, new PatternTopic(ASYNC_TASK_RPC));
     }
@@ -178,10 +188,33 @@ public class RedisRPCManager implements RPCManager {
     }
 
     /**
-     * 等待响应
+     * 等待响应。若拿到的是“已忽略”响应则会继续等待，直到拿到“已处理”的响应
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public  <T> RPCResponse<T> waitResponse(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException {
+    public <T> RPCResponse<T> waitNoIgnoreResponse(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException {
+        boolean isIgnore;
+        RPCResponse rpcResponse;
+        int tryCount = 0;
+        do {
+            // 尝试等待一个响应
+            rpcResponse = waitResponse(request, resultType, timeout);
+            // null响应超时，直接返回
+            if (rpcResponse == null) {
+                return null;
+            }
+            // 判定是否为一个“已忽略”响应，如果是且是第一次拿到“已忽略”，则获取当前集群节点数量，继续等待非“已忽略”的响应。
+            // 直到获取到非”已忽略“响应或收到的忽略数量与节点数量相等
+            isIgnore = !Boolean.TRUE.equals(rpcResponse.getIsHandled());
+        } while (isIgnore && ++tryCount >= clusterService.getNodeCount());
+
+        if (isIgnore) {
+            throw new RPCIgnoreException(request);
+        }
+        return rpcResponse;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public <T> RPCResponse<T> waitResponse(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException {
         Object o = redisTemplate.opsForList().rightPop(request.getResponseKey(), timeout);
         if (o == null) {
             return null;
@@ -228,7 +261,7 @@ public class RedisRPCManager implements RPCManager {
     @Override
     public <T> RPCResponse<T> call(RPCRequest request, Class<T> resultType, Duration timeout) throws IOException {
         sendRequest(request);
-        return waitResponse(request, resultType, timeout);
+        return waitNoIgnoreResponse(request, resultType, timeout);
     }
 
     private void sendRequest(RPCRequest request) throws JsonProcessingException {

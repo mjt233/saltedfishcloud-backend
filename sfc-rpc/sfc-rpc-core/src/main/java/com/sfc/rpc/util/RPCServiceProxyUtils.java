@@ -6,6 +6,8 @@ import com.sfc.rpc.RPCResponse;
 import com.sfc.rpc.annotation.RPCAction;
 import com.sfc.rpc.annotation.RPCService;
 import com.sfc.rpc.enums.RPCResponseStrategy;
+import com.sfc.rpc.exception.RPCException;
+import com.sfc.rpc.exception.RPCIgnoreException;
 import com.sfc.rpc.support.RPCActionDefinition;
 import com.sfc.rpc.support.RPCContextHolder;
 import com.xiaotao.saltedfishcloud.utils.ClassUtils;
@@ -59,7 +61,7 @@ public class RPCServiceProxyUtils {
      * @param <T>               代理类类型
      * @return                  代理类工厂方法
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static <T> T createProxy(T originInstance, RPCManager rpcManager) {
         Class<?> targetClass = originInstance.getClass();
         String namespace = getRPCServiceNamespace(targetClass);
@@ -71,22 +73,31 @@ public class RPCServiceProxyUtils {
                 .filter(e -> e.getAnnotation(RPCAction.class) != null)
                 .collect(Collectors.toMap(
                         RPCServiceProxyUtils::getMethodIdentify,
-                        e -> RPCActionDefinition.builder()
-                                .strategy(e.getAnnotation(RPCAction.class).strategy())
-                                .method(e)
-                                .fullFunctionName(getRPCActionFunctionName(namespace, e))
-                                .build()
+                        e -> {
+                            RPCAction rpcAction = e.getAnnotation(RPCAction.class);
+                            return RPCActionDefinition.builder()
+                                    .rpcAction(rpcAction)
+                                    .strategy(rpcAction.strategy())
+                                    .method(e)
+                                    .fullFunctionName(getRPCActionFunctionName(namespace, e))
+                                    .build();
+                        }
                 ));
 
+        // 注册服务端
         actionDefinitionMap.forEach((methodId, rpcActionDefinition) -> {
+            RPCAction rpcAction = rpcActionDefinition.getRpcAction();
+            Method rpcMethod = rpcActionDefinition.getMethod();
+            boolean autoIgnore = rpcAction.nullAsIgnore() && rpcMethod.getReturnType() != Void.TYPE;
+
             rpcManager.registerRpcHandler(rpcActionDefinition.getFullFunctionName(), request -> {
                 RPCContextHolder.setRequest(request);
                 try {
                     Object[] args = MapperHolder.withTypeMapper.readValue(request.getParam(), List.class).toArray();
-                    Object result = rpcActionDefinition.getMethod().invoke(originInstance, args);
+                    Object result = rpcMethod.invoke(originInstance, args);
                     if (result instanceof RPCResponse) {
                         return (RPCResponse)result;
-                    } else if (RPCContextHolder.isIgnore()) {
+                    } else if ((result == null && autoIgnore) || Boolean.TRUE.equals(RPCContextHolder.isIgnore())) {
                         return RPCResponse.ignore();
                     } else {
                         return RPCResponse.success(result);
@@ -94,12 +105,13 @@ public class RPCServiceProxyUtils {
                 } catch (Throwable e) {
                     log.error("[RPC代理]执行出错: ", e);
                     return RPCResponse.error(e.getMessage());
-                }finally {
+                } finally {
                     RPCContextHolder.remove();
                 }
             });
         });
 
+        // 注册客户端
         Enhancer enhancer = new Enhancer();
         enhancer.setClassLoader(targetClass.getClassLoader());
         enhancer.setSuperclass(targetClass);
@@ -108,14 +120,21 @@ public class RPCServiceProxyUtils {
             if (definition == null) {
                 throw new UnsupportedOperationException(method + "不是有效的rpc方法");
             }
+            RPCAction rpcAction = definition.getRpcAction();
 
             RPCRequest request = RPCRequest.builder()
                     .functionName(definition.getFullFunctionName())
+                    .isReportIgnore(rpcAction.reportIgnore())
                     .param(MapperHolder.withTypeMapper.writeValueAsString(Arrays.asList(args)))
                     .build();
 
             if (definition.getStrategy() == RPCResponseStrategy.ONLY_ACCEPT_ONE) {
-                return rpcManager.call(request, method.getReturnType()).getResult();
+                try {
+                    return rpcManager.call(request, method.getReturnType()).getResult();
+                } catch (RPCIgnoreException e) {
+                    throw new RPCIgnoreException(request, rpcAction.ignoreMessage());
+                }
+
             } else {
                 return rpcManager.callAll(request, method.getReturnType())
                         .stream()

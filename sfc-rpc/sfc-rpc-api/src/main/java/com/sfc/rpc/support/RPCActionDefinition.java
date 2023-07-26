@@ -1,5 +1,6 @@
 package com.sfc.rpc.support;
 
+import com.sfc.rpc.annotation.RPCAction;
 import com.sfc.rpc.enums.RPCResponseStrategy;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,4 +25,9 @@ public class RPCActionDefinition {
      * 方法
      */
     private Method method;
+
+    /**
+     * 原始注解
+     */
+    private RPCAction rpcAction;
 }
