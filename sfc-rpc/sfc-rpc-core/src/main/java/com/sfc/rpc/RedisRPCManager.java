@@ -1,10 +1,10 @@
 package com.sfc.rpc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.sfc.rpc.exception.RPCException;
 import com.sfc.rpc.exception.RPCIgnoreException;
+import com.sfc.rpc.support.RPCMethodActionHandler;
 import com.sfc.rpc.support.RPCContextHolder;
-import com.sfc.rpc.util.RPCServiceProxyUtils;
+import com.sfc.rpc.util.RPCActionDefinitionUtils;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.utils.ClassUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -22,7 +22,6 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +48,8 @@ public class RedisRPCManager implements RPCManager {
 
     private final Map<String, RPCHandler<?>> handlerMap = new ConcurrentHashMap<>();
 
-    private final Map<Class<?>, List<Object>> rpcProxyServiceMap = new ConcurrentHashMap<>();
-    private final Map<Class<?>, Object> rpcProxyProvideLazyMap = new ConcurrentHashMap<>();
+    private final Map<Class<?>, List<Object>> rpcClientMap = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Object> rpcClientLazyMap = new ConcurrentHashMap<>();
 
     @Getter
     private int idCode;
@@ -67,29 +66,35 @@ public class RedisRPCManager implements RPCManager {
 
     @Override
     public void registerRPCService(Object obj) {
-        Class<?> originClass = obj.getClass();
-        Object proxy = RPCServiceProxyUtils.createProxy(obj, this);
-        ClassUtils.visitExtendsPath(originClass, clazz -> {
-            rpcProxyServiceMap.computeIfAbsent(clazz, key -> new ArrayList<>()).add(proxy);
-            return true;
+        Class<?> clazz = obj.getClass();
+        RPCActionDefinitionUtils.getRPCActionDefinition(clazz).forEach((id, def) -> {
+            this.registerRpcHandler(def.getFullFunctionName(), new RPCMethodActionHandler<>(obj, def));
         });
-        ClassUtils.visitImplementsPath(originClass, clazz -> {
-            rpcProxyServiceMap.computeIfAbsent(clazz, key -> new ArrayList<>()).add(proxy);
-            return true;
-        });
-
 
     }
 
     @Override
+    public void registerRPCClient(Class<?> clazz) {
+        Object client = RPCActionDefinitionUtils.createRPCClient(clazz, this);
+        ClassUtils.visitExtendsPath(clazz, parentClass -> {
+            rpcClientMap.computeIfAbsent(parentClass, key -> new ArrayList<>()).add(client);
+            return true;
+        });
+        ClassUtils.visitImplementsPath(clazz, interfaceClass -> {
+            rpcClientMap.computeIfAbsent(interfaceClass, key -> new ArrayList<>()).add(client);
+            return true;
+        });
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
-    public <T> T getRPCService(Class<T> clazz) {
-        return (T) rpcProxyProvideLazyMap.computeIfAbsent(clazz, key -> {
+    public <T> T getRPCClient(Class<T> clazz) {
+        return (T) rpcClientLazyMap.computeIfAbsent(clazz, key -> {
             Enhancer enhancer = new Enhancer();
             enhancer.setSuperclass(clazz);
             enhancer.setClassLoader(clazz.getClassLoader());
             enhancer.setCallback((LazyLoader) () -> {
-                List<Object> objects = rpcProxyServiceMap.get(clazz);
+                List<Object> objects = rpcClientMap.get(clazz);
                 if (objects == null) {
                     throw new IllegalArgumentException("没有注册" + clazz + "的RPC服务");
                 }
@@ -205,7 +210,7 @@ public class RedisRPCManager implements RPCManager {
             // 判定是否为一个“已忽略”响应，如果是且是第一次拿到“已忽略”，则获取当前集群节点数量，继续等待非“已忽略”的响应。
             // 直到获取到非”已忽略“响应或收到的忽略数量与节点数量相等
             isIgnore = !Boolean.TRUE.equals(rpcResponse.getIsHandled());
-        } while (isIgnore && ++tryCount >= clusterService.getNodeCount());
+        } while (isIgnore && ++tryCount <= clusterService.getNodeCount());
 
         if (isIgnore) {
             throw new RPCIgnoreException(request);

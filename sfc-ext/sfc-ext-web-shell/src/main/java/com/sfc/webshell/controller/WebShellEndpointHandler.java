@@ -61,7 +61,7 @@ public class WebShellEndpointHandler {
     private void auth(Session wsSession, Long sessionId) throws IOException {
         User user = (User) ((UsernamePasswordAuthenticationToken) wsSession.getUserPrincipal()).getPrincipal();
         ShellSessionRecord sessionRecord = getRpcManager()
-                .getRPCService(ShellExecuteRPCService.class)
+                .getRPCClient(ShellExecuteRPCService.class)
                 .getSessionById(sessionId);
         if (sessionRecord == null) {
             throw  new JsonException("找不到id为" + sessionId + "的webShell交互会话");
