@@ -320,7 +320,7 @@ public class DefaultPluginManager implements PluginManager {
 
         try {
             // 读取插件基本信息
-            log.info("{}加载插件：{}",LOG_PREFIX, StringUtils.getURLLastName(pluginUrl));
+            log.info("{}开始加载插件：{}",LOG_PREFIX, pluginUrl);
             pluginInfo = getPluginInfoFromLoader(classLoader);
             this.validPluginInfo(pluginInfo);
 

@@ -1,7 +1,6 @@
 package com.sfc.rpc;
 
 import com.sfc.rpc.annotation.RPCResource;
-import com.sfc.rpc.annotation.RPCService;
 import com.sfc.rpc.util.RPCServiceProxyUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
@@ -16,8 +15,15 @@ import java.util.List;
 
 public class RPCResourceBeanPostProcessor implements BeanPostProcessor {
     private RPCManager rpcManager;
-    private final List<Object> waitRegisterBean = new ArrayList<>();
-    private final List<Tuple2<Object, Field>> waitInjectBean = new ArrayList<>();
+    private List<Object> waitRegisterBean = new ArrayList<>();
+    private List<Tuple2<Object, Field>> waitInjectBean = new ArrayList<>();
+
+
+    public void clearCache() {
+        // 释放内存
+        waitInjectBean = new ArrayList<>();
+        waitRegisterBean = new ArrayList<>();
+    }
 
     @Override
     public Object postProcessBeforeInitialization(@NotNull Object bean, @NotNull String beanName) throws BeansException {

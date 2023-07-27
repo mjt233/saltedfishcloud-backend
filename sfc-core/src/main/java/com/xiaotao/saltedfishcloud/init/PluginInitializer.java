@@ -6,19 +6,28 @@ import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.PoolUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.io.PathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 @Slf4j
 public class PluginInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
@@ -45,14 +54,19 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
             // 执行插件升级替换
             pluginManager.upgrade();
 
-            // 从classpath和ext目录中加载jar包插件
-            initPluginFromClassPath(pluginManager);
+            List<Tuple2<Resource, Supplier<ClassLoader>>> pluginResourceList = new ArrayList<>();
 
-            // 从外部目录中加载非jar包形式的插件
-            initPluginFromExtraResource(pluginManager, pluginProperty);
+            // 从classpath和ext目录中读取jar包插件
+            getPluginFromClassPath(pluginResourceList);
+
+            // 从外部目录中读取非jar包形式的插件
+            getPluginFromExtraResource(pluginProperty, pluginResourceList);
+
+            // 开始注册
+            startRegister(pluginManager, pluginResourceList);
+
             context.addBeanFactoryPostProcessor(beanFactory -> {
                 beanFactory.registerSingleton("pluginManager", pluginManager);
-//                beanFactory.registerResolvableDependency(PluginManager.class, pluginManager);
             });
             String pluginLists = "[" + String.join(",", pluginManager.getAllPlugin().keySet()) + "]";
             log.info("{}启动时加载的插件清单：{}",LOG_PREFIX, pluginLists);
@@ -63,10 +77,43 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
         }
     }
 
+    public void startRegister(PluginManager pluginManager, List<Tuple2<Resource, Supplier<ClassLoader>>> pluginResourceList) throws IOException {
+
+        // 多线程注册
+        int size = pluginResourceList.size();
+        Semaphore semaphore = new Semaphore(size);
+        AtomicReference<IOException> exceptionRef = new AtomicReference<>();
+
+        try { semaphore.acquire(size); } catch (InterruptedException ignore) { }
+        for (Tuple2<Resource, Supplier<ClassLoader>> pluginResource : pluginResourceList) {
+            PoolUtils.submitInitTask(() -> {
+                Resource resource = pluginResource.getT1();
+                ClassLoader classLoader = pluginResource.getT2().get();
+                try {
+                    if (classLoader == null) {
+                        pluginManager.register(resource);
+                    } else {
+                        pluginManager.register(resource, classLoader);
+                    }
+                } catch (IOException e) {
+                    exceptionRef.set(e);
+                } finally {
+                    semaphore.release();
+                    log.info("{}[OK]插件加载完成: {}", LOG_PREFIX, resource);
+                }
+            });
+        }
+        try { semaphore.acquire(size); } catch (InterruptedException ignore) { }
+
+        if (exceptionRef.get() != null) {
+            throw exceptionRef.get();
+        }
+    }
+
     /**
      * 从指定的外部资源中加载插件
      */
-    public void initPluginFromExtraResource(PluginManager pluginManager, PluginProperty pluginProperty) throws IOException {
+    public void getPluginFromExtraResource(PluginProperty pluginProperty, List<Tuple2<Resource, Supplier<ClassLoader>>> pluginResourceList) throws IOException {
         for (String s : pluginProperty.getExtraResource()) {
             Path path = Paths.get(s).toAbsolutePath();
 
@@ -79,8 +126,12 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
             PathResource pathResource = new PathResource(path);
             log.info("{}从额外资源路径加载插件：{}",LOG_PREFIX, path);
 
-//            DirPathClassLoader classLoader = new DirPathClassLoader(path, null);
-            pluginManager.register(pathResource, PluginClassLoaderFactory.createPurePluginClassLoader(path.toUri().toURL()));
+            Path finalPath = path;
+            pluginResourceList.add(Tuples.of(pathResource, () -> {
+                try {
+                    return PluginClassLoaderFactory.createPurePluginClassLoader(finalPath.toUri().toURL());
+                } catch (MalformedURLException ignore) { return null; }
+            }));
         }
     }
 
@@ -98,8 +149,7 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
     /**
      * 从classpath中加载插件信息
      */
-    public void initPluginFromClassPath(PluginManager pluginManager) throws IOException {
-
+    public void getPluginFromClassPath(List<Tuple2<Resource, Supplier<ClassLoader>>> pluginResourceList) throws IOException {
         Enumeration<URL> resources = PluginManager.class.getClassLoader().getResources(PluginManager.PLUGIN_INFO_FILE);
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
@@ -114,7 +164,7 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
                 } else {
                     classpathRoot = url.getPath();
                 }
-                pluginManager.register(resource, new DirPathClassLoader(Paths.get(classpathRoot).getParent()));
+                pluginResourceList.add(Tuples.of(resource, () -> new DirPathClassLoader(Paths.get(classpathRoot).getParent())));
             } else if (classpath.startsWith("jar:")) {
                 // 处理jar包作为classpath发现的资源
                 String strUrl = url.toString();
@@ -123,7 +173,7 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
                 if (jarIndex != -1) {
                     jarUrl = strUrl.substring(0, jarIndex);
                     log.info("{}加载classpath中的jar包插件：{}",LOG_PREFIX, jarUrl);
-                    pluginManager.register(new UrlResource(jarUrl));
+                    pluginResourceList.add(Tuples.of(new UrlResource(jarUrl), () -> null));
                 }
 
             } else {
@@ -133,8 +183,7 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
 
         // 注册目录中的jar包插件
         for (URL extUrl : ExtUtils.getExtUrls()) {
-            pluginManager.register(new UrlResource(extUrl));
+            pluginResourceList.add(Tuples.of(new UrlResource(extUrl), () -> null));
         }
-
     }
 }
