@@ -11,6 +11,7 @@ import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.AllArgsConstructor;
@@ -21,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.PathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
@@ -379,10 +379,10 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     }
 
     @Override
-    public Resource getLog(Long taskId, boolean withHistory) {
+    public String getLog(Long taskId) throws IOException {
         Path logPath = getLogPath(taskId);
         if (Files.exists(logPath)) {
-            return new PathResource(logPath);
+            return ResourceUtils.resourceToString(new PathResource(logPath));
         }
         return null;
     }

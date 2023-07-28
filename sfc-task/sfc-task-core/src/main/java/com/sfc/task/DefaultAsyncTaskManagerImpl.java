@@ -2,9 +2,7 @@ package com.sfc.task;
 
 import com.sfc.constant.MQTopic;
 import com.sfc.constant.error.CommonError;
-import com.sfc.rpc.RPCManager;
-import com.sfc.rpc.RPCRequest;
-import com.sfc.rpc.RPCResponse;
+import com.sfc.rpc.annotation.RPCResource;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
@@ -23,14 +21,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -43,10 +37,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @Slf4j
-public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean {
-
-    @Autowired
-    private RPCManager rpcManager;
+public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -62,6 +53,9 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
 
     @Autowired
     private MQService mqService;
+
+    @RPCResource
+    private DefaultAsyncTaskRpcService asyncTaskRpcService;
 
     /**
      * 将spring容器中所有实现了AsyncTaskFactory的bean都注册到任务管理器中
@@ -139,58 +133,12 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
         }
 
         // 发起RPC让正在执行该任务的节点中断执行
-        RPCRequest request = RPCRequest.builder()
-                .taskId(taskId)
-                .functionName(RPCFunction.TASK_INTERRUPT)
-                .build();
-        rpcManager.call(request, Boolean.class, Duration.ofSeconds(30));
+        asyncTaskRpcService.interrupt(taskId);
     }
 
     @Override
     public ProgressRecord getProgress(Long taskId) throws IOException {
         return executor.getProgress(taskId);
-    }
-
-    public void initRPCHandler() {
-        // 注册获取任务日志方法
-        rpcManager.registerRpcHandler(RPCFunction.TASK_GET_LOG, request -> {
-            Resource resource = executor.getLog(Long.parseLong(request.getParam()), false);
-            if (resource == null) {
-                return RPCResponse.ignore();
-            } else {
-                try(InputStream inputStream = resource.getInputStream()) {
-                    return RPCResponse.<String>builder()
-                            .isHandled(true)
-                            .isSuccess(true)
-                            .result(StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8))
-                            .build();
-                } catch (IOException e) {
-                    log.error("获取异步任务日志出错: {}", request, e);
-                    return RPCResponse.<String>builder()
-                            .isHandled(true)
-                            .isSuccess(false)
-                            .error(e.getMessage())
-                            .build();
-                }
-            }
-        });
-
-        // 注册中断任务方法
-        rpcManager.registerRpcHandler(RPCFunction.TASK_INTERRUPT, request -> {
-            Long taskId = request.getTaskId();
-            AsyncTask task = executor.getTask(taskId);
-            if (task == null) {
-                return RPCResponse.ignore();
-            } else {
-                try {
-                    task.interrupt();
-                } catch (Exception e) {
-                    log.error("任务中断出错: ", e);
-                    return RPCResponse.error(e.getMessage());
-                }
-            }
-            return RPCResponse.success(true);
-        });
     }
 
     /**
@@ -294,25 +242,11 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
 
         // 如果任务是运行中的，则再获取最新的日志
         if (AsyncTaskConstants.Status.RUNNING.equals(task.getStatus())) {
-            RPCRequest request = RPCRequest.builder()
-                    .taskId(taskId)
-                    .functionName(RPCFunction.TASK_GET_LOG)
-                    .param(taskId + "")
-                    .build();
-            RPCResponse<String> response = rpcManager.call(request, String.class, Duration.ofMinutes(500));
-            if (response != null) {
-                if(response.getIsSuccess()) {
-                    String originResult = response.getResult();
-                    if (originResult.startsWith("\"") && originResult.endsWith("\"")) {
-                        allLog += "[运行中最新日志]:\n" + MapperHolder.mapper.readValue(originResult, String.class);
-                    } else {
-                        allLog += "[运行中最新日志]:\n" + originResult;
-                    }
-                } else {
-                    allLog += "[运行中最新日志获取失败]:\n" + response.getError();
-                }
-            } else {
-                allLog += "[运行中最新日志无响应]\n";
+            try {
+                allLog += "[运行中最新日志]:\n" +asyncTaskRpcService.getTaskLog(taskId);
+            } catch (Throwable e) {
+                log.error("异步任务日志获取失败", e);
+                allLog += "[运行中最新日志获取失败]:\n" + e.getMessage();
             }
         }
         return ResourceUtils.stringToResource(allLog);
@@ -326,7 +260,6 @@ public class AsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean 
     @Override
     public void afterPropertiesSet() throws Exception {
         initExecutor();
-        initRPCHandler();
     }
 
     @EventListener(ContextClosedEvent.class)

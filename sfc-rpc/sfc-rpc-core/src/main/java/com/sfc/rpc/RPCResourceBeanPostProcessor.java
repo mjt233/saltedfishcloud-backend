@@ -48,7 +48,7 @@ public class RPCResourceBeanPostProcessor implements BeanPostProcessor {
                 rpcManager.registerRPCService(bean);
                 rpcManager.registerRPCClient(clazz);
             } else {
-                waitRegisterServiceBean.add(beanName);
+                waitRegisterServiceBean.add(bean);
             }
         }
 

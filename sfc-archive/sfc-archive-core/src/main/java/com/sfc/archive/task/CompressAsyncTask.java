@@ -121,9 +121,6 @@ public class CompressAsyncTask implements AsyncTask {
 
         fileInfo.setName(pb.range(1, -1).replace("/", ""));
         fileSystem.moveToSaveFile(compressParam.getSourceUid().intValue(), localPath, pb.range(-1), fileInfo);
-        taskLog.info("保存成功");
-        taskLog.info("删除本地临时文件: " + localPath);
-        Files.deleteIfExists(localPath);
     }
 
     @Override
@@ -160,6 +157,8 @@ public class CompressAsyncTask implements AsyncTask {
             }
             // 保存压缩结果到网盘
             saveToFileSystem(localPath);
+
+            taskLog.info("保存成功");
         }  catch (Throwable e) {
             log.error("任务异常",e);
             taskLog.error("任务异常：", e);
@@ -169,12 +168,20 @@ public class CompressAsyncTask implements AsyncTask {
                 throw new RuntimeException(e);
             }
         } finally {
+            taskLog.info("删除本地临时文件: " + localPath);
+            try {
+                Files.deleteIfExists(localPath);
+            } catch (IOException e) {
+                taskLog.error("本地文件删除失败： " + localPath, e);
+            }
+            taskLog.info("任务已退出");
             inRunning = false;
         }
     }
 
     @Override
     public void interrupt() {
+        taskLog.warn("收到任务中断命令");
         if (compressor != null) {
             try {
                 compressor.close();

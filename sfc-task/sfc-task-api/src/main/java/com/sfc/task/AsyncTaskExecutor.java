@@ -61,9 +61,9 @@ public interface AsyncTaskExecutor {
     /**
      * 获取任务的日志
      * @param taskId     任务id
-     * @param withHistory 是否包含历史日志
+     * @return 任务最新的运行日志，若获取不到则为null
      */
-    Resource getLog(Long taskId, boolean withHistory);
+    String getLog(Long taskId) throws IOException;
 
     /**
      * 获取运行中的任务实例
