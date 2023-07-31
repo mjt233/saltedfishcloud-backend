@@ -186,7 +186,7 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
         // 记录任务失败/成功信息
         executor.addTaskFailedListener(record -> {
             try {
-                record.setStatus(AsyncTaskConstants.Status.FAILED);
+                record.setStatus(Optional.ofNullable(record.getStatus()).orElse(AsyncTaskConstants.Status.CANCEL));
                 record.setFailedDate(new Date());
                 record.setIsFailed(true);
                 repo.save(record);
