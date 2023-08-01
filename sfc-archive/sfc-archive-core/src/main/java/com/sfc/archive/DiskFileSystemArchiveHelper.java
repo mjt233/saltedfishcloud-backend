@@ -62,8 +62,14 @@ public class DiskFileSystemArchiveHelper {
             if (resource == null) {
                 compressDir(uid, root, StringUtils.appendPath(root, name), compressor, fileSystem,1);
             } else {
+                String archiveFilename;
+                if ("/".equals(root)) {
+                    archiveFilename = curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name);
+                } else {
+                    archiveFilename = StringUtils.removePrefix(root, curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name));
+                }
                 compressor.addFile(new ArchiveResourceEntry(
-                        StringUtils.removePrefix(root, curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name)),
+                        archiveFilename,
                         resource.contentLength(),
                         resource
                 ));
