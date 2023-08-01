@@ -12,7 +12,9 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -285,5 +287,30 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
     @Override
     public void removeLogListen(Long listenId) {
         mqService.unsubscribeMessageQueue(listenId);
+    }
+
+    @Override
+    public AsyncTaskRecord rerun(Long taskId) throws IOException {
+        AsyncTaskRecord originTask = repo.findById(taskId).orElseThrow(() -> new IllegalArgumentException("无效的任务id"));
+        if(!UIDValidator.validate(originTask.getUid(), true)) {
+            throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+        }
+        if (
+                AsyncTaskConstants.Status.RUNNING.equals(originTask.getStatus()) ||
+                AsyncTaskConstants.Status.OFFLINE.equals(originTask.getStatus()) ||
+                AsyncTaskConstants.Status.WAITING.equals(originTask.getStatus())
+        ) {
+            throw new IllegalArgumentException("只能已结束的任务进行重新运行操作");
+        }
+
+        AsyncTaskRecord newTask = AsyncTaskRecord.builder()
+                .taskType(originTask.getTaskType())
+                .name(originTask.getName())
+                .cpuOverhead(originTask.getCpuOverhead())
+                .params(originTask.getParams())
+                .build();
+        newTask.setUid((long) Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getId());
+        submitAsyncTask(newTask);
+        return newTask;
     }
 }

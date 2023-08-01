@@ -63,6 +63,13 @@ public interface AsyncTaskManager {
     void removeLogListen(Long listenId);
 
     /**
+     * 重新运行任务
+     * @param taskId    任务id
+     * @return          新的任务对象
+     */
+    AsyncTaskRecord rerun(Long taskId) throws IOException;
+
+    /**
      * 获取任务进度
      * @param taskId 任务id
      */

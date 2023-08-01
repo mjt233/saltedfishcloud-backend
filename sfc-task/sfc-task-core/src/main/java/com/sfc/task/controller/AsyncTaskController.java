@@ -11,10 +11,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +53,16 @@ public class AsyncTaskController {
         } catch (InterruptedException e) {
             return JsonResultImpl.getInstance(false);
         }
+    }
+
+    /**
+     * 重新运行任务
+     * @param taskId    任务id
+     * @return          新任务对象
+     */
+    @PostMapping("rerun")
+    public JsonResult<AsyncTaskRecord> rerun(@RequestParam("taskId") Long taskId) throws IOException {
+        return JsonResultImpl.getInstance(asyncTaskManager.rerun(taskId));
     }
 
     @RequestMapping("/interrupt")
