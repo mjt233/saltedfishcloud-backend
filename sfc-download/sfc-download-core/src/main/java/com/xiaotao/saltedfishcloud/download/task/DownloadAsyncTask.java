@@ -1,14 +1,13 @@
 package com.xiaotao.saltedfishcloud.download.task;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.download.IgnoreSSLHttpRequestFactory;
 import com.xiaotao.saltedfishcloud.download.model.DownloadProgressRecord;
+import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
-import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
@@ -20,7 +19,6 @@ import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Setter;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -32,6 +30,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 public class DownloadAsyncTask implements AsyncTask {
+    private final static int BUFFER_SIZE = 8192;
     private final String originParams;
 
     private final DownloadTaskParams params;
@@ -251,6 +250,17 @@ public class DownloadAsyncTask implements AsyncTask {
                     this.tempFilePath = PathUtils.getAndCreateTempDirPath("offline-download")
                             .resolve(params.downloadId + "_" + this.filename);
                     logger.info("创建本地临时文件: " + this.tempFilePath.toAbsolutePath());
+                    Thread loggerThread = new Thread(() -> {
+                        while (!isCancel && this.progressRecord.getTotal() != this.progressRecord.getLoaded() && !Thread.currentThread().isInterrupted()) {
+                            try {
+                                Thread.sleep(2000);
+                                logger.info("【正在下载】总大小: " + this.progressRecord.getTotal() + " 已下载: " + this.progressRecord.getLoaded());
+                            } catch (InterruptedException e) {
+                                return;
+                            }
+                        }
+                        logger.info("下载已停止");
+                    });
                     try (InputStream is = response.getBody(); OutputStream os = Files.newOutputStream(this.tempFilePath)) {
 
                         // 开始接收文件流
@@ -258,13 +268,18 @@ public class DownloadAsyncTask implements AsyncTask {
                         this.receiverInputStream = is;
                         long s = 0;
                         this.progressRecord.setLoaded(0L);
-                        while ((s = StreamUtils.copyRange(is, os, 0, 4095)) > 0) {
+                        loggerThread.start();
+                        byte[] buffer = new byte[BUFFER_SIZE];
+                        while ((s = is.read(buffer, 0, buffer.length)) > 0) {
+                            os.write(buffer, 0, (int) s);
                             this.progressRecord.appendLoaded(s);
                         }
-
+                        logger.info("总大小: " + this.progressRecord.getTotal() + " 已下载: " + this.progressRecord.getLoaded());
                         // 文件传输完整时记录已下载量为总量
                         if (!isCancel) {
-                            this.progressRecord.setTotal(this.progressRecord.getLoaded());
+                            if (this.progressRecord.getLoaded() != this.progressRecord.getTotal()) {
+                                logger.warn("注意：已下载文件大小与探测到的大小不一致，文件可能不完整或已损坏");
+                            }
                         }
 
                         // 更新大小和文件名
@@ -277,6 +292,7 @@ public class DownloadAsyncTask implements AsyncTask {
 
                     } finally {
                         receiverInputStream = null;
+                        loggerThread.interrupt();
                     }
                     logger.info("文件下载完成");
                     return null;
