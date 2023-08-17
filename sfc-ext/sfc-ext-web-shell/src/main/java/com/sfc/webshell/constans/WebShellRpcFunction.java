@@ -9,6 +9,12 @@ public interface WebShellRpcFunction {
      */
     String KILL = "web_shell__kill";
 
+
+    /**
+     * 根据会话id获取可交互shell的会话信息
+     */
+    String GET_SESSION_BY_ID = "web_shell__get_session_by_id";
+
     /**
      * 获取会话列表
      */
@@ -28,6 +34,11 @@ public interface WebShellRpcFunction {
      * 重启会话
      */
     String RESTART = "web_shell__restart";
+
+    /**
+     * 重置pty终端大小
+     */
+    String RESIZE_PTY = "web_shell__resize";
 
     /**
      * 移除会话

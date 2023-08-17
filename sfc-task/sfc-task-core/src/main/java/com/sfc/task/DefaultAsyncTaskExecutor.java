@@ -9,9 +9,7 @@ import com.sfc.task.prog.ProgressRecord;
 import com.sfc.task.repo.AsyncTaskLogRecordRepo;
 import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.PathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
@@ -223,6 +220,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 if (cpuOverhead > 0) {
                     loadCleanQueue.add(cpuOverhead);
                 }
+                emit(failedListener, record);
                 return;
             }
 
@@ -241,7 +239,6 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 PipedOutputStream po = new PipedOutputStream()
             ) {
                 pi.connect(po);
-                Semaphore semaphore = new Semaphore(1);
 
                 // 绑定上下文用户信息
                 SecureUtils.bindUser(userService.getUserById(record.getUid().intValue()));
@@ -249,48 +246,50 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 progressDetector.addObserve(asyncTask::getProgress, record.getId() + "");
 
                 // 将获取到的日志推送到消息队列和写到文件
-                semaphore.acquire();
-                new Thread(() -> {
+                CompletableFuture<Void> asyncLogFuture = CompletableFuture.runAsync(() -> {
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(pi, StandardCharsets.UTF_8))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             logOutput.write(line.getBytes(StandardCharsets.UTF_8));
                             logOutput.write(WRAP_BYTES);
-                            mqService.push(MQTopic.Prefix.ASYNC_TASK_LOG + recordId, line);
+                            mqService.push(MQTopic.Prefix.ASYNC_TASK_LOG + recordId, MapperHolder.toJson(line));
                         }
                     } catch (IOException e) {
                         log.error("[异步任务执行器]推送异步任务日志出错", e);
                     } finally {
-                        semaphore.release();
-                        try {
-                            // 消息队列日志保留5秒后销毁
-                            Thread.sleep(5000);
-                            mqService.destroyQueue(MQTopic.Prefix.ASYNC_TASK_LOG + recordId);
-                        } catch (InterruptedException ignore) {
-                        }
+                        // 消息队列日志保留5秒后销毁
+                        CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS)
+                                .execute(() -> mqService.destroyQueue(MQTopic.Prefix.ASYNC_TASK_LOG + recordId));
                     }
-                }).start();
+                });
 
                 try {
                     // 执行任务本体
-                    asyncTask.execute(po);
+                    CompletableFuture.runAsync(() -> asyncTask.execute(po)).join();
+                    record.setStatus(AsyncTaskConstants.Status.FINISH);
+                    emit(finishListener, record);
                 } finally {
+                    // ============ 日志流关闭 ============
                     // 关闭流
-                    po.close();
-
-                    // 确保日志写入文件完成后再关闭文件流
-                    semaphore.acquire();
-                    logOutput.close();
-                    if (!giveUpRecord.contains(recordId)) {
-                        emit(finishListener, record);
-                    }
+                    try {
+                        po.close();
+                        // 确保日志写入文件完成后再关闭文件流
+                        asyncLogFuture.join();
+                        logOutput.close();
+                    } catch (Throwable ignore) {}
                 }
             } catch (Throwable e) {
-                if (!giveUpRecord.contains(recordId)) {
-                    emit(failedListener, record);
-                }
                 log.error("异步任务{}执行出错", record.getId(), e);
+                // ============ 任务执行异常处理 ============
+                // 出错时判断是否因为中断导致的，设置对应的状态并抛出事件
+                if (!giveUpRecord.contains(recordId)) {
+                    record.setStatus(AsyncTaskConstants.Status.CANCEL);
+                } else {
+                    record.setStatus(AsyncTaskConstants.Status.FAILED);
+                }
+                emit(failedListener, record);
             } finally {
+                // ============ 数据清理类任务 ============
                 try {
                     // 任务完成，添加负载值到待清算的队列
                     if (cpuOverhead > 0) {
@@ -379,10 +378,10 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     }
 
     @Override
-    public Resource getLog(Long taskId, boolean withHistory) {
+    public String getLog(Long taskId) throws IOException {
         Path logPath = getLogPath(taskId);
         if (Files.exists(logPath)) {
-            return new PathResource(logPath);
+            return ResourceUtils.resourceToString(new PathResource(logPath));
         }
         return null;
     }

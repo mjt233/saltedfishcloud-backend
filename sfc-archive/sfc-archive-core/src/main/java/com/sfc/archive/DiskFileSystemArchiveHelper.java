@@ -49,19 +49,27 @@ public class DiskFileSystemArchiveHelper {
      * @param fileSystem    网盘文件系统
      * @param compressor    压缩器
      */
-    private static void compress(DiskFileSystemCompressParam param, ArchiveCompressor compressor, DiskFileSystem fileSystem) throws IOException {
+    public static void compress(DiskFileSystemCompressParam param, ArchiveCompressor compressor, DiskFileSystem fileSystem) throws IOException {
         String curDir = param.getSourcePath().replaceAll("//+", "").replaceAll("^/+", "");
         int uid = param.getSourceUid().intValue();
         String root = param.getSourcePath().replaceAll("//+", "");
 
         for (String name : param.getSourceNames()) {
-
+            if (Thread.interrupted()) {
+                throw new IllegalStateException("压缩中断");
+            }
             Resource resource = fileSystem.getResource(uid, param.getSourcePath(), name);
             if (resource == null) {
                 compressDir(uid, root, StringUtils.appendPath(root, name), compressor, fileSystem,1);
             } else {
+                String archiveFilename;
+                if ("/".equals(root)) {
+                    archiveFilename = curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name);
+                } else {
+                    archiveFilename = StringUtils.removePrefix(root, curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name));
+                }
                 compressor.addFile(new ArchiveResourceEntry(
-                        StringUtils.removePrefix(root, curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name)),
+                        archiveFilename,
                         resource.contentLength(),
                         resource
                 ));
@@ -78,6 +86,7 @@ public class DiskFileSystemArchiveHelper {
      * @param depth         当前压缩深度
      */
     private static void compressDir(int uid, String root, String path, ArchiveCompressor compressor, DiskFileSystem fileSystem, int depth) throws IOException {
+        checkInterrupt();
         List<FileInfo>[] list = fileSystem.getUserFileList(uid, path);
         String curPath = StringUtils.removePrefix(root, path).replaceAll("//+", "/").replaceAll("^/+", "");
         compressor.addFile(new ArchiveResourceEntry(
@@ -86,14 +95,25 @@ public class DiskFileSystemArchiveHelper {
                 null
         ));
         for (FileInfo file : list[1]) {
+            checkInterrupt();
             compressor.addFile(new ArchiveResourceEntry(
                     curPath + "/" + file.getName(), file.getSize(), fileSystem.getResource(uid, path, file.getName()))
             );
         }
 
         for (FileInfo file : list[0]) {
+            checkInterrupt();
             compressor.addFile(new ArchiveResourceEntry(curPath + "/" + file.getName() + "/", 0, null));
             compressDir(uid, root, path + "/" + file.getName(), compressor, fileSystem,depth + 1);
+        }
+    }
+
+    /**
+     * 检查压缩线程是否中断
+     */
+    private static void checkInterrupt() {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new IllegalStateException("执行中断");
         }
     }
 }

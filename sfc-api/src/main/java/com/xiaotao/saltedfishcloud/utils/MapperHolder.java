@@ -52,6 +52,9 @@ public class MapperHolder {
 
     @SuppressWarnings("unchecked")
     public static <T> T parseAsJson(Object jsonObj, Class<T> clazz) throws IOException {
+        if (jsonObj instanceof String && clazz == String.class) {
+            return (T)mapper.readValue(jsonObj.toString(), String.class);
+        }
         if (clazz.isAssignableFrom(jsonObj.getClass())) {
             return (T)jsonObj;
         } else if (jsonObj instanceof String) {

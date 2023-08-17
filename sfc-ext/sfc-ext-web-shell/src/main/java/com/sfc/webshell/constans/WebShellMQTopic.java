@@ -20,6 +20,10 @@ public interface WebShellMQTopic {
          */
         String OUTPUT_STREAM = "web_shell_output_";
 
+        /**
+         * 会话退出广播信息
+         */
         String EXIT_BROADCAST = "web_shell_exit_";
     }
+
 }

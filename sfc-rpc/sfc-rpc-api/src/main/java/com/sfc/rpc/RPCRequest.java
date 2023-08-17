@@ -28,6 +28,11 @@ public class RPCRequest {
     private String functionName;
 
     /**
+     * 忽略处理时，是否需要报告响应被忽略
+     */
+    private Boolean isReportIgnore;
+
+    /**
      * 调用参数，一般为json字符串
      */
     private String param;
