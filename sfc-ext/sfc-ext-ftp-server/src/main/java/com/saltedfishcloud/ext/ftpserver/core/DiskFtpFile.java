@@ -14,10 +14,7 @@ import org.apache.ftpserver.ftplet.FtpFile;
 import org.springframework.core.io.Resource;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -27,6 +24,8 @@ public class DiskFtpFile implements FtpFile {
     private final DiskFileSystemManager fileService;
     private Resource fileResource;
     private final int resourceUid;
+
+    private Long lastModifiedValue;
 
     /**
      * 处于FTP根或资源根
@@ -72,6 +71,16 @@ public class DiskFtpFile implements FtpFile {
             }
         }
     }
+
+    /**
+     * 用来与{@link #setLastModified(long)}进行区分，仅设置更改日期的值到对象中从而影响{@link #getLastModified()}的结果，不影响系统数据。<br>
+     * 因为按照接口定义，{@link #setLastModified(long)}会修改文件的修改日期。
+     * @param lastModifiedValue 修改日期
+     */
+    public void setLastModifiedValue(Long lastModifiedValue) {
+        this.lastModifiedValue = lastModifiedValue;
+    }
+
     @Override
     public String getAbsolutePath() {
         return pathInfo.getFullPath();
@@ -170,6 +179,9 @@ public class DiskFtpFile implements FtpFile {
      */
     @Override
     public long getLastModified() {
+        if(lastModifiedValue != null) {
+            return lastModifiedValue;
+        }
         Resource fileResource = getFileResource();
         if (isRoot() || fileResource == null) {
             return System.currentTimeMillis();
@@ -274,6 +286,14 @@ public class DiskFtpFile implements FtpFile {
             DiskFtpFile ftpFile = new DiskFtpFile(path + "/" + fileInfo.getName(), user, fileService);
             ftpFile.isDir = fileInfo.isDir();
             ftpFile.isExist = true;
+            ftpFile.setLastModifiedValue(Optional
+                    .ofNullable(fileInfo.getLastModified())
+                    .orElseGet(() -> Optional
+                            .ofNullable(fileInfo.getCreatedAt())
+                            .map(Date::getTime)
+                            .orElse(System.currentTimeMillis())
+                    )
+            );
             return ftpFile;
         }).collect(Collectors.toList());
     }
