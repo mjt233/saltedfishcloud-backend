@@ -73,21 +73,5 @@ public class DesktopComponentServiceImpl implements DesktopComponentService, Ini
     @Override
     public void afterPropertiesSet() throws Exception {
         this.registerAllPluginComponent();
-//        registerComponent(DesktopComponent.builder()
-//                .name("dateTip")
-//                .title("日期显示")
-//                .describe("显示问候语和当前时间")
-//                .icon("mdi-clock-outline")
-//                .showOrder(0)
-//                .config(Collections.singletonList(
-//                        ConfigNode.builder()
-//                                .name("message")
-//                                .title("问候语")
-//                                .inputType("text")
-//                                .required(false)
-//                                .defaultValue("")
-//                                .build()
-//                ))
-//                .build());
     }
 }
