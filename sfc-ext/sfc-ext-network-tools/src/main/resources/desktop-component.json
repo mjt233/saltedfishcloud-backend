@@ -1,0 +1,29 @@
+[
+  {
+    "name": "wol-device-list",
+    "title": "WOL网络唤醒",
+    "describe": "管理你的WOL设备",
+    "icon": "mdi-power-standby",
+    "showOrder": 0,
+    "config": [
+      {
+        "name": "showAdd",
+        "inputType": "switch",
+        "describe": "能否新增",
+        "defaultValue": false
+      },
+      {
+        "name": "editable",
+        "inputType": "switch",
+        "describe": "能否编辑修改",
+        "defaultValue": false
+      },
+      {
+        "name": "autoRefresh",
+        "inputType": "switch",
+        "describe": "开启自动刷新",
+        "defaultValue": true
+      }
+    ]
+  }
+]

@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sfc-ext-network-tools</artifactId>
+    <version>1.2.0</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>

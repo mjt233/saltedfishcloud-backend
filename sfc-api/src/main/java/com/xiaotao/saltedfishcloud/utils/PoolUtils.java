@@ -5,19 +5,20 @@ import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public class PoolUtils {
     private static final ThreadPoolExecutor INIT_THREAD_POOL = new ThreadPoolExecutor(
-            0,
+            Runtime.getRuntime().availableProcessors(),
             Runtime.getRuntime().availableProcessors() * 2,
             5,
             TimeUnit.SECONDS,
-            new SynchronousQueue<>());
+            new LinkedBlockingQueue<>());
+
+    static {
+        INIT_THREAD_POOL.allowCoreThreadTimeOut(true);
+    }
 
     /**
      * 提交一个系统启动初始化任务，启动初始化类的任务若需要异步统一使用该方法
