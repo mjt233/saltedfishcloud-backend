@@ -157,6 +157,7 @@ public class CompressAsyncTask implements AsyncTask {
 
             // 开始压缩
             this.compressor.start();
+            this.compressor.close();
             // 保存压缩结果到网盘
             saveToFileSystem(localPath);
             taskLog.info("保存成功");

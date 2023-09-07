@@ -282,7 +282,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 log.error("异步任务{}执行出错", record.getId(), e);
                 // ============ 任务执行异常处理 ============
                 // 出错时判断是否因为中断导致的，设置对应的状态并抛出事件
-                if (!giveUpRecord.contains(recordId)) {
+                if (giveUpRecord.contains(recordId)) {
                     record.setStatus(AsyncTaskConstants.Status.CANCEL);
                 } else {
                     record.setStatus(AsyncTaskConstants.Status.FAILED);
