@@ -144,6 +144,8 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
         } catch (Throwable throwable) {
             listeners.forEach(listener -> listener.onError(entry, throwable));
             throw new IOException(throwable);
+        } finally {
+            curInputStream = null;
         }
     }
 
@@ -162,23 +164,22 @@ public abstract class AbstractCompressor implements ArchiveCompressor {
 
     @Override
     public void close() throws IOException {
-
+        if (curInputStream != null) {
+            try {
+                curInputStream.close();
+            } catch (IOException ignore) {}
+        }
         if (archiveOutputStream != null) {
-            curInputStream.close();
-            synchronized (archiveOutputStream) {
-                try {
-                    archiveOutputStream.closeArchiveEntry();
-                } catch (IOException ignore) { }
-                try {
-                    archiveOutputStream.finish();
-                } finally {
-                    archiveOutputStream.close();
-                }
-
+            try {
+                archiveOutputStream.finish();
+            } finally {
+                archiveOutputStream.close();
+                archiveOutputStream = null;
             }
         }
         if (originOutput != null) {
             originOutput.close();
+            originOutput = null;
         }
     }
 }
