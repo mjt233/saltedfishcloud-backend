@@ -5,6 +5,8 @@ import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import com.xiaotao.saltedfishcloud.service.CrudService;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,34 @@ public abstract class CrudServiceImpl<T extends AuditModel, R extends BaseRepo<T
     }
 
     @Override
+    public void saveWithOwnerPermissions(T entity) {
+
+        // 阻止篡改无权限的数据
+        if (entity.getId() != null) {
+            repository.findById(entity.getId()).ifPresent(existEntity -> {
+                UIDValidator.validate(entity.getUid(), true);
+            });
+        }
+
+        // 阻止创建不属于自己的数据
+        if (entity.getUid() != null) {
+            UIDValidator.validate(entity.getUid(), true);
+        } else {
+            entity.setUid(SecureUtils.getCurrentUid());
+        }
+
+        save(entity);
+    }
+
+    @Override
+    public void deleteWithOwnerPermissions(Long id) {
+        repository.findById(id).ifPresent(existEntity -> {
+            UIDValidator.validate(id, true);
+        });
+        repository.deleteById(id);
+    }
+
+    @Override
     public void batchSave(Collection<T> entityList) {
         repository.saveAll(entityList);
     }
@@ -49,16 +79,22 @@ public abstract class CrudServiceImpl<T extends AuditModel, R extends BaseRepo<T
 
     @Override
     public CommonPageInfo<T> findByUid(Long uid, PageableRequest pageableRequest) {
-        Page<T> queryResult = repository.findAll(
-                (Specification<T>)(root, query, cb) -> query.where(cb.equal(root.get("uid"), uid)).getRestriction(),
-                PageRequest.of(pageableRequest.getPage(), pageableRequest.getSize(), Sort.Direction.DESC, "id")
-        );
-        return CommonPageInfo.of(queryResult);
+        if (pageableRequest != null) {
+            return CommonPageInfo.of(repository.findByUid(uid, PageRequest.of(pageableRequest.getPage(), pageableRequest.getSize())));
+        } else {
+            return CommonPageInfo.of(repository.findByUid(uid, null));
+        }
+    }
+
+    @Override
+    public CommonPageInfo<T> findByUidWithOwnerPermissions(Long uid, PageableRequest pageableRequest) {
+        UIDValidator.validate(uid, false);
+        return findByUid(uid, pageableRequest);
     }
 
     @Override
     public List<T> findByUid(Long uid) {
-        return repository.findAll((Specification<T>)(root, query, cb) -> query.where(cb.equal(root.get("uid"), uid)).getRestriction());
+        return repository.findByUid(uid, null).getContent();
     }
 
     @Override

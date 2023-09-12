@@ -290,6 +290,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 emit(failedListener, record);
             } finally {
                 // ============ 数据清理类任务 ============
+                SecureUtils.unbind();
                 try {
                     // 任务完成，添加负载值到待清算的队列
                     if (cpuOverhead > 0) {

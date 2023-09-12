@@ -15,7 +15,7 @@ mybatis:
 spring:
   jpa:
     database: mysql
-    open-in-view: false
+    open-in-view: true
     hibernate:
       ddl-auto: none
   datasource:

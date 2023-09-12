@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.config;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.sfc.constant.CacheNames;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import jodd.util.ThreadUtil;
 import lombok.RequiredArgsConstructor;
@@ -73,8 +74,9 @@ public class RedisConfig {
         return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(
                 Objects.requireNonNull(redisTemplate().getConnectionFactory()))
                 .cacheDefaults(getCacheConfig())
-                .withCacheConfiguration("path", getCacheConfig().entryTtl(Duration.ofHours(12)))
-                .withCacheConfiguration("default", getCacheConfig().entryTtl(Duration.ofHours(6)))
+                .withCacheConfiguration(CacheNames.PATH, getCacheConfig().entryTtl(Duration.ofHours(12)))
+                .withCacheConfiguration(CacheNames.DEFAULT, getCacheConfig().entryTtl(Duration.ofHours(6)))
+                .withCacheConfiguration(CacheNames.PROXY_TEST_RESULT, getCacheConfig().entryTtl(Duration.ofMinutes(1)))
                 .build();
     }
 

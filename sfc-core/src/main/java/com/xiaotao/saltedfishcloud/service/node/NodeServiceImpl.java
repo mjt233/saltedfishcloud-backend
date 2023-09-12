@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
+import com.sfc.constant.CacheNames;
 import com.xiaotao.saltedfishcloud.dao.jpa.NodeInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
@@ -43,7 +44,7 @@ public class NodeServiceImpl implements NodeService {
     private NodeService self;
 
     @Override
-    @Cacheable(cacheNames = "path", key = "#uid+':node:'+#nid")
+    @Cacheable(cacheNames = CacheNames.PATH, key = "#uid+':node:'+#nid")
     public NodeInfo getNodeById(Integer uid, String nid) {
         if (nid.length() == 32) {
             return nodeDao.getNodeById(uid, nid);
@@ -66,7 +67,7 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    @Cacheable(cacheNames = "path", key = "#uid+':pnid:'+#parentId+':'+#nodeName")
+    @Cacheable(cacheNames = CacheNames.PATH, key = "#uid+':pnid:'+#parentId+':'+#nodeName")
     public NodeInfo getNodeByParentId(int uid, String parentId, String nodeName) {
         return nodeDao.getNodeByParentId(uid, parentId, nodeName);
     }
@@ -185,7 +186,7 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    @Cacheable(cacheNames = "path", key = "#uid+':path:'+#nodeId")
+    @Cacheable(cacheNames = CacheNames.PATH, key = "#uid+':path:'+#nodeId")
     public String getPathByNode(int uid, String nodeId) {
         if (nodeId.length() < 32) {
             return "/";

@@ -10,6 +10,7 @@ import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -68,7 +69,7 @@ public class DownloadAsyncTask implements AsyncTask {
     private InputStream receiverInputStream;
 
     @Setter
-    private ProxyDao proxyDao;
+    private ProxyInfoService proxyInfoService;
 
     @Setter
     private NodeService nodeService;
@@ -184,7 +185,7 @@ public class DownloadAsyncTask implements AsyncTask {
      */
     private void initProxy() {
         if (params.proxy != null && params.proxy.length() != 0) {
-            ProxyInfo proxy = proxyDao.getProxyByName(params.proxy);
+            ProxyInfo proxy = proxyInfoService.findById(Long.parseLong(params.proxy));
             if (proxy == null) {
                 throw new IllegalArgumentException("无效的代理：" + params.proxy);
             }
@@ -242,6 +243,7 @@ public class DownloadAsyncTask implements AsyncTask {
 
                     // 更新大小与文件名
                     long size = response.getHeaders().getContentLength();
+                    this.filename = this.filename.replaceAll(":", "_");
                     progressRecord.setTotal(size);
                     downloadTaskRepo.updateSizeAndName(params.downloadId, size, this.filename);
                     logger.info("开始拉取文件, 文件大小: " + size + " 文件名: " + this.filename);

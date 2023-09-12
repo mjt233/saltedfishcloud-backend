@@ -25,6 +25,18 @@ public interface CrudService<T> {
     void save(T entity);
 
     /**
+     * 使用带持有人权限验证的保存，默认实现中不允许非管理员对公共数据操作，需要额外限制重写该方法即可。
+     * @param entity    待保存的实体类
+     */
+    void saveWithOwnerPermissions(T entity);
+
+    /**
+     * 带数据拥有者权限验证的删除数据
+     * @param id    待保存的数据id
+     */
+    void deleteWithOwnerPermissions(Long id);
+
+    /**
      * 批量保存
      * @param entityList    要保存的对象列表
      */
@@ -39,11 +51,18 @@ public interface CrudService<T> {
     /**
      * 按用户id分页查询数据
      * @param uid               用户id
-     * @param pageableRequest   分页查询参数
+     * @param pageableRequest   分页查询参数，为null则表示不分页
      * @return                  分页查询结果
      */
     CommonPageInfo<T> findByUid(Long uid, PageableRequest pageableRequest);
 
+    /**
+     * 带数据拥有者权限验证的按用户id分页查询数据。默认实现中允许非管理员对公共数据操作，需要额外限制重写该方法即可。
+     * @param uid               用户id
+     * @param pageableRequest   分页查询参数，为null则表示不分页
+     * @return                  分页查询结果
+     */
+    CommonPageInfo<T> findByUidWithOwnerPermissions(Long uid, PageableRequest pageableRequest);
 
     /**
      * 按用户id查询数据
