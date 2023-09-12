@@ -42,7 +42,7 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-download-api</artifactId>
-            <version>1.0.0</version>
+            <version>${download.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
