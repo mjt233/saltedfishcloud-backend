@@ -1,62 +1,56 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import org.springframework.dao.DuplicateKeyException;
+import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
-import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping(ProxyController.PREFIX)
-@RolesAllowed({"ADMIN"})
 @Validated
 public class ProxyController {
     public static final String PREFIX = "/api/admin/sys/proxy";
 
-    @Resource
-    private ProxyDao proxyDao;
+    @Autowired
+    private ProxyInfoService proxyInfoService;
 
+    @PostMapping("save")
+    public JsonResult<ProxyInfo> save(@RequestBody ProxyInfo proxyInfo) {
+        proxyInfoService.saveWithOwnerPermissions(proxyInfo);
+        return JsonResultImpl.getInstance(proxyInfo);
+    }
 
-    @PostMapping
-    public JsonResult addProxy(@Validated ProxyInfo info) {
-        try {
-            proxyDao.addProxy(info);
-        } catch (DuplicateKeyException e) {
-            throw new JsonException(400, "名称已存在");
-        }
-        return JsonResult.emptySuccess();
+    @GetMapping("findByUid")
+    public JsonResult<CommonPageInfo<ProxyInfo>> findByUid(Long uid, @RequestParam(required = false) PageableRequest pageableRequest) {
+        return JsonResultImpl.getInstance(proxyInfoService.findByUidWithOwnerPermissions(uid, pageableRequest));
     }
 
     @GetMapping
-    public JsonResult getAllProxy() {
-        return JsonResultImpl.getInstance(proxyDao.getAllProxy());
-    }
-
-    @PutMapping
-    public JsonResult modifyProxy(@Valid ProxyInfo info, String proxyName) {
-        try {
-            if (proxyDao.modifyProxy(proxyName, info) == 0) {
-                throw new JsonException(400, "代理" + proxyName + "不存在");
-            }
-        } catch (DuplicateKeyException e) {
-            throw new JsonException(400, "新名称已存在");
-        }
-        return JsonResult.emptySuccess();
+    @RolesAllowed({"ADMIN"})
+    public JsonResult<List<ProxyInfo>> getAllProxy() {
+        return JsonResultImpl.getInstance(proxyInfoService.findAll());
     }
 
     @DeleteMapping
-    public JsonResult deleteProxy(@RequestParam String proxyName) {
-        if (proxyDao.removeProxy(proxyName) == 0) {
-            throw new JsonException(400, "代理" + proxyName + "不存在");
-        }
+    public JsonResult<?> deleteProxy(@RequestParam Long proxyId) {
+        proxyInfoService.deleteWithOwnerPermissions(proxyId);
         return JsonResult.emptySuccess();
+    }
+
+    @GetMapping("test")
+    public JsonResult<Boolean> test(@RequestParam("proxyId") Long proxyId,
+                                    @RequestParam(value = "timeout", defaultValue = "10000") int timeout,
+                                    @RequestParam(value = "useCache",defaultValue = "true") boolean useCache
+    ) {
+        return JsonResultImpl.getInstance(proxyInfoService.testProxy(proxyId, timeout, useCache));
     }
 }

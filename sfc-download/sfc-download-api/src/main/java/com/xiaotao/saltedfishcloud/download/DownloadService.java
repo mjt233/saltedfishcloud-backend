@@ -3,9 +3,11 @@ package com.xiaotao.saltedfishcloud.download;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
+import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import org.springframework.data.domain.Page;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface DownloadService {
 
@@ -27,4 +29,9 @@ public interface DownloadService {
      * @return 下载任务ID
      */
     String createTask(DownloadTaskParams params, int creator) throws IOException;
+
+    /**
+     * 获取可用的代理
+     */
+    List<ProxyInfo> listAvailableProxy();
 }

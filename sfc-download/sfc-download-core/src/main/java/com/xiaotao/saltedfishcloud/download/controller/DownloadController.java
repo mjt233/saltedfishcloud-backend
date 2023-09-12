@@ -6,8 +6,8 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
-import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.download.DownloadService;
+import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +29,8 @@ public class DownloadController {
     private final ProxyDao proxyDao;
 
     @GetMapping("proxy")
-    public JsonResult getProxy() {
-        List<ProxyInfo> res = proxyDao.getAllProxy();
-        res.forEach(e -> {
-            e.setAddress(null);
-            e.setPort(null);
-            e.setType(null);
-        });
-        return JsonResultImpl.getInstance(res);
+    public JsonResult<List<ProxyInfo>> getProxy() {
+        return JsonResultImpl.getInstance(downloadService.listAvailableProxy());
     }
 
     @DeleteMapping

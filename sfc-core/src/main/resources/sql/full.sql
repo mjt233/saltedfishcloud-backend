@@ -157,11 +157,17 @@ DROP TABLE IF EXISTS `proxy`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `proxy` (
+                         `id` bigint NOT NULL COMMENT '主键',
                          `name` varchar(128) NOT NULL,
                          `type` varchar(16) NOT NULL,
                          `address` varchar(512) NOT NULL,
                          `port` smallint unsigned NOT NULL,
-                         PRIMARY KEY (`name`)
+                         `uid` bigint DEFAULT '0' COMMENT '创建用户id',
+                         `test_url` varchar(255) DEFAULT NULL,
+                         `create_at` datetime DEFAULT NULL,
+                         `update_at` datetime DEFAULT NULL,
+                         PRIMARY KEY (`id`),
+                         KEY `i_uid` (`uid`,`name`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
