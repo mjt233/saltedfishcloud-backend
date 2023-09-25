@@ -1,17 +1,15 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
-import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
-import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.node.cache.NodeCacheService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -19,7 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**

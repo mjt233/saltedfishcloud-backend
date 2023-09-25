@@ -34,7 +34,7 @@ import java.util.Date;
 import java.util.function.Supplier;
 
 @SpringBootApplication(
-        exclude= {DataSourceAutoConfiguration.class, GsonAutoConfiguration.class},
+        exclude= {GsonAutoConfiguration.class},
         scanBasePackages = {
                 "com.xiaotao.saltedfishcloud"
         }

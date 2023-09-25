@@ -29,7 +29,6 @@ import java.util.*;
  */
 @Service
 @Slf4j
-@Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class NodeServiceImpl implements NodeService {
     private final static String LOG_PREFIX = "[Node]";
@@ -124,6 +123,7 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String addNode(int uid, String name, String parent) {
         int i;
         String id;
@@ -217,6 +217,7 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String addMountPointNode(MountPoint mountPoint) {
         NodeInfo nodeInfo = NodeInfo.builder()
                 .mountId(mountPoint.getId())
