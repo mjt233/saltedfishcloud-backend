@@ -82,7 +82,8 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
         // 多线程注册
         int size = pluginResourceList.size();
         Semaphore semaphore = new Semaphore(size);
-        AtomicReference<IOException> exceptionRef = new AtomicReference<>();
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+        AtomicReference<Resource> errorResourceRef = new AtomicReference<>();
 
         try { semaphore.acquire(size); } catch (InterruptedException ignore) { }
         for (Tuple2<Resource, Supplier<ClassLoader>> pluginResource : pluginResourceList) {
@@ -95,8 +96,9 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
                     } else {
                         pluginManager.register(resource, classLoader);
                     }
-                } catch (IOException e) {
-                    exceptionRef.set(e);
+                } catch (Throwable e) {
+                    errorRef.set(e);
+                    errorResourceRef.set(pluginResource.getT1());
                 } finally {
                     semaphore.release();
                     log.info("{}[OK]插件加载完成: {}", LOG_PREFIX, resource);
@@ -105,8 +107,13 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
         }
         try { semaphore.acquire(size); } catch (InterruptedException ignore) { }
 
-        if (exceptionRef.get() != null) {
-            throw exceptionRef.get();
+        if (errorRef.get() != null) {
+            Throwable throwable = errorRef.get();
+            if (throwable instanceof IOException) {
+                throw (IOException) throwable;
+            } else {
+                throw new PluginInfoException(errorResourceRef.get().getFilename() + " " + throwable.getMessage() ,throwable);
+            }
         }
     }
 
