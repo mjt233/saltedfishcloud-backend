@@ -23,9 +23,6 @@ spring:
     url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
     username: root
     password: test
-    test-while-idle: true
-    test-on-borrow: false
-    test-on-return: false
   redis:
     host: 127.0.0.1
     port: 6379
