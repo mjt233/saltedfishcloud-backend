@@ -100,7 +100,7 @@ public class StaticPublishServiceImpl implements StaticPublishService, Applicati
     public void stop() throws LifecycleException {
         if (tomcatInst != null) {
             tomcatInst.stop();
-//            tomcatInst.destroy();
+            tomcatInst.destroy();
             this.isRunning = false;
             this.tomcatInst = null;
             log.info("{}内嵌Tomcat服务关闭成功", LOG_PREFIX);

@@ -8,10 +8,15 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRange;
+import org.springframework.util.StreamUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -32,8 +37,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
+import static javax.servlet.http.HttpServletResponse.*;
 
 @Slf4j
 public class DispatchServlet extends HttpServlet {
@@ -99,39 +103,80 @@ public class DispatchServlet extends HttpServlet {
         }
 
 
-
         // 输出文件
-        // todo 支持断点续传
+        String requestFileName = PathUtils.getLastNode(uri);
         if (resp.getContentType() == null) {
-            resp.setContentType(FileUtils.getContentType(PathUtils.getLastNode(uri)));
+            resp.setContentType(FileUtils.getContentType(requestFileName));
         }
-        resp.setContentLengthLong(fileResource.contentLength());
-        try (InputStream inputStream = fileResource.getInputStream()) {
-            ServletOutputStream outputStream = resp.getOutputStream();
-            byte[] buffer = new byte[8192];
-            int cnt;
-            while ((cnt = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, cnt);
-            }
+        if (resp.getHeader(HttpHeaders.CONTENT_DISPOSITION) == null && requestFileName.length() > 0 && !requestFileName.endsWith("/")) {
+            resp.addHeader(HttpHeaders.CONTENT_DISPOSITION, ResourceUtils.generateContentDisposition(requestFileName));
         }
+        sendFile(req, resp, fileResource);
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
             doResponse(req, resp);
+        } catch (ClientAbortException ignore) {
         } catch (Throwable e) {
-            send500ErrorPage(req, resp, e);
             log.error("静态资源响应错误: ", e);
+            send500ErrorPage(req, resp, e);
+        }
+    }
+
+    /**
+     * 响应文件内容
+     * @param req           请求
+     * @param resp          响应
+     * @param fileResource  文件资源
+     */
+    private void sendFile(HttpServletRequest req, HttpServletResponse resp, Resource fileResource) throws IOException {
+        long len = fileResource.contentLength();
+        resp.addHeader("Accept-Ranges", "bytes");
+        String rangeHeader = req.getHeader("Range");
+
+        long start = 0, end = len;
+        if (rangeHeader != null) {
+            List<HttpRange> rangeList;
+            try {
+                rangeList = HttpRange.parseRanges(rangeHeader);
+                if (rangeList.size() > 1) {
+                    resp.setStatus(SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                    return;
+                }
+            } catch (Exception ignore) {
+                resp.setStatus(SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                return;
+            }
+
+            HttpRange range = rangeList.get(0);
+            start = range.getRangeStart(len);
+            end = range.getRangeEnd(len);
+
+            resp.setStatus(SC_PARTIAL_CONTENT);
+            resp.addHeader("Content-Range", "bytes " + start + "-" + end + "/" + len);
+        }
+
+        resp.setContentLengthLong(end - start + 1);
+        try (InputStream inputStream = fileResource.getInputStream()) {
+            ServletOutputStream outputStream = resp.getOutputStream();
+            StreamUtils.copyRange(inputStream, outputStream, start, end);
         }
     }
 
     private void send500ErrorPage(HttpServletRequest req, HttpServletResponse resp, Throwable e) throws IOException {
+        PrintWriter writer;
+        try {
+            writer = resp.getWriter();
+        } catch (Exception ignore) {
+            return;
+        }
         Context context = new Context();
         resp.setStatus(SC_INTERNAL_SERVER_ERROR);
         context.setVariable("errorMessage", e.getMessage());
         context.setVariable("uri", "/".equals(req.getRequestURI()) ? "" : req.getRequestURI());
-        templateEngine.process("staticSiteInternalError", context, resp.getWriter());
+        templateEngine.process("staticSiteInternalError", context, writer);
     }
 
     /**
