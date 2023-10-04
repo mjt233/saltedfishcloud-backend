@@ -1,0 +1,9 @@
+[
+  {
+    "name": "static-publish",
+    "title": "配置",
+    "describe": "对插件依赖和相关功能进行配置",
+    "defaultValue": "{}",
+    "typeRef": "com.sfc.staticpublish.model.property.StaticPublishProperty"
+  }
+]

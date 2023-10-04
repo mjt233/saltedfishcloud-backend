@@ -1,0 +1,12 @@
+{
+  "name": "static-publish",
+  "alias": "静态站点发布",
+  "describe": "可以直接将目录发布为静态Web站点",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-publish",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^"
+}

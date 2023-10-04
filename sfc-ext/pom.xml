@@ -33,6 +33,7 @@
         <module>sfc-ext-quick-share</module>
         <module>sfc-ext-network-tools</module>
         <module>sfc-ext-web-shell</module>
+        <module>sfc-ext-static-publish</module>
     </modules>
 
 
