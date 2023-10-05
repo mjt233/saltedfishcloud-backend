@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>11</java.version>
-        <api.version>2.6.6</api.version>
+        <api.version>2.6.7</api.version>
         <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
