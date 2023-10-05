@@ -2,7 +2,9 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
+import com.xiaotao.saltedfishcloud.annotations.ConfigSelectOption;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.xiaotao.saltedfishcloud.model.SelectOption;
 
 import java.util.*;
 import java.util.function.Function;
@@ -113,6 +115,14 @@ public class PropertyUtils {
                     configNode.setDefaultValue(p.defaultValue());
                     configNode.setInputType(p.inputType());
                     configNode.setTitle(StringUtils.hasText(p.title()) ? p.title() : p.value() );
+                    ConfigSelectOption[] options = p.options();
+                    if (options.length > 0) {
+                        configNode.setOptions(
+                                Arrays.stream(options)
+                                        .map(o -> SelectOption.builder().title(o.title()).value(o.value()).build())
+                                        .collect(Collectors.toList())
+                        );
+                    }
 
                     configNode.setName(getConfigName(entity, p, f.getName()));
                     configNode.setGroupId(p.group());

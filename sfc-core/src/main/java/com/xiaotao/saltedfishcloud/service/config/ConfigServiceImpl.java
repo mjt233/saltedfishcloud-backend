@@ -129,8 +129,8 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
                 .keySet()
                 .stream()
                 .flatMap(e -> Optional.ofNullable(pluginManager.getPluginConfigNodeGroup(e)).orElse(Collections.emptyList()).stream())
-                .flatMap(e -> e.getNodes().stream())
-                .flatMap(e -> e.getNodes().stream())
+                .flatMap(e -> Optional.ofNullable(e.getNodes()).orElseGet(Collections::emptyList).stream())
+                .flatMap(e -> Optional.ofNullable(e.getNodes()).orElseGet(Collections::emptyList).stream())
                  .forEach(e -> {
                      if (res.containsKey(e.getName())) {
                          throw new IllegalArgumentException("存在同名配置项 - " + e.getName() );
