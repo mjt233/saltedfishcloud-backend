@@ -30,10 +30,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -86,6 +83,12 @@ public class DispatchServlet extends HttpServlet {
             return;
         }
 
+        // 检查身份验证
+        if (!checkAuth(record, req, resp)) {
+            send401Page(req, resp);
+            return;
+        }
+
         // 组装站点发布路径 + 请求资源路径为 网盘文件请求路径，从网盘中获取对应的资源
         String diskPath = StringUtils.appendPath(record.getPath(), resourcePath);
         // 获取文件资源
@@ -112,6 +115,46 @@ public class DispatchServlet extends HttpServlet {
             resp.addHeader(HttpHeaders.CONTENT_DISPOSITION, ResourceUtils.generateContentDisposition(requestFileName));
         }
         sendFile(req, resp, fileResource);
+    }
+
+    /**
+     * 检查是否通过身份验证
+     * @param record    站点发布信息
+     * @param req       请求
+     * @param resp      响应
+     * @return          是否通过，若不通过则应结束流程
+     */
+    protected boolean checkAuth(StaticPublishRecord record, HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        // 无需登录，跳过
+        if (!Boolean.TRUE.equals(record.getIsNeedLogin())) {
+            return true;
+        }
+
+        String authorizationStr = req.getHeader("Authorization");
+        if (authorizationStr == null || authorizationStr.length() < 6) {
+            return false;
+        }
+
+        String base64Str = authorizationStr.substring(6);
+        String[] usernameAndPassword = new String(Base64.getDecoder().decode(base64Str), StandardCharsets.UTF_8).split(":", 2);
+        if (usernameAndPassword.length != 2) {
+            return false;
+        }
+        return usernameAndPassword[0].equals(record.getLoginUsername()) && usernameAndPassword[1].equals(record.getLoginPassword());
+    }
+
+    /**
+     * 发送401需要验证页面
+     * @param req   请求
+     * @param resp  响应
+     */
+    protected void send401Page(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setStatus(SC_UNAUTHORIZED);
+        resp.addHeader("WWW-Authenticate", "Basic realm=\"Site need Login\"");
+        resp.setContentType("text/html;charset=utf-8");
+        PrintWriter writer = resp.getWriter();
+        writer.print("<html> <body> <h1><center>401 Unauthorized</center></h1> <hr> 该站点需要身份验证 <hr> <p><center>咸鱼云网盘</center><p> ");
+        writer.print("</body> </html>");
     }
 
     @Override
