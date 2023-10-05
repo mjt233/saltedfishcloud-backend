@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${record.getSiteName() + '的索引'}">/资源/电影/喜剧 的索引</title>
+    <style>
+        th {
+            text-align: left;
+        }
+        .file-name {
+            min-width: 320px;
+        }
+        .file-date {
+            width: 280px;
+        }
+        .file-size {
+            width: 180px;
+        }
+        table {
+            width: 100%;
+            max-width: 1000px;
+        }
+    </style>
+</head>
+<body>
+    <h3 th:text="${'站点: ' + record.getSiteName()}"></h3>
+    <h4 th:if="${uri.length() > 0}" th:text="${'路径: ' + uri}">路径：/资源/电影/喜剧</h4>
+    <h4 th:if="${uri.length() == 0}">路径：/</h4>
+    <a th:if="${uri.length() > 0}" href="..">返回上一级</a>
+    <hr>
+    <table>
+        <thead>
+            <tr>
+                <th>文件名</th>
+                <th>大小</th>
+                <th>修改日期</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="file,stat:${fileList}">
+                <td class="file-name"><a th:href="${uri + '/' + file.getName()}"  th:text="${file.getName()}">西虹市首富</a></td>
+                <td class="file-size" th:if="${file.isFile()}" th:text="${file.getSize()}">1145141919810</td>
+                <td class="file-size" th:if="${file.isDir()}">-</td>
+                <td class="file-date" th:text="${T(com.xiaotao.saltedfishcloud.utils.DateUtils).format(file.getLastModified())}">1900-01-01</td>
+            </tr>
+        </tbody>
+    </table>
+    <hr>
+    <p style="text-align: center">咸鱼云网盘</p>
+</body>
+</html>

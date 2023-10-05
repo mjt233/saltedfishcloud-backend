@@ -27,9 +27,14 @@ public @interface ConfigProperty {
     String describe() default "";
 
     /**
-     * 输入类型，可选text、select、checkbox
+     * 输入类型，可选text、select、checkbox、radio
      */
     String inputType() default "text";
+
+    /**
+     * 当配置项的inputType为"select"时的候选值
+     */
+    ConfigSelectOption[] options() default {};
 
     /**
      * 是否必填

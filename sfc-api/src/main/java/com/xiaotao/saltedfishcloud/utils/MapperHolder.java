@@ -44,6 +44,7 @@ public class MapperHolder {
         // Long -> String
         simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
         mapper.registerModule(simpleModule);
+        mapper.setTypeFactory(mapper.getTypeFactory().withClassLoader(Thread.currentThread().getContextClassLoader()));
     }
 
     public static <T> T parseJson(String json, Class<T> clazz) throws IOException {
