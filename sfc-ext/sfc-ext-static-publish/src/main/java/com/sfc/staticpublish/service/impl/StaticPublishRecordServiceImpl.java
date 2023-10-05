@@ -13,7 +13,7 @@ import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -31,13 +31,13 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
     private CacheManager cacheManager;
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.STATIC_PUBLISH, key = "'byName::' + #publishName")
+    @Cacheable(cacheNames = CacheNames.STATIC_PUBLISH, key = "'byName::' + #publishName")
     public StaticPublishRecord getBySiteName(String publishName) {
         return repository.getBySiteName(publishName);
     }
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.STATIC_PUBLISH, key = "'byPath::' + #username + '::' + #siteName")
+    @Cacheable(cacheNames = CacheNames.STATIC_PUBLISH, key = "'byPath::' + #username + '::' + #siteName")
     public StaticPublishRecord getByPath(String username, String siteName) {
         return getRepository().getByPath(username, siteName);
     }
