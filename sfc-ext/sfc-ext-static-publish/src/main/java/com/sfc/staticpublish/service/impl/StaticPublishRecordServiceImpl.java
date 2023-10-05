@@ -49,12 +49,12 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
 
         if (entity.isByHost()) {
             StaticPublishRecord existRecord = repository.getBySiteName(entity.getSiteName());
-            if (existRecord.getId().equals(entity.getId())) {
+            if (!existRecord.getId().equals(entity.getId())) {
                 throw new JsonException("站点名称冲突，请尝试其他站点名称");
             }
         } else {
             StaticPublishRecord existRecord = repository.getByPath(entity.getUsername(), entity.getSiteName());
-            if (existRecord.getId().equals(entity.getId())) {
+            if (!existRecord.getId().equals(entity.getId())) {
                 throw new JsonException("站点名称冲突，请尝试其他站点名称");
             }
         }
