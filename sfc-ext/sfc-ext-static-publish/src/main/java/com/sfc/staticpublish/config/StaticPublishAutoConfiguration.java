@@ -6,7 +6,7 @@ import com.sfc.staticpublish.service.impl.StaticPublishRecordServiceImpl;
 import com.sfc.staticpublish.service.impl.StaticPublishServiceImpl;
 import com.sfc.staticpublish.servlet.DispatchServlet;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
+import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
@@ -20,7 +20,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
 import org.thymeleaf.templatemode.TemplateMode;
-import org.thymeleaf.templateresolver.StringTemplateResolver;
 
 
 @Configuration
@@ -44,6 +43,9 @@ public class StaticPublishAutoConfiguration implements InitializingBean, Applica
     @Autowired
     private TemplateEngine templateEngine;
 
+    @Autowired
+    private HelloService helloService;
+
     private ApplicationContext context;
 
     @Override
@@ -58,6 +60,8 @@ public class StaticPublishAutoConfiguration implements InitializingBean, Applica
         resolver.setCacheable(false);
         resolver.setApplicationContext(context);
         templateEngine.addTemplateResolver(resolver);
+
+        helloService.setFeature("staticPublish", property);
     }
 
     @Override

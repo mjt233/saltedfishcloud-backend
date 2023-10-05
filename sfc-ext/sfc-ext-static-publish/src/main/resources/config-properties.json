@@ -1,9 +1,23 @@
 [
   {
     "name": "static-publish",
-    "title": "配置",
+    "title": "基础配置",
     "describe": "对插件依赖和相关功能进行配置",
     "defaultValue": "{}",
     "typeRef": "com.sfc.staticpublish.model.property.StaticPublishProperty"
+  },
+  {
+    "name": "static-publish-site-list-view-menu",
+    "title": "公共站点",
+    "describe": "管理员维护的公共网盘静态资源站点",
+    "nodes": [{
+      "nodes": [{
+        "name": "static-publish-site-list-view",
+        "title": "公共站点",
+        "describe": "管理员维护的公共网盘静态资源站点",
+        "inputType": "template",
+        "template": "static-publish-site-list-view"
+      }]
+    }]
   }
 ]
