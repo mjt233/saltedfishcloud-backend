@@ -1,5 +1,6 @@
 package com.sfc.staticpublish.servlet;
 
+import com.sfc.staticpublish.constants.AccessWay;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.model.property.StaticPublishProperty;
 import com.sfc.staticpublish.service.StaticPublishRecordService;
@@ -252,10 +253,20 @@ public class DispatchServlet extends HttpServlet {
         }
 
         Context context = new Context();
+        String uri = URLDecoder.decode("/".equals(req.getRequestURI()) ? "" : req.getRequestURI(), StandardCharsets.UTF_8);
+        String parentUri = PathUtils.getParentPath(uri);
         context.setVariable("fileList", finalFileList);
         context.setVariable("record", record);
         context.setVariable("request", req);
-        context.setVariable("uri", URLDecoder.decode("/".equals(req.getRequestURI()) ? "" : req.getRequestURI(), StandardCharsets.UTF_8));
+        context.setVariable("uri", uri);
+        context.setVariable("parentUri", parentUri);
+        boolean isRoot;
+        if (Objects.equals(AccessWay.BY_HOST, record.getAccessWay())) {
+            isRoot = uri.length() == 0 || uri.equals("/");
+        } else {
+            isRoot = uri.length() == 0 || uri.equals("/" + record.getSiteName());
+        }
+        context.setVariable("isRoot", isRoot);
         String res = templateEngine.process("dirFileList", context);
         resp.getWriter().println(res);
     }

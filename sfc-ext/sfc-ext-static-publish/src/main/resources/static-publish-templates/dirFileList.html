@@ -26,7 +26,7 @@
     <h3 th:text="${'站点: ' + record.getSiteName()}"></h3>
     <h4 th:if="${uri.length() > 0}" th:text="${'路径: ' + uri}">路径：/资源/电影/喜剧</h4>
     <h4 th:if="${uri.length() == 0}">路径：/</h4>
-    <a th:if="${uri.length() > 0}" href="..">返回上一级</a>
+    <a th:if="${!isRoot}" th:href="${parentUri}">返回上一级</a>
     <hr>
     <table>
         <thead>
