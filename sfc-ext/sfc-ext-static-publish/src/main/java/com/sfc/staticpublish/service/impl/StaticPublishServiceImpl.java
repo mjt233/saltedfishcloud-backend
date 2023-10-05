@@ -81,9 +81,7 @@ public class StaticPublishServiceImpl implements StaticPublishService, Applicati
 
         ctx.setJarScanner(new NoJarScanner());
         ctx.setResources(root);
-        ctx.addLifecycleListener(event -> {
-            log.info("{}Tomcat - {}", LOG_PREFIX, event.getLifecycle().getState());
-        });
+        ctx.setParentClassLoader(this.getClass().getClassLoader());
 
         tomcat.addServlet("", "static-dispatcher", servlet);
         ctx.addServletMappingDecoded("/*", "static-dispatcher");
