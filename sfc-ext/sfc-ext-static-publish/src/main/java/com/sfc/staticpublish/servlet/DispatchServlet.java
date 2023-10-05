@@ -179,7 +179,7 @@ public class DispatchServlet extends HttpServlet {
         resp.addHeader("Accept-Ranges", "bytes");
         String rangeHeader = req.getHeader("Range");
 
-        long start = 0, end = len;
+        long start = 0, end = len - 1;
         if (rangeHeader != null) {
             List<HttpRange> rangeList;
             try {
