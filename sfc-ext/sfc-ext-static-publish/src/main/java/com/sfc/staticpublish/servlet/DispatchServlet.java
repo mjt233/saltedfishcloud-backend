@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -256,6 +257,10 @@ public class DispatchServlet extends HttpServlet {
         String uri = URLDecoder.decode("/".equals(req.getRequestURI()) ? "" : req.getRequestURI(), StandardCharsets.UTF_8);
         String parentUri = PathUtils.getParentPath(uri);
         context.setVariable("fileList", finalFileList);
+        context.setVariable("fileUrlNameMap", finalFileList.stream().collect(Collectors.toMap(
+                FileInfo::getName,
+                e -> URLEncoder.encode(e.getName(), StandardCharsets.UTF_8)
+        )));
         context.setVariable("record", record);
         context.setVariable("request", req);
         context.setVariable("uri", uri);
