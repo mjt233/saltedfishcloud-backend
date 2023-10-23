@@ -37,6 +37,9 @@ nav:
         - 插件：ftp-store: extension/ftp-store.md
         - 插件：video-enhance: extension/video-enhance.md
         - 插件：quick-share: extension/quick-share.md
+        - 插件：web-shell: extension/web-shell.md
+        - 插件：network-tools: extension/network-tools.md
+        - 插件：static-publish: extension/static-publish.md
   - 开发手册:
       - 简介: develop/index.md
       - 项目构建: develop/build.md

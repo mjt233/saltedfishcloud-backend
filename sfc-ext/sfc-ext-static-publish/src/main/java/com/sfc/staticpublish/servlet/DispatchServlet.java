@@ -1,5 +1,6 @@
 package com.sfc.staticpublish.servlet;
 
+import com.sfc.staticpublish.constants.AccessWay;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.model.property.StaticPublishProperty;
 import com.sfc.staticpublish.service.StaticPublishRecordService;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -59,28 +61,49 @@ public class DispatchServlet extends HttpServlet {
 
         // 根据主机名判断按路径/按主机名，并从uri和主机名中获取站点名称、资源用户名、请求资源路径
         String siteName;
-        String username;
+        String username = null;
         String resourcePath;
+
+        // 尝试从Host和URI中解析站点名称和用户名
         boolean isByHost = host.endsWith(property.getByHostSuffix());
-        if (isByHost) {
-            siteName = host.substring(0, host.indexOf('.'));
-            username = null;
-            resourcePath = uri;
+        int dotIndex = host.indexOf('.');
+        if (dotIndex > -1) {
+            if (isByHost) {
+                siteName = host.substring(0, dotIndex);
+                resourcePath = uri;
+            } else {
+                username = host.substring(0, dotIndex);
+                siteName = getSiteNameFromUri(uri);
+                int siteIndex = uri.indexOf(siteName);
+                resourcePath = uri.substring(siteIndex + siteName.length());
+            }
         } else {
-            username = host.substring(0, host.indexOf('.'));
+            // 像直接用localhost这种地址来访问是没有“.”的，只能是根路径站点
             siteName = getSiteNameFromUri(uri);
             int siteIndex = uri.indexOf(siteName);
             resourcePath = uri.substring(siteIndex + siteName.length());
         }
-        StaticPublishRecord record;
+
+        // 匹配站点
+        StaticPublishRecord record = null;
         if (isByHost) {
             record = staticPublishRecordService.getBySiteName(siteName);
-        } else {
+        } else if (username != null){
             record = staticPublishRecordService.getByPath(username, siteName);
         }
         if (record == null) {
-            send404Page(resp);
-            return;
+            if (!property.getIsEnableDirectRootPath()) {
+                send404Page(resp);
+                return;
+            }
+
+            // 匹配根目录挂载站点
+            // 此时的siteName是从uri中取的
+            record = staticPublishRecordService.getDirectRootPathBySiteName(siteName);
+            if (record == null) {
+                send404Page(resp);
+                return;
+            }
         }
 
         // 检查身份验证
@@ -217,6 +240,9 @@ public class DispatchServlet extends HttpServlet {
         }
         Context context = new Context();
         resp.setStatus(SC_INTERNAL_SERVER_ERROR);
+        String uri = URLDecoder.decode("/".equals(req.getRequestURI()) ? "" : req.getRequestURI(), StandardCharsets.UTF_8);
+        String parentUri = PathUtils.getParentPath(uri);
+        context.setVariable("parentUri", parentUri);
         context.setVariable("errorMessage", e.getMessage());
         context.setVariable("uri", "/".equals(req.getRequestURI()) ? "" : req.getRequestURI());
         templateEngine.process("staticSiteInternalError", context, writer);
@@ -252,10 +278,24 @@ public class DispatchServlet extends HttpServlet {
         }
 
         Context context = new Context();
+        String uri = URLDecoder.decode("/".equals(req.getRequestURI()) ? "" : req.getRequestURI(), StandardCharsets.UTF_8);
+        String parentUri = PathUtils.getParentPath(uri);
         context.setVariable("fileList", finalFileList);
+        context.setVariable("fileUrlNameMap", finalFileList.stream().collect(Collectors.toMap(
+                FileInfo::getName,
+                e -> URLEncoder.encode(e.getName(), StandardCharsets.UTF_8)
+        )));
         context.setVariable("record", record);
         context.setVariable("request", req);
-        context.setVariable("uri", URLDecoder.decode("/".equals(req.getRequestURI()) ? "" : req.getRequestURI(), StandardCharsets.UTF_8));
+        context.setVariable("uri", uri);
+        context.setVariable("parentUri", parentUri);
+        boolean isRoot;
+        if (Objects.equals(AccessWay.BY_HOST, record.getAccessWay())) {
+            isRoot = uri.length() == 0 || uri.equals("/");
+        } else {
+            isRoot = uri.length() == 0 || uri.equals("/" + record.getSiteName());
+        }
+        context.setVariable("isRoot", isRoot);
         String res = templateEngine.process("dirFileList", context);
         resp.getWriter().println(res);
     }

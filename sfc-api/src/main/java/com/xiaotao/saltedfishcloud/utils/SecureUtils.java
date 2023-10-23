@@ -55,6 +55,15 @@ public class SecureUtils {
     }
 
     /**
+     * 当前登录用户是否为管理员
+     */
+    public static boolean currentIsAdmin() {
+        return Optional.ofNullable(getSpringSecurityUser())
+                .map(User::isAdmin)
+                .orElse(false);
+    }
+
+    /**
      * 获取当前已登陆用户的id。若未绑定用户则返回null。
      * @return 当前用户id
      */

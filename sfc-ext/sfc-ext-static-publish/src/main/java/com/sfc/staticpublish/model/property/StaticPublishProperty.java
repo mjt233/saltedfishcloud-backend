@@ -10,6 +10,7 @@ import lombok.Data;
 @ConfigPropertyEntity(prefix = "static-publish", groups = {
         @ConfigPropertiesGroup(id = "server", name = "服务配置"),
         @ConfigPropertiesGroup(id = "publish", name = "发布配置"),
+        @ConfigPropertiesGroup(id = "rootSite", name = "根路径站点配置", describe = "适用于无法自由使用域名的场景下部署站点。如：只在局域网通过IP地址访问服务。\n该功能开启后，根路径站点将作为无匹配站点时的默认回调站点进行路径匹配。")
 })
 @Data
 public class StaticPublishProperty {
@@ -35,12 +36,14 @@ public class StaticPublishProperty {
     )
     private String protocol;
 
+
+    // todo 系统该设计用户组和权限控制机制了
     @ConfigProperty(
             group = "publish",
             title = "发布权限控制",
             defaultValue = "true",
             inputType = ConfigInputType.SWITCH,
-            describe = "只允许管理员新发布站点"
+            describe = "只允许管理员管理站点"
     )
     private Boolean isOnlyAdminPublish;
 
@@ -61,4 +64,21 @@ public class StaticPublishProperty {
             describe = "按路径发布站点时，静态站点的上级域名，如站点名称为：my-site，系统主机后缀为mydomain.com:6666，则访问域名为：my-site.mydomain.com:6666"
     )
     private String byPathSuffix;
+
+    @ConfigProperty(
+            group = "rootSite",
+            title = "功能开关",
+            defaultValue = "false",
+            describe = "启用根路径站点功能",
+            inputType = ConfigInputType.SWITCH
+    )
+    private Boolean isEnableDirectRootPath;
+
+    @ConfigProperty(
+            group = "rootSite",
+            title = "服务器站点地址",
+            defaultValue = "localhost:9999",
+            describe = "静态站点服务器地址，用于按根路径匹配时页面展示URL"
+    )
+    private String serverAddress;
 }

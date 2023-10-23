@@ -2,6 +2,8 @@ package com.sfc.staticpublish.service;
 
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.xiaotao.saltedfishcloud.service.CrudService;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface StaticPublishRecordService extends CrudService<StaticPublishRecord> {
 
@@ -19,4 +21,12 @@ public interface StaticPublishRecordService extends CrudService<StaticPublishRec
      * @return          发布记录
      */
     StaticPublishRecord getByPath(String username, String siteName);
+
+    /**
+     * 按站点名称获取直接根目录发布的站点
+     * @param siteName  站点名称
+     * @return  发布记录
+     */
+    StaticPublishRecord getDirectRootPathBySiteName(String siteName);
+
 }
