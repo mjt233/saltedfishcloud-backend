@@ -99,6 +99,9 @@ public class DispatchServlet extends HttpServlet {
 
             // 匹配根目录挂载站点
             // 此时的siteName是从uri中取的
+            siteName = getSiteNameFromUri(uri);
+            int siteIndex = uri.indexOf(siteName);
+            resourcePath = uri.substring(siteIndex + siteName.length());
             record = staticPublishRecordService.getDirectRootPathBySiteName(siteName);
             if (record == null) {
                 send404Page(resp);
