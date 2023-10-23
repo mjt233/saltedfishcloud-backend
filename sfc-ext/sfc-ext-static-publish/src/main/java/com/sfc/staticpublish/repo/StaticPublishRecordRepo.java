@@ -22,5 +22,13 @@ public interface StaticPublishRecordRepo extends BaseRepo<StaticPublishRecord> {
      * @return          发布记录
      */
     @Query("SELECT r FROM StaticPublishRecord r WHERE r.username = :username AND r.siteName = :siteName AND r.accessWay = 2")
-    StaticPublishRecord getByPath(@Param("username") String username,@Param("siteName") String siteName);
+    StaticPublishRecord getByPath(@Param("username") String username, @Param("siteName") String siteName);
+
+    /**
+     * 按站点名称获取直接根目录发布的站点
+     * @param siteName  站点名称
+     * @return  发布记录
+     */
+    @Query("SELECT r FROM StaticPublishRecord r WHERE r.siteName = :siteName AND r.accessWay = 3")
+    StaticPublishRecord getDirectRootPathBySiteName(@Param("siteName") String siteName);
 }

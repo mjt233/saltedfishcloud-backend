@@ -75,6 +75,11 @@ public class StaticPublishRecord extends AuditModel {
 
     @Transient
     public boolean isByPath() {
-        return !isByHost();
+        return Objects.equals(AccessWay.BY_PATH, accessWay);
+    }
+
+    @Transient
+    public boolean isByDirectRootPath() {
+        return Objects.equals(AccessWay.BY_DIRECT_ROOT_PATH, accessWay);
     }
 }
