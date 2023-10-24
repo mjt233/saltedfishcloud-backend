@@ -70,8 +70,8 @@ public class RedisConfig {
 
     @Bean
     public RedisCacheManager cacheManager() {
-        return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(
-                Objects.requireNonNull(redisTemplate().getConnectionFactory()))
+        RedisConnectionFactory connectionFactory = Objects.requireNonNull(redisTemplate().getConnectionFactory());
+        return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(connectionFactory)
                 .cacheDefaults(getCacheConfig())
                 .withCacheConfiguration(CacheNames.PATH, getCacheConfig().entryTtl(Duration.ofHours(12)))
                 .withCacheConfiguration(CacheNames.DEFAULT, getCacheConfig().entryTtl(Duration.ofHours(6)))
@@ -94,6 +94,7 @@ public class RedisConfig {
         return RedisCacheConfiguration.defaultCacheConfig()
                 .serializeValuesWith(
                         RedisSerializationContext.SerializationPair.fromSerializer(redisTemplate().getValueSerializer())
-                );
+                )
+                .entryTtl(Duration.ofMinutes(30));
     }
 }
