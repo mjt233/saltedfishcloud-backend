@@ -1,6 +1,8 @@
 package com.sfc.staticpublish.service.impl;
 
 import com.sfc.common.service.CrudServiceImpl;
+import com.sfc.constant.error.CommonError;
+import com.sfc.constant.error.ErrorInfo;
 import com.sfc.staticpublish.constants.AccessWay;
 import com.sfc.staticpublish.constants.CacheNames;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
@@ -88,8 +90,12 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
     @Override
     public void deleteWithOwnerPermissions(Long id) {
         checkOperatePermission();
+        StaticPublishRecord record = findById(id);
+        if (record == null) {
+            throw new JsonException(CommonError.RESOURCE_NOT_FOUND);
+        }
         super.deleteWithOwnerPermissions(id);
-        removeCache(findById(id));
+        removeCache(record);
     }
 
     @Override
