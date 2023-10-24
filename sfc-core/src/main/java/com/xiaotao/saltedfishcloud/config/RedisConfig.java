@@ -69,32 +69,9 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisCacheManager cacheManager() {
-        RedisConnectionFactory connectionFactory = Objects.requireNonNull(redisTemplate().getConnectionFactory());
-        return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(connectionFactory)
-                .cacheDefaults(getCacheConfig())
-                .withCacheConfiguration(CacheNames.PATH, getCacheConfig().entryTtl(Duration.ofHours(12)))
-                .withCacheConfiguration(CacheNames.DEFAULT, getCacheConfig().entryTtl(Duration.ofHours(6)))
-                .withCacheConfiguration(CacheNames.PROXY_TEST_RESULT, getCacheConfig().entryTtl(Duration.ofMinutes(1)))
-                .build();
-    }
-
-    @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory factory) {
         final RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(factory);
         return container;
-    }
-
-    /**
-     * 获取一个Redis缓存配置
-     * @return  Redis缓存配置
-     */
-    private RedisCacheConfiguration getCacheConfig() {
-        return RedisCacheConfiguration.defaultCacheConfig()
-                .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(redisTemplate().getValueSerializer())
-                )
-                .entryTtl(Duration.ofMinutes(30));
     }
 }
