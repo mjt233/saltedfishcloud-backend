@@ -2,8 +2,6 @@ package com.sfc.staticpublish.service.impl;
 
 import com.sfc.common.service.CrudServiceImpl;
 import com.sfc.constant.error.CommonError;
-import com.sfc.constant.error.ErrorInfo;
-import com.sfc.staticpublish.constants.AccessWay;
 import com.sfc.staticpublish.constants.CacheNames;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.model.property.StaticPublishProperty;
@@ -22,7 +20,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 

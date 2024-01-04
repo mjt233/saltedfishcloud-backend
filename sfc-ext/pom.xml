@@ -12,6 +12,7 @@
     <properties>
         <java.version>11</java.version>
         <api.version>2.6.8</api.version>
+        <rpc.version>1.0.0</rpc.version>
         <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>

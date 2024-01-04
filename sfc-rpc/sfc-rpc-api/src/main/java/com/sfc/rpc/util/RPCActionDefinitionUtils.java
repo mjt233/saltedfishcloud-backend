@@ -89,15 +89,26 @@ public class RPCActionDefinitionUtils {
                     throw new RPCIgnoreException(request, rpcAction.ignoreMessage());
                 }
 
-            } else {
+            } else if (definition.getStrategy() == RPCResponseStrategy.SUMMARY_ALL) {
                 return rpcManager.callAll(request, method.getReturnType())
                         .stream()
-                        .map(e -> (List<?>)e.getResult())
+                        .map(e -> {
+                            Object result = e.getResult();
+                            if (result == null) {
+                                return null;
+                            }
+                            if (result instanceof Collection) {
+                                return (Collection<?>)result;
+                            } else {
+                                return Collections.singletonList(result);
+                            }
+                        })
                         .filter(Objects::nonNull)
                         .flatMap(Collection::stream)
                         .collect(Collectors.toList());
+            } else {
+                throw new IllegalArgumentException("在 [ " + definition.getFullFunctionName() + " ]上存在不支持的RPC响应结果汇总策略：" + definition.getStrategy());
             }
-
         });
 
         return (T)enhancer.create();

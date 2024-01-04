@@ -1,6 +1,7 @@
 package com.sfc.rpc;
 
 import com.sfc.rpc.annotation.RPCResource;
+import com.sfc.rpc.annotation.RPCService;
 import com.sfc.rpc.util.RPCActionDefinitionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
@@ -30,7 +31,7 @@ import java.util.List;
  */
 public class RPCResourceBeanPostProcessor implements BeanPostProcessor {
     private RPCManager rpcManager;
-    private List<Object> waitRegisterServiceBean = new ArrayList<>();
+    private List<Tuple2<RPCService, Object>> waitRegisterServiceBean = new ArrayList<>();
     private List<Tuple2<Object, Field>> waitInjectResourceBean = new ArrayList<>();
 
 
@@ -43,15 +44,21 @@ public class RPCResourceBeanPostProcessor implements BeanPostProcessor {
     @Override
     public Object postProcessBeforeInitialization(@NotNull Object bean, @NotNull String beanName) throws BeansException {
         Class<?> clazz = bean.getClass();
-        if( RPCActionDefinitionUtils.getRPCServiceAnnotation(clazz) != null) {
+        RPCService rpcServiceAnnotation = RPCActionDefinitionUtils.getRPCServiceAnnotation(clazz);
+
+        // 注册RPC服务提供者和客户端
+        // 若RPC服务管理器未完成初始化，则暂存注册信息，等到RPC服务管理器完成初始化后统一注册
+        if( rpcServiceAnnotation != null) {
+            Tuple2<RPCService, Object> tuple = Tuples.of(rpcServiceAnnotation, bean);
             if (rpcManager != null) {
-                rpcManager.registerRPCService(bean);
-                rpcManager.registerRPCClient(clazz);
+                registerBeanToRPCManager(tuple);
             } else {
-                waitRegisterServiceBean.add(bean);
+                waitRegisterServiceBean.add(tuple);
             }
         }
 
+        // 对已注册为RPC客户端的接口注入到要求该RPC客户端的Bean字段中，该字段通常用@RPCResource标注用于获取对应的RPC客户端
+        // 类似于@Autowired功能
         Arrays.stream(clazz.getDeclaredFields())
                 .filter(e -> e.getAnnotation(RPCResource.class) != null)
                 .forEach(field -> {
@@ -68,11 +75,11 @@ public class RPCResourceBeanPostProcessor implements BeanPostProcessor {
 
                 });
 
+        // 判断是否为RPC管理器完成初始化，如果是则把暂存的服务/客户端注册、客户端实例字段注入统一消费掉
         if (rpcManager == null && bean instanceof RPCManager) {
             rpcManager = (RPCManager) bean;
             if (!waitRegisterServiceBean.isEmpty()) {
-                waitRegisterServiceBean.forEach(rpcManager::registerRPCService);
-                waitRegisterServiceBean.forEach(e -> rpcManager.registerRPCClient(e.getClass()));
+                waitRegisterServiceBean.forEach(this::registerBeanToRPCManager);
             }
             if (!waitInjectResourceBean.isEmpty()) {
                 for (Tuple2<Object, Field> tuple : waitInjectResourceBean) {
@@ -87,5 +94,17 @@ public class RPCResourceBeanPostProcessor implements BeanPostProcessor {
             }
         }
         return bean;
+    }
+
+    private void registerBeanToRPCManager(Tuple2<RPCService, Object> tuple) {
+        RPCService rpcService = tuple.getT1();
+        Object bean = tuple.getT2();
+
+        if (rpcService.registerAsProvider()) {
+            rpcManager.registerRPCService(bean);
+        }
+        if (rpcService.registerAsClient()) {
+            rpcManager.registerRPCClient(bean.getClass());
+        }
     }
 }

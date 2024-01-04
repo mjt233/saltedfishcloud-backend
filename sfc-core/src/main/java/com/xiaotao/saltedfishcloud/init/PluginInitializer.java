@@ -38,7 +38,9 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
         long begin = System.currentTimeMillis();
         // 加载插件
         PluginManager pluginManager = new DefaultPluginManager(PluginInitializer.class.getClassLoader());
-        context.setClassLoader(pluginManager.getJarMergeClassLoader());
+        ClassLoader pluginClassLoader = pluginManager.getJarMergeClassLoader();
+        Thread.currentThread().setContextClassLoader(pluginClassLoader);
+        context.setClassLoader(pluginClassLoader);
         PluginProperty pluginProperty = PluginProperty.loadFromPropertyResolver(context.getEnvironment());
 
         // 删除被标记的插件

@@ -7,7 +7,6 @@ import com.sfc.webshell.model.ShellSessionRecord;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 @RPCService(namespace = "web_shell")
 public interface ShellExecuteRPCService {

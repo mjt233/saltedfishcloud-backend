@@ -55,6 +55,8 @@ import java.util.function.Supplier;
 @Indexed
 public class SaltedfishcloudApplication {
 
+    private static final ClassLoader originLoader = SaltedfishcloudApplication.class.getClassLoader();
+
     public static void main(String[] args) {
         // 记录启动参数
         SpringContextUtils.setLaunchArgs(args);
@@ -75,12 +77,13 @@ public class SaltedfishcloudApplication {
     }
 
     public static Supplier<SpringApplication> getEmergencyModeLaunchFactory() {
+
+        Thread.currentThread().setContextClassLoader(originLoader);
         return () -> new SpringApplication(EmergencyApplication.class);
     }
 
     public static Supplier<SpringApplication> getLaunchFactory() {
         return () -> {
-
             long begin = System.currentTimeMillis();
 
 
