@@ -19,5 +19,19 @@
         "template": "static-publish-site-list-view"
       }]
     }]
+  },
+  {
+    "name": "static-publish-site-list-status-menu",
+    "title": "服务状态",
+    "describe": "各节点的服务状态",
+    "nodes": [{
+      "nodes": [{
+        "name": "static-publish-site-list-status",
+        "title": "服务状态",
+        "describe": "各节点的服务状态",
+        "inputType": "template",
+        "template": "static-publish-site-status-list-view"
+      }]
+    }]
   }
 ]

@@ -28,4 +28,9 @@ public class ServiceStatus {
      * 是否运行中
      */
     private Boolean isRunning;
+
+    /**
+     * 错误信息
+     */
+    private String errorMsg;
 }

@@ -60,6 +60,8 @@ public class StaticPublishServiceImpl implements StaticPublishService, Applicati
 
     private Tomcat tomcatInst;
     private boolean isRunning;
+    private String lastError;
+
     @Autowired
     private DispatchServlet servlet;
 
@@ -94,8 +96,9 @@ public class StaticPublishServiceImpl implements StaticPublishService, Applicati
         ctx.setResources(root);
         ctx.setParentClassLoader(this.getClass().getClassLoader());
         ctx.addLifecycleListener(l -> {
-            if(l.getLifecycle().getState() == LifecycleState.STOPPED) {
-                isRunning = false;
+            switch (l.getLifecycle().getState()) {
+                case FAILED: lastError = Optional.ofNullable(l.getData()).map(Object::toString).orElse("");
+                case STOPPED: isRunning = false;
             }
         });
 
@@ -107,6 +110,7 @@ public class StaticPublishServiceImpl implements StaticPublishService, Applicati
         this.tomcatInst = tomcat;
 
         log.info("{}内嵌Tomcat服务器启动成功", LOG_PREFIX);
+        lastError = null;
     }
 
     @Override
@@ -135,6 +139,7 @@ public class StaticPublishServiceImpl implements StaticPublishService, Applicati
                 .serverPort(property.getServerPort())
                 .isRunning(isRunning)
                 .nodeInfo(clusterService.getSelf())
+                .errorMsg(lastError)
                 .build();
     }
 
