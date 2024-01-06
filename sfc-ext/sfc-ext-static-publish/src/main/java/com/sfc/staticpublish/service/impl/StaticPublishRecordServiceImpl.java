@@ -59,7 +59,7 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
     public void save(StaticPublishRecord entity) {
         checkOperatePermission();
 
-        User user = userService.getUserById(entity.getUid().intValue());
+        User user = userService.getUserById(entity.getUid());
         entity.setUsername(user.getUsername());
 
         if (entity.isByHost()) {
@@ -100,7 +100,7 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
         checkOperatePermission();
         Map<Long, User> userMap = userService.findBaseInfoByIds(entityList.stream().map(AuditModel::getUid).distinct().collect(Collectors.toList()))
                 .stream()
-                .collect(Collectors.toMap(e -> e.getId().longValue(), Function.identity()));
+                .collect(Collectors.toMap(e -> e.getId(), Function.identity()));
         for (StaticPublishRecord record : entityList) {
             record.setUsername(userMap.get(record.getUid()).getUser());
         }

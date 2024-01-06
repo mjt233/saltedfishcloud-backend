@@ -24,7 +24,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
     private FileDao fileDao;
 
     @Override
-    public void handleFileAdd(int uid, Collection<FileInfo> files) throws IOException {
+    public void handleFileAdd(long uid, Collection<FileInfo> files) throws IOException {
         for (FileInfo fileInfo : files) {
             if (fileInfo.getMd5() == null) {
                 fileInfo.updateMd5();
@@ -34,14 +34,14 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
     }
 
     @Override
-    public void handleFileDel(int uid, Collection<FileInfo> files) {
+    public void handleFileDel(long uid, Collection<FileInfo> files) {
         for (FileInfo file : files) {
             fileDao.deleteRecord(uid, file.getNode(), file.getName());
         }
     }
 
     @Override
-    public void handleFileChange(int uid, Collection<FileChangeInfo> files) throws IOException {
+    public void handleFileChange(long uid, Collection<FileChangeInfo> files) throws IOException {
         for (FileChangeInfo changeInfo : files) {
             final FileInfo newFile = changeInfo.newFile;
             fileDao.updateRecord(
@@ -55,7 +55,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
     }
 
     @Override
-    public void handleDirAdd(int uid, Collection<String> paths) throws IOException {
+    public void handleDirAdd(long uid, Collection<String> paths) throws IOException {
         for (String e : paths) {
             FileInfo info = new FileInfo();
             int i = e.lastIndexOf('/');
@@ -68,7 +68,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
     }
 
     @Override
-    public void handleDirDel(int uid, Collection<String> paths) throws IOException {
+    public void handleDirDel(long uid, Collection<String> paths) throws IOException {
         Set<String> hasDelete = new HashSet<>();
         for(String p : paths ){
             boolean breakFlag = false;

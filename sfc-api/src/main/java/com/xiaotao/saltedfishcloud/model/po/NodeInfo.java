@@ -38,11 +38,11 @@ public class NodeInfo {
         return id.length() < 32;
     }
 
-    public static NodeInfo getRootNode(int uid) {
+    public static NodeInfo getRootNode(long uid) {
         NodeInfo info = new NodeInfo();
         info.setName("");
         info.setId("" + uid);
-        info.setUid((long) uid);
+        info.setUid(uid);
         return info;
     }
 

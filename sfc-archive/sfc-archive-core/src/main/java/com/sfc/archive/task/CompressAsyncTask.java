@@ -123,7 +123,7 @@ public class CompressAsyncTask implements AsyncTask {
         pb.append(compressParam.getTargetFilePath());
 
         fileInfo.setName(pb.range(1, -1).replace("/", ""));
-        fileSystem.moveToSaveFile(compressParam.getSourceUid().intValue(), localPath, pb.range(-1), fileInfo);
+        fileSystem.moveToSaveFile(compressParam.getSourceUid(), localPath, pb.range(-1), fileInfo);
     }
 
     @Override

@@ -23,7 +23,7 @@ public class FileResourceMd5ResolverImpl implements FileResourceMd5Resolver {
     }
 
     @Override
-    public String getResourceMd5(int uid, String path) {
+    public String getResourceMd5(long uid, String path) {
         FileInfo fileInfo = fileRecordService.getFileInfo(uid, PathUtils.getParentPath(path), PathUtils.getLastNode(path));
         if (fileInfo == null) {
             return null;

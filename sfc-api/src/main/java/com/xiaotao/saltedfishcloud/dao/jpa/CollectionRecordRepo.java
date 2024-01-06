@@ -6,7 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-public interface CollectionRecordRepo extends JpaRepository<CollectionRecord, Integer> {
+public interface CollectionRecordRepo extends JpaRepository<CollectionRecord, Long> {
     @Query(nativeQuery = true,
             countProjection = "1",
             value =

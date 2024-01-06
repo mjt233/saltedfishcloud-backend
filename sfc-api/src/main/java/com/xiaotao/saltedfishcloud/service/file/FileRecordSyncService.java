@@ -13,5 +13,5 @@ public interface FileRecordSyncService {
      * @param uid       待同步的用户数据的用户ID，公共为0
      * @param precise   是否使用精确同步，使用精确同步会计算文件的哈希值，这可能将会耗费大量时间。若不使用精确同步，将仅比较文件大小。
      */
-    void doSync(int uid, boolean precise) throws IOException, SQLException;
+    void doSync(long uid, boolean precise) throws IOException, SQLException;
 }

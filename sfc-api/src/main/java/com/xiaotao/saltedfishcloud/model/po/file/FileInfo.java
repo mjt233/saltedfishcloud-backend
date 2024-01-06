@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.model.po.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.springframework.core.io.InputStreamSource;
@@ -9,6 +11,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.persistence.Transient;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,22 +22,27 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @Accessors(chain = true)
-public class FileInfo extends BasicFileInfo{
-    /**
-     * 文件所属用户ID
-     */
-    private Integer uid;
+public class FileInfo extends AuditModel {
+    public final static int TYPE_DIR = 1;
+    public final static int TYPE_FILE = 2;
+
     private String parent;
 
     /**
      * 相对用户网盘中，文件所在的目录路径，或在存储系统中的完整路径
      */
     @JsonIgnore
+    @Transient
     private String path;
     private String node;
     private Long lastModified;
     private Date createdAt;
     private Date updatedAt;
+
+    private String name;
+    private String md5;
+    private Integer type;
+    private Long size;
 
     /**
      * 是否为外部挂载的文件系统文件
@@ -48,7 +56,25 @@ public class FileInfo extends BasicFileInfo{
 
 
     @JsonIgnore
+    @Transient
     private InputStreamSource streamSource;
+
+    @JsonIgnore
+    public boolean isFile() {
+        return size != -1L || (type != null && type == TYPE_FILE);
+    }
+
+    public boolean isDir() {
+        return !isFile();
+    }
+
+    /**
+     * 获取文件后缀名，不带点.
+     * @return 后缀名
+     */
+    public String getSuffix() {
+        return FileUtils.getSuffix(name);
+    }
 
     /**
      * 从资源接口中创建文件信息
@@ -57,7 +83,7 @@ public class FileInfo extends BasicFileInfo{
      * @param type      文件类型，2为文件{@link FileInfo#TYPE_FILE}，1为目录{@link FileInfo#TYPE_DIR}
      * @return          文件信息
      */
-    public static FileInfo getFromResource(Resource resource, Integer uid, Integer type) throws IOException {
+    public static FileInfo getFromResource(Resource resource, Long uid, Integer type) throws IOException {
         final FileInfo fileInfo = new FileInfo();
         Date now = new Date();
         fileInfo.setName(resource.getFilename());
@@ -115,7 +141,7 @@ public class FileInfo extends BasicFileInfo{
         this.lastModified = lastModified;
         this.streamSource = streamSource;
         if (type == TYPE_DIR) {
-            this.size = -1;
+            this.size = -1L;
         }
     }
 

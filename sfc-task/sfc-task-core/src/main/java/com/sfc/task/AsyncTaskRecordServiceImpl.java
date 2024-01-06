@@ -23,7 +23,7 @@ public class AsyncTaskRecordServiceImpl implements AsyncTaskRecordService {
 
     @Override
     public CommonPageInfo<AsyncTaskRecord> listRecord(AsyncTaskQueryParam param) {
-        UIDValidator.validate(Optional.ofNullable(param.getUid()).orElse((long)User.PUBLIC_USER_ID), true);
+        UIDValidator.validate(Optional.ofNullable(param.getUid()).orElse(User.PUBLIC_USER_ID), true);
         return CommonPageInfo.of(asyncTaskRecordRepo.findAll((Specification<AsyncTaskRecord>) (root, query, criteriaBuilder) -> {
             Predicate condition = criteriaBuilder.conjunction();
             if (param.getUid() != null) {

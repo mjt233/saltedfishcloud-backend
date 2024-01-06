@@ -27,14 +27,14 @@ public interface DiskFileSystem {
      * @param uid   用户ID
      * @return      用户未设置头像时，为null
      */
-    Resource getAvatar(int uid) throws IOException;
+    Resource getAvatar(long uid) throws IOException;
 
     /**
      * 保存用户头像
      * @param uid   用户ID
      * @param resource 头像资源
      */
-    void saveAvatar(int uid, Resource resource) throws IOException;
+    void saveAvatar(long uid, Resource resource) throws IOException;
 
     /**
      * 利用MD5通过文件系统中现有的资源直接存储到网盘
@@ -44,7 +44,7 @@ public interface DiskFileSystem {
      * @param md5 文件的MD5
      * @return 成功为true，失败为false
      */
-    boolean quickSave(int uid, String path, String name, String md5) throws IOException;
+    boolean quickSave(long uid, String path, String name, String md5) throws IOException;
 
     /**
      * 判断给定的路径是否存在
@@ -52,7 +52,7 @@ public interface DiskFileSystem {
      * @param path  要判断的文件路径
      * @return      结果，存在则返回true，否则为false
      */
-    boolean exist(int uid, String path) throws IOException;
+    boolean exist(long uid, String path) throws IOException;
 
     /**
      * 从文件系统获取文件资源
@@ -61,7 +61,7 @@ public interface DiskFileSystem {
      * @param name  文件名
      * @return      文件资源，当资源不存在或目标资源为目录时，应返回null
      */
-    Resource getResource(int uid, String path,String name) throws IOException;
+    Resource getResource(long uid, String path,String name) throws IOException;
 
     /**
      * 获取对应文件资源的缩略图
@@ -70,7 +70,7 @@ public interface DiskFileSystem {
      * @param name      文件名称
      * @return          缩略图资源，若不支持或无法获取则为null
      */
-    Resource getThumbnail(int uid, String path, String name) throws IOException;
+    Resource getThumbnail(long uid, String path, String name) throws IOException;
 
     /**
      * 在网盘中连同所有父级目录，创建一个目录
@@ -79,7 +79,7 @@ public interface DiskFileSystem {
      * @return 目录创建后，该目录的节点ID
      * @throws JsonException 目录树中某个部分与文件名冲突时抛出
      */
-    String mkdirs(int uid, String path) throws IOException;
+    String mkdirs(long uid, String path) throws IOException;
 
     /**
      * 通过文件MD5获取一个存储在系统中的文件<br>
@@ -105,7 +105,7 @@ public interface DiskFileSystem {
      * @param overwrite
      *      是否覆盖
      */
-    void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException;
+    void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException;
 
     /**
      * 移动网盘中的文件或目录到指定目录下
@@ -115,7 +115,7 @@ public interface DiskFileSystem {
      * @param name      文件名
      * @param overwrite 是否覆盖原文件
      */
-    void move(int uid, String source, String target, String name, boolean overwrite) throws IOException;
+    void move(long uid, String source, String target, String name, boolean overwrite) throws IOException;
 
     /**
      * 获取某个用户网盘目录下的所有文件信息
@@ -126,7 +126,7 @@ public interface DiskFileSystem {
      * @param path  网盘路径
      * @return      一个List数组，数组下标0为目录，1为文件，或null
      */
-    List<FileInfo>[] getUserFileList(int uid, String path) throws IOException;
+    List<FileInfo>[] getUserFileList(long uid, String path) throws IOException;
 
     /**
      * 获取用户所有文件信息<br>
@@ -135,7 +135,7 @@ public interface DiskFileSystem {
      * @param reverse 目录排序倒序
      * @return      文件信息集合，key为目录名，value为该目录下的文件信息列表
      */
-    LinkedHashMap<String, List<FileInfo>> collectFiles(int uid, boolean reverse);
+    LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse);
 
     /**
      * 通过节点ID获取节点下的文件信息
@@ -143,9 +143,9 @@ public interface DiskFileSystem {
      * @param nodeId    节点ID
      * @return          一个List数组，数组下标0为目录，1为文件，或null
      */
-    List<FileInfo>[] getUserFileListByNodeId(int uid, String nodeId);
+    List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId);
 
-    List<FileInfo> search(int uid, String key);
+    List<FileInfo> search(long uid, String key);
 
     /**
      * 通过移动本地文件的方式存储文件
@@ -157,7 +157,7 @@ public interface DiskFileSystem {
      * @param fileInfo          文件信息（一般只取name）
      * @throws IOException      存储出错
      */
-    void moveToSaveFile(int uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException;
+    void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException;
 
     /**
      * 保存数据流的数据到网盘系统中
@@ -167,7 +167,7 @@ public interface DiskFileSystem {
      * @param fileInfo    文件信息
      * @throws IOException 文件写入失败时抛出
      */
-    long saveFile(int uid,
+    long saveFile(long uid,
                  InputStream stream,
                  String path,
                  FileInfo fileInfo) throws IOException;
@@ -184,7 +184,7 @@ public interface DiskFileSystem {
      * {@link DiskFileSystem#SAVE_NOT_CHANGE}
      * @throws IOException 文件写入失败时抛出
      */
-    long saveFile(int uid,
+    long saveFile(long uid,
                  MultipartFile file,
                  String requestPath,
                  String md5) throws IOException;
@@ -196,7 +196,7 @@ public interface DiskFileSystem {
      * @param name 文件夹名称
      * @throws NoSuchFileException 当目标目录不存在时抛出
      */
-    void mkdir(int uid, String path, String name) throws IOException;
+    void mkdir(long uid, String path, String name) throws IOException;
 
     /**
      * 删除文件
@@ -206,7 +206,7 @@ public interface DiskFileSystem {
      * @throws NoSuchFileException 当目标路径不存在时抛出
      * @return 删除的数量
      */
-    long deleteFile(int uid, String path, List<String> name) throws IOException;
+    long deleteFile(long uid, String path, List<String> name) throws IOException;
 
     /**
      * 重命名文件或目录
@@ -216,7 +216,7 @@ public interface DiskFileSystem {
      * @throws NoSuchFileException 当目标路径不存在时抛出
      * @param newName 新文件名
      */
-    void rename(int uid, String path, String name, String newName) throws IOException;
+    void rename(long uid, String path, String name, String newName) throws IOException;
 
     /**
      * 获取文件系统状态

@@ -32,7 +32,7 @@ class CollectionInfoRepositoryTest {
     public void testHighConcurrent() throws BrokenBarrierException, InterruptedException {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DATE, 2);
-        CollectionInfo info = new CollectionInfo(1, "admin", "测试高并发安全", "1", "1", new Date(), null);
+        CollectionInfo info = new CollectionInfo(1L, "admin", "测试高并发安全", "1", "1", new Date(), null);
         info.setExpiredAt(calendar.getTime());
         info.setAllowMax(10000);
         info.setAvailable(10000);
@@ -65,7 +65,7 @@ class CollectionInfoRepositoryTest {
     public void testAdd() {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.HOUR, 24);
-        CollectionInfo info = new CollectionInfo(2, "admin", "测试收集", "啦啦啦", "root", calendar.getTime(), null);
+        CollectionInfo info = new CollectionInfo(2L, "admin", "测试收集", "啦啦啦", "root", calendar.getTime(), null);
         info.setMaxSize(ByteSize._1MiB * 512L);
         repository.save(info);
         assertTrue(repository.findAll().size() > 0);

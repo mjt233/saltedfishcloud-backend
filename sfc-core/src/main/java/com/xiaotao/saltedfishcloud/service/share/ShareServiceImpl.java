@@ -53,7 +53,7 @@ public class ShareServiceImpl implements ShareService {
     private WrapService wrapService;
 
     @Override
-    public String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo) {
+    public String createwrap(Long sid, String verification, String code, FileTransferInfo fileTransferInfo) {
         ShareInfo share = getShare(sid, verification);
         if (share.getExtractCode() != null && !code.equalsIgnoreCase(share.getExtractCode())) {
             throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
@@ -67,7 +67,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public void deleteShare(Integer sid, Integer uid) {
+    public void deleteShare(Long sid, Long uid) {
         ShareInfo share = shareRepo.findById(sid).orElse(null);
         if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         if (!share.getUid().equals(uid)) throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
@@ -118,7 +118,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public List<FileInfo>[] browse(int sid, String verification, String path, String extractCode) throws IOException {
+    public List<FileInfo>[] browse(long sid, String verification, String path, String extractCode) throws IOException {
         ShareInfo share = shareRepo.findById(sid).orElse(null);
 
         // 校验存在
@@ -147,7 +147,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public ShareInfo createShare(int uid, ShareDTO shareDTO) {
+    public ShareInfo createShare(long uid, ShareDTO shareDTO) {
         try {
             LinkedList<NodeInfo> nodes = nodeService.getPathNodeByPath(uid, shareDTO.getPath());
             String nid = nodes.getLast().getId();
@@ -170,7 +170,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public CommonPageInfo<ShareInfo> getUserShare(int uid, int page, int size, boolean hideKeyAttr) {
+    public CommonPageInfo<ShareInfo> getUserShare(long uid, int page, int size, boolean hideKeyAttr) {
         ShareInfo po = new ShareInfo();
         po.setUid(uid);
         CommonPageInfo<ShareInfo> res = CommonPageInfo.of(
@@ -196,7 +196,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public ShareInfo getShare(int sid, String verification) {
+    public ShareInfo getShare(long sid, String verification) {
         ShareInfo po = shareRepo.findById(sid).orElse(null);
         if (po == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
 
@@ -220,7 +220,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public ShareInfo getById(int id) {
+    public ShareInfo getById(long id) {
         return shareRepo.findById(id).orElse(null);
     }
 }

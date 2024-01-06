@@ -36,7 +36,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
      * @param storeService  存储服务
      * @return key - 文件完整路径，value - 文件信息
      */
-    protected Map<String, FileInfo> getStoreAllFile(int uid, StoreService storeService) throws IOException {
+    protected Map<String, FileInfo> getStoreAllFile(long uid, StoreService storeService) throws IOException {
         log.debug("[FileRecordSync]获取uid {} 完整的目录和文件", uid);
         // 利用栈使用循环迭代方式实现的深度优先搜索（DFS）遍历
 
@@ -66,7 +66,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
      * 从数据库抓取用户指定节点下的文件信息
      * @return 以目录为Key，目录下的文件列表为Value的Map集合
      */
-    private Map<String, Collection<? extends FileInfo>> fetchDbFiles(int uid) {
+    private Map<String, Collection<? extends FileInfo>> fetchDbFiles(long uid) {
         Map<String, Collection<? extends FileInfo>> dbFile = new HashMap<>();
         NodeTree tree = nodeService.getFullTree(uid);
         DiskFileSystem fileSystem = fileService.getMainFileSystem();
@@ -79,7 +79,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
     }
 
     @Override
-    public SyncDiffResultDefaultImpl detect(int uid, boolean precise) throws IOException {
+    public SyncDiffResultDefaultImpl detect(long uid, boolean precise) throws IOException {
         final StoreService storeService = storeServiceFactory.getService();
         SyncDiffResultDefaultImpl res = new SyncDiffResultDefaultImpl();
 

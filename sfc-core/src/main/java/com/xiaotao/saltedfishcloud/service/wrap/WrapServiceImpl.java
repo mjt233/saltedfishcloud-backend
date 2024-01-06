@@ -37,7 +37,7 @@ public class WrapServiceImpl implements WrapService {
     private ShareService shareService;
 
     @Override
-    public String registerWrap(Integer uid, FileTransferInfo files) {
+    public String registerWrap(Long uid, FileTransferInfo files) {
         String wid = SecureUtils.getUUID();
         redisTemplate.opsForValue().set(
                 RedisKeyGenerator.getWrapKey(wid),
@@ -61,7 +61,7 @@ public class WrapServiceImpl implements WrapService {
 
         files.setFilenames(param.getFilenames());
 
-        int uid = 0;
+        long uid = 0;
 
         // TODO: 调整为策略模式
         if (source.equals("file")) {

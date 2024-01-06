@@ -144,7 +144,7 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     private FileInfo convertToFileInfo(FileIdBothDirectoryInformation info) {
         FileInfo fileInfo = new FileInfo();
         if (info.getFileAttributes() == FileAttributes.FILE_ATTRIBUTE_DIRECTORY.getValue()) {
-            fileInfo.setSize(-1);
+            fileInfo.setSize(-1L);
             fileInfo.setType(FileInfo.TYPE_DIR);
         } else {
             fileInfo.setSize(info.getEndOfFile());

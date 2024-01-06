@@ -23,7 +23,7 @@ public class DiskFtpFile implements FtpFile {
     private final DiskFtpUser user;
     private final DiskFileSystemManager fileService;
     private Resource fileResource;
-    private final int resourceUid;
+    private final long resourceUid;
 
     private Long lastModifiedValue;
 

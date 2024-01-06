@@ -45,7 +45,7 @@ public interface FileDao {
      * @return  受影响的行数
      */
     @Update("UPDATE file_table SET node=#{targetNodeId} WHERE node=#{nid} AND name=#{name} AND uid=#{uid}")
-    int move(@Param("uid") Integer uid,
+    int move(@Param("uid") Long uid,
                 @Param("nid") String nid,
                 @Param("targetNodeId") String targetNodeId,
                 @Param("name") String name);
@@ -57,7 +57,7 @@ public interface FileDao {
      * @return 文件信息列表
      */
     @Select("SELECT uid, name, node, size, md5, created_at, updated_at, mount_id FROM file_table WHERE node = #{nid} AND uid = #{uid}")
-    List<FileInfo> getFileListByNodeId(@Param("uid") Integer uid, @Param("nid") String nodeId);
+    List<FileInfo> getFileListByNodeId(@Param("uid") Long uid, @Param("nid") String nodeId);
 
     /**
      * 搜索某个用户的文件
@@ -69,7 +69,7 @@ public interface FileDao {
             "file_table A LEFT JOIN node_list B ON " +
             " A.node = B.id " +
             "WHERE A.uid = #{uid} AND A.name like #{key} COLLATE utf8mb4_general_ci")
-    List<FileInfo> search(@Param("uid") Integer uid,
+    List<FileInfo> search(@Param("uid") Long uid,
                                      @Param("key") String key);
 
     /**
@@ -81,9 +81,14 @@ public interface FileDao {
      * @param nodeId 文件所在路径（不包含文件名）的映射ID，路径ID需要用NodeDao或NodeService获取
      * @return 影响的行数
      */
-    default int addRecord(Integer uid, String fileName, Long size, String md5, String nodeId) {
+    default int addRecord(Long uid, String fileName, Long size, String md5, String nodeId) {
         return addRecord(uid, fileName, size, md5, nodeId, new Date());
     }
+
+    @Insert("INSERT IGNORE INTO file_table (uid, name, node, size, md5, created_at, updated_at, mount_id) VALUES (" +
+            "#{fileInfo.uid}, #{fileInfo.name}, #{fileInfo.node}, #{fileInfo.size}, #{fileInfo.md5}, #{fileInfo.createdAt}, #{fileInfo.updatedAt}, #{fileInfo.mountId}" +
+            ")")
+    int addRecord(@Param("fileInfo") FileInfo fileInfo);
 
     /**
      * 添加一条文件记录
@@ -96,7 +101,7 @@ public interface FileDao {
      * @return 影响的行数
      */
     @Insert("INSERT IGNORE INTO file_table (uid,name,size,md5,node,created_at) VALUES (#{uid},#{name},#{size},#{md5},#{node},#{createAt})")
-    int addRecord(@Param("uid") Integer uid,
+    int addRecord(@Param("uid") Long uid,
                   @Param("name") String fileName,
                   @Param("size") Long size,
                   @Param("md5") String md5,
@@ -112,7 +117,7 @@ public interface FileDao {
      * @param name 文件名
      * @return 受影响的行数
      */
-    int deleteRecords(@Param("uid") Integer uid,
+    int deleteRecords(@Param("uid") Long uid,
                       @Param("node") String node,
                       @Param("name") List<String> name);
 
@@ -124,7 +129,7 @@ public interface FileDao {
      * @return 受影响的行数
      */
     @Delete("DELETE FROM file_table WHERE node = #{node} AND name = #{name} AND uid=#{uid}")
-    int deleteRecord(@Param("uid") Integer uid,
+    int deleteRecord(@Param("uid") Long uid,
                      @Param("node") String node,
                      @Param("name") String name);
 
@@ -135,7 +140,7 @@ public interface FileDao {
      * @param nodes  节点ID列表
      * @return 删除数
      */
-    int deleteDirsRecord(@Param("uid") Integer uid,
+    int deleteDirsRecord(@Param("uid") Long uid,
                          @Param("nodes") List<String> nodes
                       );
 
@@ -148,7 +153,7 @@ public interface FileDao {
      * @return 受影响行数
      */
     @Update("UPDATE file_table SET md5=#{newMd5}, size=#{newSize}, updated_at=#{updateAt} WHERE node=#{node} AND uid=#{uid} AND name=#{name}")
-    int updateRecord(@Param("uid") Integer uid,
+    int updateRecord(@Param("uid") Long uid,
                      @Param("name") String name,
                      @Param("updateAt") Date updateAt,
                      @Param("node") String nodeId,
@@ -163,7 +168,7 @@ public interface FileDao {
      * @param newMd5 新文件MD5
      * @return 受影响行数
      */
-    default int updateRecord(Integer uid, String name, String nodeId, Long newSize, String newMd5) {
+    default int updateRecord(Long uid, String name, String nodeId, Long newSize, String newMd5) {
         return updateRecord(uid, name, new Date(), nodeId, newSize, newMd5);
     }
 
@@ -175,7 +180,7 @@ public interface FileDao {
      * @return 文件信息
      */
     @Select("SELECT name, size, md5, node FROM file_table WHERE node=#{nodeId} AND name=#{name} AND uid=#{uid} ")
-    FileInfo getFileInfo(@Param("uid") Integer uid, @Param("name") String name, @Param("nodeId") String nodeId);
+    FileInfo getFileInfo(@Param("uid") Long uid, @Param("name") String name, @Param("nodeId") String nodeId);
 
     /**
      * 批量获取某个目录下的文件信息
@@ -184,7 +189,7 @@ public interface FileDao {
      * @param nodeId 路径ID
      * @return 删除数
      */
-    List<FileInfo> getFilesInfo(@Param("uid") Integer uid, @Param("names") Collection<String> name, @Param("nodeId") String nodeId);
+    List<FileInfo> getFilesInfo(@Param("uid") Long uid, @Param("names") Collection<String> name, @Param("nodeId") String nodeId);
 
     /**
      * 重命名文件或文件夹
@@ -195,7 +200,7 @@ public interface FileDao {
      * @return  受影响的行数
      */
     @Update("UPDATE file_table SET name=#{newName} WHERE node=#{nid} AND name=#{oldName} AND uid=#{uid}")
-    int rename(@Param("uid") Integer uid,
+    int rename(@Param("uid") Long uid,
                @Param("nid") String nid,
                @Param("oldName") String oldName,
                @Param("newName") String newName);

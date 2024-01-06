@@ -91,12 +91,12 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
      * @param path  文件所在路径
      * @param name  文件名
      */
-    private static String getStoreLockKey(int uid, String path, String name) {
+    private static String getStoreLockKey(long uid, String path, String name) {
         return uid + ":" + StringUtils.appendPath(path, name);
     }
 
     @Override
-    public Resource getThumbnail(int uid, String path, String name) throws IOException {
+    public Resource getThumbnail(long uid, String path, String name) throws IOException {
         String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, name));
         if (md5 != null) {
             return thumbnailService.getThumbnail(md5, FileUtils.getSuffix(name));
@@ -109,18 +109,18 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
      * @param uid   用户id
      * @param dest  文件所在路径
      */
-    public static String getStoreLockKey(int uid, String dest) {
+    public static String getStoreLockKey(long uid, String dest) {
         return uid + ":" + dest;
     }
 
     @Override
-    public void saveAvatar(int uid, Resource resource) throws IOException {
+    public void saveAvatar(long uid, Resource resource) throws IOException {
         customStoreService.saveAvatar(uid, resource);
     }
 
 
     @Override
-    public Resource getAvatar(int uid) throws IOException {
+    public Resource getAvatar(long uid) throws IOException {
         final Resource avatar = customStoreService.getAvatar(uid);
         if (avatar == null) {
             return customStoreService.getDefaultAvatar();
@@ -130,7 +130,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public boolean quickSave(int uid, String path, String name, String md5) throws IOException {
+    public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
         List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
         if (files.isEmpty()) {
             return false;
@@ -156,18 +156,18 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public boolean exist(int uid, String path) {
+    public boolean exist(long uid, String path) {
         return fileRecordService.exist(uid, PathUtils.getParentPath(path), PathUtils.getLastNode(path));
     }
 
     @Override
-    public Resource getResource(int uid, String path, String name) throws IOException {
+    public Resource getResource(long uid, String path, String name) throws IOException {
         return storeServiceFactory.getService().getResource(uid, path, name);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String mkdirs(int uid, String path) throws IOException {
+    public String mkdirs(long uid, String path) throws IOException {
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         if (pb.getPath().isEmpty()) {
@@ -199,7 +199,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void copy(int uid, String source, String target, int targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
+    public void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
         RLock lock = redisson.getLock(getStoreLockKey(uid, target, targetName));
         try {
             lock.lock();
@@ -215,7 +215,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
+    public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
         RLock lock = redisson.getLock(getStoreLockKey(uid, target, name));
         try {
             lock.lock();
@@ -235,20 +235,20 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public List<FileInfo>[] getUserFileList(int uid, String path) throws IOException {
+    public List<FileInfo>[] getUserFileList(long uid, String path) throws IOException {
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         return getUserFileListByNodeId(uid, nodeId);
     }
 
     @Override
-    public LinkedHashMap<String, List<FileInfo>> collectFiles(int uid, boolean reverse) {
+    public LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse) {
         LinkedHashMap<String, List<FileInfo>> res = new LinkedHashMap<>();
         List<NodeInfo> nodes = new LinkedList<>();
 
         // 根目录使用用户id作为id
         String strId = "" + uid;
         nodes.add(NodeInfo.builder()
-                .uid((long) uid)
+                .uid(uid)
                 .id(strId)
                 .build()
         );
@@ -265,7 +265,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<FileInfo>[] getUserFileListByNodeId(int uid, String nodeId) {
+    public List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId) {
         List<FileInfo> fileList = fileDao.getFileListByNodeId(uid, nodeId);
         List<FileInfo> dirs = new LinkedList<>(), files = new LinkedList<>();
         fileList.forEach(file -> {
@@ -281,14 +281,14 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public List<FileInfo> search(int uid, String key) {
+    public List<FileInfo> search(long uid, String key) {
         key = "%" + key.replaceAll("%", "\\%").replaceAll("/s+", "%") + "%";
         return fileDao.search(uid, key);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void moveToSaveFile(int uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
+    public void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
         RLock lock = redisson.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
         try {
             lock.lock();
@@ -304,7 +304,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public long saveFile(int uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
+    public long saveFile(long uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
 
         if (fileInfo.getMd5() == null) {
             fileInfo.updateMd5();
@@ -314,7 +314,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public long saveFile(int uid, MultipartFile file, String requestPath, String md5) throws IOException {
+    public long saveFile(long uid, MultipartFile file, String requestPath, String md5) throws IOException {
         FileInfo fileInfo = new FileInfo(file);
         // 获取上传的文件信息 并看情况计算MD5
         if (md5 != null) {
@@ -325,7 +325,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         return saveFileWithDelete(uid, file.getInputStream(), requestPath, fileInfo);
     }
 
-    private int saveFileWithDelete(int uid, InputStream file, String path, FileInfo fileInfo) throws IOException {
+    private int saveFileWithDelete(long uid, InputStream file, String path, FileInfo fileInfo) throws IOException {
         String nid;
         // 判断目录是否存在，若不存在则尝试创建
         nid = nodeService.getNodeIdByPathNoEx(uid, path);
@@ -359,7 +359,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void mkdir(int uid, String path, String name) throws IOException {
+    public void mkdir(long uid, String path, String name) throws IOException {
         final StoreService storeService = storeServiceFactory.getService();
         if ( !storeService.isUnique() && !storeService.mkdir(uid, path, name) ) {
             throw new IOException("在" + path + "创建文件夹失败");
@@ -369,7 +369,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public long deleteFile(int uid, String path, List<String> name) throws IOException {
+    public long deleteFile(long uid, String path, List<String> name) throws IOException {
         ArrayList<RLock> locks = new ArrayList<>();
         for (String s : name) {
             RLock lock = redisson.getLock(getStoreLockKey(uid, path, s));
@@ -404,7 +404,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void rename(int uid, String path, String name, String newName) throws IOException {
+    public void rename(long uid, String path, String name, String newName) throws IOException {
         RLock lock1 = redisson.getLock(getStoreLockKey(uid, path, name));
         RLock lock2 = redisson.getLock(getStoreLockKey(uid, path, newName));
         lock1.lock();

@@ -21,7 +21,7 @@ public class NodeCacheProxyHandler {
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Object handlePathToNodeId(ProceedingJoinPoint joinPoint, RemoveNodeCache anno) throws Throwable {
         Object[] args = joinPoint.getArgs();
-        int uid = (int)args[anno.uid()];
+        long uid = (int)args[anno.uid()];
         List<String> nids = new ArrayList<>();
         Object nid = args[anno.nid()];
         if (nid instanceof Collection) {

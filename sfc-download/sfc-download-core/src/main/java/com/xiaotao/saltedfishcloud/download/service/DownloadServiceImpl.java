@@ -70,7 +70,7 @@ public class DownloadServiceImpl implements DownloadService {
     }
 
     @Override
-    public Page<DownloadTaskInfo> getTaskList(int uid, int page, int size, TaskType type) {
+    public Page<DownloadTaskInfo> getTaskList(long uid, int page, int size, TaskType type) {
         Page<DownloadTaskInfo> tasks;
         PageRequest pageRequest = PageRequest.of(page, size);
         if (type == null || type == TaskType.ALL) {
@@ -98,7 +98,7 @@ public class DownloadServiceImpl implements DownloadService {
     }
 
     @Override
-    public String createTask(DownloadTaskParams params, int creator) throws IOException {
+    public String createTask(DownloadTaskParams params, long creator) throws IOException {
 
         // 初始化下载任务信息和录入数据库
         DownloadTaskInfo info = new DownloadTaskInfo();
@@ -126,7 +126,7 @@ public class DownloadServiceImpl implements DownloadService {
 
     @Override
     public List<ProxyInfo> listAvailableProxy() {
-        List<ProxyInfo> res = new ArrayList<>(proxyInfoService.findByUid((long) User.PUBLIC_USER_ID));
+        List<ProxyInfo> res = new ArrayList<>(proxyInfoService.findByUid(User.PUBLIC_USER_ID));
         Long currentUid = SecureUtils.getCurrentUid();
         if (currentUid != null) {
             res.addAll(proxyInfoService.findByUid(currentUid));

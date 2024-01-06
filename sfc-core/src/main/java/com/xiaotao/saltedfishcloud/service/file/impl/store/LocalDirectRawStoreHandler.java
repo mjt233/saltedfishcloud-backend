@@ -80,7 +80,7 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
         if (!Files.exists(path1)) {
             return null;
         }
-        return FileInfo.getFromResource(new PathResource(path1), 0, Files.isDirectory(path1) ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
+        return FileInfo.getFromResource(new PathResource(path1), 0L, Files.isDirectory(path1) ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
     }
 
     @Override

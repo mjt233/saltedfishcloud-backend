@@ -51,7 +51,7 @@ public class DiskFileSystemArchiveHelper {
      */
     public static void compress(DiskFileSystemCompressParam param, ArchiveCompressor compressor, DiskFileSystem fileSystem) throws IOException {
         String curDir = param.getSourcePath().replaceAll("//+", "").replaceAll("^/+", "");
-        int uid = param.getSourceUid().intValue();
+        long uid = param.getSourceUid();
         String root = param.getSourcePath().replaceAll("//+", "");
 
         for (String name : param.getSourceNames()) {
@@ -85,7 +85,7 @@ public class DiskFileSystemArchiveHelper {
      * @param compressor    压缩器
      * @param depth         当前压缩深度
      */
-    private static void compressDir(int uid, String root, String path, ArchiveCompressor compressor, DiskFileSystem fileSystem, int depth) throws IOException {
+    private static void compressDir(long uid, String root, String path, ArchiveCompressor compressor, DiskFileSystem fileSystem, int depth) throws IOException {
         checkInterrupt();
         List<FileInfo>[] list = fileSystem.getUserFileList(uid, path);
         String curPath = StringUtils.removePrefix(root, path).replaceAll("//+", "/").replaceAll("^/+", "");

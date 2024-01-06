@@ -86,7 +86,7 @@ public class QuickShareService {
 
         // 设置基础数据 - 标记过期日期
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.MINUTE, property.getEffectiveDuration().intValue());
+        calendar.add(Calendar.MINUTE, property.getEffectiveDuration());
         quickShare.setExpiredAt(calendar.getTime());
 
         // 存储文件

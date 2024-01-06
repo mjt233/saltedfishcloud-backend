@@ -25,8 +25,8 @@ public class ShellExecuteRecordServiceImpl
         ShellExecuteRecord record = new ShellExecuteRecord();
         record.setUid(
                 Optional.ofNullable(SecureUtils.getSpringSecurityUser())
-                        .map(e -> e.getId().longValue())
-                        .orElse((long)User.PUBLIC_USER_ID)
+                        .map(e -> e.getId())
+                        .orElse(User.PUBLIC_USER_ID)
         );
         record.setHost(clusterService.getSelf().getHost());
         record.setCmd(cmd);

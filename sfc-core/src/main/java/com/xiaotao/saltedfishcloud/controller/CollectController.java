@@ -87,7 +87,7 @@ public class CollectController {
                                        @RequestPart("submitInfo") @Valid SubmitFile submitFile,
                                        HttpServletRequest request) throws IOException {
         User u = SecureUtils.getSpringSecurityUser();
-        int uid = u == null ? 0 : u.getId();
+        long uid = u == null ? 0 : u.getId();
         if (submitFile.getSize() == null) {
             submitFile.setSize(file.getSize());
         }

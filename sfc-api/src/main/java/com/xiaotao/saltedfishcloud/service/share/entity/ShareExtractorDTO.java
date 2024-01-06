@@ -10,7 +10,7 @@ import javax.validation.constraints.NotNull;
 @Builder
 public class ShareExtractorDTO {
     @NotNull
-    private Integer sid;
+    private Long sid;
     @NotBlank
     private String verification;
     private String code;

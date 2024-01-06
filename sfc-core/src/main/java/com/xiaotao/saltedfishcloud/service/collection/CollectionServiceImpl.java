@@ -46,7 +46,7 @@ public class CollectionServiceImpl implements CollectionService {
     }
 
     @Override
-    public void deleteCollection(int uid, long cid) {
+    public void deleteCollection(long uid, long cid) {
         CollectionInfo collection = collectionDao.findById(cid).orElse(null);
         if (collection == null) throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
         if (!collection.getUid().equals(uid)) throw new JsonException(CommonError.FORMAT_ERROR);
@@ -54,7 +54,7 @@ public class CollectionServiceImpl implements CollectionService {
     }
 
     @Override
-    public CollectionInfo setState(int uid, Long cid, CollectionInfo.State state) {
+    public CollectionInfo setState(long uid, Long cid, CollectionInfo.State state) {
         CollectionInfo info = collectionDao.findById(cid).orElse(null);
         if (info == null) throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
         if (!info.getUid().equals(uid)) throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
@@ -63,7 +63,7 @@ public class CollectionServiceImpl implements CollectionService {
         return info;
     }
     @Override
-    public CollectionInfoId createCollection(int uid, CollectionDTO info) {
+    public CollectionInfoId createCollection(long uid, CollectionDTO info) {
         if(!CollectionValidator.validateCreate(info)) {
             throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED);
         }
@@ -100,7 +100,7 @@ public class CollectionServiceImpl implements CollectionService {
 
     @Override
     @Transactional(rollbackFor = Throwable.class)
-    public void collectFile(CollectionInfoId cid, int uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile, String ip) throws IOException {
+    public void collectFile(CollectionInfoId cid, long uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile, String ip) throws IOException {
         CollectionInfo ci = collectionDao.findById(cid.getId()).orElse(null);
 
         // 校验收集存在

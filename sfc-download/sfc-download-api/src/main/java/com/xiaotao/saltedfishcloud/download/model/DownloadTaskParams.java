@@ -28,7 +28,7 @@ public class DownloadTaskParams {
      * 用户id
      */
     @UID
-    public int uid;
+    public long uid;
 
     /**
      * 额外的headers

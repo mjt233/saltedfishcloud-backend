@@ -2,10 +2,9 @@ package com.xiaotao.saltedfishcloud.service.resource;
 
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 
 import java.io.IOException;
 
@@ -48,7 +47,7 @@ public interface ResourceService {
      * @param expr      过期日期
      * @return          生成的文件下载码
      */
-    String getFileDownloadCode(int uid, String path, BasicFileInfo fileInfo, int expr) throws IOException;
+    String getFileDownloadCode(long uid, String path, FileInfo fileInfo, int expr) throws IOException;
 
     /**
      * 向目标资源操作器写入资源

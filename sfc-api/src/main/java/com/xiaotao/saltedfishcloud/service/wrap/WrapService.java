@@ -15,7 +15,7 @@ public interface WrapService {
      * @param files 打包的资源信息
      * @return 打包ID
      */
-    String registerWrap(Integer uid, FileTransferInfo files);
+    String registerWrap(Long uid, FileTransferInfo files);
 
     /**
      * 获取打包信息

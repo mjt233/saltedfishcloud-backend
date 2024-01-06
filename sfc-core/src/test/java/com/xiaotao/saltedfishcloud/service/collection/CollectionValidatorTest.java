@@ -59,7 +59,7 @@ class CollectionValidatorTest {
 
     @Test
     void validateSubmit() {
-        CollectionInfo info = new CollectionInfo(0, "测试", "测试", "测试", "测试", new Date(), "doc");
+        CollectionInfo info = new CollectionInfo(0L, "测试", "测试", "测试", "测试", new Date(), "doc");
         SubmitFile submitFile = new SubmitFile("test.doc", 1024L, null);
 
         // 无约束

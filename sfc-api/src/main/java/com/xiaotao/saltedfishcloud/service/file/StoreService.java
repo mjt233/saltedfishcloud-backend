@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
-import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
@@ -70,7 +69,7 @@ public interface StoreService {
      * @param path  请求目录路径
      * @return  文件信息列表，若目录路径不存在或路径为文件则返回null，空目录返回空列表
      */
-    List<FileInfo> lists(int uid, String path) throws IOException;
+    List<FileInfo> lists(long uid, String path) throws IOException;
 
     /**
      * 获取文件资源，当资源不存在或目标资源为不可作为单文件读取的目录时，应返回null
@@ -79,7 +78,7 @@ public interface StoreService {
      * @param name  文件名
      * @return      文件资源，当资源不存在或目标资源为不可作为单文件读取的目录时，应返回null
      */
-    Resource getResource(int uid, String path, String name) throws IOException;
+    Resource getResource(long uid, String path, String name) throws IOException;
 
     /**
      * 判断给定的文件路径是否存在
@@ -87,7 +86,7 @@ public interface StoreService {
      * @param path  文件或目录路径
      * @return  存在为true，否则为false
      */
-    boolean exist(int uid, String path) throws IOException;
+    boolean exist(long uid, String path) throws IOException;
 
     /**
      * 通过文件移动的方式存储文件到网盘系统，相对于{@link #store}方法，避免了文件的重复写入操作。对本地文件操作后，原路径文件不再存在<br><br>
@@ -99,7 +98,7 @@ public interface StoreService {
      * @param diskPath      网盘路径
      * @param fileInfo      文件信息
      */
-    default void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
+    default void moveToSave(long uid, Path nativePath, String diskPath, FileInfo fileInfo) throws IOException {
         throw new UnsupportedOperationException("不支持store操作");
     }
 
@@ -113,7 +112,7 @@ public interface StoreService {
      * @param targetName    目标文件名
      * @param overwrite 是否覆盖，若非true，则跳过该文件
      */
-    default void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
+    default void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
         throw new UnsupportedOperationException("不支持copy操作");
     }
 
@@ -128,7 +127,7 @@ public interface StoreService {
      * @throws DuplicateKeyException UNIQUE模式下两个不相同的文件发生MD5碰撞
      * @throws UnableOverwriteException 保存位置存在同名的目录
      */
-    default void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
+    default void store(long uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
         throw new UnsupportedOperationException("不支持store操作");
     }
 
@@ -140,7 +139,7 @@ public interface StoreService {
      * @param name    文件名
      * @param overwrite 是否覆盖原文件
      */
-    default void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
+    default void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
         throw new UnsupportedOperationException("不支持move操作");
     }
 
@@ -151,7 +150,7 @@ public interface StoreService {
      * @param oldName 旧文件名
      * @param newName 新文件名
      */
-    default void rename(int uid, String path, String oldName, String newName) throws IOException {
+    default void rename(long uid, String path, String oldName, String newName) throws IOException {
         throw new UnsupportedOperationException("不支持rename操作");
     }
 
@@ -163,7 +162,7 @@ public interface StoreService {
      * @throws FileAlreadyExistsException 目标已存在时抛出
      * @return 是否创建成功
      */
-    default boolean mkdir(int uid, String path, String name) throws IOException {
+    default boolean mkdir(long uid, String path, String name) throws IOException {
         throw new UnsupportedOperationException("不支持mkdir操作");
     }
 
@@ -183,7 +182,7 @@ public interface StoreService {
      * @param files 文件名
      * @return 删除的文件和文件夹总数
      */
-    default long delete(int uid, String path, Collection<String> files) throws IOException {
+    default long delete(long uid, String path, Collection<String> files) throws IOException {
         throw new UnsupportedOperationException("不支持delete操作");
     }
 }

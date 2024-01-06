@@ -47,7 +47,7 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
-    public FileInfo getFileInfo(int uid, String dirPath, String name) {
+    public FileInfo getFileInfo(long uid, String dirPath, String name) {
         final String nodeId = nodeService.getNodeIdByPathNoEx(uid, dirPath);
         if (nodeId == null) {
             return null;
@@ -56,7 +56,7 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
-    public boolean exist(int uid, String path, String name) {
+    public boolean exist(long uid, String path, String name) {
         try {
             final String nid = nodeService.getNodeIdByPath(uid, path);
             if ((uid + "").equals(nid) && (name == null || name.length() == 0)) {
@@ -75,7 +75,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException {
+    public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException {
         PathBuilder pathBuilder = new PathBuilder();
         pathBuilder.setForcePrefix(true);
         int prefixLength = source.length() + 1 + sourceName.length();
@@ -133,7 +133,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
+    public void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
         String sourceId = nodeService.getNodeIdByPath(uid, source);
         String targetId = nodeService.getNodeIdByPath(uid, target);
         FileInfo sourceFileInfo = fileDao.getFileInfo(uid, name, sourceId);
@@ -184,21 +184,21 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int addRecord(int uid, String name, Long size, String md5, String path) throws NoSuchFileException {
+    public int addRecord(long uid, String name, Long size, String md5, String path) throws NoSuchFileException {
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         return fileDao.addRecord(uid, name, size, md5, nodeId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int updateFileRecord(int uid, String name, String path, Long newSize, String newMd5) throws NoSuchFileException {
+    public int updateFileRecord(long uid, String name, String path, Long newSize, String newMd5) throws NoSuchFileException {
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         return fileDao.updateRecord(uid, name, nodeId, newSize, newMd5);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<FileInfo> deleteRecords(int uid, String path, Collection<String> name) throws NoSuchFileException {
+    public List<FileInfo> deleteRecords(long uid, String path, Collection<String> name) throws NoSuchFileException {
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         List<FileInfo> infos = fileDao.getFilesInfo(uid, name, nodeId);
         List<FileInfo> res = new LinkedList<>();
@@ -224,7 +224,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String mkdir(int uid, String name, String path) throws NoSuchFileException {
+    public String mkdir(long uid, String name, String path) throws NoSuchFileException {
         log.debug("mkdir " + name + " at " + path);
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         String newNodeId = nodeService.addNode(uid, name, nodeId);
@@ -239,7 +239,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String mkdirs(int uid, String path) {
+    public String mkdirs(long uid, String path) {
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         String id = "" + uid;
@@ -259,7 +259,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException {
+    public void rename(long uid, String path, String oldName, String newName) throws NoSuchFileException {
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         FileInfo fileInfo = fileDao.getFileInfo(uid, oldName, nodeId);
         if (fileInfo == null) {
@@ -278,7 +278,7 @@ public class FileRecordServiceImpl implements FileRecordService {
      * @param dirInfo   文件夹信息
      * @return 被删除的文件信息（不包含文件夹）
      */
-    private List<FileInfo> deleteDirRecord(int uid, FileInfo dirInfo) {
+    private List<FileInfo> deleteDirRecord(long uid, FileInfo dirInfo) {
          List<FileInfo> res = new LinkedList<>();
 
         // 目录下的所有子目录信息

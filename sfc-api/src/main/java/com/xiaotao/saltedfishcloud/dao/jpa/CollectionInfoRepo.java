@@ -15,7 +15,7 @@ public interface CollectionInfoRepo extends JpaRepository<CollectionInfo, Long> 
     @Modifying
     int updateState();
 
-    List<CollectionInfo> findByUidEquals(Integer uid, Sort sort);
+    List<CollectionInfo> findByUidEquals(Long uid, Sort sort);
 
     @Modifying
     @Transactional
