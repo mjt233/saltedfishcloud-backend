@@ -12,10 +12,21 @@ public class ObjectUtils {
     private ObjectUtils() {}
     public static void copyMapToBean(Map<?, ?> map, Object object) {
         try {
-            BeanInfo beanInfo = Introspector.getBeanInfo(object.getClass());
+            Class<?> clazz = object.getClass();
+            BeanInfo beanInfo = Introspector.getBeanInfo(clazz);
             PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
             for (PropertyDescriptor property : propertyDescriptors) {
                 Method setter = property.getWriteMethod();
+                if (setter == null) {
+                    Method getter = property.getReadMethod();
+                    if (getter != null) {
+                        try {
+                            setter = clazz.getMethod("set" + StringUtils.camelToUpperCamel(property.getName()), getter.getReturnType());
+                        } catch (NoSuchMethodException ignore) {
+                            continue;
+                        }
+                    }
+                }
                 if (map.containsKey(property.getName()) && setter != null) {
                     Class<?> parameterType = setter.getParameterTypes()[0];
                     setter.invoke(object, TypeUtils.convert(parameterType, map.get(property.getName())));

@@ -25,7 +25,7 @@ import java.util.Date;
 public class ShareInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
     private Long uid;
     private String nid;
     private String parentId;

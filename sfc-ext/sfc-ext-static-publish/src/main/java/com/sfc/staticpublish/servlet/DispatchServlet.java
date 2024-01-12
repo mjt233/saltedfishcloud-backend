@@ -272,10 +272,10 @@ public class DispatchServlet extends HttpServlet {
         ).collect(Collectors.toList());
 
         for (FileInfo fileInfo : finalFileList) {
-            if (fileInfo.getLastModified() == null) {
-                Date fixDate = Optional.ofNullable(fileInfo.getUpdatedAt()).orElseGet(fileInfo::getCreatedAt);
+            if (fileInfo.getMtime() == null) {
+                Date fixDate = Optional.ofNullable(fileInfo.getUpdateAt()).orElseGet(fileInfo::getCreateAt);
                 if (fixDate != null) {
-                    fileInfo.setLastModified(fixDate.getTime());
+                    fileInfo.setMtime(fixDate.getTime());
                 }
             }
         }

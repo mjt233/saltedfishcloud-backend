@@ -68,34 +68,24 @@ public interface FileRecordService {
     @Transactional(rollbackFor = Exception.class)
     void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException;
 
-    /**
-     * 添加一个记录
-     *
-     * @param uid  用户ID 0表示公共
-     * @param name 文件名
-     * @param size 文件大小
-     * @param md5  文件MD5
-     * @param path 文件所在路径
-     * @return 添加数量
-     */
-    @Transactional(rollbackFor = Exception.class)
-    int addRecord(long uid, String name, Long size, String md5, String path) throws NoSuchFileException;
-
-    @Transactional(rollbackFor = Exception.class)
-    int insert(FileInfo fileInfo);
 
     /**
-     * 因文件被替换而更新一条记录
-     *
-     * @param uid     用户ID 0表示公共
-     * @param name    文件名
-     * @param path    文件所在路径
-     * @param newSize 新的文件大小
-     * @param newMd5  新的文件MD5
-     * @return 影响行数
+     * 保存或更新文件信息记录
+     * @param fileInfo  待保存数据，若存在id则直接按id保存
+     * @param path      文件所在路径，若没有id 且 没有node 则按路径匹配数据
+     * @return          保存后的文件信息，与参数是相同的对象引用
      */
-    @Transactional(rollbackFor = Exception.class)
-    int updateFileRecord(long uid, String name, String path, Long newSize, String newMd5) throws NoSuchFileException;
+    FileInfo saveRecord(FileInfo fileInfo, String path);
+
+    FileInfo save(FileInfo fileInfo);
+
+    /**
+     * 按用户id和节点id列出文件列表
+     * @param uid       用户id
+     * @param nodeId    节点id
+     * @return          文件列表
+     */
+    List<FileInfo> findByUidAndNodeId(Long uid, String nodeId);
 
     /**
      * 批量删除某个目录下的文件或文件夹，文件夹的所有子文件夹和文件也会被一同删除

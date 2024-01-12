@@ -158,9 +158,7 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
         fileInfo.setName(file.getName());
         fileInfo.setType(file.isDirectory() ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
         fileInfo.setSize(file.isDirectory() ? -1 : file.getSize());
-        fileInfo.setLastModified(file.getTimestamp().getTimeInMillis());
-        fileInfo.setCreatedAt(file.getTimestamp().getTime());
-        fileInfo.setUpdatedAt(file.getTimestamp().getTime());
+        fileInfo.setMtime(file.getTimestamp().getTimeInMillis());
         fileInfo.setMount(true);
         return fileInfo;
     }

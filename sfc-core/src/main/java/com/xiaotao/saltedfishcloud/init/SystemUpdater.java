@@ -1,25 +1,103 @@
 package com.xiaotao.saltedfishcloud.init;
 
+import com.xiaotao.saltedfishcloud.annotations.update.RollbackAction;
 import com.xiaotao.saltedfishcloud.annotations.update.UpdateAction;
 import com.xiaotao.saltedfishcloud.annotations.update.Updater;
+import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 系统核心模块版本更新处理器
  */
 @Component
 @Updater
+@Slf4j
 public class SystemUpdater {
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private FileInfoRepo fileInfoRepo;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    private void executeSqlResource(String sqlFileClassPath) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(sqlFileClassPath));
+        }
+
+    }
+
+    @RollbackAction("2.7.0")
+    public void rollback2_7_0() throws SQLException {
+        this.executeSqlResource("sql/2.7.0.rollback.no-auto.sql");
+        log.warn("2.7.0更新出错，但是表结构回滚成功");
+    }
+
+    @UpdateAction("2.7.0")
+    public void update2_7_0() throws SQLException {
+        // 先执行修改表结构的脚本
+        this.executeSqlResource("sql/2.7.0.no-auto.sql");
+
+        List<FileInfo> fileInfoList = jdbcTemplate.queryForList("SELECT * FROM file_table")
+                .stream()
+                .map(mapRes -> {
+                    HashMap<String, Object> newMap = new HashMap<>();
+                    mapRes.forEach((field, val) -> newMap.put(StringUtils.underToCamel(field), val));
+                    return ObjectUtils.mapToBean(newMap, FileInfo.class);
+                })
+                .collect(Collectors.toList());
+
+        DefaultTransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
+        TransactionStatus transaction = transactionManager.getTransaction(transactionDefinition);
+
+        try {
+            // 给文件列表数据赋值ID
+            jdbcTemplate.execute("DELETE FROM file_table");
+            for (FileInfo fi : fileInfoList) {
+                fi.setId(IdUtil.getId());
+            }
+            fileInfoRepo.saveAll(fileInfoList);
+            transactionManager.commit(transaction);
+
+            // 设置主键字段
+            jdbcTemplate.execute("ALTER TABLE file_table ADD PRIMARY KEY (`id`)");
+        } catch (Throwable err) {
+            try {
+                transactionManager.rollback(transaction);
+            } catch (Throwable ignore) {}
+            log.error("file_table表结构更新出错: ", err);
+            throw err;
+        }
+    }
 
     @UpdateAction("2.6.6")
     public void update2_6_6() {

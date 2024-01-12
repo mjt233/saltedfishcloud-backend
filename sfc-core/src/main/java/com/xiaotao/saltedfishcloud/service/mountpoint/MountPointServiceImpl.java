@@ -196,15 +196,15 @@ public class MountPointServiceImpl implements MountPointService {
         mountPointRepo.save(mountPoint);
         // 文件表保存
         String newNodeId = nodeService.addMountPointNode(mountPoint);
-        FileInfo fileInfo = new FileInfo(mountPoint.getName(), -1, FileInfo.TYPE_DIR, "", System.currentTimeMillis(), null);
-        Date now = new Date();
+        long now = System.currentTimeMillis();
+        FileInfo fileInfo = new FileInfo(mountPoint.getName(), -1, FileInfo.TYPE_DIR, "", now, null);
         fileInfo.setUid(mountPoint.getUid());
         fileInfo.setNode(mountPoint.getNid());
-        fileInfo.setCreatedAt(now);
-        fileInfo.setUpdatedAt(now);
         fileInfo.setMountId(mountPoint.getId());
         fileInfo.setMd5(newNodeId);
-        fileRecordService.insert(fileInfo);
+        fileInfo.setCtime(now);
+        fileInfo.setMtime(now);
+        fileRecordService.save(fileInfo);
     }
 
     @Override

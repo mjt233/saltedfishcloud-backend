@@ -87,11 +87,9 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         Date now = new Date();
         long uid = Integer.parseInt(param.getTargetId());
 
-        FileInfo fileInfo = new FileInfo()
-                .setCreatedAt(now)
-                .setLastModified(now.getTime())
-                .setUpdatedAt(now)
-                .setStreamSource(resource);
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setCtime(now.getTime());
+        fileInfo.setStreamSource(resource);
         
         fileInfo.setUid(uid);
         fileInfo.setName(param.getName());

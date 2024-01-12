@@ -1,8 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
-import com.sfc.archive.ArchiveManager;
 import com.sfc.constant.FeatureName;
-import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -18,14 +16,11 @@ import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
@@ -131,7 +126,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
-        List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
+        List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
         if (files.isEmpty()) {
             return false;
         }
@@ -189,7 +184,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Override
     public Resource getResourceByMd5(String md5) throws IOException {
         FileInfo fileInfo;
-        List<FileInfo> files = fileDao.getFilesByMD5(md5, 1);
+        List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
         if (files.size() == 0) throw new NoSuchFileException("文件不存在: " + md5);
         fileInfo = files.get(0);
         String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
@@ -258,7 +253,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         if (reverse) Collections.reverse(nodes);
         for (NodeInfo node : nodes) {
             String dir = nodeService.getPathByNode(uid, node.getId());
-            res.put(dir, fileDao.getFileListByNodeId(uid, node.getId()));
+            res.put(dir, fileRecordService.findByUidAndNodeId(uid, node.getId()));
         }
         return res;
     }
@@ -266,7 +261,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Override
     @SuppressWarnings("unchecked")
     public List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId) {
-        List<FileInfo> fileList = fileDao.getFileListByNodeId(uid, nodeId);
+        List<FileInfo> fileList = fileRecordService.findByUidAndNodeId(uid, nodeId);
         List<FileInfo> dirs = new LinkedList<>(), files = new LinkedList<>();
         fileList.forEach(file -> {
             if (file.isFile()) {
@@ -293,9 +288,18 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         try {
             lock.lock();
             storeServiceFactory.getService().moveToSave(uid, nativeFilePath, path, fileInfo);
-            int res = fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), path);
-            if ( res == 0) {
-                fileRecordService.updateFileRecord(uid, fileInfo.getName(), path, fileInfo.getSize(), fileInfo.getMd5());
+            fileRecordService.getFileInfo(uid, path, fileInfo.getName());
+            FileInfo existFile = fileRecordService.getFileInfo(uid, path, fileInfo.getName());
+            if (existFile != null) {
+                existFile.setCtime(fileInfo.getCtime());
+                existFile.setMtime(fileInfo.getMtime());
+                existFile.setMd5(fileInfo.getMd5());
+                existFile.setSize(fileInfo.getSize());
+                fileRecordService.save(existFile);
+            } else {
+                FileInfo newFile = FileInfo.createFrom(fileInfo, false);
+                newFile.setUid(uid);
+                fileRecordService.saveRecord(newFile, path);
             }
         } finally {
             lock.unlock();
@@ -339,7 +343,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         RLock lock = redisson.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
         try {
             lock.lock();
-            FileInfo originInfo = fileDao.getFileInfo(uid, fileInfo.getName(), nid);
+            FileInfo originInfo = fileRecordService.getFileInfo(uid, fileInfo.getName(), nid);
             boolean exist = false;
             if (originInfo != null) {
                 if (originInfo.getMd5().equals(fileInfo.getMd5())) {
@@ -350,7 +354,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
                 exist = true;
             }
             storeServiceFactory.getService().store(uid, file, path, fileInfo);
-            fileDao.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), nid);
+            fileRecordService.saveRecord(fileInfo, path);
             return exist ? SAVE_COVER : SAVE_NEW_FILE;
         } finally {
             lock.unlock();

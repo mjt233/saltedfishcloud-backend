@@ -287,10 +287,10 @@ public class DiskFtpFile implements FtpFile {
             ftpFile.isDir = fileInfo.isDir();
             ftpFile.isExist = true;
             ftpFile.setLastModifiedValue(Optional
-                    .ofNullable(fileInfo.getLastModified())
+                    .ofNullable(fileInfo.getMtime())
                     .orElseGet(() -> Optional
-                            .ofNullable(fileInfo.getCreatedAt())
-                            .map(Date::getTime)
+                            .ofNullable(fileInfo.getMtime())
+                            .or(() -> Optional.ofNullable(fileInfo.getMtime()))
                             .orElse(System.currentTimeMillis())
                     )
             );

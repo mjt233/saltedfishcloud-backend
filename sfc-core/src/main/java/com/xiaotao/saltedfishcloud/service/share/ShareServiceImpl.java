@@ -4,20 +4,20 @@ import com.sfc.constant.error.CommonError;
 import com.sfc.constant.error.FileSystemError;
 import com.sfc.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ShareRepo;
-import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
-import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
@@ -43,10 +43,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ShareServiceImpl implements ShareService {
     private final NodeService nodeService;
-    private final FileDao fileDao;
     private final ShareRepo shareRepo;
     private final UserDao userDao;
     private final DiskFileSystemManager fileSystemFactory;
+    private final FileRecordService fileRecordService;
 
     @Autowired
     @Lazy
@@ -151,7 +151,7 @@ public class ShareServiceImpl implements ShareService {
         try {
             LinkedList<NodeInfo> nodes = nodeService.getPathNodeByPath(uid, shareDTO.getPath());
             String nid = nodes.getLast().getId();
-            FileInfo fileInfo = fileDao.getFileInfo(uid, shareDTO.getName(), nid);
+            FileInfo fileInfo =  fileRecordService.getFileInfo(uid, shareDTO.getName(), nid);
 
             if (fileInfo == null) throw new JsonException(FileSystemError.FILE_NOT_FOUND);
             ShareInfo shareInfo = ShareInfo.valueOf(
@@ -207,7 +207,7 @@ public class ShareServiceImpl implements ShareService {
             if (nodeInfo == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         } else {
             // 判断分享的原文件是否失效
-            FileInfo fi = fileDao.getFileInfo(po.getUid(), po.getName(), po.getParentId());
+            FileInfo fi = fileRecordService.getFileInfo(po.getUid(), po.getName(), po.getParentId());
             if (fi == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         }
 

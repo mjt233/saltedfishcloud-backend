@@ -286,6 +286,44 @@ public class StringUtils {
     }
 
     /**
+     * 转为大驼峰
+     * @param str   待转换小驼峰字符串
+     * @return      转换后的大驼峰字符串
+     */
+    public static String camelToUpperCamel(String str) {
+        if (str.charAt(0) >= 'A' && str.charAt(0) <= 'Z') {
+            return str;
+        }
+        return Character.toUpperCase(str.charAt(0)) + str.substring(1);
+    }
+
+    /**
+     * 下划线命名转小驼峰
+     * @param str   待转换字符串
+     * @return      转换结果
+     */
+    public static String underToCamel(String str) {
+        int length = str.length();
+        StringBuilder sb = new StringBuilder(str.length() + 6);
+        boolean nextIsUpper = false;
+        for (int i = 0; i < length; i++) {
+            char c = str.charAt(i);
+            if (c == '_') {
+                nextIsUpper = true;
+                continue;
+            }
+            if (nextIsUpper) {
+                if (c >= 'a' && c <= 'z') {
+                    c = Character.toUpperCase(c);
+                }
+                nextIsUpper = false;
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    /**
      * 解析驼峰命名，并将各单词转为小写后用参数连接
      * @param str   待解析字符串
      * @param ch    连接字符

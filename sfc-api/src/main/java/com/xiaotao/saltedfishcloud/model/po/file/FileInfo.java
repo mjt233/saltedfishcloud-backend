@@ -5,12 +5,15 @@ import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.springframework.beans.BeanUtils;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.io.File;
 import java.io.IOException;
@@ -18,15 +21,80 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Date;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
+@Getter
+@Setter
+@ToString
+@AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Accessors(chain = true)
+@Table(name = "file_table")
+@Entity
 public class FileInfo extends AuditModel {
     public final static int TYPE_DIR = 1;
     public final static int TYPE_FILE = 2;
 
+    /**
+     * 文件所在目录节点
+     */
+    private String node;
+
+    /**
+     * 文件修改时间
+     */
+    private Long mtime;
+
+    /**
+     * 文件创建时间
+     */
+    private Long ctime;
+
+    /**
+     * 文件名
+     */
+    private String name;
+
+    /**
+     * 文件md5
+     */
+    private String md5;
+
+
+    /**
+     * 文件字节大小, 若为-1则表示是个目录
+     */
+    private Long size;
+
+    /**
+     * 挂载id
+     */
+    private Long mountId;
+
+    /**
+     * 文件记录类型
+     *
+     * @see FileInfo#TYPE_DIR
+     * @see FileInfo#TYPE_FILE
+     */
+    @Transient
+    private Integer type;
+
+    /**
+     * 是否为外部挂载的文件系统文件
+     */
+    @Transient
+    private boolean isMount;
+
+    /**
+     * 上级目录节点的名称
+     */
+    @Transient
     private String parent;
+
+
+    @JsonIgnore
+    @Transient
+    private transient InputStreamSource streamSource;
 
     /**
      * 相对用户网盘中，文件所在的目录路径，或在存储系统中的完整路径
@@ -34,30 +102,6 @@ public class FileInfo extends AuditModel {
     @JsonIgnore
     @Transient
     private String path;
-    private String node;
-    private Long lastModified;
-    private Date createdAt;
-    private Date updatedAt;
-
-    private String name;
-    private String md5;
-    private Integer type;
-    private Long size;
-
-    /**
-     * 是否为外部挂载的文件系统文件
-     */
-    private boolean isMount;
-
-    /**
-     * 挂载id
-     */
-    private Long mountId;
-
-
-    @JsonIgnore
-    @Transient
-    private InputStreamSource streamSource;
 
     @JsonIgnore
     public boolean isFile() {
@@ -88,9 +132,9 @@ public class FileInfo extends AuditModel {
         Date now = new Date();
         fileInfo.setName(resource.getFilename());
         fileInfo.setUid(uid);
-        fileInfo.setCreatedAt(now);
+        fileInfo.setCreateAt(now);
         fileInfo.setSize(type == FileInfo.TYPE_DIR ? -1 : resource.contentLength());
-        fileInfo.setLastModified(now.getTime());
+        fileInfo.setMtime(now.getTime());
         fileInfo.setType(type);
         fileInfo.setStreamSource(resource);
         return fileInfo;
@@ -131,14 +175,15 @@ public class FileInfo extends AuditModel {
 
     public FileInfo(File file) {
         this(file.getName(), file.isDirectory() ? -1 : file.length(), file.isDirectory() ? TYPE_DIR : TYPE_FILE, file.getPath(), file.lastModified(), new PathResource(file.getPath()));
+        setMtime(file.lastModified());
     }
 
-    public FileInfo(String name, long size, int type, String path, long lastModified, InputStreamSource streamSource) {
+    public FileInfo(String name, long size, int type, String path, long mtime, InputStreamSource streamSource) {
         this.name = name;
         this.size = size;
         this.type = type;
         this.path = path;
-        this.lastModified = lastModified;
+        this.mtime = mtime;
         this.streamSource = streamSource;
         if (type == TYPE_DIR) {
             this.size = -1L;
@@ -155,5 +200,37 @@ public class FileInfo extends AuditModel {
                 md5 = DigestUtils.md5DigestAsHex(is);
             }
         }
+    }
+
+    /**
+     * 从一个现有的文件信息中创建副本
+     * @param fileInfo          源对象
+     * @param withAuditField    是否复制数据审核字段
+     * @return                  新对象
+     */
+    public static FileInfo createFrom(FileInfo fileInfo, boolean withAuditField) {
+        FileInfo newObj = new FileInfo();
+        BeanUtils.copyProperties(fileInfo, newObj);
+        if (!withAuditField) {
+            newObj.setUpdateAt(null);
+            newObj.setCreateAt(null);
+            newObj.setUid(null);
+            newObj.setId(null);
+        }
+        newObj.setMountId(null);
+        return newObj;
+    }
+
+    /**
+     * 将文件的本身固有属性复制到当前文件对象中
+     * @param fileInfo  待复制文件
+     * @return          复制属性后的自己（用于链式调用）
+     */
+    public FileInfo copyFrom(FileInfo fileInfo) {
+        this.setMd5(fileInfo.getMd5());
+        this.setSize(fileInfo.getSize());
+        this.setCtime(fileInfo.getCtime());
+        this.setMtime(fileInfo.getMtime());
+        return this;
     }
 }

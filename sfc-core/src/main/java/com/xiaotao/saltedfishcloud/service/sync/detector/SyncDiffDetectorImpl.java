@@ -134,7 +134,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
                 final FileInfo recordInfo = recordFiles.get(k);
                 if (recordInfo == null) {
                     newFiles.add(v);
-                } else if (recordInfo.getSize() != v.getSize()) {
+                } else if (!Objects.equals(recordInfo.getSize(), v.getSize())) {
                     changeFiles.add(new FileChangeInfo(recordInfo, v));
                 } else if (precise) {
 

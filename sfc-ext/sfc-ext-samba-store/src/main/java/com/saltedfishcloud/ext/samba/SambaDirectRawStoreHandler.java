@@ -151,10 +151,10 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
             fileInfo.setType(FileInfo.TYPE_FILE);
         }
 
-        fileInfo.setLastModified(info.getLastWriteTime().toDate().getTime());
+        fileInfo.setMtime(info.getLastWriteTime().toDate().getTime());
         fileInfo.setName(info.getFileName());
-        fileInfo.setCreatedAt(info.getCreationTime().toDate());
-        fileInfo.setUpdatedAt(info.getLastWriteTime().toDate());
+        fileInfo.setCreateAt(info.getCreationTime().toDate());
+        fileInfo.setUpdateAt(info.getLastWriteTime().toDate());
         return fileInfo;
     }
 
@@ -162,12 +162,12 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
         FileInfo fileInfo = new FileInfo();
         FileBasicInformation baseInfo = info.getBasicInformation();
         boolean isDir = baseInfo.getFileAttributes() == FileAttributes.FILE_ATTRIBUTE_DIRECTORY.getValue();
-        fileInfo.setLastModified(baseInfo.getLastWriteTime().toDate().getTime());
+        fileInfo.setMtime(baseInfo.getLastWriteTime().toDate().getTime());
         fileInfo.setName(info.getNameInformation());
         fileInfo.setSize(isDir ? -1 : info.getStandardInformation().getEndOfFile());
         fileInfo.setType(isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
-        fileInfo.setCreatedAt(baseInfo.getCreationTime().toDate());
-        fileInfo.setUpdatedAt(baseInfo.getLastWriteTime().toDate());
+        fileInfo.setCreateAt(baseInfo.getCreationTime().toDate());
+        fileInfo.setUpdateAt(baseInfo.getLastWriteTime().toDate());
         return fileInfo;
     }
 

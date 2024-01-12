@@ -43,6 +43,9 @@ public class TypeUtils {
      * @return      数字类型为true，否则为false
      */
     public static boolean isNumber(Class<?> type) {
+        if (type == null) {
+            return false;
+        }
         return Number.class.isAssignableFrom(type) ||
                 Integer.TYPE.isAssignableFrom(type) ||
                 Long.TYPE.isAssignableFrom(type) ||
@@ -63,6 +66,9 @@ public class TypeUtils {
      */
     @SuppressWarnings("unchecked")
     public static <T> T toNumber(Class<T> target, Object input) {
+        if (input == null) {
+            return null;
+        }
         // 相同类型直接返回
         if (target.isAssignableFrom(input.getClass())) {
             return (T)input;
@@ -169,6 +175,9 @@ public class TypeUtils {
      */
     @SuppressWarnings("unchecked")
     public static <T> T convert(Class<T> targetType, Object input) {
+        if (input == null) {
+            return null;
+        }
         if (targetType.isAssignableFrom(input.getClass())) {
             return (T)input;
         }
