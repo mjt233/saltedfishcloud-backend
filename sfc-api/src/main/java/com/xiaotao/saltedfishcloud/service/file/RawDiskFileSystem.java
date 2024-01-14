@@ -4,11 +4,13 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
+import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,9 +19,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 原始的文件系统，根据DirectRawStoreHandler和basePath对存储操作器进行操作封装，暴露为对网盘文件系统的操作。
@@ -53,6 +55,22 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
         this.storeHandler = storeHandler;
         camHandler = CopyAndMoveHandler.createByStoreHandler(storeHandler);
         this.basePath = basePath;
+    }
+
+    @Override
+    public List<FileInfo> getUserFileList(long uid, String path, @Nullable Collection<String> nameList) throws IOException {
+        if (CollectionUtils.isEmpty(nameList)) {
+            List<FileInfo>[] userFileList = getUserFileList(uid, path);
+            if (userFileList == null) {
+                return null;
+            } else {
+                return Stream.concat(
+                        userFileList[0].stream(),
+                        userFileList[1].stream()
+                ).collect(Collectors.toList());
+            }
+        }
+        return storeHandler.listFiles(StringUtils.appendPath(basePath, path));
     }
 
     @Override

@@ -8,14 +8,20 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-
+@Slf4j
 public class DiskFileSystemArchiveHelper {
+    private final static String LOG_TITLE = "Archive";
+
     /**
      * 从文件系统上读取文件进行压缩打包，并将压缩结果直接输出到指定的输出流中而不受参数影响
      * @param diskFileSystem    网盘文件系统
@@ -53,7 +59,11 @@ public class DiskFileSystemArchiveHelper {
         String curDir = param.getSourcePath().replaceAll("//+", "").replaceAll("^/+", "");
         long uid = param.getSourceUid();
         String root = param.getSourcePath().replaceAll("//+", "");
-
+        Map<String, FileInfo> fileInfoMap = fileSystem.getUserFileList(uid, param.getSourcePath(), param.getSourceNames()).stream()
+                .collect(Collectors.toMap(
+                        FileInfo::getName,
+                        Function.identity()
+                ));
         for (String name : param.getSourceNames()) {
             if (Thread.interrupted()) {
                 throw new IllegalStateException("压缩中断");
@@ -68,11 +78,19 @@ public class DiskFileSystemArchiveHelper {
                 } else {
                     archiveFilename = StringUtils.removePrefix(root, curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name));
                 }
-                compressor.addFile(new ArchiveResourceEntry(
+                ArchiveResourceEntry entry = new ArchiveResourceEntry(
                         archiveFilename,
                         resource.contentLength(),
                         resource
-                ));
+                );
+                FileInfo fileInfo = fileInfoMap.get(name);
+                if (fileInfo != null) {
+                    entry.setMtime(fileInfo.getMtime());
+                    entry.setCtime(fileInfo.getCtime());
+                } else {
+                    throw new IllegalArgumentException("在" + param.getSourcePath() + "下缺失文件" + name + "的信息");
+                }
+                compressor.addFile(entry);
             }
         }
     }
@@ -96,14 +114,19 @@ public class DiskFileSystemArchiveHelper {
         ));
         for (FileInfo file : list[1]) {
             checkInterrupt();
-            compressor.addFile(new ArchiveResourceEntry(
-                    curPath + "/" + file.getName(), file.getSize(), fileSystem.getResource(uid, path, file.getName()))
-            );
+            ArchiveResourceEntry entry = new ArchiveResourceEntry(
+                    curPath + "/" + file.getName(), file.getSize(), fileSystem.getResource(uid, path, file.getName()));
+            entry.setMtime(file.getMtime());
+            entry.setCtime(file.getCtime());
+            compressor.addFile(entry);
         }
 
         for (FileInfo file : list[0]) {
             checkInterrupt();
-            compressor.addFile(new ArchiveResourceEntry(curPath + "/" + file.getName() + "/", 0, null));
+            ArchiveResourceEntry entry = new ArchiveResourceEntry(curPath + "/" + file.getName() + "/", 0, null);
+            entry.setMtime(file.getMtime());
+            entry.setCtime(file.getCtime());
+            compressor.addFile(entry);
             compressDir(uid, root, path + "/" + file.getName(), compressor, fileSystem,depth + 1);
         }
     }

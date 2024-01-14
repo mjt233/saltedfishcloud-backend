@@ -15,6 +15,7 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -101,6 +102,12 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             throw new IllegalArgumentException("已经设置了主文件系统:" + mainFileSystem.getClass());
         }
         this.mainFileSystem = mainFileSystem;
+    }
+
+    @Override
+    public List<FileInfo> getUserFileList(long uid, String path, @Nullable Collection<String> nameList) throws IOException {
+        FileSystemMatchResult fileSystemMatchResult = matchFileSystem(uid, path);
+        return fileSystemMatchResult.fileSystem.getUserFileList(uid, fileSystemMatchResult.resolvedPath, nameList);
     }
 
     @Override

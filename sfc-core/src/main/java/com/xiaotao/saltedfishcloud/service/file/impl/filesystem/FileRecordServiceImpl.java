@@ -11,6 +11,7 @@ import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.node.cache.NodeCacheService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,6 +57,7 @@ public class FileRecordServiceImpl implements FileRecordService {
         return fileInfoRepo.findFileInfo(uid, name, nodeId);
     }
 
+
     @Override
     public boolean exist(long uid, String path, String name) {
         try {
@@ -73,6 +75,15 @@ public class FileRecordServiceImpl implements FileRecordService {
     public List<FileInfo> getFileInfoByMd5(String md5, int limit) {
         Page<FileInfo> page = fileInfoRepo.findByMd5(md5, PageRequest.of(0, limit));
         return page.getContent();
+    }
+
+    @Override
+    public List<FileInfo> findByUidAndNodeId(Long uid, String nodeId,@Nullable Collection<String> nameList) {
+        if (nameList == null || nameList.isEmpty()) {
+            return fileInfoRepo.findFileInfoByNames(uid, nameList, nodeId);
+        } else {
+            return findByUidAndNodeId(uid, nodeId);
+        }
     }
 
     @Override

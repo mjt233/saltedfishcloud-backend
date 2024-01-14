@@ -1,6 +1,8 @@
 package com.sfc.archive.model;
 
 import com.sfc.archive.utils.ArchiveUtils;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
 /**
@@ -8,6 +10,21 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
  */
 public abstract class ArchiveFile {
     private String name;
+
+    /**
+     * 文件创建日期
+     */
+    @Setter
+    @Getter
+    private Long ctime;
+
+    /**
+     * 文件修改日期
+     */
+    @Setter
+    @Getter
+    private Long mtime;
+
     /**
      * 获取文件名（而不是完整路径+文件名）
      */
@@ -31,7 +48,7 @@ public abstract class ArchiveFile {
     public abstract long getSize();
 
     /**
-     * 获取文件在压缩文件中的完整路径+文件名
+     * 获取文件在压缩文件中的完整路径+文件名 <br>
      * todo 识别编码不一致导致的文件名乱码还原
      */
     public abstract String getPath();

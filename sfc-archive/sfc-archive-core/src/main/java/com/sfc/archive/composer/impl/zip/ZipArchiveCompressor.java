@@ -10,6 +10,8 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 
 import java.io.OutputStream;
+import java.nio.file.attribute.FileTime;
+import java.util.Objects;
 
 /**
  * Zip压缩器
@@ -34,7 +36,10 @@ public class ZipArchiveCompressor extends AbstractCompressor {
         if (!ze.isDirectory()) {
             ze.setSize(file.getSize());
         }
-        ze.setTime(System.currentTimeMillis());
+        long mtime = Objects.requireNonNullElseGet(file.getMtime(), System::currentTimeMillis);
+        long ctime = Objects.requireNonNullElseGet(file.getCtime(), System::currentTimeMillis);
+        ze.setLastModifiedTime(FileTime.fromMillis(mtime));
+        ze.setCreationTime(FileTime.fromMillis(ctime));
         return ze;
     }
 }

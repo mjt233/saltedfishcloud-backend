@@ -18,6 +18,7 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.InitializingBean;
@@ -236,6 +237,12 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     public List<FileInfo>[] getUserFileList(long uid, String path) throws IOException {
         String nodeId = nodeService.getNodeIdByPath(uid, path);
         return getUserFileListByNodeId(uid, nodeId);
+    }
+
+    @Override
+    public List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException {
+        String nodeId = nodeService.getNodeIdByPath(uid, path);
+        return fileRecordService.findByUidAndNodeId(uid, nodeId, nameList);
     }
 
     @Override

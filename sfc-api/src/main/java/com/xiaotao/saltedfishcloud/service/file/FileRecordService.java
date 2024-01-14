@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,6 +87,15 @@ public interface FileRecordService {
      * @return          文件列表
      */
     List<FileInfo> findByUidAndNodeId(Long uid, String nodeId);
+
+    /**
+     * 按用户id、节点id和文件列表列出文件列表
+     * @param uid       用户id
+     * @param nodeId    节点id
+     * @param nameList  限定的文件名列表，可为null表示不限制
+     * @return          文件列表
+     */
+    List<FileInfo> findByUidAndNodeId(Long uid, String nodeId,@Nullable Collection<String> nameList);
 
     /**
      * 批量删除某个目录下的文件或文件夹，文件夹的所有子文件夹和文件也会被一同删除

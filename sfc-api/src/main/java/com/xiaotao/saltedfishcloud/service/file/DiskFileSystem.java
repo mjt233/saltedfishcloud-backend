@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -118,15 +120,26 @@ public interface DiskFileSystem {
     void move(long uid, String source, String target, String name, boolean overwrite) throws IOException;
 
     /**
-     * 获取某个用户网盘目录下的所有文件信息
-     * 若路径不存在则抛出异常
-     * 若路径指向一个文件则返回null
-     * 若路径指向一个目录则返回一个集合，数组下标0为目录，1为文件
+     * 获取某个用户网盘目录下的所有文件信息<br>
+     * 若路径不存在则抛出异常 <br>
+     * 若路径指向一个文件则返回null<br>
+     * 若路径指向一个目录则返回一个集合，数组下标0为目录，1为文件<br>
      * @param uid   用户ID
      * @param path  网盘路径
      * @return      一个List数组，数组下标0为目录，1为文件，或null
      */
     List<FileInfo>[] getUserFileList(long uid, String path) throws IOException;
+
+    /**
+     * 获取某个用户网盘目录下的文件信息<br>
+     * 若路径不存在则抛出异常 <br>
+     * 若路径指向一个文件则返回null<br>
+     * 若路径指向一个目录则返回一个集合，数组下标0为目录，1为文件<br>
+     * @param uid   用户ID
+     * @param path  网盘路径
+     * @param nameList 路径下要筛选的文件列表，可为空或null表示不限制
+     */
+    List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException;
 
     /**
      * 获取用户所有文件信息<br>
