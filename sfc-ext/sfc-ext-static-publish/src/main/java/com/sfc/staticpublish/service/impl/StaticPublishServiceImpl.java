@@ -85,6 +85,7 @@ public class StaticPublishServiceImpl implements StaticPublishService, Applicati
         log.info("{}启动内嵌Tomcat服务器中...", LOG_PREFIX);
 
         Tomcat tomcat = new Tomcat();
+        tomcat.setAddDefaultWebXmlToWebapp(false);
         tomcat.setPort(Optional.ofNullable(property.getServerPort()).orElse(9999));
 
         Path tomcatTmpPath = Path.of(".").toAbsolutePath();
