@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 /**
  * 配置服务实现类
  * TODO 监听机制实现线程安全
- * TODO 支持集群更新
  */
 @Service
 @Slf4j
@@ -45,8 +44,6 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     private ConfigDao configDao;
     @Resource
     private StoreTypeSwitch storeTypeSwitch;
-    @Resource
-    private SysProperties sysProperties;
     @Resource
     private DatabaseInitializer databaseInitializer;
 
@@ -60,12 +57,6 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
      * 是否为开发环境
      */
     private Boolean isInDevelop = null;
-
-    /**
-     * 当配置key被修改后，抑制事件广播的key以确保某些操作只由单个节点执行。
-     *
-     */
-    private final static List<String> suppressBroadcastKeys = List.of(SysConfigName.Store.SYS_STORE_TYPE);
 
     private final ArrayList<Consumer<Pair<String, String>>> listeners = new ArrayList<>();
     private final Map<String, List<Consumer<String>>> configBeforeSetListeners = new ConcurrentHashMap<>();
