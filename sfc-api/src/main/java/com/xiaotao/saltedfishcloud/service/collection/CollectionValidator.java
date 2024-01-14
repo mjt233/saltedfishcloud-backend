@@ -52,13 +52,13 @@ public class CollectionValidator {
      */
     public static boolean validateSubmit(CollectionInfo info, SubmitFile submitFile) {
         // 校验非法文件名
-        String n = submitFile.getFilename();
+        String n = submitFile.getFileParam().getName();
         if (!FileNameValidator.valid(n)) {
             throw new CollectionCheckedException("非法文件名");
         }
 
         // 校验文件大小
-        if (info.getMaxSize() > -1 && info.getMaxSize() < submitFile.getSize()) {
+        if (info.getMaxSize() > -1 && info.getMaxSize() < submitFile.getFileParam().getSize()) {
             throw new CollectionCheckedException("文件大于" + info.getMaxSize() + "字节");
         }
 
@@ -77,7 +77,7 @@ public class CollectionValidator {
      */
     private static boolean validatePattern(CollectionInfo info, SubmitFile submitFile) {
         String pattern = info.getPattern();
-        if (com.xiaotao.saltedfishcloud.utils.StringUtils.matchRegex(pattern, submitFile.getFilename())) {
+        if (com.xiaotao.saltedfishcloud.utils.StringUtils.matchRegex(pattern, submitFile.getFileParam().getName())) {
             return true;
         } else {
             throw new CollectionCheckedException("文件名不符合正则约束：" + info.getPattern());
@@ -89,7 +89,7 @@ public class CollectionValidator {
      */
     private static boolean validateField(CollectionInfo info, SubmitFile submitFile) {
         try {
-            String name = submitFile.getFilename();
+            String name = submitFile.getFileParam().getName();
 
             // 校验拓展名
             String ext = FileUtils.getSuffix(name);

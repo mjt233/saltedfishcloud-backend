@@ -15,7 +15,7 @@ public interface NodeDao {
      * @return      用户节点列表
      */
     @Select("SELECT name, id, parent, uid, mount_id FROM node_list WHERE uid = #{uid}")
-    List<NodeInfo> getAllNode(@Param("uid") Integer uid);
+    List<NodeInfo> getAllNode(@Param("uid") Long uid);
 
     /**
      * 将节点移动到另一个节点下
@@ -25,7 +25,7 @@ public interface NodeDao {
      * @return  受影响行数
      */
     @Update("UPDATE node_list SET parent=#{pid} WHERE id=#{nid} AND uid=#{uid}")
-    int move(@Param("uid") Integer uid, @Param("nid") String nodeId, @Param("pid") String parentId);
+    int move(@Param("uid") Long uid, @Param("nid") String nodeId, @Param("pid") String parentId);
 
     /**
      * 通过节点ID获取节点详细信息
@@ -34,7 +34,7 @@ public interface NodeDao {
      * @return  节点信息或null
      */
     @Select("SELECT name,id,parent,uid FROM node_list WHERE id=#{nodeId} AND uid=#{uid}")
-    NodeInfo getNodeById(@Param("uid") Integer uid,
+    NodeInfo getNodeById(@Param("uid") Long uid,
                          @Param("nodeId") String nodeId);
 
     /**
@@ -46,13 +46,10 @@ public interface NodeDao {
      * @return  插入的行数
      */
     @Insert("INSERT IGNORE INTO node_list (name, id, parent, uid) VALUES (#{name}, #{id}, #{parent}, #{uid})")
-    int addNode(@Param("uid") Integer uid,
+    int addNode(@Param("uid") Long uid,
                 @Param("name") String name,
                 @Param("id") String id,
                 @Param("parent") String parent);
-
-    @Insert("INSERT INTO node_list (name, id, parent, uid, mount_id) VALUES (#{mountPoint.})")
-    int addMountPointNode(@Param("mountPoint")MountPoint mountPoint);
 
     /**
      * 取某个用户目录下多个节点的所有直接子节点
@@ -70,7 +67,7 @@ public interface NodeDao {
             " AND uid = #{uid}",
             "</script>"
     })
-    List<NodeInfo> getChildNodes(@Param("uid") Integer uid, @Param("nid") Collection<String> nid );
+    List<NodeInfo> getChildNodes(@Param("uid") Long uid, @Param("nid") Collection<String> nid );
 
     /**
      * 通过父节点ID获取某个目录节点信息
@@ -80,7 +77,7 @@ public interface NodeDao {
      * @return  节点信息
      */
     @Select("SELECT name, id, parent, uid, parent, mount_id FROM node_list WHERE parent = #{pid} AND name = #{name} AND  uid = #{uid}")
-    NodeInfo getNodeByParentId(@Param("uid") Integer uid, @Param("pid") String pid, @Param("name") String name);
+    NodeInfo getNodeByParentId(@Param("uid") Long uid, @Param("pid") String pid, @Param("name") String name);
 
     @Delete({
             "<script>",
@@ -91,7 +88,7 @@ public interface NodeDao {
             " AND uid = #{uid}",
             "</script>"
     })
-    int deleteNodes(@Param("uid") Integer uid, @Param("nodes") Collection<String> nodes);
+    int deleteNodes(@Param("uid") Long uid, @Param("nodes") Collection<String> nodes);
 
     /**
      * 修改节点的父节点
@@ -101,7 +98,7 @@ public interface NodeDao {
      * @return 影响的行数
      */
     @Update("UPDATE node_list SET parent=#{parent} WHERE id=#{nid} AND uid=#{uid}")
-    int changeParent(@Param("uid") Integer uid, @Param("nid") String nid, @Param("parent") String parent);
+    int changeParent(@Param("uid") Long uid, @Param("nid") String nid, @Param("parent") String parent);
 
     /**
      * 修改节点的名称
@@ -111,7 +108,7 @@ public interface NodeDao {
      * @return 影响的行数
      */
     @Update("UPDATE node_list SET name=#{name} WHERE id=#{nid} AND uid=#{uid}")
-    int changeName(@Param("uid") Integer uid, @Param("nid") String nid, @Param("name") String name);
+    int changeName(@Param("uid") Long uid, @Param("nid") String nid, @Param("name") String name);
 
     /**
      * 修改节点的父节点和名称
@@ -122,5 +119,5 @@ public interface NodeDao {
      * @return 影响的行数
      */
     @Update("UPDATE node_list SET name=#{name}, parent=#{parent} WHERE id=#{nid} AND uid=#{uid}")
-    int changNode(@Param("uid") Integer uid, @Param("nid") String nid,@Param("parent") String parent, @Param("name") String name);
+    int changNode(@Param("uid") Long uid, @Param("nid") String nid,@Param("parent") String parent, @Param("name") String name);
 }

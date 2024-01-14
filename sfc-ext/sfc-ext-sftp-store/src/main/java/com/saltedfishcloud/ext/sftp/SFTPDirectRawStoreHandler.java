@@ -134,12 +134,9 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
 
     private FileInfo remoteResourceInfoToFileInfo(RemoteResourceInfo info) {
         FileAttributes attributes = info.getAttributes();
-        Date mtime = new Date(attributes.getMtime());
         FileInfo fileInfo = new FileInfo();
-        fileInfo.setCreatedAt(mtime);
+        fileInfo.setMtime(attributes.getMtime());
         fileInfo.setMount(false);
-        fileInfo.setLastModified(mtime.getTime());
-        fileInfo.setUpdatedAt(mtime);
         fileInfo.setName(info.getName());
         fileInfo.setType(info.isDirectory() ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
         fileInfo.setSize(info.isDirectory() ? -1 : attributes.getSize());
@@ -152,10 +149,7 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
         fileInfo.setSize(isDir ? -1 : attributes.getSize());
         fileInfo.setType(isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
 
-        Date mtime = new Date(attributes.getMtime());
-        fileInfo.setUpdatedAt(mtime);
-        fileInfo.setCreatedAt(mtime);
-        fileInfo.setLastModified(mtime.getTime());
+        fileInfo.setMtime(attributes.getMtime());
         return fileInfo;
     }
 

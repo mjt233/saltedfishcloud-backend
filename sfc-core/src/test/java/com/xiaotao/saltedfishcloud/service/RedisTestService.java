@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 public class RedisTestService {
 
     @Cacheable(value = "user", key = "#uid")
-    public User getUser(int uid) {
+    public User getUser(long uid) {
         User user = new User();
         user.setId(uid);
         user.setPwd(uid + "");

@@ -64,7 +64,7 @@ public class StoreTypeSwitch {
                 storeServiceFactory.getService().getRawStoreService();
 
         for (User user : users) {
-            int uid = user.getId();
+            long uid = user.getId();
             log.debug("[Store Switch]处理用户：{}", user.getUsername());
             LinkedHashMap<String, List<FileInfo>> allFile = fileService.getMainFileSystem().collectFiles(user.getId(), false);
 

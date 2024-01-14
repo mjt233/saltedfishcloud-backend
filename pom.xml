@@ -24,7 +24,7 @@
     <artifactId>saltedfishcloud</artifactId>
 
     <!--  主版本号   -->
-    <version>2.6.8</version>
+    <version>2.7.0</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
@@ -33,7 +33,7 @@
 <!--        <sfc.front-end-path>C:\Users\xiaotao\code\saltedfishcloud-frontend</sfc.front-end-path>-->
         <java.version>11</java.version>
         <!--   系统核心api模块版本     -->
-        <api.version>2.6.8</api.version>
+        <api.version>2.7.0</api.version>
         <task.version>1.0.0</task.version>
         <rpc.version>1.0.0</rpc.version>
         <oshi.version>6.4.0</oshi.version>

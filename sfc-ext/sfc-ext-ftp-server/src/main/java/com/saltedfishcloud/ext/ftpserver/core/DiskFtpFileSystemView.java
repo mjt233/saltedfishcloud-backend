@@ -62,7 +62,7 @@ public class DiskFtpFileSystemView implements FileSystemView {
 
             // cd到具体目录
             DiskFileSystem fileSystem = fileSystemProvider.getMainFileSystem();
-            int uid = ftpPathInfo.isPublicArea() ? User.getPublicUser().getId() : user.getId();
+            long uid = ftpPathInfo.isPublicArea() ? User.getPublicUser().getId() : user.getId();
             if (!fileSystem.exist(uid, ftpPathInfo.getResourcePath()) ||
                 fileSystem.getResource(uid, ftpPathInfo.getResourceParent(), ftpPathInfo.getName()) != null) {
                 throw new IllegalArgumentException("路径不存在，切换到：" + originalPath);

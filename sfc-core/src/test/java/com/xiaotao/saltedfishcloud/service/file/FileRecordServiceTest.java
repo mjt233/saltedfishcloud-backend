@@ -18,7 +18,7 @@ class FileRecordServiceTest {
     private UserDao userDao;
     @Test
     void copy() throws NoSuchFileException {
-        int uid = userDao.getUserByUser("xiaotao").getId();
+        long uid = userDao.getUserByUser("xiaotao").getId();
         try {
             fileRecordService.copy(uid, "/", "/", uid, "f1", "234", true);
         } catch (UnsupportedOperationException ignore) {}

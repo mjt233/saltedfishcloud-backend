@@ -41,6 +41,9 @@ public class CollectController {
     private final CollectionService collectionService;
     private final Sort SORT_BY_EXPIRED_AT_DESC = Sort.by("expiredAt").descending();
 
+    /**
+     * 获取文件收集记录
+     */
     @GetMapping("/record/{cid}")
     public JsonResult<CommonPageInfo<CollectionRecord>> getRecords(@PathVariable("cid") Long cid,
                                                                                    @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
@@ -54,6 +57,9 @@ public class CollectController {
         return PageUtils.getInstanceWithPage(collectionService.getSubmits(cid, page - 1, size));
     }
 
+    /**
+     * 删除收集任务
+     */
     @DeleteMapping("{cid}")
     public JsonResult<Object> delete(@PathVariable("cid") Long cid) {
         User user = SecureUtils.getSpringSecurityUser();
@@ -62,6 +68,9 @@ public class CollectController {
         return JsonResult.emptySuccess();
     }
 
+    /**
+     * 修改收集任务状态
+     */
     @PutMapping("{cid}/state/{state}")
     public JsonResult<CollectionInfo> setState(@PathVariable("cid") Long cid,
                                @PathVariable("state") CollectionInfo.State state) {
@@ -70,6 +79,9 @@ public class CollectController {
         return JsonResultImpl.getInstance(collectionService.setState(user.getId(), cid, state));
     }
 
+    /**
+     * 创建收集任务
+     */
     @PostMapping
     public JsonResult<CollectionInfoId> createCollection(@Valid @RequestBody CollectionDTO data) {
         User u = SecureUtils.getSpringSecurityUser();
@@ -78,6 +90,13 @@ public class CollectController {
         return JsonResultImpl.getInstance(collectionService.createCollection(u.getId(), data));
     }
 
+    /**
+     * 提交收集文件
+     * @param cid           收集id
+     * @param verification  收集任务的验证码（verification字段）
+     * @param file          接受的文件
+     * @param submitFile    提交的文件信息
+     */
     @PostMapping("{cid}/{verification}")
     @BreakPoint
     @AllowAnonymous
@@ -87,16 +106,21 @@ public class CollectController {
                                        @RequestPart("submitInfo") @Valid SubmitFile submitFile,
                                        HttpServletRequest request) throws IOException {
         User u = SecureUtils.getSpringSecurityUser();
-        int uid = u == null ? 0 : u.getId();
-        if (submitFile.getSize() == null) {
-            submitFile.setSize(file.getSize());
+        long providerUid = u == null ? 0 : u.getId();
+        if (submitFile.getFileParam().getSize() == null) {
+            submitFile.getFileParam().setSize(file.getSize());
+        }
+        FileInfo newFile = new FileInfo(file)
+                .setMd5(submitFile.getFileParam().getMd5())
+                .setMtime(submitFile.getFileParam().getMtime());
+        if (newFile.getMtime() == null) {
+            newFile.setMtime(file.getResource().lastModified());
         }
         String ip = request.getRemoteAddr();
         collectionService.collectFile(
                 new CollectionInfoId(cid, verification),
-                uid,
-                file.getInputStream(),
-                new FileInfo(file),
+                providerUid,
+                newFile,
                 submitFile,
                 ip
         );

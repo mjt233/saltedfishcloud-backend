@@ -21,7 +21,7 @@ class StoreServiceTest {
 
     @Test
     void copy() throws IOException {
-        int uid = userDao.getUserByUser("xiaotao").getId();
+        long uid = userDao.getUserByUser("xiaotao").getId();
         storeService.getService().copy(uid, "/f1", "/", uid, "233", "f2", true);
     }
 }

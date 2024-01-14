@@ -33,7 +33,7 @@ public class FtpUploadHandler extends DefaultFtplet {
     public FtpletResult onUploadStart(FtpSession session, FtpRequest request) throws FtpException {
         FtpPathInfo pathInfo = new FtpPathInfo(session.getFileSystemView().getWorkingDirectory().getAbsolutePath() + "/" + request.getArgument());
         User user = session.getUser();
-        int uid = 0;
+        long uid = 0;
         if (!pathInfo.isPublicArea()) {
             if (user instanceof DiskFtpUser) {
                 uid = ((DiskFtpUser) user).getId();
@@ -55,7 +55,7 @@ public class FtpUploadHandler extends DefaultFtplet {
         log.debug("upload end");
 
         FtpPathInfo pathInfo = (FtpPathInfo) session.getAttribute("pathInfo");
-        int uid = (int) session.getAttribute("uid");
+        long uid = (int) session.getAttribute("uid");
         String tmpDir = System.getProperty("java.io.tmpdir");
         String tag = uid + SecureUtils.getMd5(pathInfo.getFullPath());
 

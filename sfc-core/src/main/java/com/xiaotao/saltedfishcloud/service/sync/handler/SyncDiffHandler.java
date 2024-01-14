@@ -16,7 +16,7 @@ public interface SyncDiffHandler {
      * @param uid       用户ID
      * @param paths     目录的完整网盘路径
      */
-    void handleDirAdd(int uid, Collection<String> paths) throws IOException, SQLException;
+    void handleDirAdd(long uid, Collection<String> paths) throws IOException, SQLException;
 
 
     /**
@@ -24,21 +24,21 @@ public interface SyncDiffHandler {
      * @param uid       用户ID
      * @param paths     目录的完整网盘路径集合，且该集合是<strong>按路径节点长度降序排序的有序集合</strong>
      */
-    void handleDirDel(int uid, Collection<String> paths) throws IOException, SQLException;
+    void handleDirDel(long uid, Collection<String> paths) throws IOException, SQLException;
 
     /**
      * 处理未通过咸鱼云网盘系统在用户目录创建的文件
      * @param uid       用户ID
      * @param files     新增的文件信息
      */
-    void handleFileAdd(int uid, Collection<FileInfo> files) throws IOException, SQLException;
+    void handleFileAdd(long uid, Collection<FileInfo> files) throws IOException, SQLException;
 
     /**
      * 处理未通过咸鱼云网盘系统在用户目录删除的文件
      * @param uid       用户ID
      * @param files     被删除的文件信息
      */
-    void handleFileDel(int uid, Collection<FileInfo> files) throws IOException, SQLException;
+    void handleFileDel(long uid, Collection<FileInfo> files) throws IOException, SQLException;
 
     /**
      * 操作用户网盘中，数据库中的文件信息与本地文件信息不一致的文件<br>
@@ -46,5 +46,5 @@ public interface SyncDiffHandler {
      * @param uid       用户ID
      * @param files     文件修改更改集合
      */
-    void handleFileChange(int uid, Collection<FileChangeInfo> files) throws IOException, SQLException;
+    void handleFileChange(long uid, Collection<FileChangeInfo> files) throws IOException, SQLException;
 }

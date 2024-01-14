@@ -19,7 +19,7 @@ public class FileServiceTest {
     public void move() {
         try {
             DiskFileSystem fileService = this.fileService.getMainFileSystem();
-            int uid = userDao.getUserByUser("xiaotao").getId();
+            long uid = userDao.getUserByUser("xiaotao").getId();
             fileService.mkdir(uid, "/", "test");
             fileService.mkdir(uid, "/", "test2");
             fileService.move(uid, "/", "/test", "test2", true);
@@ -31,7 +31,7 @@ public class FileServiceTest {
 
     @Test
     public void copy() {
-        int uid = userDao.getUserByUser("xiaotao").getId();
+        long uid = userDao.getUserByUser("xiaotao").getId();
         try {
             fileService.getMainFileSystem().copy(uid, "/", "/", uid, "f1", "f2", true);
         } catch (IOException e) {

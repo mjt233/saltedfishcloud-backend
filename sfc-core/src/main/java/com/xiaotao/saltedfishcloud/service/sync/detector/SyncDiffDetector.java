@@ -15,5 +15,5 @@ public interface SyncDiffDetector {
      * @param uid   被检测的用户id
      * @return      检测结果集合信息类
      */
-    SyncDiffDetectResult detect(int uid, boolean precise) throws IOException, SQLException;
+    SyncDiffDetectResult detect(long uid, boolean precise) throws IOException, SQLException;
 }

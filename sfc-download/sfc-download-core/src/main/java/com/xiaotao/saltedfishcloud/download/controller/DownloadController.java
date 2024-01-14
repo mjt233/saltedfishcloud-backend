@@ -46,7 +46,7 @@ public class DownloadController {
 
     @GetMapping
     public JsonResult getAllTask(
-            @UID @RequestParam @Validated int uid,
+            @UID @RequestParam @Validated long uid,
             @RequestParam(defaultValue = "1") @Validated @Min(1) int page,
             @RequestParam(defaultValue = "10") @Validated @Min(5) @Max(400) int size,
             @RequestParam(defaultValue = "ALL") TaskType type

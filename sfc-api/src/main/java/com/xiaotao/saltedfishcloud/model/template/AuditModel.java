@@ -18,11 +18,20 @@ import java.util.Date;
 @Getter
 @Setter
 public class AuditModel extends BaseModel {
+    /**
+     * 数据所属人
+     */
     private Long uid;
 
+    /**
+     * 数据创建日期
+     */
     @CreatedDate
     private Date createAt;
 
+    /**
+     * 数据更新日期
+     */
     @LastModifiedDate
     private Date updateAt;
 }

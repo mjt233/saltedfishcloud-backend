@@ -196,15 +196,15 @@ public class MountPointServiceImpl implements MountPointService {
         mountPointRepo.save(mountPoint);
         // 文件表保存
         String newNodeId = nodeService.addMountPointNode(mountPoint);
-        FileInfo fileInfo = new FileInfo(mountPoint.getName(), -1, FileInfo.TYPE_DIR, "", System.currentTimeMillis(), null);
-        Date now = new Date();
-        fileInfo.setUid(Math.toIntExact(mountPoint.getUid()));
+        long now = System.currentTimeMillis();
+        FileInfo fileInfo = new FileInfo(mountPoint.getName(), -1, FileInfo.TYPE_DIR, "", now, null);
+        fileInfo.setUid(mountPoint.getUid());
         fileInfo.setNode(mountPoint.getNid());
-        fileInfo.setCreatedAt(now);
-        fileInfo.setUpdatedAt(now);
         fileInfo.setMountId(mountPoint.getId());
         fileInfo.setMd5(newNodeId);
-        fileRecordService.insert(fileInfo);
+        fileInfo.setCtime(now);
+        fileInfo.setMtime(now);
+        fileRecordService.save(fileInfo);
     }
 
     @Override
@@ -216,7 +216,7 @@ public class MountPointServiceImpl implements MountPointService {
         }
         // key末尾加个/，防止出现部分前缀误匹配导致的挂载点误匹配，如：/挂载点1 与 /挂载点11，两者前缀相同，访问/挂载点11时容易出现误匹配到/挂载点1
         Map<String, MountPoint> mountPointMap = mountPointList.stream().collect(Collectors.toMap(
-                e -> StringUtils.appendPath(nodeService.getPathByNode(e.getUid().intValue(), e.getNid()), e.getName()) + "/",
+                e -> StringUtils.appendPath(nodeService.getPathByNode(e.getUid(), e.getNid()), e.getName()) + "/",
                 Function.identity(),
                 (oldVal, newVal) -> {
                     log.warn("{}存在挂载路径冲突：{} 与 {}", LOG_PREFIX, oldVal.getNid(), newVal.getNid());

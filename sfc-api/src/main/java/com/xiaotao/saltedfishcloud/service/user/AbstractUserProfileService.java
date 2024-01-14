@@ -7,12 +7,12 @@ import java.io.InputStream;
 
 public abstract class AbstractUserProfileService implements UserProfileService {
     @Override
-    public Resource getAvatar(int uid) {
+    public Resource getAvatar(long uid) {
         return null;
     }
 
     @Override
-    public void saveAvatar(int uid, InputStream inputStream) throws IOException {
+    public void saveAvatar(long uid, InputStream inputStream) throws IOException {
 
     }
 }

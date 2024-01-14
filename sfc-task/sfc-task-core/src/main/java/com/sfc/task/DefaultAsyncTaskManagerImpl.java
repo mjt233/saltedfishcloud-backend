@@ -309,7 +309,7 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
                 .cpuOverhead(originTask.getCpuOverhead())
                 .params(originTask.getParams())
                 .build();
-        newTask.setUid((long) Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getId());
+        newTask.setUid(Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getId());
         submitAsyncTask(newTask);
         return newTask;
     }

@@ -259,11 +259,11 @@ public class DispatchServlet extends HttpServlet {
      */
     private void sendFileListPage(HttpServletRequest req, HttpServletResponse resp, StaticPublishRecord record, String diskPath) throws IOException {
         DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
-        if (!fileSystem.exist(record.getUid().intValue(), diskPath)) {
+        if (!fileSystem.exist(record.getUid(), diskPath)) {
             send404Page(resp);
             return;
         }
-        List<FileInfo>[] fileList = fileSystem.getUserFileList(record.getUid().intValue(), diskPath);
+        List<FileInfo>[] fileList = fileSystem.getUserFileList(record.getUid(), diskPath);
         resp.setContentType(FileUtils.getContentType("a.html"));
 
         List<FileInfo> finalFileList = Stream.concat(
@@ -272,10 +272,10 @@ public class DispatchServlet extends HttpServlet {
         ).collect(Collectors.toList());
 
         for (FileInfo fileInfo : finalFileList) {
-            if (fileInfo.getLastModified() == null) {
-                Date fixDate = Optional.ofNullable(fileInfo.getUpdatedAt()).orElseGet(fileInfo::getCreatedAt);
+            if (fileInfo.getMtime() == null) {
+                Date fixDate = Optional.ofNullable(fileInfo.getUpdateAt()).orElseGet(fileInfo::getCreateAt);
                 if (fixDate != null) {
-                    fileInfo.setLastModified(fixDate.getTime());
+                    fileInfo.setMtime(fixDate.getTime());
                 }
             }
         }
@@ -309,11 +309,11 @@ public class DispatchServlet extends HttpServlet {
      * @param diskPath              请求的资源路径所在的网盘路径
      */
     private Resource getFileResource(HttpServletResponse resp, StaticPublishRecord record, String diskPath) throws IOException {
-        Resource resource = diskFileSystemManager.getMainFileSystem().getResource(record.getUid().intValue(), diskPath, null);
+        Resource resource = diskFileSystemManager.getMainFileSystem().getResource(record.getUid(), diskPath, null);
 
         // 文件不存在，如果开启了index.html首页，则尝试加载首页
         if (resource == null && Boolean.TRUE.equals(record.getIsEnableIndex())) {
-            resource = diskFileSystemManager.getMainFileSystem().getResource(record.getUid().intValue(), diskPath, "index.html");
+            resource = diskFileSystemManager.getMainFileSystem().getResource(record.getUid(), diskPath, "index.html");
             resp.setContentType(FileUtils.getContentType("index.html"));
         }
 

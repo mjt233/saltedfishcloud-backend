@@ -54,7 +54,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
     private AsyncTaskManager asyncTaskManager;
 
     @Override
-    public void compressAndWriteOut(int uid, String path, Collection<String> names, OutputStream outputStream) throws IOException {
+    public void compressAndWriteOut(long uid, String path, Collection<String> names, OutputStream outputStream) throws IOException {
         DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
         DiskFileSystemCompressParam param = DiskFileSystemCompressParam.builder()
                 .archiveParam(ArchiveParam.builder()
@@ -62,7 +62,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
                         .type("zip")
                         .build())
                 .sourceNames(names)
-                .sourceUid((long) uid)
+                .sourceUid(uid)
                 .sourcePath(path)
                 .build();
 
@@ -73,7 +73,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
 
 
     @Override
-    public void compress(int uid, String path, Collection<String> names, String dest) throws IOException {
+    public void compress(long uid, String path, Collection<String> names, String dest) throws IOException {
         DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
         DiskFileSystemArchiveHelper.testIsFileWritable(fileSystem, uid, dest);
         Path temp = Paths.get(PathUtils.getTempDirectory() + "/temp_zip" + System.currentTimeMillis());
@@ -102,7 +102,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
         record.setCpuOverhead(10);
         record.setParams(MapperHolder.toJson(param));
         User curUser = SecureUtils.getSpringSecurityUser();
-        record.setUid(Optional.ofNullable(curUser).map(e -> e.getId().longValue()).orElse(param.getSourceUid()));
+        record.setUid(Optional.ofNullable(curUser).map(e -> e.getId()).orElse(param.getSourceUid()));
 
         asyncTaskManager.submitAsyncTask(record);
 
@@ -125,7 +125,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
      * todo 封装代码
      */
     @Override
-    public void extractArchive(int uid, String path, String name, String dest) throws IOException {
+    public void extractArchive(long uid, String path, String name, String dest) throws IOException {
         DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
         Resource resource = fileSystem.getResource(uid, path, name);
         if (resource == null) throw new NoSuchFileException(path + "/" + name);

@@ -241,7 +241,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 pi.connect(po);
 
                 // 绑定上下文用户信息
-                SecureUtils.bindUser(userService.getUserById(record.getUid().intValue()));
+                SecureUtils.bindUser(userService.getUserById(record.getUid()));
                 // 添加进度事件监听
                 progressDetector.addObserve(asyncTask::getProgress, record.getId() + "");
 

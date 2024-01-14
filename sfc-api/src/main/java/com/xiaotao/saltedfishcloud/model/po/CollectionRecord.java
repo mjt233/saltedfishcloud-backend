@@ -18,7 +18,7 @@ public class CollectionRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long cid;
-    private Integer uid;
+    private Long uid;
 
     private String filename;
     private Long size;
@@ -28,7 +28,7 @@ public class CollectionRecord {
     @Column(insertable = false, updatable = false)
     private String username;
 
-    public CollectionRecord(Long cid, Integer uid, String filename, Long size, String md5, String ip) {
+    public CollectionRecord(Long cid, Long uid, String filename, Long size, String md5, String ip) {
         this.cid = cid;
         this.uid = uid;
         this.filename = filename;

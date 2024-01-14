@@ -173,7 +173,7 @@ public class VideoService {
      * @return      任务ID
      */
     public String createEncodeConvertTask(EncodeConvertTaskParam param) throws IOException {
-        Integer uid = SecureUtils.getSpringSecurityUser().getId();
+        Long uid = SecureUtils.getSpringSecurityUser().getId();
         EncodeConvertTask taskPo = createTaskPo(param);
         boolean isHandleVideo = param.getRules().stream().anyMatch(e -> ConvertTaskType.VIDEO.equals(e.getType()) && EncodeMethod.CONVERT.equals(e.getMethod()));
         AsyncTaskRecord record = AsyncTaskRecord.builder()
@@ -184,12 +184,12 @@ public class VideoService {
                 // 涉及到视频重编码时，开销设定跑16个CPU核心以便让多核CPU平台上能同时运行多个视频转换，非多核平台上最多只能运行一个视频编码转换任务，且运行期间不再接收其他任务
                 .cpuOverhead(isHandleVideo ? 1600 : 100)
                 .build();
-        record.setUid(uid.longValue());
+        record.setUid(uid);
 
         asyncTaskManager.submitAsyncTask(record);
 
         taskPo.setAsyncTaskRecord(record);
-        taskPo.setUid(uid.longValue());
+        taskPo.setUid(uid);
         encodeConvertTaskRepo.save(taskPo);
         return record.getId() + "";
     }
