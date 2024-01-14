@@ -13,10 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -80,7 +77,16 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
         if (!Files.exists(path1)) {
             return null;
         }
-        return FileInfo.getFromResource(new PathResource(path1), 0L, Files.isDirectory(path1) ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
+        return FileInfo.getFromResource(new PathResource(path1) {
+            @Override
+            public String getFilename() {
+                if (path1.getFileName() == null) {
+                    return "";
+                } else {
+                    return path1.getFileName().toString();
+                }
+            }
+        }, 0L, Files.isDirectory(path1) ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
     }
 
     @Override
@@ -108,6 +114,8 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
         try(final OutputStream os = Files.newOutputStream(savePath)) {
             cnt = StreamUtils.copy(inputStream, os);
             inputStream.close();
+        } catch (AccessDeniedException e) {
+            throw new IOException("权限不足",e);
         }
         return cnt;
     }
