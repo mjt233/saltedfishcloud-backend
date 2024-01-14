@@ -249,7 +249,10 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     .findAny()
                     .orElseThrow(() -> new IOException(source + "/" + sourceName + " 不存在"));
             fileInfo.setStreamSource(sourceResource);
-            targetMatchResult.fileSystem.saveFile(targetUid, sourceResource.getInputStream(), targetMatchResult.resolvedPath, fileInfo);
+            FileInfo newFile = FileInfo.createFrom(fileInfo, false);
+            newFile.setUid(targetUid);
+            fileInfo.setStreamSource(sourceResource);
+            targetMatchResult.fileSystem.saveFile(fileInfo, targetMatchResult.resolvedPath);
             return;
         }
         String resolvedSourcePath = StringUtils.appendPath(sourceMatchResult.resolvedPath, sourceName);
@@ -263,12 +266,10 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         if (fileList != null) {
             for (FileInfo fileInfo : fileList) {
                 Resource resource = sourceMatchResult.fileSystem.getResource(uid, resolvedSourcePath, fileInfo.getName());
-                if (targetMatchResult.fileSystem == mainFileSystem) {
-                    fileInfo.setStreamSource(resource);
-                }
-                try(InputStream inputStream = resource.getInputStream()) {
-                    targetMatchResult.fileSystem.saveFile(targetUid, inputStream, resolvedTargetPath, fileInfo);
-                }
+                fileInfo.setStreamSource(resource);
+                FileInfo newFile = FileInfo.createFrom(fileInfo, false);
+                newFile.setUid(targetUid);
+                targetMatchResult.fileSystem.saveFile(fileInfo, resolvedTargetPath);
             }
         }
 
@@ -370,20 +371,12 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public long saveFile(long uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
-        FileSystemMatchResult matchResult = matchFileSystem(uid, path);
-        return matchResult.fileSystem.saveFile(uid, stream, matchResult.resolvedPath, fileInfo);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public long saveFile(long uid, MultipartFile file, String requestPath, String md5) throws IOException {
+    public long saveFile(FileInfo file, String requestPath) throws IOException {
         if(!FileNameValidator.valid(file.getName())) {
             throw new IllegalArgumentException("非法文件名，不可包含/\\<>?|:换行符，回车符或文件名为..");
         }
-        FileSystemMatchResult matchResult = matchFileSystem(uid, requestPath);
-        return matchResult.fileSystem.saveFile(uid, file, matchResult.resolvedPath, md5);
+        FileSystemMatchResult matchResult = matchFileSystem(file.getUid(), requestPath);
+        return matchResult.fileSystem.saveFile(file, matchResult.resolvedPath);
     }
 
     @Override

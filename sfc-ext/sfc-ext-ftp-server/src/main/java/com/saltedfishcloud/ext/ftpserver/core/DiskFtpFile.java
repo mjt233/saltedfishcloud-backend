@@ -174,9 +174,6 @@ public class DiskFtpFile implements FtpFile {
         return 0;
     }
 
-    /**
-     * todo 针对目录进行日期处理
-     */
     @Override
     public long getLastModified() {
         if(lastModifiedValue != null) {
@@ -281,6 +278,7 @@ public class DiskFtpFile implements FtpFile {
     }
 
     protected List<? extends FtpFile> fileInfo2FtpFile(List<FileInfo> fileInfos) {
+
         return fileInfos.stream().map(fileInfo -> {
             String path = getAbsolutePath();
             DiskFtpFile ftpFile = new DiskFtpFile(path + "/" + fileInfo.getName(), user, fileService);
@@ -289,8 +287,8 @@ public class DiskFtpFile implements FtpFile {
             ftpFile.setLastModifiedValue(Optional
                     .ofNullable(fileInfo.getMtime())
                     .orElseGet(() -> Optional
-                            .ofNullable(fileInfo.getMtime())
-                            .or(() -> Optional.ofNullable(fileInfo.getMtime()))
+                            .ofNullable(fileInfo.getUpdateAt()).map(Date::getTime)
+                            .or(() -> Optional.ofNullable(fileInfo.getCreateAt()).map(Date::getTime))
                             .orElse(System.currentTimeMillis())
                     )
             );

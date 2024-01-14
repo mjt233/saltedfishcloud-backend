@@ -164,15 +164,10 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public long saveFile(long uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
-        return storeHandler.store(StringUtils.appendPath(basePath, path, fileInfo.getName()), fileInfo.getSize(), stream);
-    }
-
-    @Override
-    public long saveFile(long uid, MultipartFile file, String requestPath, String md5) throws IOException {
+    public long saveFile(FileInfo file, String requestPath) throws IOException {
         long size = file.getSize();
-        storeHandler.store(StringUtils.appendPath(basePath, requestPath, file.getOriginalFilename()), size, file.getInputStream());
-        return size;
+        storeHandler.store(StringUtils.appendPath(basePath, requestPath, file.getName()), size, file.getStreamSource().getInputStream());
+        return 0;
     }
 
     @Override

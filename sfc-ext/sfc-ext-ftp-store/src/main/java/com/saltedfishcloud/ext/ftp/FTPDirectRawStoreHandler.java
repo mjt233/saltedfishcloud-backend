@@ -60,7 +60,7 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
                 if (!client.changeWorkingDirectory( "\\")) {
                     throw new IOException("FTP目录切换失败：" + property.getPath());
                 }
-                    return client;
+                return client;
             }
 
             @Override

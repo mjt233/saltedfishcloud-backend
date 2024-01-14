@@ -92,6 +92,7 @@ public class FileController {
      * 上传文件到网盘系统中
      * @param uid   目标用户的ID
      * @param file  接收到的文件
+     * @param mtime 文件修改日期
      * @param md5   文件MD5
      */
     @PutMapping("file/**")
@@ -99,12 +100,17 @@ public class FileController {
     public JsonResult<Long> upload(HttpServletRequest request,
                              @PathVariable @UID(true) long uid,
                              @RequestParam(value = "file", required = false) @MergeFile MultipartFile file,
+                             @RequestParam(value = "mtime", required = false) Long mtime,
                              @RequestParam(value = "md5", required = false) String md5) throws JsonException, IOException {
         if (file == null) {
             throw new JsonException(400, "文件为空");
         }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
-        long i = fileSystemManager.getMainFileSystem().saveFile(uid, file, requestPath, md5);
+        FileInfo fileInfo = new FileInfo(file);
+        fileInfo.setUid(uid);
+        fileInfo.setMd5(md5);
+        fileInfo.setMtime(mtime);
+        long i = fileSystemManager.getMainFileSystem().saveFile(fileInfo, requestPath);
         return JsonResultImpl.getInstance(i);
     }
 

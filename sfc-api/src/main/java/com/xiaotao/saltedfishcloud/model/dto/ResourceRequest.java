@@ -41,6 +41,16 @@ public class ResourceRequest {
     private String targetId;
 
     /**
+     * 文件创建日期
+     */
+    private Long ctime;
+
+    /**
+     * 文件修改日期
+     */
+    private Long mtime;
+
+    /**
      * 是否让前端缓存
      */
     private Boolean isCache;

@@ -72,9 +72,9 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    public LinkedList<NodeInfo> getPathNodeByPathNoEx(long uid, String path) {
+    public Deque<NodeInfo> getPathNodeByPathNoEx(long uid, String path) {
         log.debug("{}<<==== 开始解析路径途径节点 uid: {} 路径: {}",LOG_PREFIX, uid, path);
-        LinkedList<NodeInfo> link = new LinkedList<>();
+        Deque<NodeInfo> link = new ArrayDeque<>();
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         Collection<String> paths = pb.getPath();
@@ -114,8 +114,8 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    public LinkedList<NodeInfo> getPathNodeByPath(long uid, String path) throws NoSuchFileException {
-        LinkedList<NodeInfo> list = getPathNodeByPathNoEx(uid, path);
+    public Deque<NodeInfo> getPathNodeByPath(long uid, String path) throws NoSuchFileException {
+        Deque<NodeInfo> list = getPathNodeByPathNoEx(uid, path);
         if (list == null) {
             throw new NoSuchFileException("路径" + path + "不存在，或节点信息已丢失");
         }
@@ -178,7 +178,7 @@ public class NodeServiceImpl implements NodeService {
 
     @Override
     public String getNodeIdByPathNoEx(long uid, String path) {
-        LinkedList<NodeInfo> list = self.getPathNodeByPathNoEx(uid, path);
+        Deque<NodeInfo> list = self.getPathNodeByPathNoEx(uid, path);
         if (list == null) {
             return null;
         }

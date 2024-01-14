@@ -160,34 +160,16 @@ public interface DiskFileSystem {
     void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException;
 
     /**
-     * 保存数据流的数据到网盘系统中
-     * @param uid         用户ID 0表示公共
-     * @param stream      要保存的数据流，方法内无需处理数据流的关闭
-     * @param path        文件要保存到的网盘目录
-     * @param fileInfo    文件信息
-     * @throws IOException 文件写入失败时抛出
-     */
-    long saveFile(long uid,
-                 InputStream stream,
-                 String path,
-                 FileInfo fileInfo) throws IOException;
-
-    /**
      * 保存上传的文件到网盘系统中
-     * @param uid         用户ID 0表示公共
      * @param file        接收到的文件对象
-     * @param requestPath 请求的文件路径
-     * @param md5         请求时传入的文件md5
+     * @param savePath    保存的文件路径
      * @return 新文件 - 1，旧文件覆盖 - 0，文件无变更 - 2
      * 常量见{@link DiskFileSystem#SAVE_COVER}、
      * {@link DiskFileSystem#SAVE_NEW_FILE}、
      * {@link DiskFileSystem#SAVE_NOT_CHANGE}
      * @throws IOException 文件写入失败时抛出
      */
-    long saveFile(long uid,
-                 MultipartFile file,
-                 String requestPath,
-                 String md5) throws IOException;
+    long saveFile(FileInfo file, String savePath) throws IOException;
 
     /**
      * 创建文件夹

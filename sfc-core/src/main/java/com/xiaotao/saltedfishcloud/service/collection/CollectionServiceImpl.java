@@ -100,37 +100,37 @@ public class CollectionServiceImpl implements CollectionService {
 
     @Override
     @Transactional(rollbackFor = Throwable.class)
-    public void collectFile(CollectionInfoId cid, long uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile, String ip) throws IOException {
-        CollectionInfo ci = collectionDao.findById(cid.getId()).orElse(null);
+    public void collectFile(CollectionInfoId cid, long providerUid, FileInfo fileInfo, SubmitFile submitFile, String ip) throws IOException {
+        CollectionInfo collectionInfo = collectionDao.findById(cid.getId()).orElse(null);
 
         // 校验收集存在
-        if (ci == null) { throw new JsonException(CollectionError.COLLECTION_NOT_FOUND); }
+        if (collectionInfo == null) { throw new JsonException(CollectionError.COLLECTION_NOT_FOUND); }
 
         // 校验开关状态
-        if (ci.getState() == CollectionInfo.State.CLOSED) {
+        if (collectionInfo.getState() == CollectionInfo.State.CLOSED) {
             throw new JsonException(CollectionError.COLLECTION_CLOSED);
         }
 
         // 校验过期
-        if (ci.getExpiredAt().compareTo(new Date()) < 0) {
-            throw new CollectionCheckedException("收集已于" + ci.getExpiredAt() + "过期");
+        if (collectionInfo.getExpiredAt().compareTo(new Date()) < 0) {
+            throw new CollectionCheckedException("收集已于" + collectionInfo.getExpiredAt() + "过期");
         }
 
         // 校验匿名状态
-        if (!ci.getAllowAnonymous() && uid == 0) { throw new JsonException(CollectionError.COLLECTION_REQUIRE_LOGIN); }
+        if (!collectionInfo.getAllowAnonymous() && providerUid == 0) { throw new JsonException(CollectionError.COLLECTION_REQUIRE_LOGIN); }
 
         // 校验约束
-        if (!CollectionValidator.validateSubmit(ci, submitFile)) { throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED); }
+        if (!CollectionValidator.validateSubmit(collectionInfo, submitFile)) { throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED); }
 
         // 校验收集数
-        Integer allowMax = ci.getAllowMax();
+        Integer allowMax = collectionInfo.getAllowMax();
         if (allowMax != null && allowMax > -1) {
             // 收集满
-            if (ci.getAvailable() == 0) {
+            if (collectionInfo.getAvailable() == 0) {
                 throw new JsonException(CollectionError.COLLECTION_FULL);
             }
 
-            int res = collectionDao.consumeCount(cid.getId(), ci.getAvailable());
+            int res = collectionDao.consumeCount(cid.getId(), collectionInfo.getAvailable());
 
             // 乐观锁操作失败
             if (res == 0) {
@@ -138,32 +138,34 @@ public class CollectionServiceImpl implements CollectionService {
             }
 
             // 收集完最后一个，状态设为已关闭
-            if (ci.getAvailable() == 1) {
-                ci.setAvailable(0);
-                ci.setState(CollectionInfo.State.CLOSED);
-                collectionDao.save(ci);
+            if (collectionInfo.getAvailable() == 1) {
+                collectionInfo.setAvailable(0);
+                collectionInfo.setState(CollectionInfo.State.CLOSED);
+                collectionDao.save(collectionInfo);
             }
         }
 
+        // 保存文件信息
         if (fileInfo.getMd5() == null) fileInfo.updateMd5();
-
-
-        String filename = CollectionParser.parseFilename(ci, submitFile);
-        CollectionRecord record = new CollectionRecord(cid.getId(), uid, filename, submitFile.getSize(), fileInfo.getMd5(), ip);
+        String filename = CollectionParser.parseFilename(collectionInfo, submitFile);
+        CollectionRecord record = new CollectionRecord(cid.getId(), providerUid, filename, submitFile.getFileParam().getSize(), fileInfo.getMd5(), ip);
 
         DiskFileSystem fileSystem = this.fileSystem.getMainFileSystem();
-        String path = nodeService.getPathByNode(ci.getUid(), ci.getSaveNode());
+        String path = nodeService.getPathByNode(collectionInfo.getUid(), collectionInfo.getSaveNode());
         String[] pair = FileUtils.parseName(filename);
 
         int cnt = 1;
-        while (fileSystem.exist(ci.getUid(), path + "/" + filename)) {
+        while (fileSystem.exist(collectionInfo.getUid(), path + "/" + filename)) {
             filename = pair[0] + "_" + cnt + (pair[1] == null ? "" : ("." + pair[1]));
             cnt++;
         }
         record.setFilename(filename);
         recordDao.save(record);
         fileInfo.setName(filename);
+
         // 存入文件
-        fileSystem.saveFile(ci.getUid(), is, path, fileInfo);
+        FileInfo saveFile = FileInfo.createFrom(fileInfo, false);
+        saveFile.setUid(collectionInfo.getUid());
+        fileSystem.saveFile(saveFile, path);
     }
 }

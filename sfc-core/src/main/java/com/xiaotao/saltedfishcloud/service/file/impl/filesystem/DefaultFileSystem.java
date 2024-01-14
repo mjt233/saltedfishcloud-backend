@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.sfc.constant.FeatureName;
+import com.xiaotao.saltedfishcloud.common.FileInfoWrapResource;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -25,7 +26,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -136,16 +136,14 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         if (resource == null) {
             return false;
         }
-        RLock lock = redisson.getLock(getStoreLockKey(uid, path, name));
         try {
-            lock.lock();
             fileInfo.setName(name);
-            saveFile(uid, resource.getInputStream(), path, fileInfo);
+            FileInfo newFile = FileInfo.createFrom(fileInfo, false);
+            newFile.setUid(uid);
+            saveFile(newFile, path);
         } catch (IOException e) {
             log.trace("错误：{}", e.getMessage());
             return false;
-        } finally {
-            lock.unlock();
         }
         return true;
     }
@@ -157,7 +155,11 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     public Resource getResource(long uid, String path, String name) throws IOException {
-        return storeServiceFactory.getService().getResource(uid, path, name);
+        Resource resource = storeServiceFactory.getService().getResource(uid, path, name);
+        if (resource == null) {
+            return null;
+        }
+        return FileInfoWrapResource.create(resource, () -> fileRecordService.getFileInfo(uid, path, name));
     }
 
     @Override
@@ -189,7 +191,8 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         fileInfo = files.get(0);
         String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
         fileInfo.setPath(path + "/" + fileInfo.getName());
-        return getResource(fileInfo.getUid(), path, fileInfo.getName());
+        Resource resource = getResource(fileInfo.getUid(), path, fileInfo.getName());
+        return FileInfoWrapResource.create(resource, fileInfo);
     }
 
     @Override
@@ -308,25 +311,12 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public long saveFile(long uid, InputStream stream, String path, FileInfo fileInfo) throws IOException {
-
-        if (fileInfo.getMd5() == null) {
-            fileInfo.updateMd5();
-        }
-        return saveFileWithDelete(uid, stream, path, fileInfo);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public long saveFile(long uid, MultipartFile file, String requestPath, String md5) throws IOException {
-        FileInfo fileInfo = new FileInfo(file);
+    public long saveFile(FileInfo file, String savePath) throws IOException {
         // 获取上传的文件信息 并看情况计算MD5
-        if (md5 != null) {
-            fileInfo.setMd5(md5);
-        } else {
-            fileInfo.updateMd5();
+        if (file.getMd5() == null) {
+            file.updateMd5();
         }
-        return saveFileWithDelete(uid, file.getInputStream(), requestPath, fileInfo);
+        return saveFileWithDelete(file.getUid(), file.getStreamSource().getInputStream(), savePath, file);
     }
 
     private int saveFileWithDelete(long uid, InputStream file, String path, FileInfo fileInfo) throws IOException {

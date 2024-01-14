@@ -94,13 +94,18 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         fileInfo.setUid(uid);
         fileInfo.setName(param.getName());
         fileInfo.setSize(resource.contentLength());
+        if (param.getMtime() != null) {
+            fileInfo.setMtime(param.getMtime());
+        } else {
+            fileInfo.setMtime(resource.lastModified());
+        }
         String md5 = param.getParams().get("md5");
         if (md5 != null) {
             fileInfo.setMd5(md5);
+        } else if (fileInfo.getMd5() == null) {
+            fileInfo.updateMd5();
         }
-        try(InputStream in = resource.getInputStream()) {
-            fileSystemManager.getMainFileSystem().saveFile(uid, in, param.getPath(), fileInfo);
-        }
+        fileSystemManager.getMainFileSystem().saveFile(fileInfo,param.getPath());
 
     }
 }

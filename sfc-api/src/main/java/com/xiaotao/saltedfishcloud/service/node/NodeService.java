@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -34,7 +35,7 @@ public interface NodeService {
      * @throws NoSuchFileException 请求的路径不存在时抛出此异常
      * @return  节点信息列表
      */
-    LinkedList<NodeInfo> getPathNodeByPath(long uid, String path) throws NoSuchFileException;
+    Deque<NodeInfo> getPathNodeByPath(long uid, String path) throws NoSuchFileException;
 
     /**
      * 获取某个路径中途径的节点信息，若路径不存在则返回null而不是抛出异常
@@ -42,7 +43,7 @@ public interface NodeService {
      * @param path  路径
      * @return  节点信息列表
      */
-    LinkedList<NodeInfo> getPathNodeByPathNoEx(long uid, String path);
+    Deque<NodeInfo> getPathNodeByPathNoEx(long uid, String path);
 
     /**
      * 添加一个节点

@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -149,7 +150,7 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public ShareInfo createShare(long uid, ShareDTO shareDTO) {
         try {
-            LinkedList<NodeInfo> nodes = nodeService.getPathNodeByPath(uid, shareDTO.getPath());
+            Deque<NodeInfo> nodes = nodeService.getPathNodeByPath(uid, shareDTO.getPath());
             String nid = nodes.getLast().getId();
             FileInfo fileInfo =  fileRecordService.getFileInfo(uid, shareDTO.getName(), nid);
 

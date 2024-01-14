@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.collection;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SimpleField;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
+import com.xiaotao.saltedfishcloud.model.param.FileInfoSaveParam;
 import com.xiaotao.saltedfishcloud.model.po.CollectionField;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import org.junit.jupiter.api.Assertions;
@@ -96,7 +97,8 @@ class CollectionValidatorTest {
         submitFields.add(new SimpleField("name", "田所浩二"));
         submitFields.add(new SimpleField("age", "24"));
         submitFile.setField(submitFields);
-        submitFile.setFilename("koko.doc");
+        FileInfoSaveParam fileParam = submitFile.getFileParam();
+        fileParam.setName("koko.doc");
 
         // 符合约束
         assertTrue(CollectionValidator.validateSubmit(info, submitFile));
@@ -126,17 +128,17 @@ class CollectionValidatorTest {
             fail();
         } catch (CollectionCheckedException ignore) {}
         submitFields.add(new SimpleField("age", "24"));
-
+        ;
         // 文件拓展名不符合
-        submitFile.setFilename("koko.pdf");
+        fileParam.setName("koko.pdf");
         try {
             CollectionValidator.validateSubmit(info, submitFile);
             fail();
         } catch (CollectionCheckedException ignore) {}
 
         // 文件过大
-        submitFile.setFilename("koko.doc");
-        submitFile.setSize(114514L);
+        fileParam.setName("koko.doc");
+        fileParam.setSize(114514L);
         info.setMaxSize(1024L);
         try {
             CollectionValidator.validateSubmit(info, submitFile);

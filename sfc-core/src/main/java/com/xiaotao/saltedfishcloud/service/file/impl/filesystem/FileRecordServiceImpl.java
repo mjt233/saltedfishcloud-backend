@@ -318,6 +318,9 @@ public class FileRecordServiceImpl implements FileRecordService {
             nodeDao.changeName(uid, nodeDao.getNodeByParentId(uid, nodeId, oldName).getId(), newName);
         }
         fileInfo.setName(newName);
+        if (fileInfo.isDir()) {
+            fileInfo.setMtime(System.currentTimeMillis());
+        }
         fileInfoRepo.save(fileInfo);
     }
 

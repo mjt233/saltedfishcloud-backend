@@ -22,7 +22,8 @@ public class CollectionParser {
 
         // 无字段直接返回原文
         List<CollectionField> fields = ci.getFields();
-        if (fields == null) return sf.getFilename();
+        String filename = sf.getFileParam().getName();
+        if (fields == null) return filename;
 
         // 替换字段变量
         String pattern = ci.getPattern();
@@ -30,7 +31,7 @@ public class CollectionParser {
         for (CollectionField field : fields) {
             pattern = pattern.replaceAll("\\$\\{" + field.getName() + "}", fieldMap.get(field.getName()));
         }
-        pattern = pattern.replaceAll("\\$\\{__ext__}", FileUtils.getSuffix(sf.getFilename()));
+        pattern = pattern.replaceAll("\\$\\{__ext__}", FileUtils.getSuffix(filename));
         return pattern;
     }
 }
