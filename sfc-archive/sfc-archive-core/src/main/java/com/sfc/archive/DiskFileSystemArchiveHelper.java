@@ -68,9 +68,14 @@ public class DiskFileSystemArchiveHelper {
             if (Thread.interrupted()) {
                 throw new IllegalStateException("压缩中断");
             }
+            FileInfo fileInfo = fileInfoMap.get(name);
+            if (fileInfo == null) {
+                throw new IllegalArgumentException("在" + param.getSourcePath() + "下缺失文件" + name + "的信息");
+            }
+
             Resource resource = fileSystem.getResource(uid, param.getSourcePath(), name);
             if (resource == null) {
-                compressDir(uid, root, StringUtils.appendPath(root, name), compressor, fileSystem,1);
+                compressDir(fileInfo, uid, root, StringUtils.appendPath(root, name), compressor, fileSystem,1);
             } else {
                 String archiveFilename;
                 if ("/".equals(root)) {
@@ -83,13 +88,8 @@ public class DiskFileSystemArchiveHelper {
                         resource.contentLength(),
                         resource
                 );
-                FileInfo fileInfo = fileInfoMap.get(name);
-                if (fileInfo != null) {
-                    entry.setMtime(fileInfo.getMtime());
-                    entry.setCtime(fileInfo.getCtime());
-                } else {
-                    throw new IllegalArgumentException("在" + param.getSourcePath() + "下缺失文件" + name + "的信息");
-                }
+                entry.setMtime(fileInfo.getMtime());
+                entry.setCtime(fileInfo.getCtime());
                 compressor.addFile(entry);
             }
         }
@@ -103,15 +103,18 @@ public class DiskFileSystemArchiveHelper {
      * @param compressor    压缩器
      * @param depth         当前压缩深度
      */
-    private static void compressDir(long uid, String root, String path, ArchiveCompressor compressor, DiskFileSystem fileSystem, int depth) throws IOException {
+    private static void compressDir(FileInfo fileInfo, long uid, String root, String path, ArchiveCompressor compressor, DiskFileSystem fileSystem, int depth) throws IOException {
         checkInterrupt();
         List<FileInfo>[] list = fileSystem.getUserFileList(uid, path);
         String curPath = StringUtils.removePrefix(root, path).replaceAll("//+", "/").replaceAll("^/+", "");
-        compressor.addFile(new ArchiveResourceEntry(
+        ArchiveResourceEntry dirEntry = new ArchiveResourceEntry(
                 curPath + "/",
                 0,
                 null
-        ));
+        );
+        dirEntry.setMtime(fileInfo.getMtime());
+        dirEntry.setCtime(fileInfo.getCtime());
+        compressor.addFile(dirEntry);
         for (FileInfo file : list[1]) {
             checkInterrupt();
             ArchiveResourceEntry entry = new ArchiveResourceEntry(
@@ -127,7 +130,7 @@ public class DiskFileSystemArchiveHelper {
             entry.setMtime(file.getMtime());
             entry.setCtime(file.getCtime());
             compressor.addFile(entry);
-            compressDir(uid, root, path + "/" + file.getName(), compressor, fileSystem,depth + 1);
+            compressDir(file, uid, root, path + "/" + file.getName(), compressor, fileSystem,depth + 1);
         }
     }
 
