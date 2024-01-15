@@ -11,6 +11,7 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -176,7 +177,7 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
             throw new IllegalArgumentException(nativeFilePath + " 不是文件或不存在");
         }
         try (InputStream is = Files.newInputStream(nativeFilePath)) {
-            storeHandler.store(StringUtils.appendPath(basePath, path, fileInfo.getName()), Files.size(nativeFilePath), is);
+            storeHandler.store(fileInfo, StringUtils.appendPath(basePath, path, fileInfo.getName()), Files.size(nativeFilePath), is);
         }
 
     }
@@ -184,8 +185,13 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     @Override
     public long saveFile(FileInfo file, String requestPath) throws IOException {
         long size = file.getSize();
-        storeHandler.store(StringUtils.appendPath(basePath, requestPath, file.getName()), size, file.getStreamSource().getInputStream());
-        return 0;
+        InputStreamSource streamSource = file.getStreamSource();
+        if (streamSource == null) {
+            throw new IllegalArgumentException("文件缺失streamSource");
+        }
+        try (InputStream is = streamSource.getInputStream()) {
+            return storeHandler.store(file, StringUtils.appendPath(basePath, requestPath, file.getName()), size, is);
+        }
     }
 
     @Override

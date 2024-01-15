@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.store;
 
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,12 +25,13 @@ public interface StoreWriter {
 
     /**
      * 直接存储数据流为指定路径的文件
+     * @param fileInfo      文件信息
      * @param path          保存路径
      * @param size          文件大小，-1为未知
-     * @param inputStream   文件输入流
+     * @param inputStream   文件输入流，方法内不需要关闭该流，由外部调用方维护流的关闭操作。
      * @return              保存的数据量大小（Byte）
      */
-    long store(String path, long size, InputStream inputStream) throws IOException;
+    long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException;
 
     /**
      * 获取目标路径文件资源的输出流

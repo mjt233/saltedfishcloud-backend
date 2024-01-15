@@ -199,9 +199,11 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
     }
 
     @Override
-    public long store(String path, long size, InputStream inputStream) throws IOException {
+    public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
         try (OutputStream os = newOutputStream(path)) {
-            return StreamUtils.copy(inputStream, os);
+            int ret = StreamUtils.copy(inputStream, os);
+            os.close();
+            return ret;
         }
     }
 

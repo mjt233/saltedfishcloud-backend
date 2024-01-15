@@ -113,7 +113,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
         }
 
         log.debug("[{}]存储新文件：{}，保存路径：{}", LOG_TITLE, fileInfo.getName(), path);
-        handler.store(path, fileInfo.getSize(), input);
+        handler.store(fileInfo, path, fileInfo.getSize(), input);
 
     }
 

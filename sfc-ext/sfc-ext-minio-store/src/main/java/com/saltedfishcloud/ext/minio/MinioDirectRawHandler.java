@@ -9,6 +9,7 @@ import io.minio.*;
 import io.minio.errors.*;
 import io.minio.messages.Item;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -215,7 +216,7 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
     }
 
     @Override
-    public long store(String path, long size, InputStream inputStream) throws IOException {
+    public long store(@Nullable FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
         try {
             StatObjectResponse stat = MinioUtils.getStat(client, properties.getBucket(), path);
             if(!MinioUtils.isDir(stat)) {
@@ -269,7 +270,7 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
                 log.info("{}->输出流关闭：{} 本地临时文件：{}", LOG_PREFIX, path, tempPath);
                 outputStream.close();
                 try(InputStream is = Files.newInputStream(tempPath)) {
-                    store(path, Files.size(tempPath), is);
+                    store(null, path, Files.size(tempPath), is);
                 }
                 Files.deleteIfExists(tempPath);
                 log.info("{}->删除临时文件：{}", LOG_PREFIX, tempPath);

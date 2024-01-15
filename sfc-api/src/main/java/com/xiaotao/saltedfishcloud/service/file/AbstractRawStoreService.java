@@ -181,7 +181,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     public void store(long uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
         final String root = getUserFileRoot(uid);
         final String savePath = StringUtils.appendPath(root, targetDir, fileInfo.getName());
-        handler.store(savePath, fileInfo.getSize(), input);
+        handler.store(fileInfo, savePath, fileInfo.getSize(), input);
     }
 
     @Override
@@ -230,7 +230,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         }
         try(final InputStream is = resource.getInputStream()) {
             final String path = StringUtils.appendPath(userProfileRoot, "avatar." + FileUtils.getSuffix(resource.getFilename()));
-            handler.store(path, resource.contentLength() ,is);
+            handler.store(FileInfo.getFromResource(resource, uid, FileInfo.TYPE_FILE), path, resource.contentLength() ,is);
         }
 
     }

@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.*;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -107,13 +108,17 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
     }
 
     @Override
-    public long store(String path, long size, InputStream inputStream) throws IOException {
+    public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
         int cnt;
         final Path savePath = Paths.get(path);
         FileUtils.createParentDirectory(savePath);
         try(final OutputStream os = Files.newOutputStream(savePath)) {
             cnt = StreamUtils.copy(inputStream, os);
             inputStream.close();
+            os.close();
+            if (fileInfo.getMtime() != null) {
+                Files.setLastModifiedTime(savePath, FileTime.fromMillis(fileInfo.getMtime()));
+            }
         } catch (AccessDeniedException e) {
             throw new IOException("权限不足",e);
         }

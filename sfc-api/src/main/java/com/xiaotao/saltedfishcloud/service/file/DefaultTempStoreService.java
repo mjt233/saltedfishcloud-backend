@@ -73,8 +73,8 @@ public class DefaultTempStoreService implements TempStoreService {
     }
 
     @Override
-    public long store(String path, long size, InputStream inputStream) throws IOException {
-        return handler.store(StringUtils.appendPath(tempRootDir, path), size, inputStream);
+    public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
+        return handler.store(fileInfo, StringUtils.appendPath(tempRootDir, path), size, inputStream);
     }
 
     @Override

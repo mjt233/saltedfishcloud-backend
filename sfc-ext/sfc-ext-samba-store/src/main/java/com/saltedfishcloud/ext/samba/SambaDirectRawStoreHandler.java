@@ -222,7 +222,7 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     }
 
     @Override
-    public long store(String path, long size, InputStream inputStream) throws IOException {
+    public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
         try(OutputStream os = newOutputStream(path)) {
             StreamUtils.copy(inputStream, os);
         }
