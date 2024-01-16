@@ -334,7 +334,7 @@ public class StringUtils {
         StringBuilder sb = new StringBuilder(str.length() + 6);
         for (int i = 0; i < length; i++) {
             char c = str.charAt(i);
-            if (c < 'a') {
+            if (c >= 'A' && c <= 'Z') {
                 if (sb.length() != 0) {
                     sb.append(ch);
                 }

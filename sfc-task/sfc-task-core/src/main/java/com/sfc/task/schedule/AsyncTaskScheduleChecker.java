@@ -97,7 +97,7 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
      * 半分钟一次，确认运行中的任务存在执行标记
      */
     @Async
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 30000, initialDelay = 5000)
     @ClusterScheduleJob("mark_task_offline")
     public void markTaskOffline() {
         List<AsyncTaskRecord> asyncTaskRecords = asyncTaskRecordRepo.listRunningTask();

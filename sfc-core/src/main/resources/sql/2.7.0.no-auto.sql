@@ -5,6 +5,7 @@ ALTER TABLE file_table ADD mtime BIGINT COMMENT '文件修改日期';
 ALTER TABLE file_table CHANGE created_at create_at DATETIME COMMENT '数据创建日期';
 ALTER TABLE file_table CHANGE updated_at update_at DATETIME COMMENT '数据更新日期';
 UPDATE file_table SET mtime = UNIX_TIMESTAMP(update_at)*1000 WHERE mtime IS NULL;
+UPDATE file_table SET mtime = UNIX_TIMESTAMP(create_at)*1000 WHERE mtime IS NULL;
 UPDATE file_table SET ctime = UNIX_TIMESTAMP(create_at)*1000 WHERE ctime IS NULL;
 UPDATE file_table SET ctime = UNIX_TIMESTAMP(update_at)*1000 WHERE ctime IS NULL;
 

@@ -3,9 +3,9 @@ package com.xiaotao.saltedfishcloud.init;
 import com.xiaotao.saltedfishcloud.annotations.update.RollbackAction;
 import com.xiaotao.saltedfishcloud.annotations.update.UpdateAction;
 import com.xiaotao.saltedfishcloud.annotations.update.Updater;
-import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.FileInfoService;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
@@ -14,14 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
+import javax.persistence.EntityManager;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -44,10 +43,13 @@ public class SystemUpdater {
     private DataSource dataSource;
 
     @Autowired
-    private FileInfoRepo fileInfoRepo;
+    private FileInfoService fileInfoService;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private void executeSqlResource(String sqlFileClassPath) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
@@ -65,8 +67,12 @@ public class SystemUpdater {
     @UpdateAction("2.7.0")
     public void update2_7_0() throws SQLException {
         // 先执行修改表结构的脚本
+        long begin = System.currentTimeMillis();
+        log.info("======== 开始执行2.7.0 文件表file_table 表结构更新 ========");
+        log.info("======== 执行结构调整脚本... ========");
         this.executeSqlResource("sql/2.7.0.no-auto.sql");
 
+        log.info("======== 查询原数据... ========");
         List<FileInfo> fileInfoList = jdbcTemplate.queryForList("SELECT * FROM file_table")
                 .stream()
                 .map(mapRes -> {
@@ -75,21 +81,24 @@ public class SystemUpdater {
                     return ObjectUtils.mapToBean(newMap, FileInfo.class);
                 })
                 .collect(Collectors.toList());
+        log.info("======== 共{}条数据 ========", fileInfoList.size());
 
         DefaultTransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
         TransactionStatus transaction = transactionManager.getTransaction(transactionDefinition);
 
         try {
             // 给文件列表数据赋值ID
+            log.info("======== 清空原数据... ========");
             jdbcTemplate.execute("DELETE FROM file_table");
-            for (FileInfo fi : fileInfoList) {
-                fi.setId(IdUtil.getId());
-            }
-            fileInfoRepo.saveAll(fileInfoList);
+            log.info("======== 更新新数据... ========");
+            fileInfoService.batchInsert(fileInfoList);
+            log.info("======== 提交事务... ========");
             transactionManager.commit(transaction);
 
             // 设置主键字段
+            log.info("======== 设置主键... ========");
             jdbcTemplate.execute("ALTER TABLE file_table ADD PRIMARY KEY (`id`)");
+            log.info("======== 更新完成，共{}条数据，耗时：{}ms ========", fileInfoList.size(), System.currentTimeMillis() - begin);
         } catch (Throwable err) {
             try {
                 transactionManager.rollback(transaction);

@@ -86,7 +86,7 @@ public class ClassUtils {
             List<Field> fieldList = FIELD_CACHE.computeIfAbsent(curClass, k -> List.of(finalCurClass.getDeclaredFields()));
 
             res.addAll(fieldList);
-            curClass = clazz.getSuperclass();
+            curClass = curClass.getSuperclass();
         }
         return res;
     }
