@@ -8,14 +8,20 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-
+@Slf4j
 public class DiskFileSystemArchiveHelper {
+    private final static String LOG_TITLE = "Archive";
+
     /**
      * 从文件系统上读取文件进行压缩打包，并将压缩结果直接输出到指定的输出流中而不受参数影响
      * @param diskFileSystem    网盘文件系统
@@ -51,16 +57,25 @@ public class DiskFileSystemArchiveHelper {
      */
     public static void compress(DiskFileSystemCompressParam param, ArchiveCompressor compressor, DiskFileSystem fileSystem) throws IOException {
         String curDir = param.getSourcePath().replaceAll("//+", "").replaceAll("^/+", "");
-        int uid = param.getSourceUid().intValue();
+        long uid = param.getSourceUid();
         String root = param.getSourcePath().replaceAll("//+", "");
-
+        Map<String, FileInfo> fileInfoMap = fileSystem.getUserFileList(uid, param.getSourcePath(), param.getSourceNames()).stream()
+                .collect(Collectors.toMap(
+                        FileInfo::getName,
+                        Function.identity()
+                ));
         for (String name : param.getSourceNames()) {
             if (Thread.interrupted()) {
                 throw new IllegalStateException("压缩中断");
             }
+            FileInfo fileInfo = fileInfoMap.get(name);
+            if (fileInfo == null) {
+                throw new IllegalArgumentException("在" + param.getSourcePath() + "下缺失文件" + name + "的信息");
+            }
+
             Resource resource = fileSystem.getResource(uid, param.getSourcePath(), name);
             if (resource == null) {
-                compressDir(uid, root, StringUtils.appendPath(root, name), compressor, fileSystem,1);
+                compressDir(fileInfo, uid, root, StringUtils.appendPath(root, name), compressor, fileSystem,1);
             } else {
                 String archiveFilename;
                 if ("/".equals(root)) {
@@ -68,11 +83,14 @@ public class DiskFileSystemArchiveHelper {
                 } else {
                     archiveFilename = StringUtils.removePrefix(root, curDir.length() == 0 ? name : StringUtils.appendPath(curDir, name));
                 }
-                compressor.addFile(new ArchiveResourceEntry(
+                ArchiveResourceEntry entry = new ArchiveResourceEntry(
                         archiveFilename,
                         resource.contentLength(),
                         resource
-                ));
+                );
+                entry.setMtime(fileInfo.getMtime());
+                entry.setCtime(fileInfo.getCtime());
+                compressor.addFile(entry);
             }
         }
     }
@@ -85,26 +103,34 @@ public class DiskFileSystemArchiveHelper {
      * @param compressor    压缩器
      * @param depth         当前压缩深度
      */
-    private static void compressDir(int uid, String root, String path, ArchiveCompressor compressor, DiskFileSystem fileSystem, int depth) throws IOException {
+    private static void compressDir(FileInfo fileInfo, long uid, String root, String path, ArchiveCompressor compressor, DiskFileSystem fileSystem, int depth) throws IOException {
         checkInterrupt();
         List<FileInfo>[] list = fileSystem.getUserFileList(uid, path);
         String curPath = StringUtils.removePrefix(root, path).replaceAll("//+", "/").replaceAll("^/+", "");
-        compressor.addFile(new ArchiveResourceEntry(
+        ArchiveResourceEntry dirEntry = new ArchiveResourceEntry(
                 curPath + "/",
                 0,
                 null
-        ));
+        );
+        dirEntry.setMtime(fileInfo.getMtime());
+        dirEntry.setCtime(fileInfo.getCtime());
+        compressor.addFile(dirEntry);
         for (FileInfo file : list[1]) {
             checkInterrupt();
-            compressor.addFile(new ArchiveResourceEntry(
-                    curPath + "/" + file.getName(), file.getSize(), fileSystem.getResource(uid, path, file.getName()))
-            );
+            ArchiveResourceEntry entry = new ArchiveResourceEntry(
+                    curPath + "/" + file.getName(), file.getSize(), fileSystem.getResource(uid, path, file.getName()));
+            entry.setMtime(file.getMtime());
+            entry.setCtime(file.getCtime());
+            compressor.addFile(entry);
         }
 
         for (FileInfo file : list[0]) {
             checkInterrupt();
-            compressor.addFile(new ArchiveResourceEntry(curPath + "/" + file.getName() + "/", 0, null));
-            compressDir(uid, root, path + "/" + file.getName(), compressor, fileSystem,depth + 1);
+            ArchiveResourceEntry entry = new ArchiveResourceEntry(curPath + "/" + file.getName() + "/", 0, null);
+            entry.setMtime(file.getMtime());
+            entry.setCtime(file.getCtime());
+            compressor.addFile(entry);
+            compressDir(file, uid, root, path + "/" + file.getName(), compressor, fileSystem,depth + 1);
         }
     }
 

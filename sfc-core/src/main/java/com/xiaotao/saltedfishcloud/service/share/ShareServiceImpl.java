@@ -4,20 +4,20 @@ import com.sfc.constant.error.CommonError;
 import com.sfc.constant.error.FileSystemError;
 import com.sfc.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ShareRepo;
-import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
-import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -43,17 +44,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ShareServiceImpl implements ShareService {
     private final NodeService nodeService;
-    private final FileDao fileDao;
     private final ShareRepo shareRepo;
     private final UserDao userDao;
     private final DiskFileSystemManager fileSystemFactory;
+    private final FileRecordService fileRecordService;
 
     @Autowired
     @Lazy
     private WrapService wrapService;
 
     @Override
-    public String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo) {
+    public String createwrap(Long sid, String verification, String code, FileTransferInfo fileTransferInfo) {
         ShareInfo share = getShare(sid, verification);
         if (share.getExtractCode() != null && !code.equalsIgnoreCase(share.getExtractCode())) {
             throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
@@ -67,7 +68,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public void deleteShare(Integer sid, Integer uid) {
+    public void deleteShare(Long sid, Long uid) {
         ShareInfo share = shareRepo.findById(sid).orElse(null);
         if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         if (!share.getUid().equals(uid)) throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
@@ -118,7 +119,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public List<FileInfo>[] browse(int sid, String verification, String path, String extractCode) throws IOException {
+    public List<FileInfo>[] browse(long sid, String verification, String path, String extractCode) throws IOException {
         ShareInfo share = shareRepo.findById(sid).orElse(null);
 
         // 校验存在
@@ -147,11 +148,11 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public ShareInfo createShare(int uid, ShareDTO shareDTO) {
+    public ShareInfo createShare(long uid, ShareDTO shareDTO) {
         try {
-            LinkedList<NodeInfo> nodes = nodeService.getPathNodeByPath(uid, shareDTO.getPath());
+            Deque<NodeInfo> nodes = nodeService.getPathNodeByPath(uid, shareDTO.getPath());
             String nid = nodes.getLast().getId();
-            FileInfo fileInfo = fileDao.getFileInfo(uid, shareDTO.getName(), nid);
+            FileInfo fileInfo =  fileRecordService.getFileInfo(uid, shareDTO.getName(), nid);
 
             if (fileInfo == null) throw new JsonException(FileSystemError.FILE_NOT_FOUND);
             ShareInfo shareInfo = ShareInfo.valueOf(
@@ -170,7 +171,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public CommonPageInfo<ShareInfo> getUserShare(int uid, int page, int size, boolean hideKeyAttr) {
+    public CommonPageInfo<ShareInfo> getUserShare(long uid, int page, int size, boolean hideKeyAttr) {
         ShareInfo po = new ShareInfo();
         po.setUid(uid);
         CommonPageInfo<ShareInfo> res = CommonPageInfo.of(
@@ -196,7 +197,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public ShareInfo getShare(int sid, String verification) {
+    public ShareInfo getShare(long sid, String verification) {
         ShareInfo po = shareRepo.findById(sid).orElse(null);
         if (po == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
 
@@ -207,7 +208,7 @@ public class ShareServiceImpl implements ShareService {
             if (nodeInfo == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         } else {
             // 判断分享的原文件是否失效
-            FileInfo fi = fileDao.getFileInfo(po.getUid(), po.getName(), po.getParentId());
+            FileInfo fi = fileRecordService.getFileInfo(po.getUid(), po.getName(), po.getParentId());
             if (fi == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         }
 
@@ -220,7 +221,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public ShareInfo getById(int id) {
+    public ShareInfo getById(long id) {
         return shareRepo.findById(id).orElse(null);
     }
 }

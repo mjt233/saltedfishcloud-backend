@@ -144,17 +144,17 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     private FileInfo convertToFileInfo(FileIdBothDirectoryInformation info) {
         FileInfo fileInfo = new FileInfo();
         if (info.getFileAttributes() == FileAttributes.FILE_ATTRIBUTE_DIRECTORY.getValue()) {
-            fileInfo.setSize(-1);
+            fileInfo.setSize(-1L);
             fileInfo.setType(FileInfo.TYPE_DIR);
         } else {
             fileInfo.setSize(info.getEndOfFile());
             fileInfo.setType(FileInfo.TYPE_FILE);
         }
 
-        fileInfo.setLastModified(info.getLastWriteTime().toDate().getTime());
+        fileInfo.setMtime(info.getLastWriteTime().toDate().getTime());
         fileInfo.setName(info.getFileName());
-        fileInfo.setCreatedAt(info.getCreationTime().toDate());
-        fileInfo.setUpdatedAt(info.getLastWriteTime().toDate());
+        fileInfo.setCreateAt(info.getCreationTime().toDate());
+        fileInfo.setUpdateAt(info.getLastWriteTime().toDate());
         return fileInfo;
     }
 
@@ -162,12 +162,12 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
         FileInfo fileInfo = new FileInfo();
         FileBasicInformation baseInfo = info.getBasicInformation();
         boolean isDir = baseInfo.getFileAttributes() == FileAttributes.FILE_ATTRIBUTE_DIRECTORY.getValue();
-        fileInfo.setLastModified(baseInfo.getLastWriteTime().toDate().getTime());
+        fileInfo.setMtime(baseInfo.getLastWriteTime().toDate().getTime());
         fileInfo.setName(info.getNameInformation());
         fileInfo.setSize(isDir ? -1 : info.getStandardInformation().getEndOfFile());
         fileInfo.setType(isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
-        fileInfo.setCreatedAt(baseInfo.getCreationTime().toDate());
-        fileInfo.setUpdatedAt(baseInfo.getLastWriteTime().toDate());
+        fileInfo.setCreateAt(baseInfo.getCreationTime().toDate());
+        fileInfo.setUpdateAt(baseInfo.getLastWriteTime().toDate());
         return fileInfo;
     }
 
@@ -222,7 +222,7 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     }
 
     @Override
-    public long store(String path, long size, InputStream inputStream) throws IOException {
+    public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
         try(OutputStream os = newOutputStream(path)) {
             StreamUtils.copy(inputStream, os);
         }

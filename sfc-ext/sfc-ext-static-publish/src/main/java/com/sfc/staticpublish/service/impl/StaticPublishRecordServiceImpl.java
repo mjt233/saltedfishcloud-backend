@@ -1,7 +1,7 @@
 package com.sfc.staticpublish.service.impl;
 
 import com.sfc.common.service.CrudServiceImpl;
-import com.sfc.staticpublish.constants.AccessWay;
+import com.sfc.constant.error.CommonError;
 import com.sfc.staticpublish.constants.CacheNames;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.model.property.StaticPublishProperty;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -60,7 +59,7 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
     public void save(StaticPublishRecord entity) {
         checkOperatePermission();
 
-        User user = userService.getUserById(entity.getUid().intValue());
+        User user = userService.getUserById(entity.getUid());
         entity.setUsername(user.getUsername());
 
         if (entity.isByHost()) {
@@ -88,8 +87,12 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
     @Override
     public void deleteWithOwnerPermissions(Long id) {
         checkOperatePermission();
+        StaticPublishRecord record = findById(id);
+        if (record == null) {
+            throw new JsonException(CommonError.RESOURCE_NOT_FOUND);
+        }
         super.deleteWithOwnerPermissions(id);
-        removeCache(findById(id));
+        removeCache(record);
     }
 
     @Override
@@ -97,7 +100,7 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
         checkOperatePermission();
         Map<Long, User> userMap = userService.findBaseInfoByIds(entityList.stream().map(AuditModel::getUid).distinct().collect(Collectors.toList()))
                 .stream()
-                .collect(Collectors.toMap(e -> e.getId().longValue(), Function.identity()));
+                .collect(Collectors.toMap(e -> e.getId(), Function.identity()));
         for (StaticPublishRecord record : entityList) {
             record.setUsername(userMap.get(record.getUid()).getUser());
         }

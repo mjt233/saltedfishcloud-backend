@@ -83,4 +83,10 @@ public interface CrudService<T> {
      * @return          删除数量
      */
     int batchDelete(Collection<Long> ids);
+
+
+    /**
+     * 批量插入，比saveAll性能好
+     */
+    void batchInsert(Iterable<T> entityList);
 }

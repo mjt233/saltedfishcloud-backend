@@ -1,6 +1,9 @@
 package com.sfc.staticpublish.controller;
 
+import com.sfc.rpc.annotation.RPCResource;
+import com.sfc.staticpublish.model.ServiceStatus;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
+import com.sfc.staticpublish.service.StaticPublishRPCClient;
 import com.sfc.staticpublish.service.StaticPublishRecordService;
 import com.sfc.staticpublish.service.StaticPublishService;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
@@ -21,6 +24,18 @@ public class StaticPublishController {
 
     @Autowired
     private StaticPublishRecordService staticPublishRecordService;
+
+    @RPCResource
+    private StaticPublishRPCClient rpcClient;
+
+    /**
+     * 获取所有节点的服务运行状态
+     */
+    @GetMapping("listStatus")
+    @RolesAllowed("ADMIN")
+    public JsonResult<List<ServiceStatus>> listStatus() {
+        return JsonResultImpl.getInstance(rpcClient.getStatus());
+    }
 
     /**
      * 启动静态站点服务

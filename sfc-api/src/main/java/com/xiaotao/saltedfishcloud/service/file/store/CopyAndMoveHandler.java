@@ -30,12 +30,12 @@ public abstract class CopyAndMoveHandler {
     public static CopyAndMoveHandler createByStoreHandler(DirectRawStoreHandler handler) {
         return new CopyAndMoveHandler(handler) {
             @Override
-            protected boolean copyFile(String src, String dest) throws IOException {
+            public boolean copyFile(String src, String dest) throws IOException {
                 return handler.copy(src, dest);
             }
 
             @Override
-            protected boolean moveFile(String src, String dest) throws IOException {
+            public boolean moveFile(String src, String dest) throws IOException {
                 return handler.move(src, dest);
             }
 
@@ -58,7 +58,7 @@ public abstract class CopyAndMoveHandler {
      * @return      复制成功为true，否则为false
      * @throws IOException  任意IO错误
      */
-    protected abstract boolean copyFile(String src, String dest) throws IOException;
+    public abstract boolean copyFile(String src, String dest) throws IOException;
 
     /**
      * 移动单个文件
@@ -67,7 +67,7 @@ public abstract class CopyAndMoveHandler {
      * @return      移动成功为true，否则为false
      * @throws IOException  任意IO错误
      */
-    protected abstract boolean moveFile(String src, String dest) throws IOException;
+    public abstract boolean moveFile(String src, String dest) throws IOException;
 
     /**
      * 文件移动是否需要递归执行。
@@ -92,7 +92,7 @@ public abstract class CopyAndMoveHandler {
      * @return      路径为目录则为true，否则为false
      * @throws IOException  任意IO错误
      */
-    protected boolean isDirectory(String path) throws IOException {
+    public boolean isDirectory(String path) throws IOException {
         final FileInfo fileInfo = reader.getFileInfo(path);
         return fileInfo != null && fileInfo.isDir();
     }

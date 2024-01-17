@@ -67,11 +67,11 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
      * 校验文件写入参数
      */
     private void validWriteParam(ResourceRequest param) {
-        int uid = Integer.parseInt(param.getTargetId());
+        long uid = Integer.parseInt(param.getTargetId());
         User user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
             String createUid = Objects.requireNonNull(param.getParams().get(ResourceRequest.CREATE_UID), "缺失权限上下文会话或创建人id");
-            user = Objects.requireNonNull(userService.getUserById(Integer.parseInt(createUid)), "无效的创建人id");
+            user = Objects.requireNonNull(userService.getUserById(Long.valueOf(createUid)), "无效的创建人id");
         }
         if(!UIDValidator.validate(user, uid, true)) {
             throw new IllegalArgumentException("访问拒绝");
@@ -85,23 +85,27 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         }
         validWriteParam(param);
         Date now = new Date();
-        int uid = Integer.parseInt(param.getTargetId());
+        long uid = Integer.parseInt(param.getTargetId());
 
-        FileInfo fileInfo = new FileInfo()
-                .setCreatedAt(now)
-                .setLastModified(now.getTime())
-                .setUpdatedAt(now)
-                .setUid(uid)
-                .setStreamSource(resource);
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setCtime(now.getTime());
+        fileInfo.setStreamSource(resource);
+        
+        fileInfo.setUid(uid);
         fileInfo.setName(param.getName());
         fileInfo.setSize(resource.contentLength());
+        if (param.getMtime() != null) {
+            fileInfo.setMtime(param.getMtime());
+        } else {
+            fileInfo.setMtime(resource.lastModified());
+        }
         String md5 = param.getParams().get("md5");
         if (md5 != null) {
             fileInfo.setMd5(md5);
+        } else if (fileInfo.getMd5() == null) {
+            fileInfo.updateMd5();
         }
-        try(InputStream in = resource.getInputStream()) {
-            fileSystemManager.getMainFileSystem().saveFile(uid, in, param.getPath(), fileInfo);
-        }
+        fileSystemManager.getMainFileSystem().saveFile(fileInfo,param.getPath());
 
     }
 }

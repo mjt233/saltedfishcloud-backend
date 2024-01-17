@@ -30,7 +30,7 @@ public class NodeCacheService {
     private final RedisDao redisDao;
     private final NodeService nodeService;
 
-    public void deleteNodeCache(int uid, Collection<String> nodeIds) {
+    public void deleteNodeCache(long uid, Collection<String> nodeIds) {
         try {
             deleteNodeCache(uid, nodeIds, true);
         } catch (JsonProcessingException e) {
@@ -44,7 +44,7 @@ public class NodeCacheService {
      * @param parentId  父节点ID
      * @param nodeName  节点名称
      */
-    public void deletePnidCache(int uid, String parentId, String nodeName) {
+    public void deletePnidCache(long uid, String parentId, String nodeName) {
         redisTemplate.delete(NodeCacheKeyGenerator.generatePnidKey(uid, parentId, nodeName));
     }
 
@@ -53,7 +53,7 @@ public class NodeCacheService {
      * @param uid       用户ID
      * @param nodeIds   要被删除的节点ID列表
      */
-    private void deleteNodeCache(int uid, Collection<String> nodeIds, boolean queryParent) throws JsonProcessingException {
+    private void deleteNodeCache(long uid, Collection<String> nodeIds, boolean queryParent) throws JsonProcessingException {
         if (nodeIds.size() == 0) return;
         log.debug("[NodeCache]<<==== 开始删除节点缓存 uid:{} 节点id集合: {}", uid, nodeIds);
 
@@ -98,7 +98,7 @@ public class NodeCacheService {
      * @param path  请求的路径
      * @return  redis key
      */
-    public static String getPathCacheKey(int uid, String path) {
+    public static String getPathCacheKey(long uid, String path) {
         return "xyy::path::" + uid + "::" + path;
     }
 
@@ -108,7 +108,7 @@ public class NodeCacheService {
      * @param id  请求的id
      * @return  redis key
      */
-    public static String getNodeIdCacheKey(int uid, String id) {
+    public static String getNodeIdCacheKey(long uid, String id) {
         return "xyy::node::" + uid + "::" + id;
     }
 }

@@ -15,7 +15,7 @@ public interface CustomStoreService {
      * @param uid   用户ID
      * @return      用户未设置头像时，为null
      */
-    Resource getAvatar(int uid) throws IOException;
+    Resource getAvatar(long uid) throws IOException;
 
     /**
      * 获取默认头像资源
@@ -27,5 +27,5 @@ public interface CustomStoreService {
      * @param uid   用户ID
      * @param resource 头像资源
      */
-    void saveAvatar(int uid, Resource resource) throws IOException;
+    void saveAvatar(long uid, Resource resource) throws IOException;
 }

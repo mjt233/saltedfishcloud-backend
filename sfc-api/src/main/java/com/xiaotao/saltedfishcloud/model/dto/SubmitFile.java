@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.dto;
 
+import com.xiaotao.saltedfishcloud.model.param.FileInfoSaveParam;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
@@ -10,15 +11,23 @@ import java.util.Map;
 @NoArgsConstructor
 @Data
 public class SubmitFile {
-    @NotBlank
-    private String filename;
-    private Long size;
+
+    /**
+     * 文件保存参数
+     */
+    private FileInfoSaveParam fileParam;
+
+    /**
+     * 填写的字段信息
+     */
     private List<SimpleField> field;
 
 
     public SubmitFile(String filename, Long size, List<SimpleField> field) {
-        this.filename = filename;
-        this.size = size;
+        this.fileParam = FileInfoSaveParam.builder()
+                .name(filename)
+                .size(size)
+                .build();
         this.field = field;
     }
 

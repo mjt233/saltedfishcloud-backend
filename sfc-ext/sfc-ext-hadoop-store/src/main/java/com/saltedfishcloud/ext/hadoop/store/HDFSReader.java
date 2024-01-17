@@ -68,7 +68,7 @@ public class HDFSReader implements StoreReader {
                             new HDFSResource(fs, fileStatus.getPath())
                     );
                 }
-                file.setCreatedAt(new Date(System.currentTimeMillis()));
+                file.setCreateAt(new Date(System.currentTimeMillis()));
                 res.add(file);
             }
             return res;

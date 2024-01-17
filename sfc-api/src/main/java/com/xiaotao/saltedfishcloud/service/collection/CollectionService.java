@@ -27,7 +27,7 @@ public interface CollectionService {
      * @param uid   调用者用户ID，用于验证权限
      * @param cid   文件收集ID
      */
-    void deleteCollection(int uid, long cid);
+    void deleteCollection(long uid, long cid);
 
     /**
      * 关闭一个收集任务，停止收集
@@ -35,7 +35,7 @@ public interface CollectionService {
      * @param cid   收集ID
      * @return  关闭后的收集任务信息
      */
-    CollectionInfo setState(int uid, Long cid, CollectionInfo.State state);
+    CollectionInfo setState(long uid, Long cid, CollectionInfo.State state);
 
     /**
      * 创建收集任务
@@ -43,7 +43,7 @@ public interface CollectionService {
      * @param info  收集任务信息
      * @return      收集任务ID
      */
-    CollectionInfoId createCollection(int uid, CollectionDTO info);
+    CollectionInfoId createCollection(long uid, CollectionDTO info);
 
     /**
      * 获取一个收集信息
@@ -62,12 +62,11 @@ public interface CollectionService {
     /**
      * 接受一个文件存到集合中
      * @param cid   收集ID
-     * @param uid   提供者ID，游客使用0
-     * @param is    文件输入流
+     * @param providerUid   提供者ID，游客使用0
      * @param fileInfo      基础文件信息（至少应包含文件名，大小，md5）
      * @param ip            提交者的IP地址
      * @param submitFile    提交的文件信息
      */
     @Transactional(rollbackFor = Throwable.class)
-    void collectFile(CollectionInfoId cid, int uid, InputStream is, FileInfo fileInfo, SubmitFile submitFile, String ip) throws IOException;
+    void collectFile(CollectionInfoId cid, long providerUid, FileInfo fileInfo, SubmitFile submitFile, String ip) throws IOException;
 }

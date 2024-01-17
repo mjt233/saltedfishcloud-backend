@@ -31,7 +31,7 @@ public class DefaultFileRecordSyncService implements FileRecordSyncService {
     private final StoreServiceFactory storeServiceFactory;
 
     @Override
-    public void doSync(int uid, boolean precise) throws IOException, SQLException {
+    public void doSync(long uid, boolean precise) throws IOException, SQLException {
             if (!storeServiceFactory.getService().canBrowse()) {
                 log.debug("[SYNC]存储服务不支持同步");
                 return;

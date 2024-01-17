@@ -79,7 +79,7 @@ public class FileController {
      * 创建文件夹
      */
     @PutMapping("dir/**")
-    public JsonResult<Object> mkdir(@PathVariable @UID(true) int uid,
+    public JsonResult<Object> mkdir(@PathVariable @UID(true) long uid,
                             HttpServletRequest request,
                             @RequestParam("name") @FileName String name) throws JsonException, IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/dir", request);
@@ -92,24 +92,30 @@ public class FileController {
      * 上传文件到网盘系统中
      * @param uid   目标用户的ID
      * @param file  接收到的文件
+     * @param mtime 文件修改日期
      * @param md5   文件MD5
      */
     @PutMapping("file/**")
     @BreakPoint
     public JsonResult<Long> upload(HttpServletRequest request,
-                             @PathVariable @UID(true) int uid,
+                             @PathVariable @UID(true) long uid,
                              @RequestParam(value = "file", required = false) @MergeFile MultipartFile file,
+                             @RequestParam(value = "mtime", required = false) Long mtime,
                              @RequestParam(value = "md5", required = false) String md5) throws JsonException, IOException {
         if (file == null) {
             throw new JsonException(400, "文件为空");
         }
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/file", request);
-        long i = fileSystemManager.getMainFileSystem().saveFile(uid, file, requestPath, md5);
+        FileInfo fileInfo = new FileInfo(file);
+        fileInfo.setUid(uid);
+        fileInfo.setMd5(md5);
+        fileInfo.setMtime(mtime);
+        long i = fileSystemManager.getMainFileSystem().saveFile(fileInfo, requestPath);
         return JsonResultImpl.getInstance(i);
     }
 
     @PostMapping("extractArchive/**")
-    public JsonResult<Object> extractArchive(@PathVariable @UID int uid,
+    public JsonResult<Object> extractArchive(@PathVariable @UID long uid,
                                      @RequestParam("name") String name,
                                      @RequestParam("dest") String dest,
                                      HttpServletRequest request) throws IOException {
@@ -125,7 +131,7 @@ public class FileController {
      * @param files 文件传输信息
      */
     @PostMapping("compress")
-    public JsonResult<Object> compress(@PathVariable @UID int uid,
+    public JsonResult<Object> compress(@PathVariable @UID long uid,
                                @RequestBody FileTransferInfo files) throws IOException {
         archiveService.compress(uid, files.getSource(), files.getFilenames(), files.getDest());
         return JsonResult.emptySuccess();
@@ -139,7 +145,7 @@ public class FileController {
      */
     @PostMapping("wrap")
     @AllowAnonymous
-    public JsonResult<Object> createWrap(@PathVariable @UID int uid,
+    public JsonResult<Object> createWrap(@PathVariable @UID long uid,
                                  @RequestBody FileTransferInfo files) {
         String wid = wrapService.registerWrap(uid, files);
         return JsonResultImpl.getInstance(wid);
@@ -153,7 +159,7 @@ public class FileController {
      * @param path  文件保存目录路径
      */
     @PostMapping("quickSave")
-    public JsonResult<Boolean> quickSave(@UID @PathVariable int uid,
+    public JsonResult<Boolean> quickSave(@UID @PathVariable long uid,
                                 @RequestParam("path") String path,
                                 @RequestParam("name") String name,
                                 @RequestParam("md5") String md5) throws IOException {
@@ -188,7 +194,7 @@ public class FileController {
     @AllowAnonymous
     @GetMapping("fileList/byPath/**")
     @NotBlock
-    public JsonResult<Collection<? extends FileInfo>[]> getFileList(HttpServletRequest request, @PathVariable @UID int uid) throws IOException {
+    public JsonResult<Collection<? extends FileInfo>[]> getFileList(HttpServletRequest request, @PathVariable @UID long uid) throws IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fileList/byPath", request);
         Collection<? extends FileInfo>[] fileList = fileSystemManager.getMainFileSystem().getUserFileList(uid, requestPath);
         return JsonResultImpl.getInstance(fileList);
@@ -198,7 +204,7 @@ public class FileController {
     @ApiOperation("获取指定文件的信息")
     @GetMapping("getFileInfo")
     @AllowAnonymous
-    public JsonResult<FileInfo> getFileInfo(@PathVariable @UID int uid, @RequestParam("path") String path, @RequestParam("name") String name) throws IOException {
+    public JsonResult<FileInfo> getFileInfo(@PathVariable @UID long uid, @RequestParam("path") String path, @RequestParam("name") String name) throws IOException {
         List<FileInfo>[] fileList = fileSystemManager.getMainFileSystem().getUserFileList(uid, path);
         FileInfo fileInfo = Optional.ofNullable(fileList[1]).orElse(Collections.emptyList()).stream().filter(e -> Objects.equals(e.getName(), name))
                 .findAny()
@@ -215,7 +221,7 @@ public class FileController {
     @AllowAnonymous
     @NotBlock
     public JsonResult<PageInfo<FileInfo>> search(@PathVariable("name") String key,
-                             @PathVariable @UID int uid,
+                             @PathVariable @UID long uid,
                              @RequestParam(value = "page", defaultValue = "1") Integer page) {
         PageHelper.startPage(page, 10);
         List<FileInfo> res = fileSystemManager.getMainFileSystem().search(uid, key);
@@ -231,7 +237,7 @@ public class FileController {
     @AllowAnonymous
     @NotBlock(level = ProtectLevel.DATA_CHECKING)
     @Deprecated
-    public ResponseEntity<Resource> download(HttpServletRequest request,@PathVariable @UID int uid)
+    public ResponseEntity<Resource> download(HttpServletRequest request,@PathVariable @UID long uid)
             throws IOException {
         String prefix = PREFIX + uid + "/content";
         String requestPath = URLUtils.getRequestFilePath(prefix, request);
@@ -260,8 +266,8 @@ public class FileController {
     @PostMapping("copy")
     public JsonResult<Object> copy( @PathVariable("uid") @UID(true) long uid,
                             @RequestBody @Validated FileTransferParam info) throws IOException {
-        int sourceUid = (int)uid;
-        int targetUid = info.getTargetUid().intValue();
+        long sourceUid = uid;
+        long targetUid = info.getTargetUid();
         for (FileItemTransferParam item : info.getFiles()) {
             String source = PathUtils.getParentPath(item.getSource());
             String sourceName = PathUtils.getLastNode(item.getSource());
@@ -281,7 +287,7 @@ public class FileController {
     @PostMapping("move")
     public JsonResult<Object> move( @PathVariable("uid") @UID(true) long uid,
                             @RequestBody @Validated FileTransferParam info) throws IOException {
-        int sourceUid = (int)uid;
+        long sourceUid = uid;
         for (FileItemTransferParam item : info.getFiles()) {
             String source = PathUtils.getParentPath(item.getSource());
             String sourceName = PathUtils.getLastNode(item.getSource());
@@ -297,7 +303,7 @@ public class FileController {
      */
     @PostMapping("fromPath/**")
     @Deprecated
-    public JsonResult<Object> copy( @PathVariable("uid") @UID(true) int uid,
+    public JsonResult<Object> copy( @PathVariable("uid") @UID(true) long uid,
                             @RequestBody @Validated FileCopyOrMoveInfo info,
                             HttpServletRequest request) throws IOException {
         String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
@@ -316,7 +322,7 @@ public class FileController {
     @PutMapping("/fromPath/**")
     @Deprecated
     public JsonResult<Object> move(HttpServletRequest request,
-                           @PathVariable("uid") @UID(true) int uid,
+                           @PathVariable("uid") @UID(true) long uid,
                            @RequestBody @Valid FileCopyOrMoveInfo info)
             throws IOException {
         String source = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
@@ -332,7 +338,7 @@ public class FileController {
      */
     @PutMapping("name/**")
     public JsonResult<Object> rename(HttpServletRequest request,
-                             @PathVariable @UID(true) int uid,
+                             @PathVariable @UID(true) long uid,
                              @RequestParam("oldName") @Valid @FileName String oldName,
                              @RequestParam("newName") @Valid @FileName String newName) throws IOException {
         String from = URLUtils.getRequestFilePath(PREFIX + uid + "/name", request);
@@ -356,7 +362,7 @@ public class FileController {
      */
     @DeleteMapping("content/**")
     public JsonResult<Long> delete(HttpServletRequest request,
-                             @PathVariable @UID(true) int uid,
+                             @PathVariable @UID(true) long uid,
                              @RequestBody @Validated FileNameList fileName) throws IOException {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/content", request);
         long res = fileSystemManager.getMainFileSystem().deleteFile(uid, path, fileName.getFileName());

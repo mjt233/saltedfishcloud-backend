@@ -1,11 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sfc.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
-import com.sfc.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +16,6 @@ import java.util.function.Consumer;
 
 /**
  * 系统统一配置服务
- * todo 实现配置项与实体类的绑定功能
  */
 public interface ConfigService {
 

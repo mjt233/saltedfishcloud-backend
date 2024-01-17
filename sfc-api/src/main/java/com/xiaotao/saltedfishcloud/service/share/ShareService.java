@@ -23,13 +23,13 @@ public interface ShareService {
      * @return                      打包码
      */
     @Deprecated
-    String createwrap(Integer sid, String verification, String code, FileTransferInfo fileTransferInfo);
+    String createwrap(Long sid, String verification, String code, FileTransferInfo fileTransferInfo);
 
     /**
      * 取消分享
      * @param sid 分享ID
      */
-    void deleteShare(Integer sid, Integer uid);
+    void deleteShare(Long sid, Long uid);
 
     /**
      * 获取分享文件或目录的具体文件内容资源
@@ -47,7 +47,7 @@ public interface ShareService {
      * @return 一个List数组，数组下标0为目录，1为文件，或null
      * @throws IOException 任何可能的IO异常
      */
-    List<FileInfo>[] browse(int sid, String verification, String path, String extractCode) throws IOException;
+    List<FileInfo>[] browse(long sid, String verification, String path, String extractCode) throws IOException;
 
     /**
      * 创建分享
@@ -55,7 +55,7 @@ public interface ShareService {
      * @param shareDTO  分享初始设定数据
      * @return          完整分享信息对象
      */
-    ShareInfo createShare(int uid, ShareDTO shareDTO);
+    ShareInfo createShare(long uid, ShareDTO shareDTO);
 
     /**
      * 获取用户的所有分享
@@ -65,7 +65,7 @@ public interface ShareService {
      * @param hideKeyAttr 隐藏关键信息
      * @return  分页信息
      */
-    CommonPageInfo<ShareInfo> getUserShare(int uid, int page, int size, boolean hideKeyAttr);
+    CommonPageInfo<ShareInfo> getUserShare(long uid, int page, int size, boolean hideKeyAttr);
 
     /**
      * 获取分享信息，内部将进行有效性校验，包括：文件是否存在、分享是否存在、校验码是否正确
@@ -73,12 +73,12 @@ public interface ShareService {
      * @param verification  校验码
      * @return  分享信息
      */
-    ShareInfo getShare(int sid, String verification);
+    ShareInfo getShare(long sid, String verification);
 
     /**
      * 根据id获取分享信息
      * @param id    分享id
      * @return      分享信息
      */
-    ShareInfo getById(int id);
+    ShareInfo getById(long id);
 }

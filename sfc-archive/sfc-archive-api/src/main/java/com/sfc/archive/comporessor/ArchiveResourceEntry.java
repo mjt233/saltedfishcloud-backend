@@ -1,6 +1,8 @@
 package com.sfc.archive.comporessor;
 
 import com.sfc.archive.model.ArchiveFile;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.core.io.InputStreamSource;
 
 import java.io.IOException;

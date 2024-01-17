@@ -21,7 +21,7 @@ class NodeServiceTest {
 
     @Test
     void getLastNodeInfoByPath() throws NoSuchFileException {
-        int nid = userService.getUserByUser("xiaotao").getId();
+        long nid = userService.getUserByUser("xiaotao").getId();
         String node = nodeService.getNodeIdByPath(nid, "/f1");
         log.info(node);
     }

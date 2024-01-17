@@ -22,10 +22,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -96,7 +95,11 @@ public class RedisRPCManager implements RPCManager {
             enhancer.setCallback((LazyLoader) () -> {
                 List<Object> objects = rpcClientMap.get(clazz);
                 if (objects == null) {
-                    throw new IllegalArgumentException("没有注册" + clazz + "的RPC服务");
+                    T client = RPCActionDefinitionUtils.createRPCClient(clazz, this);
+                    List<Object> clientList = new ArrayList<>();
+                    clientList.add(client);
+                    rpcClientMap.put(clazz, clientList);
+                    return client;
                 }
                 if (objects.size() > 1) {
                     throw new IllegalArgumentException("与" + clazz + "关联的RPC服务存在多个");
@@ -186,9 +189,9 @@ public class RedisRPCManager implements RPCManager {
         }
         Object result = response.getResult();
         if (result != null) {
-            response.setResult(MapperHolder.toJson(result));
+            response.setResult(MapperHolder.toJsonWithType(result));
         }
-        redisTemplate.opsForList().leftPush(request.getResponseKey(), MapperHolder.toJson(response));
+        redisTemplate.opsForList().leftPush(request.getResponseKey(), MapperHolder.toJsonWithType(response));
         redisTemplate.expire(request.getResponseKey(), DEFAULT_TIMEOUT);
     }
 
@@ -229,7 +232,13 @@ public class RedisRPCManager implements RPCManager {
         }
         RPCResponse rpcResponse = MapperHolder.parseJson((String) o, RPCResponse.class);
         if (resultType != null && rpcResponse.getResult() != null) {
-            rpcResponse.setResult(MapperHolder.parseJson(rpcResponse.getResult().toString(), resultType));
+            String resultJson = rpcResponse.getResult().toString();
+            if (!resultJson.startsWith("[") && Collection.class.isAssignableFrom(resultType)) {
+                rpcResponse.setResult(List.of(MapperHolder.withTypeMapper.readValue(resultJson, Object.class)));
+            } else {
+                rpcResponse.setResult(MapperHolder.parseJson(resultJson, resultType));
+            }
+
         }
         return rpcResponse;
     }

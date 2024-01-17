@@ -5,7 +5,7 @@ import org.apache.ftpserver.usermanager.impl.BaseUser;
 
 
 public class DiskFtpUser extends BaseUser {
-    private int id;
+    private long id;
     private boolean admin;
 
     public DiskFtpUser(User user) {
@@ -18,11 +18,11 @@ public class DiskFtpUser extends BaseUser {
         return admin;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

@@ -282,7 +282,7 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
         }
         session.setRunning(true);
         session.setUpdateAt(now);
-        session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId().longValue()).orElse((long)User.PUBLIC_USER_ID));
+        session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId()).orElse(User.PUBLIC_USER_ID));
 
         // 根据参数创建进程
         long begin = System.currentTimeMillis();

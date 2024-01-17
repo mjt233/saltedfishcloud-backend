@@ -6,6 +6,7 @@ import com.sfc.quickshare.repo.QuickShareRepo;
 import com.sfc.constant.ByteSize;
 import com.sfc.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -86,12 +87,12 @@ public class QuickShareService {
 
         // 设置基础数据 - 标记过期日期
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.MINUTE, property.getEffectiveDuration().intValue());
+        calendar.add(Calendar.MINUTE, property.getEffectiveDuration());
         quickShare.setExpiredAt(calendar.getTime());
 
         // 存储文件
         try(InputStream is = resource.getInputStream()) {
-            storeServiceFactory.getTempStoreService().store(StringUtils.appendPath(PREFIX_DIR, quickShare.getId().toString()), fileSize, is);
+            storeServiceFactory.getTempStoreService().store(FileInfo.getFromResource(resource, quickShare.getUid(), FileInfo.TYPE_FILE), StringUtils.appendPath(PREFIX_DIR, quickShare.getId().toString()), fileSize, is);
         }
 
         // 生成并记录提取码

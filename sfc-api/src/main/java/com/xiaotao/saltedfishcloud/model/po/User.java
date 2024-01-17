@@ -30,7 +30,7 @@ public class User implements UserDetails {
     public static final String SYS_NAME_PUBLIC = "__SYSTEM_PUBLIC";
     public static final String SYS_NAME_ADMIN = "ADMIN";
     public static final String SYS_GROUP_NAME_PUBLIC = "__SYSTEM_PUBLIC_GROUP";
-    public static final int PUBLIC_USER_ID = 0;
+    public static final long PUBLIC_USER_ID = 0;
 
     private static final long serialVersionUID = -2530285292010387981L;
     public static final int TYPE_ADMIN = 1;
@@ -39,7 +39,7 @@ public class User implements UserDetails {
     /**
      * 用户id，后续将改为Long类型
      */
-    private Integer id;
+    private Long id;
     @Username
     private String user;
 
@@ -87,7 +87,7 @@ public class User implements UserDetails {
             }
 
             @Override
-            public void setId(Integer id) {
+            public void setId(Long id) {
                 throw new UnsupportedOperationException("不支持设置公共用户属性");
             }
 

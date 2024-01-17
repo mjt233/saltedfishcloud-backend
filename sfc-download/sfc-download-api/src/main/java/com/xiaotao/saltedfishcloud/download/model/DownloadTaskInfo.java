@@ -31,7 +31,7 @@ public class DownloadTaskInfo {
     @GeneratedValue(generator = "jpa-uuid")
     private String id;
 
-    private int uid;
+    private long uid;
 
     @NotEmpty
     private String url;
@@ -63,7 +63,7 @@ public class DownloadTaskInfo {
     @Column(name = "finish_at")
     private Date finishAt;
 
-    private int createdBy;
+    private long createdBy;
 
     @OneToOne
     @JoinColumn(name = "task_id", referencedColumnName = "id")

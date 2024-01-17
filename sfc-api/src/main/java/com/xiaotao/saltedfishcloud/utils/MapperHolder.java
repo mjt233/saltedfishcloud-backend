@@ -131,4 +131,8 @@ public class MapperHolder {
     public static String toJson(Object val) throws JsonProcessingException {
         return mapper.writeValueAsString(val);
     }
+
+    public static String toJsonWithType(Object val) throws JsonProcessingException {
+        return withTypeMapper.writeValueAsString(val);
+    }
 }

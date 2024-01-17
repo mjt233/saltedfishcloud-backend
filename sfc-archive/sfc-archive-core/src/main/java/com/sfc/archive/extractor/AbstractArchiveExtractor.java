@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -175,6 +176,9 @@ public abstract class AbstractArchiveExtractor implements ArchiveExtractor {
 
                 try(OutputStream targetOutput = Files.newOutputStream(target)) {
                     StreamUtils.copy(stream, targetOutput);
+                }
+                if (file.getMtime() != null) {
+                    Files.setLastModifiedTime(target, FileTime.fromMillis(file.getMtime()));
                 }
 
                 long end = System.currentTimeMillis() - begin;

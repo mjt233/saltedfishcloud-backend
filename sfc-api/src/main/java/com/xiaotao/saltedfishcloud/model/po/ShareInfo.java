@@ -25,8 +25,8 @@ import java.util.Date;
 public class ShareInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-    private Integer uid;
+    private Long id;
+    private Long uid;
     private String nid;
     private String parentId;
     private String verification;
@@ -54,14 +54,14 @@ public class ShareInfo {
     @JsonIgnore
     private boolean hide = false;
 
-    public ShareInfo(Integer uid, String nid, ShareType type, Date expiredAt) {
+    public ShareInfo(Long uid, String nid, ShareType type, Date expiredAt) {
         this.uid = uid;
         this.nid = nid;
         this.type = type;
         this.expiredAt = expiredAt;
     }
 
-    public static ShareInfo valueOf(ShareDTO shareDTO, ShareType type, String nid, int uid) {
+    public static ShareInfo valueOf(ShareDTO shareDTO, ShareType type, String nid, long uid) {
         ShareInfo shareInfo = new ShareInfo();
         shareInfo.setExpiredAt(shareDTO.getExpiredAt());
         shareInfo.setExtractCode(shareDTO.getExtractCode());

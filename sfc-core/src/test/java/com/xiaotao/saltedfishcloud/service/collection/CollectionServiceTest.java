@@ -79,6 +79,7 @@ class CollectionServiceTest {
         fileInfo.setMd5(md5);
         fileInfo.setSize(resource.contentLength());
         fileInfo.updateMd5();
+        fileInfo.setStreamSource(resource);
 
 
         SubmitFile file = new SubmitFile("full.sql", resource.contentLength(), null);
@@ -87,15 +88,15 @@ class CollectionServiceTest {
         // 保存文件到收集任务
         try {
             // 文件名不匹配正则
-            cs.collectFile(cid, u.getId(), resource.getInputStream(), fileInfo, file, ip);
+            cs.collectFile(cid, u.getId(), fileInfo, file, ip);
             fail();
         } catch (JsonException e) {
             System.out.println(e.toString());
         }
-        file.setFilename("full.docx");
+        file.getFileParam().setName("full.docx");
 
         // OK
-        cs.collectFile(cid, u.getId(), resource.getInputStream(), fileInfo, file, ip);
+        cs.collectFile(cid, u.getId(), fileInfo, file, ip);
     }
 
     @Test

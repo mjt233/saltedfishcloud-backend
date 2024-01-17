@@ -97,7 +97,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     }
 
     @Override
-    public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
+    public void store(long uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
         String md5 = fileInfo.getMd5();
         if (md5 == null) {
             fileInfo.updateMd5();
@@ -113,12 +113,12 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
         }
 
         log.debug("[{}]存储新文件：{}，保存路径：{}", LOG_TITLE, fileInfo.getName(), path);
-        handler.store(path, fileInfo.getSize(), input);
+        handler.store(fileInfo, path, fileInfo.getSize(), input);
 
     }
 
     @Override
-    public long delete(int uid, String path, Collection<String> files) throws IOException {
+    public long delete(long uid, String path, Collection<String> files) throws IOException {
         int cnt = 0;
         for (String file : files) {
             final String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, file));
@@ -148,22 +148,22 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     }
 
     @Override
-    public void rename(int uid, String path, String oldName, String newName) throws IOException {
+    public void rename(long uid, String path, String oldName, String newName) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean mkdir(int uid, String path, String name) throws IOException {
+    public boolean mkdir(long uid, String path, String name) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<FileInfo> lists(int uid, String path) throws IOException {
+    public List<FileInfo> lists(long uid, String path) throws IOException {
         throw new UnsupportedOperationException("不支持lists");
     }
 
     @Override
-    public Resource getResource(int uid, String path, String name) throws IOException {
+    public Resource getResource(long uid, String path, String name) throws IOException {
         final String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, name));
         if (md5 == null) {
             return null;
@@ -175,17 +175,17 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     }
 
     @Override
-    public boolean exist(int uid, String path) {
+    public boolean exist(long uid, String path) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
+    public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void move(int uid, String source, String target, String name, boolean overwrite) {
+    public void move(long uid, String source, String target, String name, boolean overwrite) {
         throw new UnsupportedOperationException();
     }
 

@@ -28,6 +28,7 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -114,9 +115,11 @@ public class DatabaseUpdater implements ApplicationRunner {
      */
     private void registerSQLUpdateHandler() throws IOException {
         // 读取资源目录/sql下的所有版本更新sql文件
-        Resource[] sqls = ResourcePatternUtils
+        Resource[] sqls = Arrays.stream(ResourcePatternUtils
                 .getResourcePatternResolver(resourceLoader)
-                .getResources("classpath:/sql/*.*.*.sql");
+                .getResources("classpath:/sql/*.*.*.sql"))
+                .filter(e -> !Objects.requireNonNull(e.getFilename()).endsWith("no-auto.sql"))
+                .toArray(Resource[]::new);
         SQLVersionResource[] resources = SQLVersionResource.valueOf(sqls);
         Arrays.sort(resources);
         for (SQLVersionResource resource : resources) {

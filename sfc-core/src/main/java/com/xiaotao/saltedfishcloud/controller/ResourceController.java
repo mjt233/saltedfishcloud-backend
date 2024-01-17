@@ -10,7 +10,7 @@ import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
@@ -123,7 +123,7 @@ public class ResourceController {
     @GetMapping({"node/**", "node"})
     @AllowAnonymous
     @NotBlock
-    public JsonResult<Object> pathToNodeList(@PathVariable("uid") @UID int uid, HttpServletRequest request) throws NoSuchFileException {
+    public JsonResult<Object> pathToNodeList(@PathVariable("uid") @UID long uid, HttpServletRequest request) throws NoSuchFileException {
         String path = URLUtils.getRequestFilePath(PREFIX + "/" + uid + "/node", request);
         return JsonResultImpl.getInstance(nodeService.getPathNodeByPath(uid, "/" + path));
     }
@@ -136,7 +136,7 @@ public class ResourceController {
     @GetMapping("path/{node}")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<Object> getPath(@PathVariable("uid") @UID int uid,
+    public JsonResult<Object> getPath(@PathVariable("uid") @UID long uid,
                               @PathVariable("node") String node) {
         return JsonResultImpl.getInstance(nodeService.getPathByNode(uid, node));
     }
@@ -147,13 +147,15 @@ public class ResourceController {
     @GetMapping("FDC/**")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<Object> getFDC(@PathVariable @UID int uid,
+    public JsonResult<Object> getFDC(@PathVariable @UID long uid,
                              HttpServletRequest request,
                              @RequestParam(value = "md5", required = false) String md5,
                              @RequestParam("name") @Valid @FileName String name,
                              @RequestParam(value = "expr", defaultValue = "1") int expr) throws IOException {
         String filePath = URLUtils.getRequestFilePath(PREFIX + uid + "/FDC", request);
-        BasicFileInfo fileInfo = new BasicFileInfo(name, md5);
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setName(name);
+        fileInfo.setMd5(md5);
         String dc = resourceService.getFileDownloadCode(uid, filePath, fileInfo, expr);
         return JsonResultImpl.getInstance(dc);
     }
@@ -183,7 +185,7 @@ public class ResourceController {
     @NotBlock(level = ProtectLevel.DATA_CHECKING)
     public ResponseEntity<org.springframework.core.io.Resource> downloadByMD5(
             @PathVariable("md5") String md5,
-            @PathVariable("uid") int uid,
+            @PathVariable("uid") long uid,
             HttpServletRequest request
     )
             throws IOException {
