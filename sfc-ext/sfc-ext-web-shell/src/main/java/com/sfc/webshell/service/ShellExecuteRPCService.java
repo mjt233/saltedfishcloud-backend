@@ -46,7 +46,7 @@ public interface ShellExecuteRPCService {
     /**
      * 获取当前集群所有节点运行的webShell进程会话信息
      */
-    @RPCAction(strategy = RPCResponseStrategy.SUMMARY_ALL)
+    @RPCAction(strategy = RPCResponseStrategy.SUMMARY_ALL, isFlat = true)
     List<ShellSessionRecord> getAllSession() throws IOException;
 
     /**

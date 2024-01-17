@@ -233,7 +233,8 @@ public class RedisRPCManager implements RPCManager {
         RPCResponse rpcResponse = MapperHolder.parseJson((String) o, RPCResponse.class);
         if (resultType != null && rpcResponse.getResult() != null) {
             String resultJson = rpcResponse.getResult().toString();
-            if (!resultJson.startsWith("[") && Collection.class.isAssignableFrom(resultType)) {
+            boolean isJsonArray = resultJson.startsWith("[\"") && resultJson.endsWith("]]");
+            if ((!resultJson.startsWith("[") || isJsonArray) && Collection.class.isAssignableFrom(resultType)) {
                 rpcResponse.setResult(List.of(MapperHolder.withTypeMapper.readValue(resultJson, Object.class)));
             } else {
                 rpcResponse.setResult(MapperHolder.parseJson(resultJson, resultType));
