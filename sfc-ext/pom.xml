@@ -21,11 +21,11 @@
     </properties>
 
     <modules>
-        <module>sfc-ext-hadoop-store</module>
-        <module>sfc-ext-demo</module>
+<!--        <module>sfc-ext-hadoop-store</module>-->
+<!--        <module>sfc-ext-demo</module>-->
         <module>sfc-ext-mp3-thumbnail</module>
         <module>sfc-ext-minio-store</module>
-        <module>sfc-ext-samba-store</module>
+<!--        <module>sfc-ext-samba-store</module>-->
         <module>sfc-ext-sftp-store</module>
         <module>sfc-ext-ftp-store</module>
         <module>sfc-ext-ftp-server</module>
