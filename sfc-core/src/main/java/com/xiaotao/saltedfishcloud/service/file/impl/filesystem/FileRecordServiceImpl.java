@@ -50,11 +50,17 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public FileInfo getFileInfo(long uid, String dirPath, String name) {
-        final String nodeId = nodeService.getNodeIdByPathNoEx(uid, dirPath);
+        String requestDir = dirPath;
+        String requestName = name;
+        if (name == null) {
+            requestDir = PathUtils.getParentPath(dirPath);
+            requestName = PathUtils.getLastNode(dirPath);
+        }
+        final String nodeId = nodeService.getNodeIdByPathNoEx(uid, requestDir);
         if (nodeId == null) {
             return null;
         }
-        return fileInfoRepo.findFileInfo(uid, name, nodeId);
+        return fileInfoRepo.findFileInfo(uid, requestName, nodeId);
     }
 
 
