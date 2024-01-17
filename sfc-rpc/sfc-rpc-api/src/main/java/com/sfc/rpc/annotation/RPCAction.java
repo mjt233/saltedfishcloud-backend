@@ -22,6 +22,19 @@ public @interface RPCAction {
     RPCResponseStrategy strategy() default RPCResponseStrategy.ONLY_ACCEPT_ONE;
 
     /**
+     * 是否将结果扁平化处理<br>
+     * 这在将单个节点返回List类型时会非常有用。如：两个节点返回值为:<br>
+     * <code>["a", "b"], ["c", "c"]</code> <br>
+     *
+     * 经过汇总后会处理为：<br>
+     *
+     * <code>[["a", "b"], ["c", "c"]]</code><br>
+     *
+     * 开启扁平化处理后，结果将会处理为：["a", "b", "c", "d"]
+     */
+    boolean isFlat() default false;
+
+    /**
      * 返回null时，是否默认设置为请求被忽略<br>
      * 仅在方法返回值不为void时生效
      */

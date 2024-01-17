@@ -22,6 +22,11 @@ public class RPCActionDefinition {
     private RPCResponseStrategy strategy;
 
     /**
+     * 是否扁平化处理list
+     */
+    private boolean isFlat;
+
+    /**
      * 方法
      */
     private Method method;

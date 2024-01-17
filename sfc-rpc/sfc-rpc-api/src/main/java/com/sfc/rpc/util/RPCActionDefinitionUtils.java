@@ -2,6 +2,7 @@ package com.sfc.rpc.util;
 
 import com.sfc.rpc.RPCManager;
 import com.sfc.rpc.RPCRequest;
+import com.sfc.rpc.RPCResponse;
 import com.sfc.rpc.annotation.RPCAction;
 import com.sfc.rpc.annotation.RPCService;
 import com.sfc.rpc.enums.RPCResponseStrategy;
@@ -90,7 +91,8 @@ public class RPCActionDefinitionUtils {
                 }
 
             } else if (definition.getStrategy() == RPCResponseStrategy.SUMMARY_ALL) {
-                return rpcManager.callAll(request, method.getReturnType())
+                List<? extends RPCResponse<?>> rawResult = rpcManager.callAll(request, method.getReturnType());
+                Stream<?> stream = rawResult
                         .stream()
                         .map(e -> {
                             Object result = e.getResult();
@@ -98,14 +100,17 @@ public class RPCActionDefinitionUtils {
                                 return null;
                             }
                             if (result instanceof Collection) {
-                                return (Collection<?>)result;
+                                return (Collection<?>) result;
                             } else {
                                 return Collections.singletonList(result);
                             }
                         })
                         .filter(Objects::nonNull)
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toList());
+                        .flatMap(Collection::stream);
+                if (definition.isFlat()) {
+                    stream = stream.flatMap(collection -> ((Collection<?>) collection).stream());
+                }
+                return stream.collect(Collectors.toList());
             } else {
                 throw new IllegalArgumentException("在 [ " + definition.getFullFunctionName() + " ]上存在不支持的RPC响应结果汇总策略：" + definition.getStrategy());
             }
@@ -133,6 +138,7 @@ public class RPCActionDefinitionUtils {
                             return RPCActionDefinition.builder()
                                     .rpcAction(rpcAction)
                                     .strategy(rpcAction.strategy())
+                                    .isFlat(rpcAction.isFlat())
                                     .method(e)
                                     .fullFunctionName(getRPCActionFunctionName(namespace, e))
                                     .build();
