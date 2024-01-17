@@ -73,7 +73,7 @@ public class FileInfoWrapResource implements Resource {
 
     @Override
     public long contentLength() throws IOException {
-        return getFileInfo().getSize();
+        return originResource.contentLength();
     }
 
     @Override
