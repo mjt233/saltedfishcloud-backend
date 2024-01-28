@@ -5,6 +5,7 @@ import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
 import com.saltedfishcloud.ext.ve.model.ProcessWrap;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.utils.StringParser;
+import com.saltedfishcloud.ext.ve.utils.VideoResourceUtils;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
@@ -24,6 +25,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Scanner;
 
 /**
@@ -204,9 +206,8 @@ public class VideoConvertTask implements AsyncTask {
     private void initInputFile() throws UnsupportedProtocolException, IOException {
         if (this.inputFile == null) {
             Resource resource = resourceService.getResource(param.getSource());
-            if (!(resource instanceof PathResource)) {
-                throw new IllegalArgumentException("目前仅支持PathResource");
-            }
+            Objects.requireNonNull(resource, "视频资源获取失败或已丢失");
+            VideoResourceUtils.toLocalPath(resource);
             this.inputFile = ((PathResource) resource).getPath();
         }
     }

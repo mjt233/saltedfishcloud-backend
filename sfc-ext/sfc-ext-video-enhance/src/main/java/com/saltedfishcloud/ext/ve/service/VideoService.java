@@ -10,6 +10,7 @@ import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTaskLog;
+import com.saltedfishcloud.ext.ve.utils.VideoResourceUtils;
 import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
@@ -131,22 +132,12 @@ public class VideoService {
         return resource;
     }
 
-    private String resourceToLocalPath(Resource resource) {
-        if (resource == null) {
-            throw new IllegalArgumentException("资源为null");
-        }
-        if (!(resource instanceof PathResource)) {
-            throw new IllegalArgumentException("目前仅支持PathResource");
-        }
-        return ((PathResource) resource).getPath();
-    }
-
     /**
      * 获取字幕信息列表
      * @param resource  视频文件资源
      */
     public VideoInfo getVideoInfo(Resource resource) throws IOException {
-        String localPath = resourceToLocalPath(resource);
+        String localPath = VideoResourceUtils.toLocalPath(resource);
         return ffMpegHelper.getVideoInfo(localPath);
     }
 
@@ -163,7 +154,7 @@ public class VideoService {
         if (streamNo == null) {
             throw new IllegalArgumentException("流编号不能为空");
         }
-        String localPath = resourceToLocalPath(resource);
+        String localPath = VideoResourceUtils.toLocalPath(resource);
         return ffMpegHelper.extractSubtitle(localPath, streamNo, type);
     }
 
