@@ -340,7 +340,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         RLock lock = redisson.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
         try {
             lock.lock();
-            FileInfo originInfo = fileRecordService.getFileInfo(uid, fileInfo.getName(), nid);
+            FileInfo originInfo = fileRecordService.getFileInfoByNode(uid, nid, fileInfo.getName());
             boolean exist = false;
             if (originInfo != null) {
                 if (originInfo.getMd5().equals(fileInfo.getMd5())) {

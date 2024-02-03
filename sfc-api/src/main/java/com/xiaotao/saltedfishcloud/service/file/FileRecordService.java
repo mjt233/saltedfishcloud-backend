@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
@@ -33,6 +32,14 @@ public interface FileRecordService {
      * @param name      文件名
      */
     FileInfo getFileInfo(long uid, String dirPath, String name);
+
+    /**
+     * 按所属节点id查询文件信息
+     * @param uid       用户id
+     * @param nid       节点id
+     * @param name      文件名
+     */
+    FileInfo getFileInfoByNode(long uid, String nid, String name);
 
     /**
      * 通过MD5获取文件

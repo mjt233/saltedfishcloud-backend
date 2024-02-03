@@ -63,6 +63,10 @@ public class FileRecordServiceImpl implements FileRecordService {
         return fileInfoRepo.findFileInfo(uid, requestName, nodeId);
     }
 
+    @Override
+    public FileInfo getFileInfoByNode(long uid, String nid, String name) {
+        return fileInfoRepo.findFileInfo(uid, name, nid);
+    }
 
     @Override
     public boolean exist(long uid, String path, String name) {
