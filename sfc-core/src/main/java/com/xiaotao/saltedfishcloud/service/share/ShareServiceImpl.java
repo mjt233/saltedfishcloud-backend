@@ -37,7 +37,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 
 @Service
@@ -152,7 +151,7 @@ public class ShareServiceImpl implements ShareService {
         try {
             Deque<NodeInfo> nodes = nodeService.getPathNodeByPath(uid, shareDTO.getPath());
             String nid = nodes.getLast().getId();
-            FileInfo fileInfo =  fileRecordService.getFileInfo(uid, shareDTO.getName(), nid);
+            FileInfo fileInfo =  fileRecordService.getFileInfoByNode(uid, nid, shareDTO.getName());
 
             if (fileInfo == null) throw new JsonException(FileSystemError.FILE_NOT_FOUND);
             ShareInfo shareInfo = ShareInfo.valueOf(
@@ -208,7 +207,7 @@ public class ShareServiceImpl implements ShareService {
             if (nodeInfo == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         } else {
             // 判断分享的原文件是否失效
-            FileInfo fi = fileRecordService.getFileInfo(po.getUid(), po.getName(), po.getParentId());
+            FileInfo fi = fileRecordService.getFileInfoByNode(po.getUid(), po.getParentId(), po.getName());
             if (fi == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         }
 
