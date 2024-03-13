@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -22,10 +23,7 @@ import java.util.Date;
 @Setter
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ShareInfo {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class ShareInfo extends AuditModel {
     private Long uid;
     private String nid;
     private String parentId;
@@ -37,8 +35,6 @@ public class ShareInfo {
     private String extractCode;
     private String name;
 
-    @CreatedDate
-    private Date createdAt;
     private Date expiredAt;
 
     @Transient
