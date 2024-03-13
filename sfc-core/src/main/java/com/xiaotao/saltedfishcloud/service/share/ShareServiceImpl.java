@@ -179,7 +179,7 @@ public class ShareServiceImpl implements ShareService {
                         PageRequest.of(
                                 page,
                                 size,
-                                Sort.by(Sort.Direction.DESC, "createdAt")
+                                Sort.by(Sort.Direction.DESC, "createAt")
                         )
                 )
         );
