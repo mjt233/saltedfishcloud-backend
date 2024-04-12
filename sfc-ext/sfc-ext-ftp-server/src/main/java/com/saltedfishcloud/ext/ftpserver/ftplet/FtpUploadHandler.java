@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +56,7 @@ public class FtpUploadHandler extends DefaultFtplet {
         log.debug("upload end");
 
         FtpPathInfo pathInfo = (FtpPathInfo) session.getAttribute("pathInfo");
-        long uid = (int) session.getAttribute("uid");
+        long uid = TypeUtils.toLong(session.getAttribute("uid"));
         String tmpDir = System.getProperty("java.io.tmpdir");
         String tag = uid + SecureUtils.getMd5(pathInfo.getFullPath());
 

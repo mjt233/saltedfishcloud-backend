@@ -141,6 +141,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
             fileInfo.setName(name);
             FileInfo newFile = FileInfo.createFrom(fileInfo, false);
             newFile.setUid(uid);
+            newFile.setStreamSource(resource);
             saveFile(newFile, path);
         } catch (IOException e) {
             log.trace("错误：{}", e.getMessage());
