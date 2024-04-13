@@ -217,6 +217,7 @@ public class FileInfo extends AuditModel {
             newObj.setUid(null);
             newObj.setId(null);
         }
+        newObj.setNode(null);
         newObj.setMountId(null);
         return newObj;
     }
