@@ -258,8 +258,8 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             fileInfo.setStreamSource(sourceResource);
             FileInfo newFile = FileInfo.createFrom(fileInfo, false);
             newFile.setUid(targetUid);
-            fileInfo.setStreamSource(sourceResource);
-            targetMatchResult.fileSystem.saveFile(fileInfo, targetMatchResult.resolvedPath);
+            newFile.setStreamSource(sourceResource);
+            targetMatchResult.fileSystem.saveFile(newFile, targetMatchResult.resolvedPath);
             return;
         }
         String resolvedSourcePath = StringUtils.appendPath(sourceMatchResult.resolvedPath, sourceName);

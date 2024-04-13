@@ -111,7 +111,6 @@ public class FileRecordServiceImpl implements FileRecordService {
             FileInfo newRecord = FileInfo.createFrom(sourceInfo, false);
             newRecord.setUid(targetId);
             newRecord.setName(targetName);
-            newRecord.setNode(null);
             saveRecord(newRecord, target);
             return ;
         }
@@ -149,7 +148,6 @@ public class FileRecordServiceImpl implements FileRecordService {
                     if (existFile == null) {
                         FileInfo newFile = FileInfo.createFrom(sourceFile, false);
                         newFile.setNode(newPathInfo.nid);
-                        newFile.setId(null);
                         newFile.setUid(targetId);
                         fileInfoRepo.save(newFile);
                         log.debug("addFile: " + sourceFile.getName() + " at " + newPathInfo.nid);
