@@ -90,11 +90,13 @@ public interface UserDao {
      * @param type  用户类型，1为管理员，0为普通用户
      * @return      受影响的表行数
      */
-    @Insert("INSERT INTO user (user,pwd, email, type) VALUE (#{user},#{pwd}, #{email}, #{type})")
+    @Insert("INSERT INTO user (id,user,pwd, email, type) VALUE (#{id}, #{user},#{pwd}, #{email}, #{type})")
     int addUser(@Param("user") String user,
                 @Param("pwd") String pwd,
                 @Param("email") String email,
-                @Param("type") Integer type);
+                @Param("type") Integer type,
+                @Param("id") Long id
+    );
 
     /**
      * 取用户列表

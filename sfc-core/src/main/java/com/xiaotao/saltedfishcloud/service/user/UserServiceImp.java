@@ -18,6 +18,7 @@ import com.xiaotao.saltedfishcloud.service.mail.MailMessageGenerator;
 import com.xiaotao.saltedfishcloud.service.mail.MailValidateType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -313,7 +314,7 @@ public class UserServiceImp implements UserService {
         if (email != null && email.length() != 0 && userDao.getByEmail(email) != null) throw new JsonException(AccountError.EMAIL_EXIST);
         String pwd = SecureUtils.getPassswd(passwd);
         try {
-            int res = userDao.addUser(user, pwd, email, type);
+            int res = userDao.addUser(user, pwd, email, type, IdUtil.getId());
             redisTemplate.delete(RedisKeyGenerator.getRegCodeKey(email));
             return res;
         } catch (DuplicateKeyException e) {
