@@ -4,15 +4,11 @@ import com.xiaotao.saltedfishcloud.common.RedirectableResource;
 import com.xiaotao.saltedfishcloud.common.RedirectableUrl;
 import com.xiaotao.saltedfishcloud.common.ResponseResource;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import org.springframework.core.io.AbstractResource;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.util.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StreamUtils;
 
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.lang.reflect.Proxy;
 import java.net.URLEncoder;
