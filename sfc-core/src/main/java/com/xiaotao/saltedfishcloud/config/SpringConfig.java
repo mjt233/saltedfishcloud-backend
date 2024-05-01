@@ -1,9 +1,13 @@
 package com.xiaotao.saltedfishcloud.config;
 
+import com.xiaotao.saltedfishcloud.common.RedirectableUrl;
+import com.xiaotao.saltedfishcloud.common.RedirectableUrlHttpMessageConverter;
 import com.xiaotao.saltedfishcloud.interceptor.ProtectBlocker;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -17,6 +21,12 @@ import java.util.concurrent.TimeUnit;
 public class SpringConfig implements WebMvcConfigurer {
     @Resource
     ProtectBlocker protectBlocker;
+
+    @Bean
+    public HttpMessageConverter<RedirectableUrl> redirectableUrlHttpMessageConverter() {
+        return new RedirectableUrlHttpMessageConverter();
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(protectBlocker)

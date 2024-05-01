@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.sfc.constant.FeatureName;
-import com.xiaotao.saltedfishcloud.common.FileInfoWrapResource;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -16,6 +15,7 @@ import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -161,7 +161,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         if (resource == null) {
             return null;
         }
-        return FileInfoWrapResource.create(resource, () -> fileRecordService.getFileInfo(uid, path, name));
+        return ResourceUtils.bindFileInfo(resource, () -> fileRecordService.getFileInfo(uid, path, name));
     }
 
     @Override
@@ -194,7 +194,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
         fileInfo.setPath(path + "/" + fileInfo.getName());
         Resource resource = getResource(fileInfo.getUid(), path, fileInfo.getName());
-        return FileInfoWrapResource.create(resource, fileInfo);
+        return ResourceUtils.bindFileInfo(resource, fileInfo);
     }
 
     @Override
