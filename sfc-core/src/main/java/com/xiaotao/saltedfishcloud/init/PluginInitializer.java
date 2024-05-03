@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.init;
 
+import com.sfc.enums.PluginLoadType;
 import com.xiaotao.saltedfishcloud.ext.*;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
@@ -8,7 +9,9 @@ import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -28,17 +31,24 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class PluginInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     private final static String LOG_PREFIX = "[插件初始化]";
 
+    private PluginManager pluginManager;
+
+    public PluginInitializer(PluginManager pluginManager) {
+        this.pluginManager = pluginManager;
+    }
+
     @Override
     public void initialize(ConfigurableApplicationContext context) {
         long begin = System.currentTimeMillis();
         // 加载插件
-        PluginManager pluginManager = new DefaultPluginManager(PluginInitializer.class.getClassLoader());
-        ClassLoader pluginClassLoader = pluginManager.getJarMergeClassLoader();
+        pluginManager.init();
+        ClassLoader pluginClassLoader = pluginManager.getMergeClassLoader();
         Thread.currentThread().setContextClassLoader(pluginClassLoader);
         context.setClassLoader(pluginClassLoader);
         PluginProperty pluginProperty = PluginProperty.loadFromPropertyResolver(context.getEnvironment());
@@ -77,7 +87,29 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
             log.error("{}插件信息初始化失败", LOG_PREFIX, e);
             throw new RuntimeException("插件信息初始化失败", e);
         }
+        context.addApplicationListener((ApplicationListener<ApplicationStartedEvent>) event -> {
+            // 处理独立加载的插件
+            List<PluginInfo> alonePluginList = pluginManager.listAllPlugin().stream().filter(e -> e.getLoadType() == PluginLoadType.ALONE).collect(Collectors.toList());
+            if (alonePluginList.isEmpty()) {
+                log.info("{}没有需要单独加载的插件", LOG_PREFIX);
+            } else {
+                for (PluginInfo pluginInfo : alonePluginList) {
+                    log.info("{}处理单独加载的插件: {}", LOG_PREFIX, pluginInfo.getName());
+                    try {
+                        pluginManager.loadAlonePlugin(pluginInfo.getName());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            // 初始化延迟加载的库
+            pluginManager.initDelayLoadLib();
+
+        });
     }
+
+
 
     public void startRegister(PluginManager pluginManager, List<Tuple2<Resource, Supplier<ClassLoader>>> pluginResourceList) throws IOException {
 
@@ -195,4 +227,6 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
             pluginResourceList.add(Tuples.of(new UrlResource(extUrl), () -> null));
         }
     }
+
+
 }

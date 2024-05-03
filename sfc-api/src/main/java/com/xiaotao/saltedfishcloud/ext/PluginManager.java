@@ -19,6 +19,22 @@ public interface PluginManager extends Closeable {
     String CONFIG_PROPERTIES_FILE = "config-properties.json";
 
     /**
+     * 插件管理器初始化操作。
+     */
+    void init();
+
+    /**
+     * 加载需要独立加载依赖的插件
+     * @param name  插件名称
+     */
+    void loadAlonePlugin(String name) throws IOException;
+
+    /**
+     * 初始化需要延迟加载的库
+     */
+    void initDelayLoadLib();
+
+    /**
      * 移除插件
      */
     void remove(String name);
@@ -134,7 +150,7 @@ public interface PluginManager extends Closeable {
     /**
      * 获取合并了各个插件的类加载器
      */
-    ClassLoader getJarMergeClassLoader();
+    ClassLoader getMergeClassLoader();
 
     /**
      * 刷新插件配置项信息
