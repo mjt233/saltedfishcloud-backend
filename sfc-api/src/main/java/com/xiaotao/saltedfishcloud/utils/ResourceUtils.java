@@ -15,9 +15,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 
 public class ResourceUtils {
@@ -152,11 +150,17 @@ public class ResourceUtils {
      * @return          绑定后的代理对象
      */
     public static Resource bindFileInfo(Resource resource, Supplier<FileInfo> fileInfoSupplier) {
-        Class<?>[] originInterfaces = resource.getClass().getInterfaces();
+        Class<?>[] interfaces = resource.getClass().getInterfaces();
+        List<Class<?>> proxyInterfaceList = new ArrayList<>(Arrays.asList(interfaces));
+        if (!isContainResource(interfaces)) {
+            proxyInterfaceList.add(Resource.class);
+        }
+
+
         Lazy<FileInfo> fileInfo = Lazy.of(fileInfoSupplier);
         return (Resource)Proxy.newProxyInstance(
                 Resource.class.getClassLoader(),
-                originInterfaces,
+                proxyInterfaceList.toArray(new Class[0]),
                 (proxy, method, args) -> {
                     String methodName = method.getName();
                     if ("lastModified".equals(methodName)) {
@@ -174,6 +178,18 @@ public class ResourceUtils {
     }
 
     /**
+     * 判断类集合中是否包含了Resource接口类
+     */
+    private static boolean isContainResource(Class<?>[] interfaces) {
+        for (Class<?> aClass : interfaces) {
+            if (Resource.class.isAssignableFrom(aClass)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 将资源接口与可重定向的url进行组合
      * @param resource          原始资源接口
      * @param redirectableUrl   可重定向url接口
@@ -183,14 +199,12 @@ public class ResourceUtils {
         if (resource instanceof RedirectableUrl) {
             throw new IllegalArgumentException("resource已经实现了RedirectableUrl");
         }
-        Class<?>[] interfaces = resource.getClass().getInterfaces();
-        Class<?>[] proxyInterfaces = new Class[interfaces.length + 1];
-        System.arraycopy(interfaces, 0, proxyInterfaces, 0, interfaces.length);
-        proxyInterfaces[proxyInterfaces.length - 1] = RedirectableResource.class;
+        List<Class<?>> proxyInterfaceList = new ArrayList<>(Arrays.asList(resource.getClass().getInterfaces()));
+        proxyInterfaceList.add(RedirectableResource.class);
 
         Object proxyObj = Proxy.newProxyInstance(
                 RedirectableResource.class.getClassLoader(),
-                proxyInterfaces,
+                proxyInterfaceList.toArray(new Class[0]),
                 (proxy, method, args) -> {
                     String methodName = method.getName();
                     if ("getRedirectUrl".equals(methodName)) {

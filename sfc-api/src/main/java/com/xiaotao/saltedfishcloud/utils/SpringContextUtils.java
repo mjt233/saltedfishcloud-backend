@@ -12,9 +12,11 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.util.ClassUtils;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Supplier;
 
 @UtilityClass
@@ -34,6 +36,10 @@ public class SpringContextUtils {
     @Setter
     @Getter
     private static String[] launchArgs;
+
+    @Setter
+    @Getter
+    private static List<HttpMessageConverter<?>> httpMessageConverterList;
 
     public static void setContext(ConfigurableApplicationContext context) {
         SpringContextUtils.context = context;
