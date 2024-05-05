@@ -35,6 +35,7 @@
         <module>sfc-ext-network-tools</module>
         <module>sfc-ext-web-shell</module>
         <module>sfc-ext-static-publish</module>
+        <module>sfc-ext-oss-store</module>
     </modules>
 
 

@@ -1,0 +1,14 @@
+{
+  "name": "oss-store",
+  "loadType": "merge",
+  "author": "xiaotao233",
+  "icon": "mdi-elephant",
+  "email": "mjt233@qq.com",
+  "describe": "为系统提供第三方的OSS对象存储支持",
+  "alias": "OSS对象存储支持",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^",
+  "delayLoadLib": [
+    "joda-time-2.8.1.jar"
+  ]
+}
