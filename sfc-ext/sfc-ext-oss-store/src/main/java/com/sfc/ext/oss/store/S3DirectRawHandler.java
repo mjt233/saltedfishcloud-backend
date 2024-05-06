@@ -178,7 +178,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
     private Supplier<URL> getObjectUrlSupplier(String objKey) {
         return Lazy.of(() -> {
             Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.HOUR, 6);
+            calendar.add(Calendar.DATE, Integer.parseInt(Optional.ofNullable(property.getUrlExpire()).orElse("1")));
             URL url = s3Client.generatePresignedUrl(property.getBucket(), objKey, calendar.getTime());
             if (property.getCdnDomain() == null || property.getCdnDomain().isBlank()) {
                 return url;

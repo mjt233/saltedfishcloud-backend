@@ -48,4 +48,16 @@ public class OSSProperty {
     @ConfigProperty(value = "cdnDomain", title = "CDN地址(选填)")
     private String cdnDomain;
 
+    @ConfigProperty(
+            value = "urlExpire",
+            title = "生成URL有效期",
+            inputType = ConfigInputType.SELECT,
+            options = {
+                    @ConfigSelectOption(title = "1天", value = "1"),
+                    @ConfigSelectOption(title = "3天", value = "3"),
+                    @ConfigSelectOption(title = "7天", value = "7")
+            },
+            defaultValue = "1"
+    )
+    private String urlExpire;
 }
