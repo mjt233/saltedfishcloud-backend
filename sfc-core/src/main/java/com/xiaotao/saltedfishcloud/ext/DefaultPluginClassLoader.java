@@ -14,11 +14,11 @@ import java.util.stream.Collectors;
  * 默认的基于本地文件系统的拓展Jar包加载器
  */
 @Slf4j
-public class JarMergePluginClassLoader extends PluginClassLoader {
+public class DefaultPluginClassLoader extends PluginClassLoader {
     private final static String LOG_PREFIX = "[JarMerge]";
     private final Set<URL> loaded = new HashSet<>();
 
-    public JarMergePluginClassLoader(ClassLoader parent) {
+    public DefaultPluginClassLoader(ClassLoader parent) {
         super(new URL[0], parent);
         log.info("{}加载器：{}", LOG_PREFIX, parent.getClass().getName());
     }

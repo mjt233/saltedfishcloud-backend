@@ -1,0 +1,7 @@
+{
+  "type": "s3",
+  "bucket": "xyy-store",
+  "serviceEndPoint": "oss-cn-shenzhen.aliyuncs.com",
+  "accessKey": "accessKey",
+  "secretKey": "secretKey"
+}

@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud;
 
 import com.sfc.archive.annocation.EnableArchive;
-import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.rpc.annotation.EnableRpc;
 import com.sfc.task.annocation.EnableAsyncTask;
+import com.xiaotao.saltedfishcloud.ext.DefaultPluginManager;
 import com.xiaotao.saltedfishcloud.init.PluginInitializer;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -14,14 +14,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Import;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -70,7 +69,6 @@ public class SaltedfishcloudApplication {
         try {
             // 启动
             ConfigurableApplicationContext context = getLaunchFactory().get().run(args);
-
             // 记录上下文
             SpringContextUtils.setContext(context);
         } catch (Exception ignore) {}
@@ -86,12 +84,12 @@ public class SaltedfishcloudApplication {
         return () -> {
             long begin = System.currentTimeMillis();
 
-
+            DefaultPluginManager pluginManager = new DefaultPluginManager(originLoader);
             SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
 
             // 配置SpringBoot，注册插件管理器
             sa.addInitializers(c -> log.info("[Boot]程序运行目录: {}", Paths.get("").toAbsolutePath()));
-            sa.addInitializers(new PluginInitializer());
+            sa.addInitializers(new PluginInitializer(pluginManager));
 
             sa.addListeners((ApplicationListener<ApplicationReadyEvent>) applicationEvent -> {
                 // 打印启动信息

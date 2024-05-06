@@ -34,6 +34,11 @@ public class PluginInfo {
     private PluginLoadType loadType;
 
     /**
+     * 需要延迟加载的外部库
+     */
+    private List<String> delayLoadLib;
+
+    /**
      * 插件类型
      */
     private PluginType type;

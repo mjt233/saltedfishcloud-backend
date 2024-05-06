@@ -1,20 +1,22 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.xiaotao.saltedfishcloud.common.RedirectableResource;
+import com.xiaotao.saltedfishcloud.common.RedirectableUrl;
 import com.xiaotao.saltedfishcloud.common.ResponseResource;
-import org.springframework.core.io.AbstractResource;
-import org.springframework.core.io.InputStreamResource;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.springframework.core.io.Resource;
+import org.springframework.data.util.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StreamUtils;
 
 import java.io.*;
+import java.lang.reflect.Proxy;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Supplier;
 
 public class ResourceUtils {
     public static class Header {
@@ -117,5 +119,101 @@ public class ResourceUtils {
         try (InputStream is = resource.getInputStream()) {
             return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
         }
+    }
+
+    /**
+     * 通过创建代理类，将FileInfo的信息绑定到Resource接口的方法
+     * <ul>
+     *     <li>{@link Resource#getFilename()}</li>
+     *     <li>{@link Resource#lastModified()}</li>
+     *     <li>{@link Resource#contentLength()}</li>
+     * </ul>
+     *
+     * @param resource  文件资源对象
+     * @param fileInfo  文件信息
+     * @return          绑定后的代理对象
+     */
+    public static Resource bindFileInfo(Resource resource, FileInfo fileInfo) {
+        return bindFileInfo(resource, () -> fileInfo);
+    }
+
+    /**
+     * 通过创建代理类，将FileInfo的信息绑定到Resource接口的方法
+     * <ul>
+     *     <li>{@link Resource#getFilename()}</li>
+     *     <li>{@link Resource#lastModified()}</li>
+     *     <li>{@link Resource#contentLength()}</li>
+     * </ul>
+     *
+     * @param resource          文件资源对象
+     * @param fileInfoSupplier  文件信息获取函数
+     * @return          绑定后的代理对象
+     */
+    public static Resource bindFileInfo(Resource resource, Supplier<FileInfo> fileInfoSupplier) {
+        Class<?>[] interfaces = resource.getClass().getInterfaces();
+        List<Class<?>> proxyInterfaceList = new ArrayList<>(Arrays.asList(interfaces));
+        if (!isContainResource(interfaces)) {
+            proxyInterfaceList.add(Resource.class);
+        }
+
+
+        Lazy<FileInfo> fileInfo = Lazy.of(fileInfoSupplier);
+        return (Resource)Proxy.newProxyInstance(
+                Resource.class.getClassLoader(),
+                proxyInterfaceList.toArray(new Class[0]),
+                (proxy, method, args) -> {
+                    String methodName = method.getName();
+                    if ("lastModified".equals(methodName)) {
+                        return fileInfo.get().getMtime();
+                    }
+                    if ("getFilename".equals(methodName)) {
+                        return fileInfo.get().getName();
+                    }
+                    if ("contentLength".equals(methodName)) {
+                        return fileInfo.get().getSize();
+                    }
+                    return method.invoke(resource, args);
+                }
+        );
+    }
+
+    /**
+     * 判断类集合中是否包含了Resource接口类
+     */
+    private static boolean isContainResource(Class<?>[] interfaces) {
+        for (Class<?> aClass : interfaces) {
+            if (Resource.class.isAssignableFrom(aClass)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 将资源接口与可重定向的url进行组合
+     * @param resource          原始资源接口
+     * @param redirectableUrl   可重定向url接口
+     * @return                  原始类与可重定向接口的组合代理类
+     */
+    public static RedirectableResource bindRedirectUrl(Resource resource, RedirectableUrl redirectableUrl) {
+        if (resource instanceof RedirectableUrl) {
+            throw new IllegalArgumentException("resource已经实现了RedirectableUrl");
+        }
+        List<Class<?>> proxyInterfaceList = new ArrayList<>(Arrays.asList(resource.getClass().getInterfaces()));
+        proxyInterfaceList.add(RedirectableResource.class);
+
+        Object proxyObj = Proxy.newProxyInstance(
+                RedirectableResource.class.getClassLoader(),
+                proxyInterfaceList.toArray(new Class[0]),
+                (proxy, method, args) -> {
+                    String methodName = method.getName();
+                    if ("getRedirectUrl".equals(methodName)) {
+                        return redirectableUrl.getRedirectUrl();
+                    } else {
+                        return method.invoke(resource, args);
+                    }
+                }
+        );
+        return (RedirectableResource)proxyObj;
     }
 }
