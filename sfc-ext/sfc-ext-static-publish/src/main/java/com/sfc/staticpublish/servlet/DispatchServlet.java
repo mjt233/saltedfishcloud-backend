@@ -4,6 +4,7 @@ import com.sfc.staticpublish.constants.AccessWay;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.model.property.StaticPublishProperty;
 import com.sfc.staticpublish.service.StaticPublishRecordService;
+import com.xiaotao.saltedfishcloud.common.RedirectableUrl;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -201,6 +202,11 @@ public class DispatchServlet extends HttpServlet {
      * @param fileResource  文件资源
      */
     private void sendFile(HttpServletRequest req, HttpServletResponse resp, Resource fileResource) throws IOException {
+        if (fileResource instanceof RedirectableUrl) {
+            String redirectUrl = ((RedirectableUrl) fileResource).getRedirectUrl();
+            resp.sendRedirect(redirectUrl);
+            return;
+        }
         long len = fileResource.contentLength();
         resp.addHeader("Accept-Ranges", "bytes");
         String rangeHeader = req.getHeader("Range");
