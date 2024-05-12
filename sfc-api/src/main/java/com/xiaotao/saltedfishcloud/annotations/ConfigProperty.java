@@ -55,4 +55,20 @@ public @interface ConfigProperty {
      * 是否掩盖显示为“*”
      */
     boolean isMask() default false;
+
+    /**
+     * 是否独占一行显示
+     */
+    boolean isRow() default false;
+
+    /**
+     * 当{@link #inputType()}为{@link com.sfc.constant.ConfigInputType#TEMPLATE}时，使用的模板组件
+     */
+    String template() default "";
+
+    /**
+     * 当{@link #inputType()}为{@link com.sfc.constant.ConfigInputType#TEMPLATE}时，给模板传入的参数json
+     */
+    String templateParams() default "{}";
+
 }

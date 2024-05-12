@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.annotations.ConfigSelectOption;
@@ -111,10 +112,17 @@ public class PropertyUtils {
                 .map(f -> {
                     ConfigProperty p = f.getAnnotation(ConfigProperty.class);
                     ConfigNode configNode = new ConfigNode();
+                    configNode.setIsRow(p.isRow());
                     configNode.setDescribe(p.describe());
                     configNode.setDefaultValue(p.defaultValue());
                     configNode.setInputType(p.inputType());
                     configNode.setTitle(StringUtils.hasText(p.title()) ? p.title() : p.value() );
+                    configNode.setTemplate(p.template());
+                    if (!"{}".equals(p.templateParams())) {
+                        try {
+                            configNode.setParams(MapperHolder.parseJsonToMap(p.templateParams()));
+                        } catch (JsonProcessingException e) { throw new IllegalArgumentException(e); }
+                    }
                     ConfigSelectOption[] options = p.options();
                     if (options.length > 0) {
                         configNode.setOptions(
