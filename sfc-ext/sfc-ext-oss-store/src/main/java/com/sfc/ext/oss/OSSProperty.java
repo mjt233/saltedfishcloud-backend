@@ -17,11 +17,25 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @ConfigPropertyEntity(
         groups = {
+                @ConfigPropertiesGroup(id = "warn", name = "注意事项"),
                 @ConfigPropertiesGroup(id = "base", name = "基本配置"),
                 @ConfigPropertiesGroup(id = "response", name = "文件响应配置")
         }
 )
 public class OSSProperty {
+    @ConfigProperty(
+            inputType = ConfigInputType.TEMPLATE,
+            template = "multi-line-text",
+            templateParams = "{" +
+                    "\"text\": \"挂载后会产生OSS接口请求调用，可能会给您的OSS服务造成费用支出，请留意您的OSS提供商相关的收费标准\", " +
+                    "\"class\": \"tip\"" +
+                    "}",
+            title = "接口调用注意",
+            isRow = true,
+            group = "warn"
+    )
+    private String warn;
+
     /**
      * OSS类型
      *
@@ -70,7 +84,7 @@ public class OSSProperty {
 
     @ConfigProperty(
             value = "useUrlRedirect",
-            title = "启用URL重定向",
+            describe = "启用URL重定向",
             inputType = ConfigInputType.SWITCH,
             defaultValue = "true",
             group = "response"
