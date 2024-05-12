@@ -2,6 +2,7 @@ package com.sfc.ext.oss;
 
 import com.sfc.constant.ConfigInputType;
 import com.sfc.ext.oss.constants.OSSType;
+import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.annotations.ConfigSelectOption;
@@ -14,7 +15,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ConfigPropertyEntity
+@ConfigPropertyEntity(
+        groups = {
+                @ConfigPropertiesGroup(id = "base", name = "基本配置"),
+                @ConfigPropertiesGroup(id = "response", name = "文件响应配置")
+        }
+)
 public class OSSProperty {
     /**
      * OSS类型
@@ -45,7 +51,7 @@ public class OSSProperty {
     @ConfigProperty(required = true, value = "secretKey")
     private String secretKey;
 
-    @ConfigProperty(value = "cdnDomain", title = "CDN地址(选填)")
+    @ConfigProperty(value = "cdnDomain", title = "CDN地址(选填)", group = "response")
     private String cdnDomain;
 
     @ConfigProperty(
@@ -57,7 +63,17 @@ public class OSSProperty {
                     @ConfigSelectOption(title = "3天", value = "3"),
                     @ConfigSelectOption(title = "7天", value = "7")
             },
-            defaultValue = "1"
+            defaultValue = "1",
+            group = "response"
     )
     private String urlExpire;
+
+    @ConfigProperty(
+            value = "useUrlRedirect",
+            title = "启用URL重定向",
+            inputType = ConfigInputType.SWITCH,
+            defaultValue = "true",
+            group = "response"
+    )
+    private Boolean useUrlRedirect = Boolean.TRUE;
 }
