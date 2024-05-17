@@ -172,7 +172,15 @@ public class ResourceUtils {
                     if ("contentLength".equals(methodName)) {
                         return fileInfo.get().getSize();
                     }
-                    return method.invoke(resource, args);
+                    try {
+                        return method.invoke(resource, args);
+                    } catch (Throwable e) {
+                        if (e.getCause() != null) {
+                            throw e.getCause();
+                        } else {
+                            throw e;
+                        }
+                    }
                 }
         );
     }

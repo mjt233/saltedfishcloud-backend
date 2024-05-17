@@ -86,7 +86,11 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
                 return fileInfo.getStreamSource().getInputStream();
             }
         }, fileInfo);
-        return ResourceUtils.bindRedirectUrl(fileResource, () -> getObjectUrlSupplier(OSSPathUtils.toOSSObjectName(path)).get().toString());
+        if (Boolean.TRUE.equals(property.getUseUrlRedirect())) {
+            return ResourceUtils.bindRedirectUrl(fileResource, () -> getObjectUrlSupplier(OSSPathUtils.toOSSObjectName(path)).get().toString());
+        } else {
+            return fileResource;
+        }
     }
 
     @Override
@@ -127,6 +131,14 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
     public FileInfo getFileInfo(String path) throws IOException {
         S3Object object;
         String ossPath = OSSPathUtils.toOSSObjectName(path);
+        if ("".equals(ossPath)) {
+            return FileInfo.builder()
+                    .type(FileInfo.TYPE_DIR)
+                    .size(-1L)
+                    .name("")
+                    .isMount(true)
+                    .build();
+        }
         try {
             object = s3Client.getObject(property.getBucket(), ossPath);
         } catch (AmazonS3Exception e) {
@@ -150,7 +162,8 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
         ObjectMetadata objectMetadata = object.getObjectMetadata();
         boolean isDir = OSSPathUtils.isDir(ossPath);
         FileInfo fileInfo = new FileInfo();
-        fileInfo.setName(StringUtils.getURLLastName(object.getKey()));
+        String objectKey = object.getKey();
+        fileInfo.setName(StringUtils.getURLLastName(objectKey));
         fileInfo.setSize(isDir ? -1L : objectMetadata.getContentLength());
         fileInfo.setType(isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
         fileInfo.setMd5(isDir ? null : objectMetadata.getETag().toLowerCase());
@@ -158,7 +171,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
         fileInfo.setMount(true);
 
         if (!isDir) {
-            fileInfo.setStreamSource(object::getObjectContent);
+            fileInfo.setStreamSource(() -> getObjectUrlSupplier(objectKey).get().openStream());
         }
         return fileInfo;
     }
