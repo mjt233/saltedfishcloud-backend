@@ -18,6 +18,7 @@ import com.xiaotao.saltedfishcloud.service.mail.MailMessageGenerator;
 import com.xiaotao.saltedfishcloud.service.mail.MailValidateType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,7 +88,7 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public User getUserById(Integer id) {
+    public User getUserById(Long id) {
         if (id == 0) {
             return User.getPublicUser();
         } else {
@@ -96,7 +97,7 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public String sendBindEmail(Integer uid, String email) throws MessagingException, UnsupportedEncodingException {
+    public String sendBindEmail(Long uid, String email) throws MessagingException, UnsupportedEncodingException {
         if (userDao.getByEmail(email) != null) throw new JsonException(AccountError.EMAIL_EXIST);
         String code = StringUtils.getRandomString(6, false);
         redisTemplate.opsForValue().set(
@@ -149,7 +150,7 @@ public class UserServiceImp implements UserService {
 
 
     @Override
-    public String sendVerifyEmail(Integer uid) throws MessagingException, UnsupportedEncodingException {
+    public String sendVerifyEmail(Long uid) throws MessagingException, UnsupportedEncodingException {
         final User user = getUserById(uid);
         if (user == null) throw new JsonException(AccountError.USER_NOT_EXIST);
         if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(AccountError.EMAIL_NOT_SET);
@@ -165,7 +166,7 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public void verifyEmail(Integer uid, String code) throws MessagingException, UnsupportedEncodingException {
+    public void verifyEmail(Long uid, String code) throws MessagingException, UnsupportedEncodingException {
         final User user = getUserById(uid);
         if (user == null) throw new JsonException(AccountError.USER_NOT_EXIST);
         if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(AccountError.EMAIL_NOT_SET);
@@ -177,7 +178,7 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public void setEmail(Integer uid, String email) {
+    public void setEmail(Long uid, String email) {
         final User user = userDao.getUserById(uid);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
         userDao.updateEmail(uid, email);
@@ -185,7 +186,7 @@ public class UserServiceImp implements UserService {
 
 
     @Override
-    public void bindEmail(Integer uid, String email, String originCode, String newCode) {
+    public void bindEmail(Long uid, String email, String originCode, String newCode) {
         final User user = userDao.getUserById(uid);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
         String originKey = null, originRecord = null, newKey = null, newRecord = null;
@@ -234,7 +235,7 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public void grant(int uid, int type) {
+    public void grant(long uid, int type) {
         if (type > 1 || type < 0) throw new IllegalArgumentException("不合法的用户类型");
         User user = userDao.getUserById(uid);
         if (user == null) throw new UserNoExistException(404, "用户不存在");
@@ -256,7 +257,7 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public int modifyPasswd(Integer uid, String oldPassword, String newPassword) {
+    public int modifyPasswd(Long uid, String oldPassword, String newPassword) {
         User user = userDao.getUserById(uid);
         if (user == null) throw new UserNoExistException(404, "用户不存在");
         if (!SecureUtils.getPassswd(oldPassword).equals(user.getPwd())) {
@@ -267,7 +268,7 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public int updateLoginDate(Integer uid) {
+    public int updateLoginDate(Long uid) {
 
         return userDao.updateLoginDate(uid, new Date().getTime()/1000);
     }
@@ -313,7 +314,7 @@ public class UserServiceImp implements UserService {
         if (email != null && email.length() != 0 && userDao.getByEmail(email) != null) throw new JsonException(AccountError.EMAIL_EXIST);
         String pwd = SecureUtils.getPassswd(passwd);
         try {
-            int res = userDao.addUser(user, pwd, email, type);
+            int res = userDao.addUser(user, pwd, email, type, IdUtil.getId());
             redisTemplate.delete(RedisKeyGenerator.getRegCodeKey(email));
             return res;
         } catch (DuplicateKeyException e) {

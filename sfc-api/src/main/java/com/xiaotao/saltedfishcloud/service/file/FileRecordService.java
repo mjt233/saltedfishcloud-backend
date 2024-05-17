@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +23,7 @@ public interface FileRecordService {
      * @param name  文件名
      * @return      存在true，不存在false
      */
-    boolean exist(int uid, String path, String name);
+    boolean exist(long uid, String path, String name);
 
     /**
      * 获取用户的文件信息
@@ -31,7 +31,15 @@ public interface FileRecordService {
      * @param dirPath   文件所在的目录路径
      * @param name      文件名
      */
-    FileInfo getFileInfo(int uid, String dirPath, String name);
+    FileInfo getFileInfo(long uid, String dirPath, String name);
+
+    /**
+     * 按所属节点id查询文件信息
+     * @param uid       用户id
+     * @param nid       节点id
+     * @param name      文件名
+     */
+    FileInfo getFileInfoByNode(long uid, String nid, String name);
 
     /**
      * 通过MD5获取文件
@@ -53,7 +61,7 @@ public interface FileRecordService {
      * @param overwrite  是否覆盖已存在的文件
      */
     @Transactional(rollbackFor = Exception.class)
-    void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException;
+    void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException;
 
     /**
      * 操作数据库移动网盘文件或目录到指定目录下
@@ -66,36 +74,35 @@ public interface FileRecordService {
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
     @Transactional(rollbackFor = Exception.class)
-    void move(int uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException;
+    void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException;
+
 
     /**
-     * 添加一个记录
-     *
-     * @param uid  用户ID 0表示公共
-     * @param name 文件名
-     * @param size 文件大小
-     * @param md5  文件MD5
-     * @param path 文件所在路径
-     * @return 添加数量
+     * 保存或更新文件信息记录
+     * @param fileInfo  待保存数据，若存在id则直接按id保存
+     * @param path      文件所在路径，若没有id 且 没有node 则按路径匹配数据
+     * @return          保存后的文件信息，与参数是相同的对象引用
      */
-    @Transactional(rollbackFor = Exception.class)
-    int addRecord(int uid, String name, Long size, String md5, String path) throws NoSuchFileException;
+    FileInfo saveRecord(FileInfo fileInfo, String path);
 
-    @Transactional(rollbackFor = Exception.class)
-    int insert(FileInfo fileInfo);
+    FileInfo save(FileInfo fileInfo);
 
     /**
-     * 因文件被替换而更新一条记录
-     *
-     * @param uid     用户ID 0表示公共
-     * @param name    文件名
-     * @param path    文件所在路径
-     * @param newSize 新的文件大小
-     * @param newMd5  新的文件MD5
-     * @return 影响行数
+     * 按用户id和节点id列出文件列表
+     * @param uid       用户id
+     * @param nodeId    节点id
+     * @return          文件列表
      */
-    @Transactional(rollbackFor = Exception.class)
-    int updateFileRecord(int uid, String name, String path, Long newSize, String newMd5) throws NoSuchFileException;
+    List<FileInfo> findByUidAndNodeId(Long uid, String nodeId);
+
+    /**
+     * 按用户id、节点id和文件列表列出文件列表
+     * @param uid       用户id
+     * @param nodeId    节点id
+     * @param nameList  限定的文件名列表，可为null表示不限制
+     * @return          文件列表
+     */
+    List<FileInfo> findByUidAndNodeId(Long uid, String nodeId,@Nullable Collection<String> nameList);
 
     /**
      * 批量删除某个目录下的文件或文件夹，文件夹的所有子文件夹和文件也会被一同删除
@@ -106,7 +113,7 @@ public interface FileRecordService {
      * @return 删除的文件列表
      */
     @Transactional(rollbackFor = Exception.class)
-    List<FileInfo> deleteRecords(int uid, String path, Collection<String> name) throws NoSuchFileException;
+    List<FileInfo> deleteRecords(long uid, String path, Collection<String> name) throws NoSuchFileException;
 
     /**
      * 向数据库系统新建一个文件夹记录
@@ -118,7 +125,7 @@ public interface FileRecordService {
      * @throws NoSuchFileException   当父级目录不存在时抛出
      */
     @Transactional(rollbackFor = Exception.class)
-    String mkdir(int uid, String name, String path) throws NoSuchFileException;
+    String mkdir(long uid, String name, String path) throws NoSuchFileException;
 
     /**
      * 创建一个文件夹，若文件夹的祖先目录不存在，则一并创建
@@ -128,7 +135,7 @@ public interface FileRecordService {
      * @return 文件夹创建后的节点ID，若无文件夹成功创建则返回null
      */
     @Transactional(rollbackFor = Exception.class)
-    String mkdirs(int uid, String path);
+    String mkdirs(long uid, String path);
 
     /**
      * 对文件或文件夹进行重命名
@@ -139,5 +146,5 @@ public interface FileRecordService {
      * @param newName 新文件名
      */
     @Transactional(rollbackFor = Exception.class)
-    void rename(int uid, String path, String oldName, String newName) throws NoSuchFileException;
+    void rename(long uid, String path, String oldName, String newName) throws NoSuchFileException;
 }

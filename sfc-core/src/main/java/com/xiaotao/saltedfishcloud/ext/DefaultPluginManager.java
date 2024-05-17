@@ -18,10 +18,16 @@ import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -64,7 +70,7 @@ public class DefaultPluginManager implements PluginManager {
     private final Map<String, ClassLoader> pluginRawLoaderMap = new ConcurrentHashMap<>();
     private final Map<String, List<ConfigNode>> pluginConfigNodeGroupMap = new ConcurrentHashMap<>();
     private final Map<String, String> pluginResourceRootMap = new ConcurrentHashMap<>();
-    private final PluginClassLoader jarMergeClassLoader;
+    private final PluginClassLoader mergeClassLoader;
 
     private final Map<String, URL> pluginOriginUrl = new ConcurrentHashMap<>();
 
@@ -82,11 +88,14 @@ public class DefaultPluginManager implements PluginManager {
 
     public DefaultPluginManager(ClassLoader masterLoader) {
         this.masterLoader = masterLoader;
-        this.jarMergeClassLoader = new JarMergePluginClassLoader(masterLoader);
-        initPureDependenceJar();
+        this.mergeClassLoader = new DefaultPluginClassLoader(masterLoader);
     }
 
-    private void initPureDependenceJar() {
+    /**
+     * 初始化未加载插件时，当前引用的依赖信息
+     */
+    @Override
+    public void init() {
         try {
             Enumeration<URL> resources = masterLoader.getResources("META-INF");
             int successCount = 0;
@@ -95,7 +104,7 @@ public class DefaultPluginManager implements PluginManager {
                 ++total;
                 URL url = resources.nextElement();
                 try {
-                    registerDependence(url.toString());
+                    checkLibDependence(url.toString(), true);
                     ++successCount;
                 } catch (PluginDependenceRepeatException e) {
                     log.warn("{}初始依赖存在重复：{}", LOG_PREFIX, e.getMessage());
@@ -111,12 +120,50 @@ public class DefaultPluginManager implements PluginManager {
         }
     }
 
+    @Override
+    public void loadAlonePlugin(String name) throws IOException {
+        // 功能未实现
+        PluginInfo pluginInfo = Objects.requireNonNull(pluginMap.get(name), "插件" + name + "不存在");
+        if (pluginInfo.getLoadType() != PluginLoadType.ALONE) {
+            throw new IllegalArgumentException(name + "不是独立加载依赖的插件");
+        }
+//        ClassLoader classLoader = pluginRawLoaderMap.get(name);
+//        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(classLoader);
+//        Resource[] resources = resolver.getResources("classpath*:**.class");
+//        for (Resource resource : resources) {
+//            System.out.println(resource.getURL());
+//        }
+    }
+
+    @Override
+    public void initDelayLoadLib() {
+        log.info("{}开始进行延迟加载第三方库", LOG_PREFIX);
+        listAllPlugin().stream().filter(pluginInfo -> pluginInfo.getDelayLoadLib() != null && pluginInfo.getDelayLoadLib().size() > 0)
+                .forEach(pluginInfo -> {
+                    ClassLoader loader = pluginClassLoaderMap.get(pluginInfo.getName());
+                    if (!(loader instanceof PluginClassLoader)) {
+                        throw new IllegalArgumentException("插件" + pluginInfo.getName() + "的ClassLoader不是PluginClassLoader，无法使用延迟加载。插件当前的ClassLoader为" + loader.getClass());
+                    }
+
+                    Set<String> delayLoadLibSet = new HashSet<>(pluginInfo.getDelayLoadLib());
+                    try {
+                        List<URL> delayLoadLibUrlList = getPluginDependencies(pluginRawLoaderMap.get(pluginInfo.getName()))
+                                .stream()
+                                .filter(url -> delayLoadLibSet.contains(PathUtils.getLastNode(url.toString())))
+                                .collect(Collectors.toList());
+                        loadExtraDependencies(delayLoadLibUrlList,  (PluginClassLoader) loader,pluginInfo);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
     /**
-     * 注册插件的依赖信息
-     * @param url   待注册的插件url
-     * @return      是否注册成功，存在版本冲突注册失败为false，其他情况均为true
+     * 检查插件的外部库依赖信息是否有冲突
+     * @param url   待检查的插件依赖包的url
+     * @param isRegister 是否记录到现有插件外部依赖库记录中
      */
-    private synchronized void registerDependence(String url) {
+    private synchronized void checkLibDependence(String url, boolean isRegister) {
         String name = parseJarNameByUrl(url);
         if (name == null) {
             log.warn("{}插件依赖名称解析失败:{}", LOG_PREFIX, url);
@@ -131,7 +178,9 @@ public class DefaultPluginManager implements PluginManager {
                 throw new PluginDependenceConflictException(exist.toString());
             }
         }
-        registeredDependencies.put(jarDependenceInfo.getName(), jarDependenceInfo);
+        if (isRegister) {
+            registeredDependencies.put(jarDependenceInfo.getName(), jarDependenceInfo);
+        }
     }
 
     /**
@@ -215,10 +264,10 @@ public class DefaultPluginManager implements PluginManager {
      * 加载外部依赖
      * @param urls  外部jar包依赖集合
      * @param loader    加载器
-     * @param name 插件名称
+     * @param pluginInfo 插件信息
      */
-    protected void loadExtraDependencies(List<URL> urls, PluginClassLoader loader, String name) throws IOException {
-        String pluginUnpackPath = DEP_EXPLODE_PATH + "/" + name;
+    protected void loadExtraDependencies(List<URL> urls, PluginClassLoader loader, PluginInfo pluginInfo) throws IOException {
+        String pluginUnpackPath = DEP_EXPLODE_PATH + "/" + pluginInfo.getName();
         Files.createDirectories(Paths.get(pluginUnpackPath));
 
         List<Result<List<String>, URL>> errorList = new ArrayList<>();
@@ -227,7 +276,7 @@ public class DefaultPluginManager implements PluginManager {
 
         // 对每个待加载的url进行 解包 和 校验
         if (urls.size() > 0) {
-            log.info("{}验证来自{}的依赖，共{}个", LOG_PREFIX, name, urls.size());
+            log.info("{}验证来自{}的依赖，共{}个", LOG_PREFIX, pluginInfo.getName(), urls.size());
         }
         for (URL url : urls) {
             String depName = StringUtils.getURLLastName(url.getPath());
@@ -235,13 +284,13 @@ public class DefaultPluginManager implements PluginManager {
 
             // 整包冲突校验
             try {
-                registerDependence(url.toString());
+                checkLibDependence(url.toString(), pluginInfo.getLoadType() == PluginLoadType.MERGE);
             } catch (PluginDependenceConflictException e) {
-                log.warn("{}来自插件{}的依赖包版本出现冲突：{} 与 {}", LOG_PREFIX, name, depName, e.getMessage());
+                log.warn("{}来自插件{}的依赖包版本出现冲突：{} 与 {}", LOG_PREFIX, pluginInfo.getName(), depName, e.getMessage());
                 conflictList.add(depName);
                 continue;
             } catch (PluginDependenceRepeatException e) {
-                log.warn("{}来自插件{}的依赖包版本出现重复，已忽略：{} ", LOG_PREFIX, name, depName);
+                log.warn("{}来自插件{}的依赖包版本出现重复，已忽略：{} ", LOG_PREFIX, pluginInfo.getName(), depName);
                 continue;
             }
 
@@ -279,7 +328,7 @@ public class DefaultPluginManager implements PluginManager {
         }
 
         // 通过校验，开始加载依赖
-        log.info("{}加载来自{}的依赖：{}", LOG_PREFIX, name, passValidUrls.stream().map(StringUtils::getURLLastName).collect(Collectors.toList()));
+        log.info("{}加载来自{}的依赖：{}", LOG_PREFIX, pluginInfo.getName(), passValidUrls.stream().map(StringUtils::getURLLastName).collect(Collectors.toList()));
         for (URL url : passValidUrls) {
             String depName = StringUtils.getURLLastName(url.getPath());
             Path tempFile =  Paths.get(pluginUnpackPath + "/" + depName);
@@ -318,19 +367,31 @@ public class DefaultPluginManager implements PluginManager {
         PluginInfo pluginInfo;
         List<ConfigNode> configNodeGroups;
 
+
+        PluginClassLoader loader;
         try {
             // 读取插件基本信息
-            log.info("{}加载插件：{}",LOG_PREFIX, StringUtils.getURLLastName(pluginUrl));
+            log.info("{}开始加载插件：{}",LOG_PREFIX, pluginUrl);
             pluginInfo = getPluginInfoFromLoader(classLoader);
             this.validPluginInfo(pluginInfo);
+
+            if (pluginInfo.getLoadType() == PluginLoadType.MERGE) {
+                loader = mergeClassLoader;
+            } else {
+                loader = new DefaultPluginClassLoader(masterLoader);
+            }
 
             // 读取配置项
             configNodeGroups = getPluginConfigNodeFromLoader(classLoader);
 
             // 加载插件所需的外部依赖
-            List<URL> pluginDependencies = getPluginDependencies(classLoader);
+            Set<String> delayLoadLib = new HashSet<>(Optional.ofNullable(pluginInfo.getDelayLoadLib()).orElse(Collections.emptyList()));
+            List<URL> pluginDependencies = getPluginDependencies(classLoader)
+                    .stream()
+                    .filter(url -> !delayLoadLib.contains(PathUtils.getLastNode(url.toString())))
+                    .collect(Collectors.toList());
             if (!pluginDependencies.isEmpty()) {
-                loadExtraDependencies(pluginDependencies, jarMergeClassLoader, pluginInfo.getName());
+                loadExtraDependencies(pluginDependencies, loader, pluginInfo);
             }
 
         } catch (JsonProcessingException e) {
@@ -339,13 +400,6 @@ public class DefaultPluginManager implements PluginManager {
         } catch (RuntimeException e) {
             log.error("{}插件 {} 加载失败", LOG_PREFIX, pluginResource.getURL());
             throw e;
-        }
-
-        PluginClassLoader loader;
-        if (pluginInfo.getLoadType() == PluginLoadType.MERGE) {
-            loader = jarMergeClassLoader;
-        } else {
-            throw new IllegalArgumentException("不支持的拓展加载方式：" + pluginInfo.getLoadType());
         }
 
         loader.loadFromUrl(pluginUrl);
@@ -661,8 +715,8 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     @Override
-    public ClassLoader getJarMergeClassLoader() {
-        return jarMergeClassLoader;
+    public ClassLoader getMergeClassLoader() {
+        return mergeClassLoader;
     }
 
     @Override
@@ -790,7 +844,7 @@ public class DefaultPluginManager implements PluginManager {
 
     @Override
     public void close() throws IOException {
-        jarMergeClassLoader.close();
+        mergeClassLoader.close();
         for (Map.Entry<String, ClassLoader> entry : pluginRawLoaderMap.entrySet()) {
             String plugin = entry.getKey();
             ClassLoader classLoader = entry.getValue();
@@ -799,6 +853,15 @@ public class DefaultPluginManager implements PluginManager {
                 ((Closeable) classLoader).close();
             }
         }
+        pluginClassLoaderMap.values().stream()
+                .filter(c -> c != mergeClassLoader)
+                .forEach(c -> {
+                    if (c instanceof Closeable) {
+                        try {
+                            ((Closeable) c).close();
+                        } catch (IOException ignore) { }
+                    }
+                });
     }
 
     @Override
@@ -815,49 +878,4 @@ public class DefaultPluginManager implements PluginManager {
             }
         });
     }
-
-    //    @Override
-//    public synchronized void loadPlugin(String name) throws IOException {
-//        if(getPluginInfo(name) != null) {
-//            throw new IllegalArgumentException("插件已加载");
-//        }
-//        Path jarPath = Paths.get(ExtUtils.getExtDir().getAbsolutePath()).resolve(name + ".jar");
-//        if (!Files.exists(jarPath) || Files.isDirectory(jarPath)) {
-//            throw new FileNotFoundException("插件 【" + name + "】 不存在");
-//        }
-//
-//        try (URLClassLoader classLoader = PluginClassLoaderFactory.createPurePluginClassLoader(jarPath.toUri().toURL())) {
-//            PluginInfo pluginInfo = getPluginInfoFromLoader(classLoader);
-//            jarMergeClassLoader.loadFromUrl(jarPath.toUri().toURL());
-//            List<Class<?>> classList = getAutoConfigurationClass(classLoader);
-//            for (Class<?> clazz : classList) {
-//                SpringContextUtils.registerBean(clazz);
-//            }
-//        } catch (IOException e) {
-//            throw new IOException("获取插件信息失败，请检查插件的plugin-info.json：{}", e);
-//        }
-//    }
-//
-//    private List<Class<?>> getAutoConfigurationClass(ClassLoader classLoader) throws IOException {
-//        Properties properties = new Properties();
-//        try (InputStream stream = classLoader.getResourceAsStream("META-INF/spring.factories")) {
-//            if (stream == null) {
-//                throw new IllegalArgumentException("未在META-INF/spring.factories中指定自动配置类");
-//            }
-//            properties.load(stream);
-//        }
-//        String autoConfigClass = properties.getProperty("org.springframework.boot.autoconfigure.EnableAutoConfiguration");
-//        if (!StringUtils.hasText(autoConfigClass)) {
-//            throw new IllegalArgumentException("未在META-INF/spring.factories中指定自动配置类");
-//        }
-//        return Arrays.stream(autoConfigClass.split(","))
-//                .map(clazz -> {
-//                    try {
-//                        return classLoader.loadClass(clazz);
-//                    } catch (ClassNotFoundException e) {
-//                        throw new IllegalArgumentException("无效的自动配置类：" + clazz, e);
-//                    }
-//                })
-//                .collect(Collectors.toList());
-//    }
 }

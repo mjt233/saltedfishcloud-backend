@@ -4,12 +4,10 @@ spring:
   jpa:
     show-sql: true
   datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    druid:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
-      username: root
-      password: test
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
+    username: root
+    password: test
   redis:
     host: 127.0.0.1
     port: 6379
@@ -27,18 +25,20 @@ logging:
 plugin:
   # 额外加载的插件资源
   extra-resource:
-    - sfc-ext/sfc-ext-quick-share
+#    - sfc-ext/sfc-ext-quick-share
 #    - sfc-ext/sfc-ext-demo
-    - sfc-ext/sfc-ext-ftp-server
+#    - sfc-ext/sfc-ext-ftp-server
 #    - sfc-ext/sfc-ext-minio-store
 #    - sfc-ext/sfc-ext-samba-store
 #    - sfc-ext/sfc-ext-hadoop-store
 #    - sfc-ext/sfc-ext-mp3-thumbnail
-    - sfc-ext/sfc-ext-sftp-store
+#    - sfc-ext/sfc-ext-sftp-store
 #    - sfc-ext/sfc-ext-ftp-store
     - sfc-ext/sfc-ext-video-enhance
-    - sfc-ext/sfc-ext-network-tools
+    - sfc-ext/sfc-ext-oss-store
+#    - sfc-ext/sfc-ext-network-tools
     - sfc-ext/sfc-ext-web-shell
+    - sfc-ext/sfc-ext-static-publish
 
   # 开发模式下可设置为false 关闭插件前端资源的自动加载
   use-auto-load-resource: false

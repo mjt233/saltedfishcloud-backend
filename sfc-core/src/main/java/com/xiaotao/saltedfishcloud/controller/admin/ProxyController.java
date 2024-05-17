@@ -1,62 +1,77 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import org.springframework.dao.DuplicateKeyException;
+import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
-import javax.validation.Valid;
+import java.util.List;
 
 @RestController
-@RequestMapping(ProxyController.PREFIX)
-@RolesAllowed({"ADMIN"})
+@RequestMapping("/api/proxy")
 @Validated
 public class ProxyController {
-    public static final String PREFIX = "/api/admin/sys/proxy";
+    @Autowired
+    private ProxyInfoService proxyInfoService;
 
-    @Resource
-    private ProxyDao proxyDao;
-
-
-    @PostMapping
-    public JsonResult addProxy(@Validated ProxyInfo info) {
-        try {
-            proxyDao.addProxy(info);
-        } catch (DuplicateKeyException e) {
-            throw new JsonException(400, "名称已存在");
-        }
-        return JsonResult.emptySuccess();
+    /**
+     * 保存代理信息（可新增、编辑）
+     * @param proxyInfo 代理信息
+     */
+    @PostMapping("save")
+    public JsonResult<ProxyInfo> save(@RequestBody ProxyInfo proxyInfo) {
+        proxyInfoService.saveWithOwnerPermissions(proxyInfo);
+        return JsonResultImpl.getInstance(proxyInfo);
     }
 
+    /**
+     * 按用户id获取代理节点
+     * @param uid               用户id
+     * @param pageableRequest   分页参数，可为null
+     */
+    @GetMapping("findByUid")
+    public JsonResult<CommonPageInfo<ProxyInfo>> findByUid(Long uid, @RequestParam(required = false) PageableRequest pageableRequest) {
+        return JsonResultImpl.getInstance(proxyInfoService.findByUidWithOwnerPermissions(uid, pageableRequest));
+    }
+
+    /**
+     * （管理员）获取所有代理节点
+     */
     @GetMapping
-    public JsonResult getAllProxy() {
-        return JsonResultImpl.getInstance(proxyDao.getAllProxy());
+    @RolesAllowed({"ADMIN"})
+    public JsonResult<List<ProxyInfo>> getAllProxy() {
+        return JsonResultImpl.getInstance(proxyInfoService.findAll());
     }
 
-    @PutMapping
-    public JsonResult modifyProxy(@Valid ProxyInfo info, String proxyName) {
-        try {
-            if (proxyDao.modifyProxy(proxyName, info) == 0) {
-                throw new JsonException(400, "代理" + proxyName + "不存在");
-            }
-        } catch (DuplicateKeyException e) {
-            throw new JsonException(400, "新名称已存在");
-        }
-        return JsonResult.emptySuccess();
-    }
-
+    /**
+     * 删除代理
+     * @param proxyId   代理id
+     */
     @DeleteMapping
-    public JsonResult deleteProxy(@RequestParam String proxyName) {
-        if (proxyDao.removeProxy(proxyName) == 0) {
-            throw new JsonException(400, "代理" + proxyName + "不存在");
-        }
+    public JsonResult<?> deleteProxy(@RequestParam Long proxyId) {
+        proxyInfoService.deleteWithOwnerPermissions(proxyId);
         return JsonResult.emptySuccess();
+    }
+
+    /**
+     * 测试代理连通性
+     * @param proxyId   代理id
+     * @param timeout   超时（ms）
+     * @param useCache  是否使用缓存结果
+     * @return          是否连通，连同为true，否则为false
+     */
+    @GetMapping("test")
+    public JsonResult<Boolean> test(@RequestParam("proxyId") Long proxyId,
+                                    @RequestParam(value = "timeout", defaultValue = "10000") int timeout,
+                                    @RequestParam(value = "useCache",defaultValue = "true") boolean useCache
+    ) {
+        return JsonResultImpl.getInstance(proxyInfoService.testProxy(proxyId, timeout, useCache));
     }
 }

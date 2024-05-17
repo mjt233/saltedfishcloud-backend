@@ -43,8 +43,10 @@
 
 #### 拓展功能（插件支持）
 
+- 发布目录为静态页面站点
+- WebShell
 - 支持存储集群
-- 外部存储目录挂载 - MinIO,HDFS,Samba,SFTP协议的外部存储读写支持
+- 外部存储目录挂载 - OSS对象存储, MinIO, HDFS, Samba, SFTP协议的外部存储读写支持
 - 自定义视频转码、字幕提取
 - 作为FTP服务端提供网盘文件访问
 
@@ -96,17 +98,17 @@ $ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 **目前有以下插件：**
 
-| 插件名           | 简介                                      |
-|---------------|-----------------------------------------|
-| mp3-thumbnail | 为mp3文件提供缩率图显示支持                         |
-| demo          | 没啥用，就是个demo，添加/ext/img和/ext/hello两个测试路由 |
-| hadoop-store  | 提供hdfs文件系统读写支持（主存储、挂载存储）                |
-| minio-store   | 提供minio对象存储系统读写支持（主存储、挂载存储）             |
-| samba-store   | **\[特别不稳定\]** 提供Samba文件共享的读写支持（挂载存储）    |
-| sftp-store    | 提供基于SFTP文件传输的存储读写支持（挂载存储）               |
-| ftp-store     | 提供基于FTP文件传输的存储读写支持（挂载存储）                |
-| ftp-server    | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源             |
-| video-enhance | 基于ffmpeg的视频增强服务，支持播放选择字幕、视频转码功能         |
+| 插件名           | 简介                                               |
+|---------------|--------------------------------------------------|
+| mp3-thumbnail | 为mp3文件提供缩率图显示支持                                  |
+| demo          | 没啥用，就是个demo，添加/ext/img和/ext/hello两个测试路由          |
+| hadoop-store  | 提供hdfs文件系统读写支持（主存储、挂载存储）                         |
+| oss-store     | 提供基于Amazon S3协议的OSS对象存储系统读写支持（挂载存储）              |
+| minio-store   | **\[将并入oss-store\]** 提供minio对象存储系统读写支持（主存储、挂载存储） |
+| sftp-store    | 提供基于SFTP文件传输的存储读写支持（挂载存储）                        |
+| ftp-store     | 提供基于FTP文件传输的存储读写支持（挂载存储）                         |
+| ftp-server    | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源                      |
+| video-enhance | 基于ffmpeg的视频增强服务，支持播放选择字幕、视频转码功能                  |
 
 
 ### 4. 插件的加载

@@ -15,7 +15,7 @@ public interface FileResourceMd5Resolver {
      * @param path  网盘路径
      * @return      用户网盘路径对应的文件MD5值，若不存在则为null
      */
-    String getResourceMd5(int uid, String path);
+    String getResourceMd5(long uid, String path);
 
     /**
      * 判断某个文件是否仍在被用户引用

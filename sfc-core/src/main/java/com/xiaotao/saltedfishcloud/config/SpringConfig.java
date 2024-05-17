@@ -1,15 +1,22 @@
 package com.xiaotao.saltedfishcloud.config;
 
+import com.xiaotao.saltedfishcloud.common.RedirectableUrl;
+import com.xiaotao.saltedfishcloud.common.RedirectableUrlHttpMessageConverter;
 import com.xiaotao.saltedfishcloud.interceptor.ProtectBlocker;
+import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.annotation.Resource;
 import java.net.URL;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
@@ -17,6 +24,17 @@ import java.util.concurrent.TimeUnit;
 public class SpringConfig implements WebMvcConfigurer {
     @Resource
     ProtectBlocker protectBlocker;
+
+    @Bean
+    public HttpMessageConverter<Object> redirectableUrlHttpMessageConverter() {
+        return new RedirectableUrlHttpMessageConverter();
+    }
+
+    @Override
+    public void configureMessageConverters(@NotNull List<HttpMessageConverter<?>> converters) {
+        SpringContextUtils.setHttpMessageConverterList(converters);
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(protectBlocker)

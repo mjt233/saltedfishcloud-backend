@@ -4,19 +4,62 @@ import com.xiaotao.saltedfishcloud.model.Result;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.net.JarURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class ClassUtils {
     private static final Map<Class<?>, List<Field>> FIELD_CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * 从类中获取指定注解的类访问器工厂
+     *
+     * @param annotation 要获取的注解
+     * @return 参数 - 接收注解的引用
+     */
+    private static <T extends Annotation> Function<AtomicReference<T>, Function<Class<?>, Boolean>> getAnnotationGetterFactory(Class<T> annotation) {
+        return ref -> clazz -> {
+            T ann = clazz.getAnnotation(annotation);
+            if (ann != null) {
+                ref.set(ann);
+                return false;
+            }
+            return true;
+        };
+    }
+
+    /**
+     * 从bean中获取类注解，优先级：类本身 > 父类 > 实现接口<br>
+     * 注意：该方法不会缓存结果
+     * @param clazz 待解析类
+     * @return      获取到的注解，若获取不到则返回null
+     */
+    public static <T extends Annotation> T getAnnotation(Class<?> clazz, Class<T> annotation) {
+        // 尝试直接从类上获取注解
+        T anno = clazz.getAnnotation(annotation);
+        if (anno != null) {
+            return anno;
+        }
+
+        // 尝试从继承的父类获取注解
+        AtomicReference<T> reference = new AtomicReference<>();
+        Function<Class<?>, Boolean> visitor = getAnnotationGetterFactory(annotation).apply(reference);
+        ClassUtils.visitExtendsPath(clazz, visitor);
+        if (reference.get() != null) {
+            return reference.get();
+        }
+
+        // 尝试从实现的接口获取注解
+        ClassUtils.visitImplementsPath(clazz, visitor);
+        return reference.get();
+    }
 
     public static List<URL> getAllResources(ClassLoader loader, String prefix) throws IOException {
         List<URL> res = new ArrayList<>();
@@ -43,9 +86,42 @@ public class ClassUtils {
             List<Field> fieldList = FIELD_CACHE.computeIfAbsent(curClass, k -> List.of(finalCurClass.getDeclaredFields()));
 
             res.addAll(fieldList);
-            curClass = clazz.getSuperclass();
+            curClass = curClass.getSuperclass();
         }
         return res;
+    }
+
+    /**
+     * 访问类直到Object继承路径
+     * @param clazz     待测试类
+     * @param consumer  访问函数，返回值表示是否继续遍历
+     */
+    public static void visitExtendsPath(Class<?> clazz, Function<Class<?>, Boolean> consumer) {
+        Class<?> curClass = clazz;
+        while (curClass != Object.class) {
+            boolean isContinue = Boolean.TRUE.equals(consumer.apply(curClass));
+            if (!isContinue) {
+                return;
+            }
+            curClass = curClass.getSuperclass();
+        }
+    }
+
+    /**
+     * 访问类的所有实现接口
+     * @param clazz     待测试类
+     * @param consumer  访问函数，返回值表示是否继续遍历
+     */
+    public static void visitImplementsPath(Class<?> clazz, Function<Class<?>, Boolean> consumer) {
+        LinkedList<Class<?>> queue = new LinkedList<>(Arrays.asList(clazz.getInterfaces()));
+        while (!queue.isEmpty()) {
+            Class<?> anInterface = queue.pop();
+            boolean isContinue = Boolean.TRUE.equals(consumer.apply(anInterface));
+            if (!isContinue) {
+                continue;
+            }
+            queue.addAll(Arrays.asList(anInterface.getInterfaces()));
+        }
     }
 
 

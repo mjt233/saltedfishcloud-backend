@@ -14,7 +14,7 @@ public class ClusterHoldSchedule {
     /**
      * 保持集群节点注册上线
      */
-    @Scheduled(fixedRate = 5000, initialDelay = 5000)
+    @Scheduled(fixedRate = 5000)
     public void holdCluster() {
         clusterService.registerSelf();
     }

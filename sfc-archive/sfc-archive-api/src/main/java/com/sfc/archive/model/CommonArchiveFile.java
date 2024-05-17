@@ -3,6 +3,7 @@ package com.sfc.archive.model;
 import com.sfc.constant.RejectRegex;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
+import java.util.Date;
 import java.util.regex.Pattern;
 
 /**
@@ -15,6 +16,10 @@ public class CommonArchiveFile extends ArchiveFile {
     private String path;
     public CommonArchiveFile(ArchiveEntry entry) {
         this.entry = entry;
+        Date lastModifiedDate = entry.getLastModifiedDate();
+        if (lastModifiedDate != null) {
+            setCtime(lastModifiedDate.getTime());
+        }
     }
 
     public long getSize() {

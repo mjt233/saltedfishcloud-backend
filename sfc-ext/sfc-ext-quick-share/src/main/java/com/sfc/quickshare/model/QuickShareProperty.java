@@ -22,5 +22,5 @@ public class QuickShareProperty {
     private Long maxSize = 512L;
 
     @ConfigProperty(describe = "单位：分钟，文件到期后将被自动清理", title = "文件保留时长", defaultValue = "30")
-    private Long effectiveDuration = 30L;
+    private int effectiveDuration = 30;
 }

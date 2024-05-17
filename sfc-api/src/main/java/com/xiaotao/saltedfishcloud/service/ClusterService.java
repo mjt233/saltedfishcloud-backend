@@ -18,6 +18,12 @@ public interface ClusterService {
     List<ClusterNodeInfo> listNodes();
 
     /**
+     * 获取集群节点数量
+     * @return  节点数量
+     */
+    int getNodeCount();
+
+    /**
      * 获取当前节点信息
      */
     ClusterNodeInfo getSelf();

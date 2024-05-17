@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
+import com.sfc.constant.CacheNames;
 import com.xiaotao.saltedfishcloud.dao.jpa.NodeInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
@@ -28,7 +29,6 @@ import java.util.*;
  */
 @Service
 @Slf4j
-@Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class NodeServiceImpl implements NodeService {
     private final static String LOG_PREFIX = "[Node]";
@@ -43,19 +43,19 @@ public class NodeServiceImpl implements NodeService {
     private NodeService self;
 
     @Override
-    @Cacheable(cacheNames = "path", key = "#uid+':node:'+#nid")
-    public NodeInfo getNodeById(Integer uid, String nid) {
+    @Cacheable(cacheNames = CacheNames.PATH, key = "#uid+':node:'+#nid")
+    public NodeInfo getNodeById(Long uid, String nid) {
         if (nid.length() == 32) {
             return nodeDao.getNodeById(uid, nid);
         }
         NodeInfo node = new NodeInfo();
         node.setId(uid + "");
-        node.setUid(Long.valueOf(uid));
+        node.setUid(uid);
         return node;
     }
 
     @Override
-    public NodeTree getFullTree(int uid) {
+    public NodeTree getFullTree(long uid) {
         NodeTree tree = new NodeTree();
         List<NodeInfo> allNode = nodeDao.getAllNode(uid);
         tree.putNode(NodeInfo.getRootNode(uid));
@@ -66,15 +66,15 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    @Cacheable(cacheNames = "path", key = "#uid+':pnid:'+#parentId+':'+#nodeName")
-    public NodeInfo getNodeByParentId(int uid, String parentId, String nodeName) {
+    @Cacheable(cacheNames = CacheNames.PATH, key = "#uid+':pnid:'+#parentId+':'+#nodeName")
+    public NodeInfo getNodeByParentId(long uid, String parentId, String nodeName) {
         return nodeDao.getNodeByParentId(uid, parentId, nodeName);
     }
 
     @Override
-    public LinkedList<NodeInfo> getPathNodeByPathNoEx(int uid, String path) {
+    public Deque<NodeInfo> getPathNodeByPathNoEx(long uid, String path) {
         log.debug("{}<<==== 开始解析路径途径节点 uid: {} 路径: {}",LOG_PREFIX, uid, path);
-        LinkedList<NodeInfo> link = new LinkedList<>();
+        Deque<NodeInfo> link = new ArrayDeque<>();
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         Collection<String> paths = pb.getPath();
@@ -98,7 +98,7 @@ public class NodeServiceImpl implements NodeService {
         if (link.isEmpty()) {
             NodeInfo info = new NodeInfo();
             info.setId(strId);
-            info.setUid((long) uid);
+            info.setUid(uid);
             link.add(info);
         }
         if (log.isDebugEnabled()) {
@@ -114,8 +114,8 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    public LinkedList<NodeInfo> getPathNodeByPath(int uid, String path) throws NoSuchFileException {
-        LinkedList<NodeInfo> list = getPathNodeByPathNoEx(uid, path);
+    public Deque<NodeInfo> getPathNodeByPath(long uid, String path) throws NoSuchFileException {
+        Deque<NodeInfo> list = getPathNodeByPathNoEx(uid, path);
         if (list == null) {
             throw new NoSuchFileException("路径" + path + "不存在，或节点信息已丢失");
         }
@@ -123,7 +123,8 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    public String addNode(int uid, String name, String parent) {
+    @Transactional(rollbackFor = Exception.class)
+    public String addNode(long uid, String name, String parent) {
         int i;
         String id;
         cacheService.deletePnidCache(uid, parent, name);
@@ -140,7 +141,7 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    public List<NodeInfo> getChildNodes(int uid, String nid) {
+    public List<NodeInfo> getChildNodes(long uid, String nid) {
         // 最终结果
         List<NodeInfo> res = new LinkedList<>();
 
@@ -162,7 +163,7 @@ public class NodeServiceImpl implements NodeService {
 
     @Override
     @RemoveNodeCache(uid = 0, nid = 1)
-    public int deleteNodes(int uid, Collection<String> ids) {
+    public int deleteNodes(long uid, Collection<String> ids) {
         if (!ids.isEmpty()) {
             return nodeDao.deleteNodes(uid, ids);
         } else {
@@ -171,13 +172,13 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    public String getNodeIdByPath(int uid, String path) throws NoSuchFileException {
+    public String getNodeIdByPath(long uid, String path) throws NoSuchFileException {
         return self.getPathNodeByPath(uid, path).getLast().getId();
     }
 
     @Override
-    public String getNodeIdByPathNoEx(int uid, String path) {
-        LinkedList<NodeInfo> list = self.getPathNodeByPathNoEx(uid, path);
+    public String getNodeIdByPathNoEx(long uid, String path) {
+        Deque<NodeInfo> list = self.getPathNodeByPathNoEx(uid, path);
         if (list == null) {
             return null;
         }
@@ -185,8 +186,8 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    @Cacheable(cacheNames = "path", key = "#uid+':path:'+#nodeId")
-    public String getPathByNode(int uid, String nodeId) {
+    @Cacheable(cacheNames = CacheNames.PATH, key = "#uid+':path:'+#nodeId")
+    public String getPathByNode(long uid, String nodeId) {
         if (nodeId.length() < 32) {
             return "/";
         }
@@ -216,6 +217,7 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String addMountPointNode(MountPoint mountPoint) {
         NodeInfo nodeInfo = NodeInfo.builder()
                 .mountId(mountPoint.getId())

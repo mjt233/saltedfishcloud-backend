@@ -21,7 +21,7 @@ public class TokenServiceImpl implements TokenService {
     private final UserDao userDao;
 
     @Override
-    public String generateUserToken(Integer uid) {
+    public String generateUserToken(Long uid) {
         final User user = userDao.getUserById(uid);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
         return generateUserToken(user);
@@ -42,17 +42,17 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public void setToken(Integer uid, String token) {
+    public void setToken(Long uid, String token) {
         redisTemplate.opsForValue().set(TokenService.getTokenKey(uid, token), "1", Duration.ofDays(2));
     }
 
     @Override
-    public void cleanUserToken(Integer uid) {
+    public void cleanUserToken(Long uid) {
         redisTemplate.delete(redisDao.scanKeys("xyy::token::" + uid + "::*"));
     }
 
     @Override
-    public boolean isTokenValid(Integer uid, String token) {
+    public boolean isTokenValid(Long uid, String token) {
         return redisTemplate.opsForValue().get(TokenService.getTokenKey(uid, token)) != null;
     }
 

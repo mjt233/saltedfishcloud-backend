@@ -4,7 +4,6 @@ import com.sfc.constant.error.CommonError;
 import com.sfc.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.User;
-import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
@@ -64,7 +63,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
 
     /**
      * 文件移动是否需要递归执行。
-     * @return 若返回值为true，则通过递归逐个移动文件。若为false，则直接调用{@link CopyAndMoveHandler#moveFile(String, String)}方法进行移动。
+     * @return 若返回值为true，则通过递归逐个移动文件。若为false，则直接调用{@link CopyAndMoveHandler#moveFile(java.lang.String, java.lang.String)}方法进行移动。
      * 使用递归移动时，支持同名目录合并。
      *
      */
@@ -91,12 +90,12 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         }
 
         @Override
-        protected boolean copyFile(String src, String dest) throws IOException {
+        public boolean copyFile(String src, String dest) throws IOException {
             return handler.copy(src, dest);
         }
 
         @Override
-        protected boolean moveFile(String src, String dest) throws IOException {
+        public boolean moveFile(String src, String dest) throws IOException {
             return handler.move(src, dest);
         }
 
@@ -120,11 +119,11 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
      */
     public abstract String getStoreRoot();
 
-    public final String getUserProfileRoot(int uid) {
+    public final String getUserProfileRoot(long uid) {
         return StringUtils.appendPath(getStoreRoot(), "user_profile", uid + "");
     }
 
-    public final String getUserFileRoot(int uid) {
+    public final String getUserFileRoot(long uid) {
         if (uid == User.PUBLIC_USER_ID) {
             return getPublicRoot();
         } else {
@@ -179,25 +178,25 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public void store(int uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
+    public void store(long uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
         final String root = getUserFileRoot(uid);
         final String savePath = StringUtils.appendPath(root, targetDir, fileInfo.getName());
-        handler.store(savePath, fileInfo.getSize(), input);
+        handler.store(fileInfo, savePath, fileInfo.getSize(), input);
     }
 
     @Override
-    public void rename(int uid, String path, String oldName, String newName) throws IOException {
+    public void rename(long uid, String path, String oldName, String newName) throws IOException {
         final String src = getPath(uid, path, oldName);
         handler.rename(src, newName);
     }
 
     @Override
-    public boolean mkdir(int uid, String path, String name) throws IOException {
+    public boolean mkdir(long uid, String path, String name) throws IOException {
         return handler.mkdirs(getPath(uid, path, name));
     }
 
     @Override
-    public long delete(int uid, String path, Collection<String> files) throws IOException {
+    public long delete(long uid, String path, Collection<String> files) throws IOException {
         final String root = getPath(uid, path);
         for (String file : files) {
             if(!FileNameValidator.valid(file)) {
@@ -209,7 +208,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public Resource getAvatar(int uid) throws IOException {
+    public Resource getAvatar(long uid) throws IOException {
         final String r = getUserProfileRoot(uid);
         for (FileInfo info : handler.listFiles(r)) {
             if (info.getName().startsWith("avatar.")) {
@@ -221,7 +220,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
 
 
     @Override
-    public void saveAvatar(int uid, Resource resource) throws IOException {
+    public void saveAvatar(long uid, Resource resource) throws IOException {
         FileValidator.validateAvatar(resource);
         final String userProfileRoot = getUserProfileRoot(uid);
         for (FileInfo fileInfo : handler.listFiles(userProfileRoot)) {
@@ -231,7 +230,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         }
         try(final InputStream is = resource.getInputStream()) {
             final String path = StringUtils.appendPath(userProfileRoot, "avatar." + FileUtils.getSuffix(resource.getFilename()));
-            handler.store(path, resource.contentLength() ,is);
+            handler.store(FileInfo.getFromResource(resource, uid, FileInfo.TYPE_FILE), path, resource.contentLength() ,is);
         }
 
     }
@@ -248,7 +247,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
      * @param path  路径节点集合
      * @return 资源完整存储路径
      */
-    private String getPath(int uid, String...path) {
+    private String getPath(long uid, String...path) {
         String root = (uid == User.PUBLIC_USER_ID ?
                 getPublicRoot() :
                 StringUtils.appendPath(getUserFileRoot(uid))
@@ -263,7 +262,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public List<FileInfo> lists(int uid, String path) throws IOException {
+    public List<FileInfo> lists(long uid, String path) throws IOException {
         if (!canBrowse()) {
             return Collections.emptyList();
         }
@@ -277,7 +276,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public Resource getResource(int uid, String path, String name) throws IOException {
+    public Resource getResource(long uid, String path, String name) throws IOException {
         String root;
         if (name == null) {
             root = getPath(uid, path);
@@ -289,12 +288,12 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public boolean exist(int uid, String path) throws IOException {
+    public boolean exist(long uid, String path) throws IOException {
         return handler.exist(getPath(uid, path));
     }
 
     @Override
-    public void moveToSave(int uid, Path nativePath, String diskPath, BasicFileInfo fileInfo) throws IOException {
+    public void moveToSave(long uid, Path nativePath, String diskPath, FileInfo fileInfo) throws IOException {
         try(final InputStream is = Files.newInputStream(nativePath)) {
             final FileInfo fileResource = FileInfo.getFromResource(new PathResource(nativePath), uid, fileInfo.getType());
             fileResource.setName(fileInfo.getName());
@@ -305,7 +304,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public void copy(int uid, String source, String target, int targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
+    public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
         final String src = StringUtils.appendPath(getUserFileRoot(uid), source, sourceName);
         final String dst = StringUtils.appendPath(getUserFileRoot(targetId), target, targetName);
         copyAndMoveHandler.copy(src, dst, overwrite);
@@ -313,7 +312,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public void move(int uid, String source, String target, String name, boolean overwrite) throws IOException {
+    public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
         final String src = StringUtils.appendPath(getUserFileRoot(uid), source, name);
         final String dst = StringUtils.appendPath(getUserFileRoot(uid), target, name);
         final String dstParent = PathUtils.getParentPath(dst);

@@ -57,7 +57,7 @@ class MinioDirectRawHandlerTest {
         String testFileName = "xyy-new-file.txt";
         String testFileContent2 = "Hello Minio!2";
         String testFileName2 = "xyy-new-file2.txt";
-        handler.store(testFileName, testFileContent.length(), new ByteArrayInputStream(testFileContent.getBytes(StandardCharsets.UTF_8)));
+        handler.store(null, testFileName, testFileContent.length(), new ByteArrayInputStream(testFileContent.getBytes(StandardCharsets.UTF_8)));
         try(OutputStream os = handler.newOutputStream(testFileName2)) {
             StreamUtils.copy(testFileContent2.getBytes(StandardCharsets.UTF_8), os);
         }

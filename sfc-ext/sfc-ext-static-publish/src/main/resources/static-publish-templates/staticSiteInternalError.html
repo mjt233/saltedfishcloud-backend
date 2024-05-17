@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>系统内部错误</title>
+</head>
+<body>
+    <h1 style="text-align: center">500 Server Internal Error</h1>
+    <hr>
+    <a th:href="${parentUri}" th:if="${uri.length() > 0}">返回上一级</a>
+    <p>ヽ(*。>Д<)o゜ 啊哦~芭比Q了，系统出现了内部错误，请联系管理员</p>
+    <p th:text="'错误信息: ' + ${errorMessage}"></p>
+    <hr>
+    <p style="text-align: center">咸鱼云网盘</p>
+</body>
+</html>

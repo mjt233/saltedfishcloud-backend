@@ -28,15 +28,19 @@ nav:
       - 衍生项目: quick-start/other.md
     - 插件:
         - 插件系统说明: extension/index.md
-        - 插件：ftp-server: extension/ftp-server.md
-        - 插件：mp3-thumbnail: extension/mp3-thumbnail.md
-        - 插件：hadoop-store: extension/hadoop-store.md
-        - 插件：minio-store: extension/minio-store.md
-        - 插件：samba-store: extension/samba-store.md
-        - 插件：sftp-store: extension/sftp-store.md
-        - 插件：ftp-store: extension/ftp-store.md
-        - 插件：video-enhance: extension/video-enhance.md
-        - 插件：quick-share: extension/quick-share.md
+        - FTP服务 ftp-server: extension/ftp-server.md
+        - OSS对象存储 oss-store: extension/ftp-server.md
+        - Minio对象存储 minio-store: extension/minio-store.md
+        - mp3缩略图 mp3-thumbnail: extension/mp3-thumbnail.md
+        - Hadoop存储 hadoop-store: extension/hadoop-store.md
+        - Samba文件共享 samba-store: extension/samba-store.md
+        - SFTP存储 sftp-store: extension/sftp-store.md
+        - FTP存储 ftp-store: extension/ftp-store.md
+        - 视频功能增强 video-enhance: extension/video-enhance.md
+        - 快捷分享 quick-share: extension/quick-share.md
+        - WebShell web-shell: extension/web-shell.md
+        - 网络工具 network-tools: extension/network-tools.md
+        - 静态资源站点 static-publish: extension/static-publish.md
   - 开发手册:
       - 简介: develop/index.md
       - 项目构建: develop/build.md

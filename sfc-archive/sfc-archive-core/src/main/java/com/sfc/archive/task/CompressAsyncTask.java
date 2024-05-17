@@ -2,10 +2,10 @@ package com.sfc.archive.task;
 
 import com.sfc.archive.ArchiveHandleEventListener;
 import com.sfc.archive.ArchiveManager;
+import com.sfc.archive.DiskFileSystemArchiveHelper;
 import com.sfc.archive.comporessor.ArchiveCompressor;
 import com.sfc.archive.model.ArchiveFile;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
-import com.sfc.archive.DiskFileSystemArchiveHelper;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 压缩任务
@@ -53,6 +54,8 @@ public class CompressAsyncTask implements AsyncTask {
     private CustomLogger taskLog;
 
     private boolean inRunning = false;
+
+    private final AtomicReference<Thread> executeThread = new AtomicReference<>();
 
     public CompressAsyncTask(DiskFileSystemCompressParam compressParam, String originParams) {
         this.compressParam = compressParam;
@@ -120,10 +123,7 @@ public class CompressAsyncTask implements AsyncTask {
         pb.append(compressParam.getTargetFilePath());
 
         fileInfo.setName(pb.range(1, -1).replace("/", ""));
-        fileSystem.moveToSaveFile(compressParam.getSourceUid().intValue(), localPath, pb.range(-1), fileInfo);
-        taskLog.info("保存成功");
-        taskLog.info("删除本地临时文件: " + localPath);
-        Files.deleteIfExists(localPath);
+        fileSystem.moveToSaveFile(compressParam.getSourceUid(), localPath, pb.range(-1), fileInfo);
     }
 
     @Override
@@ -140,26 +140,27 @@ public class CompressAsyncTask implements AsyncTask {
 
         taskLog.info("正在读取待压缩文件列表...");
         long begin = System.currentTimeMillis();
-        try {
-            try (OutputStream outputStream = Files.newOutputStream(localPath);
-                 ArchiveCompressor compressor = DiskFileSystemArchiveHelper.compressAndWriteOut(fileSystem, archiveManager, compressParam, outputStream)
-            ) {
+        try (OutputStream outputStream = Files.newOutputStream(localPath);
+             ArchiveCompressor compressor = archiveManager.getCompressor(compressParam.getArchiveParam(), outputStream);
+        ) {
+            this.compressor = compressor;
+            executeThread.set(Thread.currentThread());
+            DiskFileSystemArchiveHelper.compress(compressParam, compressor, fileSystem);
 
-                this.compressor = compressor;
+            // 输出初始化信息
+            logBasicInfo(System.currentTimeMillis() - begin);
+            progressRecord.setLoaded(this.compressor.getLoaded());
+            progressRecord.setTotal(this.compressor.getTotal());
 
-                // 输出初始化信息
-                logBasicInfo(System.currentTimeMillis() - begin);
-                progressRecord.setLoaded(compressor.getLoaded());
-                progressRecord.setTotal(compressor.getTotal());
+            // 绑定事件处理
+            initEventHandler();
 
-                // 绑定事件处理
-                initEventHandler();
-
-                // 开始压缩
-                compressor.start();
-            }
+            // 开始压缩
+            this.compressor.start();
+            this.compressor.close();
             // 保存压缩结果到网盘
             saveToFileSystem(localPath);
+            taskLog.info("保存成功");
         }  catch (Throwable e) {
             log.error("任务异常",e);
             taskLog.error("任务异常：", e);
@@ -169,21 +170,24 @@ public class CompressAsyncTask implements AsyncTask {
                 throw new RuntimeException(e);
             }
         } finally {
+            executeThread.set(null);
+            taskLog.info("删除本地临时文件: " + localPath);
+            try {
+                Files.deleteIfExists(localPath);
+            } catch (IOException e) {
+                taskLog.error("本地文件删除失败： " + localPath, e);
+            }
+            taskLog.info("任务已退出");
             inRunning = false;
         }
     }
 
     @Override
     public void interrupt() {
-        if (compressor != null) {
-            try {
-                compressor.close();
-            } catch (IOException e) {
-                log.error("中断出错",e);
-                if (taskLog != null) {
-                    taskLog.error(e);
-                }
-            }
+        taskLog.warn("收到任务中断命令");
+        Thread thread = executeThread.get();
+        if (thread != null) {
+            thread.interrupt();
         }
     }
 

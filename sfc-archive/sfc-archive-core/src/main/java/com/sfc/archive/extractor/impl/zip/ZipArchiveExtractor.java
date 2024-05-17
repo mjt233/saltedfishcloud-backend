@@ -1,27 +1,23 @@
 package com.sfc.archive.extractor.impl.zip;
 
-import com.sfc.archive.model.ArchiveParam;
-import com.sfc.archive.model.CommonArchiveFile;
 import com.sfc.archive.extractor.AbstractArchiveExtractor;
 import com.sfc.archive.extractor.ArchiveExtractorVisitor;
 import com.sfc.archive.model.ArchiveFile;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.archive.model.ArchiveParam;
+import com.sfc.archive.model.CommonArchiveFile;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.springframework.core.io.Resource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.zip.ZipException;
 
 /**
  * todo 防御ZIP炸弹

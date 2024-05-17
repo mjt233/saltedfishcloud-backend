@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.sfc.constant.ConfigInputType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -92,6 +93,8 @@ public class ConfigNode {
 
     /**
      * 可选项，用于为select、multi-select、ratio和checkbox类型提供可选值
+     *
+     * @see ConfigInputType
      */
     private List<SelectOption> options;
 
@@ -127,7 +130,7 @@ public class ConfigNode {
     private boolean required;
 
     /**
-     * 额外参数，当类型为模板时会传递给模板
+     * 额外参数，当type为 {@link ConfigInputType#TEMPLATE} 会传递给模板
      */
     private Map<String, Object> params;
 

@@ -19,7 +19,7 @@ public interface DiskFileSystemArchiveService {
      * @param outputStream  接收压缩数据的输出流
      * @return 任务id
      */
-    void compressAndWriteOut(int uid, String path, Collection<String> names, OutputStream outputStream)
+    void compressAndWriteOut(long uid, String path, Collection<String> names, OutputStream outputStream)
             throws IOException;
 
     /**
@@ -31,7 +31,7 @@ public interface DiskFileSystemArchiveService {
      * @param type  压缩类型
      * @return 任务id
      */
-    void compress(int uid, String path, Collection<String> names, String dest) throws IOException;
+    void compress(long uid, String path, Collection<String> names, String dest) throws IOException;
 
     /**
      * 通过异步任务进行压缩文件操作
@@ -48,5 +48,5 @@ public interface DiskFileSystemArchiveService {
      * @param dest  解压目的地
      * @return 任务id
      */
-    void extractArchive(int uid, String path, String name, String dest) throws IOException;
+    void extractArchive(long uid, String path, String name, String dest) throws IOException;
 }

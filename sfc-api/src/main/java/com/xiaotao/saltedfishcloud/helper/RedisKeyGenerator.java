@@ -28,7 +28,7 @@ public class RedisKeyGenerator {
      * @param type      验证类型
      * @return          Redis key，Redis值为验证码
      */
-    public static String getUserEmailValidKey(int uid, String email, MailValidateType type) {
+    public static String getUserEmailValidKey(long uid, String email, MailValidateType type) {
         return PREFIX + "mailValidate:" + uid + ":" + type + ":" + email;
     }
 }

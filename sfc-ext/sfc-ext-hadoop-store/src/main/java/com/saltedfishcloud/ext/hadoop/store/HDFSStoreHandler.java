@@ -2,6 +2,7 @@ package com.saltedfishcloud.ext.hadoop.store;
 
 import com.sfc.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -51,7 +52,7 @@ public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandle
     }
 
     @Override
-    public long store(String path, long size, InputStream inputStream) throws IOException {
+    public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
         Path target = new Path(path);
         if (fs.exists(target)) {
             if (fs.getFileStatus(target).isDirectory()) {
@@ -62,6 +63,9 @@ public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandle
         long cnt = 0;
         try(final FSDataOutputStream out = fs.create(target)) {
             cnt = StreamUtils.copy(inputStream, out);
+        }
+        if (fileInfo != null && fileInfo.getMtime() != null) {
+            fs.setTimes(target, fileInfo.getMtime(), System.currentTimeMillis());
         }
         inputStream.close();
         return cnt;

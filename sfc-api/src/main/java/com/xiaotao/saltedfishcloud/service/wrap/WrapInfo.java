@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WrapInfo {
-    private Integer uid;
+    private Long uid;
     private FileTransferInfo files;
 }

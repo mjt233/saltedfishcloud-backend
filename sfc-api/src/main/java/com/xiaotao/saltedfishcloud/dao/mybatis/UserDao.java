@@ -26,7 +26,7 @@ public interface UserDao {
      * @return          受影响的行数
      */
     @Update("UPDATE user SET email = #{email} WHERE id = #{id}")
-    int updateEmail(Integer id, String email);
+    int updateEmail(Long id, String email);
 
     @Select("SELECT * FROM user WHERE email = #{email}")
     User getByEmail(String email);
@@ -38,7 +38,7 @@ public interface UserDao {
      * @return          受影响的行数
      */
     @Update("UPDATE user SET type = #{type} WHERE id = #{uid}")
-    int grant(@Param("uid") Integer uid, @Param("type") Integer type);
+    int grant(@Param("uid") Long uid, @Param("type") Integer type);
 
     /**
      * 获取用户数量
@@ -55,7 +55,7 @@ public interface UserDao {
      * @return                  受影响的数据库行数
      */
     @Update("UPDATE user SET pwd=#{pwd} WHERE id = #{uid}")
-    int modifyPassword(@Param("uid") Integer uid, @Param("pwd") String encodedPassword);
+    int modifyPassword(@Param("uid") Long uid, @Param("pwd") String encodedPassword);
 
     /**
      * 通过用户ID获取用户信息
@@ -63,7 +63,7 @@ public interface UserDao {
      * @return      用户信息对象
      */
     @Select("SELECT * FROM user WHERE id = #{id}")
-    User getUserById(Integer id);
+    User getUserById(Long id);
 
     /**
      * 通过用户名获取用户信息
@@ -80,7 +80,7 @@ public interface UserDao {
      * @return              受影响的表行数
      */
     @Update("UPDATE user SET last_login = #{loginTime} WHERE id = #{uid}")
-    int updateLoginDate(@Param("uid") Integer uid, @Param("loginTime") Long loginTime);
+    int updateLoginDate(@Param("uid") Long uid, @Param("loginTime") Long loginTime);
 
     /**
      * 添加一个用户
@@ -90,11 +90,13 @@ public interface UserDao {
      * @param type  用户类型，1为管理员，0为普通用户
      * @return      受影响的表行数
      */
-    @Insert("INSERT INTO user (user,pwd, email, type) VALUE (#{user},#{pwd}, #{email}, #{type})")
+    @Insert("INSERT INTO user (id,user,pwd, email, type) VALUE (#{id}, #{user},#{pwd}, #{email}, #{type})")
     int addUser(@Param("user") String user,
                 @Param("pwd") String pwd,
                 @Param("email") String email,
-                @Param("type") Integer type);
+                @Param("type") Integer type,
+                @Param("id") Long id
+    );
 
     /**
      * 取用户列表
@@ -113,5 +115,5 @@ public interface UserDao {
             "(SELECT sum(size) as used from file_table where uid=#{uid} and size > 0) b," +
             "(SELECT quota from user where id=#{uid} ) a" +
             ")")
-    QuotaInfo getUserQuotaUsed(@Param("uid") Integer uid);
+    QuotaInfo getUserQuotaUsed(@Param("uid") Long uid);
 }

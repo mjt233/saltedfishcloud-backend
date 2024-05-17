@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PublicKey;
 import java.util.Collections;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -125,7 +124,7 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
                     .handler(this)
                     .path(path)
                     .name(PathUtils.getLastNode(path))
-                    .lastModified(fileAttributes.getMtime())
+                    .lastModified(fileAttributes.getMtime() * 1000)
                     .size(fileAttributes.getSize())
                     .build();
         }
@@ -134,12 +133,9 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
 
     private FileInfo remoteResourceInfoToFileInfo(RemoteResourceInfo info) {
         FileAttributes attributes = info.getAttributes();
-        Date mtime = new Date(attributes.getMtime());
         FileInfo fileInfo = new FileInfo();
-        fileInfo.setCreatedAt(mtime);
+        fileInfo.setMtime(attributes.getMtime() * 1000);
         fileInfo.setMount(false);
-        fileInfo.setLastModified(mtime.getTime());
-        fileInfo.setUpdatedAt(mtime);
         fileInfo.setName(info.getName());
         fileInfo.setType(info.isDirectory() ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
         fileInfo.setSize(info.isDirectory() ? -1 : attributes.getSize());
@@ -151,11 +147,7 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
         boolean isDir = attributes.getType() == FileMode.Type.DIRECTORY;
         fileInfo.setSize(isDir ? -1 : attributes.getSize());
         fileInfo.setType(isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
-
-        Date mtime = new Date(attributes.getMtime());
-        fileInfo.setUpdatedAt(mtime);
-        fileInfo.setCreatedAt(mtime);
-        fileInfo.setLastModified(mtime.getTime());
+        fileInfo.setMtime(attributes.getMtime() * 1000);
         return fileInfo;
     }
 
@@ -230,19 +222,26 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
     }
 
     @Override
-    public long store(String path, long size, InputStream inputStream) throws IOException {
-        FileInfo fileInfo = getFileInfo(path);
-        if (fileInfo != null) {
-            if (fileInfo.isDir()) {
+    public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
+        FileInfo existFile = getFileInfo(path);
+        if (existFile != null) {
+            if (existFile.isDir()) {
                 throw new IOException(path + "是目录，无法覆盖");
             }
         }
-        try (SFTPClient sftpClient = getSFTPClient()) {
-            try(RemoteFile file = sftpClient.open(path, CREATE_OPEN_MODE)) {
-                try(RemoteFile.RemoteFileOutputStream os = file.new RemoteFileOutputStream()) {
-                    return StreamUtils.copy(inputStream, os);
-                }
+        try (SFTPClient sftpClient = getSFTPClient();
+             RemoteFile file = sftpClient.open(path, CREATE_OPEN_MODE);
+             RemoteFile.RemoteFileOutputStream os = file.new RemoteFileOutputStream()
+        ) {
+            int ret = StreamUtils.copy(inputStream, os);
+            os.close();
+            if (fileInfo.getMtime() != null) {
+                FileAttributes attributes = new FileAttributes.Builder()
+                        .withAtimeMtime(System.currentTimeMillis() / 1000, fileInfo.getMtime() / 1000)
+                        .build();
+                file.setAttributes(attributes);
             }
+            return ret;
         }
     }
 

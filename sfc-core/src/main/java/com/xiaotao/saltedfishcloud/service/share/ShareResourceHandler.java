@@ -41,7 +41,7 @@ public class ShareResourceHandler implements ResourceProtocolHandler, Initializi
                         .name(param.getName())
                         .path(param.getPath())
                         .verification(vid.toString())
-                        .sid(Integer.parseInt(param.getTargetId()))
+                        .sid(Long.valueOf(param.getTargetId()))
                         .build()
         );
     }

@@ -15,19 +15,20 @@ mybatis:
 spring:
   jpa:
     database: mysql
-    open-in-view: false
+    open-in-view: true
     hibernate:
       ddl-auto: none
+    properties:
+      hibernate:
+        order_inserts: true
+        jdbc:
+          batch_size: 200
+
   datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    druid:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
-      username: root
-      password: test
-      test-while-idle: true
-      test-on-borrow: false
-      test-on-return: false
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
+    username: root
+    password: test
   redis:
     host: 127.0.0.1
     port: 6379
@@ -48,6 +49,8 @@ spring:
   mvc:
     throw-exception-if-no-handler-found: true
 logging:
+  file:
+    name: ./log/output.log
   level:
     org: warn
     com: warn

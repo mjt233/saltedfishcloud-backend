@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `collection`;
 CREATE TABLE `collection` (
                               `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '收集任务ID',
                               `verification` char(32) NOT NULL COMMENT '校验码',
-                              `uid` int unsigned NOT NULL COMMENT '创建者ID',
+                              `uid` bigint unsigned NOT NULL COMMENT '创建者ID',
                               `nickname` varchar(128) NOT NULL COMMENT '接收者署名',
                               `describe` text COMMENT '收集任务描述',
                               `title` varchar(128) NOT NULL COMMENT '标题',
@@ -57,7 +57,7 @@ DROP TABLE IF EXISTS `collection_rec`;
 CREATE TABLE `collection_rec` (
                                   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '记录ID',
                                   `cid` bigint NOT NULL COMMENT '收集任务ID',
-                                  `uid` int unsigned NOT NULL COMMENT '上传者ID，匿名用户为0',
+                                  `uid` bigint unsigned NOT NULL COMMENT '上传者ID，匿名用户为0',
                                   `filename` varchar(1024) NOT NULL COMMENT '文件名',
                                   `size` bigint NOT NULL COMMENT '文件大小',
                                   `md5` char(32) NOT NULL COMMENT '文件MD5校验码',
@@ -91,7 +91,7 @@ DROP TABLE IF EXISTS `download_task`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `download_task` (
                                  `id` varchar(128) NOT NULL,
-                                 `uid` int unsigned DEFAULT NULL,
+                                 `uid` bigint unsigned DEFAULT NULL,
                                  `url` varchar(2048) DEFAULT NULL,
                                  `proxy` varchar(128) DEFAULT NULL,
                                  `state` varchar(128) DEFAULT 'waiting',
@@ -101,7 +101,7 @@ CREATE TABLE `download_task` (
                                  `created_at` datetime DEFAULT NULL,
                                  `finish_at` datetime DEFAULT NULL,
                                  `save_path` varchar(2048) DEFAULT NULL,
-                                 `created_by` int unsigned DEFAULT NULL,
+                                 `created_by` bigint unsigned DEFAULT NULL,
                                  `loaded` bigint unsigned DEFAULT '0',
                                  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -115,13 +115,16 @@ DROP TABLE IF EXISTS `file_table`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `file_table` (
-                              `uid` int unsigned NOT NULL,
+                              `id` bigint not null primary key,
+                              `uid` bigint unsigned NOT NULL,
                               `name` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
                               `node` char(32) DEFAULT NULL,
                               `size` bigint NOT NULL,
                               `md5` char(32) DEFAULT NULL,
-                              `created_at` datetime NULL DEFAULT NULL,
-                              `updated_at` datetime NULL DEFAULT NULL,
+                              `create_at` datetime NULL DEFAULT NULL,
+                              `update_at` datetime NULL DEFAULT NULL,
+                              `ctime` long NULL DEFAULT NULL,
+                              `mtime` long NULL DEFAULT NULL,
                               `mount_id` bigint NULL COMMENT '挂载点id',
                               UNIQUE KEY `file_index` (`node`,`name`,`uid`),
                               KEY `md5_index` (`md5`),
@@ -140,7 +143,7 @@ CREATE TABLE `node_list` (
                              `name` varchar(512) DEFAULT NULL,
                              `id` char(32) DEFAULT NULL,
                              `parent` char(32) DEFAULT NULL,
-                             `uid` int unsigned DEFAULT NULL,
+                             `uid` bigint DEFAULT NULL,
                              `collecting` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于收集文件中',
                              `sharing` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于分享状态',
                              mount_id bigint COMMENT '挂载点id',
@@ -157,11 +160,17 @@ DROP TABLE IF EXISTS `proxy`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `proxy` (
+                         `id` bigint NOT NULL COMMENT '主键',
                          `name` varchar(128) NOT NULL,
                          `type` varchar(16) NOT NULL,
                          `address` varchar(512) NOT NULL,
                          `port` smallint unsigned NOT NULL,
-                         PRIMARY KEY (`name`)
+                         `uid` bigint DEFAULT '0' COMMENT '创建用户id',
+                         `test_url` varchar(255) DEFAULT NULL,
+                         `create_at` datetime DEFAULT NULL,
+                         `update_at` datetime DEFAULT NULL,
+                         PRIMARY KEY (`id`),
+                         KEY `i_uid` (`uid`,`name`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -173,9 +182,9 @@ DROP TABLE IF EXISTS `share`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `share` (
-                         `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '分享ID',
+                         `id` bigint NOT NULL AUTO_INCREMENT COMMENT '分享ID',
                          `verification` char(32) NOT NULL COMMENT '分享校验码',
-                         `uid` int unsigned NOT NULL COMMENT '分享者ID',
+                         `uid` bigint unsigned NOT NULL COMMENT '分享者ID',
                          `nid` char(32) NOT NULL COMMENT '资源ID，分享目录则为目录节点ID，文件则为文件MD5',
                          `parent_id` char(32) NOT NULL COMMENT '资源所处目录的节点ID',
                          `type` enum('FILE','DIR') NOT NULL COMMENT '分享类型，可为文件或目录',

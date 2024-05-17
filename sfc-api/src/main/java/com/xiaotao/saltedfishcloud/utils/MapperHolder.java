@@ -44,6 +44,7 @@ public class MapperHolder {
         // Long -> String
         simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
         mapper.registerModule(simpleModule);
+        mapper.setTypeFactory(mapper.getTypeFactory().withClassLoader(Thread.currentThread().getContextClassLoader()));
     }
 
     public static <T> T parseJson(String json, Class<T> clazz) throws IOException {
@@ -52,6 +53,9 @@ public class MapperHolder {
 
     @SuppressWarnings("unchecked")
     public static <T> T parseAsJson(Object jsonObj, Class<T> clazz) throws IOException {
+        if (jsonObj instanceof String && clazz == String.class) {
+            return (T)mapper.readValue(jsonObj.toString(), String.class);
+        }
         if (clazz.isAssignableFrom(jsonObj.getClass())) {
             return (T)jsonObj;
         } else if (jsonObj instanceof String) {
@@ -126,5 +130,9 @@ public class MapperHolder {
 
     public static String toJson(Object val) throws JsonProcessingException {
         return mapper.writeValueAsString(val);
+    }
+
+    public static String toJsonWithType(Object val) throws JsonProcessingException {
+        return withTypeMapper.writeValueAsString(val);
     }
 }

@@ -34,7 +34,7 @@ public class CollectionInfo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String verification;
-    private Integer uid;
+    private Long uid;
     private String nickname;
 
     @Column(name = "`describe`")
@@ -97,7 +97,7 @@ public class CollectionInfo {
     @Enumerated(EnumType.STRING)
     private State state;
 
-    public CollectionInfo(Integer uid,String nickname, String title, String describe, String saveNode, Date expiredAt, String extPattern) {
+    public CollectionInfo(Long uid,String nickname, String title, String describe, String saveNode, Date expiredAt, String extPattern) {
         this.uid = uid;
         this.title = title;
         this.describe = describe;
@@ -108,7 +108,7 @@ public class CollectionInfo {
         this.extPattern = extPattern;
     }
 
-    public CollectionInfo(Integer uid, CollectionDTO info) {
+    public CollectionInfo(Long uid, CollectionDTO info) {
         this(uid, info.getNickname(), info.getTitle(), info.getDescribe(), info.getSaveNode(), info.getExpiredAt(), info.getExtPattern());
         this.allowAnonymous = info.getAllowAnonymous();
         this.maxSize = info.getMaxSize();

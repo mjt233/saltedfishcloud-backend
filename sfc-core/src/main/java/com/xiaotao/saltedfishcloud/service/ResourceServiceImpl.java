@@ -6,9 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.po.file.BasicFileInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileDCInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
@@ -91,7 +91,7 @@ public class ResourceServiceImpl implements ResourceService {
      * @param expr  下载码有效时长（单位：天），若小于0，则无限制
      */
     @Override
-    public String getFileDownloadCode(int uid, String path, BasicFileInfo fileInfo, int expr) throws IOException {
+    public String getFileDownloadCode(long uid, String path, FileInfo fileInfo, int expr) throws IOException {
         DiskFileSystem fileSystem = fileSystemFactory.getMainFileSystem();
         if (
                 !fileSystem.exist(uid, PathBuilder.formatPath(path + "/" + fileInfo.getName(), true))

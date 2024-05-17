@@ -26,7 +26,7 @@ public class HDFSProperties {
 
     private String user = "xiaotao";
 
-    public String getStoreRoot(int uid) {
+    public String getStoreRoot(long uid) {
         return root + "/user_file/" + uid;
     }
 }

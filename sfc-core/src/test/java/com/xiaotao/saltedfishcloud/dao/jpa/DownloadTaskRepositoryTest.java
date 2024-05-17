@@ -18,7 +18,7 @@ class DownloadTaskRepositoryTest {
 
     @Test
     public void testMethod() {
-        Page<DownloadTaskInfo> res = downloadTaskRepo.findByUid(1, PageRequest.of(0, 10));
+        Page<DownloadTaskInfo> res = downloadTaskRepo.findByUid(1L, PageRequest.of(0, 10));
         for (DownloadTaskInfo info : res) {
             System.out.println(info);
         }

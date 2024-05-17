@@ -11,7 +11,8 @@
 
     <properties>
         <java.version>11</java.version>
-        <api.version>2.6.4</api.version>
+        <api.version>2.8.0</api.version>
+        <rpc.version>1.0.0</rpc.version>
         <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -20,11 +21,11 @@
     </properties>
 
     <modules>
-        <module>sfc-ext-hadoop-store</module>
-        <module>sfc-ext-demo</module>
+<!--        <module>sfc-ext-hadoop-store</module>-->
+<!--        <module>sfc-ext-demo</module>-->
         <module>sfc-ext-mp3-thumbnail</module>
         <module>sfc-ext-minio-store</module>
-        <module>sfc-ext-samba-store</module>
+<!--        <module>sfc-ext-samba-store</module>-->
         <module>sfc-ext-sftp-store</module>
         <module>sfc-ext-ftp-store</module>
         <module>sfc-ext-ftp-server</module>
@@ -33,6 +34,8 @@
         <module>sfc-ext-quick-share</module>
         <module>sfc-ext-network-tools</module>
         <module>sfc-ext-web-shell</module>
+        <module>sfc-ext-static-publish</module>
+        <module>sfc-ext-oss-store</module>
     </modules>
 
 

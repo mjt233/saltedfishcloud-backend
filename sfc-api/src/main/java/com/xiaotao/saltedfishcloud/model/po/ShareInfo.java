@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -22,11 +23,8 @@ import java.util.Date;
 @Setter
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ShareInfo {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-    private Integer uid;
+public class ShareInfo extends AuditModel {
+    private Long uid;
     private String nid;
     private String parentId;
     private String verification;
@@ -37,8 +35,6 @@ public class ShareInfo {
     private String extractCode;
     private String name;
 
-    @CreatedDate
-    private Date createdAt;
     private Date expiredAt;
 
     @Transient
@@ -54,14 +50,14 @@ public class ShareInfo {
     @JsonIgnore
     private boolean hide = false;
 
-    public ShareInfo(Integer uid, String nid, ShareType type, Date expiredAt) {
+    public ShareInfo(Long uid, String nid, ShareType type, Date expiredAt) {
         this.uid = uid;
         this.nid = nid;
         this.type = type;
         this.expiredAt = expiredAt;
     }
 
-    public static ShareInfo valueOf(ShareDTO shareDTO, ShareType type, String nid, int uid) {
+    public static ShareInfo valueOf(ShareDTO shareDTO, ShareType type, String nid, long uid) {
         ShareInfo shareInfo = new ShareInfo();
         shareInfo.setExpiredAt(shareDTO.getExpiredAt());
         shareInfo.setExtractCode(shareDTO.getExtractCode());

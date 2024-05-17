@@ -24,7 +24,7 @@
     <artifactId>saltedfishcloud</artifactId>
 
     <!--  主版本号   -->
-    <version>2.6.4</version>
+    <version>2.8.0</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
@@ -33,11 +33,11 @@
 <!--        <sfc.front-end-path>C:\Users\xiaotao\code\saltedfishcloud-frontend</sfc.front-end-path>-->
         <java.version>11</java.version>
         <!--   系统核心api模块版本     -->
-        <api.version>2.6.4</api.version>
+        <api.version>2.8.0</api.version>
         <task.version>1.0.0</task.version>
         <rpc.version>1.0.0</rpc.version>
         <oshi.version>6.4.0</oshi.version>
-        <download.version>1.0.0</download.version>
+        <download.version>1.1.0</download.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -66,6 +66,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!--   cglib动态代理     -->
+        <dependency>
+            <groupId>cglib</groupId>
+            <artifactId>cglib</artifactId>
+            <version>3.3.0</version>
         </dependency>
 
 
@@ -198,13 +205,6 @@
         <!--            <optional>true</optional>-->
         <!--        </dependency>-->
 
-
-        <!-- SpringBoot Druid数据源 -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid-spring-boot-starter</artifactId>
-            <version>1.1.22</version>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>

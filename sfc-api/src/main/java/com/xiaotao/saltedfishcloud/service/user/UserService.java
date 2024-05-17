@@ -36,7 +36,7 @@ public interface UserService {
 
     User getUserByEmail(String email);
 
-    User getUserById(Integer id);
+    User getUserById(Long id);
 
     /**
      * 通过邮箱验证方式重置用户密码
@@ -51,7 +51,7 @@ public interface UserService {
      * @param uid   用户ID
      * @param email 新邮箱
      */
-    void setEmail(Integer uid, String email);
+    void setEmail(Long uid, String email);
 
     /**
      * 绑定新邮箱
@@ -60,7 +60,7 @@ public interface UserService {
      * @param originCode    旧邮箱的验证码，若用户原本没有邮箱则可为空
      * @param newCode       新邮箱的验证码
      */
-    void bindEmail(Integer uid, String newEmail, String originCode, String newCode);
+    void bindEmail(Long uid, String newEmail, String originCode, String newCode);
 
     /**
      * 发送用户新邮箱绑定用的邮箱验证码。
@@ -69,22 +69,22 @@ public interface UserService {
      * @param email 新邮箱
      * @return      验证码，注意不要暴露到响应
      */
-    String sendBindEmail(Integer uid, String email) throws MessagingException, UnsupportedEncodingException;
+    String sendBindEmail(Long uid, String email) throws MessagingException, UnsupportedEncodingException;
 
     /**
      * 发送旧邮箱验证码，用于验证用户拥有该邮箱地址
      * @param uid   用户ID
      * @return 验证码，注意不要暴露到响应
      */
-    String sendVerifyEmail(Integer uid) throws MessagingException, UnsupportedEncodingException;
+    String sendVerifyEmail(Long uid) throws MessagingException, UnsupportedEncodingException;
 
     /**
-     * 验证用户的邮箱验证码是否正确。验证码来源见{@link UserService#sendVerifyEmail(Integer)}
+     * 验证用户的邮箱验证码是否正确。验证码来源见{@link UserService#sendVerifyEmail(Long)}
      * 若验证失败则抛异常
      * @param uid   用户ID
      * @param code  邮箱验证码
      */
-    void verifyEmail(Integer uid, String code) throws MessagingException, UnsupportedEncodingException;
+    void verifyEmail(Long uid, String code) throws MessagingException, UnsupportedEncodingException;
 
     /**
      * 发送用户重置密码用的邮箱验证码。
@@ -114,7 +114,7 @@ public interface UserService {
      * @param uid 用户ID
      * @param type 用户类型，1管理员，0普通用户
      */
-    void grant(int uid, int type);
+    void grant(long uid, int type);
 
     /**
      * 通过用户名获取用户信息
@@ -132,7 +132,7 @@ public interface UserService {
      * @param newPassword   新密码
      * @return              数据库操作影响的行数
      */
-    int modifyPasswd(Integer uid, String oldPassword, String newPassword);
+    int modifyPasswd(Long uid, String oldPassword, String newPassword);
 
     /**
      * 直接添加用户
@@ -160,5 +160,5 @@ public interface UserService {
      * @param uid   用户ID
      * @return      数据库操作影响的行数
      */
-    int updateLoginDate(Integer uid);
+    int updateLoginDate(Long uid);
 }

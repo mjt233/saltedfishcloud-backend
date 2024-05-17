@@ -33,6 +33,16 @@ public class ShellSessionRecord extends AuditModel {
     private Integer exitCode;
 
     /**
+     * pty终端行高
+     */
+    private int rows;
+
+    /**
+     * pty终端列宽
+     */
+    private int cols;
+
+    /**
      * 会话初始化参数
      */
     private ShellExecuteParameter parameter;

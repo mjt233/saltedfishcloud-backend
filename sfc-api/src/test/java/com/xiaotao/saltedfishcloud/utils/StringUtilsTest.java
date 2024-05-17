@@ -23,4 +23,11 @@ class StringUtilsTest {
         urlLastName = StringUtils.getURLLastName("a/?name=xiaotao");
         assertEquals("a", urlLastName);
     }
+
+    @Test
+    void testCamelToUnder() {
+        assertEquals("shell_execute_record", StringUtils.camelToUnder("ShellExecuteRecord"));
+        assertEquals("md5_a114", StringUtils.camelToUnder("md5A114"));
+    }
+
 }

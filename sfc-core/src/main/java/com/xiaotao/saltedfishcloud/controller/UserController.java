@@ -109,7 +109,7 @@ public class UserController {
     public JsonResult<?> setEmail(@RequestParam("email") @Email String email,
                                @RequestParam(value = "originCode", required = false) String originCode,
                                @RequestParam("newCode") String newCode) {
-        Integer uid = SecureUtils.getSpringSecurityUser().getId();
+        Long uid = SecureUtils.getSpringSecurityUser().getId();
         userService.bindEmail(uid, email, originCode, newCode);
         return JsonResult.emptySuccess();
     }
@@ -120,7 +120,7 @@ public class UserController {
      */
     @PostMapping("/sendBindEmail")
     public JsonResult<?> sendBindEmail(@RequestParam("email") @Email String email) throws MessagingException, UnsupportedEncodingException {
-        Integer uid = SecureUtils.getSpringSecurityUser().getId();
+        Long uid = SecureUtils.getSpringSecurityUser().getId();
         userService.sendBindEmail(uid, email);
         return JsonResult.emptySuccess();
     }
@@ -242,7 +242,7 @@ public class UserController {
     @AllowAnonymous
     public ResponseEntity<Resource>
                 getAvatar(HttpServletResponse response,
-                          @RequestParam(required = false) Integer uid,
+                          @RequestParam(required = false) Long uid,
                           @PathVariable(required = false) String username) throws IOException {
         try {
             User currentUser = SecureUtils.getSpringSecurityUser();
@@ -250,7 +250,7 @@ public class UserController {
                 response.sendRedirect("/api/static/defaultAvatar.png");
                 return null;
             }
-            Integer finalUid = 0;
+            Long finalUid = 0L;
 
             if (uid != null) {
                 finalUid = uid;
@@ -288,7 +288,7 @@ public class UserController {
     @PostMapping("{uid}/passwd")
     public JsonResult<?> modifyPassword(@RequestParam("old") String oldPasswd,
                                      @RequestParam("new") @Length(min = 6) String newPasswd,
-                                     @PathVariable("uid") @UID int uid,
+                                     @PathVariable("uid") @UID long uid,
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
         User user = SecureUtils.getSpringSecurityUser();
         if (force) {
@@ -313,7 +313,7 @@ public class UserController {
      */
     @PutMapping("{uid}/type/{typeCode}")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<?> grant(@PathVariable("uid") int uid,
+    public JsonResult<?> grant(@PathVariable("uid") long uid,
                             @PathVariable("typeCode") int type) {
         User user = userService.getUserById(uid);
         if (user == null) {

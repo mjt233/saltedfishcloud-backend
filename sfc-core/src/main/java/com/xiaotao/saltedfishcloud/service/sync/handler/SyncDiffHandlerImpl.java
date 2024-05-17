@@ -10,52 +10,54 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.nio.file.NoSuchFileException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class SyncDiffHandlerImpl implements SyncDiffHandler{
     @Resource
     private FileRecordService fileRecordService;
-    @Resource
-    private FileDao fileDao;
 
     @Override
-    public void handleFileAdd(int uid, Collection<FileInfo> files) throws IOException {
+    public void handleFileAdd(long uid, Collection<FileInfo> files) throws IOException {
         for (FileInfo fileInfo : files) {
             if (fileInfo.getMd5() == null) {
                 fileInfo.updateMd5();
             }
-            fileRecordService.addRecord(uid, fileInfo.getName(), fileInfo.getSize(), fileInfo.getMd5(), fileInfo.getPath());
+            fileRecordService.saveRecord(fileInfo, fileInfo.getPath());
         }
     }
 
     @Override
-    public void handleFileDel(int uid, Collection<FileInfo> files) {
-        for (FileInfo file : files) {
-            fileDao.deleteRecord(uid, file.getNode(), file.getName());
-        }
+    public void handleFileDel(long uid, Collection<FileInfo> files) {
+        Map<String, List<String>> fileGroup = files.stream().collect(Collectors.groupingBy(
+                FileInfo::getNode,
+                Collectors.mapping(FileInfo::getName, Collectors.toList())
+        ));
+        fileGroup.forEach((node, fileList) -> {
+            try {
+                fileRecordService.deleteRecords(uid, node, fileList);
+            } catch (NoSuchFileException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
-    public void handleFileChange(int uid, Collection<FileChangeInfo> files) throws IOException {
+    public void handleFileChange(long uid, Collection<FileChangeInfo> files) throws IOException {
         for (FileChangeInfo changeInfo : files) {
             final FileInfo newFile = changeInfo.newFile;
-            fileDao.updateRecord(
-                    uid,
-                    newFile.getName(),
-                    newFile.getNode(),
-                    newFile.getSize(),
-                    newFile.getMd5()
-            );
+            FileInfo oldFile = changeInfo.oldFile;
+            oldFile.copyFrom(newFile);
+            fileRecordService.save(oldFile);
         }
     }
 
     @Override
-    public void handleDirAdd(int uid, Collection<String> paths) throws IOException {
+    public void handleDirAdd(long uid, Collection<String> paths) throws IOException {
         for (String e : paths) {
             FileInfo info = new FileInfo();
             int i = e.lastIndexOf('/');
@@ -68,7 +70,7 @@ public class SyncDiffHandlerImpl implements SyncDiffHandler{
     }
 
     @Override
-    public void handleDirDel(int uid, Collection<String> paths) throws IOException {
+    public void handleDirDel(long uid, Collection<String> paths) throws IOException {
         Set<String> hasDelete = new HashSet<>();
         for(String p : paths ){
             boolean breakFlag = false;

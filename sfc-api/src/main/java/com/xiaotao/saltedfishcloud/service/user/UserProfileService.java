@@ -17,12 +17,12 @@ public interface UserProfileService {
      * @param uid   用户ID
      * @return      用户未设置头像时，为null
      */
-    Resource getAvatar(int uid);
+    Resource getAvatar(long uid);
 
     /**
      * 保存用户头像
      * @param uid   用户ID
      * @param inputStream 头像资源输入流
      */
-    void saveAvatar(int uid, InputStream inputStream) throws IOException;
+    void saveAvatar(long uid, InputStream inputStream) throws IOException;
 }
