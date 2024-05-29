@@ -10,6 +10,7 @@
   "apiVersion": "^api.version^",
   "version": "^project.version^",
   "autoLoad": [
-    "index.umd.js"
+    "index.umd.js",
+    "style.css"
   ]
 }
