@@ -1,20 +1,16 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
-import com.sfc.constant.CacheNames;
 import com.xiaotao.saltedfishcloud.dao.jpa.NodeInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
-import com.xiaotao.saltedfishcloud.model.po.MountPoint;
-import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.service.node.cache.NodeCacheService;
-import com.xiaotao.saltedfishcloud.service.node.cache.annotation.RemoveNodeCache;
+import com.xiaotao.saltedfishcloud.model.po.MountPoint;
+import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -180,7 +176,7 @@ public class NodeServiceImpl implements NodeService {
         List<String> ids = new ArrayList<>();
         ids.add(nid);
         do {
-            nodes = nodeDao.getChildNodes(uid, ids);
+            nodes = nodeInfoRepo.findByUidAndParent(uid, ids);
             res.addAll(nodes);
             ids = nodes.stream()
                     .peek(node -> {
@@ -198,7 +194,7 @@ public class NodeServiceImpl implements NodeService {
 //    @RemoveNodeCache(uid = 0, nid = 1)
     public int deleteNodes(long uid, Collection<String> ids) {
         if (!ids.isEmpty()) {
-            return nodeDao.deleteNodes(uid, ids);
+            return nodeInfoRepo.deleteByIdAndUid(uid, ids);
         } else {
             return 0;
         }

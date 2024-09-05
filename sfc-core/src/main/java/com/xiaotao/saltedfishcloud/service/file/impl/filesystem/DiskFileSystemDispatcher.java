@@ -396,11 +396,11 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Transactional(rollbackFor = Exception.class)
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
         String sourcePath = StringUtils.appendPath(source, name);
+        String targetPath = StringUtils.appendPath(target, name);
         FileSystemMatchResult targetMatchResult = matchFileSystem(uid, target);
         FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
-
-        // 处理挂载点移动的逻辑
         FileSystemMatchResult sourceFullMatchResult = matchFileSystem(uid, sourcePath);
+        FileSystemMatchResult targetFullMatchResult = matchFileSystem(uid, targetPath);
 
         List<MountPoint> mountPoints = null;
         Resource resource = sourceMatchResult.fileSystem.getResource(uid, sourceMatchResult.resolvedPath, name);
@@ -408,11 +408,11 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             mountPoints = mountPointService.listByPath(uid, sourcePath);
 
             // 如果目标位置是挂载点位置，需要判断源目标中是否包含挂载点，如果有挂载点是不允许的，防止挂载点内出现嵌套，不好处理。
-            if (targetMatchResult.mountPoint != null) {
+            if (targetMatchResult.mountPoint != null || targetFullMatchResult.isMountPath(targetPath)) {
                 if (mountPoints != null && !mountPoints.isEmpty()) {
                     throw new JsonException("目录包含挂载点，不能移动到其他挂载点下");
                 }
-                if (sourceMatchResult.isMountPath(sourcePath)) {
+                if (sourceFullMatchResult.isMountPath(sourcePath)) {
                     throw new JsonException("挂载点不允许移动到其他挂载点下");
                 }
             }

@@ -53,23 +53,6 @@ public interface NodeDao {
                 @Param("isMount") Boolean isMount
     );
 
-    /**
-     * 取某个用户目录下多个节点的所有直接子节点
-     * @param uid   用户ID
-     * @param nid   要查询的节点
-     * @return  节点信息列表
-     */
-    @Select({
-            "<script>",
-            "SELECT name, id, parent, uid, mount_id FROM node_list ",
-            "WHERE parent in ",
-                "<foreach collection='nid' item='id' open='(' separator=',' close=')'>",
-                "#{id}",
-                "</foreach>",
-            " AND uid = #{uid}",
-            "</script>"
-    })
-    List<NodeInfo> getChildNodes(@Param("uid") Long uid, @Param("nid") Collection<String> nid );
 
     /**
      * 通过父节点ID获取某个目录节点信息
@@ -81,16 +64,6 @@ public interface NodeDao {
     @Select("SELECT name, id, parent, uid, parent, mount_id FROM node_list WHERE parent = #{pid} AND name = #{name} AND  uid = #{uid}")
     NodeInfo getNodeByParentId(@Param("uid") Long uid, @Param("pid") String pid, @Param("name") String name);
 
-    @Delete({
-            "<script>",
-            "DELETE FROM node_list WHERE id IN ",
-                "<foreach collection='nodes' item='node' open='(' separator=',' close=')'>",
-                "#{node}",
-                "</foreach>",
-            " AND uid = #{uid}",
-            "</script>"
-    })
-    int deleteNodes(@Param("uid") Long uid, @Param("nodes") Collection<String> nodes);
 
     /**
      * 修改节点的父节点
