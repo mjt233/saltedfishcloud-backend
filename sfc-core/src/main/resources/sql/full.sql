@@ -126,6 +126,7 @@ CREATE TABLE `file_table` (
                               `ctime` long NULL DEFAULT NULL,
                               `mtime` long NULL DEFAULT NULL,
                               `mount_id` bigint NULL COMMENT '挂载点id',
+                              is_mount BOOLEAN NULL COMMENT '是否为挂载点目录记录',
                               UNIQUE KEY `file_index` (`node`,`name`,`uid`),
                               KEY `md5_index` (`md5`),
                               KEY `uid_index` (`uid`)
@@ -147,6 +148,7 @@ CREATE TABLE `node_list` (
                              `collecting` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于收集文件中',
                              `sharing` tinyint(1) DEFAULT NULL COMMENT '该节点是否处于分享状态',
                              mount_id bigint COMMENT '挂载点id',
+                             is_mount BOOLEAN COMMENT '是否未挂载点目录节点',
                              UNIQUE KEY `node_name_index` (`parent`,`name`),
                              KEY `id_index` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -238,6 +240,8 @@ CREATE TABLE mount_point (
                              protocol VARCHAR(32) COMMENT '挂载的文件系统协议',
                              params TEXT COMMENT '挂载参数',
                              create_at DATETIME COMMENT '创建日期',
+                             update_at DATETIME NULL COMMENT '更新日期',
+                             is_proxy_store_record BOOLEAN NULL COMMENT '委托存储记录',
                              KEY `idx_uid`(uid, nid)
 )ENGINE=InnoDB CHARSET=utf8mb4 COMMENT '第三方文件系统挂载点';
 

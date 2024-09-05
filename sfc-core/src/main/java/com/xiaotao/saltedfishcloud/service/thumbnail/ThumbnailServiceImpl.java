@@ -117,15 +117,15 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     /**
      * 尝试获取已经生成过的缩略图资源
-     * @param md5       源文件md5
+     * @param fileIdentify       源文件唯一标识
      * @return          缩略图资源，若不存在则为null
      */
-    protected Resource getFromExist(String md5) throws IOException {
-        final String thumbnailPath = getThumbnailTempPath(md5);
+    protected Resource getFromCache(String fileIdentify) throws IOException {
+        final String thumbnailPath = getThumbnailTempPath(fileIdentify);
         final TempStoreService tempHandler = storeServiceFactory.getService().getTempFileHandler();
         final Resource resource = tempHandler.getResource(thumbnailPath);
         if (resource != null) {
-            log.debug("{}已有缩略图：{}", LOG_TITLE, md5);
+            log.debug("{}已有缩略图：{}", LOG_TITLE, fileIdentify);
             return resource;
         } else {
             return null;
@@ -133,21 +133,21 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     }
 
     @Override
-    public Resource getThumbnail(Resource resource, String ext, String id) throws IOException {
+    public Resource getThumbnail(Resource resource, String ext, String fileIdentify) throws IOException {
         // 优先从已生成的资源中获取，若不存在再进行生成操作
-        Resource existResource = getFromExist(id);
+        Resource existResource = getFromCache(fileIdentify);
         if (existResource != null) {
             return existResource;
         }
-        RLock lock = redisson.getLock(id);
+        RLock lock = redisson.getLock(fileIdentify);
         try {
             lock.lock();
 
-            existResource = getFromExist(id);
+            existResource = getFromCache(fileIdentify);
             if (existResource != null) {
                 return existResource;
             }
-            return generate(resource, ext, id);
+            return generate(resource, ext, fileIdentify);
         } finally {
             lock.unlock();
         }

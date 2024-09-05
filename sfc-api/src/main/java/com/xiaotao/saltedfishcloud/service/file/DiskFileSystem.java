@@ -85,10 +85,14 @@ public interface DiskFileSystem {
 
     /**
      * 通过文件MD5获取一个存储在系统中的文件<br>
+     * 在作为主文件系统时该方法生效。若返回null则表示不处理该方法，交由系统从文件存储记录中解析后转发到满足条件的文件系统中。<br>
+     * 如果在主文件系统中实现了该方法但确实找不到文件，且不希望继续交给系统解析转发，则应抛出异常。
      * @param md5   文件MD5值
      * @return      MD5在网盘中对应的资源
      */
-    Resource getResourceByMd5(String md5) throws IOException;
+    default Resource getResourceByMd5(String md5) throws IOException {
+        return null;
+    }
 
     /**
      * 复制指定用户的文件或目录到指定用户的某个目录下

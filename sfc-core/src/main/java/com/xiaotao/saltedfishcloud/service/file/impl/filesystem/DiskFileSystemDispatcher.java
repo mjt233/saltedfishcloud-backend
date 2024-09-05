@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
+import com.sfc.constant.error.CommonError;
 import com.sfc.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
@@ -9,24 +9,28 @@ import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
+import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
-import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.data.util.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -71,6 +75,13 @@ class FileSystemMatchResult {
         }
         return StringUtils.isPathEqual(path, mountPoint.getPath());
     }
+
+    /**
+     * 判断是否为一个启用了代理文件存储记录的挂载点
+     */
+    public boolean isProxyStoreRecordMountPoint() {
+        return mountPoint != null && Boolean.TRUE.equals(mountPoint.getIsProxyStoreRecord());
+    }
 }
 
 /**
@@ -91,10 +102,10 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     private DiskFileSystemManager diskFileSystemManager;
 
     @Autowired
-    private RedissonClient redisson;
+    private FileRecordService fileRecordService;
 
     @Autowired
-    private SysProperties sysProperties;
+    private NodeService nodeService;
 
 
     public void setMainFileSystem(DiskFileSystem mainFileSystem) {
@@ -107,6 +118,9 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Override
     public List<FileInfo> getUserFileList(long uid, String path, @Nullable Collection<String> nameList) throws IOException {
         FileSystemMatchResult fileSystemMatchResult = matchFileSystem(uid, path);
+        if (fileSystemMatchResult.isProxyStoreRecordMountPoint()) {
+            return getMainFileSystem().getUserFileList(uid, path, nameList);
+        }
         return fileSystemMatchResult.fileSystem.getUserFileList(uid, fileSystemMatchResult.resolvedPath, nameList);
     }
 
@@ -147,7 +161,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     protected FileSystemMatchResult matchFileSystem(long uid, String path) {
         MountPoint mountPoint = matchMountPoint(uid, path);
         if (mountPoint == null) {
-            return new FileSystemMatchResult(mainFileSystem, mountPoint, path);
+            return new FileSystemMatchResult(mainFileSystem, null, path);
         } else {
             try {
                 Map<String, Object> map = MapperHolder.parseJsonToMap(mountPoint.getParams());
@@ -194,7 +208,16 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Transactional(rollbackFor = Exception.class)
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
-        return matchResult.fileSystem.quickSave(uid, matchResult.resolvedPath, name, md5);
+        boolean isSuccess = matchResult.fileSystem.quickSave(uid, matchResult.resolvedPath, name, md5);
+        if (matchResult.isProxyStoreRecordMountPoint() && isSuccess) {
+            Optional.ofNullable(fileRecordService.getFileInfoByMd5(md5, 1))
+                    .orElseThrow(() -> new JsonException(
+                            CommonError.MOUNT_POINT_FILE_RECORD_PROXY_ERROR.getStatus(),
+                            CommonError.MOUNT_POINT_FILE_RECORD_PROXY_ERROR.getCode(),
+                            CommonError.MOUNT_POINT_FILE_RECORD_PROXY_ERROR.getMessage() + ": 找不到节点id。位置: " + path + "/" + name + " 文件md5: " + md5)
+                    );
+        }
+        return isSuccess;
     }
 
     @Override
@@ -203,7 +226,11 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         if (matchResult.mountPoint != null && (matchResult.resolvedPath.equals("/") || matchResult.resolvedPath.equals(""))) {
             return true;
         } else {
-            return matchResult.fileSystem.exist(uid, matchResult.resolvedPath);
+            if (matchResult.isProxyStoreRecordMountPoint()) {
+                return getMainFileSystem().exist(uid, path);
+            } else {
+                return matchResult.fileSystem.exist(uid, matchResult.resolvedPath);
+            }
         }
 
     }
@@ -221,62 +248,99 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         if (matchResult.isMountPath(path)) {
             throw new JsonException(FileSystemError.MOUNT_POINT_EXIST);
         }
-        return matchResult.fileSystem.mkdirs(uid, matchResult.resolvedPath);
+        String mkdirsResult = matchResult.fileSystem.mkdirs(uid, matchResult.resolvedPath);
+        if (matchResult.isProxyStoreRecordMountPoint()) {
+            fileRecordService.mkdirs(uid, path, true);
+        }
+        return mkdirsResult;
     }
 
     @Override
     public Resource getResourceByMd5(String md5) throws IOException {
-        return mainFileSystem.getResourceByMd5(md5);
+        Resource mainResource = getMainFileSystem().getResourceByMd5(md5);
+        if(mainResource != null) {
+            return mainResource;
+        }
+        FileInfo fileInfo;
+        List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
+        if (files.size() == 0) {
+            throw new NoSuchFileException("文件不存在: " + md5);
+        }
+        fileInfo = files.get(0);
+        String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
+        fileInfo.setPath(path + "/" + fileInfo.getName());
+        Resource resource = getResource(fileInfo.getUid(), path, fileInfo.getName());
+        return ResourceUtils.bindFileInfo(resource, fileInfo);
     }
 
-    private void doCopy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite, int depth) throws IOException {
-        log.debug("{}执行复制：{}/{} -> {}/{}", LOG_PREFIX, source, sourceName, target, targetName);
+    private void doCopy(long uid, String sourceDir, String targetDir, long targetUid, String sourceName, String targetName, Boolean overwrite, int depth) throws IOException {
+        log.debug("{}执行复制：{}/{} -> {}/{}", LOG_PREFIX, sourceDir, sourceName, targetDir, targetName);
         if (depth >= 64) {
             throw new IOException("目录嵌套层数过大！（不能大于64）");
         }
 
 
-        FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
-        FileSystemMatchResult targetMatchResult = matchFileSystem(targetUid, target);
+        FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, sourceDir);
+        FileSystemMatchResult targetMatchResult = matchFileSystem(targetUid, targetDir);
         if (Objects.equals(sourceMatchResult.fileSystem, mainFileSystem) && Objects.equals(targetMatchResult.fileSystem, mainFileSystem)) {
-            log.debug("{}相同文件系统内copy: {}/{} -> {}/{}", LOG_PREFIX, source, sourceName, target, targetName);
-            sourceMatchResult.fileSystem.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+            log.debug("{}相同文件系统内copy: {}/{} -> {}/{}", LOG_PREFIX, sourceDir, sourceName, targetDir, targetName);
+            sourceMatchResult.fileSystem.copy(uid, sourceDir, targetDir, targetUid, sourceName, targetName, overwrite);
             return;
         }
 
-        log.debug("{}不同文件系统间copy: {}/{} -> {}/{}，文件系统：{} -> {}", LOG_PREFIX, source, sourceName, target, targetName, sourceMatchResult, targetMatchResult);
+        log.debug("{}不同文件系统间copy: {}/{} -> {}/{}，文件系统：{} -> {}", LOG_PREFIX, sourceDir, sourceName, targetDir, targetName, sourceMatchResult, targetMatchResult);
 
+        // 如果能拿到Resource 说明被复制对象是文件，直接复制文件即可
         Resource sourceResource = sourceMatchResult.fileSystem.getResource(uid, sourceMatchResult.resolvedPath, sourceName);
         if (sourceResource != null) {
             List<FileInfo>[] userFileList = sourceMatchResult.fileSystem.getUserFileList(uid, sourceMatchResult.resolvedPath);
             FileInfo fileInfo = Optional.ofNullable(userFileList[1])
-                    .orElseThrow(() -> new IOException(source + " 下获取不到文件列表"))
+                    .orElseThrow(() -> new IOException(sourceDir + " 下获取不到文件列表"))
                     .stream()
                     .filter(e -> e.getName().equals(sourceName))
                     .findAny()
-                    .orElseThrow(() -> new IOException(source + "/" + sourceName + " 不存在"));
+                    .orElseThrow(() -> new IOException(sourceDir + "/" + sourceName + " 不存在"));
             fileInfo.setStreamSource(sourceResource);
             FileInfo newFile = FileInfo.createFrom(fileInfo, false);
             newFile.setUid(targetUid);
             newFile.setStreamSource(sourceResource);
             targetMatchResult.fileSystem.saveFile(newFile, targetMatchResult.resolvedPath);
+            if (targetMatchResult.isProxyStoreRecordMountPoint()) {
+                newFile.setNode(nodeService.getNodeIdByPath(targetUid, targetDir));
+                newFile.setIsMount(true);
+                fileRecordService.saveRecord(newFile, targetDir);
+            }
             return;
         }
+
+        // 被复制对象是目录
         String resolvedSourcePath = StringUtils.appendPath(sourceMatchResult.resolvedPath, sourceName);
         String resolvedTargetPath = StringUtils.appendPath(targetMatchResult.resolvedPath, targetName);
-        if(!targetMatchResult.fileSystem.exist(targetUid, resolvedTargetPath)) {
+        if (targetMatchResult.isProxyStoreRecordMountPoint()) {
+            if (!fileRecordService.exist(targetUid, targetDir, targetName)) {
+                fileRecordService.mkdirs(targetUid, StringUtils.appendPath(targetDir, targetName), true);
+                targetMatchResult.fileSystem.mkdir(targetUid, targetMatchResult.resolvedPath, targetName);
+            }
+        } else if(!targetMatchResult.fileSystem.exist(targetUid, resolvedTargetPath)) {
             targetMatchResult.fileSystem.mkdir(targetUid, targetMatchResult.resolvedPath, targetName);
         }
+
         List<FileInfo>[] sourceFileList = sourceMatchResult.fileSystem.getUserFileList(uid, resolvedSourcePath);
         List<FileInfo> fileList = sourceFileList[1];
         // 先复制文件
         if (fileList != null) {
+            String fileNodeId = targetMatchResult.isProxyStoreRecordMountPoint() ? nodeService.getNodeIdByPath(targetUid, StringUtils.appendPath(targetDir, targetName)) : null;
             for (FileInfo fileInfo : fileList) {
                 Resource resource = sourceMatchResult.fileSystem.getResource(uid, resolvedSourcePath, fileInfo.getName());
                 fileInfo.setStreamSource(resource);
                 FileInfo newFile = FileInfo.createFrom(fileInfo, false);
                 newFile.setUid(targetUid);
-                targetMatchResult.fileSystem.saveFile(fileInfo, resolvedTargetPath);
+                targetMatchResult.fileSystem.saveFile(newFile, resolvedTargetPath);
+                if (targetMatchResult.isProxyStoreRecordMountPoint()) {
+                    newFile.setNode(fileNodeId);
+                    newFile.setIsMount(true);
+                    fileRecordService.saveRecord(newFile, targetDir);
+                }
             }
         }
 
@@ -304,7 +368,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             int nextDepth = depth + 1;
             for (FileInfo fileInfo : dirList) {
                 // 跳过挂载点
-                if (fileInfo.isMount()) {
+                if (fileInfo.getMountId() != null) {
                     continue;
                 }
                 if (!existDir.contains(fileInfo.getName())) {
@@ -313,8 +377,11 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                         continue;
                     }
                     targetMatchResult.fileSystem.mkdir(targetUid, resolvedTargetPath, fileInfo.getName());
+                    if (targetMatchResult.isProxyStoreRecordMountPoint()) {
+                        fileRecordService.mkdirs(targetUid, StringUtils.appendPath(targetDir, fileInfo.getName()), true);
+                    }
                 }
-                doCopy(uid, StringUtils.appendPath(source, sourceName), StringUtils.appendPath(target, targetName), targetUid, fileInfo.getName(), fileInfo.getName(), overwrite, nextDepth);
+                doCopy(uid, StringUtils.appendPath(sourceDir, sourceName), StringUtils.appendPath(targetDir, targetName), targetUid, fileInfo.getName(), fileInfo.getName(), overwrite, nextDepth);
             }
         }
     }
@@ -328,26 +395,71 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
-        FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
+        String sourcePath = StringUtils.appendPath(source, name);
         FileSystemMatchResult targetMatchResult = matchFileSystem(uid, target);
-        if (Objects.equals(sourceMatchResult.fileSystem, mainFileSystem) && Objects.equals(targetMatchResult.fileSystem, mainFileSystem)) {
-            sourceMatchResult.fileSystem.move(uid, source, target, name, overwrite);
-            return;
+        FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
+
+        // 处理挂载点移动的逻辑
+        FileSystemMatchResult sourceFullMatchResult = matchFileSystem(uid, sourcePath);
+
+        List<MountPoint> mountPoints = null;
+        Resource resource = sourceMatchResult.fileSystem.getResource(uid, sourceMatchResult.resolvedPath, name);
+        if (resource == null) {
+            mountPoints = mountPointService.listByPath(uid, sourcePath);
+
+            // 如果目标位置是挂载点位置，需要判断源目标中是否包含挂载点，如果有挂载点是不允许的，防止挂载点内出现嵌套，不好处理。
+            if (targetMatchResult.mountPoint != null) {
+                if (mountPoints != null && !mountPoints.isEmpty()) {
+                    throw new JsonException("目录包含挂载点，不能移动到其他挂载点下");
+                }
+                if (sourceMatchResult.isMountPath(sourcePath)) {
+                    throw new JsonException("挂载点不允许移动到其他挂载点下");
+                }
+            }
+
+            // 如果移动的是挂载点本身，那么只需要修改挂载点的nid就好了
+            if (sourceFullMatchResult.isMountPath(sourcePath)) {
+                String nodeId = nodeService.getNodeIdByPath(uid, target);
+                MountPoint mountPoint = sourceFullMatchResult.mountPoint;
+                mountPoint.setNid(nodeId);
+                try {
+                    mountPointService.saveMountPoint(mountPoint);
+                    return;
+                } catch (FileSystemParameterException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
         }
-        copy(uid, source, target, uid, name, name, true);
-        deleteFile(uid, source, Collections.singletonList(name));
+
+        if (Objects.equals(sourceMatchResult.fileSystem, targetMatchResult.fileSystem)) {
+            sourceMatchResult.fileSystem.move(uid, source, target, name, overwrite);
+        } else {
+            copy(uid, source, target, uid, name, name, true);
+            deleteFile(uid, source, Collections.singletonList(name));
+        }
+
+        // 挂载点被移动，需要清理掉缓存
+        if (mountPoints != null && !mountPoints.isEmpty()) {
+            mountPointService.clearCache(uid);
+        }
     }
 
     @Override
     public List<FileInfo>[] getUserFileList(long uid, String path) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
-        List<FileInfo>[] res = matchResult.fileSystem.getUserFileList(uid, matchResult.resolvedPath);
+        List<FileInfo>[] res;
+        if (matchResult.isProxyStoreRecordMountPoint()) {
+            res = mainFileSystem.getUserFileList(uid, path);
+        } else {
+            res = matchResult.fileSystem.getUserFileList(uid, matchResult.resolvedPath);
+        }
 
         // 若匹配到的文件系统不是主文件系统，则说明是挂载的文件系统，设置文件的mount属性为true
         if (!matchResult.fileSystem.equals(mainFileSystem)) {
             for (List<FileInfo> fileList : res) {
                 for (FileInfo fileInfo : fileList) {
-                    fileInfo.setMount(true);
+                    fileInfo.setIsMount(true);
                     fileInfo.setUid(uid);
                 }
             }
@@ -375,6 +487,10 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     public void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         matchResult.fileSystem.moveToSaveFile(uid, nativeFilePath, matchResult.resolvedPath, fileInfo);
+        if (matchResult.isProxyStoreRecordMountPoint()) {
+            fileInfo.setUid(uid);
+            fileRecordService.saveRecord(fileInfo, path);
+        }
     }
 
     @Override
@@ -383,7 +499,11 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             throw new IllegalArgumentException("非法文件名，不可包含/\\<>?|:换行符，回车符或文件名为..");
         }
         FileSystemMatchResult matchResult = matchFileSystem(file.getUid(), requestPath);
-        return matchResult.fileSystem.saveFile(file, matchResult.resolvedPath);
+        long res = matchResult.fileSystem.saveFile(file, matchResult.resolvedPath);
+        if (matchResult.isProxyStoreRecordMountPoint()) {
+            fileRecordService.saveRecord(file, requestPath);
+        }
+        return res;
     }
 
     @Override
@@ -391,6 +511,9 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     public void mkdir(long uid, String path, String name) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         matchResult.fileSystem.mkdir(uid, matchResult.resolvedPath, name);
+        if (matchResult.isProxyStoreRecordMountPoint()) {
+            fileRecordService.mkdirs(uid, StringUtils.appendPath(path, name), true);
+        }
     }
 
     @Override
@@ -399,24 +522,26 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         // 得到挂载完整路径 -> 挂载点 的map
         Map<String, MountPoint> mountPointMap = mountPointService.findMountPointPathByUid(uid);
-        Set<Long> deleteMountId = new HashSet<>();
-        for (String n : name) {
-            String deletePath = StringUtils.appendPath(path, n);
-            List<Long> ids = mountPointMap.entrySet()
-                    .stream()
-                    .filter(e -> e.getKey().startsWith(deletePath))
-                    .map(e -> e.getValue().getId())
-                    .collect(Collectors.toList());
 
-            if (!ids.isEmpty()) {
-                deleteMountId.addAll(ids);
-            }
+        // 筛选出删除的文件中包含的挂载点
+        Map<Long, MountPoint> needRemoveMountPointMap = name.stream()
+                .flatMap(n -> mountPointMap.entrySet()
+                        .stream()
+                        .filter(e -> e.getKey().startsWith(StringUtils.appendPath(path, n)))
+                        .map(Map.Entry::getValue)
+                )
+                .collect(Collectors.toMap(
+                        MountPoint::getId,
+                        Function.identity(),
+                        (oldVal, newVal) -> oldVal
+                ));
+        if (!needRemoveMountPointMap.isEmpty()) {
+            log.info("{}:删除的路径中存在以下挂载点需要删除：{}", LOG_PREFIX, needRemoveMountPointMap.keySet());
+            mountPointService.batchRemove(uid, needRemoveMountPointMap.keySet());
         }
-        if (!deleteMountId.isEmpty()) {
-            log.info("{}:删除的路径中存在以下挂载点需要删除：{}", LOG_PREFIX, deleteMountId);
-            mountPointService.batchRemove(uid, deleteMountId);
+        if (matchResult.isProxyStoreRecordMountPoint()) {
+            fileRecordService.deleteRecords(uid, path, name);
         }
-
         return matchResult.fileSystem.deleteFile(uid, matchResult.resolvedPath, name);
     }
 
@@ -438,8 +563,14 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             }
         } else {
             matchResult = matchFileSystem(uid, path);
-            matchResult.fileSystem.rename(uid, matchResult.resolvedPath, name, newName);
+            if (matchResult.isProxyStoreRecordMountPoint()) {
+                fileRecordService.rename(uid, path, name, newName);
+                matchResult.fileSystem.rename(uid, matchResult.resolvedPath, name, newName);
+            } else {
+                matchResult.fileSystem.rename(uid, matchResult.resolvedPath, name, newName);
+            }
         }
+
 
     }
 

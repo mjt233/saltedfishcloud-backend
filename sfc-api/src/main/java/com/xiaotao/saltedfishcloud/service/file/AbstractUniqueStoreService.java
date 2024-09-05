@@ -19,9 +19,7 @@ import java.util.List;
  * 因仅负责集中式的数据仓库的维护，不存在用户网盘文件组织结构的数据，所以不支持列出用户文件列表，判断文件是否存在，按路径删除，复制，移动，重命名等操作，也因此无法参与系统的文件记录同步机制。
  * 但这些操作对于唯一存储服务而言这些是不必要的行为，用户网盘文件组织结构全权交由文件记录服务接口组
  * {@link FileRecordService},<br>
- * {@link com.xiaotao.saltedfishcloud.dao.mybatis.FileDao},<br>
  * {@link com.xiaotao.saltedfishcloud.service.node.NodeService},<br>
- * {@link com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao}<br>
  * 提供。<br>
  * 上述4个接口后续将由{@link FileRecordService}全部集成
  *

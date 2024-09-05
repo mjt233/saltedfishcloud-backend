@@ -48,13 +48,13 @@ public abstract class CrudServiceImpl<T extends AuditModel, R extends BaseRepo<T
         // 阻止篡改无权限的数据
         if (entity.getId() != null) {
             repository.findById(entity.getId()).ifPresent(existEntity -> {
-                UIDValidator.validate(entity.getUid(), true);
+                UIDValidator.validateWithException(entity.getUid(), true);
             });
         }
 
         // 阻止创建不属于自己的数据
         if (entity.getUid() != null) {
-            UIDValidator.validate(entity.getUid(), true);
+            UIDValidator.validateWithException(entity.getUid(), true);
         } else {
             entity.setUid(SecureUtils.getCurrentUid());
         }
@@ -65,7 +65,7 @@ public abstract class CrudServiceImpl<T extends AuditModel, R extends BaseRepo<T
     @Override
     public void deleteWithOwnerPermissions(Long id) {
         repository.findById(id).ifPresent(existEntity -> {
-            UIDValidator.validate(id, true);
+            UIDValidator.validateWithException(id, true);
         });
         repository.deleteById(id);
     }
@@ -96,7 +96,7 @@ public abstract class CrudServiceImpl<T extends AuditModel, R extends BaseRepo<T
 
     @Override
     public CommonPageInfo<T> findByUidWithOwnerPermissions(Long uid, PageableRequest pageableRequest) {
-        UIDValidator.validate(uid, false);
+        UIDValidator.validateWithException(uid, false);
         return findByUid(uid, pageableRequest);
     }
 

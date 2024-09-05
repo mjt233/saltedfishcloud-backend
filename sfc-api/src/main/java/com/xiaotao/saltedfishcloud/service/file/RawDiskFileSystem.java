@@ -125,11 +125,6 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public Resource getResourceByMd5(String md5) throws IOException {
-        throw new UnsupportedOperationException("不支持的操作");
-    }
-
-    @Override
     public void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
         if (uid != targetUid) {
             throw new UnsupportedOperationException("不支持跨用户网盘复制");

@@ -19,7 +19,7 @@ public interface FileInfoRepo extends BaseRepo<FileInfo> {
     @Query("SELECT f FROM FileInfo f WHERE f.uid = :uid AND f.node = :node AND f.name IN :names")
     List<FileInfo> findFileInfoByNames(@Param("uid") Long uid, @Param("names") Collection<String> names, @Param("node") String node);
 
-    @Query("SELECT f FROM FileInfo f WHERE f.md5 = :md5")
+    @Query("SELECT f FROM FileInfo f WHERE f.md5 = :md5 ORDER BY f.isMount DESC")
     Page<FileInfo> findByMd5(@Param("md5") String md5, Pageable pageable);
 
     List<FileInfo> findByUidAndNode(Long uid, String node);

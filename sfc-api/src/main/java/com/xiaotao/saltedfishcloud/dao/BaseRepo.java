@@ -21,4 +21,7 @@ public interface BaseRepo<T extends AuditModel> extends JpaRepository<T, Long>, 
 
     @Query("SELECT t FROM #{#entityName} t WHERE t.uid = :uid ORDER BY t.id DESC")
     Page<T> findByUid(@Param("uid") Long uid, Pageable pageable);
+
+    @Query("SELECT t FROM #{#entityName} t WHERE t.id IN :ids")
+    List<T> findByIds(@Param("ids") Collection<Long> ids);
 }

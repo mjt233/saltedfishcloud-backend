@@ -85,6 +85,9 @@ public interface FileRecordService {
      */
     FileInfo saveRecord(FileInfo fileInfo, String path);
 
+    /**
+     * 直接保存文件信息，没有任何其他业务逻辑和校验
+     */
     FileInfo save(FileInfo fileInfo);
 
     /**
@@ -134,8 +137,30 @@ public interface FileRecordService {
      * @param path 要创建的文件夹完整网盘路径
      * @return 文件夹创建后的节点ID，若无文件夹成功创建则返回null
      */
-    @Transactional(rollbackFor = Exception.class)
     String mkdirs(long uid, String path);
+
+
+    /**
+     * 创建一个文件夹，若文件夹的祖先目录不存在，则一并创建
+     *
+     * @param uid  用户ID
+     * @param path 要创建的文件夹完整网盘路径
+     * @param isMount 是否为挂载点目录
+     * @return 文件夹创建后的节点ID，若无文件夹成功创建则返回null
+     */
+    String mkdirs(long uid, String path, boolean isMount);
+
+    /**
+     * 删除文件记录。若文件是目录，则会连同本身、下级以及对应的NodeInfo与FileInfo记录一并删除。（注意：不检查权限）
+     * @param id    文件记录FileInfo的id
+     */
+    void deleteFileInfo(long id);
+
+    /**
+     * 删除文件记录。若文件是目录，则会连同本身、下级以及对应的NodeInfo与FileInfo记录一并删除。（注意：不检查权限）
+     * @param fileInfo    文件记录
+     */
+    void deleteFileInfo(FileInfo fileInfo);
 
     /**
      * 对文件或文件夹进行重命名

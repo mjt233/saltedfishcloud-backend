@@ -5,7 +5,9 @@ import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.param.MountPointSyncFileRecordParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
@@ -16,6 +18,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
@@ -34,7 +37,7 @@ public class MountPointController {
      * 获取可用的文件系统
      */
     @GetMapping("listAvailableFileSystem")
-    public JsonResult listAvailableFileSystem() {
+    public JsonResult<List<DiskFileSystemDescribe>> listAvailableFileSystem() {
         return JsonResultImpl.getInstance(fileSystemManager.listPublicFileSystem().stream().map(DiskFileSystemFactory::getDescribe).collect(Collectors.toList()));
     }
 
@@ -43,7 +46,7 @@ public class MountPointController {
      * @param mountPoint    挂载点信息
      */
     @PutMapping("setMountPoint")
-    public JsonResult setMountPoint(@RequestBody MountPoint mountPoint) throws IOException, FileSystemParameterException {
+    public JsonResult<?> setMountPoint(@RequestBody MountPoint mountPoint) throws IOException, FileSystemParameterException {
         mountPointService.saveMountPoint(mountPoint);
         return JsonResult.emptySuccess();
     }
@@ -53,7 +56,7 @@ public class MountPointController {
      * @param uid 用户id
      */
     @GetMapping("listByUid")
-    public JsonResult listByUid(@UID @RequestParam("uid") long uid) {
+    public JsonResult<List<MountPoint>> listByUid(@UID @RequestParam("uid") long uid) {
         return JsonResultImpl.getInstance(mountPointService.findByUid(uid));
     }
 
@@ -61,7 +64,7 @@ public class MountPointController {
      * 根据挂载点id获取挂载点信息
      */
     @GetMapping("getById")
-    public JsonResult getById(@RequestParam("id") long id) {
+    public JsonResult<MountPoint> getById(@RequestParam("id") long id) {
         MountPoint mountPoint = mountPointService.findById(id);
         if (mountPoint != null) {
             if(!UIDValidator.validate(mountPoint.getUid(), true)) {
@@ -79,10 +82,18 @@ public class MountPointController {
      * @param id    挂载点id
      */
     @DeleteMapping("remove")
-    public JsonResult delete(@UID @RequestParam("uid") long uid, @RequestParam("id") long id) {
+    public JsonResult<?> delete(@UID @RequestParam("uid") long uid, @RequestParam("id") long id) {
         mountPointService.remove(uid, id);
         return JsonResult.emptySuccess();
     }
 
+    /**
+     * 同步挂载点的文件信息到文件记录服务
+     */
+    @PostMapping("syncFileRecord")
+    public JsonResult<?> syncFileRecord(@RequestBody MountPointSyncFileRecordParam param) throws FileSystemParameterException, IOException {
+        mountPointService.syncFileRecord(param);
+        return JsonResult.emptySuccess();
+    }
 
 }

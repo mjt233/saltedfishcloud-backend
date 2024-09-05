@@ -55,7 +55,7 @@ public class FileInfo extends AuditModel {
     private String name;
 
     /**
-     * 文件md5
+     * 文件md5，若记录为目录则表示目录的节点id
      */
     private String md5;
 
@@ -82,8 +82,7 @@ public class FileInfo extends AuditModel {
     /**
      * 是否为外部挂载的文件系统文件
      */
-    @Transient
-    private boolean isMount;
+    private Boolean isMount;
 
     /**
      * 上级目录节点的名称
@@ -219,6 +218,7 @@ public class FileInfo extends AuditModel {
         }
         newObj.setNode(null);
         newObj.setMountId(null);
+        newObj.setIsMount(false);
         return newObj;
     }
 

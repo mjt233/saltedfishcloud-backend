@@ -45,11 +45,13 @@ public interface NodeDao {
      * @param parent    父节点
      * @return  插入的行数
      */
-    @Insert("INSERT IGNORE INTO node_list (name, id, parent, uid) VALUES (#{name}, #{id}, #{parent}, #{uid})")
+    @Insert("INSERT IGNORE INTO node_list (name, id, parent, uid, is_mount) VALUES (#{name}, #{id}, #{parent}, #{uid}, #{isMount})")
     int addNode(@Param("uid") Long uid,
                 @Param("name") String name,
                 @Param("id") String id,
-                @Param("parent") String parent);
+                @Param("parent") String parent,
+                @Param("isMount") Boolean isMount
+    );
 
     /**
      * 取某个用户目录下多个节点的所有直接子节点
