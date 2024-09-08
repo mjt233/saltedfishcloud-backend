@@ -2,11 +2,8 @@ package com.xiaotao.saltedfishcloud.dao.jpa;
 
 import com.xiaotao.saltedfishcloud.dao.BaseRepo;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
-import com.xiaotao.saltedfishcloud.service.BaseJpaService;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;

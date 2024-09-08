@@ -13,6 +13,7 @@ import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.persistence.Entity;
+import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.io.File;
@@ -28,7 +29,13 @@ import java.util.Date;
 @NoArgsConstructor
 @Builder
 @Accessors(chain = true)
-@Table(name = "file_table")
+@Table(
+        name = "file_table",
+        indexes = {
+                @Index(name = "file_index", columnList = "node,name,uid", unique = true),
+                @Index(name = "md5_index", columnList = "md5"),
+                @Index(name = "uid_index", columnList = "uid")
+        })
 @Entity
 public class FileInfo extends AuditModel {
     public final static int TYPE_DIR = 1;

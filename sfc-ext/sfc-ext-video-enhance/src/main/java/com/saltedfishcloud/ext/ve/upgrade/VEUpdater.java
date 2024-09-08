@@ -23,28 +23,10 @@ public class VEUpdater {
         ScriptUtils.executeSqlScript(dataSource.getConnection(), new ClassPathResource("ve-sql/" + name + ".sql", this.getClass().getClassLoader()));
     }
 
-    @InitAction
-    public void init() throws SQLException {
-        log.info("VE插件初始化...");
-        executeScript("init");
-    }
-
-    @UpdateAction("1.1.0")
-    public void createTaskTable110() throws SQLException {
-
-        executeScript("1.1.0");
-    }
-
     @UpdateAction("1.1.1")
     public void createTaskTable111() throws SQLException {
 
         executeScript("1.1.1");
-    }
-
-    @UpdateAction("1.1.3")
-    public void createTaskTable113() throws SQLException {
-
-        executeScript("1.1.3");
     }
 
     @UpdateAction("1.2.0")

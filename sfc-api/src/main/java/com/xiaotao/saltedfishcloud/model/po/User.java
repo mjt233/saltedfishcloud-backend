@@ -7,26 +7,25 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.validation.Valid;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
 
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Valid
-public class User implements UserDetails {
+public class User extends UserInfo implements UserDetails {
     public static final String SYS_NAME_PUBLIC = "__SYSTEM_PUBLIC";
     public static final String SYS_NAME_ADMIN = "ADMIN";
     public static final String SYS_GROUP_NAME_PUBLIC = "__SYSTEM_PUBLIC_GROUP";
@@ -35,20 +34,6 @@ public class User implements UserDetails {
     private static final long serialVersionUID = -2530285292010387981L;
     public static final int TYPE_ADMIN = 1;
     public static final int TYPE_COMMON = 0;
-
-    /**
-     * 用户id，后续将改为Long类型
-     */
-    private Long id;
-    @Username
-    private String user;
-
-    @JsonIgnore
-    private String pwd;
-    private Integer lastLogin;
-    private Integer type = User.TYPE_COMMON;
-    private int quota;
-    private String email;
 
     @JsonIgnore
     private String token;
@@ -67,7 +52,7 @@ public class User implements UserDetails {
             }
 
             @Override
-            public void setQuota(int quota) {
+            public void setQuota(Integer quota) {
                 throw new UnsupportedOperationException("不支持设置公共用户属性");
             }
 

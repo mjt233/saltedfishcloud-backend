@@ -30,7 +30,6 @@ import org.thymeleaf.templatemode.TemplateMode;
         StaticPublishRecordServiceImpl.class,
         StaticPublishController.class,
         DispatchServlet.class,
-        StaticPublishAutoUpdater.class,
         StaticPublishProperty.class
 })
 public class StaticPublishAutoConfiguration implements InitializingBean, ApplicationContextAware {

@@ -16,7 +16,9 @@ import java.util.Objects;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
-@Table(name = "node_list")
+@Table(name = "node_list", indexes = {
+        @Index(name = "node_name_index", columnList = "parent,name", unique = true)
+})
 @Builder
 public class NodeInfo {
 

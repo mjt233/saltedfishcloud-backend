@@ -5,10 +5,7 @@ import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
@@ -20,7 +17,9 @@ import java.net.Proxy;
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Entity(name = "Proxy")
-@Table(name = "proxy")
+@Table(name = "proxy", indexes = {
+        @Index(name = "i_uid", columnList = "uid,name")
+})
 public class ProxyInfo extends AuditModel {
     @NotEmpty
     private String name;

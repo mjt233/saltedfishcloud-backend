@@ -17,7 +17,7 @@ spring:
     database: mysql
     open-in-view: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     properties:
       hibernate:
         order_inserts: true

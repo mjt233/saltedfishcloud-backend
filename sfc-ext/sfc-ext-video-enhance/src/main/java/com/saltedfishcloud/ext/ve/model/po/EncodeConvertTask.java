@@ -1,5 +1,6 @@
 package com.saltedfishcloud.ext.ve.model.po;
 
+import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
@@ -10,7 +11,10 @@ import org.hibernate.annotations.NotFoundAction;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "encode_convert_task")
+@Table(indexes = {
+        @Index(name = "idx_uid", columnList = "uid"),
+        @Index(name = "idx_task_id", columnList = "task_id")
+})
 @Getter
 @Setter
 @Builder
@@ -29,7 +33,7 @@ public class EncodeConvertTask extends AuditModel {
     private String params;
 
     @OneToOne
-    @JoinColumn(name = "task_id", referencedColumnName = "id")
+    @JoinColumn(name = "task_id", referencedColumnName = "id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     @NotFound(action = NotFoundAction.IGNORE)
     private AsyncTaskRecord asyncTaskRecord;
 

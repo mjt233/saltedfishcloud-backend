@@ -19,7 +19,9 @@ import java.util.Date;
 @Getter
 @Entity
 @Proxy(lazy = false)
-@Table(name = "download_task")
+@Table(name = "download_task", indexes = {
+        @Index(name = "idx_uid", columnList = "uid")
+})
 @EntityListeners(AuditingEntityListener.class)
 @GenericGenerator(name = "jpa-uuid", strategy = "uuid")
 public class DownloadTaskInfo {
@@ -41,6 +43,7 @@ public class DownloadTaskInfo {
     @Enumerated(EnumType.STRING)
     private State state = State.WAITING;
 
+    @Column(columnDefinition = "text")
     private String message;
 
     private long loaded;
@@ -50,9 +53,10 @@ public class DownloadTaskInfo {
     @Transient
     private long speed;
 
+    @Column(length = 1024)
     private String name;
 
-    @Column(name = "save_path")
+    @Column(name = "save_path", length = 2048)
     @NotEmpty
     private String savePath;
 
@@ -66,7 +70,7 @@ public class DownloadTaskInfo {
     private long createdBy;
 
     @OneToOne
-    @JoinColumn(name = "task_id", referencedColumnName = "id")
+    @JoinColumn(name = "task_id", referencedColumnName = "id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     @NotFound(action = NotFoundAction.IGNORE)
     private AsyncTaskRecord asyncTaskRecord;
 
