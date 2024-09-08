@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
+import com.xiaotao.saltedfishcloud.dao.BaseRepo;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
+import com.xiaotao.saltedfishcloud.service.BaseJpaService;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.List;
 
-public interface MountPointRepo extends JpaRepository<MountPoint, Long> {
+public interface MountPointRepo extends BaseRepo<MountPoint> {
     /**
      * 根据用户id查询所有挂载点
      * @param uid   用户id

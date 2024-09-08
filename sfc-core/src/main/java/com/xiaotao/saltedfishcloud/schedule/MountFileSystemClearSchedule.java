@@ -29,7 +29,7 @@ public class MountFileSystemClearSchedule {
     /**
      * 每30分钟清理一次挂载文件系统失效的缓存
      */
-    @Scheduled(fixedRate = 1000 * 60 * 30)
+    @Scheduled(fixedRate = 1000 * 60 * 30, initialDelay = 5000)
     public void autoClear() {
         Map<String, List<MountPoint>> mountGroup = mountPointService.listAll().stream().collect(Collectors.groupingBy(MountPoint::getProtocol));
         for (DiskFileSystemFactory factory : diskFileSystemManager.listAllFileSystem()) {

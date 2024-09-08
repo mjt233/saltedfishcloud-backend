@@ -76,7 +76,7 @@ public class VideoController {
     @AllowAnonymous
     @GetMapping("getVideoInfo")
     public JsonResult<VideoInfo> listSubtitle(VideoRequest request) throws IOException {
-        Resource resource = fileSystemManager.getMainFileSystem().getResource(Math.toIntExact(request.getUid()), request.getPath(), request.getName());
+        Resource resource = fileSystemManager.getMainFileSystem().getResource(request.getUid(), request.getPath(), request.getName());
         return JsonResultImpl.getInstance(videoService.getVideoInfo(resource));
     }
 
@@ -84,7 +84,7 @@ public class VideoController {
     @AllowAnonymous
     @GetMapping("getSubtitle")
     public String getSubtitle(VideoRequest request) throws IOException {
-        Resource resource = fileSystemManager.getMainFileSystem().getResource(Math.toIntExact(request.getUid()), request.getPath(), request.getName());
+        Resource resource = fileSystemManager.getMainFileSystem().getResource(request.getUid(), request.getPath(), request.getName());
         return videoService.getSubtitleText(resource, request.getStream(), request.getType());
     }
 }

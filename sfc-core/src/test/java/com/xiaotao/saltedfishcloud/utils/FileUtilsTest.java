@@ -13,6 +13,8 @@ class FileUtilsTest {
         assertTrue(PathUtils.isSubDir("/asd/asd/a", "asd/asd/a/123"));
         assertFalse(PathUtils.isSubDir("/asd/asd/a", "/asd/asd"));
         assertFalse(PathUtils.isSubDir("/asd/asd/a", "asd/asd"));
+        assertFalse(PathUtils.isSubDir("/asd", "/asda"));
+        assertFalse(PathUtils.isSubDir("/asd/dd/e", "/asda"));
     }
 
     @Test

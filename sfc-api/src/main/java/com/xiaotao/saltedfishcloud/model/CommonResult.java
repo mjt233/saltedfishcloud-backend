@@ -17,4 +17,6 @@ public class CommonResult<T> extends AbstractJsonResult<T> {
     private String msg;
     private T data;
     private int code;
+    private int businessCode;
+
 }

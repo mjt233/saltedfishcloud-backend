@@ -35,6 +35,12 @@ public class StringUtils {
             return false;
         }
 
+        if (a.endsWith("/")) {
+            a = a.replaceAll("/+$", "");
+        }
+        if (b.endsWith("/")) {
+            b = b.replaceAll("/+$", "");
+        }
         a = a.replaceAll("//+", "/");
         b = b.replaceAll("//+", "/");
         return a.equals(b);

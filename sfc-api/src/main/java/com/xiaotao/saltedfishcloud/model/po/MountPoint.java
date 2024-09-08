@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
+import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.*;
 import org.hibernate.Hibernate;
@@ -25,12 +26,7 @@ import java.util.Objects;
 @AllArgsConstructor
 @NoArgsConstructor
 @Validated
-public class MountPoint {
-
-    @Id
-    @GeneratedValue(generator = "snowflake")
-    @GenericGenerator(name = "snowflake", strategy = "com.xiaotao.saltedfishcloud.utils.identifier.SnowFlakeIdGenerator")
-    private Long id;
+public class MountPoint extends AuditModel {
 
     @UID
     private Long uid;
@@ -53,14 +49,15 @@ public class MountPoint {
     private String params;
 
     /**
+     * 委托存储记录
+     */
+    private Boolean isProxyStoreRecord;
+
+    /**
      * 挂载的目录名称
      */
     @NotNull
     private String name;
-
-    @Column(name = "create_at")
-    @CreatedDate
-    private Date createAt;
 
     /**
      * 该挂载点的完整路径
@@ -74,12 +71,18 @@ public class MountPoint {
     @Transient
     private String parentPath;
 
+    /**
+     * 创建节点时是否立即同步文件记录信息
+     */
+    @Transient
+    private Boolean initRecord;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
         MountPoint that = (MountPoint) o;
-        return id != null && Objects.equals(id, that.id);
+        return getId() != null && Objects.equals(getId(), that.getId());
     }
 
     @Override

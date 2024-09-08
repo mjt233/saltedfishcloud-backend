@@ -6,10 +6,13 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.node.cache.NodeCacheService;
+import com.xiaotao.saltedfishcloud.service.node.cache.annotation.RemoveNodeCache;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
@@ -36,8 +39,8 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Resource
     private NodeDao nodeDao;
-    @Resource
-    private NodeCacheService cacheService;
+//    @Resource
+//    private NodeCacheService cacheService;
 
     @Resource
     private FileInfoRepo fileInfoRepo;
@@ -70,15 +73,14 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public boolean exist(long uid, String path, String name) {
-        try {
-            final String nid = nodeService.getNodeIdByPath(uid, path);
-            if ((uid + "").equals(nid) && (name == null || name.length() == 0)) {
-                return true;
-            }
-            return fileInfoRepo.findFileInfo(uid, name, nid) != null;
-        } catch (NoSuchFileException e) {
+        final String nid = nodeService.getNodeIdByPathNoEx(uid, path);
+        if (nid == null) {
             return false;
         }
+        if ((uid + "").equals(nid) && (name == null || name.length() == 0)) {
+            return true;
+        }
+        return fileInfoRepo.findFileInfo(uid, name, nid) != null;
     }
 
     @Override
@@ -141,6 +143,11 @@ public class FileRecordServiceImpl implements FileRecordService {
             //  遍历一个目录并追加该目录下的子目录
             List<FileInfo> sourceFileList = fileInfoRepo.findByUidAndNode(uid, pairInfo.nid);
             for (FileInfo sourceFile : sourceFileList) {
+                // 跳过挂载文件
+                // todo 作为可选项
+                if (Boolean.TRUE.equals(sourceFile.getIsMount()) || sourceFile.getMountId() != null) {
+                    continue;
+                }
                 if (sourceFile.isDir()) {
                     needProcessSourceDirList.add(new PathIdPair(pairInfo.path + "/" + sourceFile.getName(), sourceFile.getMd5()));
                 } else {
@@ -180,10 +187,13 @@ public class FileRecordServiceImpl implements FileRecordService {
         FileInfo targetFileInfo = fileInfoRepo.findFileInfo(uid, name, targetNode);
 
         if (sourceFileInfo.isDir()) {
-            if (PathUtils.isSubDir(source + "/" + name, target + "/" + name)) {
-                throw new IllegalArgumentException("目标目录不能为源目录的子目录");
+            if (PathUtils.isSubDir(StringUtils.appendPath(source, name),StringUtils.appendPath(target, name))) {
+                throw new JsonException("目标目录不能为源目录的子目录");
             }
             if (targetFileInfo != null) {
+                if (targetFileInfo.getIsMount() != null || sourceFileInfo.getIsMount() != null) {
+                    throw new JsonException("存在同名的挂载点目录\"" + name +"\"，无法移动:" + source + "->" + target);
+                }
                 // 当移动目录时存在同名文件或目录
                 if (targetFileInfo.isDir()) {
                     // 目录 -> 目录 同名的是目录，则根据overwrite规则合并
@@ -191,11 +201,11 @@ public class FileRecordServiceImpl implements FileRecordService {
                     deleteRecords(uid, source, Collections.singleton(name));
                 } else {
                     // 目录 -> 文件 同名的是文件，不支持的操作，需要手动解决
-                    throw new UnsupportedOperationException("目标位置存在同名文件\"" + name  + "\"，无法移动");
+                    throw new JsonException("目标位置存在同名文件\"" + name  + "\"，无法移动");
                 }
             } else {
                 // 不存在同名目录，直接修改节点ID
-                cacheService.deleteNodeCache(uid, Collections.singleton(sourceFileInfo.getMd5()));
+//                cacheService.deleteNodeCache(uid, Collections.singleton(sourceFileInfo.getMd5()));
                 sourceFileInfo.setNode(targetNode);
                 fileInfoRepo.save(sourceFileInfo);
                 nodeDao.move(uid, sourceFileInfo.getMd5(), targetNode);
@@ -212,7 +222,7 @@ public class FileRecordServiceImpl implements FileRecordService {
                     }
                 } else if (targetFileInfo.isDir()){
                     // 文件 -> 目录 不支持的操作，需要手动解决
-                    throw new UnsupportedOperationException("目标位置存在同名目录\"" + name  + "\"，无法移动");
+                    throw new JsonException("目标位置存在同名目录\"" + name  + "\"，无法移动");
                 }
             } else {
                 // 不存在同名文件，直接修改文件所属节点ID
@@ -228,7 +238,30 @@ public class FileRecordServiceImpl implements FileRecordService {
             String nodeId = nodeService.getNodeIdByPathNoEx(fileInfo.getUid(), path);
             fileInfo.setNode(nodeId);
         }
-        return fileInfoRepo.save(fileInfo);
+        FileInfo existFile;
+        if (fileInfo.getId() != null) {
+            existFile = fileInfoRepo.findById(fileInfo.getId()).orElse(null);
+            if (existFile != null) {
+                existFile.setCtime(fileInfo.getCtime());
+                existFile.setMtime(fileInfo.getMtime());
+                existFile.setMd5(fileInfo.getMd5());
+                existFile.setSize(fileInfo.getSize());
+                fileInfoRepo.save(existFile);
+                return existFile;
+            }
+        } else {
+            existFile = fileInfoRepo.findFileInfo(fileInfo.getUid(), fileInfo.getName(), fileInfo.getNode());
+        }
+        FileInfo newFile = FileInfo.createFrom(fileInfo, false);
+        newFile.setUid(fileInfo.getUid());
+        newFile.setNode(fileInfo.getNode());
+        newFile.setIsMount(fileInfo.getIsMount());
+        newFile.setMountId(fileInfo.getMountId());
+        if (existFile != null) {
+            newFile.setId(existFile.getId());
+        }
+        fileInfoRepo.save(newFile);
+        return newFile;
     }
 
     @Override
@@ -277,7 +310,7 @@ public class FileRecordServiceImpl implements FileRecordService {
         if (existFile != null) {
             throw new DuplicateKeyException("目录已存在");
         }
-        addDirRecord(uid, name, nodeId, newNodeId);
+        addDirRecord(uid, name, nodeId, newNodeId, false);
         log.debug("mkdir finish: " + newNodeId);
         return newNodeId;
     }
@@ -289,12 +322,13 @@ public class FileRecordServiceImpl implements FileRecordService {
      * @param node          目录所在的目录节点
      * @param selfNodeId    目录自己的节点
      */
-    private FileInfo addDirRecord(Long uid, String name, String node, String selfNodeId) {
+    private FileInfo addDirRecord(Long uid, String name, String node, String selfNodeId, Boolean isMount) {
         FileInfo newFile = FileInfo.builder()
                 .name(name)
                 .md5(selfNodeId)
                 .node(node)
                 .size(-1L)
+                .isMount(isMount)
                 .build();
         newFile.setUid(uid);
         long now = System.currentTimeMillis();
@@ -306,6 +340,12 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String mkdirs(long uid, String path) {
+        return this.mkdirs(uid, path, false);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String mkdirs(long uid, String path, boolean isMount) {
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         // 起始的根目录节点id与用户id相同
@@ -314,8 +354,8 @@ public class FileRecordServiceImpl implements FileRecordService {
         for (String name : pb.getPath()) {
             NodeInfo nodeInfo = nodeDao.getNodeByParentId(uid, parentNode, name);
             if (nodeInfo == null) {
-                nid = nodeService.addNode(uid, name, parentNode);
-                addDirRecord(uid, name, parentNode, nid);
+                nid = nodeService.addNode(uid, name, parentNode, isMount);
+                addDirRecord(uid, name, parentNode, nid, isMount);
                 parentNode = nid;
             } else {
                 parentNode = nodeInfo.getId();
@@ -332,7 +372,7 @@ public class FileRecordServiceImpl implements FileRecordService {
         if (fileInfo == null) {
             throw new JsonException(404, "文件不存在");
         }
-        cacheService.deleteNodeCache(uid, Collections.singleton(nodeId));
+//        cacheService.deleteNodeCache(uid, Collections.singleton(nodeId));
         if (fileInfo.isDir()) {
             nodeDao.changeName(uid, nodeDao.getNodeByParentId(uid, nodeId, oldName).getId(), newName);
         }
@@ -366,5 +406,62 @@ public class FileRecordServiceImpl implements FileRecordService {
         }
         fileInfoRepo.deleteFiles(uid, dirInfo.getNode(), Collections.singleton(dirInfo.getName()));
         return res;
+    }
+
+    @Override
+    public void deleteFileInfo(long id) {
+        FileInfo file = fileInfoRepo.getOne(id);
+        deleteFileInfo(file);
+    }
+
+    @Override
+    public void deleteFileInfo(FileInfo fileInfo) {
+        if (fileInfo.isFile()) {
+            fileInfoRepo.delete(fileInfo);
+        } else {
+            deleteDir(fileInfo, 1, 64);
+        }
+    }
+
+    /**
+     * 删除目录以及目录下的所有子项目
+     * @param fileInfo  待删除的目录信息
+     * @param curDepth  当前递归深度
+     * @param maxDepth  最大递归深度
+     * @throws IllegalArgumentException 达到最大递归深度 maxDepth 时抛出
+     */
+    private void deleteDir(FileInfo fileInfo, int curDepth, int maxDepth) {
+        if (curDepth >= maxDepth) {
+            throw new IllegalArgumentException("达到最大递归深度: " + maxDepth + ", 请先手动删除较内层的数据");
+        }
+        List<FileInfo> subFileList = findByUidAndNodeId(fileInfo.getUid(), fileInfo.getMd5());
+        if (subFileList.isEmpty()) {
+            nodeService.deleteNodes(fileInfo.getUid(), Collections.singletonList(fileInfo.getMd5()));
+            fileInfoRepo.delete(fileInfo);
+            return;
+        }
+        // 将目录下的子项目按文件和目录进行分组处理
+        Map<String, List<FileInfo>> typeGroup = subFileList.stream().collect(Collectors.groupingBy(e -> {
+            if (e.isFile()) {
+                return "file";
+            } else {
+                return "dir";
+            }
+        }));
+        // 文件直接删除
+        List<Long> fileIdList = typeGroup.getOrDefault("file", Collections.emptyList()).stream().map(BaseModel::getId).collect(Collectors.toList());
+        if (!fileIdList.isEmpty()) {
+            fileInfoRepo.batchDelete(fileIdList);
+        }
+        // 目录则需要递归处理
+        List<FileInfo> dirList = typeGroup.get("dir");
+        if (dirList != null) {
+            for (FileInfo dir : dirList) {
+                deleteDir(dir, curDepth + 1, maxDepth);
+            }
+        }
+        // 处理完成，删除自己
+        nodeService.deleteNodes(fileInfo.getUid(), Collections.singletonList(fileInfo.getMd5()));
+        fileInfoRepo.delete(fileInfo);
     }
 }

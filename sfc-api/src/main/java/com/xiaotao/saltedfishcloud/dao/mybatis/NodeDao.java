@@ -45,29 +45,14 @@ public interface NodeDao {
      * @param parent    父节点
      * @return  插入的行数
      */
-    @Insert("INSERT IGNORE INTO node_list (name, id, parent, uid) VALUES (#{name}, #{id}, #{parent}, #{uid})")
+    @Insert("INSERT IGNORE INTO node_list (name, id, parent, uid, is_mount) VALUES (#{name}, #{id}, #{parent}, #{uid}, #{isMount})")
     int addNode(@Param("uid") Long uid,
                 @Param("name") String name,
                 @Param("id") String id,
-                @Param("parent") String parent);
+                @Param("parent") String parent,
+                @Param("isMount") Boolean isMount
+    );
 
-    /**
-     * 取某个用户目录下多个节点的所有直接子节点
-     * @param uid   用户ID
-     * @param nid   要查询的节点
-     * @return  节点信息列表
-     */
-    @Select({
-            "<script>",
-            "SELECT name, id, parent, uid, mount_id FROM node_list ",
-            "WHERE parent in ",
-                "<foreach collection='nid' item='id' open='(' separator=',' close=')'>",
-                "#{id}",
-                "</foreach>",
-            " AND uid = #{uid}",
-            "</script>"
-    })
-    List<NodeInfo> getChildNodes(@Param("uid") Long uid, @Param("nid") Collection<String> nid );
 
     /**
      * 通过父节点ID获取某个目录节点信息
@@ -79,16 +64,6 @@ public interface NodeDao {
     @Select("SELECT name, id, parent, uid, parent, mount_id FROM node_list WHERE parent = #{pid} AND name = #{name} AND  uid = #{uid}")
     NodeInfo getNodeByParentId(@Param("uid") Long uid, @Param("pid") String pid, @Param("name") String name);
 
-    @Delete({
-            "<script>",
-            "DELETE FROM node_list WHERE id IN ",
-                "<foreach collection='nodes' item='node' open='(' separator=',' close=')'>",
-                "#{node}",
-                "</foreach>",
-            " AND uid = #{uid}",
-            "</script>"
-    })
-    int deleteNodes(@Param("uid") Long uid, @Param("nodes") Collection<String> nodes);
 
     /**
      * 修改节点的父节点

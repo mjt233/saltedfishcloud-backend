@@ -222,7 +222,7 @@ public class DatabaseUpdater implements ApplicationRunner {
         try {
             for (VersionUpdateHandler updateHandler : updateManager.getNeedUpdateHandlerList(null, lastVersion)) {
                 if (log.isInfoEnabled()) {
-                    log.info("[版本更新][{}]{}", updateHandler.getUpdateVersion(), updateHandler.getMessage());
+                    log.info("[版本更新]======= 执行更新程序 =======[{}-{}]{}",updateHandler.getScope(), updateHandler.getUpdateVersion(), updateHandler.getMessage());
                 }
                 updateHandler.update(lastVersion, sysProperties.getVersion());
             }

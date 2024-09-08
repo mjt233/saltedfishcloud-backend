@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
@@ -24,6 +25,32 @@ public interface NodeService {
      * @return      节点目录树
      */
     NodeTree getFullTree(long uid);
+
+    /**
+     * 根据路径获取对应的节点对象
+     * @param uid   用户id
+     * @param path  路径
+     * @return      若路径不存在则返回null
+     */
+    @Nullable
+    NodeInfo getNodeByPath(long uid, String path);
+
+    /**
+     * 按节点id列出节点下面的直接一级节点
+     * @param uid       用户id
+     * @param nodeId    开始遍历的节点id
+     * @return          若节点id不存在则返回null
+     */
+    @Nullable
+    List<NodeInfo> listNodeByNodeId(long uid, String nodeId);
+
+    /**
+     * 根据节点id取出节点的所有父节点
+     * @param uid       用户id
+     * @param nodeId    查找的节点id
+     * @return          所有父节点
+     */
+    List<NodeInfo> listAllParentByNodeId(long uid, String nodeId);
 
     NodeInfo getNodeByParentId(long uid, String parentId, String nodeName);
 
@@ -53,6 +80,16 @@ public interface NodeService {
      * @return 新节点ID
      */
     String addNode(long uid, String name, String parent);
+
+    /**
+     * 添加一个节点
+     * @param uid 用户ID
+     * @param name 名称
+     * @param parent 父节点ID
+     * @param isMount 是否为挂载点节点
+     * @return 新节点ID
+     */
+    String addNode(long uid, String name, String parent, Boolean isMount);
 
     /**
      * 取某节点下的所有子节点

@@ -242,9 +242,8 @@ public class DefaultPluginManager implements PluginManager {
                 }
             } else if ("file".equals(url.getProtocol())) {
                 // 从本地文件中获取
-                try {
-                    Path path = Paths.get(url.toURI());
-                    res.addAll(Files.list(path).map(e -> {
+                try(Stream<Path> list = Files.list(Paths.get(url.toURI()))) {
+                    res.addAll(list.map(e -> {
                         try {
                             return e.toUri().toURL();
                         } catch (MalformedURLException ex) {

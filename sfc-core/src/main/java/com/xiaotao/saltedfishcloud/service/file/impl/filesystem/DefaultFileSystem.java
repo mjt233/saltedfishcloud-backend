@@ -186,18 +186,6 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public Resource getResourceByMd5(String md5) throws IOException {
-        FileInfo fileInfo;
-        List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
-        if (files.size() == 0) throw new NoSuchFileException("文件不存在: " + md5);
-        fileInfo = files.get(0);
-        String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
-        fileInfo.setPath(path + "/" + fileInfo.getName());
-        Resource resource = getResource(fileInfo.getUid(), path, fileInfo.getName());
-        return ResourceUtils.bindFileInfo(resource, fileInfo);
-    }
-
-    @Override
     @Transactional(rollbackFor = Exception.class)
     public void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
         RLock lock = redisson.getLock(getStoreLockKey(uid, target, targetName));
@@ -298,20 +286,9 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         RLock lock = redisson.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
         try {
             lock.lock();
+            fileInfo.setUid(uid);
             storeServiceFactory.getService().moveToSave(uid, nativeFilePath, path, fileInfo);
-            fileRecordService.getFileInfo(uid, path, fileInfo.getName());
-            FileInfo existFile = fileRecordService.getFileInfo(uid, path, fileInfo.getName());
-            if (existFile != null) {
-                existFile.setCtime(fileInfo.getCtime());
-                existFile.setMtime(fileInfo.getMtime());
-                existFile.setMd5(fileInfo.getMd5());
-                existFile.setSize(fileInfo.getSize());
-                fileRecordService.save(existFile);
-            } else {
-                FileInfo newFile = FileInfo.createFrom(fileInfo, false);
-                newFile.setUid(uid);
-                fileRecordService.saveRecord(newFile, path);
-            }
+            fileRecordService.saveRecord(fileInfo, path);
         } finally {
             lock.unlock();
         }
@@ -389,7 +366,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
                 for (FileInfo fileInfo : fileInfos) {
 
                     // todo 使用批量查询和求集合差级操作进行引用判断提高性能
-                    if (!md5Resolver.hasRef(fileInfo.getMd5())) {
+                    if (fileInfo.getMd5() != null && !md5Resolver.hasRef(fileInfo.getMd5())) {
                         storeService.delete(fileInfo.getMd5());
                     }
                 }

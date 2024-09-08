@@ -58,6 +58,10 @@ public class TypeUtils {
         return toNumber(Long.class, input);
     }
 
+    public static Integer toInt(Object input) {
+        return toNumber(Integer.class, input);
+    }
+
     /**
      * 数字类型之间相互转换
      * @param target    目标简单数字类型

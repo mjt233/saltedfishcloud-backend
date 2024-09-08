@@ -11,6 +11,11 @@ public enum EmptySuccessJsonResult implements JsonResult<Object> {
     }
 
     @Override
+    public int getBusinessCode() {
+        return 200;
+    }
+
+    @Override
     public Object getData() {
         return null;
     }
@@ -29,5 +34,6 @@ public enum EmptySuccessJsonResult implements JsonResult<Object> {
     public String toString() {
         return getJsonStr();
     }
+
 
 }
