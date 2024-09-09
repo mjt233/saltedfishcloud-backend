@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Index;
 import javax.persistence.Table;
@@ -14,16 +14,30 @@ import javax.persistence.Table;
 @Entity
 @Table(
         indexes = {
-                @Index(name = "idx_type", columnList = "type")
+                @Index(name = "idx_type", columnList = "type", unique = true)
         }
 )
 @Setter
 @Getter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class ThirdPartyAuthPlatform extends AuditModel {
     /**
      * 第三方平台类型
      */
+    @Column(unique = true, nullable = false)
     private String type;
+
+    /**
+     * 平台展示用的名称
+     */
+    private String name;
+
+    /**
+     * 图标 可以是http链接/mdi标识/base64
+     */
+    private String icon;
 
     /**
      * 是否已启用
@@ -33,6 +47,7 @@ public class ThirdPartyAuthPlatform extends AuditModel {
     /**
      * json格式配置参数
      */
+    @Column(length = 2048)
     private String config;
 
     /**

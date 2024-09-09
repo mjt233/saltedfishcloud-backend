@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyUserRepo;
+import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
@@ -10,19 +11,30 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.util.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Component
-public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager, InitializingBean {
+@Slf4j
+public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager {
+    private final static String LOG_PREFIX = "[第三方登录]";
+
+    private final static String ACTION_RECORD_KEY = "third_action::";
+
     @Autowired
     private ThirdPartyAuthPlatformRepo platformRepo;
 
@@ -35,40 +47,13 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager,
     @Autowired
     private TokenService tokenService;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     private final Map<String, ThirdPartyPlatformHandler> handlerMap = new ConcurrentHashMap<>();
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        registerPlatform(new ThirdPartyPlatformHandler() {
-            @Override
-            public String getType() {
-                return "test";
-            }
-
-            @Override
-            public String getRedirectUrl(ThirdPartyAuthPlatform partyAuthPlatform) {
-                return "";
-            }
-
-            @Override
-            public ThirdPartyPlatformUser callback(ThirdPartyAuthPlatform partyAuthPlatform, Map<String, Object> platformCallbackParam) {
-                ThirdPartyPlatformUser user = new ThirdPartyPlatformUser();
-                User admin = userService.getUserByUser("admin");
-                user.setUid(admin.getId());
-                user.setPlatformType(getType());
-                user.setThirdPartyUserId("admin");
-                return user;
-            }
-
-            @Override
-            public List<ConfigNode> getPlatformConfigNode() {
-                return null;
-            }
-        });
-    }
-
-    @Override
-    public void registerPlatform(ThirdPartyPlatformHandler handler) {
+    public void registerPlatformHandler(ThirdPartyPlatformHandler handler) {
         if(handlerMap.containsKey(handler.getType())) {
             throw new IllegalArgumentException("类型为" + handler.getType() + "的第三方平台已注册");
         }
@@ -77,7 +62,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager,
     }
 
     @Override
-    public List<ThirdPartyPlatformHandler> getAllPlatform() {
+    public List<ThirdPartyPlatformHandler> getAllPlatformHandler() {
         return new ArrayList<>(handlerMap.values());
     }
 
@@ -95,10 +80,8 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager,
         }
 
         ThirdPartyAuthPlatform platform = platformRepo.getByType(platformType);
-        if (!"test".equals(platformType)) {
-            if (platform == null || !Boolean.TRUE.equals(platform.getIsEnable())) {
-                throw new IllegalArgumentException("平台" + platformType + "的第三方登录未启用");
-            }
+        if (platform == null || !Boolean.TRUE.equals(platform.getIsEnable())) {
+            throw new IllegalArgumentException("平台" + platformType + "的第三方登录未启用");
         }
 
         // 封装回调url中的参数
@@ -110,53 +93,71 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager,
         }
 
         // 执行对应的第三方平台处理器的回调方法
-        ThirdPartyPlatformUser platformUser = handler.callback(platform, param);
+        ThirdPartyPlatformUser platformUser;
+        try {
+            platformUser = handler.callback(platform, param);
+        } catch (IOException e) {
+            log.error("{}平台{}回调出错", LOG_PREFIX, platformType, e);
+            throw new RuntimeException("系统内部错误，请联系管理员检查系统日志");
+        }
+
         if (platformUser == null) {
             throw new IllegalArgumentException("认证失败，无法获取平台用户信息");
         }
+        ThirdPartyPlatformCallbackResult result;
 
-        // 判断是否已关联了系统用户
-        User assocUser;
+        // 判断是否已关联了系统账号
+        User assocUser = null;
+        String actionId = IdUtil.getId() + "";
         ThirdPartyPlatformUser existPlatformUser = platformUserRepo.getByPlatformTypeAndThirdPartyUserId(platformUser.getPlatformType(), platformUser.getThirdPartyUserId());
         if (existPlatformUser != null) {
-             assocUser = Objects.requireNonNull(
-                    userService.getUserById(existPlatformUser.getUid()),
-                    "该账号已绑定用户" + existPlatformUser.getUid() + "，但用户不存在，请联系管理员");
-            platformUser.setUid(assocUser.getId());
-            return ThirdPartyPlatformCallbackResult.builder()
-                    .isNewUser(false)
-                    .platformUser(platformUser)
-                    .user(assocUser)
-                    .build();
+            if (Boolean.TRUE.equals(existPlatformUser.getIsActive())) {
+                // 该第三方账号已关联系统账号
+                if (!Integer.valueOf(1).equals(existPlatformUser.getStatus())) {
+                    throw new IllegalArgumentException("该用户在" + platformType + "平台的关联已被停用");
+                }
+                assocUser = Objects.requireNonNull(
+                        userService.getUserById(existPlatformUser.getUid()),
+                        "该账号已绑定用户" + existPlatformUser.getUid() + "，但用户不存在，请联系管理员"
+                );
+                platformUser.setUid(assocUser.getId());
+                result = ThirdPartyPlatformCallbackResult.builder()
+                        .isNewUser(false)
+                        .platformUser(platformUser)
+                        .user(assocUser)
+                        .actionId(actionId)
+                        .build();
+            } else {
+                // 登录过但未关联系统账号
+                result = ThirdPartyPlatformCallbackResult.builder()
+                        .isNewUser(true)
+                        .platformUser(existPlatformUser)
+                        .actionId(actionId)
+                        .build();
+            }
         } else {
-            // 没关联系统用户，判断当前是否已有用户登录，如果有则关联到当前登录用户
+            platformUser.setIsActive(false);
+            // 判断当前是否已有用户登录，如果有则记录当前登录用户（仅设置对象信息，确认关联操作需要前端另外调用 bindUser以供用户确认）
             User curUser = SecureUtils.getSpringSecurityUser();
-            boolean isNewUser = false;
             if (curUser != null) {
                 assocUser = curUser;
-                platformUser.setIsActive(true);
-                if(platformUserRepo.getByPlatformTypeAndUid(platformType, curUser.getId()) != null) {
-                    throw new IllegalArgumentException("当前用户" + curUser.getUser() + "已关联了" + platformType + "平台的账号");
-                }
-            } else {
-                platformUser.setIsActive(false);
-                String newUserName = generateNewUserName(platformUser);
-                userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), User.TYPE_COMMON);
-                assocUser = userService.getUserByUser(newUserName);
-                isNewUser = true;
+                platformUser.setUid(assocUser.getId());
             }
 
             if (platformUser.getStatus() == null) {
                 platformUser.setStatus(1);
             }
-            platformUserRepo.save(platformUser);
-            platformUser.setUid(assocUser.getId());
-            return ThirdPartyPlatformCallbackResult.builder()
-                    .isNewUser(isNewUser)
+
+            result = ThirdPartyPlatformCallbackResult.builder()
+                    .isNewUser(true)
                     .platformUser(platformUser)
                     .user(assocUser)
+                    .actionId(actionId)
                     .build();
         }
+
+        setPlatformUser(actionId, result.getPlatformUser());
+        return result;
     }
 
     /**
@@ -168,6 +169,58 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager,
         } catch (UserNoExistException e) {
             return platformUser.getPlatformType() + "_" + IdUtil.getId();
         }
+    }
 
+    @Override
+    public List<ThirdPartyAuthPlatform> listPlatform() {
+        Lazy<Map<String, ThirdPartyAuthPlatform>> configMap = Lazy.of(() -> platformRepo.findEnabled()
+                .stream()
+                .collect(Collectors.toMap(ThirdPartyAuthPlatform::getType, e -> e))
+        );
+        return getAllPlatformHandler().stream()
+                .map(e -> configMap.get().getOrDefault(e.getType(), e.getDefaultConfig()))
+                .filter(Objects::nonNull)
+                .map(c -> {
+                    ThirdPartyAuthPlatform platform = new ThirdPartyAuthPlatform();
+                    BeanUtils.copyProperties(c, platform);
+                    return platform;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void bindUser(String actionId, User user) {
+        ThirdPartyPlatformUser platformUser = getPlatformUser(actionId);
+        platformUser.setIsActive(true);
+        if(platformUserRepo.getByPlatformTypeAndUid(platformUser.getPlatformType(), user.getId()) != null) {
+            throw new IllegalArgumentException("用户" + user.getUser() + "已关联了" + platformUser.getPlatformType() + "平台的账号，无需重复关联");
+        }
+        platformUserRepo.save(platformUser);
+        clearActionId(actionId);
+    }
+
+    @Override
+    public User createUser(String actionId) {
+        ThirdPartyPlatformUser platformUser = getPlatformUser(actionId);
+        String newUserName = this.generateNewUserName(platformUser);
+        userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), User.TYPE_COMMON);
+        User newUser = userService.getUserByUser(newUserName);
+        clearActionId(actionId);
+        return newUser;
+    }
+
+    private ThirdPartyPlatformUser getPlatformUser(String actionId) {
+        return Objects.requireNonNull(
+                (ThirdPartyPlatformUser) redisTemplate.opsForValue().get(ACTION_RECORD_KEY + actionId),
+                "操作已过期或记录id不存在，请重试"
+        );
+    }
+
+    private void setPlatformUser(String actionId, ThirdPartyPlatformUser platformUser) {
+        redisTemplate.opsForValue().set(ACTION_RECORD_KEY + actionId, platformUser, Duration.ofMinutes(10));
+    }
+
+    private void clearActionId(String actionId) {
+        redisTemplate.delete(ACTION_RECORD_KEY + actionId);
     }
 }

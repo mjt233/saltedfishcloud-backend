@@ -1,9 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.Entity;
 import javax.persistence.Index;
@@ -21,6 +19,9 @@ import javax.persistence.Table;
                 @Index(name = "idx_pid", columnList = "thirdPartyUserId,platformType")
         }
 )
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ThirdPartyPlatformUser extends AuditModel {
     /**
      * 第三方平台类型

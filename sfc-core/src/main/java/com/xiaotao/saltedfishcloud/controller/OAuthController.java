@@ -47,7 +47,7 @@ public class OAuthController {
     public ModelAndView callback(@PathVariable("platformType") String platformType, HttpServletRequest request) {
         try {
             ThirdPartyPlatformCallbackResult callbackResult = thirdPartyPlatformManager.doCallback(platformType, request);
-            String newToken = SecureUtils.getSpringSecurityUser() == null ? tokenService.generateUserToken(callbackResult.getUser()) : null;
+            String newToken = callbackResult.getUser() != null ? tokenService.generateUserToken(callbackResult.getUser()) : null;
             return new ModelAndView("thirdPlatformCallback")
                     .addObject("result", callbackResult)
                     .addObject("newToken", newToken);
@@ -64,7 +64,7 @@ public class OAuthController {
     @RolesAllowed("ADMIN")
     public JsonResult<Map<String, List<ConfigNode>>> getThirdPartyPlatformConfig() {
         return JsonResultImpl.getInstance(
-                thirdPartyPlatformManager.getAllPlatform().stream()
+                thirdPartyPlatformManager.getAllPlatformHandler().stream()
                         .collect(Collectors.toMap(
                                 ThirdPartyPlatformHandler::getType,
                                 ThirdPartyPlatformHandler::getPlatformConfigNode))
@@ -77,7 +77,7 @@ public class OAuthController {
     @RolesAllowed("ADMIN")
     public JsonResult<Map<String, ThirdPartyAuthPlatform>> getThirdPartyPlatformConfigValue() {
         return JsonResultImpl.getInstance(
-                thirdPartyAuthPlatformRepo.findAll()
+                thirdPartyPlatformManager.listPlatform()
                         .stream()
                         .collect(Collectors.toMap(ThirdPartyAuthPlatform::getType, Function.identity()))
         );
@@ -91,5 +91,20 @@ public class OAuthController {
         return JsonResultImpl.getInstance(
                 thirdPartyAuthPlatformRepo.saveAll(platformList)
         );
+    }
+
+
+    /**
+     * 列出系统当前可用的第三方平台（第三方平台已注册处理器）
+     */
+    @GetMapping("listPlatform")
+    @AllowAnonymous
+    @ResponseBody
+    public JsonResult<List<ThirdPartyAuthPlatform>> listPlatform() {
+        List<ThirdPartyAuthPlatform> list = thirdPartyPlatformManager.listPlatform();
+        for (ThirdPartyAuthPlatform platform : list) {
+            platform.setConfig(null);
+        }
+        return JsonResultImpl.getInstance(list);
     }
 }

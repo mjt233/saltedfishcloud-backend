@@ -79,7 +79,7 @@ public class PropertyUtils {
     /**
      * 从配置实体类中获取配置节点
      * @param refClass     要读取的配置类，需要使用{@link ConfigPropertyEntity ConfigPropertiesEntity} 标注类，并在各个字段中标注对应的{@link ConfigProperty ConfigProperties}
-     * @return          key - 配置节点集名称，value - 节点集下的配置节点
+     * @return          key - 配置节点组名称，value - 节点组下的配置节点
      */
     public static Map<String, ConfigNode> getConfigNodeFromEntityClass(Class<?> refClass) {
 

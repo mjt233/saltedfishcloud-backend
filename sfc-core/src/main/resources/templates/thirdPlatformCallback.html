@@ -4,29 +4,40 @@
     <meta charset="UTF-8">
     <title>第三方登录</title>
     <script th:inline="javascript">
+        const callbackResult = [[${result}]]
+        function showMessage(msg) {
+            document.querySelector("#app").textContent = msg;
+        }
         window.addEventListener("load", e => {
             const errMsg = [[${error}]]
             if (errMsg) {
-                document.querySelector("#app").textContent = `系统错误: ${errMsg}`;
+                if(window.opener) {
+                    window.opener.postMessage({
+                        name: 'thirdPlatformCallbackError',
+                        data: {
+                            errMsg: errMsg
+                        }
+                    })
+                    window.close()
+                } else {
+                    showMessage(`系统错误: ${errMsg}`)
+                }
                 return;
             }
             if(!window.opener) {
-                document.querySelector("#app").textContent = "页面转跳错误，5s后返回主页";
-                setTimeout(() => {
-                    location.href = "/"
-                }, 5000)
+                showMessage("页面转跳错误，请从咸鱼云网盘页签中打开第三方登录链接")
                 return
             }
             const newToken = [[${newToken}]]
-            document.querySelector("#app").textContent = newToken ? "登录成功，3s后页面自动关闭" : "关联成功，3s后页面自动关闭";
+            showMessage("登录成功");
             window.opener.postMessage({
                 name: 'thirdPlatformCallbackSuccess',
                 data: {
-                    result: [[${result}]],
-                    newToken: [[${newToken}]]
+                    result: callbackResult,
+                    newToken: newToken
                 }
             })
-            setTimeout(() => window.close(), 3000)
+            setTimeout(() => window.close(), 1000)
         })
     </script>
 
