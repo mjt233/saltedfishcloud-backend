@@ -84,7 +84,7 @@ public class OAuthController {
     }
 
     @ApiOperation("管理员接口-保存第三方平台配置参数值")
-    @GetMapping("saveThirdPartyPlatformConfigValue")
+    @PostMapping("saveThirdPartyPlatformConfigValue")
     @ResponseBody
     @RolesAllowed("ADMIN")
     public JsonResult<?> saveThirdPartyPlatformConfigValue(@RequestBody List<ThirdPartyAuthPlatform> platformList) {
