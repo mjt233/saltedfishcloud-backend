@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.dao.BaseRepo;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface ThirdPartyAuthPlatformRepo extends BaseRepo<ThirdPartyAuthPlatform> {
@@ -11,4 +12,7 @@ public interface ThirdPartyAuthPlatformRepo extends BaseRepo<ThirdPartyAuthPlatf
 
     @Query("SELECT p FROM ThirdPartyAuthPlatform p WHERE p.isEnable = true ")
     List<ThirdPartyAuthPlatform> findEnabled();
+
+
+    List<ThirdPartyAuthPlatform> findByTypeIn(Collection<String> type);
 }

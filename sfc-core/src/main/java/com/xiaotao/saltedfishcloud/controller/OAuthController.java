@@ -10,7 +10,6 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +22,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -88,6 +88,17 @@ public class OAuthController {
     @ResponseBody
     @RolesAllowed("ADMIN")
     public JsonResult<?> saveThirdPartyPlatformConfigValue(@RequestBody List<ThirdPartyAuthPlatform> platformList) {
+        List<String> types = platformList.stream().map(ThirdPartyAuthPlatform::getType).collect(Collectors.toList());
+        Map<String, ThirdPartyAuthPlatform> typeMap = thirdPartyAuthPlatformRepo.findByTypeIn(types)
+                .stream()
+                .collect(Collectors.toMap(ThirdPartyAuthPlatform::getType, Function.identity()));
+
+        // 如果有相同的平台 直接取id赋值上防止重复
+        for (ThirdPartyAuthPlatform platform : platformList) {
+            Optional.ofNullable(typeMap.get(platform.getType()))
+                    .ifPresent(existData -> platform.setId(existData.getId()));
+        }
+
         return JsonResultImpl.getInstance(
                 thirdPartyAuthPlatformRepo.saveAll(platformList)
         );
