@@ -47,7 +47,7 @@ public interface ThirdPartyPlatformManager {
     User createUser(String actionId);
 
     /**
-     * 列出系统当前可用的第三方平台（第三方平台已注册处理器 且 配置为已启用）
+     * 列出系统当前已注册的第三方平台
      */
     List<ThirdPartyAuthPlatform> listPlatform();
 }

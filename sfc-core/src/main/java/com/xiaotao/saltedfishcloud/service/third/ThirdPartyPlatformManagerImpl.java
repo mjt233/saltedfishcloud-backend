@@ -173,7 +173,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
 
     @Override
     public List<ThirdPartyAuthPlatform> listPlatform() {
-        Lazy<Map<String, ThirdPartyAuthPlatform>> configMap = Lazy.of(() -> platformRepo.findEnabled()
+        Lazy<Map<String, ThirdPartyAuthPlatform>> configMap = Lazy.of(() -> platformRepo.findAll()
                 .stream()
                 .collect(Collectors.toMap(ThirdPartyAuthPlatform::getType, e -> e))
         );
