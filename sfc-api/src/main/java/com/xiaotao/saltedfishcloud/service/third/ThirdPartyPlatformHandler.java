@@ -3,10 +3,8 @@ package com.xiaotao.saltedfishcloud.service.third;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
-import com.xiaotao.saltedfishcloud.model.po.User;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Map;
 
@@ -17,9 +15,9 @@ public interface ThirdPartyPlatformHandler {
     String getType();
 
     /**
-     * 获取第三方平台的登录url
+     * 获取第三方平台的登录授权url
      */
-    String getRedirectUrl(ThirdPartyAuthPlatform partyAuthPlatform);
+    String getAuthUrl(ThirdPartyAuthPlatform partyAuthPlatform);
 
     /**
      * 第三方平台授权完成回调

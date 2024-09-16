@@ -3,10 +3,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Index;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 /**
  * 第三方认证平台配置
@@ -54,4 +51,7 @@ public class ThirdPartyAuthPlatform extends AuditModel {
      * 是否允许通过该平台注册为新用户
      */
     private Boolean isAllowRegister;
+
+    @Transient
+    private String authUrl;
 }

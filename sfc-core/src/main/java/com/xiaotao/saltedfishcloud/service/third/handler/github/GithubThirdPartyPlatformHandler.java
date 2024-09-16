@@ -46,7 +46,7 @@ public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
     }
 
     @Override
-    public String getRedirectUrl(ThirdPartyAuthPlatform partyAuthPlatform) {
+    public String getAuthUrl(ThirdPartyAuthPlatform partyAuthPlatform) {
         try {
             GithubPlatformProperty property = getProperty(partyAuthPlatform);
             return "https://github.com/login/oauth/authorize?scope=user:email&client_id=" + property.getClientId();

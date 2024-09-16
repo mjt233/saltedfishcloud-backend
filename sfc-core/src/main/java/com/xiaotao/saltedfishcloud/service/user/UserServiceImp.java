@@ -249,11 +249,7 @@ public class UserServiceImp implements UserService {
 
     @Override
     public User getUserByUser(String user) throws UserNoExistException {
-        User user1 = userDao.getUserByUser(user);
-        if (user1 == null) {
-            throw new UserNoExistException(-1, "用户" + user + "不存在");
-        }
-        return user1;
+        return userDao.getUserByUser(user);
     }
 
     @Override

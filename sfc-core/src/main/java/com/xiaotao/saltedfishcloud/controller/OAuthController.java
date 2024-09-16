@@ -3,17 +3,25 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.param.BindUserParam;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -22,6 +30,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,6 +50,26 @@ public class OAuthController {
     @Autowired
     private TokenService tokenService;
 
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+
+    @ApiOperation("使用第三方登录创建新账号")
+    @AllowAnonymous
+    @GetMapping("createUser")
+    @ResponseBody
+    public JsonResult<ThirdPartyPlatformCallbackResult> createUser(@RequestParam("actionId") String actionId) {
+        User user = thirdPartyPlatformManager.createUser(actionId);
+        user.setPwd(null);
+        return JsonResultImpl.getInstance(ThirdPartyPlatformCallbackResult.builder()
+                        .newToken(tokenService.generateUserToken(user))
+                        .user(user)
+                .build());
+    }
+
     @ApiOperation("第三方平台回调接口")
     @GetMapping("/callback/{platformType}")
     @AllowAnonymous
@@ -48,8 +77,9 @@ public class OAuthController {
         try {
             ThirdPartyPlatformCallbackResult callbackResult = thirdPartyPlatformManager.doCallback(platformType, request);
             String newToken = callbackResult.getUser() != null ? tokenService.generateUserToken(callbackResult.getUser()) : null;
+            callbackResult.setNewToken(newToken);
             return new ModelAndView("thirdPlatformCallback")
-                    .addObject("result", callbackResult)
+                    .addObject("result", MapperHolder.toJson(callbackResult))
                     .addObject("newToken", newToken);
         } catch (Exception e) {
             log.error(platformType + "平台第三方登录回调出错", e);
@@ -117,5 +147,25 @@ public class OAuthController {
             platform.setConfig(null);
         }
         return JsonResultImpl.getInstance(list);
+    }
+
+    @PostMapping("bindUser")
+    @AllowAnonymous
+    @ResponseBody
+    public JsonResult<User> bindUser(@RequestBody BindUserParam param) {
+        User user;
+        if (!Boolean.TRUE.equals(param.getAutoBind())) {
+            Objects.requireNonNull(param.getAccount(), "用户名不能为空");
+            Objects.requireNonNull(param.getPassword(), "密码不能为空");
+            User specifyUser = Optional.ofNullable(userService.getUserByAccount(param.getAccount())).orElseThrow(UserNoExistException::new);
+            if(!passwordEncoder.encode(param.getPassword()).equals(specifyUser.getPassword())) {
+                throw new JsonException("用户名或密码错误");
+            }
+            user = thirdPartyPlatformManager.bindUser(param.getActionId(), specifyUser);
+        } else {
+            user = thirdPartyPlatformManager.bindUser(param.getActionId(), null);
+        }
+
+        return JsonResultImpl.getInstance(user);
     }
 }

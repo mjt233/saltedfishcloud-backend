@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
+import org.jetbrains.annotations.Nullable;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -35,9 +35,9 @@ public interface ThirdPartyPlatformManager {
     /**
      * 绑定第三方账号到已有的系统账号
      * @param actionId {@link #doCallback(String, HttpServletRequest)}中的操作id
-     * @param user      要绑定的用户
+     * @param user      指定要绑定的用户，若回调中已设定了关联用户可不传该参数
      */
-    void bindUser(String actionId, User user);
+    User bindUser(String actionId, @Nullable User user);
 
     /**
      * 根据第三方账号创建账号

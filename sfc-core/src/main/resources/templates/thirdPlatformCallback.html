@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>第三方登录</title>
     <script th:inline="javascript">
-        const callbackResult = [[${result}]]
+        const callbackResult = JSON.parse([[${result}]])
         function showMessage(msg) {
             document.querySelector("#app").textContent = msg;
         }
@@ -37,7 +37,7 @@
                     newToken: newToken
                 }
             })
-            setTimeout(() => window.close(), 1000)
+            window.close()
         })
     </script>
 

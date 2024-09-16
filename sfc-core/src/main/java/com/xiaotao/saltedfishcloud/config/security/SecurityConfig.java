@@ -39,7 +39,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Resource
     private RequestMappingHandlerMapping requestMappingHandlerMapping;
 
-
     @Resource
     private PasswordEncoder myPasswordEncoder;
 

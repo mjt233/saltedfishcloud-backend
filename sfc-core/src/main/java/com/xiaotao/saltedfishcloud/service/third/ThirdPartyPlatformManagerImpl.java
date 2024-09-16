@@ -2,24 +2,23 @@ package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyUserRepo;
-import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
-import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.util.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -142,6 +141,12 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
             if (curUser != null) {
                 assocUser = curUser;
                 platformUser.setUid(assocUser.getId());
+            } else if (StringUtils.hasText(platformUser.getEmail())) {
+                // 如果系统存在相同邮箱，默认匹配让用户确认
+                assocUser = userService.getUserByEmail(platformUser.getEmail());
+                if (assocUser != null) {
+                    platformUser.setUid(assocUser.getId());
+                }
             }
 
             if (platformUser.getStatus() == null) {
@@ -156,7 +161,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                     .build();
         }
 
-        setPlatformUser(actionId, result.getPlatformUser());
+        setCallbackResult(actionId, result);
         return result;
     }
 
@@ -164,10 +169,11 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
      * 根据第三方平台用户信息生成咸鱼云的新用户名，会优先尝试使用第三方平台的名称，系统中存在重名时则随机生成
      */
     private String generateNewUserName(ThirdPartyPlatformUser platformUser) {
-        try {
-            return userService.getUserByUser(platformUser.getUserName()).getUser();
-        } catch (UserNoExistException e) {
-            return platformUser.getPlatformType() + "_" + IdUtil.getId();
+        User sameNameUser = userService.getUserByUser(platformUser.getUserName());
+        if (sameNameUser == null) {
+            return platformUser.getUserName();
+        } else {
+            return platformUser.getPlatformType() + "_" + Optional.ofNullable(platformUser.getThirdPartyUserId()).orElseGet(() -> String.valueOf(IdUtil.getId()));
         }
     }
 
@@ -183,41 +189,58 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                 .map(c -> {
                     ThirdPartyAuthPlatform platform = new ThirdPartyAuthPlatform();
                     BeanUtils.copyProperties(c, platform);
+                    platform.setAuthUrl(getHandler(c.getType()).getAuthUrl(c));
                     return platform;
                 })
                 .collect(Collectors.toList());
     }
 
     @Override
-    public void bindUser(String actionId, User user) {
-        ThirdPartyPlatformUser platformUser = getPlatformUser(actionId);
-        platformUser.setIsActive(true);
-        if(platformUserRepo.getByPlatformTypeAndUid(platformUser.getPlatformType(), user.getId()) != null) {
-            throw new IllegalArgumentException("用户" + user.getUser() + "已关联了" + platformUser.getPlatformType() + "平台的账号，无需重复关联");
+    @Transactional(rollbackFor = Exception.class)
+    public User bindUser(String actionId,@Nullable User user) {
+        ThirdPartyPlatformCallbackResult callbackResult = Objects.requireNonNull(getCallbackResult(actionId), "无效或已过期的actionId");
+        ThirdPartyPlatformUser platformUser = callbackResult.getPlatformUser();
+        User bindUserObj = Optional.ofNullable(callbackResult.getUser()).orElse(user);
+        if (bindUserObj == null) {
+            throw new IllegalArgumentException("未指定关联的用户");
         }
+
+        if(platformUserRepo.getByPlatformTypeAndUid(platformUser.getPlatformType(), bindUserObj.getId()) != null) {
+            throw new IllegalArgumentException("用户" + bindUserObj.getUser() + "已关联了" + platformUser.getPlatformType() + "平台的账号，无需重复关联");
+        }
+
+        platformUser.setIsActive(true);
         platformUserRepo.save(platformUser);
         clearActionId(actionId);
+        bindUserObj.setToken(tokenService.generateUserToken(user));
+        return user;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public User createUser(String actionId) {
-        ThirdPartyPlatformUser platformUser = getPlatformUser(actionId);
+        ThirdPartyPlatformCallbackResult callbackResult = getCallbackResult(actionId);
+        ThirdPartyPlatformUser platformUser = callbackResult.getPlatformUser();
         String newUserName = this.generateNewUserName(platformUser);
         userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), User.TYPE_COMMON);
         User newUser = userService.getUserByUser(newUserName);
+
+        platformUser.setUid(newUser.getId());
+        platformUser.setIsActive(true);
+        platformUserRepo.save(platformUser);
         clearActionId(actionId);
         return newUser;
     }
 
-    private ThirdPartyPlatformUser getPlatformUser(String actionId) {
+    private ThirdPartyPlatformCallbackResult getCallbackResult(String actionId) {
         return Objects.requireNonNull(
-                (ThirdPartyPlatformUser) redisTemplate.opsForValue().get(ACTION_RECORD_KEY + actionId),
+                (ThirdPartyPlatformCallbackResult) redisTemplate.opsForValue().get(ACTION_RECORD_KEY + actionId),
                 "操作已过期或记录id不存在，请重试"
         );
     }
 
-    private void setPlatformUser(String actionId, ThirdPartyPlatformUser platformUser) {
-        redisTemplate.opsForValue().set(ACTION_RECORD_KEY + actionId, platformUser, Duration.ofMinutes(10));
+    private void setCallbackResult(String actionId, ThirdPartyPlatformCallbackResult result) {
+        redisTemplate.opsForValue().set(ACTION_RECORD_KEY + actionId, result, Duration.ofMinutes(10));
     }
 
     private void clearActionId(String actionId) {
