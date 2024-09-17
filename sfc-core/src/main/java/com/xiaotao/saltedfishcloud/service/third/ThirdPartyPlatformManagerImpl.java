@@ -1,11 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
-import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyUserRepo;
+import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyPlatformUserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -38,7 +39,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
     private ThirdPartyAuthPlatformRepo platformRepo;
 
     @Autowired
-    private ThirdPartyUserRepo platformUserRepo;
+    private ThirdPartyPlatformUserRepo platformUserRepo;
 
     @Autowired
     private UserService userService;
@@ -120,10 +121,13 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                         "该账号已绑定用户" + existPlatformUser.getUid() + "，但用户不存在，请联系管理员"
                 );
                 platformUser.setUid(assocUser.getId());
+                String token = tokenService.generateUserToken(assocUser);
+                assocUser.setToken(token);
                 result = ThirdPartyPlatformCallbackResult.builder()
                         .isNewUser(false)
+                        .newToken(token)
                         .platformUser(platformUser)
-                        .user(assocUser)
+                        .user(UserVO.from(assocUser))
                         .actionId(actionId)
                         .build();
             } else {
@@ -156,7 +160,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
             result = ThirdPartyPlatformCallbackResult.builder()
                     .isNewUser(true)
                     .platformUser(platformUser)
-                    .user(assocUser)
+                    .user(UserVO.from(assocUser))
                     .actionId(actionId)
                     .build();
         }
@@ -197,10 +201,10 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public User bindUser(String actionId,@Nullable User user) {
+    public UserVO bindUser(String actionId, @Nullable User user) {
         ThirdPartyPlatformCallbackResult callbackResult = Objects.requireNonNull(getCallbackResult(actionId), "无效或已过期的actionId");
         ThirdPartyPlatformUser platformUser = callbackResult.getPlatformUser();
-        User bindUserObj = Optional.ofNullable(callbackResult.getUser()).orElse(user);
+        UserVO bindUserObj = Optional.ofNullable(callbackResult.getUser()).orElse(UserVO.from(user));
         if (bindUserObj == null) {
             throw new IllegalArgumentException("未指定关联的用户");
         }
@@ -210,26 +214,28 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         }
 
         platformUser.setIsActive(true);
+        platformUser.setUid(bindUserObj.getId());
         platformUserRepo.save(platformUser);
-        clearActionId(actionId);
-        bindUserObj.setToken(tokenService.generateUserToken(user));
-        return user;
+        bindUserObj.setToken(tokenService.generateUserToken(bindUserObj));
+        return bindUserObj;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public User createUser(String actionId) {
+    public UserVO createUser(String actionId) {
         ThirdPartyPlatformCallbackResult callbackResult = getCallbackResult(actionId);
         ThirdPartyPlatformUser platformUser = callbackResult.getPlatformUser();
         String newUserName = this.generateNewUserName(platformUser);
         userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), User.TYPE_COMMON);
         User newUser = userService.getUserByUser(newUserName);
+        newUser.setToken(tokenService.generateUserToken(newUser));
 
         platformUser.setUid(newUser.getId());
         platformUser.setIsActive(true);
         platformUserRepo.save(platformUser);
+
         clearActionId(actionId);
-        return newUser;
+        return UserVO.from(newUser, false);
     }
 
     private ThirdPartyPlatformCallbackResult getCallbackResult(String actionId) {

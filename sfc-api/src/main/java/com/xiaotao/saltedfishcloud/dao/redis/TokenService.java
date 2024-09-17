@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.dao.redis;
 
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 
 public interface TokenService {
@@ -30,6 +31,14 @@ public interface TokenService {
      * @return 有效的新token
      */
     String generateUserToken(User user);
+
+    /**
+     * 创建一个用户token
+     *
+     * @param user 用户信息
+     * @return 有效的新token
+     */
+    String generateUserToken(UserVO user);
 
     /**
      * 添加用户鉴权token到Redis缓存

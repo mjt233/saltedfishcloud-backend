@@ -5,6 +5,7 @@ import com.sfc.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +25,16 @@ public class TokenServiceImpl implements TokenService {
     public String generateUserToken(Long uid) {
         final User user = userDao.getUserById(uid);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
-        return generateUserToken(user);
+        return generateUserToken(UserVO.from(user, true));
     }
 
     @Override
     public String generateUserToken(User user) {
-        user.setPwd(null);
+        return generateUserToken(UserVO.from(user, true));
+    }
+
+    @Override
+    public String generateUserToken(UserVO user) {
         final String token;
         try {
             token = JwtUtils.generateToken(MapperHolder.mapper.writeValueAsString(user), 30 * 24 * 60 * 60);

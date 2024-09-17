@@ -10,12 +10,16 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.BindUserParam;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
+import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformUserService;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -35,7 +40,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-
+@Validated
 @Controller
 @RequestMapping("/api/oauth")
 @Slf4j
@@ -56,14 +61,16 @@ public class OAuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private ThirdPartyPlatformUserService thirdPartyPlatformUserService;
+
 
     @ApiOperation("使用第三方登录创建新账号")
     @AllowAnonymous
     @GetMapping("createUser")
     @ResponseBody
     public JsonResult<ThirdPartyPlatformCallbackResult> createUser(@RequestParam("actionId") String actionId) {
-        User user = thirdPartyPlatformManager.createUser(actionId);
-        user.setPwd(null);
+        UserVO user = thirdPartyPlatformManager.createUser(actionId);
         return JsonResultImpl.getInstance(ThirdPartyPlatformCallbackResult.builder()
                         .newToken(tokenService.generateUserToken(user))
                         .user(user)
@@ -76,11 +83,9 @@ public class OAuthController {
     public ModelAndView callback(@PathVariable("platformType") String platformType, HttpServletRequest request) {
         try {
             ThirdPartyPlatformCallbackResult callbackResult = thirdPartyPlatformManager.doCallback(platformType, request);
-            String newToken = callbackResult.getUser() != null ? tokenService.generateUserToken(callbackResult.getUser()) : null;
-            callbackResult.setNewToken(newToken);
             return new ModelAndView("thirdPlatformCallback")
                     .addObject("result", MapperHolder.toJson(callbackResult))
-                    .addObject("newToken", newToken);
+                    .addObject("newToken", callbackResult.getNewToken());
         } catch (Exception e) {
             log.error(platformType + "平台第三方登录回调出错", e);
             return new ModelAndView("thirdPlatformCallback")
@@ -152,8 +157,8 @@ public class OAuthController {
     @PostMapping("bindUser")
     @AllowAnonymous
     @ResponseBody
-    public JsonResult<User> bindUser(@RequestBody BindUserParam param) {
-        User user;
+    public JsonResult<UserVO> bindUser(@RequestBody BindUserParam param) {
+        UserVO user;
         if (!Boolean.TRUE.equals(param.getAutoBind())) {
             Objects.requireNonNull(param.getAccount(), "用户名不能为空");
             Objects.requireNonNull(param.getPassword(), "密码不能为空");
@@ -167,5 +172,12 @@ public class OAuthController {
         }
 
         return JsonResultImpl.getInstance(user);
+    }
+
+    @GetMapping("listAssocPlatformUser")
+    @ApiOperation("列出已关联的第三方平台用户信息")
+    @ResponseBody
+    public JsonResult<List<ThirdPartyPlatformUser>> listAssocPlatformUser(@RequestParam("uid") @UID Long uid) {
+        return JsonResultImpl.getInstance(thirdPartyPlatformUserService.findByUid(uid));
     }
 }

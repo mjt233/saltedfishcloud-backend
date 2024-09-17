@@ -18,6 +18,6 @@ public class UserNoExistException extends JsonException {
     }
 
     public UserNoExistException() {
-        super();
+        super("用户不存在");
     }
 }
