@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.third;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyPlatformUserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
@@ -151,6 +152,9 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                 if (assocUser != null) {
                     platformUser.setUid(assocUser.getId());
                 }
+            }
+            if (assocUser == null && !Boolean.TRUE.equals(platform.getIsAllowRegister())) {
+                throw new JsonException(platform.getName() + " 未开放新用户注册，请联系管理员");
             }
 
             if (platformUser.getStatus() == null) {
