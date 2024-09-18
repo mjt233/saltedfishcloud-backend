@@ -6,9 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.validator.constraints.Length;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import java.util.Date;
 
 /**
@@ -17,6 +15,9 @@ import java.util.Date;
 @Getter
 @Setter
 @Entity
+@Table(indexes = {
+        @Index(name = "idx_uid", columnList = "uid")
+})
 public class WolDevice extends AuditModel {
 
     /**

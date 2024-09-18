@@ -18,7 +18,9 @@ import java.util.Date;
 
 @EntityListeners(AuditingEntityListener.class)
 @Entity
-@Table(name = "share")
+@Table(name = "share", indexes = {
+        @Index(name = "uid_index", columnList = "uid")
+})
 @Getter
 @Setter
 @NoArgsConstructor

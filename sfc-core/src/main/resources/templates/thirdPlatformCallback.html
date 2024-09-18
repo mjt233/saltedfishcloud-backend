@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>第三方登录</title>
+    <script th:inline="javascript">
+        const callbackResult = JSON.parse([[${result}]])
+        function showMessage(msg) {
+            document.querySelector("#app").textContent = msg;
+        }
+        window.addEventListener("load", e => {
+            const errMsg = [[${error}]]
+            if (errMsg) {
+                if(window.opener) {
+                    window.opener.postMessage({
+                        name: 'thirdPlatformCallbackError',
+                        data: {
+                            errMsg: errMsg
+                        }
+                    })
+                    window.close()
+                } else {
+                    showMessage(`系统错误: ${errMsg}`)
+                }
+                return;
+            }
+            if(!window.opener) {
+                showMessage("页面转跳错误，请从咸鱼云网盘页签中打开第三方登录链接")
+                return
+            }
+            const newToken = [[${newToken}]]
+            showMessage("登录成功");
+            window.opener.postMessage({
+                name: 'thirdPlatformCallbackSuccess',
+                data: {
+                    result: callbackResult,
+                    newToken: newToken
+                }
+            })
+            window.close()
+        })
+    </script>
+
+</head>
+<body>
+    <div id="app">
+
+    </div>
+</body>
+</html>

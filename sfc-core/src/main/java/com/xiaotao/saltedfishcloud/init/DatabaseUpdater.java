@@ -23,6 +23,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.Arrays;
@@ -115,32 +116,36 @@ public class DatabaseUpdater implements ApplicationRunner {
      */
     private void registerSQLUpdateHandler() throws IOException {
         // 读取资源目录/sql下的所有版本更新sql文件
-        Resource[] sqls = Arrays.stream(ResourcePatternUtils
-                .getResourcePatternResolver(resourceLoader)
-                .getResources("classpath:/sql/*.*.*.sql"))
-                .filter(e -> !Objects.requireNonNull(e.getFilename()).endsWith("no-auto.sql"))
-                .toArray(Resource[]::new);
-        SQLVersionResource[] resources = SQLVersionResource.valueOf(sqls);
-        Arrays.sort(resources);
-        for (SQLVersionResource resource : resources) {
-            this.updateManager.registerUpdateHandler(new VersionUpdateHandler() {
-                @Override
-                public void update(Version from, Version to) throws Exception {
-                    try (Connection connection = dataSource.getConnection()) {
-                        ScriptUtils.executeSqlScript(connection, resource.getResource());
+        try {
+            Resource[] sqls = Arrays.stream(ResourcePatternUtils
+                            .getResourcePatternResolver(resourceLoader)
+                            .getResources("classpath:/sql/*.*.*.sql"))
+                    .filter(e -> !Objects.requireNonNull(e.getFilename()).endsWith("no-auto.sql"))
+                    .toArray(Resource[]::new);
+            SQLVersionResource[] resources = SQLVersionResource.valueOf(sqls);
+            Arrays.sort(resources);
+            for (SQLVersionResource resource : resources) {
+                this.updateManager.registerUpdateHandler(new VersionUpdateHandler() {
+                    @Override
+                    public void update(Version from, Version to) throws Exception {
+                        try (Connection connection = dataSource.getConnection()) {
+                            ScriptUtils.executeSqlScript(connection, resource.getResource());
+                        }
                     }
-                }
 
-                @Override
-                public Version getUpdateVersion() {
-                    return resource.getVersion();
-                }
+                    @Override
+                    public Version getUpdateVersion() {
+                        return resource.getVersion();
+                    }
 
-                @Override
-                public String getMessage() {
-                    return "数据库结构更新：" + resource.getVersion();
-                }
-            });
+                    @Override
+                    public String getMessage() {
+                        return "数据库结构更新：" + resource.getVersion();
+                    }
+                });
+            }
+        } catch (FileNotFoundException ignored) {
+            // 当不存在sql目录时就会报这个 忽略即可
         }
     }
 

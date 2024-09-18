@@ -20,7 +20,12 @@ import java.util.Objects;
 @ToString
 @Entity
 @Proxy(lazy = false)
-@Table(name = "mount_point")
+@Table(
+        name = "mount_point",
+        indexes = {
+                @Index(name = "idx_uid", columnList = "uid,nid")
+        }
+)
 @EntityListeners(AuditingEntityListener.class)
 @Builder
 @AllArgsConstructor

@@ -11,7 +11,12 @@ import java.util.Date;
 @Entity
 @Data
 @NoArgsConstructor
-@Table(name = "collection_rec")
+@Table(
+        name = "collection_rec",
+        indexes = {
+                @Index(name = "cid_index", columnList = "cid")
+        }
+)
 @EntityListeners(AuditingEntityListener.class)
 public class CollectionRecord {
     @Id

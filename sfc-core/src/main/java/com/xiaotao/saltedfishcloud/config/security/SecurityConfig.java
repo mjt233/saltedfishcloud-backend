@@ -39,7 +39,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Resource
     private RequestMappingHandlerMapping requestMappingHandlerMapping;
 
-
     @Resource
     private PasswordEncoder myPasswordEncoder;
 
@@ -80,7 +79,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
         //  放行公共API和登录API
         http.authorizeRequests()
-                .antMatchers("/","/static-extension.json", "/ext/**", "/assets/**","/static/**", "/api/static/**", "/favicon.ico", "/index.*").permitAll()
+                .antMatchers("/","/static-extension.json", "/api/oauth/callback/**","/ext/**", "/assets/**","/static/**", "/api/static/**", "/favicon.ico", "/index.*").permitAll()
                 .antMatchers(getAnonymousUrls()).permitAll()
                 .antMatchers(HttpMethod.POST, LOGIN_URI).permitAll()
                 .anyRequest().authenticated();

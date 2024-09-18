@@ -4,6 +4,8 @@ import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import lombok.*;
 
 import javax.persistence.Entity;
+import javax.persistence.Index;
+import javax.persistence.Table;
 
 @Entity
 @Getter
@@ -11,6 +13,9 @@ import javax.persistence.Entity;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(indexes = {
+        @Index(name = "idx_task_id", columnList = "taskId")
+})
 public class EncodeConvertTaskLog extends BaseModel {
     /**
      * 任务id

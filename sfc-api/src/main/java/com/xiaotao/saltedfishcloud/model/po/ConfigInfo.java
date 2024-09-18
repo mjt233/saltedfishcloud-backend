@@ -1,14 +1,24 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.sfc.constant.SysConfigName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+import javax.persistence.*;
+
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "config")
 public class ConfigInfo {
-    private SysConfigName key;
+    /**
+     * @see SysConfigName
+     */
+    @Id
+    @Column(name = "`key`", length = 64)
+    private String key;
+
+    @Column(length = 512)
     private String value;
 }
