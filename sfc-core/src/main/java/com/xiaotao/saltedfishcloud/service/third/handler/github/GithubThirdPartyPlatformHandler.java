@@ -48,6 +48,9 @@ public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
     @Override
     public String getAuthUrl(ThirdPartyAuthPlatform partyAuthPlatform) {
         try {
+            if (isNotConfig(partyAuthPlatform)) {
+                return null;
+            }
             GithubPlatformProperty property = getProperty(partyAuthPlatform);
             return "https://github.com/login/oauth/authorize?scope=user:email&client_id=" + property.getClientId();
         } catch (IOException e) {
@@ -70,8 +73,12 @@ public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
                 .build();
     }
 
+    private boolean isNotConfig(ThirdPartyAuthPlatform platform) {
+        return platform.getConfig() == null || platform.getConfig().isBlank() || platform.getConfig().equals("{}");
+    }
+
     private GithubPlatformProperty getProperty(ThirdPartyAuthPlatform platform) throws IOException {
-        if (platform.getConfig() == null || platform.getConfig().isBlank() || platform.getConfig().equals("{}")) {
+        if (this.isNotConfig(platform)) {
             throw new IllegalArgumentException("Github平台参数未配置，请联系系统管理员");
         }
         return MapperHolder.parseJson(platform.getConfig(), GithubPlatformProperty.class);
