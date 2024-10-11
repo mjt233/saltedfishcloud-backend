@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.mail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.sfc.constant.SysConfigName;
+import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;

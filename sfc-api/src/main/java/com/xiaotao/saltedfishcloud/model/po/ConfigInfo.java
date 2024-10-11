@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.sfc.constant.SysConfigName;
+import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import lombok.*;
 
 import javax.persistence.*;

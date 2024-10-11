@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.sfc.enums.PluginLoadType;
+import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
 import com.xiaotao.saltedfishcloud.ext.*;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;

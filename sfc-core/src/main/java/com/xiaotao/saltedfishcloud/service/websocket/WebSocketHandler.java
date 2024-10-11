@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.sfc.constant.MQTopic;
-import com.sfc.constant.WebSocketConstant;
+import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.constant.WebSocketConstant;
 import com.sfc.task.AsyncTaskManager;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketRequest;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketResponse;

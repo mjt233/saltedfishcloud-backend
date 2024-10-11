@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
-import com.sfc.common.service.CrudServiceImpl;
-import com.sfc.constant.error.CommonError;
-import com.sfc.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.MountPointRepo;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.share;
 
-import com.sfc.constant.ResourceProtocol;
+import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;

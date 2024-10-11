@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sfc.constant.ConfigInputType;
+import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

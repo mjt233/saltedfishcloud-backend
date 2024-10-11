@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
 
-import com.sfc.enums.StoreMode;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;

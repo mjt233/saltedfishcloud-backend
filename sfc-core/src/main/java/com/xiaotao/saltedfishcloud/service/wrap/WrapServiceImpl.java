@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.wrap;
 
-import com.sfc.constant.error.FileSystemError;
-import com.sfc.constant.error.ShareError;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;

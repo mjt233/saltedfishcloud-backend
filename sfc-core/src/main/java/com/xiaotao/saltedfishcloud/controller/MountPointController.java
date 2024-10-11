@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.sfc.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;

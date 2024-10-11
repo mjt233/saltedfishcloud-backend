@@ -1,7 +1,7 @@
 package com.sfc.task;
 
-import com.sfc.constant.MQTopic;
-import com.sfc.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.sfc.rpc.annotation.RPCResource;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;

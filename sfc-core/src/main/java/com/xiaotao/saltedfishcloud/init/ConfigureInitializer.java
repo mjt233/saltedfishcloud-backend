@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.sfc.constant.FeatureName;
+import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
-import com.sfc.enums.StoreMode;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.sfc.constant.SysConfigName;
+import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.*;

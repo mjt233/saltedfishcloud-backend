@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.websocket;
 
+import com.xiaotao.saltedfishcloud.constant.WebSocketConstant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,13 +14,13 @@ public class WebSocketRequest {
     /**
      * 请求动作
      *
-     * @see com.sfc.constant.WebSocketConstant.Action
+     * @see WebSocketConstant.Action
      */
     private String action;
 
     /**
      * 数据业务类型
-     * @see com.sfc.constant.WebSocketConstant.Type
+     * @see WebSocketConstant.Type
      */
     private String type;
 

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl;
 
-import com.sfc.common.service.CrudServiceImpl;
+import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileInfoService;

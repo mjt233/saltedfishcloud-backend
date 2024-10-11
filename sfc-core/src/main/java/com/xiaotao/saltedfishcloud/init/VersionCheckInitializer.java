@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.sfc.constant.SysConfigName;
+import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
@@ -11,7 +11,6 @@ import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
-import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 
 public class VersionCheckInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {

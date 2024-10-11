@@ -1,11 +1,9 @@
 package com.xiaotao.saltedfishcloud.exception;
 
-import com.sfc.constant.error.ErrorInfo;
+import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import lombok.Getter;
-
-import javax.persistence.Transient;
 
 public class JsonException extends RuntimeException {
     private static final long serialVersionUID = -6859013370470905290L;

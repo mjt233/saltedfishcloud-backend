@@ -1,6 +1,6 @@
 package com.sfc.ext.oss;
 
-import com.sfc.constant.ConfigInputType;
+import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
 import com.sfc.ext.oss.constants.OSSType;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;

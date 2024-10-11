@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.validator;
 
-import com.sfc.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
