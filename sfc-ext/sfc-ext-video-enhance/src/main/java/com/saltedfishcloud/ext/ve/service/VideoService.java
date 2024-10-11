@@ -21,10 +21,8 @@ import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +30,12 @@ import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,7 @@ import static com.saltedfishcloud.ext.ve.constant.VEConstants.*;
 
 @Service
 @Slf4j
+@Validated
 public class VideoService {
     @Autowired
     private FFMpegHelper ffMpegHelper;
@@ -58,6 +60,9 @@ public class VideoService {
     @Autowired
     private AsyncTaskManager asyncTaskManager;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     /**
      * 检查配置是否正确
      */
@@ -71,6 +76,26 @@ public class VideoService {
         } catch (IOException e) {
             throw new JsonException("检查失败，错误：" + e.getMessage());
         }
+    }
+
+    /**
+     * 记录观看进度
+     * @param uid       观看用户id
+     * @param identify  视频标识，可通过相同的标识获取进度
+     * @param time      观看进度
+     */
+    public void recordWatchProgress(@UID(value = true) Long uid, String identify, double time) {
+        redisTemplate.opsForValue().set("watch_progress::" + uid + "::" + identify, time, Duration.ofDays(7));
+    }
+
+    /**
+     * 获取观看进度
+     * @param uid       观看用户id
+     * @param identify  视频标识
+     * @return          观看进度，返回null就是没有记录
+     */
+    public Double getWatchProgress(@UID(value = true) Long uid, String identify) {
+        return (Double) redisTemplate.opsForValue().get("watch_progress::" + uid + "::" + identify);
     }
 
     /**

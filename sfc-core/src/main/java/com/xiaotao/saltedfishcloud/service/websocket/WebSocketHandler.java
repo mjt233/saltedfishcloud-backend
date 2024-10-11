@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+// todo 使用Spring提供的Websocket框架重构
 @Slf4j
 @Component
 @ServerEndpoint("/api/ws")
