@@ -1,6 +1,6 @@
 package com.sfc.archive.model;
 
-import com.sfc.constant.RejectRegex;
+import com.sfc.archive.constant.RejectRegex;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
 import java.util.Date;
