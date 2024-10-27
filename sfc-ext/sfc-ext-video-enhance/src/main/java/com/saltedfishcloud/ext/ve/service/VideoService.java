@@ -152,7 +152,7 @@ public class VideoService {
                 throw new RuntimeException(e);
             }
         } else {
-            resource = diskFileSystemManager.getMainFileSystem().getResource(Integer.parseInt(param.getTargetId()), param.getPath(), param.getName());
+            resource = diskFileSystemManager.getMainFileSystem().getResource(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
         }
         return resource;
     }

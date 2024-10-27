@@ -45,9 +45,9 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
             throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
         }
         if (param.getIsThumbnail()) {
-            return fileSystemManager.getMainFileSystem().getThumbnail(Integer.parseInt(param.getTargetId()), param.getPath(), param.getName());
+            return fileSystemManager.getMainFileSystem().getThumbnail(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
         } else {
-            return fileSystemManager.getMainFileSystem().getResource(Integer.parseInt(param.getTargetId()), param.getPath(), param.getName());
+            return fileSystemManager.getMainFileSystem().getResource(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
         }
 
     }
@@ -66,7 +66,7 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
      * 校验文件写入参数
      */
     private void validWriteParam(ResourceRequest param) {
-        long uid = Integer.parseInt(param.getTargetId());
+        long uid = Long.parseLong(param.getTargetId());
         User user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
             String createUid = Objects.requireNonNull(param.getParams().get(ResourceRequest.CREATE_UID), "缺失权限上下文会话或创建人id");
@@ -84,7 +84,7 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         }
         validWriteParam(param);
         Date now = new Date();
-        long uid = Integer.parseInt(param.getTargetId());
+        long uid = Long.parseLong(param.getTargetId());
 
         FileInfo fileInfo = new FileInfo();
         fileInfo.setCtime(now.getTime());

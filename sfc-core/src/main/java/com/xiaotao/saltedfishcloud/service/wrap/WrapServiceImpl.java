@@ -66,7 +66,7 @@ public class WrapServiceImpl implements WrapService {
         // TODO: 调整为策略模式
         if (source.equals("file")) {
             /* 直接从私人/公共网盘创建的打包 */
-            uid = Integer.parseInt(sourceId);
+            uid = Long.parseLong(sourceId);
             files.setSource(param.getPath());
         } else if(source.equals("share")){
 
@@ -83,7 +83,7 @@ public class WrapServiceImpl implements WrapService {
             }
 
             // 2. 获取分享的信息，记录到打包信息中
-            ShareInfo shareInfo = shareService.getShare(Integer.parseInt(sourceId), vid);
+            ShareInfo shareInfo = shareService.getShare(Long.parseLong(sourceId), vid);
             if (!shareInfo.validateExtractCode(extractCode)) {
                 throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
             }
