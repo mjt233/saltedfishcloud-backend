@@ -10,6 +10,7 @@ import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,11 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         } else {
             return fileSystemManager.getMainFileSystem().getResource(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
         }
+    }
 
+    @Override
+    public String getPathMappingIdentity(ResourceRequest param) {
+        return SecureUtils.getMd5(param.getTargetId() + ":" + StringUtils.appendPath(param.getPath(), param.getName()));
     }
 
     @Override

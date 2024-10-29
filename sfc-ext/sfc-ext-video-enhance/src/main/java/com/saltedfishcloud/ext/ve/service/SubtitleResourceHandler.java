@@ -1,8 +1,10 @@
 package com.saltedfishcloud.ext.ve.service;
 
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
+import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
+import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -12,10 +14,21 @@ import java.util.Objects;
 
 public class SubtitleResourceHandler implements ResourceProtocolHandler {
 
+    @Autowired
+    private ResourceService resourceService;
 
     @Autowired
     private VideoService videoService;
 
+    @Override
+    public String getPathMappingIdentity(ResourceRequest param) {
+        ResourceRequest sourceResourceRequest = videoService.getSourceResourceRequest(param);
+        if (sourceResourceRequest != param) {
+            return resourceService.getResourceHandler(sourceResourceRequest.getProtocol()).getPathMappingIdentity(sourceResourceRequest) + "#" + getProtocolName();
+        } else {
+            return resourceService.getResourceHandler(ResourceProtocol.MAIN).getPathMappingIdentity(param) + "#" + getProtocolName();
+        }
+    }
 
     @Override
     public Resource getFileResource(ResourceRequest param) throws IOException {

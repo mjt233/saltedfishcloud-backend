@@ -3,9 +3,16 @@ package com.xiaotao.saltedfishcloud.service.share;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
+import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
+import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
+import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -22,10 +29,36 @@ public class ShareResourceHandler implements ResourceProtocolHandler, Initializi
     private ResourceService resourceService;
     @Autowired
     private ShareService shareService;
+    @Autowired
+    private NodeService nodeService;
 
     @Override
     public void afterPropertiesSet() throws Exception {
         resourceService.addResourceHandler(this);
+    }
+
+    @Override
+    public String getPathMappingIdentity(ResourceRequest param) {
+        Object vid = param.getParams().get("vid");
+        if (vid == null) {
+            throw new JsonException("缺少参数：vid");
+        }
+        ShareInfo share = shareService.getShare(Long.parseLong(param.getTargetId()), vid.toString());
+
+        String basePath = nodeService.getPathByNode(share.getUid(), share.getParentId());
+        if (share.getType() == ShareType.FILE) {
+            return SecureUtils.getMd5(
+                    share.getUid() + ":" + StringUtils.appendPath(basePath, param.getName())
+            );
+        }
+        return SecureUtils.getMd5(
+                share.getUid() + ":" + StringUtils.appendPath(
+                        basePath,
+                        share.getName(),
+                        param.getPath(),
+                        param.getName()
+                )
+        );
     }
 
     @Override

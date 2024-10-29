@@ -126,11 +126,12 @@ public class VideoService {
     }
 
     /**
-     * 提取资源拓展方法，支持通过sourceProtocol和sourceId获取资源的依赖资源
+     * 获取请求的视频资源的实际资源来源。
+     * @param param 若额外参数中设置了sourceProtocol，则表示指定要提取的视频资源的请求协议，设置sourceId指定要提取的目标资源id。
+     * @return  如果资源请求未指定实际的资源来源，则返回本次请求参数本身
      */
-    public Resource getResource(ResourceRequest param) throws IOException {
+    public ResourceRequest getSourceResourceRequest(ResourceRequest param) {
         String sourceProtocol = param.getParams().get("sourceProtocol");
-        Resource resource;
 
         // 若指定了文件来源协议，则从来源协议处理器中获取资源（如：从文件分享中获取，或是其他拓展的协议）
         if (sourceProtocol != null) {
@@ -146,15 +147,28 @@ public class VideoService {
             nextRequest.setParams(new HashMap<>(param.getParams()));
             nextRequest.setProtocol(sourceProtocol);
             nextRequest.setTargetId(sourceId);
+            return nextRequest;
+        } else {
+            return param;
+        }
+    }
+
+    /**
+     * 提取资源拓展方法，支持通过sourceProtocol和sourceId获取资源的依赖资源
+     */
+    public Resource getResource(ResourceRequest param) throws IOException {
+        ResourceRequest realResourceRequest = getSourceResourceRequest(param);
+
+        // 若指定了文件来源协议，则从来源协议处理器中获取资源（如：从文件分享中获取，或是其他拓展的协议）
+        if (realResourceRequest != param) {
             try {
-                resource = resourceService.getResource(nextRequest);
+                return resourceService.getResource(realResourceRequest);
             } catch (UnsupportedProtocolException e) {
                 throw new RuntimeException(e);
             }
         } else {
-            resource = diskFileSystemManager.getMainFileSystem().getResource(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
+            return diskFileSystemManager.getMainFileSystem().getResource(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
         }
-        return resource;
     }
 
     /**
