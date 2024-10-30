@@ -41,6 +41,7 @@ plugin:
 #    - sfc-ext/sfc-ext-network-tools
     - sfc-ext/sfc-ext-web-shell
     - sfc-ext/sfc-ext-static-publish
+    - sfc-ext/sfc-ext-only-office
 
   # 开发模式下可设置为false 关闭插件前端资源的自动加载
   use-auto-load-resource: false

@@ -36,6 +36,7 @@
         <module>sfc-ext-web-shell</module>
         <module>sfc-ext-static-publish</module>
         <module>sfc-ext-oss-store</module>
+        <module>sfc-ext-only-office</module>
     </modules>
 
 

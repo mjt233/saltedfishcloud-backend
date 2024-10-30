@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>咸鱼云 - Office文档</title>
+    <script th:src="|${property.documentServerHost}/web-apps/apps/api/documents/api.js|"></script>
+    <style>
+        body,html {
+            margin: 0;
+            padding: 0;
+        }
+        #editor {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div style="height: 100vh">
+        <div id="editor"></div>
+    </div>
+
+    <script th:inline="javascript">
+        const config = [[${config}]]
+        new DocsAPI.DocEditor("editor", config)
+        console.log(config)
+    </script>
+</body>
+</html>
