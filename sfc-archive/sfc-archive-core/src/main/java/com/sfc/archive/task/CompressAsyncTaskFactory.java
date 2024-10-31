@@ -1,10 +1,8 @@
 package com.sfc.archive.task;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sfc.archive.ArchiveManager;
-import com.sfc.archive.model.ArchiveParam;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
-import com.sfc.constant.AsyncTaskType;
+import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
 import com.sfc.task.model.AsyncTaskRecord;

@@ -21,10 +21,8 @@ import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +30,12 @@ import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,7 @@ import static com.saltedfishcloud.ext.ve.constant.VEConstants.*;
 
 @Service
 @Slf4j
+@Validated
 public class VideoService {
     @Autowired
     private FFMpegHelper ffMpegHelper;
@@ -58,6 +60,9 @@ public class VideoService {
     @Autowired
     private AsyncTaskManager asyncTaskManager;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     /**
      * 检查配置是否正确
      */
@@ -71,6 +76,26 @@ public class VideoService {
         } catch (IOException e) {
             throw new JsonException("检查失败，错误：" + e.getMessage());
         }
+    }
+
+    /**
+     * 记录观看进度
+     * @param uid       观看用户id
+     * @param identify  视频标识，可通过相同的标识获取进度
+     * @param time      观看进度
+     */
+    public void recordWatchProgress(@UID(value = true) Long uid, String identify, double time) {
+        redisTemplate.opsForValue().set("watch_progress::" + uid + "::" + identify, time, Duration.ofDays(7));
+    }
+
+    /**
+     * 获取观看进度
+     * @param uid       观看用户id
+     * @param identify  视频标识
+     * @return          观看进度，返回null就是没有记录
+     */
+    public Double getWatchProgress(@UID(value = true) Long uid, String identify) {
+        return (Double) redisTemplate.opsForValue().get("watch_progress::" + uid + "::" + identify);
     }
 
     /**
@@ -101,11 +126,12 @@ public class VideoService {
     }
 
     /**
-     * 提取资源拓展方法，支持通过sourceProtocol和sourceId获取资源的依赖资源
+     * 获取请求的视频资源的实际资源来源。
+     * @param param 若额外参数中设置了sourceProtocol，则表示指定要提取的视频资源的请求协议，设置sourceId指定要提取的目标资源id。
+     * @return  如果资源请求未指定实际的资源来源，则返回本次请求参数本身
      */
-    public Resource getResource(ResourceRequest param) throws IOException {
+    public ResourceRequest getSourceResourceRequest(ResourceRequest param) {
         String sourceProtocol = param.getParams().get("sourceProtocol");
-        Resource resource;
 
         // 若指定了文件来源协议，则从来源协议处理器中获取资源（如：从文件分享中获取，或是其他拓展的协议）
         if (sourceProtocol != null) {
@@ -121,15 +147,28 @@ public class VideoService {
             nextRequest.setParams(new HashMap<>(param.getParams()));
             nextRequest.setProtocol(sourceProtocol);
             nextRequest.setTargetId(sourceId);
+            return nextRequest;
+        } else {
+            return param;
+        }
+    }
+
+    /**
+     * 提取资源拓展方法，支持通过sourceProtocol和sourceId获取资源的依赖资源
+     */
+    public Resource getResource(ResourceRequest param) throws IOException {
+        ResourceRequest realResourceRequest = getSourceResourceRequest(param);
+
+        // 若指定了文件来源协议，则从来源协议处理器中获取资源（如：从文件分享中获取，或是其他拓展的协议）
+        if (realResourceRequest != param) {
             try {
-                resource = resourceService.getResource(nextRequest);
+                return resourceService.getResource(realResourceRequest);
             } catch (UnsupportedProtocolException e) {
                 throw new RuntimeException(e);
             }
         } else {
-            resource = diskFileSystemManager.getMainFileSystem().getResource(Integer.parseInt(param.getTargetId()), param.getPath(), param.getName());
+            return diskFileSystemManager.getMainFileSystem().getResource(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
         }
-        return resource;
     }
 
     /**

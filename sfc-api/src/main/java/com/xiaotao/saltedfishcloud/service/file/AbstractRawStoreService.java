@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.sfc.constant.error.CommonError;
-import com.sfc.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;

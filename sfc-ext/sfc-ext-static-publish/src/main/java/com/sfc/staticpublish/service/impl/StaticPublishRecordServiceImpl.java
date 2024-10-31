@@ -1,7 +1,7 @@
 package com.sfc.staticpublish.service.impl;
 
-import com.sfc.common.service.CrudServiceImpl;
-import com.sfc.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.sfc.staticpublish.constants.CacheNames;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.model.property.StaticPublishProperty;

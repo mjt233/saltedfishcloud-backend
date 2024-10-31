@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sfc.enums.PluginLoadType;
-import com.sfc.enums.PluginType;
+import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
+import com.xiaotao.saltedfishcloud.enums.PluginType;
 import lombok.Data;
 import lombok.experimental.Accessors;
 

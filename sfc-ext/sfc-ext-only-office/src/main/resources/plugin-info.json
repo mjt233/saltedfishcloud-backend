@@ -1,0 +1,14 @@
+{
+  "name": "ONLYOFFICE",
+  "loadType": "merge",
+  "author": "xiaotao233",
+  "icon": "mdi-microsoft-office",
+  "email": "mjt233@qq.com",
+  "describe": "为系统提供基于ONLYOFFICE文档服务器的办公文档在线预览和编辑功能",
+  "alias": "Only Office",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^",
+  "autoLoad": [
+    "index.umd.js"
+  ]
+}

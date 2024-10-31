@@ -1,6 +1,6 @@
 package com.sfc.nwt.service;
 
-import com.sfc.common.service.CrudServiceImpl;
+import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
 import com.sfc.nwt.model.po.WolDevice;
 import com.sfc.nwt.repo.WolDeviceRepo;
 import com.sfc.nwt.utils.NetworkUtils;

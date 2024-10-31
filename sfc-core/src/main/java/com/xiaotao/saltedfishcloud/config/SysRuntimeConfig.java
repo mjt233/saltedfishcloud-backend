@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.sfc.constant.MQTopic;
-import com.sfc.enums.ProtectLevel;
-import com.sfc.constant.SysConfigName;
+import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

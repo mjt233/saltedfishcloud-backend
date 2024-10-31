@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.sfc.constant.ResourceProtocol;
-import com.sfc.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
@@ -10,6 +10,7 @@ import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Date;
 import java.util.Objects;
 
@@ -46,11 +46,16 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
             throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
         }
         if (param.getIsThumbnail()) {
-            return fileSystemManager.getMainFileSystem().getThumbnail(Integer.parseInt(param.getTargetId()), param.getPath(), param.getName());
+            return fileSystemManager.getMainFileSystem().getThumbnail(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
         } else {
-            return fileSystemManager.getMainFileSystem().getResource(Integer.parseInt(param.getTargetId()), param.getPath(), param.getName());
+            return fileSystemManager.getMainFileSystem().getResource(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
         }
+    }
 
+    @Override
+    public String getPathMappingIdentity(ResourceRequest param) {
+        UIDValidator.validateWithException(Long.parseLong(param.getTargetId()), true);
+        return SecureUtils.getMd5(param.getTargetId() + ":" + StringUtils.appendPath(param.getPath(), param.getName()));
     }
 
     @Override
@@ -67,7 +72,7 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
      * 校验文件写入参数
      */
     private void validWriteParam(ResourceRequest param) {
-        long uid = Integer.parseInt(param.getTargetId());
+        long uid = Long.parseLong(param.getTargetId());
         User user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
             String createUid = Objects.requireNonNull(param.getParams().get(ResourceRequest.CREATE_UID), "缺失权限上下文会话或创建人id");
@@ -85,7 +90,7 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         }
         validWriteParam(param);
         Date now = new Date();
-        long uid = Integer.parseInt(param.getTargetId());
+        long uid = Long.parseLong(param.getTargetId());
 
         FileInfo fileInfo = new FileInfo();
         fileInfo.setCtime(now.getTime());

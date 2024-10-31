@@ -1,6 +1,6 @@
 package com.sfc.webshell.controller;
 
-import com.sfc.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.sfc.rpc.RPCManager;
 import com.sfc.webshell.constans.WebShellMQTopic;
 import com.sfc.webshell.model.ShellSessionRecord;

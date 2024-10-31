@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem.factory;
 
-import com.sfc.constant.ResourceProtocol;
+import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalDirectRawStoreHandler;

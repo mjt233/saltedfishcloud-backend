@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.ftpserver.core;
 
-import com.sfc.constant.error.ErrorInfo;
+import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

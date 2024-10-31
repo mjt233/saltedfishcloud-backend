@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.sfc.enums.StoreMode;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;

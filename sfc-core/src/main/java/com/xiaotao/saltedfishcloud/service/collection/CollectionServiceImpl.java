@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
-import com.sfc.constant.error.CollectionError;
-import com.sfc.constant.error.CommonError;
-import com.sfc.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionRecordRepo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Date;
 import java.util.Optional;
 

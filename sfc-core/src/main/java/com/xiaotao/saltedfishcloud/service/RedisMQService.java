@@ -2,8 +2,8 @@ package com.xiaotao.saltedfishcloud.service;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.sfc.constant.MQTopic;
-import com.sfc.enums.MQOffsetStrategy;
+import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.enums.MQOffsetStrategy;
 import com.xiaotao.saltedfishcloud.model.MQMessage;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;

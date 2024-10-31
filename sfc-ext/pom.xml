@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>11</java.version>
-        <api.version>2.8.1</api.version>
+        <api.version>2.9.1</api.version>
         <rpc.version>1.0.0</rpc.version>
         <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
@@ -36,6 +36,7 @@
         <module>sfc-ext-web-shell</module>
         <module>sfc-ext-static-publish</module>
         <module>sfc-ext-oss-store</module>
+        <module>sfc-ext-only-office</module>
     </modules>
 
 
@@ -43,12 +44,6 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
-            <version>${api.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-common</artifactId>
             <version>${api.version}</version>
             <scope>provided</scope>
         </dependency>

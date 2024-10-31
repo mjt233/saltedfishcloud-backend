@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.service;
 
-import com.sfc.common.service.CrudServiceImpl;
-import com.sfc.constant.CacheNames;
+import com.xiaotao.saltedfishcloud.constant.CacheNames;
 import com.xiaotao.saltedfishcloud.dao.jpa.ProxyInfoRepo;
 import com.xiaotao.saltedfishcloud.download.IgnoreSSLHttpRequestFactory;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
 import java.util.Optional;
 
 @Service

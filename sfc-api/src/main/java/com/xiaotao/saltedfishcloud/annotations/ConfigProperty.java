@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.annotations;
 
+import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
+
 import java.lang.annotation.*;
 
 /**
@@ -62,12 +64,12 @@ public @interface ConfigProperty {
     boolean isRow() default false;
 
     /**
-     * 当{@link #inputType()}为{@link com.sfc.constant.ConfigInputType#TEMPLATE}时，使用的模板组件
+     * 当{@link #inputType()}为{@link ConfigInputType#TEMPLATE}时，使用的模板组件
      */
     String template() default "";
 
     /**
-     * 当{@link #inputType()}为{@link com.sfc.constant.ConfigInputType#TEMPLATE}时，给模板传入的参数json
+     * 当{@link #inputType()}为{@link ConfigInputType#TEMPLATE}时，给模板传入的参数json
      */
     String templateParams() default "{}";
 

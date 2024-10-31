@@ -1,6 +1,6 @@
 package com.sfc.webshell.service.impl;
 
-import com.sfc.common.service.CrudServiceImpl;
+import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
 import com.sfc.webshell.model.po.ShellExecuteRecord;
 import com.sfc.webshell.repo.ShellExecuteRecordRepo;
 import com.sfc.webshell.service.ShellExecuteRecordService;
