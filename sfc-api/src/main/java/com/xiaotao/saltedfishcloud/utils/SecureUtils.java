@@ -72,7 +72,6 @@ public class SecureUtils {
     public static Long getCurrentUid() {
         return Optional.ofNullable(getSpringSecurityUser())
                 .map(User::getId)
-                .map(Long::valueOf)
                 .orElse(null);
     }
     
