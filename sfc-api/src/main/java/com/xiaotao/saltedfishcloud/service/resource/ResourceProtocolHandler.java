@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.resource;
 
+import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import org.springframework.core.io.Resource;
 
@@ -10,6 +11,13 @@ import java.io.IOException;
  * 资源协议操作器，用于统一各个文件资源的操作。
  */
 public interface ResourceProtocolHandler {
+
+    /**
+     * 获取请求资源的权限信息
+     * @param param 资源请求参数
+     * @return      权限信息
+     */
+    PermissionInfo getPermissionInfo(ResourceRequest param);
 
     /**
      * 根据参数获取文件资源

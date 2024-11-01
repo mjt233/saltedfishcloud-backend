@@ -1,6 +1,7 @@
 package com.saltedfishcloud.ext.ve.service;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
+import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
@@ -34,6 +35,17 @@ public class VideoInfoResourceHandler implements ResourceProtocolHandler {
         Resource resource = videoService.getResource(param);
         return ResourceUtils.stringToResource(MapperHolder.toJson(videoService.getVideoInfo(resource)))
                 .setContentType("application/json;charset=utf-8");
+    }
+
+    @Override
+    public PermissionInfo getPermissionInfo(ResourceRequest param) {
+        PermissionInfo permissionInfo = resourceService.getResourceHandler(param.getProtocol())
+                .getPermissionInfo(videoService.getSourceResourceRequest(param));
+        return PermissionInfo.builder()
+                .isReadable(permissionInfo.isReadable())
+                .isWritable(false)
+                .ownerUid(permissionInfo.getOwnerUid())
+                .build();
     }
 
     @Override

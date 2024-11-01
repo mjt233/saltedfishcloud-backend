@@ -11,9 +11,11 @@ import com.onlyoffice.model.documenteditor.config.document.Type;
 import com.onlyoffice.model.documenteditor.config.editorconfig.Mode;
 import com.onlyoffice.service.documenteditor.config.ConfigService;
 import com.sfc.onlyoffice.model.OfficeConfigProperty;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
+import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
@@ -70,19 +72,26 @@ public class OfficeService {
         if (!StringUtils.hasText(officeConfigProperty.getDocumentServerHost())) {
             throw new JsonException("未配置文档服务器信息，请联系管理员");
         }
-        // 校验文件是否存在，并校验权限（权限不足时该方法会抛异常）
+        // 校验文件是否存在，并校验权限（读取权限不足时该方法会抛异常）
         if (resourceService.getResource(resourceRequest) == null) {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
 
-        // 校验编辑权限
-        // todo 支持根据请求具体的资源进行校验，在打开编辑器之前进行阻止
-        if(!isView && !resourceService.getResourceHandler(resourceRequest.getProtocol()).isWriteable()) {
-            throw new JsonException("该文件不支持编辑或权限不足");
+        // 校验编辑权限，需要有写入权限
+        ResourceProtocolHandler resourceHandler = resourceService.getResourceHandler(resourceRequest.getProtocol());
+        if(!isView) {
+            if(!resourceHandler.isWriteable()) {
+                throw new JsonException("该文件不支持编辑");
+            }
+            PermissionInfo permissionInfo = resourceHandler
+                    .getPermissionInfo(resourceRequest);
+            if (permissionInfo == null || !permissionInfo.isWritable()) {
+                throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+            }
         }
 
         // 获取请求资源的路径唯一标识，确保文件通过文件分享、网盘直接访问的情况下都能指向相同的标识。
-        String identity = resourceService.getResourceHandler(resourceRequest.getProtocol()).getPathMappingIdentity(resourceRequest);
+        String identity = resourceHandler.getPathMappingIdentity(resourceRequest);
         Config config = configService.createConfig(identity, Mode.EDIT, Type.DESKTOP);
 
         String urlPrefix = StringUtils.hasText(officeConfigProperty.getFileServerHost()) ?
@@ -154,7 +163,13 @@ public class OfficeService {
         // 校验资源能否修改
         ResourceProtocolHandler resourceHandler = resourceService.getResourceHandler(resourceRequest.getProtocol());
         if (!resourceHandler.isWriteable()) {
-            throw new JsonException("该资源不可修改");
+            throw new JsonException("该文件不支持编辑");
+        }
+        Boolean isWritable = Optional.ofNullable(resourceHandler.getPermissionInfo(resourceRequest))
+                .map(PermissionInfo::isWritable)
+                .orElse(false);
+        if (isWritable) {
+            throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
         }
 
         // 保存ONLYOFFICE响应的文件

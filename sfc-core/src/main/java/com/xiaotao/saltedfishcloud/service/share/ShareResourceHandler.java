@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.share;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
@@ -19,6 +20,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * 为统一资源访问接口添加文件分享的资源支持
@@ -35,6 +37,20 @@ public class ShareResourceHandler implements ResourceProtocolHandler, Initializi
     @Override
     public void afterPropertiesSet() throws Exception {
         resourceService.addResourceHandler(this);
+    }
+
+    @Override
+    public PermissionInfo getPermissionInfo(ResourceRequest param) {
+        Object vid = param.getParams().get("vid");
+        if (vid == null) {
+            throw new JsonException("缺少参数：vid");
+        }
+        ShareInfo share = shareService.getShare(Long.parseLong(param.getTargetId()), vid.toString());
+        return PermissionInfo.builder()
+                .isWritable(false)
+                .isReadable(true)
+                .ownerUid(Optional.ofNullable(share).map(ShareInfo::getUid).orElse(null))
+                .build();
     }
 
     @Override

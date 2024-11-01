@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 主文件系统的资源协议操作器，提供从主文件系统中获取文件及其缩略图。
@@ -38,6 +40,16 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
     @Override
     public void afterPropertiesSet() throws Exception {
         resourceService.addResourceHandler(this);
+    }
+
+    @Override
+    public PermissionInfo getPermissionInfo(ResourceRequest param) {
+        long targetId = Long.parseLong(param.getTargetId());
+        return PermissionInfo.builder()
+                .ownerUid(targetId)
+                .isReadable(UIDValidator.validate(targetId, false))
+                .isWritable(UIDValidator.validate(targetId, true))
+                .build();
     }
 
     @Override
