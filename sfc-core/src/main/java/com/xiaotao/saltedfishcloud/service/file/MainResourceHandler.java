@@ -54,7 +54,6 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
 
     @Override
     public String getPathMappingIdentity(ResourceRequest param) {
-        UIDValidator.validateWithException(Long.parseLong(param.getTargetId()), true);
         return SecureUtils.getMd5(param.getTargetId() + ":" + StringUtils.appendPath(param.getPath(), param.getName()));
     }
 
