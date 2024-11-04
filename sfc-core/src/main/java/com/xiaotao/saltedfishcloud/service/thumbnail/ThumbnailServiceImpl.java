@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
 @Service
-@Primary
 @Slf4j
 public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner {
     private final static String LOG_TITLE = "[Thumbnail]";
@@ -105,7 +104,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
                 }
             } catch (Exception e) {
                 tempHandler.delete(thumbnailPath);
-                e.printStackTrace();
+                log.error("缩略图生成异常, id:{} ",id, e);
             }
 
             return tempHandler.getResource(thumbnailPath);
