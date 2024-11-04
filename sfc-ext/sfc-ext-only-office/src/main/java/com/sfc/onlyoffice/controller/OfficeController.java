@@ -59,12 +59,12 @@ public class OfficeController {
             ModelAndView modelAndView = new ModelAndView();
             modelAndView.addObject("property", officeConfigProperty);
             modelAndView.addObject("config", config);
-            modelAndView.setViewName("office-editor");
+            modelAndView.setViewName("only-office-templates/office-editor");
             return modelAndView;
         } catch (Throwable throwable) {
             ModelAndView modelAndView = new ModelAndView();
             modelAndView.addObject("errMsg", throwable.getMessage());
-            modelAndView.setViewName("office-error");
+            modelAndView.setViewName("only-office-templates/office-error");
             if (!(throwable instanceof JsonException)) {
                 log.error("编辑器加载失败", throwable);
             }

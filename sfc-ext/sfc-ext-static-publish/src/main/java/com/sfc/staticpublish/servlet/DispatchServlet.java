@@ -20,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.util.StreamUtils;
 import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.TemplateSpec;
 import org.thymeleaf.context.Context;
 
 import javax.servlet.ServletException;
@@ -254,7 +255,7 @@ public class DispatchServlet extends HttpServlet {
         context.setVariable("parentUri", parentUri);
         context.setVariable("errorMessage", e.getMessage());
         context.setVariable("uri", "/".equals(req.getRequestURI()) ? "" : req.getRequestURI());
-        templateEngine.process("staticSiteInternalError", context, writer);
+        templateEngine.process("static-publish-templates/staticSiteInternalError", context, writer);
     }
 
     /**
@@ -305,7 +306,7 @@ public class DispatchServlet extends HttpServlet {
             isRoot = uri.length() == 0 || uri.equals("/" + record.getSiteName());
         }
         context.setVariable("isRoot", isRoot);
-        String res = templateEngine.process("dirFileList", context);
+        String res = templateEngine.process("static-publish-templates/dirFileList", context);
         resp.getWriter().println(res);
     }
 
