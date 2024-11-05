@@ -7,9 +7,9 @@ import lombok.Data;
 @Data
 @ConfigPropertyEntity
 public class GithubPlatformProperty {
-    @ConfigProperty(required = true, isRow = true, value = "clientId")
+    @ConfigProperty(value = "clientId")
     private String clientId;
 
-    @ConfigProperty(required = true, isRow = true, value = "clientSecret")
+    @ConfigProperty(value = "clientSecret")
     private String clientSecret;
 }
