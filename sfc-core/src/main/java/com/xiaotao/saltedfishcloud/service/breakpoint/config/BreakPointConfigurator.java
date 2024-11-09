@@ -20,7 +20,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @Configuration
 @RequiredArgsConstructor
 public class BreakPointConfigurator implements InitializingBean {
-    private final RequestMappingHandlerMapping mapping;
+    private final RequestMappingHandlerMapping requestMappingHandlerMapping;
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -33,7 +33,7 @@ public class BreakPointConfigurator implements InitializingBean {
     @Bean
     @ConditionalOnMissingBean(MappingInitializer.class)
     public MappingInitializer mappingInitializer() throws NoSuchMethodException {
-        return new MappingInitializer(controller(), mapping);
+        return new MappingInitializer(controller(), requestMappingHandlerMapping);
     }
 
     /**

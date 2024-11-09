@@ -5,7 +5,7 @@
     <parent>
         <artifactId>saltedfishcloud</artifactId>
         <groupId>com.xiaotao</groupId>
-        <version>2.9.1</version>
+        <version>3.0.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -19,8 +19,8 @@
     </modules>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
         <task.version>1.0.0</task.version>
     </properties>
 

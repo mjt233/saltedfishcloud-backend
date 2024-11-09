@@ -4,8 +4,8 @@ import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.http.HttpMethod;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.Map;
 
 /**
@@ -37,8 +37,9 @@ public class DownloadTaskParams {
 
     /**
      * 请求方法
+     * @see org.springframework.http.HttpHeaders
      */
-    public HttpMethod method = HttpMethod.GET;
+    public String method = HttpMethod.GET.name();
 
     /**
      * 使用的代理（在代理服务中配置的代理名称）

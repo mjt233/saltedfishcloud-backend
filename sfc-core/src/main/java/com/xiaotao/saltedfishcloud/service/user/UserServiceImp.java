@@ -29,8 +29,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.mail.MessagingException;
-import javax.validation.Valid;
+import jakarta.mail.MessagingException;
+import jakarta.validation.Valid;
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.*;

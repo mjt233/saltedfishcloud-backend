@@ -13,8 +13,8 @@ import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.InvocationHandler;
+import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.cglib.proxy.InvocationHandler;
 
 import java.lang.reflect.Method;
 import java.util.*;

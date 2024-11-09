@@ -7,7 +7,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.springframework.security.util.FieldUtils;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SnowFlakeIdGenerator implements IdentifierGenerator {
     private final Map<Class<?>, String> classIdCache = new ConcurrentHashMap<>();
     @Override
-    public Serializable generate(SharedSessionContractImplementor sharedSessionContractImplementor, Object o) throws HibernateException {
+    public Serializable generate(SharedSessionContractImplementor sharedSessionContractImplementor, Object o) {
         Serializable originId;
         if (o instanceof BaseModel) {
             originId = ((BaseModel) o).getId();

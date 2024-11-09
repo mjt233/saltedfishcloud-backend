@@ -9,8 +9,8 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import javax.annotation.security.RolesAllowed;
+import jakarta.annotation.Resource;
+import jakarta.annotation.security.RolesAllowed;
 import java.util.LinkedHashMap;
 import java.util.List;
 

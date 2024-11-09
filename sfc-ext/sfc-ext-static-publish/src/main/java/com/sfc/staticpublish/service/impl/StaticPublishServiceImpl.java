@@ -28,7 +28,7 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;

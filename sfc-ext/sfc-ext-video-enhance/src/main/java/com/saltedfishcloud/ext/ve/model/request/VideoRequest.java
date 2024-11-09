@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 import lombok.Data;
 import org.springframework.validation.annotation.Validated;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 @Data
 @Validated

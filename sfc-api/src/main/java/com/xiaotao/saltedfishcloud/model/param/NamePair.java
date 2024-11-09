@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.model.param;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import lombok.Data;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 
 @Data
 public class NamePair {

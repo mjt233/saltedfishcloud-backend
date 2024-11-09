@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 
 @SpringBootTest

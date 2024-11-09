@@ -2,8 +2,8 @@ package com.xiaotao.saltedfishcloud.validator;
 
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.util.regex.Pattern;
 
 public class UsernameValidator implements ConstraintValidator<Username, CharSequence> {

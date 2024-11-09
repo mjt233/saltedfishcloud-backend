@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.manager.TaskManager;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.NoSuchFileException;
@@ -19,7 +20,7 @@ public class BreakPointControllerImpl implements BreakPointController {
     }
 
     @Override
-    public Object uploadPart(MultipartFile file, String id, String part) throws Exception {
+    public Object uploadPart(@RequestParam("file") MultipartFile file, String id, String part) throws Exception {
         manager.save(id, part, file.getInputStream());
         return JsonResult.emptySuccess();
     }

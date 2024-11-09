@@ -8,11 +8,11 @@ import com.sfc.webshell.service.ShellExecuteService;
 import com.sfc.webshell.model.ShellExecuteResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.security.RolesAllowed;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Min;
 import java.io.IOException;
 import java.util.List;
 

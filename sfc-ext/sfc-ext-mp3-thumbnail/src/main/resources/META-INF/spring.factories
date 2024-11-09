@@ -1,2 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.xiaotao.saltedfishcloud.ext.mp3thumbnail.config.Mp3ThumbnailAutoConfiguration

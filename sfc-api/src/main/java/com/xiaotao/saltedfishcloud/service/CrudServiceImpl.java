@@ -16,7 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import reactor.util.function.Tuple2;
 
-import javax.persistence.Transient;
+import jakarta.persistence.Transient;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiConsumer;

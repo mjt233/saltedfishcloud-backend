@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 import org.hibernate.annotations.Proxy;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Date;
 
 /**
@@ -36,7 +36,7 @@ public class AsyncTaskRecord extends AuditModel {
     /**
      * 任务的创建参数
      */
-    @Column(columnDefinition = "LONGTEXT COMMENT '任务参数'")
+    @Lob
     private String params;
 
     /**

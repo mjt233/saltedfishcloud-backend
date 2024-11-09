@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Getter
 @Setter

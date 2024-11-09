@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.download.model;
 
 import com.sfc.task.model.AsyncTaskRecord;
-import lombok.Data;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
@@ -11,8 +11,7 @@ import org.hibernate.annotations.Proxy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.Date;
 
 @Setter
@@ -43,7 +42,7 @@ public class DownloadTaskInfo {
     @Enumerated(EnumType.STRING)
     private State state = State.WAITING;
 
-    @Column(columnDefinition = "text")
+    @Lob
     private String message;
 
     private long loaded;

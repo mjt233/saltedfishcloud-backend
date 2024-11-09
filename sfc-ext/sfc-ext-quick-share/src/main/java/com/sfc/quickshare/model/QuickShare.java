@@ -4,10 +4,10 @@ import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 import org.hibernate.validator.constraints.Length;
 
-import javax.persistence.Entity;
-import javax.persistence.Index;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity

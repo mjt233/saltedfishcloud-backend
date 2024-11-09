@@ -165,7 +165,7 @@ public class QuickShareService {
 
             // 从数据库中移除删除的记录
             if (!successList.isEmpty()) {
-                repo.deleteInBatch(successList);
+                repo.deleteAllInBatch(successList);
             }
 
         }

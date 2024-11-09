@@ -20,6 +20,7 @@ import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Setter;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -229,7 +230,7 @@ public class DownloadAsyncTask implements AsyncTask {
     private void startDownload() {
         restTemplate.execute(
                 params.url,
-                params.method,
+                HttpMethod.valueOf(params.method),
                 restTemplate.httpEntityCallback(new HttpEntity<>(headers)),
                 response -> {
                     // 文件名探测
