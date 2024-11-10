@@ -1,5 +1,5 @@
 # 创建编译构建环境
-FROM maven:latest AS build
+FROM maven:3.8.8-amazoncorretto-17-al2023 AS build
 
 WORKDIR /saltedfish
 
@@ -9,7 +9,7 @@ COPY . /saltedfish
 
 RUN mvn install package
 
-FROM openjdk:11-jre-alpine
+FROM openjdk:17-ea-slim
 
 WORKDIR /saltedfish
 

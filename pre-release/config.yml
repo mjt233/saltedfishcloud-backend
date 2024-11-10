@@ -9,9 +9,10 @@ spring:
     url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
     username: root
     password: test
-  redis:
-    host: 127.0.0.1
-    port: 6379
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
 #    database: 0
 #    password:
 
