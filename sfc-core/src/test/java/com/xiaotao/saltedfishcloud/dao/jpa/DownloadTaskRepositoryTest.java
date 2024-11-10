@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

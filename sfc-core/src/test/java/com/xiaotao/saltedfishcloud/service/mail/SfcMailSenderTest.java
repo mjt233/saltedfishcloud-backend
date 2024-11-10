@@ -6,7 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 
-import javax.mail.MessagingException;
+import jakarta.mail.MessagingException;
 import java.io.UnsupportedEncodingException;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;

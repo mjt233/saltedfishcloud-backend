@@ -5,8 +5,8 @@ import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Date;
 import java.util.List;
 

@@ -11,7 +11,7 @@ public interface BreakPointController {
 
     @ResponseBody
     @PostMapping
-    Object uploadPart(MultipartFile file, @PathVariable String id, @PathVariable String part) throws Exception;
+    Object uploadPart(@RequestParam("file") MultipartFile file, @PathVariable String id, @PathVariable String part) throws Exception;
 
     /**
      * 创建断点续传任务

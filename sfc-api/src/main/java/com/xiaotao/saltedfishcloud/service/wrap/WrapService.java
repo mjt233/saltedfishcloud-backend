@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.wrap;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 

@@ -21,7 +21,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -29,6 +28,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Indexed;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import javax.annotation.Nonnull;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.function.Supplier;
@@ -72,6 +72,7 @@ public class SaltedfishcloudApplication {
 
         try {
             // 启动
+            System.out.println(Nonnull.class);
             ConfigurableApplicationContext context = getLaunchFactory().get().run(args);
             // 记录上下文
             SpringContextUtils.setContext(context);

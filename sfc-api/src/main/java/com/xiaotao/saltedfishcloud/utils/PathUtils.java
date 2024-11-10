@@ -38,13 +38,28 @@ public class PathUtils {
     }
 
     /**
+     * 检查临时目录是否存在，不存在则创建
+     */
+    private static void checkAndCreateTempPath() {
+        if (!Files.exists(TEMP_PATH)) {
+            try {
+                Files.createDirectories(TEMP_PATH);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
      * 获取系统临时目录
      */
     public static String getTempDirectory() {
+        checkAndCreateTempPath();
         return TEMP_PATH_STR;
     }
 
     public static Path getTempPath() {
+        checkAndCreateTempPath();
         return TEMP_PATH;
     }
 

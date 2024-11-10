@@ -8,8 +8,8 @@ import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import javax.annotation.security.RolesAllowed;
+import jakarta.annotation.Resource;
+import jakarta.annotation.security.RolesAllowed;
 import java.io.IOException;
 import java.util.List;
 

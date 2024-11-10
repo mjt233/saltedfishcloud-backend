@@ -25,7 +25,7 @@ public class QuickShareController {
     @PostMapping("upload")
     @BreakPoint
     @AllowAnonymous
-    public JsonResult upload(@MergeFile MultipartFile file, QuickShare quickShare) throws IOException {
+    public JsonResult upload(@MergeFile @RequestParam("file") MultipartFile file, QuickShare quickShare) throws IOException {
         String code = quickShareService.saveTempFile(file.getResource(), quickShare);
         return JsonResultImpl.getInstance(code);
     }

@@ -3,8 +3,8 @@ package com.xiaotao.saltedfishcloud.utils;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;

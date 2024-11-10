@@ -2,9 +2,9 @@ package com.xiaotao.saltedfishcloud.model;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 
-import javax.persistence.Entity;
-import javax.persistence.Index;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 
 /**
  * 用户自定义属性。用于将敏感数据封装为一个关联数据，以便在前端通过组件进行网络请求和传输而不暴露关键参数。

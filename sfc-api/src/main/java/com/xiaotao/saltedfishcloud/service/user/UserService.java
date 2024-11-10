@@ -7,8 +7,8 @@ import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import org.springframework.validation.annotation.Validated;
 
-import javax.mail.MessagingException;
-import javax.validation.Valid;
+import jakarta.mail.MessagingException;
+import jakarta.validation.Valid;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;

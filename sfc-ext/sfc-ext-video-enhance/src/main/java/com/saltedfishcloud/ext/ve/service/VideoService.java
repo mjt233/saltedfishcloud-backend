@@ -216,10 +216,10 @@ public class VideoService {
                 .build();
         record.setUid(uid);
 
-        asyncTaskManager.submitAsyncTask(record);
 
         taskPo.setAsyncTaskRecord(record);
         taskPo.setUid(uid);
+        asyncTaskManager.submitAsyncTask(record);
         encodeConvertTaskRepo.save(taskPo);
         return record.getId() + "";
     }

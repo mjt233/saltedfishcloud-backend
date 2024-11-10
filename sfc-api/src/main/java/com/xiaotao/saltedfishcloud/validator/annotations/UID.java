@@ -3,8 +3,8 @@ package com.xiaotao.saltedfishcloud.validator.annotations;
 
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 
-import javax.validation.Constraint;
-import javax.validation.Payload;
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
 import java.lang.annotation.*;
 
 /**
