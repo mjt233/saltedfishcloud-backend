@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -13,7 +14,26 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import javax.sql.DataSource;
 import java.util.List;
 
+@Slf4j
 public class VersionCheckInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+
+    private boolean isTableNotExist(BadSqlGrammarException e) {
+        int maxDepth = 10;
+        Throwable throwable = e;
+        do {
+            if (throwable.getMessage() != null && throwable.getMessage().contains("doesn't exist")) {
+                return true;
+            }
+            throwable = throwable.getCause();
+            maxDepth--;
+            if (maxDepth < 0) {
+                log.error("检查版本出错，SQL异常嵌套超过了10层", e);
+                return false;
+            }
+        } while (throwable != null);
+        return false;
+    }
+
     @Override
     public void initialize(@NotNull ConfigurableApplicationContext applicationContext) {
         applicationContext.getBeanFactory().addBeanPostProcessor(new BeanPostProcessor() {
@@ -31,7 +51,7 @@ public class VersionCheckInitializer implements ApplicationContextInitializer<Co
                     }
                 } catch (BadSqlGrammarException e) {
                     // 新初始化的系统没有表，忽略
-                    if (e.getMessage() != null && e.getMessage().contains("doesn't exist")) {
+                    if (isTableNotExist(e)){
                         return null;
                     }
                     throw e;
