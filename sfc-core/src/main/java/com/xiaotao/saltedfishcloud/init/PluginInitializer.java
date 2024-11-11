@@ -4,10 +4,7 @@ import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
 import com.xiaotao.saltedfishcloud.ext.*;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
-import com.xiaotao.saltedfishcloud.utils.ExtUtils;
-import com.xiaotao.saltedfishcloud.utils.OSInfo;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.PoolUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationContextInitializer;
@@ -16,10 +13,13 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.util.StreamUtils;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -31,7 +31,9 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
 
 @Slf4j
 public class PluginInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
@@ -206,17 +208,56 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
                     classpathRoot = url.getPath();
                 }
                 pluginResourceList.add(Tuples.of(resource, () -> new DirPathClassLoader(Paths.get(classpathRoot).getParent())));
-            } else if (classpath.startsWith("jar:")) {
+            } else if (classpath.startsWith("jar:nested:")) {
+                // todo 感觉没太大必要作为独立的内置jar插件，可以考虑下作为sfc-core的子模块，打包后直接和sfc-core一起就好了，后面再看下怎么处理
+                // 原始URL jar:nested:/xxx/sfc-core.jar/!BOOT-INF/lib/sfc-task-core-1.0.0.jar!/plugin-info.json
+
                 // 处理jar包作为classpath发现的资源
-                String strUrl = url.toString();
-                String jarUrl;
-                int jarIndex = strUrl.lastIndexOf("!/");
-                if (jarIndex != -1) {
-                    jarUrl = strUrl.substring(0, jarIndex);
+                String pluginInfoOriginUrl = url.toString();
+                // jar:nested:/xxx/sfc-core.jar/!BOOT-INF/lib/sfc-task-core-1.0.0.jar!/plugin-info.json
+                int nestedIdx = pluginInfoOriginUrl.lastIndexOf("!/");
+                if (nestedIdx != -1) {
+                    // jar:nested:/xxx/sfc-core.jar/!BOOT-INF/lib/sfc-task-core-1.0.0.jar
+                    String jarUrl = pluginInfoOriginUrl.substring(0, nestedIdx);
                     log.info("{}加载classpath中的jar包插件：{}",LOG_PREFIX, jarUrl);
-                    pluginResourceList.add(Tuples.of(new UrlResource(jarUrl), () -> null));
+
+                    // 子模块如sfc-task-core作为插件时，是内嵌在sfc-core下的，需要先单独提取出来
+                    nestedIdx = jarUrl.lastIndexOf("!");
+                    if (nestedIdx != -1) {
+
+                        // BOOT-INF/lib/sfc-task-core-1.0.0.jar
+                        String nestedJarName = jarUrl.substring(nestedIdx + 1);
+                        Path extraPath = Paths.get("ext")
+                                .resolve("nested")
+                                .resolve(PathUtils.getLastNode(jarUrl));
+                        FileUtils.createParentDirectory(extraPath);
+                        log.info("{}提取内嵌的插件jar包: {} => {}", LOG_PREFIX, jarUrl, extraPath);
+
+
+                        // 提取到ext/nested/下
+                        Path jarFilePath = Paths.get(jarUrl.substring(0, nestedIdx - 1).replaceFirst(OSInfo.isWindows() ? "jar:nested:/" : "jar:nested:", ""));
+                        try (JarFile parentJarFile = new JarFile(jarFilePath.toFile());
+                             InputStream is = parentJarFile.getInputStream(new ZipEntry(nestedJarName));
+                             OutputStream os = Files.newOutputStream(extraPath)
+                        ) {
+                                StreamUtils.copy(is, os);
+                        }
+                        pluginResourceList.add(Tuples.of(new UrlResource(extraPath.toUri().toURL()), () -> null));
+                    } else {
+                        log.warn("{}不支持从该URL中加载插件jar：{}",LOG_PREFIX, url);
+                    }
                 }
 
+            } else if (classpath.startsWith("jar:")) {
+                String pluginInfoOriginUrl = url.toString();
+                int nestedIdx = pluginInfoOriginUrl.lastIndexOf("!/");
+                if (nestedIdx != -1) {
+                    // jar:nested:/xxx/sfc-core.jar/!BOOT-INF/lib/sfc-task-core-1.0.0.jar
+                    String jarUrl = pluginInfoOriginUrl.substring(0, nestedIdx);
+                    pluginResourceList.add(Tuples.of(new UrlResource(jarUrl), () -> null));
+                } else {
+                    log.warn("{}不支持从该URL中加载插件jar：{}",LOG_PREFIX, url);
+                }
             } else {
                 log.warn("{}不支持从该URL中加载插件jar：{}",LOG_PREFIX, url);
             }
