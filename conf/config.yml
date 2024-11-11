@@ -11,10 +11,11 @@ spring:
       url: jdbc:mysql://${DB_HOST}/${DB_NAME}?useSSL=false&serverTimezone=UTC
       username: ${DB_USER:root}
       password: ${DB_PASSWORD:test}
-  redis:
-    host: ${REDIS_HOST:127.0.0.1}
-    port: ${REDIS_PORT:6379}
-    database: ${REDIS_DB:0}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:0}
 #    password:
 
 sys:

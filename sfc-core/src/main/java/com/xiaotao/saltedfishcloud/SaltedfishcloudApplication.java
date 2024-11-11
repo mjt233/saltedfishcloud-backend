@@ -72,7 +72,6 @@ public class SaltedfishcloudApplication {
 
         try {
             // 启动
-            System.out.println(Nonnull.class);
             ConfigurableApplicationContext context = getLaunchFactory().get().run(args);
             // 记录上下文
             SpringContextUtils.setContext(context);
