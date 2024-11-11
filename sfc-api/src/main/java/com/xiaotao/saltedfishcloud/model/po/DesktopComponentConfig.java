@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import javax.persistence.Entity;
 import javax.persistence.Index;
+import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
@@ -30,6 +31,7 @@ public class DesktopComponentConfig extends AuditModel {
     /**
      * 组件参数json
      */
+    @Lob
     private String params;
 
     /**

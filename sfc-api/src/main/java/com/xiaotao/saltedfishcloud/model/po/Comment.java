@@ -7,6 +7,7 @@ import org.hibernate.annotations.SQLDelete;
 
 import javax.persistence.Entity;
 import javax.persistence.Index;
+import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
@@ -26,6 +27,7 @@ public class Comment extends AuditModel {
 
     private String ip;
 
+    @Lob
     private String content;
 
     private Integer isDelete = 0;

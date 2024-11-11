@@ -5,6 +5,7 @@ import lombok.*;
 
 import javax.persistence.Entity;
 import javax.persistence.Index;
+import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
@@ -25,5 +26,6 @@ public class EncodeConvertTaskLog extends BaseModel {
     /**
      * 任务日志消息
      */
+    @Lob
     private String taskLog;
 }

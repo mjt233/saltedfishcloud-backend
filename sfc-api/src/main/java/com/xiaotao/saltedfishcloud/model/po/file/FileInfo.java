@@ -12,10 +12,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.persistence.Entity;
-import javax.persistence.Index;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,6 +41,7 @@ public class FileInfo extends AuditModel {
     /**
      * 文件所在目录节点
      */
+    @Column(length = 32)
     private String node;
 
     /**
@@ -59,6 +57,7 @@ public class FileInfo extends AuditModel {
     /**
      * 文件名
      */
+    @Column(length = 512)
     private String name;
 
     /**
