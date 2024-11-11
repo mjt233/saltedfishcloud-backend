@@ -35,6 +35,7 @@ public class DownloadTaskInfo {
     private long uid;
 
     @NotEmpty
+    @Lob
     private String url;
 
     private String proxy;
