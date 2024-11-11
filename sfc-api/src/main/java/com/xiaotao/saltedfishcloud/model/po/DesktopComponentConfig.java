@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.constant.ComponentType;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import jakarta.persistence.Lob;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,6 +31,7 @@ public class DesktopComponentConfig extends AuditModel {
     /**
      * 组件参数json
      */
+    @Lob
     private String params;
 
     /**

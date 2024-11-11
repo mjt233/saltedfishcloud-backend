@@ -1,6 +1,7 @@
 package com.saltedfishcloud.ext.ve.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
+import jakarta.persistence.Lob;
 import lombok.*;
 
 import jakarta.persistence.Entity;
@@ -25,5 +26,6 @@ public class EncodeConvertTaskLog extends BaseModel {
     /**
      * 任务日志消息
      */
+    @Lob
     private String taskLog;
 }

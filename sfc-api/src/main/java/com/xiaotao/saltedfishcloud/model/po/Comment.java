@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import jakarta.persistence.Lob;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
@@ -26,6 +27,7 @@ public class Comment extends AuditModel {
 
     private String ip;
 
+    @Lob
     private String content;
 
     private Integer isDelete = 0;
