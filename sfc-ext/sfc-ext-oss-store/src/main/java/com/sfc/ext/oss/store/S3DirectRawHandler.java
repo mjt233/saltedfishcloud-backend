@@ -111,7 +111,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
                     fileInfo.setName(fileName);
                     fileInfo.setSize(obj.getSize());
                     fileInfo.setMtime(obj.getLastModified().getTime());
-                    fileInfo.setMount(true);
+                    fileInfo.setIsMount(true);
                     fileInfo.setMd5(obj.getETag().toLowerCase());
                     return fileInfo;
                 });
@@ -168,7 +168,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
         fileInfo.setType(isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
         fileInfo.setMd5(isDir ? null : objectMetadata.getETag().toLowerCase());
         fileInfo.setMtime(objectMetadata.getLastModified().getTime());
-        fileInfo.setMount(true);
+        fileInfo.setIsMount(true);
 
         if (!isDir) {
             fileInfo.setStreamSource(() -> getObjectUrlSupplier(objectKey).get().openStream());

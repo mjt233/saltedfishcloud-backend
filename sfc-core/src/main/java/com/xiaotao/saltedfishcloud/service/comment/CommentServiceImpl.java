@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.comment;
 
-import com.sfc.constant.FeatureName;
+import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.dao.jpa.CommentRepo;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.po.Comment;

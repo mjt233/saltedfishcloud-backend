@@ -1,0 +1,26 @@
+[
+  {
+    "name": "onlyoffice",
+    "title": "插件配置",
+    "describe": "office插件配置",
+    "defaultValue": "{}",
+    "typeRef": "com.sfc.onlyoffice.model.OfficeConfigProperty"
+  },
+  {
+    "name": "onlyoffice-help",
+    "title": "帮助",
+    "nodes": [
+      {
+        "nodes": [
+          {
+            "name": "onlyoffice-help",
+            "title": "ONLYOFFICE使用帮助",
+            "inputType": "template",
+            "template": "only-office-help",
+            "defaultValue": ""
+          }
+        ]
+      }
+    ]
+  }
+]

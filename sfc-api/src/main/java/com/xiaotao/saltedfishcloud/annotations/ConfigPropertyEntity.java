@@ -1,9 +1,11 @@
 package com.xiaotao.saltedfishcloud.annotations;
 
+import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
+
 import java.lang.annotation.*;
 
 /**
- * 配置参数实体类
+ * 配置参数实体类。存在该注解的类可通过{@link PropertyUtils#getConfigNodeFromEntityClass(java.lang.Class)}来解析成配置参数
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

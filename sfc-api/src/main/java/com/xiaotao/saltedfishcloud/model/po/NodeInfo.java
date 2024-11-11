@@ -16,7 +16,9 @@ import java.util.Objects;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
-@Table(name = "node_list")
+@Table(name = "node_list", indexes = {
+        @Index(name = "node_name_index", columnList = "parent,name", unique = true)
+})
 @Builder
 public class NodeInfo {
 
@@ -33,6 +35,18 @@ public class NodeInfo {
 
     @Column(name = "mount_id")
     private Long mountId;
+
+    /**
+     * 是否为挂载点下的目录节点
+     */
+    @Column(name = "is_mount")
+    private Boolean isMount;
+
+    /**
+     * 节点本身表示的路径
+     */
+    @Transient
+    private String path;
 
     public boolean isRootNode() {
         return id.length() < 32;

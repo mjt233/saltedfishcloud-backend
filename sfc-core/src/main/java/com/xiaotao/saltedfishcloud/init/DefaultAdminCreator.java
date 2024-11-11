@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.init;
 
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserType;
@@ -19,6 +20,10 @@ import javax.annotation.Resource;
 public class DefaultAdminCreator  implements ApplicationRunner {
     @Resource
     private UserDao userDao;
+
+    @Resource
+    private UserRepo userRepo;
+
     @Resource
     private PasswordEncoder passwordEncoder;
 

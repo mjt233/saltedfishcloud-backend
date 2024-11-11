@@ -1,6 +1,6 @@
 package com.sfc.staticpublish.model.property;
 
-import com.sfc.constant.ConfigInputType;
+import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;

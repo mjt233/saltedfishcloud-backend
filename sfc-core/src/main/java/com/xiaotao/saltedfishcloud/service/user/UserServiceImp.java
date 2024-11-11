@@ -4,8 +4,8 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
-import com.sfc.constant.error.AccountError;
-import com.sfc.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.error.AccountError;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
@@ -249,11 +249,7 @@ public class UserServiceImp implements UserService {
 
     @Override
     public User getUserByUser(String user) throws UserNoExistException {
-        User user1 = userDao.getUserByUser(user);
-        if (user1 == null) {
-            throw new UserNoExistException(-1, "用户" + user + "不存在");
-        }
-        return user1;
+        return userDao.getUserByUser(user);
     }
 
     @Override
@@ -311,7 +307,9 @@ public class UserServiceImp implements UserService {
         if (User.SYS_NAME_PUBLIC.equals(upperName) || User.SYS_NAME_ADMIN.equals(upperName)) {
             throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
         }
-        if (email != null && email.length() != 0 && userDao.getByEmail(email) != null) throw new JsonException(AccountError.EMAIL_EXIST);
+        if (email != null && email.length() != 0 && userDao.getByEmail(email) != null) {
+            throw new JsonException(AccountError.EMAIL_EXIST);
+        }
         String pwd = SecureUtils.getPassswd(passwd);
         try {
             int res = userDao.addUser(user, pwd, email, type, IdUtil.getId());

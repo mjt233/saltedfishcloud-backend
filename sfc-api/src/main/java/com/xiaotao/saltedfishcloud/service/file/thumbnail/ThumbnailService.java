@@ -30,10 +30,10 @@ public interface ThumbnailService {
      * 获取缩略图资源
      * @param resource 输入的文件资源
      * @param ext   文件拓展名（不带.）
-     * @param id    文件的唯一标识码，用于缓存，不能为空
+     * @param fileIdentify    文件的唯一标识码，用于缓存，不能为空
      * @return      生成的缩略图资源，若为null则表示不支持或无法生成
      */
-    Resource getThumbnail(Resource resource, String ext, String id) throws IOException;
+    Resource getThumbnail(Resource resource, String ext, String fileIdentify) throws IOException;
 
     /**
      * 向服务中新注册一个可用的缩略图操作器（提取器）

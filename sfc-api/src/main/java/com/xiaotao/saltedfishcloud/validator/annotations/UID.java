@@ -16,7 +16,7 @@ import java.lang.annotation.*;
 @Constraint(validatedBy = UIDValidator.class)
 public @interface UID {
     /**
-     * 是否仅允许管理员操作
+     * UID为0的公共资源是否仅允许管理员操作
      */
     boolean value() default false;
     String message() default "无权操作资源";

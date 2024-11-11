@@ -38,13 +38,28 @@ public class PathUtils {
     }
 
     /**
+     * 检查临时目录是否存在，不存在则创建
+     */
+    private static void checkAndCreateTempPath() {
+        if (!Files.exists(TEMP_PATH)) {
+            try {
+                Files.createDirectories(TEMP_PATH);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
      * 获取系统临时目录
      */
     public static String getTempDirectory() {
+        checkAndCreateTempPath();
         return TEMP_PATH_STR;
     }
 
     public static Path getTempPath() {
+        checkAndCreateTempPath();
         return TEMP_PATH;
     }
 
@@ -146,14 +161,25 @@ public class PathUtils {
      * @return 是子目录则为true，否则为false
      */
     public static boolean isSubDir(String a, String b) {
+        // 统一格式化，需要“/"开头
         if (a.charAt(0) != '/' && a.charAt(0) != '\\') {
             a = "/" + a;
         }
         if (b.charAt(0) != '/' && b.charAt(0) != '\\') {
             b = "/" + b;
         }
+
+        // 统一格式化，斜杠不能连续重复
         a = a.replaceAll("//+|\\\\+", "/");
         b = b.replaceAll("//+|\\\\+", "/");
+
+        // 统一格式化，末尾需要有“/”
+        if (!a.equals("/")) {
+            a += '/';
+        }
+        if (!b.equals("/")) {
+            b += '/';
+        }
         return b.startsWith(a);
     }
 }

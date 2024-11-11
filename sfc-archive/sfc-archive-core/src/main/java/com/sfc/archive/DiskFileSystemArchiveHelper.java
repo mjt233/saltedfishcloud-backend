@@ -3,7 +3,7 @@ package com.sfc.archive;
 import com.sfc.archive.comporessor.ArchiveCompressor;
 import com.sfc.archive.comporessor.ArchiveResourceEntry;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
-import com.sfc.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;

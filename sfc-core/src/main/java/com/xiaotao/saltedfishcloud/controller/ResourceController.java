@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.sfc.constant.error.FileSystemError;
-import com.sfc.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;

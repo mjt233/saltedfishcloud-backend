@@ -1,1 +1,0 @@
-CREATE INDEX uid_index ON file_table(uid)

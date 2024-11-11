@@ -5,14 +5,16 @@ import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 import org.hibernate.annotations.Proxy;
 
-import javax.persistence.Entity;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import java.util.Date;
 
 /**
  * 异步任务记录
  */
 @Entity(name = "async_task_record")
+@Table(indexes = {
+        @Index(name = "idx_uid", columnList = "uid")
+})
 @Getter
 @Setter
 @Builder
@@ -34,6 +36,7 @@ public class AsyncTaskRecord extends AuditModel {
     /**
      * 任务的创建参数
      */
+    @Column(columnDefinition = "LONGTEXT COMMENT '任务参数'")
     private String params;
 
     /**

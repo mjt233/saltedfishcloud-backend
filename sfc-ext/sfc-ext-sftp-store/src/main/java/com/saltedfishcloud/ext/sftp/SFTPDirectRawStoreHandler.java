@@ -135,7 +135,7 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
         FileAttributes attributes = info.getAttributes();
         FileInfo fileInfo = new FileInfo();
         fileInfo.setMtime(attributes.getMtime() * 1000);
-        fileInfo.setMount(false);
+        fileInfo.setIsMount(false);
         fileInfo.setName(info.getName());
         fileInfo.setType(info.isDirectory() ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
         fileInfo.setSize(info.isDirectory() ? -1 : attributes.getSize());

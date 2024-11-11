@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.json;
 
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -17,6 +19,17 @@ public class JsonResultImpl<T> extends AbstractJsonResult<T> {
         this.put("data", data);
         this.put("msg", msg);
     }
+    public JsonResultImpl(int code, int businessCode, T data, String msg) {
+        this.put("code", code);
+        this.put("data", data);
+        this.put("msg", msg);
+        this.put("businessCode", businessCode);
+    }
+
+    @Override
+    public int getBusinessCode() {
+        return TypeUtils.toInt(this.map.getOrDefault("businessCode", 200));
+    }
 
     public JsonResultImpl<T> put(String key, Object obj) {
         map.put(key, obj);
@@ -25,6 +38,9 @@ public class JsonResultImpl<T> extends AbstractJsonResult<T> {
 
     public static <T> JsonResultImpl<T> getInstance(int code, T data, String msg) {
         return new JsonResultImpl<>(code, data, msg);
+    }
+    public static <T> JsonResultImpl<T> getInstance(int code, int businessCode, T data, String msg) {
+        return new JsonResultImpl<>(code, businessCode ,data, msg);
     }
     public static <T> JsonResultImpl<T> getInstance(T data) {
         return getInstance(200, data, "OK");

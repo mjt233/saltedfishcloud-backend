@@ -5,6 +5,7 @@ import com.sfc.rpc.annotation.EnableRpc;
 import com.sfc.task.annocation.EnableAsyncTask;
 import com.xiaotao.saltedfishcloud.ext.DefaultPluginManager;
 import com.xiaotao.saltedfishcloud.init.PluginInitializer;
+import com.xiaotao.saltedfishcloud.init.VersionCheckInitializer;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import emergency.EmergencyApplication;
@@ -64,7 +65,10 @@ public class SaltedfishcloudApplication {
         SpringContextUtils.setApplicationFactory(getLaunchFactory());
 
         // 设置紧急模式启动程序工厂
-        SpringContextUtils.setEmergencyApplicationFactory(getEmergencyModeLaunchFactory());
+        SpringContextUtils.setEmergencyApplicationFactory(() -> {
+            Thread.currentThread().setContextClassLoader(originLoader);
+            return new SpringApplication(EmergencyApplication.class);
+        });
 
         try {
             // 启动
@@ -72,12 +76,6 @@ public class SaltedfishcloudApplication {
             // 记录上下文
             SpringContextUtils.setContext(context);
         } catch (Exception ignore) {}
-    }
-
-    public static Supplier<SpringApplication> getEmergencyModeLaunchFactory() {
-
-        Thread.currentThread().setContextClassLoader(originLoader);
-        return () -> new SpringApplication(EmergencyApplication.class);
     }
 
     public static Supplier<SpringApplication> getLaunchFactory() {
@@ -90,6 +88,7 @@ public class SaltedfishcloudApplication {
             // 配置SpringBoot，注册插件管理器
             sa.addInitializers(c -> log.info("[Boot]程序运行目录: {}", Paths.get("").toAbsolutePath()));
             sa.addInitializers(new PluginInitializer(pluginManager));
+            sa.addInitializers(new VersionCheckInitializer());
 
             sa.addListeners((ApplicationListener<ApplicationReadyEvent>) applicationEvent -> {
                 // 打印启动信息

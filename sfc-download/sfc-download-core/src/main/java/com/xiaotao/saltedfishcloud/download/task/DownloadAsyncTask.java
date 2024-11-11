@@ -313,8 +313,10 @@ public class DownloadAsyncTask implements AsyncTask {
 
         logger.info("计算完成，md5为：" + fileInfo.getMd5());
 
-        // 预判一波: 下载完成前，用户把保存目录删了，创建个目录防一手
-        diskFileSystem.mkdirs(params.uid, params.savePath);
+        if (!diskFileSystem.exist(params.uid, params.savePath)) {
+            diskFileSystem.mkdirs(params.uid, params.savePath);
+        }
+
         logger.info("保存目录：" + params.savePath);
 
 

@@ -76,7 +76,7 @@ public class VideoController {
     @AllowAnonymous
     @GetMapping("getVideoInfo")
     public JsonResult<VideoInfo> listSubtitle(VideoRequest request) throws IOException {
-        Resource resource = fileSystemManager.getMainFileSystem().getResource(Math.toIntExact(request.getUid()), request.getPath(), request.getName());
+        Resource resource = fileSystemManager.getMainFileSystem().getResource(request.getUid(), request.getPath(), request.getName());
         return JsonResultImpl.getInstance(videoService.getVideoInfo(resource));
     }
 
@@ -84,7 +84,33 @@ public class VideoController {
     @AllowAnonymous
     @GetMapping("getSubtitle")
     public String getSubtitle(VideoRequest request) throws IOException {
-        Resource resource = fileSystemManager.getMainFileSystem().getResource(Math.toIntExact(request.getUid()), request.getPath(), request.getName());
+        Resource resource = fileSystemManager.getMainFileSystem().getResource(request.getUid(), request.getPath(), request.getName());
         return videoService.getSubtitleText(resource, request.getStream(), request.getType());
+    }
+
+    /**
+     * 记录观看进度
+     * @param uid       观看用户id
+     * @param identify  视频标识，可通过相同的标识获取进度
+     * @param time      观看进度
+     */
+    @PostMapping("recordWatchProgress")
+    public JsonResult<?> recordWatchProgress(@RequestParam("uid") @UID(value = true) Long uid,
+                                    @RequestParam("identify") String identify,
+                                    @RequestParam("time") double time) {
+        videoService.recordWatchProgress(uid, identify, time);
+        return JsonResult.emptySuccess();
+    }
+
+    /**
+     * 获取观看进度
+     * @param uid       观看用户id
+     * @param identify  视频标识
+     * @return          观看进度，返回null就是没有记录
+     */
+    @GetMapping("getWatchProgress")
+    public JsonResult<Double> getWatchProgress(@RequestParam("uid") @UID(value = true) Long uid,
+                                             @RequestParam("identify") String identify) {
+        return JsonResultImpl.getInstance(videoService.getWatchProgress(uid, identify));
     }
 }

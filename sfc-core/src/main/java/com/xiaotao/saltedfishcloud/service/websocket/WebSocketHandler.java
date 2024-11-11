@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.sfc.constant.MQTopic;
-import com.sfc.constant.WebSocketConstant;
+import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.constant.WebSocketConstant;
 import com.sfc.task.AsyncTaskManager;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketRequest;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketResponse;
@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+// todo 使用Spring提供的Websocket框架重构
 @Slf4j
 @Component
 @ServerEndpoint("/api/ws")

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service;
 
-import com.sfc.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.RequestParam;

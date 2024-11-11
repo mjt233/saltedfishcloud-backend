@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service;
 
-import com.sfc.enums.MQOffsetStrategy;
+import com.xiaotao.saltedfishcloud.enums.MQOffsetStrategy;
 import com.xiaotao.saltedfishcloud.model.MQMessage;
 import org.jetbrains.annotations.Nullable;
 

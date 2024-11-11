@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.validator;
 
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
@@ -21,6 +23,19 @@ public class UIDValidator implements ConstraintValidator<UID, Object> {
     public static boolean validate(long uid, boolean publicOnlyAdmin) {
         User springSecurityUser = SecureUtils.getSpringSecurityUser();
         return validate(springSecurityUser, uid, publicOnlyAdmin);
+    }
+
+    /**
+     * 验证当前已登录用户是否具有操作某个UID资源的权限。 <br>
+     * 一般用户只具备操作自己和公共资源的权限。若不满足操作权限则抛出异常。
+     * @param uid 用户ID
+     * @param publicOnlyAdmin 公共资源是否只允许管理员通过验证
+     * @see CommonError#SYSTEM_FORBIDDEN
+     */
+    public static void validateWithException(long uid, boolean publicOnlyAdmin) {
+        if (!validate(uid, publicOnlyAdmin)) {
+            throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+        }
     }
 
     /**

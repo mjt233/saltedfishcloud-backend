@@ -13,6 +13,7 @@ import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.persistence.Entity;
+import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.io.File;
@@ -28,7 +29,13 @@ import java.util.Date;
 @NoArgsConstructor
 @Builder
 @Accessors(chain = true)
-@Table(name = "file_table")
+@Table(
+        name = "file_table",
+        indexes = {
+                @Index(name = "file_index", columnList = "node,name,uid", unique = true),
+                @Index(name = "md5_index", columnList = "md5"),
+                @Index(name = "uid_index", columnList = "uid")
+        })
 @Entity
 public class FileInfo extends AuditModel {
     public final static int TYPE_DIR = 1;
@@ -55,7 +62,7 @@ public class FileInfo extends AuditModel {
     private String name;
 
     /**
-     * 文件md5
+     * 文件md5，若记录为目录则表示目录的节点id
      */
     private String md5;
 
@@ -82,8 +89,7 @@ public class FileInfo extends AuditModel {
     /**
      * 是否为外部挂载的文件系统文件
      */
-    @Transient
-    private boolean isMount;
+    private Boolean isMount;
 
     /**
      * 上级目录节点的名称
@@ -219,6 +225,7 @@ public class FileInfo extends AuditModel {
         }
         newObj.setNode(null);
         newObj.setMountId(null);
+        newObj.setIsMount(false);
         return newObj;
     }
 

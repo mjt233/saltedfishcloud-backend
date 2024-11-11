@@ -18,23 +18,54 @@ import java.util.Date;
 
 @EntityListeners(AuditingEntityListener.class)
 @Entity
-@Table(name = "share")
+@Table(name = "share", indexes = {
+        @Index(name = "uid_index", columnList = "uid")
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ShareInfo extends AuditModel {
     private Long uid;
+    /**
+     * 分享类型为目录时，分享的资源本身表示的节点id。若分享类型为文件则表示文件的md5。
+     */
     private String nid;
+
+    /**
+     * 分享的资源所在的节点的上级节点id<br>
+     */
     private String parentId;
+
+    /**
+     * 分享的校验标识
+     */
     private String verification;
+
+    /**
+     * 分享的文件大小
+     */
     private Long size;
 
+    /**
+     * 分享的资源类型（文件 或 目录）
+     */
     @Enumerated(EnumType.STRING)
     private ShareType type;
+
+    /**
+     * 分享提取码
+     */
     private String extractCode;
+
+    /**
+     * 分享的文件或目录名称
+     */
     private String name;
 
+    /**
+     * 分享过期日期
+     */
     private Date expiredAt;
 
     @Transient

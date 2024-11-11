@@ -1,15 +1,21 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.sfc.constant.ComponentType;
+import com.xiaotao.saltedfishcloud.constant.ComponentType;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.Entity;
+import javax.persistence.Index;
+import javax.persistence.Table;
 
 @Entity
 @Getter
 @Setter
+@Table(indexes = {
+        @Index(name = "idx_uid", columnList = "uid"),
+        @Index(name = "idx_name", columnList = "name"),
+})
 public class DesktopComponentConfig extends AuditModel {
     /**
      * 组件标题
