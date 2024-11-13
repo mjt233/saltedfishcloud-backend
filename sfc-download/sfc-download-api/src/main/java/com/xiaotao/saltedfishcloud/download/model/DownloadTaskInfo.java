@@ -2,12 +2,12 @@ package com.xiaotao.saltedfishcloud.download.model;
 
 import com.sfc.task.model.AsyncTaskRecord;
 import jakarta.persistence.*;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.NotFound;
-import org.hibernate.annotations.NotFoundAction;
-import org.hibernate.annotations.Proxy;
+import org.hibernate.annotations.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -17,19 +17,17 @@ import java.util.Date;
 @Setter
 @Getter
 @Entity
-@Proxy(lazy = false)
 @Table(name = "download_task", indexes = {
         @Index(name = "idx_uid", columnList = "uid")
 })
 @EntityListeners(AuditingEntityListener.class)
-@GenericGenerator(name = "jpa-uuid", strategy = "uuid")
 public class DownloadTaskInfo {
     public enum State {
         WAITING, DOWNLOADING, FAILED, FINISH, CANCEL
     }
 
     @Id
-    @GeneratedValue(generator = "jpa-uuid")
+    @UuidGenerator
     private String id;
 
     private long uid;

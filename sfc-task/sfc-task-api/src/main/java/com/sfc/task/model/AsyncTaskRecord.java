@@ -20,7 +20,6 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Proxy(lazy = false)
 public class AsyncTaskRecord extends AuditModel {
 
     /**

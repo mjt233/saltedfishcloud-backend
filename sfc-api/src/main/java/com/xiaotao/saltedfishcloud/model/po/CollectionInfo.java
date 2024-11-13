@@ -3,11 +3,12 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import com.xiaotao.saltedfishcloud.service.collection.CollectionParser;
+import com.xiaotao.saltedfishcloud.annotations.SnowFlakeId;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
+import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
+import com.xiaotao.saltedfishcloud.service.collection.CollectionParser;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -15,7 +16,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.util.StringUtils;
 
-import jakarta.persistence.*;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -38,7 +38,7 @@ public class CollectionInfo {
         OPEN, CLOSED
     }
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @SnowFlakeId
     private Long id;
 
     /**

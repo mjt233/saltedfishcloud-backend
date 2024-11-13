@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
+import com.xiaotao.saltedfishcloud.annotations.SnowFlakeId;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -20,7 +21,7 @@ import java.util.Date;
 @EntityListeners(AuditingEntityListener.class)
 public class CollectionRecord {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @SnowFlakeId
     private Long id;
     private Long cid;
     private Long uid;
