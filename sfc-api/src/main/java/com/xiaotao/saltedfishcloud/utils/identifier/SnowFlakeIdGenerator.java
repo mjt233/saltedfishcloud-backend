@@ -15,27 +15,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SnowFlakeIdGenerator implements IdentifierGenerator {
     private final Map<Class<?>, String> classIdCache = new ConcurrentHashMap<>();
+    public SnowFlakeIdGenerator() {
+        System.out.println(1);
+    }
     @Override
     public Serializable generate(SharedSessionContractImplementor sharedSessionContractImplementor, Object o) {
-        Serializable originId;
-        if (o instanceof BaseModel) {
-            originId = ((BaseModel) o).getId();
-        } else {
-            String id = classIdCache.get(o.getClass());
-            if (id == null) {
-                id = ClassUtils.getAllFields(o.getClass())
-                        .stream()
-                        .filter(e -> e.getAnnotation(Id.class) != null)
-                        .findAny()
-                        .map(Field::getName)
-                        .orElse("id");
-                classIdCache.put(o.getClass(), id);
-            }
-            originId = (Serializable) FieldUtils.getProtectedFieldValue(id, o);
-        }
-        if (originId != null) {
-            return originId;
-        }
         return IdUtil.getId();
     }
 }

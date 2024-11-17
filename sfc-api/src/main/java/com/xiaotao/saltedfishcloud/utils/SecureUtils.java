@@ -20,7 +20,7 @@ public class SecureUtils {
 
     /**
      * 随机生成一个UUID<br>
-     * 注意：UUID
+     * 注意：该方法返回的UUID不包含横杠
      */
     public static String getUUID() {
         return UUID.randomUUID().toString().replaceAll("-", "");

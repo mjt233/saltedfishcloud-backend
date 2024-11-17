@@ -10,6 +10,7 @@ import com.hierynomus.mssmb2.SMB2CreateDisposition;
 import com.hierynomus.mssmb2.SMB2ShareAccess;
 import com.hierynomus.mssmb2.SMBApiException;
 import com.hierynomus.protocol.commons.buffer.Buffer;
+import com.hierynomus.protocol.transport.TransportException;
 import com.hierynomus.smbj.SMBClient;
 import com.hierynomus.smbj.SmbConfig;
 import com.hierynomus.smbj.auth.AuthenticationContext;
@@ -22,8 +23,15 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.PoolUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.pool2.BasePooledObjectFactory;
+import org.apache.commons.pool2.ObjectPool;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -31,90 +39,131 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.SocketException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Samba文件共享存储操作器
- * todo 使用对象池管理连接对象
  */
 @Slf4j
 public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closeable {
     private static final String LOG_PREFIX = "[Samba]";
-    private SambaProperty sambaProperty;
-    private SMBClient client;
-    private Session session;
-    private DiskShare share;
+    @Getter
+    private final SambaProperty sambaProperty;
+
+    private final SMBClient client;
+    private final ObjectPool<Session> sessionObjectPool;
     private static final Set<AccessMask> ACCESS_MASK_SET = new HashSet<>(List.of(AccessMask.GENERIC_ALL));
     public SambaDirectRawStoreHandler(SambaProperty property) {
         this.sambaProperty = property;
         this.client = new SMBClient(SmbConfig.createDefaultConfig());
+        sessionObjectPool = PoolUtils.createObjectPool(new BasePooledObjectFactory<Session>() {
+            @Override
+            public Session create() throws Exception {
+                log.debug("{}创建新smb session", LOG_PREFIX);
+                Integer port = Optional.ofNullable(sambaProperty.getPort()).orElse(445);
+                Connection connect = client.connect(sambaProperty.getHost(), port);
+                AuthenticationContext authenticationContext = new AuthenticationContext(
+                        sambaProperty.getUsername(),
+                        Optional.ofNullable(sambaProperty.getPassword()).orElse("").toCharArray(),
+                        ""
+                );
+                return connect.authenticate(authenticationContext);
+            }
+
+            @Override
+            public PooledObject<Session> wrap(Session session) {
+                return new DefaultPooledObject<>(session);
+            }
+
+            @Override
+            public void destroyObject(PooledObject<Session> p) throws Exception {
+                p.getObject().close();
+            }
+
+            @Override
+            public boolean validateObject(PooledObject<Session> p) {
+                return p.getObject().getConnection().isConnected();
+            }
+        });
     }
 
     @Override
-    public void close() throws IOException {
-        share.close();
-        Connection connection = session.getConnection();
-        session.close();
-        connection.close();
-    }
-
-    protected synchronized Session getSession() throws IOException {
-        if (session == null || !session.getConnection().isConnected()) {
-            Integer port = Optional.ofNullable(sambaProperty.getPort()).orElse(445);
-            Connection connect = client.connect(sambaProperty.getHost(), port);
-            AuthenticationContext authenticationContext = new AuthenticationContext(
-                    sambaProperty.getUsername(),
-                    Optional.ofNullable(sambaProperty.getPassword()).orElse("").toCharArray(),
-                    ""
-            );
-            this.session = connect.authenticate(authenticationContext);
-        }
-        return session;
-    }
-
-    protected synchronized DiskShare getShare() throws IOException {
-        if (share == null || !share.isConnected()) {
-            return (DiskShare) getSession().connectShare(sambaProperty.getShareName());
-        } else {
-            return share;
-        }
+    public void close() {
+        sessionObjectPool.close();
     }
 
     @Override
     public boolean exist(String path) {
-        try {
-            if ("/".equals(path)) {
-                return true;
-            }
-            boolean exists = getShare().fileExists(path);
+        if ("/".equals(path)) {
+            return true;
+        }
+        return getDiskShare(share -> {
+            boolean exists = share.fileExists(path);
             if (!exists) {
-                exists = getShare().folderExists(path);
+                exists = share.folderExists(path);
             }
             return exists;
-        } catch (SocketException e) {
-            e.printStackTrace();
-            throw new JsonException(e.getMessage());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
+        });
+    }
+
+    public void returnSession(Session session) {
+        try {
+            log.debug("{}smb session归还对象池", LOG_PREFIX);
+            sessionObjectPool.returnObject(session);
+        } catch (Exception e) {
+            log.debug("{}smb session归还对象池出错", LOG_PREFIX, e);
         }
     }
 
-    protected File openFileWrite(String path) throws IOException {
-        return getShare().openFile(path, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OVERWRITE_IF, null);
+    public Session getSession() {
+        try {
+            return sessionObjectPool.borrowObject();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    protected File openFileRead(String path) throws IOException {
-        return getShare().openFile(path, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+    public void getDiskShare(Consumer<DiskShare> shareConsumer) {
+        try {
+            Session session = getSession();
+            try (DiskShare share = (DiskShare) session.connectShare(sambaProperty.getShareName())){
+                shareConsumer.accept(share);
+            } finally {
+                returnSession(session);
+            }
+        } catch (Exception e) {
+            log.error("{}", LOG_PREFIX, e);
+            throw new JsonException(e.getMessage());
+        }
     }
 
-    private Directory openDir(String path) throws IOException {
-        return getShare().openDirectory(path, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+    public <T> T getDiskShare(Function<DiskShare, T> shareConsumer) {
+        AtomicReference<T> reference = new AtomicReference<>();
+        getDiskShare(diskShare -> {
+            reference.set(shareConsumer.apply(diskShare));
+        });
+        return reference.get();
+    }
+
+    public File openFileWrite(DiskShare share, String path) {
+        return share.openFile(path, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OVERWRITE_IF, null);
+    }
+
+    public File openFileRead(DiskShare share, String path) {
+        return share.openFile(path, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+    }
+
+    public Directory openDir(String path) {
+        return getDiskShare(diskShare -> {
+            return diskShare.openDirectory(path, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+        });
     }
 
     @Override
-    public boolean isEmptyDirectory(String path) throws IOException {
+    public boolean isEmptyDirectory(String path) {
         return listFiles(path).isEmpty();
     }
 
@@ -124,21 +173,22 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
         if (fileInfo == null || fileInfo.isDir()) {
             return null;
         }
-        File file = openFileRead(path);
-        return new SambaResource(file);
+        return new SambaResource(this, path);
     }
 
     @Override
-    public List<FileInfo> listFiles(String path) throws IOException {
-        List<FileIdBothDirectoryInformation> list = getShare().list(path);
-        List<FileInfo> res = new ArrayList<>(list.size());
-        for (FileIdBothDirectoryInformation info : list) {
-            if (info.getFileName().equals(".") || info.getFileName().equals("..")) {
-                continue;
+    public List<FileInfo> listFiles(String path) {
+        return getDiskShare(diskShare -> {
+            List<FileIdBothDirectoryInformation> list = diskShare.list(path);
+            List<FileInfo> res = new ArrayList<>(list.size());
+            for (FileIdBothDirectoryInformation info : list) {
+                if (info.getFileName().equals(".") || info.getFileName().equals("..")) {
+                    continue;
+                }
+                res.add(convertToFileInfo(info));
             }
-            res.add(convertToFileInfo(info));
-        }
-        return res;
+            return res;
+        });
     }
 
     private FileInfo convertToFileInfo(FileIdBothDirectoryInformation info) {
@@ -173,23 +223,23 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
 
 
     @Override
-    public FileInfo getFileInfo(String path) throws IOException {
-        try {
-            FileAllInformation fileInformation = getShare().getFileInformation(path);
-            return convertToFileInfo(fileInformation);
-        } catch (SMBApiException e) {
-            e.printStackTrace();
-            return null;
-        }
-
+    public FileInfo getFileInfo(String path) {
+        return getDiskShare(diskShare -> {
+            try {
+                FileAllInformation fileInformation = diskShare.getFileInformation(path);
+                return convertToFileInfo(fileInformation);
+            } catch (SMBApiException e) {
+                e.printStackTrace();
+                return null;
+            }
+        });
     }
 
     @Override
-    public boolean delete(String path) throws IOException {
-        // 好像有bug，删除文件后如果不close掉share，该文件就一直保持着删除中导致无法新增同名文件或目录
-        synchronized (DiskShare.class) {
+    public boolean delete(String path) {
+        getDiskShare(diskShare -> {
             try {
-                getShare().rm(path);
+                diskShare.rm(path);
             } catch (SMBApiException e) {
                 if(e.getStatusCode() == NtStatus.STATUS_FILE_IS_A_DIRECTORY.getValue()) {
                     if(!isEmptyDirectory(path)) {
@@ -199,26 +249,22 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
                         }
                     }
                 }
-                getShare().rmdir(path, true);
+                diskShare.rmdir(path, true);
             }
-            getShare().close();
-        }
-
+        });
         return true;
     }
 
     @Override
-    public boolean mkdir(String path) throws IOException {
+    public boolean mkdir(String path) {
         log.debug("{}创建文件夹：{}", LOG_PREFIX, path);
-        path = convertDelimiter(path);
-        getShare().mkdir(path);
+        getDiskShare((Consumer<DiskShare>) diskShare -> diskShare.mkdir(convertDelimiter(path)));
         return true;
     }
 
     @Override
-    public boolean mkdirs(String path) throws IOException {
-        getShare().mkdir(path);
-        return true;
+    public boolean mkdirs(String path) {
+        return this.mkdir(path);
     }
 
     @Override
@@ -231,7 +277,44 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
 
     @Override
     public OutputStream newOutputStream(String path) throws IOException {
-        return openFileWrite(path).getOutputStream();
+        Session session = getSession();
+        DiskShare diskShare = (DiskShare) session.connectShare(sambaProperty.getShareName());
+        OutputStream originOutputStream = openFileWrite(diskShare, path).getOutputStream();
+        return new OutputStream() {
+            private boolean closed = false;
+            @Override
+            public void write(@NotNull byte[] b) throws IOException {
+                originOutputStream.write(b);
+            }
+
+            @Override
+            public void write(@NotNull byte[] b, int off, int len) throws IOException {
+                originOutputStream.write(b, off, len);
+            }
+
+            @Override
+            public void flush() throws IOException {
+                originOutputStream.flush();
+            }
+
+            @Override
+            public void close() throws IOException {
+                if (closed) {
+                    return;
+                }
+                originOutputStream.close();
+                try {
+                    diskShare.close();
+                } finally {
+                    returnSession(session);
+                }
+            }
+
+            @Override
+            public void write(int b) throws IOException {
+                originOutputStream.write(b);
+            }
+        };
     }
 
     @Override
@@ -239,13 +322,15 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
         String newPath = StringUtils.appendPath(PathUtils.getParentPath(path), newName)
                 .replaceAll("^[/\\\\]+", "")
                 .replaceAll("/", "\\\\");
-        path = convertDelimiter(path);
-        FileInfo fileInfo = getFileInfo(path);
+        String smbPath = convertDelimiter(path);
+        FileInfo fileInfo = getFileInfo(smbPath);
         if (fileInfo.isDir()) {
-            openDir(path).rename(newPath, false);
+            openDir(smbPath).rename(newPath, false);
         } else {
-            File sourceFile = openFileRead(path);
-            sourceFile.rename(newPath, false);
+            getDiskShare(share -> {
+                File sourceFile = openFileRead(share, smbPath);
+                sourceFile.rename(newPath, false);
+            });
         }
         return true;
     }
@@ -270,18 +355,21 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
 
     @Override
     public boolean copy(String src, String dest) throws IOException {
-        try {
-            openFileRead(src).remoteCopyTo(openFileWrite(dest));
-        } catch (Buffer.BufferException e) {
-            e.printStackTrace();
-            throw new IOException(e);
-        }
+        getDiskShare(share -> {
+            try {
+                openFileRead(share, src).remoteCopyTo(openFileWrite(share, dest));
+            } catch (Buffer.BufferException | TransportException e) {
+                throw new RuntimeException(e);
+            }
+        });
         return true;
     }
 
     @Override
     public boolean move(String src, String dest) throws IOException {
-        openFileRead(src).rename(dest);
+        getDiskShare(share -> {
+            openFileRead(share, src).rename(dest);
+        });
         return true;
     }
 }

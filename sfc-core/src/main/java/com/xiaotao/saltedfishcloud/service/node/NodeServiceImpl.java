@@ -44,7 +44,7 @@ public class NodeServiceImpl implements NodeService {
     @Override
 //    @Cacheable(cacheNames = CacheNames.PATH, key = "#uid+':node:'+#nid")
     public NodeInfo getNodeById(Long uid, String nid) {
-        if (nid.length() == 32) {
+        if (nid.length() >= 32) {
             return nodeDao.getNodeById(uid, nid);
         }
         NodeInfo node = new NodeInfo();
