@@ -1,17 +1,16 @@
 package com.xiaotao.saltedfishcloud.download.model;
 
 import com.sfc.task.model.AsyncTaskRecord;
+import com.xiaotao.saltedfishcloud.annotations.id.SystemUuidGenerator;
 import jakarta.persistence.*;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.validation.constraints.NotEmpty;
 import java.util.Date;
 
 @Setter
@@ -27,7 +26,7 @@ public class DownloadTaskInfo {
     }
 
     @Id
-    @UuidGenerator
+    @SystemUuidGenerator
     private String id;
 
     private long uid;

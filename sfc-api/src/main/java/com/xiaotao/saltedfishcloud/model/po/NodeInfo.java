@@ -2,10 +2,10 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.xiaotao.saltedfishcloud.annotations.id.SystemUuidGenerator;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.Hibernate;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.util.Objects;
 
@@ -23,7 +23,7 @@ import java.util.Objects;
 public class NodeInfo {
 
     @Id
-    @UuidGenerator
+    @SystemUuidGenerator
     private String id;
 
     private Long uid;

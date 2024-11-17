@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.annotations.SnowFlakeId;
+import com.xiaotao.saltedfishcloud.annotations.id.SnowFlakeIdGenerator;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionParser;
@@ -38,7 +38,7 @@ public class CollectionInfo {
         OPEN, CLOSED
     }
     @Id
-    @SnowFlakeId
+    @SnowFlakeIdGenerator
     private Long id;
 
     /**

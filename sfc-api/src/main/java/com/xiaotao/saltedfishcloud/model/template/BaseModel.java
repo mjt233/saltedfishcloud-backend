@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.template;
 
-import com.xiaotao.saltedfishcloud.annotations.SnowFlakeId;
+import com.xiaotao.saltedfishcloud.annotations.id.SnowFlakeIdGenerator;
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
@@ -15,7 +15,7 @@ import java.io.Serializable;
 public class BaseModel implements Serializable {
 
     @Id
-    @SnowFlakeId
+    @SnowFlakeIdGenerator
     @Column(name = "id", columnDefinition = "BIGINT UNSIGNED COMMENT '主键'")
     private Long id;
 }
