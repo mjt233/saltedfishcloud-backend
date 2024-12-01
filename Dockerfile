@@ -10,4 +10,5 @@ WORKDIR /saltedfish
 COPY --from=build /saltedfish/release/ .
 COPY ./conf/config.yml .
 EXPOSE 8087
+VOLUME [ "/saltedfish/store" ]
 CMD java -jar sfc-core.jar --spring.config.import=file:config.yml
