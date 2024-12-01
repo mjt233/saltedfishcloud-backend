@@ -64,7 +64,7 @@ public interface ConfigService {
      * @param key       配置项
      * @param value     配置值
      */
-    boolean setConfig(String key, String value) throws IOException;
+    boolean setConfig(String key, String value);
 
     /**
      * 批量设置配置项

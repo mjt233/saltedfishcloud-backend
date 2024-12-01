@@ -19,7 +19,8 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * 系统运行时配置信息，DiskConfig中的属性将逐步转移至这里
+ * 系统运行时配置信息
+ * todo 考虑统一的配置缓存功能
  */
 @Component
 @Slf4j
@@ -100,6 +101,15 @@ public class SysRuntimeConfig implements ApplicationRunner {
         }
 
         this.listenStoreTypeChange();
+        this.listenConfigChange();
+    }
+
+    /**
+     * 监听系统配置变更来更新注册方式
+     */
+    private void listenConfigChange() {
+        configService.addAfterSetListener(SysConfigName.Register.ENABLE_REG_CODE, value -> this.enableRegCode = "true".equals(value));
+        configService.addAfterSetListener(SysConfigName.Register.ENABLE_EMAIL_REG, value -> this.enableEmailReg = "true".equals(value));
     }
 
     /**
@@ -125,11 +135,9 @@ public class SysRuntimeConfig implements ApplicationRunner {
         String enableEmailReg = configCache.get(SysConfigName.Register.ENABLE_EMAIL_REG);
         if (enableRegCode == null && enableEmailReg == null) {
             enableRegCode = "true";
-            try {
-                configService.setConfig(SysConfigName.Register.ENABLE_REG_CODE, "true");
-                configService.setConfig(SysConfigName.Register.ENABLE_EMAIL_REG, "false");
-                log.info("[注册规则初始化]未检测到注册规则配置，默认开启邀请码注册");
-            } catch (IOException ignore) { }
+            configService.setConfig(SysConfigName.Register.ENABLE_REG_CODE, "true");
+            configService.setConfig(SysConfigName.Register.ENABLE_EMAIL_REG, "false");
+            log.info("[注册规则初始化]未检测到注册规则配置，默认开启邀请码注册");
         }
         this.enableRegCode = "true".equals(enableRegCode == null ? null : enableRegCode.toLowerCase());
         this.enableEmailReg = "true".equals(enableEmailReg == null ? null : enableEmailReg.toLowerCase());
