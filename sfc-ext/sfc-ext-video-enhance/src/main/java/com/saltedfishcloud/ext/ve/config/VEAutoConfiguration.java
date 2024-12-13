@@ -13,6 +13,7 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -31,7 +32,10 @@ import java.util.Map;
 @ComponentScan("com.saltedfishcloud.ext.ve")
 @EntityScan("com.saltedfishcloud.ext.ve.model")
 @EnableJpaRepositories(basePackages = "com.saltedfishcloud.ext.ve.dao")
+@Slf4j
 public class VEAutoConfiguration implements SystemOverviewItemProvider {
+    private static final String LOG_PREFIX = "[视频增强配置]";
+
     @Autowired
     private ConfigService configService;
 
@@ -106,8 +110,7 @@ public class VEAutoConfiguration implements SystemOverviewItemProvider {
                             .build()
                     );
         } catch (Exception e) {
-            e.printStackTrace();
-
+            log.error("{}加载配置出错: ", LOG_PREFIX, e);
             return List.of(
                     ConfigNode.builder()
                             .title("ffmpeg配置")

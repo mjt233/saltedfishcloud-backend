@@ -97,9 +97,7 @@ public class ControllerAdvice {
             TaskNotFoundException.class
     })
     public JsonResult handle(Exception e) {
-        if (log.isDebugEnabled()) {
-            e.printStackTrace();
-        }
+        log.debug("{}", LOG_PREFIX, e);
         return responseError(404, e.getMessage());
     }
 

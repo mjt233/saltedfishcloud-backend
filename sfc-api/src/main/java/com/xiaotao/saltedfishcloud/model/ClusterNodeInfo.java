@@ -32,6 +32,11 @@ public class ClusterNodeInfo {
     private String ip;
 
     /**
+     * 进程id
+     */
+    private Long pid;
+
+    /**
      * http服务端口
      */
     private Integer httpPort;

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.util.Lazy;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -67,6 +70,15 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
      * 缓存的集群节点信息列表
      */
     private List<ClusterNodeInfo> cacheNodeList = Collections.emptyList();
+
+    /**
+     * 进程id
+     */
+    private final Lazy<Long> pid = Lazy.of(() -> {
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        return Integer.valueOf(runtimeMXBean.getName().split("@")[0])
+                .longValue();
+    });
 
     @Override
     public List<ClusterNodeInfo> listNodes() {
@@ -142,6 +154,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
         return ClusterNodeInfo.builder()
                 .cpu(runtime.availableProcessors())
                 .id(selfId)
+                .pid(pid.get())
                 .host(host)
                 .httpPort(port == null ? null : Integer.valueOf(port))
                 .ip(ip)

@@ -1,11 +1,14 @@
 package com.xiaotao.saltedfishcloud.service.config.version;
 
-import lombok.Getter; 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 版本信息
  */
+@Slf4j
 public final class Version implements Comparable<Version>{
+    private final static String LOG_PREFIX = "[版本信息解析]";
     @Getter
     private int bigVer = 1;
     @Getter
@@ -93,7 +96,7 @@ public final class Version implements Comparable<Version>{
                     vt
             );
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            log.error("{}", LOG_PREFIX,e);
             throw new IllegalArgumentException("Illegal version format: " + version);
         }
     }
