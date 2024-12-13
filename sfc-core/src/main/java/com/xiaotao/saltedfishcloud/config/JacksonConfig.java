@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +22,7 @@ public class JacksonConfig {
 
         return jacksonObjectMapperBuilder -> jacksonObjectMapperBuilder
                 .serializerByType(Long.TYPE, ToStringSerializer.instance)
-                .serializerByType(Long.class, ToStringSerializer.instance);
+                .serializerByType(Long.class, ToStringSerializer.instance)
+                .featuresToDisable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
     }
 }
