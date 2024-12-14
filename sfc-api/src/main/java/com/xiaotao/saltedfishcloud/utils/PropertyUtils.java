@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.annotations.ConfigKeyNameStrategy;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.annotations.ConfigSelectOption;
@@ -69,7 +70,13 @@ public class PropertyUtils {
         String prefix = "".equals(entity.prefix()) ? null : entity.prefix();
         String name;
         if ("".equals(property.value())) {
-            name = StringUtils.camelToKebab(fieldName);
+            ConfigKeyNameStrategy nameStrategy = property.defaultKeyNameStrategy() == ConfigKeyNameStrategy.INHERIT ? entity.defaultKeyNameStrategy() : property.defaultKeyNameStrategy();
+            name = switch (nameStrategy) {
+                case KEBAB_CASE -> StringUtils.camelToKebab(fieldName);
+                case CAMEL_CASE -> fieldName;
+                case UNDER_SCORE_CASE -> StringUtils.camelToUnder(fieldName);
+                default -> throw new IllegalArgumentException("未实现的策略:" + nameStrategy);
+            };
         } else {
             name = property.value();
         }
@@ -96,7 +103,7 @@ public class PropertyUtils {
             node.setTitle(g.name());
             node.setDescribe(g.describe());
             return node;
-        }).collect(Collectors.toList());
+        }).toList();
         Map<String, ConfigNode> groupMap = groupList
                 .stream()
                 .collect(Collectors.toMap(

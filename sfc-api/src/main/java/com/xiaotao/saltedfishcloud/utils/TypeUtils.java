@@ -177,7 +177,7 @@ public class TypeUtils {
      * @param input         输入的数据
      * @return              转换后的数据对象
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static <T> T convert(Class<T> targetType, Object input) {
         if (input == null) {
             return null;
@@ -191,7 +191,9 @@ public class TypeUtils {
             return (T)input.toString();
         } else if (isBoolean(targetType)) {
             return (T)toBoolean(input);
-        } else {
+        } else if (Enum.class.isAssignableFrom(targetType)) {
+            return (T)Enum.valueOf((Class<? extends Enum>) targetType, input.toString());
+        } else{
             throw new UnsupportedOperationException("无法将 " + input.getClass() + " 转为 " + targetType);
         }
     }

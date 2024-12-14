@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 配置服务实现类
@@ -89,7 +90,10 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
             configNodeInfo.setName(e.getName());
             configNodeInfo.setIcon(e.getIcon());
             configNodeInfo.setGroups(pluginManager.getPluginConfigNodeGroup(e.getName()));
-            configNodeInfo.getGroups().stream().flatMap(group -> group.getNodes().stream()).flatMap(group -> group.getNodes().stream()).forEach(node -> node.setValue(allConfig.get(node.getName())));
+            configNodeInfo.getGroups().stream()
+                    .flatMap(group -> Optional.ofNullable(group.getNodes()).stream().flatMap(Collection::stream))
+                    .flatMap(group -> Optional.ofNullable(group.getNodes()).stream().flatMap(Collection::stream))
+                    .forEach(node -> node.setValue(allConfig.get(node.getName())));
             return configNodeInfo;
         }).collect(Collectors.toList());
     }

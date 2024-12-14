@@ -2,9 +2,9 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.boot.logging.LogLevel;
 
 /**
  * 系统日志记录服务

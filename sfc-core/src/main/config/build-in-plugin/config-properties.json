@@ -85,45 +85,6 @@
     ]
   },
   {
-    "name": "log-manager",
-    "title": "日志管理",
-    "nodes": [
-      {
-        "name": "log-manager-general",
-        "title": "功能配置",
-        "nodes": [
-          {
-            "name": "sys.log.enable_log",
-            "inputType": "switch",
-            "title": "启用日志记录",
-            "defaultValue": "false",
-            "describe": "全局开关，若不启用则系统不会记录任何日志信息到额外的日志数据库"
-          },
-          {
-            "name": "sys.log.enable_auto_log",
-            "inputType": "switch",
-            "title": "启用系统自动日志记录",
-            "defaultValue": "false",
-            "describe": "常规输出到console的系统log日志是否自动记录到额外的日志数据库"
-          },
-          {
-            "name": "sys.log.auto_log_level",
-            "inputType": "select",
-            "title": "自动记录的日志级别",
-            "defaultValue": "WARN",
-            "options": [
-              { "title": "TRACE", "value": "TRACE" },
-              { "title": "DEBUG", "value": "DEBUG" },
-              { "title": "INFO", "value": "INFO" },
-              { "title": "WARN", "value": "WARN" },
-              { "title": "ERROR", "value": "ERROR" }
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  {
     "name": "user-manager",
     "title": "用户管理",
     "nodes": [

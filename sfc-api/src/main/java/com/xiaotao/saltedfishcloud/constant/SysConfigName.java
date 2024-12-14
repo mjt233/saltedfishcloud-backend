@@ -1,5 +1,8 @@
 package com.xiaotao.saltedfishcloud.constant;
 
+/**
+ * todo 后续统一使用配置参数实体类维护
+ */
 public interface SysConfigName {
 
     /**
@@ -85,25 +88,5 @@ public interface SysConfigName {
          * 是否允许匿名留言
          */
         String ALLOW_ANONYMOUS_COMMENT = "sys.safe.allow_anonymous_comments";
-    }
-
-    /**
-     * 日志相关
-     */
-    interface Log {
-        /**
-         * 是否启用日志记录功能
-         */
-        String ENABLE_LOG = "sys.log.enable_log";
-
-        /**
-         * 是否启用全局log自动记录
-         */
-        String ENABLE_AUTO_LOG = "sys.log.enable_auto_log";
-
-        /**
-         * 自动记录的系统日志级别
-         */
-        String AUTO_LOG_LEVEL = "sys.log.auto_log_level";
     }
 }

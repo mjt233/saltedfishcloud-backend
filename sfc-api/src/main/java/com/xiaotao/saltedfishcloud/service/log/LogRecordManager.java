@@ -2,8 +2,6 @@ package com.xiaotao.saltedfishcloud.service.log;
 
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 
-import java.util.Map;
-
 /**
  * 日志记录管理器，负责日志信息的分发记录
  */

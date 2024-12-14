@@ -13,8 +13,8 @@ import java.lang.annotation.*;
 public @interface ConfigProperty {
 
     /**
-     * 配置项名称，若ConfigPropertiesEntity注解中配置了prefix，则会默认添加prefix前缀。<br>
-     * 若未设定该值，则默认使用字段名的短横线命名作为配置项名。如：isEnable会自动转为is-enable。若存在prefix如quickshare，则组合后为：quickshare.is-enable
+     * 配置项名称，若ConfigPropertiesEntity注解中配置了prefix，则会默认添加prefix + "."前缀。<br>
+     * 若未设定该值，则根据{@link #defaultKeyNameStrategy}指定的策略自动生成。<br>
      */
     String value() default "";
 
@@ -72,5 +72,10 @@ public @interface ConfigProperty {
      * 当{@link #inputType()}为{@link ConfigInputType#TEMPLATE}时，给模板传入的参数json
      */
     String templateParams() default "{}";
+
+    /**
+     * 字段的默认配置key命名生成策略。
+     */
+    ConfigKeyNameStrategy defaultKeyNameStrategy() default ConfigKeyNameStrategy.INHERIT;
 
 }
