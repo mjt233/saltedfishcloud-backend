@@ -17,7 +17,6 @@ import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -133,8 +132,10 @@ public class DefaultLogRecordManager implements LogRecordManager {
         if (Objects.equals(true, config.getDisableConsoleOutput())) {
             rootLogger.detachAppender(this.consoleAppender);
         }
-        configService.addAfterSetListener("sys.log.disable_console_output", val -> {
-            if(TypeUtils.toBoolean(val)) {
+
+        // 监听参数变化，动态更新控制台的appender
+        configService.addAfterSetListener(SysLogConfig::getDisableConsoleOutput, disableConsoleOutput -> {
+            if(disableConsoleOutput) {
                 rootLogger.detachAppender(this.consoleAppender);
             } else {
                 rootLogger.addAppender(this.consoleAppender);

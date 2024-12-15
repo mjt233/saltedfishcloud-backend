@@ -14,6 +14,7 @@ import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
 import com.xiaotao.saltedfishcloud.service.MQService;
 import com.xiaotao.saltedfishcloud.utils.*;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
@@ -21,14 +22,12 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * 配置服务实现类
@@ -268,6 +267,49 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
             addAfterSetListener(configName, configConsumer);
             configConsumer.accept(getConfig(configName));
         }
+    }
+
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T, R> void addAfterSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
+        addAfterSetListener(meta.getConfigName(), rawVal -> {
+            Class<?> returnType = meta.getMethod().getReturnType();
+            listener.accept((R)TypeUtils.convert(returnType, rawVal));
+        });
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T, R> R getConfig(SFunc<T, R> keyLambdaFunc) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
+        return (R)TypeUtils.convert(meta.getMethod().getReturnType(), getConfig(meta.getConfigName()));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T, R> R getConfig(SFunc<T, R> keyLambdaFunc, R defaultValue) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
+        return Optional
+                .ofNullable((R)TypeUtils.convert(meta.getMethod().getReturnType(), getConfig(meta.getConfigName())))
+                .orElse(defaultValue);
+    }
+
+    @Override
+    public <T, R> boolean setConfig(SFunc<T, R> keyLambdaFunc, R value) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
+        return setConfig(meta.getConfigName(), TypeUtils.toString(value));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T, R> void addBeforeSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
+        addBeforeSetListener(meta.getConfigName(), rawVal -> {
+            Class<?> returnType = meta.getMethod().getReturnType();
+            listener.accept((R)TypeUtils.convert(returnType, rawVal));
+        });
     }
 }
 
