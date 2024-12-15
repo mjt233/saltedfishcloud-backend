@@ -43,4 +43,12 @@ public class SysLogConfig {
             }
     )
     private LogLevel autoLogLevel;
+
+    @ConfigProperty(
+            inputType = "switch",
+            title = "停用控制台日志输出",
+            defaultValue = "false",
+            describe = "停用后，系统初始化加载完成后将不再输出日志到控制台。（输出到文件不受影响）"
+    )
+    private Boolean disableConsoleOutput;
 }

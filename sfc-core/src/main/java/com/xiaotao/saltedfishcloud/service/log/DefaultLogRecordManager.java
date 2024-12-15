@@ -17,6 +17,7 @@ import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -43,6 +44,8 @@ public class DefaultLogRecordManager implements LogRecordManager {
     private final SysLogConfig config;
 
     private Lazy<ClusterNodeInfo> clusterNode;
+
+    private Appender<ILoggingEvent> consoleAppender;
 
     @Override
     public void saveRecord(LogRecord logRecord) {
@@ -119,12 +122,25 @@ public class DefaultLogRecordManager implements LogRecordManager {
 
         // 给根logger添加通用的日志appender接收所有的日志进行二次处理以便采集日志
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        ch.qos.logback.classic.Logger logger = context.getLogger(Logger.ROOT_LOGGER_NAME);
+        ch.qos.logback.classic.Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
         Appender<ILoggingEvent> newAppender = new SfcCustomAppender();
-        newAppender.setContext(logger.getLoggerContext());
+        newAppender.setContext(rootLogger.getLoggerContext());
         newAppender.setName("SFC_CUSTOM");
         newAppender.start();
-        logger.addAppender(newAppender);
+        rootLogger.addAppender(newAppender);
+
+        this.consoleAppender = rootLogger.getAppender("CONSOLE");
+        if (Objects.equals(true, config.getDisableConsoleOutput())) {
+            rootLogger.detachAppender(this.consoleAppender);
+        }
+        configService.addAfterSetListener("sys.log.disable_console_output", val -> {
+            if(TypeUtils.toBoolean(val)) {
+                rootLogger.detachAppender(this.consoleAppender);
+            } else {
+                rootLogger.addAppender(this.consoleAppender);
+            }
+        });
+
         log.info("日志记录服务初始化");
     }
 
