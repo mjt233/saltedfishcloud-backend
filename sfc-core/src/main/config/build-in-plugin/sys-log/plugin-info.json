@@ -1,0 +1,12 @@
+{
+  "name": "sysLog",
+  "loadType": "merge",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "describe": "系统日志记录",
+  "alias": "日志记录",
+  "version": "^project.version^",
+  "apiVersion": "^api.version^",
+  "autoLoad": [],
+  "icon": "mdi-math-log"
+}

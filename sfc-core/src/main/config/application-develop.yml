@@ -19,9 +19,9 @@ logging:
     test: info
     org: warn
     com: warn
-    com.sfc: debug
-    com.xiaotao: debug
-    com.saltedfishcloud: debug
+    com.sfc: info
+    com.xiaotao: info
+    com.saltedfishcloud: info
     com.xiaotao.saltedfishcloud.dao.mybatis: warn
 
 # 插件系统配置

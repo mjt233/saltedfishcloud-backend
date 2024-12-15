@@ -24,6 +24,7 @@ spring:
     properties:
       hibernate:
         order_inserts: true
+        enable_lazy_load_no_trans: true
         jdbc:
           batch_size: 200
 

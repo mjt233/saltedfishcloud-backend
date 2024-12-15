@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -51,6 +52,16 @@ public interface ConfigService {
      */
     String getConfig(String key);
 
+    /**
+     * 从配置表读取一个配置项的值
+     * @param key   配置名
+     * @param defaultValue 默认值
+     * @return      结果
+     */
+    default String getConfig(String key, String defaultValue) {
+        return Optional.ofNullable(getConfig(key)).orElse(defaultValue);
+    }
+
     default <T> T getJsonConfig(String key, Class<T> clazz) throws IOException {
         String config = getConfig(key);
         if (config == null) {
@@ -64,7 +75,7 @@ public interface ConfigService {
      * @param key       配置项
      * @param value     配置值
      */
-    boolean setConfig(String key, String value) throws IOException;
+    boolean setConfig(String key, String value);
 
     /**
      * 批量设置配置项

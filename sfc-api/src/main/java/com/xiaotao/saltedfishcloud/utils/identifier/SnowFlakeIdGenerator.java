@@ -1,23 +1,11 @@
 package com.xiaotao.saltedfishcloud.utils.identifier;
 
-import com.xiaotao.saltedfishcloud.model.template.BaseModel;
-import com.xiaotao.saltedfishcloud.utils.ClassUtils;
-import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
-import org.springframework.security.util.FieldUtils;
 
-import jakarta.persistence.Id;
 import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class SnowFlakeIdGenerator implements IdentifierGenerator {
-    private final Map<Class<?>, String> classIdCache = new ConcurrentHashMap<>();
-    public SnowFlakeIdGenerator() {
-        System.out.println(1);
-    }
     @Override
     public Serializable generate(SharedSessionContractImplementor sharedSessionContractImplementor, Object o) {
         return IdUtil.getId();

@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean {
+    private static final String LOG_PREFIX = "[异步任务管理]";
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -176,7 +177,7 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
             try {
                 hostName = InetAddress.getLocalHost().getHostName();
             } catch (UnknownHostException e) {
-                e.printStackTrace();
+                log.error("{} InetAddress.getLocalHost() 解析主机名出错", LOG_PREFIX, e);
                 hostName = "unknown";
             }
             record.setExecuteDate(new Date());
