@@ -56,6 +56,9 @@ public class DefaultLogRecordManager implements LogRecordManager {
         if (logRecord.getUid() == null) {
             logRecord.setUid(SecureUtils.getCurrentUid());
         }
+        if (logRecord.getProducerThread() == null) {
+            logRecord.setProducerThread(Thread.currentThread().getName());
+        }
 
         // todo 通过配置定义具体的日志存储记录方式，如使用第三方云服务提供的日志服务、Hadoop等服务
         logRecordService.saveRecord(logRecord);

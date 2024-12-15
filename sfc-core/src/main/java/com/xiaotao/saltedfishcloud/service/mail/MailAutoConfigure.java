@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.mail;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -25,6 +26,10 @@ public class MailAutoConfigure implements ApplicationRunner {
     @Autowired
     @Lazy
     private ConfigService configService;
+
+    @Autowired
+    @Lazy
+    private LogRecordManager logRecordManager;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -65,6 +70,6 @@ public class MailAutoConfigure implements ApplicationRunner {
 
     @Bean
     public JavaMailSender javaMailSender() {
-        return new SfcMailSender(mailProperties());
+        return new SfcMailSender(mailProperties(), logRecordManager);
     }
 }
