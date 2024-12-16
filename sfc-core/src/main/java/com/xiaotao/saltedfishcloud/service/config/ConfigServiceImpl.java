@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.config;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
+import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
 import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
@@ -27,6 +28,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -271,28 +273,41 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
 
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T, R> void addAfterSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
         PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
-        addAfterSetListener(meta.getConfigName(), rawVal -> {
-            Class<?> returnType = meta.getMethod().getReturnType();
-            listener.accept((R)TypeUtils.convert(returnType, rawVal));
-        });
+        Function<String, R> convertFunc = convertValTypeFunc(meta);
+        addAfterSetListener(meta.getConfigName(), rawVal -> listener.accept(convertFunc.apply(rawVal)));
+    }
+
+    @SuppressWarnings("unchecked")
+    private <R> Function<String,R> convertValTypeFunc(PropertyUtils.ConfigFieldMeta meta) {
+        Class<?> targetType = meta.getField().getType();
+        if(TypeUtils.isSupportConvert(targetType)) {
+            return rawVal -> (R)TypeUtils.convert(targetType, rawVal);
+        } else if (ConfigInputType.FORM.equals(meta.getConfigProperty().inputType())) {
+            return rawVal -> {
+                try {
+                    return (R) MapperHolder.parseJson(rawVal, targetType);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            };
+        } else {
+            throw new IllegalArgumentException("不支持将字符串类型转换为" + targetType);
+        }
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T, R> R getConfig(SFunc<T, R> keyLambdaFunc) {
         PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
-        return (R)TypeUtils.convert(meta.getMethod().getReturnType(), getConfig(meta.getConfigName()));
+        return ((Function<String, R>) convertValTypeFunc(meta)).apply(getConfig(meta.getConfigName()));
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T, R> R getConfig(SFunc<T, R> keyLambdaFunc, R defaultValue) {
-        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
         return Optional
-                .ofNullable((R)TypeUtils.convert(meta.getMethod().getReturnType(), getConfig(meta.getConfigName())))
+                .ofNullable(getConfig(keyLambdaFunc))
                 .orElse(defaultValue);
     }
 
@@ -303,13 +318,10 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T, R> void addBeforeSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
         PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
-        addBeforeSetListener(meta.getConfigName(), rawVal -> {
-            Class<?> returnType = meta.getMethod().getReturnType();
-            listener.accept((R)TypeUtils.convert(returnType, rawVal));
-        });
+        Function<String, R> convertFunc = convertValTypeFunc(meta);
+        addBeforeSetListener(meta.getConfigName(), rawVal -> listener.accept(convertFunc.apply(rawVal)));
     }
 }
 

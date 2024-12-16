@@ -21,4 +21,9 @@ public @interface ConfigPropertiesGroup {
      * 描述
      */
     String describe() default "";
+
+    /**
+     * 同组下的配置名称前缀
+     */
+    String prefix() default "";
 }

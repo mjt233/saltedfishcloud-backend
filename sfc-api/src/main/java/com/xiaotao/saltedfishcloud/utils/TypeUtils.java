@@ -191,11 +191,29 @@ public class TypeUtils {
             return (T)input.toString();
         } else if (isBoolean(targetType)) {
             return (T)toBoolean(input);
-        } else if (Enum.class.isAssignableFrom(targetType)) {
+        } else if (isEnum(targetType)) {
             return (T)Enum.valueOf((Class<? extends Enum>) targetType, input.toString());
         } else{
             throw new UnsupportedOperationException("无法将 " + input.getClass() + " 转为 " + targetType);
         }
+    }
+
+    /**
+     * 判断类型是否为枚举类型
+     * @param type  待判断的类型
+     * @return      枚举类型为true，否则为false
+     */
+    public static boolean isEnum(Class<?> type) {
+        return Enum.class.isAssignableFrom(type);
+    }
+
+    /**
+     * 判断类型是否支持直接转换
+     * @param targetType
+     * @return
+     */
+    public static boolean isSupportConvert(Class<?> targetType) {
+        return isNumber(targetType) || isString(targetType) || isBoolean(targetType) || isEnum(targetType);
     }
 
     public static String toString(Object input) {
