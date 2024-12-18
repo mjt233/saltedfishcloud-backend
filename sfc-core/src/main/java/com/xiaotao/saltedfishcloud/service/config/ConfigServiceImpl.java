@@ -162,6 +162,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
             c.accept(value);
         }
         configDao.setConfigure(key, value);
+        log.info("{}配置{}变更为 {}", LOG_PREFIX, key, value);
         mqService.sendBroadcast(MQTopic.CONFIG_CHANGE, new NameValueType<>(key, value));
         return true;
     }
