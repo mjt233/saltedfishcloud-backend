@@ -168,7 +168,6 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
 
     /**
      * 订阅配置变更事件处理
-     * todo 处理泛型json解析
      */
     @EventListener(ApplicationStartedEvent.class)
     public void subscribeConfigSetEvent() {
