@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
@@ -13,7 +13,7 @@ import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
-import com.xiaotao.saltedfishcloud.service.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -154,7 +154,6 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     public boolean setConfig(String key, String value) {
 
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
-        // todo 允许抛出异常中断执行
         for (Consumer<Pair<String, String>> listener : listeners) {
             listener.accept(new Pair<>(key, value));
         }
@@ -163,7 +162,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
         }
         configDao.setConfigure(key, value);
         log.info("{}配置{}变更为 {}", LOG_PREFIX, key, value);
-        mqService.sendBroadcast(MQTopic.CONFIG_CHANGE, new NameValueType<>(key, value));
+        mqService.sendBroadcast(MQTopicConstants.CONFIG_CHANGE, new NameValueType<>(key, value));
         return true;
     }
 
@@ -172,21 +171,16 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
      * todo 处理泛型json解析
      */
     @EventListener(ApplicationStartedEvent.class)
-    @SuppressWarnings("unchecked")
     public void subscribeConfigSetEvent() {
-        mqService.subscribeBroadcast(MQTopic.CONFIG_CHANGE, msg -> {
-            try {
-                NameValueType<String> nameValue = (NameValueType<String>)MapperHolder.parseAsJson(msg.getBody(), NameValueType.class);
-                log.info("{}配置项{}设置值：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue());
-                for (Consumer<String> c : configAfterSetListeners.getOrDefault(nameValue.getName(), Collections.emptyList())) {
-                    try {
-                        c.accept(nameValue.getValue());
-                    } catch (Throwable e) {
-                        log.error("{}配置项{}值设置后置处理出错，变更内容：{}，错误：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue(), e);
-                    }
+        mqService.subscribeBroadcast(MQTopicConstants.CONFIG_CHANGE, msg -> {
+            NameValueType<String> nameValue = msg.body();
+            log.info("{}配置项{}设置值：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue());
+            for (Consumer<String> c : configAfterSetListeners.getOrDefault(nameValue.getName(), Collections.emptyList())) {
+                try {
+                    c.accept(nameValue.getValue());
+                } catch (Throwable e) {
+                    log.error("{}配置项{}值设置后置处理出错，变更内容：{}，错误：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue(), e);
                 }
-            } catch (IOException e) {
-                log.error("{}配置项值设置后置处理json解析出错，变更内容：{}，错误：{}", LOG_PREFIX, msg, e);
             }
         });
     }

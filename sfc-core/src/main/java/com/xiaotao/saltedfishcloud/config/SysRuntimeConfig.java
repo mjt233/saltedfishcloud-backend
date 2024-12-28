@@ -1,9 +1,10 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.constant.SysConfigName;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,11 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -37,6 +36,9 @@ public class SysRuntimeConfig implements ApplicationRunner {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private MQService mqService;
 
     @Getter
     private boolean enableRegCode;
@@ -79,7 +81,7 @@ public class SysRuntimeConfig implements ApplicationRunner {
         }
 
         // 发布保护模式切换消息
-        redisTemplate.convertAndSend(MQTopic.PROTECT_LEVEL_SWITCH, level.toString());
+        mqService.sendBroadcast(MQTopicConstants.PROTECT_LEVEL_SWITCH, level);
     }
 
     protected void changeProtectModeLevel(ProtectLevel level) {
@@ -116,12 +118,11 @@ public class SysRuntimeConfig implements ApplicationRunner {
      * 监听分布式集群中触发保护级别切换信号
      */
     private void listenStoreTypeChange() {
-
-        redisMessageListenerContainer.addMessageListener((message, pattern) -> {
-            ProtectLevel level = ProtectLevel.valueOf((String)redisTemplate.getValueSerializer().deserialize(message.getBody()));
+        mqService.subscribeBroadcast(MQTopicConstants.PROTECT_LEVEL_SWITCH, msg -> {
+            ProtectLevel level = msg.body();
             log.debug("[Runtime Config]因消息通知,系统保护级别切换为：{}", level);
             changeProtectModeLevel(level);
-        }, new PatternTopic(MQTopic.PROTECT_LEVEL_SWITCH));
+        });
     }
 
 

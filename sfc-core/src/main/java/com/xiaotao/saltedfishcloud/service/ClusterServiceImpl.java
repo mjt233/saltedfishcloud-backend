@@ -1,10 +1,12 @@
 package com.xiaotao.saltedfishcloud.service;
 
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.RequestParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -169,14 +171,15 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
         Boolean success = redisTemplate.opsForValue().setIfAbsent(getKey(), self);
         redisTemplate.expire(getKey(), Duration.ofSeconds(10));
         if (Boolean.TRUE.equals(success)) {
-            mqService.sendBroadcast(MQTopic.CLUSTER_NODE_ONLINE, self);
+            MQTopic<ClusterNodeInfo> clusterNodeOnline = MQTopicConstants.CLUSTER_NODE_ONLINE;
+            mqService.sendBroadcast(clusterNodeOnline, self);
         }
 
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        mqService.subscribeBroadcast(MQTopic.CLUSTER_NODE_ONLINE, msg -> log.info("[集群管理]集群节点上线:{}", msg.getBody().toString()));
+        mqService.subscribeBroadcast(MQTopicConstants.CLUSTER_NODE_ONLINE, msg -> log.info("[集群管理]集群节点上线:{}", msg.body()));
         registerSelf();
     }
 

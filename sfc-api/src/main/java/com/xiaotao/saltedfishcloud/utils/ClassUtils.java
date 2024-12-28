@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.*;
@@ -177,5 +179,39 @@ public class ClassUtils {
                 .data(names)
                 .param(url)
                 .build();
+    }
+
+    /**
+     * 根据继承的父类获取泛型类型
+     * @param o     泛型对象
+     * @param index 泛型索引
+     */
+    public static Class<?> getTypeParameterBySuperClass(Object o, int index) {
+        Type type = o.getClass().getGenericSuperclass();
+        if (type instanceof ParameterizedType) {
+            Type actualTypeArgument = ((ParameterizedType) type).getActualTypeArguments()[index];
+            return getClassByType(actualTypeArgument);
+        }
+        throw new IllegalArgumentException("找不到" + o + "的泛型");
+    }
+
+    private static Class<?> getClassByType(Type type) {
+        if (type instanceof Class) {
+            return (Class<?>) type;
+        }
+        if (type instanceof ParameterizedType) {
+            Type rawType = ((ParameterizedType) type).getRawType();
+            return getClassByType(rawType);
+        }
+        throw new RuntimeException("无法找到" + type + "对应的具体class");
+    }
+
+
+    /**
+     * 根据继承的父类获取第一个泛型类型
+     * @param o     泛型对象
+     */
+    public static Class<?> getTypeParameterBySuperClass(Object o) {
+        return getTypeParameterBySuperClass(o, 0);
     }
 }
