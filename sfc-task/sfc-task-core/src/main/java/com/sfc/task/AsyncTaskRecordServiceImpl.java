@@ -14,6 +14,9 @@ import org.springframework.stereotype.Component;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -25,16 +28,16 @@ public class AsyncTaskRecordServiceImpl implements AsyncTaskRecordService {
     public CommonPageInfo<AsyncTaskRecord> listRecord(AsyncTaskQueryParam param) {
         UIDValidator.validate(Optional.ofNullable(param.getUid()).orElse(User.PUBLIC_USER_ID), true);
         return CommonPageInfo.of(asyncTaskRecordRepo.findAll((Specification<AsyncTaskRecord>) (root, query, criteriaBuilder) -> {
-            Predicate condition = criteriaBuilder.conjunction();
+            List<Predicate> conditions = new ArrayList<>();
             if (param.getUid() != null) {
-                criteriaBuilder.and(condition, criteriaBuilder.equal(root.get("uid"), param.getUid()));
+                conditions.add(criteriaBuilder.equal(root.get("uid"), param.getUid()));
             }
             if (param.getStatus() != null && !param.getStatus().isEmpty()) {
                 CriteriaBuilder.In<Object> inStatus = criteriaBuilder.in(root.get("status"));
                 param.getStatus().forEach(inStatus::value);
-                criteriaBuilder.and(condition, inStatus);
+                conditions.add(inStatus);
             }
-            return query.where(condition).getRestriction();
+            return criteriaBuilder.and(conditions.toArray(new Predicate[0]));
         }, PageRequest.of(param.getPage(), param.getSize(), Sort.Direction.DESC, "id")));
     }
 }
