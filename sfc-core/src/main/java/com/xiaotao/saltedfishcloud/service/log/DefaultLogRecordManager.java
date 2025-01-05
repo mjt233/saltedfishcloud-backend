@@ -118,37 +118,49 @@ public class DefaultLogRecordManager implements LogRecordManager, InitializingBe
     }
 
     public class SfcCustomAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
+        /**
+         * 调用次数记录。通过记录调用次数抑以制循环调用<br>
+         *
+         */
+        private final ThreadLocal<Boolean> inCallLocal = new ThreadLocal<>();
 
         @Override
         protected void append(ILoggingEvent event) {
-            event.getMessage();
-            if (!Objects.equals(true, config.getEnableLog()) || !Objects.equals(true, config.getEnableAutoLog())) {
+            if (inCallLocal.get() != null) {
                 return;
             }
-            Level recordLevel = Optional.ofNullable(config.getAutoLogLevel()).map(LogLevel::getLevel).orElse(null);
-            if (recordLevel == null || event.getLevel().levelInt < recordLevel.levelInt) {
-                return;
-            }
-            StringBuilder msgAbstract = new StringBuilder(event.getFormattedMessage());
-
-            StringBuilder detail =  new StringBuilder(event.getFormattedMessage());
-            if (event.getThrowableProxy() != null) {
-                IThrowableProxy throwableProxy = event.getThrowableProxy();
-                msgAbstract.append(" ").append(throwableProxy.getClassName()).append(": ").append(throwableProxy.getMessage());
-                detail.append("\n")
-                        .append(throwableProxy.getClassName()).append(": ").append(throwableProxy.getMessage())
-                        .append("\n");
-                for (StackTraceElementProxy traceElementProxy : throwableProxy.getStackTraceElementProxyArray()) {
-                    detail.append("\t").append(traceElementProxy.toString()).append("\n");
+            inCallLocal.set(true);
+            try {
+                if (!Objects.equals(true, config.getEnableLog()) || !Objects.equals(true, config.getEnableAutoLog())) {
+                    return;
                 }
+                Level recordLevel = Optional.ofNullable(config.getAutoLogLevel()).map(LogLevel::getLevel).orElse(null);
+                if (recordLevel == null || event.getLevel().levelInt < recordLevel.levelInt) {
+                    return;
+                }
+                StringBuilder msgAbstract = new StringBuilder(event.getFormattedMessage());
+
+                StringBuilder detail =  new StringBuilder(event.getFormattedMessage());
+                if (event.getThrowableProxy() != null) {
+                    IThrowableProxy throwableProxy = event.getThrowableProxy();
+                    msgAbstract.append(" ").append(throwableProxy.getClassName()).append(": ").append(throwableProxy.getMessage());
+                    detail.append("\n")
+                            .append(throwableProxy.getClassName()).append(": ").append(throwableProxy.getMessage())
+                            .append("\n");
+                    for (StackTraceElementProxy traceElementProxy : throwableProxy.getStackTraceElementProxyArray()) {
+                        detail.append("\t").append(traceElementProxy.toString()).append("\n");
+                    }
+                }
+                saveRecord(LogRecord.builder()
+                        .level(com.xiaotao.saltedfishcloud.service.log.LogLevel.valueOf(event.getLevel().toString()))
+                        .msgAbstract(msgAbstract.toString())
+                        .msgDetail(detail.toString())
+                        .type("logger")
+                        .producerThread(event.getThreadName())
+                        .build());
+            } finally {
+                inCallLocal.remove();
             }
-            saveRecordAsync(LogRecord.builder()
-                    .level(com.xiaotao.saltedfishcloud.service.log.LogLevel.valueOf(event.getLevel().toString()))
-                    .msgAbstract(msgAbstract.toString())
-                    .msgDetail(detail.toString())
-                    .type("logger")
-                    .producerThread(event.getThreadName())
-                    .build());
         }
     }
 
