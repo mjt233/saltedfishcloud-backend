@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,8 +54,12 @@ public class LogRecordDBStorage extends AbstractLogRecordStorage implements LogR
                                     .ifPresent(type -> conditions.add(cb.equal(root.get("type"), type)));
 
                             Optional.ofNullable(queryParam.getLevel())
-                                    .filter(l -> !l.isEmpty())
-                                    .ifPresent(l -> conditions.add(cb.in(root.get("type")).in(l)));
+                                    .filter(enumList -> !enumList.isEmpty())
+                                    .ifPresent(enumList -> {
+                                        CriteriaBuilder.In<Object> levelCondition = cb.in(root.get("level"));
+                                        enumList.stream().map(e -> e.getLevel().toString()).forEach(levelCondition::value);
+                                        conditions.add(levelCondition);
+                                    });
 
                             Optional.ofNullable(queryParam.getDateRange())
                                     .ifPresent(range -> {
