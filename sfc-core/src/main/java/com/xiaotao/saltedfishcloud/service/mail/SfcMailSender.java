@@ -73,6 +73,7 @@ public class SfcMailSender extends JavaMailSenderImpl {
             isSuccess = true;
         } catch (RuntimeException e) {
             exception = e;
+            throw e;
         } finally {
             // ===== 记录本次发送邮件日志 ====
             Map<String, Object> detail = new HashMap<>();
