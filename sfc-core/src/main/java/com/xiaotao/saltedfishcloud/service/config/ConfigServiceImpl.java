@@ -9,7 +9,6 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
-import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
@@ -43,8 +42,6 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     private ConfigDao configDao;
     @Resource
     private StoreTypeSwitch storeTypeSwitch;
-    @Resource
-    private DatabaseInitializer databaseInitializer;
 
     @Resource
     private PluginManager pluginManager;
@@ -224,7 +221,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        databaseInitializer.init();
+
     }
 
 

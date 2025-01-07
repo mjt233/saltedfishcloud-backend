@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.SFunc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -14,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * 系统统一配置服务

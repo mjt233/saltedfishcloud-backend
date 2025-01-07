@@ -5,13 +5,11 @@ import com.xiaotao.saltedfishcloud.annotations.*;
 import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.SelectOption;
-import com.xiaotao.saltedfishcloud.service.config.SFunc;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -208,32 +206,22 @@ public class PropertyUtils {
 
     /**
      * 通过被{@link ConfigPropertyEntity}修饰的参数配置类的字段getter方法lambda表达式来获取对应字段的配置项名称及其元数据。<br>
-     * 实现参考 <a href="https://www.cnblogs.com/xw-01/p/18308286">从Mybatis-Plus开始认识SerializedLambda - 二价亚铁 - 博客园</a>
      * @param func  配置类字段getter方法的lambda表达式。 e.g. SysLogRecord::getEnableLog
      * @return  配置key
      */
     public static <T, R> ConfigFieldMeta parseLambdaConfigNameMeta(SFunc<T, R> func) {
         try {
-            Method writeReplace = func.getClass().getDeclaredMethod("writeReplace");
-            writeReplace.setAccessible(true);
-            SerializedLambda writeReplaceInvoker = (SerializedLambda) writeReplace.invoke(func);
-            Class<?> propertyEntityClass = func.getClass().getClassLoader().loadClass(writeReplaceInvoker.getImplClass().replaceAll("/", "."));
-            String methodName = writeReplaceInvoker.getImplMethodName();
+            ClassUtils.LambdaMetaData lambdaMetaData = ClassUtils.parseGetterLambdaMetaData(func);
+            Class<?> propertyEntityClass = lambdaMetaData.entityClass();
+            Field field = lambdaMetaData.field();
+            String fieldName = lambdaMetaData.fieldName();
+            Method method = lambdaMetaData.method();
 
             ConfigPropertyEntity propertyEntity = propertyEntityClass.getDeclaredAnnotation(ConfigPropertyEntity.class);
             if (propertyEntity == null) {
                 throw new IllegalArgumentException("类 " + propertyEntityClass + " 缺少@ConfigPropertyEntity");
             }
 
-            String fieldName;
-            if (methodName.startsWith("is")) {
-                fieldName = methodName.substring(2);
-            } else if (methodName.startsWith("get")) {
-                fieldName = StringUtils.camelToLowerCamel(methodName.substring(3));
-            } else {
-                throw new IllegalArgumentException("类 " + propertyEntityClass + " 的方法名称 " + methodName + "不符合规范，需要为is或get开头");
-            }
-            Field field = propertyEntityClass.getDeclaredField(fieldName);
             ConfigProperty configProperty = field.getAnnotation(ConfigProperty.class);
             if (configProperty == null) {
                 throw new IllegalArgumentException("类 " + propertyEntityClass + " 的字段 " + fieldName + " 缺少@ConfigProperty注解");
@@ -245,7 +233,7 @@ public class PropertyUtils {
             String configName = getConfigName(propertyEntity, configPropertiesGroup, configProperty, fieldName);
             return ConfigFieldMeta.builder()
                     .configName(configName)
-                    .method(propertyEntityClass.getDeclaredMethod(methodName))
+                    .method(method)
                     .fieldName(fieldName)
                     .field(field)
                     .entityClass(propertyEntityClass)

@@ -14,15 +14,15 @@ class ObjectUtilsTest {
 
     @Test
     void getEntityTableName() {
-        assertEquals("file_table", ObjectUtils.getEntityTableName(FileInfo.class));
+        assertEquals("file_table", ClassUtils.getEntityTableName(FileInfo.class));
     }
 
     @Test
     void getClassEntityFieldGetter() {
-        List<Tuple2<String, Method>> list = ObjectUtils.getClassEntityFieldGetter(ProxyInfo.class);
+        List<Tuple2<String, Method>> list = ClassUtils.getClassEntityFieldGetter(ProxyInfo.class);
         assertEquals(9, list.size());
 
-        list = ObjectUtils.getClassEntityFieldGetter(FileInfo.class);
+        list = ClassUtils.getClassEntityFieldGetter(FileInfo.class);
         assertEquals(11, list.size());
     }
 }

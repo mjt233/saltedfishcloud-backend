@@ -1,13 +1,17 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.model.Result;
+import jakarta.persistence.Column;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.*;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.*;
@@ -16,9 +20,51 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 public class ClassUtils {
     private static final Map<Class<?>, List<Field>> FIELD_CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * 获取实体类的物理数据表名
+     */
+    public static String getEntityTableName(Class<?> clazz) {
+        Table tableAnnotation = clazz.getAnnotation(Table.class);
+        if (tableAnnotation != null) {
+            return tableAnnotation.name();
+        }
+        String simpleName = clazz.getSimpleName();
+        int i = simpleName.indexOf("$");
+        if (i >= 0) {
+            simpleName = simpleName.substring(0, i);
+        }
+        return StringUtils.camelToUnder(simpleName);
+    }
+
+    /**
+     * 获取类的数据表实体字段及其getter方法
+     */
+    public static List<Tuple2<String, Method>> getClassEntityFieldGetter(Class<?> clazz) {
+        List<Field> fieldList = getAllFields(clazz);
+        return fieldList.stream()
+                .filter(f -> f.getAnnotation(Transient.class) == null && !Modifier.isTransient(f.getModifiers()) && !Modifier.isStatic(f.getModifiers()))
+                .filter(f -> Optional.ofNullable(f.getAnnotation(Column.class)).map(Column::insertable).orElse(true))
+                .map(f -> {
+                    try {
+                        return Tuples.of(StringUtils.camelToUnder(f.getName()), clazz.getMethod("get" + StringUtils.camelToUpperCamel(f.getName())));
+                    } catch (NoSuchMethodException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
+    public record LambdaMetaData(
+            String fieldName,
+            Method method,
+            Field field,
+            Class<?> entityClass
+    ){}
 
     /**
      * 从类中获取指定注解的类访问器工厂
@@ -213,5 +259,41 @@ public class ClassUtils {
      */
     public static Class<?> getTypeParameterBySuperClass(Object o) {
         return getTypeParameterBySuperClass(o, 0);
+    }
+
+    /**
+     * 根据Getter方法的Lambda表达式解析对应的class和field。<br>
+     * e.g.
+     * <pre><code>
+     * ClassUtils.parseGetterLambdaMetaData(SomeClass::getSonField);
+     * </code></pre>
+     * 实现参考 <a href="https://www.cnblogs.com/xw-01/p/18308286">从Mybatis-Plus开始认识SerializedLambda - 二价亚铁 - 博客园</a>
+     */
+    public static <T,R> LambdaMetaData parseGetterLambdaMetaData(SFunc<T, R> func) {
+        try {
+            Method writeReplace = func.getClass().getDeclaredMethod("writeReplace");
+            writeReplace.setAccessible(true);
+            SerializedLambda writeReplaceInvoker = (SerializedLambda) writeReplace.invoke(func);
+            Class<?> propertyEntityClass = func.getClass().getClassLoader().loadClass(writeReplaceInvoker.getImplClass().replaceAll("/", "."));
+            String methodName = writeReplaceInvoker.getImplMethodName();
+
+            String fieldName;
+            if (methodName.startsWith("is")) {
+                fieldName = methodName.substring(2);
+            } else if (methodName.startsWith("get")) {
+                fieldName = StringUtils.camelToLowerCamel(methodName.substring(3));
+            } else {
+                throw new IllegalArgumentException("类 " + propertyEntityClass + " 的方法名称 " + methodName + "不符合规范，需要为is或get开头");
+            }
+            Field field = propertyEntityClass.getDeclaredField(fieldName);
+            return new LambdaMetaData(
+                    fieldName,
+                    propertyEntityClass.getDeclaredMethod(methodName),
+                    field,
+                    propertyEntityClass
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("通过lambda字段信息异常", e);
+        }
     }
 }
