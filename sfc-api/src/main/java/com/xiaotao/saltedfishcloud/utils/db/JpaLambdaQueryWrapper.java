@@ -12,15 +12,9 @@ import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class JpaLambdaQueryWrapper<T> {
-    /**
-     * lambda表达式对于的字段名称缓存
-     */
-    private final static Map<SFunc<?,?>, String> CACHE = new ConcurrentHashMap<>();
 
     /**
      * 当前QueryWrapper已添加的条件
@@ -130,10 +124,8 @@ public class JpaLambdaQueryWrapper<T> {
     }
 
     private <R> String getFieldName(SFunc<T, R> func) {
-        return CACHE.computeIfAbsent(func, f -> {
-            ClassUtils.LambdaMetaData metaData = ClassUtils.parseGetterLambdaMetaData(func);
-            return metaData.fieldName();
-        });
+        ClassUtils.LambdaMetaData metaData = ClassUtils.parseGetterLambdaMetaData(func);
+        return metaData.fieldName();
     }
 
     private static Number toNumberVal(Object val) {
