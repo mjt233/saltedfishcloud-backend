@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.param.RangeRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
+import com.xiaotao.saltedfishcloud.model.vo.LogRecordStatisticVO;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -49,6 +52,11 @@ public class LogRecordDBStorage extends AbstractLogRecordStorage implements LogR
                         Sort.by(Sort.Direction.DESC, "createAt")
                 )
         ));
+    }
+
+    @Override
+    public List<LogRecordStatisticVO> queryStatistic(RangeRequest<Date> request) {
+        return logRecordRepo.queryStatistic(request.begin(), request.end());
     }
 
     @Override

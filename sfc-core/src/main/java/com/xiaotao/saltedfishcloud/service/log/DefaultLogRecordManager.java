@@ -14,13 +14,16 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysLogConfig;
 import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
+import com.xiaotao.saltedfishcloud.model.param.RangeRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
+import com.xiaotao.saltedfishcloud.model.vo.LogRecordStatisticVO;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -218,6 +221,14 @@ public class DefaultLogRecordManager implements LogRecordManager, InitializingBe
     public CommonPageInfo<LogRecord> queryLog(LogRecordQueryParam param) {
         return Optional.ofNullable(getMainStorageName())
                 .map(e -> e.query(param))
+                .orElse(null);
+    }
+
+    @Nullable
+    @Override
+    public List<LogRecordStatisticVO> queryStatistic(RangeRequest<Date> request) {
+        return Optional.ofNullable(getMainStorageName())
+                .map(e -> e.queryStatistic(request))
                 .orElse(null);
     }
 

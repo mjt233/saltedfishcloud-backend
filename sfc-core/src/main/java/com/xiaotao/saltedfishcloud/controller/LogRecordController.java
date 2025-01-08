@@ -6,7 +6,9 @@ import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
+import com.xiaotao.saltedfishcloud.model.param.RangeRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
+import com.xiaotao.saltedfishcloud.model.vo.LogRecordStatisticVO;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +34,13 @@ public class LogRecordController {
     @ApiOperation("查询日志")
     public JsonResult<CommonPageInfo<LogRecord>> queryLog(@RequestBody LogRecordQueryParam queryParam) {
         return JsonResultImpl.getInstance(logRecordManager.queryLog(queryParam));
+    }
+
+    @RequestMapping("queryLogStatistic")
+    @RolesAllowed(SysRole.ADMIN)
+    @ApiOperation("查询日志汇总统计数据")
+    public JsonResult<List<LogRecordStatisticVO>> queryLogStatistic(@RequestBody RangeRequest<Date> queryParam) {
+        return JsonResultImpl.getInstance(logRecordManager.queryStatistic(queryParam));
     }
 
     @RequestMapping("listStorage")

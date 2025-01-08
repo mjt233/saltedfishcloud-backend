@@ -2,9 +2,12 @@ package com.xiaotao.saltedfishcloud.service.log;
 
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
+import com.xiaotao.saltedfishcloud.model.param.RangeRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
+import com.xiaotao.saltedfishcloud.model.vo.LogRecordStatisticVO;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -28,6 +31,13 @@ public interface LogRecordManager {
      */
     @Nullable
     CommonPageInfo<LogRecord> queryLog(LogRecordQueryParam queryParam);
+
+    /**
+     * 使用主存储器按日期范围统计日志
+     * @return 查询结果。若不存在主存储器，则返回null
+     */
+    @Nullable
+    List<LogRecordStatisticVO> queryStatistic(RangeRequest<Date> request);
 
     /**
      * 注册一个日志存储器
