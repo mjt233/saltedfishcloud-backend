@@ -39,7 +39,7 @@ public class LogRecordController {
     @RequestMapping("queryLogStatistic")
     @RolesAllowed(SysRole.ADMIN)
     @ApiOperation("查询日志汇总统计数据")
-    public JsonResult<List<LogRecordStatisticVO>> queryLogStatistic(@RequestBody RangeRequest<Date> queryParam) {
+    public JsonResult<List<LogRecordStatisticVO>> queryLogStatistic(@RequestBody(required = false) RangeRequest<Date> queryParam) {
         return JsonResultImpl.getInstance(logRecordManager.queryStatistic(queryParam));
     }
 

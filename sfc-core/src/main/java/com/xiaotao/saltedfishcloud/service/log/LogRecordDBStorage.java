@@ -41,7 +41,7 @@ public class LogRecordDBStorage extends AbstractLogRecordStorage implements LogR
                         .eq(LogRecord::getUid, queryParam.getUid())
                         .eq(LogRecord::getProducerHost, queryParam.getHost())
                         .eq(LogRecord::getProducerPid, queryParam.getPid())
-                        .eq(LogRecord::getType, queryParam.getType())
+                        .in(LogRecord::getType, queryParam.getType())
                         .in(LogRecord::getLevel, queryParam.getLevel())
                         .ge(LogRecord::getCreateAt, Optional.ofNullable(queryParam.getDateRange()).map(RangeRequest::begin).orElse(null))
                         .le(LogRecord::getCreateAt, Optional.ofNullable(queryParam.getDateRange()).map(RangeRequest::end).orElse(null))
@@ -56,7 +56,11 @@ public class LogRecordDBStorage extends AbstractLogRecordStorage implements LogR
 
     @Override
     public List<LogRecordStatisticVO> queryStatistic(RangeRequest<Date> request) {
-        return logRecordRepo.queryStatistic(request.begin(), request.end());
+        if (request != null && request.begin() != null && request.end() != null) {
+            return logRecordRepo.queryStatistic(request.begin(), request.end());
+        } else {
+            return logRecordRepo.queryStatistic();
+        }
     }
 
     @Override

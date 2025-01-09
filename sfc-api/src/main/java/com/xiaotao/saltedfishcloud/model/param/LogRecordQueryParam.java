@@ -15,7 +15,7 @@ import java.util.List;
 @ApiModel("日志记录查询参数")
 public class LogRecordQueryParam {
     @ApiModelProperty("日志类型")
-    private String type;
+    private List<String> type;
 
     @ApiModelProperty("指定主机")
     private String host;

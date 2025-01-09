@@ -27,4 +27,18 @@ public interface LogRecordRepo extends BaseRepo<LogRecord> {
     List<LogRecordStatisticVO> queryStatistic(@Param("begin") Date begin,@Param("end") Date end);
 
 
+    @Query("""
+        SELECT
+            new com.xiaotao.saltedfishcloud.model.vo.LogRecordStatisticVO(
+                r.type,
+                COUNT(r)
+            )
+        FROM
+            LogRecord r
+        GROUP BY
+            r.type
+    """)
+    List<LogRecordStatisticVO> queryStatistic();
+
+
 }
