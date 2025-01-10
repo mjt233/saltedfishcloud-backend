@@ -132,7 +132,7 @@ public class SfcMailSender extends JavaMailSenderImpl {
                             .type("发送邮件")
                             .msgAbstract(msgAbstract)
                             .msgDetail(msgDetail)
-                            .level(LogLevel.INFO)
+                            .level(isSuccess ? LogLevel.INFO : LogLevel.ERROR)
                     .build());
         }
     }
