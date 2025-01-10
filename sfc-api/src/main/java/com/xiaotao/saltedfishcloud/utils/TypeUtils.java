@@ -3,6 +3,15 @@ package com.xiaotao.saltedfishcloud.utils;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -191,11 +200,42 @@ public class TypeUtils {
             return (T)input.toString();
         } else if (isBoolean(targetType)) {
             return (T)toBoolean(input);
-        } else if (Enum.class.isAssignableFrom(targetType)) {
+        } else if (isEnum(targetType)) {
             return (T)Enum.valueOf((Class<? extends Enum>) targetType, input.toString());
-        } else{
+        } else {
             throw new UnsupportedOperationException("无法将 " + input.getClass() + " 转为 " + targetType);
         }
+    }
+
+    public static boolean isDate(Class<?> type) {
+        return Date.class == type || Date.class.isAssignableFrom(type);
+    }
+
+    public static Date getDate(String input, String pattern) {
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+        try {
+            return sdf.parse(input);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 判断类型是否为枚举类型
+     * @param type  待判断的类型
+     * @return      枚举类型为true，否则为false
+     */
+    public static boolean isEnum(Class<?> type) {
+        return Enum.class.isAssignableFrom(type);
+    }
+
+    /**
+     * 判断类型是否支持直接转换
+     * @param targetType
+     * @return
+     */
+    public static boolean isSupportConvert(Class<?> targetType) {
+        return isNumber(targetType) || isString(targetType) || isBoolean(targetType) || isEnum(targetType) || isDate(targetType);
     }
 
     public static String toString(Object input) {

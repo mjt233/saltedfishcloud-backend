@@ -2,10 +2,15 @@ package com.xiaotao.saltedfishcloud.service;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.enums.MQOffsetStrategy;
 import com.xiaotao.saltedfishcloud.model.MQMessage;
+import com.xiaotao.saltedfishcloud.model.vo.MQMessageRecord;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
+import com.xiaotao.saltedfishcloud.utils.ClassUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -23,6 +28,7 @@ import org.springframework.stereotype.Service;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
@@ -56,12 +62,17 @@ public class RedisMQService implements MQService {
     }
 
     @Override
+    public <T> void createQueue(MQTopic<T> topic) {
+        this.createQueue(topic.getTopic());
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public void push(String topic, Object message) throws JsonProcessingException {
         String messageBody = message instanceof CharSequence ? message.toString() : MapperHolder.toJson(message);
         MapRecord<String, String, String> record = StreamRecords.newRecord()
                 .ofMap(Collections.singletonMap("msg", messageBody))
-                .withStreamKey(MQTopic.Prefix.STREAM_PREFIX + topic);
+                .withStreamKey(MQTopicConstants.Prefix.STREAM_PREFIX + topic);
         ByteRecord byteRecord = record.serialize(
                 (RedisSerializer<? super String>)redisTemplate.getKeySerializer(),
                 (RedisSerializer<? super String>)redisTemplate.getHashKeySerializer(),
@@ -72,13 +83,37 @@ public class RedisMQService implements MQService {
     }
 
     @Override
+    public <T> void push(MQTopic<T> topic, T message) throws IOException {
+        push(topic.getTopic(), message);
+    }
+
+    @Override
     public void destroyQueue(String topic) {
-        redisTemplate.delete(MQTopic.Prefix.STREAM_PREFIX + topic);
+        redisTemplate.delete(MQTopicConstants.Prefix.STREAM_PREFIX + topic);
+    }
+
+    @Override
+    public void destroyQueue(MQTopic<?> topic) {
+        this.destroyQueue(topic.getTopic());
     }
 
     @Override
     public long subscribeMessageQueue(String topic, String group, Consumer<MQMessage> consumer) {
         return this.subscribeMessageQueue(topic, group, MQOffsetStrategy.AT_TAIL, null, consumer);
+    }
+
+    @Override
+    public <T> long subscribeMessageQueue(MQTopic<T> topic, String group, Consumer<MQMessageRecord<T>> consumer) {
+        return this.subscribeMessageQueue(topic, group, MQOffsetStrategy.AT_TAIL, null, consumer);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> long subscribeMessageQueue(MQTopic<T> topic, String group, MQOffsetStrategy offsetStrategy, @Nullable String offsetPoint, Consumer<MQMessageRecord<T>> consumer) {
+        Class<?> clazz = ClassUtils.getTypeParameterBySuperClass(topic);
+        return this.subscribeMessageQueue(topic.getTopic(), group, offsetStrategy, offsetPoint, mqMessage -> {
+            consumer.accept(new MQMessageRecord<>(mqMessage.getTopic(), (T) TypeUtils.convert(clazz, mqMessage.getBody())));
+        });
     }
 
     @Override
@@ -92,7 +127,7 @@ public class RedisMQService implements MQService {
             offset = ReadOffset.from(Objects.requireNonNull(offsetPoint, "offsetPoint不能为null"));
         }
 
-        String key = MQTopic.Prefix.STREAM_PREFIX + topic;
+        String key = MQTopicConstants.Prefix.STREAM_PREFIX + topic;
         log.debug("{}新增对流{} 的订阅组: {}", LOG_PREFIX, key, group);
         redisTemplate.opsForStream().createGroup(key, group);
         long id = IdUtil.getId();
@@ -116,13 +151,40 @@ public class RedisMQService implements MQService {
     public void unsubscribeMessageQueue(Long id) {
         Tuple3<String, String, Subscription> tuple = topicGroupMap.get(id);
         stringStreamMessageListenerContainer.remove(tuple.getT3());
-        log.debug("{}移除对流{}的订阅组: {}", LOG_PREFIX, MQTopic.Prefix.STREAM_PREFIX + tuple.getT1(), tuple.getT2());
-        redisTemplate.opsForStream().destroyGroup(MQTopic.Prefix.STREAM_PREFIX + tuple.getT1(), tuple.getT2());
+        log.debug("{}移除对流{}的订阅组: {}", LOG_PREFIX, MQTopicConstants.Prefix.STREAM_PREFIX + tuple.getT1(), tuple.getT2());
+        redisTemplate.opsForStream().destroyGroup(MQTopicConstants.Prefix.STREAM_PREFIX + tuple.getT1(), tuple.getT2());
     }
 
     @Override
     public void sendBroadcast(String topic, Object msg) {
         redisTemplate.convertAndSend(topic, msg);
+    }
+
+    @Override
+    public <T> void sendBroadcast(MQTopic<T> topic, T msg) {
+        redisTemplate.convertAndSend(topic.getTopic(), msg);
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public <T> long subscribeBroadcast(MQTopic<T> topic, Consumer<MQMessageRecord<T>> consumer) {
+        long id = IdUtil.getId();
+        Class<?> clazz = ClassUtils.getTypeParameterBySuperClass(topic);
+        MessageListener listener = (message, pattern) -> {
+            String bodyString = new String(message.getBody(), StandardCharsets.UTF_8);
+            try {
+                consumer.accept(new MQMessageRecord(
+                        new String(message.getChannel(), StandardCharsets.UTF_8),
+                        TypeUtils.isSupportConvert(clazz) ? (T)TypeUtils.convert(clazz, bodyString) : (T)MapperHolder.parseJson(bodyString, clazz)
+                ));
+            } catch (IOException e) {
+                log.error("{}消费消息出错", LOG_PREFIX, e);
+            }
+        };
+
+        redisMessageListenerContainer.addMessageListener(listener, new PatternTopic(topic.getTopic()));
+        listenerMap.put(id, listener);
+        return id;
     }
 
     @Override

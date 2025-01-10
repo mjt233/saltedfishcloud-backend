@@ -18,7 +18,8 @@ import com.xiaotao.saltedfishcloud.model.CommonResult;
 import com.xiaotao.saltedfishcloud.model.RequestParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
-import com.xiaotao.saltedfishcloud.service.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
@@ -260,6 +261,14 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
         return httpCallResult.getBody();
     }
 
+    private MQTopic<String> getInputTopic(Long sessionId) {
+        return new MQTopic<>(() -> WebShellMQTopic.Prefix.INPUT_STREAM + sessionId) {};
+    }
+
+    private MQTopic<String> getOutputTopic(Long sessionId) {
+        return new MQTopic<>(() -> WebShellMQTopic.Prefix.OUTPUT_STREAM + sessionId) {};
+    }
+
     /**
      * 根据初始会话信息创建进程
      * @param session   会话
@@ -307,12 +316,12 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
         sessionMap.put(session.getId(), session);
 
         // 进程标准IO消息队列订阅与推送
-        String inputTopic = WebShellMQTopic.Prefix.INPUT_STREAM + session.getId();
-        String outputTopic = WebShellMQTopic.Prefix.OUTPUT_STREAM + session.getId();
-        long inputSubscribeId = mqService.subscribeMessageQueue(inputTopic, WebShellMQTopic.DEFAULT_GROUP, mqMessage -> {
+        MQTopic<String> inputTopic = getInputTopic(session.getId());
+        MQTopic<String> outputTopic = getOutputTopic(session.getId());
+        long inputSubscribeId = mqService.subscribeMessageQueue(getInputTopic(session.getId()), WebShellMQTopic.DEFAULT_GROUP, mqMessage -> {
             if (process.isAlive()) {
                 try {
-                    processOutputStream.write(mqMessage.getBody().toString().getBytes());
+                    processOutputStream.write(mqMessage.body().getBytes());
                     processOutputStream.flush();
                 } catch (Throwable e) {
                     log.error("{}shell会话输入错误, id: {} input: {}",LOG_PREFIX, session.getId(), mqMessage, e);
@@ -467,14 +476,12 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
 
     @Override
     public void writeInput(Long sessionId, String input) throws IOException {
-        mqService.push(WebShellMQTopic.Prefix.INPUT_STREAM + sessionId, input);
+        mqService.push( getInputTopic(sessionId), input);
     }
 
     @Override
     public long subscribeOutput(Long sessionId, Consumer<String> consumer) {
-        return mqService.subscribeMessageQueue(WebShellMQTopic.Prefix.OUTPUT_STREAM + sessionId, System.currentTimeMillis() + "", msg -> {
-            consumer.accept(msg.getBody().toString());
-        });
+        return mqService.subscribeMessageQueue(getOutputTopic(sessionId), System.currentTimeMillis() + "", msg -> consumer.accept(msg.body()));
     }
 
     private String getLocalOutputLog(Long sessionId) {

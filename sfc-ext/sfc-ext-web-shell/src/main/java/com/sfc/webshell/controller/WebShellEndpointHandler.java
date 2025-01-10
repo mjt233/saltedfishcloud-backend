@@ -8,7 +8,7 @@ import com.sfc.webshell.service.ShellExecuteRPCService;
 import com.sfc.webshell.service.ShellExecuteService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.User;
-import com.xiaotao.saltedfishcloud.service.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

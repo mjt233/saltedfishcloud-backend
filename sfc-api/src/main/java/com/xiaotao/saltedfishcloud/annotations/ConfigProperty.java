@@ -78,4 +78,13 @@ public @interface ConfigProperty {
      */
     ConfigKeyNameStrategy defaultKeyNameStrategy() default ConfigKeyNameStrategy.INHERIT;
 
+    /**
+     * 属性是否只读
+     */
+    boolean readonly() default false;
+
+    /**
+     * 子配置节点类型引用
+     */
+    Class<?> typeRef() default Object.class;
 }

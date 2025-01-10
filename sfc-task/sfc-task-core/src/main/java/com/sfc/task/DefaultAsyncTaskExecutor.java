@@ -1,15 +1,17 @@
 package com.sfc.task;
 
 
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressDetector;
 import com.sfc.task.prog.ProgressRecord;
 import com.sfc.task.repo.AsyncTaskLogRecordRepo;
-import com.xiaotao.saltedfishcloud.service.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -31,6 +33,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+
+import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_LOG;
 
 /**
  * 异步任务执行器
@@ -252,14 +256,14 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                         while ((line = reader.readLine()) != null) {
                             logOutput.write(line.getBytes(StandardCharsets.UTF_8));
                             logOutput.write(WRAP_BYTES);
-                            mqService.push(MQTopic.Prefix.ASYNC_TASK_LOG + recordId, MapperHolder.toJson(line));
+                            mqService.push(ASYNC_TASK_LOG(recordId), line);
                         }
                     } catch (IOException e) {
                         log.error("[异步任务执行器]推送异步任务日志出错", e);
                     } finally {
                         // 消息队列日志保留5秒后销毁
                         CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS)
-                                .execute(() -> mqService.destroyQueue(MQTopic.Prefix.ASYNC_TASK_LOG + recordId));
+                                .execute(() -> mqService.destroyQueue(ASYNC_TASK_LOG(recordId)));
                     }
                 });
 

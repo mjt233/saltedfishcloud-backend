@@ -1,7 +1,9 @@
 package com.xiaotao.saltedfishcloud.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
 import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -103,6 +105,9 @@ public class ConfigNode {
      */
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String typeRef;
+
+    @JsonIgnore
+    private ConfigPropertiesGroup configPropertiesGroup;
 
     /**
      * 子节点，用于为form表单类型提供子表单数据，子表单的值为json格式化字符串

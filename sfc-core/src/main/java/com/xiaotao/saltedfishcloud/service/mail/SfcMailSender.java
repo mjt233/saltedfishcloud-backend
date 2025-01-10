@@ -73,6 +73,7 @@ public class SfcMailSender extends JavaMailSenderImpl {
             isSuccess = true;
         } catch (RuntimeException e) {
             exception = e;
+            throw e;
         } finally {
             // ===== 记录本次发送邮件日志 ====
             Map<String, Object> detail = new HashMap<>();
@@ -131,7 +132,7 @@ public class SfcMailSender extends JavaMailSenderImpl {
                             .type("发送邮件")
                             .msgAbstract(msgAbstract)
                             .msgDetail(msgDetail)
-                            .level(LogLevel.INFO)
+                            .level(isSuccess ? LogLevel.INFO : LogLevel.ERROR)
                     .build());
         }
     }

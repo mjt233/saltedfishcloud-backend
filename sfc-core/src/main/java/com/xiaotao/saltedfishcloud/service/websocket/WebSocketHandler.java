@@ -1,23 +1,26 @@
 package com.xiaotao.saltedfishcloud.service.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
-import com.xiaotao.saltedfishcloud.constant.WebSocketConstant;
 import com.sfc.task.AsyncTaskManager;
+import com.sfc.task.model.AsyncTaskRecord;
+import com.xiaotao.saltedfishcloud.constant.WebSocketConstant;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketRequest;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketResponse;
+import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import jakarta.websocket.*;
+import jakarta.websocket.server.ServerEndpoint;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.websocket.*;
-import jakarta.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_EXIT;
 
 // todo 使用Spring提供的Websocket框架重构
 @Slf4j
@@ -49,7 +52,8 @@ public class WebSocketHandler {
     public void onMessage(String message, Session session) throws IOException {
         WebSocketRequest request = MapperHolder.parseAsJson(message, WebSocketRequest.class);
         Long taskId = TypeUtils.toLong(request.getData());
-        String topic = MQTopic.Prefix.ASYNC_TASK_EXIT + taskId;
+        MQTopic<AsyncTaskRecord> mqTopic = ASYNC_TASK_EXIT(taskId);
+        String topic = mqTopic.getTopic();
 
         // 订阅异步任务日志动作
         if(WebSocketConstant.Action.SUBSCRIBE_TASK_LOG.equals(request.getAction())) {

@@ -1,16 +1,17 @@
 package com.xiaotao.saltedfishcloud.model.config;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigKeyNameStrategy;
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
-import com.xiaotao.saltedfishcloud.annotations.ConfigSelectOption;
+import com.xiaotao.saltedfishcloud.annotations.*;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import lombok.Data;
 
 @Data
 @ConfigPropertyEntity(
         prefix = "sys.log",
-        defaultKeyNameStrategy = ConfigKeyNameStrategy.UNDER_SCORE_CASE
+        defaultKeyNameStrategy = ConfigKeyNameStrategy.UNDER_SCORE_CASE,
+        groups = {
+                @ConfigPropertiesGroup(id = "base", name = "基本信息"),
+                @ConfigPropertiesGroup(id = "storage", name = "日志存储配置")
+        }
 )
 public class SysLogConfig {
     @ConfigProperty(
@@ -43,6 +44,15 @@ public class SysLogConfig {
             }
     )
     private LogLevel autoLogLevel;
+
+    @ConfigProperty(
+            inputType = "template",
+            title = "主日志存储方式",
+            template = "log-record-storage-selector",
+            defaultValue = "Database",
+            group = "storage"
+    )
+    private String mainLogRecordStorage;
 
     @ConfigProperty(
             inputType = "switch",

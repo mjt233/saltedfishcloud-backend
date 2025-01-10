@@ -13,6 +13,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.validation.Valid;
+
+import java.io.Serial;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
@@ -31,6 +33,7 @@ public class User extends UserInfo implements UserDetails {
     public static final String SYS_GROUP_NAME_PUBLIC = "__SYSTEM_PUBLIC_GROUP";
     public static final long PUBLIC_USER_ID = 0;
 
+    @Serial
     private static final long serialVersionUID = -2530285292010387981L;
     public static final int TYPE_ADMIN = 1;
     public static final int TYPE_COMMON = 0;

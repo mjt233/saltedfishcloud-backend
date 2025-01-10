@@ -9,16 +9,11 @@
     "title": "历史日志",
     "nodes": [
       {
-        "name": "log-history-viewer",
-        "title": "查看历史日志",
         "nodes": [
           {
             "name": "log-history-viewer-component",
             "inputType": "template",
-            "template": "empty-tip",
-            "params": {
-              "text": "开发中~"
-            }
+            "template": "LogRecordHistoryViewer"
           }
         ]
       }

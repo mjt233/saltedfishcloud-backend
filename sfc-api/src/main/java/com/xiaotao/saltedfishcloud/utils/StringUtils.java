@@ -304,6 +304,18 @@ public class StringUtils {
     }
 
     /**
+     * 转为小驼峰
+     * @param str   待转换大驼峰字符串
+     * @return      转换后的小驼峰字符串
+     */
+    public static String camelToLowerCamel(String str) {
+        if (str.charAt(0) >= 'a' && str.charAt(0) <= 'z') {
+            return str;
+        }
+        return Character.toLowerCase(str.charAt(0)) + str.substring(1);
+    }
+
+    /**
      * 下划线命名转小驼峰
      * @param str   待转换字符串
      * @return      转换结果

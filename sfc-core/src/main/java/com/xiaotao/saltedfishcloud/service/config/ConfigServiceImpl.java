@@ -3,17 +3,18 @@ package com.xiaotao.saltedfishcloud.service.config;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
+import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
-import com.xiaotao.saltedfishcloud.init.DatabaseInitializer;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
-import com.xiaotao.saltedfishcloud.service.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.*;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
@@ -21,14 +22,13 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * 配置服务实现类
@@ -42,8 +42,6 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     private ConfigDao configDao;
     @Resource
     private StoreTypeSwitch storeTypeSwitch;
-    @Resource
-    private DatabaseInitializer databaseInitializer;
 
     @Resource
     private PluginManager pluginManager;
@@ -153,7 +151,6 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     public boolean setConfig(String key, String value) {
 
         // 发布更新消息到所有的订阅者（执行监听回调），大大降低耦合度，无代码侵害
-        // todo 允许抛出异常中断执行
         for (Consumer<Pair<String, String>> listener : listeners) {
             listener.accept(new Pair<>(key, value));
         }
@@ -161,30 +158,25 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
             c.accept(value);
         }
         configDao.setConfigure(key, value);
-        mqService.sendBroadcast(MQTopic.CONFIG_CHANGE, new NameValueType<>(key, value));
+        log.info("{}配置{}变更为 {}", LOG_PREFIX, key, value);
+        mqService.sendBroadcast(MQTopicConstants.CONFIG_CHANGE, new NameValueType<>(key, value));
         return true;
     }
 
     /**
      * 订阅配置变更事件处理
-     * todo 处理泛型json解析
      */
     @EventListener(ApplicationStartedEvent.class)
-    @SuppressWarnings("unchecked")
     public void subscribeConfigSetEvent() {
-        mqService.subscribeBroadcast(MQTopic.CONFIG_CHANGE, msg -> {
-            try {
-                NameValueType<String> nameValue = (NameValueType<String>)MapperHolder.parseAsJson(msg.getBody(), NameValueType.class);
-                log.info("{}配置项{}设置值：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue());
-                for (Consumer<String> c : configAfterSetListeners.getOrDefault(nameValue.getName(), Collections.emptyList())) {
-                    try {
-                        c.accept(nameValue.getValue());
-                    } catch (Throwable e) {
-                        log.error("{}配置项{}值设置后置处理出错，变更内容：{}，错误：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue(), e);
-                    }
+        mqService.subscribeBroadcast(MQTopicConstants.CONFIG_CHANGE, msg -> {
+            NameValueType<String> nameValue = msg.body();
+            log.info("{}配置项{}设置值：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue());
+            for (Consumer<String> c : configAfterSetListeners.getOrDefault(nameValue.getName(), Collections.emptyList())) {
+                try {
+                    c.accept(nameValue.getValue());
+                } catch (Throwable e) {
+                    log.error("{}配置项{}值设置后置处理出错，变更内容：{}，错误：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue(), e);
                 }
-            } catch (IOException e) {
-                log.error("{}配置项值设置后置处理json解析出错，变更内容：{}，错误：{}", LOG_PREFIX, msg, e);
             }
         });
     }
@@ -229,7 +221,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        databaseInitializer.init();
+
     }
 
 
@@ -268,6 +260,59 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
             addAfterSetListener(configName, configConsumer);
             configConsumer.accept(getConfig(configName));
         }
+    }
+
+
+    @Override
+    public <T, R> void addAfterSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
+        Function<String, R> convertFunc = convertValTypeFunc(meta);
+        addAfterSetListener(meta.getConfigName(), rawVal -> listener.accept(convertFunc.apply(rawVal)));
+    }
+
+    @SuppressWarnings("unchecked")
+    private <R> Function<String,R> convertValTypeFunc(PropertyUtils.ConfigFieldMeta meta) {
+        Class<?> targetType = meta.getField().getType();
+        if(TypeUtils.isSupportConvert(targetType)) {
+            return rawVal -> (R)TypeUtils.convert(targetType, rawVal);
+        } else if (ConfigInputType.FORM.equals(meta.getConfigProperty().inputType())) {
+            return rawVal -> {
+                try {
+                    return (R) MapperHolder.parseJson(rawVal, targetType);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            };
+        } else {
+            throw new IllegalArgumentException("不支持将字符串类型转换为" + targetType);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T, R> R getConfig(SFunc<T, R> keyLambdaFunc) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
+        return ((Function<String, R>) convertValTypeFunc(meta)).apply(getConfig(meta.getConfigName()));
+    }
+
+    @Override
+    public <T, R> R getConfig(SFunc<T, R> keyLambdaFunc, R defaultValue) {
+        return Optional
+                .ofNullable(getConfig(keyLambdaFunc))
+                .orElse(defaultValue);
+    }
+
+    @Override
+    public <T, R> boolean setConfig(SFunc<T, R> keyLambdaFunc, R value) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
+        return setConfig(meta.getConfigName(), TypeUtils.toString(value));
+    }
+
+    @Override
+    public <T, R> void addBeforeSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
+        Function<String, R> convertFunc = convertValTypeFunc(meta);
+        addBeforeSetListener(meta.getConfigName(), rawVal -> listener.accept(convertFunc.apply(rawVal)));
     }
 }
 
