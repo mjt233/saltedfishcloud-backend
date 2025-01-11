@@ -5,6 +5,8 @@ import com.xiaotao.saltedfishcloud.config.security.service.UserDetailsServiceImp
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.helper.Md5PasswordEncoder;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,6 +50,12 @@ public class SecurityConfig {
     @Resource
     private UserDetailsServiceImpl userDetailsService;
 
+    @Resource
+    private LogRecordManager logRecordManager;
+
+    @Resource
+    private UserService userService;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new Md5PasswordEncoder();
@@ -65,7 +73,10 @@ public class SecurityConfig {
 
 
         //  添加Jwt登录和验证过滤器
-        http.addFilterBefore(new JwtLoginFilter(LOGIN_URI, authenticationManager(authenticationConfiguration), tokenDao), UsernamePasswordAuthenticationFilter.class)
+        JwtLoginFilter loginFilter = new JwtLoginFilter(LOGIN_URI, authenticationManager(authenticationConfiguration), tokenDao);
+        loginFilter.setLogRecordManager(logRecordManager);
+        loginFilter.setUserService(userService);
+        http.addFilterBefore(loginFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtValidateFilter(tokenDao), UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable);
 

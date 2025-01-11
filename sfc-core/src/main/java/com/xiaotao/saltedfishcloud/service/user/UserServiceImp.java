@@ -10,16 +10,21 @@ import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
+import com.xiaotao.saltedfishcloud.service.log.LogLevel;
+import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.mail.MailMessageGenerator;
 import com.xiaotao.saltedfishcloud.service.mail.MailValidateType;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
+import jakarta.servlet.ServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -31,6 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.*;
@@ -57,6 +65,10 @@ public class UserServiceImp implements UserService {
     @Autowired
     @Lazy
     private SysRuntimeConfig sysRuntimeConfig;
+
+    @Autowired
+    @Lazy
+    private LogRecordManager logRecordManager;
 
     @Override
     public User getUserByAccount(String account) {
@@ -312,11 +324,29 @@ public class UserServiceImp implements UserService {
         }
         String pwd = SecureUtils.getPassswd(passwd);
         try {
-            int res = userDao.addUser(user, pwd, email, type, IdUtil.getId());
+            long userId = IdUtil.getId();
+            int res = userDao.addUser(user, pwd, email, type, userId);
             redisTemplate.delete(RedisKeyGenerator.getRegCodeKey(email));
+            addRegLog(userDao.getUserById(userId));
             return res;
         } catch (DuplicateKeyException e) {
             throw new JsonException(AccountError.USER_EXIST);
         }
     }
+
+    private void addRegLog(User user) {
+        String ip = Optional.ofNullable(RequestContextHolder.getRequestAttributes())
+                .map(e -> (ServletRequestAttributes) e)
+                .map(ServletRequestAttributes::getRequest)
+                .map(ServletRequest::getRemoteAddr)
+                .orElse("unknown");
+
+        logRecordManager.saveRecordAsync(LogRecord.builder()
+                        .level(LogLevel.INFO)
+                        .type("注册用户")
+                        .msgAbstract("新用户[" + user.getUser() + "] 邮箱[" + user.getEmail() + "] ip[" + ip + "]")
+                        .msgDetail(MapperHolder.toJsonNoEx(user))
+                .build());
+    }
+
 }
