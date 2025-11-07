@@ -37,6 +37,7 @@
         <module>sfc-ext-static-publish</module>
         <module>sfc-ext-oss-store</module>
         <module>sfc-ext-only-office</module>
+        <module>sfc-ext-apk-parser</module>
     </modules>
 
 
