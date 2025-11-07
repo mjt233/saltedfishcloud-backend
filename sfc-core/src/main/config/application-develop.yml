@@ -41,6 +41,7 @@ plugin:
     - sfc-ext/sfc-ext-oss-store
 #    - sfc-ext/sfc-ext-network-tools
     - sfc-ext/sfc-ext-web-shell
+    - sfc-ext/sfc-ext-apk-parser
     - sfc-ext/sfc-ext-static-publish
     - sfc-ext/sfc-ext-only-office
 

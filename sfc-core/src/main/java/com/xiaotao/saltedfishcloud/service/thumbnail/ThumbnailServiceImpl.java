@@ -1,14 +1,18 @@
 package com.xiaotao.saltedfishcloud.service.thumbnail;
 
+import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
+import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,15 +20,17 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 @RequiredArgsConstructor
 @Service
@@ -43,6 +49,19 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     @Autowired(required = false)
     @Lazy
     private List<ThumbnailHandler> handlerList;
+
+    @Autowired
+    private ConfigService configService;
+
+    /**
+     * 最大可提取缩略图的源文件大小限制
+     */
+    private Double maxThumbnailResourceSize = 128D;
+
+    /**
+     * 是否停用缩略图缓存
+     */
+    private Boolean disableThumbnailCache = false;
 
     /**
      * 获取主存储服务中的缩略图文件缓存路径
@@ -89,11 +108,19 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
         try {
             final TempStoreService tempHandler = storeServiceFactory.getService().getTempFileHandler();
 
-            final String thumbnailPath = getThumbnailTempPath(id);
-            if (resource == null || resource.contentLength() == 0 || resource.contentLength() > ByteSize._1MiB * 128) {
+            if (resource == null || resource.contentLength() == 0 || resource.contentLength() > ByteSize._1MiB * maxThumbnailResourceSize) {
                 return null;
             }
-            try(final OutputStream output = tempHandler.newOutputStream(thumbnailPath)) {
+            OutputStream output;
+            final String thumbnailPath;
+            if (disableThumbnailCache) {
+                output = new ByteArrayOutputStream();
+                thumbnailPath = "内存";
+            } else {
+                thumbnailPath = getThumbnailTempPath(id);
+                output = tempHandler.newOutputStream(thumbnailPath);
+            }
+            try(output) {
                 boolean res = handler.generate(resource, ext, output);
                 if (log.isDebugEnabled()) {
                     if (res) {
@@ -103,11 +130,24 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
                     }
                 }
             } catch (Exception e) {
-                tempHandler.delete(thumbnailPath);
+                if (!disableThumbnailCache) {
+                    tempHandler.delete(thumbnailPath);
+                }
                 log.error("缩略图生成异常, id:{} ",id, e);
             }
 
-            return tempHandler.getResource(thumbnailPath);
+            if (disableThumbnailCache) {
+                InputStreamSource source = () -> new ByteArrayInputStream(((ByteArrayOutputStream) output).toByteArray());
+                return new InputStreamResource(source) {
+                    @NotNull
+                    @Override
+                    public InputStream getInputStream() throws IOException, IllegalStateException {
+                        return source.getInputStream();
+                    }
+                };
+            } else {
+                return tempHandler.getResource(thumbnailPath);
+            }
         } catch (NoSuchFileException e) {
             log.debug("{}文件资源不存在：{}", LOG_TITLE, id);
             throw e;
@@ -120,6 +160,9 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
      * @return          缩略图资源，若不存在则为null
      */
     protected Resource getFromCache(String fileIdentify) throws IOException {
+        if (disableThumbnailCache) {
+            return null;
+        }
         final String thumbnailPath = getThumbnailTempPath(fileIdentify);
         final TempStoreService tempHandler = storeServiceFactory.getService().getTempFileHandler();
         final Resource resource = tempHandler.getResource(thumbnailPath);
@@ -175,6 +218,8 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     @Override
     public void run(ApplicationArguments args) throws Exception {
         refreshRegister();
+        configService.addAfterSetListener(SysCommonConfig::getMaxThumbnailResourceSize, val -> this.maxThumbnailResourceSize = val);
+        configService.addAfterSetListener(SysCommonConfig::getDisableThumbnailCache, val -> this.disableThumbnailCache = val);
     }
 
     @Override
