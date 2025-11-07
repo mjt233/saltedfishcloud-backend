@@ -16,7 +16,8 @@ import lombok.Data;
         groups = {
                 @ConfigPropertiesGroup(id = "register", name = "注册配置", prefix = "register"),
                 @ConfigPropertiesGroup(id = "store", name = "存储配置", prefix = "store"),
-                @ConfigPropertiesGroup(id = "common", name = "常规", prefix = "common")
+                @ConfigPropertiesGroup(id = "common", name = "常规", prefix = "common"),
+                @ConfigPropertiesGroup(id = "thumbnail", name = "缩略图", prefix = "thumbnail")
         }
 )
 public class SysCommonConfig {
@@ -72,6 +73,7 @@ public class SysCommonConfig {
     )
     private Long syncInterval;
 
+    // todo 用bindPropertyEntity对整个bean动态绑定时，Version无法反序列化，需要支持自定义的反序列化
     @ConfigProperty(
             title = "系统版本",
             defaultValue = "1.0.0.0-SNAPSHOT",
@@ -80,6 +82,23 @@ public class SysCommonConfig {
             readonly = true
     )
     private Version version;
+
+    @ConfigProperty(
+            title = "缩略图源文件最大大小",
+            defaultValue = "128",
+            describe = "尝试提取一个文件的缩略图时，文件大小超过该值时会忽略提取缩略图。该项单位为：MiB",
+            group = "thumbnail"
+    )
+    private Double maxThumbnailResourceSize;
+
+    @ConfigProperty(
+            title = "停用缩略图缓存",
+            defaultValue = "false",
+            describe = "是否停用缩略图缓存(每次加载缩略图时，都重新从源文件中进行提取。谨慎开启该选项，可能会造成较高服务器压力，建议只在开发环境或在较低访问量的环境中开启)",
+            group = "thumbnail",
+            inputType = "switch"
+    )
+    private Boolean disableThumbnailCache;
 
     @ConfigProperty(
             title = "发信服务器配置",
