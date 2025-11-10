@@ -1,11 +1,14 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.xiaotao.saltedfishcloud.common.RedirectableUrl;
 import com.xiaotao.saltedfishcloud.common.RedirectableUrlHttpMessageConverter;
 import com.xiaotao.saltedfishcloud.interceptor.ProtectBlocker;
+import com.xiaotao.saltedfishcloud.servlet.FileUploadServlet;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
@@ -14,7 +17,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import jakarta.annotation.Resource;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -25,9 +27,17 @@ public class SpringConfig implements WebMvcConfigurer {
     @Resource
     ProtectBlocker protectBlocker;
 
+    @Autowired
+    private FileUploadServlet fileUploadServlet;
+
     @Bean
     public HttpMessageConverter<Object> redirectableUrlHttpMessageConverter() {
         return new RedirectableUrlHttpMessageConverter();
+    }
+
+    @Bean
+    public ServletRegistrationBean<FileUploadServlet> fileUploadServletServletRegistrationBean() {
+        return new ServletRegistrationBean<>(fileUploadServlet, "/api/file/upload");
     }
 
     @Override
