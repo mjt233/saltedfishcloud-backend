@@ -205,9 +205,17 @@ public class BoundaryBufferInputStream extends InputStream {
      */
     private void updateDataEndIndex() {
         BoundaryCheckResult checkResult = this.checkBoundary(boundaryBytes);
+
         if (checkResult.status == BoundaryCheckResultStatus.NOT_FOUND) {
             checkResult = this.checkBoundary(eofBoundaryBytes);
+        } else if (checkResult.status == BoundaryCheckResultStatus.INCOMPLETE) {
+            // 普通边界 和 终止边界可能存在重合的地方，当找到了不完整的普通边界时，实际上可能是终止边界
+            BoundaryCheckResult eofCheckResult = this.checkBoundary(eofBoundaryBytes);
+            if (eofCheckResult.status == BoundaryCheckResultStatus.EXIST) {
+                checkResult = eofCheckResult;
+            }
         }
+
         if (checkResult.status == BoundaryCheckResultStatus.NOT_FOUND) {
             dataEndIndex = endIndex;
         } else {
@@ -258,7 +266,15 @@ public class BoundaryBufferInputStream extends InputStream {
             int curReadEndIndex = readRange[1];
 
             for (; curReadBeginIndex < curReadEndIndex; curReadBeginIndex++) {
-                if (buf[curReadBeginIndex] == boundary[boundaryMatchIndex]) {
+                byte b = buf[curReadBeginIndex];
+                boolean isCurByteMatch = b == boundary[boundaryMatchIndex];
+                if (!isCurByteMatch && boundaryMatchIndex != 0) {
+                    // 匹配过程出现不匹配字节时，从头重新开始尝试匹配
+                    boundaryIndex = -1;
+                    boundaryMatchIndex = 0;
+                    isCurByteMatch = b == boundary[boundaryMatchIndex];
+                }
+                if (isCurByteMatch) {
                     // 缓冲区中发现了匹配的边界数据，记录匹配的边界索引
                     boundaryMatchIndex++;
                     if (boundaryIndex == -1) {
@@ -268,9 +284,6 @@ public class BoundaryBufferInputStream extends InputStream {
                         isMatch = true;
                         break;
                     }
-                } else {
-                    boundaryIndex = -1;
-                    boundaryMatchIndex = 0;
                 }
             }
         }
@@ -291,20 +304,22 @@ public class BoundaryBufferInputStream extends InputStream {
      * @return 是否成功越过边界
      */
     public boolean nextBoundary() throws IOException {
+        // 丢弃在下个边界前未读取的数据
         StreamUtils.drain(this);
+
+        // 边界前的数据全部读取后，正常情况下缓冲区中肯定是会有完整的已存在的边界信息
+        // 这里没有的话可能是原始的输入流中边界信息不完整，或所有数据均已完成读取
         if (lastBoundaryCheckResult == null || lastBoundaryCheckResult.status != BoundaryCheckResultStatus.EXIST) {
             return false;
         }
-
-        if (lastBoundaryCheckResult.boundary == eofBoundaryBytes) {
-            isEof = true;
-        }
-
 //                |0|1|2|3|4|5|6|7| buf.length = 8
 //                |---------------|
 //                |.|$| | | |^| | | beginReadIndex = 5 endReadIndex = 1 boundaryIndex = 5 boundary.length = 3
 //                |*|-|-|-|X|*|*|*| beginIndex = boundaryIndex + boundary.length = (5 + 3) % 8 = 0
-        beginIndex = (lastBoundaryCheckResult.boundaryIndex() + lastBoundaryCheckResult.boundary().length) % buf.length;
+        // 越过边界，将抵达的边界数据消费掉，进入到该边界之后的数据区域
+        markConsume(lastBoundaryCheckResult.boundary().length);
+
+        // 查找并更新越过边界之后的下一个边界信息
         this.updateDataEndIndex();
         return true;
     }
@@ -335,7 +350,10 @@ public class BoundaryBufferInputStream extends InputStream {
 
             // 从原始输入流抓取数据后，缓冲区剩余的边界内数据依然为空，说明没有数据能够读取了
             if (this.isAtBoundary()) {
-                return totalReadSize == 0 ? -1 : totalReadSize;
+                if (lastBoundaryCheckResult.boundary == eofBoundaryBytes) {
+                    isEof = true;
+                }
+                break;
             }
 
             for (int[] range : this.getReadIndexRange(beginIndex, dataEndIndex)) {

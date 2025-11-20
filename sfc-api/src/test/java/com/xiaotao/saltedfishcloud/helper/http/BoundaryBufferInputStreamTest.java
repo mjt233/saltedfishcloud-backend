@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.helper.http;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.StreamUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -51,6 +52,26 @@ class BoundaryBufferInputStreamTest {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
         BoundaryBufferInputStream stream = new BoundaryBufferInputStream(inputStream, 8, boundary.getBytes(), eofBoundary.getBytes());
         assertEquals(-1, stream.read());
+    }
+
+    @Test
+    @DisplayName("测试终止边界")
+    public void testEof() throws IOException {
+        String boundary =    "\r\n----1\r\n";
+        String eofBoundary = "\r\n----1--";
+
+        String caseContent = "----1\n666" + boundary + "777\r\n" + eofBoundary;
+        ByteArrayInputStream content = new ByteArrayInputStream(caseContent.getBytes());
+        BoundaryBufferInputStream stream = new BoundaryBufferInputStream(content, 64 * 1024, boundary.getBytes(), eofBoundary.getBytes());
+        assertEquals("----1", stream.readLine());
+        assertEquals("666", StreamUtils.copyToString(stream, StandardCharsets.UTF_8));
+        assertTrue(stream.nextBoundary());
+        assertFalse(stream.isEof());
+        assertEquals("777\r\n", StreamUtils.copyToString(stream, StandardCharsets.UTF_8));
+        assertTrue(stream.isEof());
+        assertTrue(stream.nextBoundary());
+        assertTrue(stream.isEof());
+        assertFalse(stream.nextBoundary());
     }
 
     @Test
