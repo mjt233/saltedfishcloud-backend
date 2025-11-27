@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,6 +63,15 @@ public class PathUtils {
     public static Path getTempPath() {
         checkAndCreateTempPath();
         return TEMP_PATH;
+    }
+
+    /**
+     * 在临时目录下随机创建一个临时文件路径
+     * @param prefix    临时文件前缀
+     * @return  创建的临时文件路径
+     */
+    public static Path createTemplateFilePath(String prefix) {
+        return getTempPath().resolve(prefix + IdUtil.getUUID() + ".tmp");
     }
 
     /**

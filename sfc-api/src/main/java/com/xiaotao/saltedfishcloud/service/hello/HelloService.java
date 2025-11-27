@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.hello;
 
+import com.xiaotao.saltedfishcloud.utils.SFunc;
+
 import java.util.Map;
 
 /**
@@ -35,6 +37,13 @@ public interface HelloService {
      * @param type          数据类型
      */
     void bindConfigAsFeature(String configKey, String mapKey, Class<?> type);
+
+    /**
+     * 将一个配置项的值绑定到feature中。feature中的值将保持和配置项的值同步。
+     * @param configKey     配置项key
+     * @param mapKey        绑定映射的特性key
+     */
+    <T,R> void bindConfigAsFeature(SFunc<T,R> configKey, String mapKey);
 
     /**
      * 获取所有特性详情

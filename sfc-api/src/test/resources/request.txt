@@ -1,0 +1,16 @@
+------WebKitFormBoundaryomtgUKHzLri7d7ZL
+Content-Disposition: form-data; name="file"; filename="testFile.txt"; filename*=UTF-8''testFile.txt
+Content-Type: text/plain
+
+asdasdasdasdasdasdasd
+
+
+------WebKitFormBoundaryomtgUKHzLri7d7ZL
+Content-Disposition: form-data; name="mtime"
+
+1760623440000
+------WebKitFormBoundaryomtgUKHzLri7d7ZL
+Content-Disposition: form-data; name="md5"
+
+f98f1f95c4091a0cd90a9b904d27e76f
+------WebKitFormBoundaryomtgUKHzLri7d7ZL--

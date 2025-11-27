@@ -3,8 +3,10 @@ package com.xiaotao.saltedfishcloud.service.file.impl.store;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStoreService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -12,6 +14,8 @@ import org.springframework.boot.ApplicationRunner;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -90,5 +94,20 @@ public class LocalStoreService extends AbstractRawStoreService implements Applic
                         .used(storeRoot.getTotalSpace() - storeRoot.getFreeSpace())
                         .build()
         );
+    }
+
+    @Override
+    public void moveToSave(long uid, Path nativePath, String diskPath, FileInfo fileInfo) throws IOException {
+        final String root = getUserFileRoot(uid);
+        final String savePath = StringUtils.appendPath(root, diskPath, fileInfo.getName());
+        Path targetPath = Path.of(savePath);
+        if (Files.exists(targetPath)) {
+            if (Files.isDirectory(targetPath)) {
+                log.error("本地存储目标路径 {} 已存在同名文件夹，无法保存文件", targetPath);
+                throw new IllegalArgumentException("target path " + uid + ":" + diskPath + " exist directory");
+            }
+            handler.delete(savePath);
+        }
+        handler.move(nativePath.toString(), savePath);
     }
 }

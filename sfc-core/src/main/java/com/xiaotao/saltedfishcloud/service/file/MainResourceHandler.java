@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
@@ -10,18 +11,23 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * 主文件系统的资源协议操作器，提供从主文件系统中获取文件及其缩略图。
@@ -94,19 +100,18 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         }
     }
 
-    @Override
-    public void writeResource(ResourceRequest param, Resource resource) throws IOException {
-        if (Boolean.TRUE.equals(param.getIsThumbnail())) {
-            throw new IllegalArgumentException("不支持写入缩略图");
-        }
-        validWriteParam(param);
+    /**
+     * 根据请求信息创建一个文件信息
+     * @param param 请求参数
+     * @param resource  文件资源
+     */
+    private FileInfo createFileInfoFromRequest(ResourceRequest param, Resource resource) throws IOException {
+        FileInfo fileInfo = new FileInfo();
         Date now = new Date();
         long uid = Long.parseLong(param.getTargetId());
-
-        FileInfo fileInfo = new FileInfo();
         fileInfo.setCtime(now.getTime());
         fileInfo.setStreamSource(resource);
-        
+
         fileInfo.setUid(uid);
         fileInfo.setName(param.getName());
         fileInfo.setSize(resource.contentLength());
@@ -121,7 +126,32 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         } else if (fileInfo.getMd5() == null) {
             fileInfo.updateMd5();
         }
-        fileSystemManager.getMainFileSystem().saveFile(fileInfo,param.getPath());
+        return fileInfo;
+    }
 
+    @Override
+    public void writeResource(ResourceRequest param, Resource resource) throws IOException {
+        if (Boolean.TRUE.equals(param.getIsThumbnail())) {
+            throw new IllegalArgumentException("不支持写入缩略图");
+        }
+        validWriteParam(param);
+        FileInfo fileInfo = this.createFileInfoFromRequest(param, resource);
+        fileSystemManager.getMainFileSystem().saveFile(fileInfo,param.getPath());
+    }
+
+    @Override
+    public void writeResource(ResourceRequest param, OutputStreamConsumer<OutputStream> outputStream) throws IOException {
+        long uid = Long.parseLong(param.getTargetId());
+
+        Path tmpFile = PathUtils.getTempPath().resolve(IdUtil.getUUID());
+        try(OutputStream os = Files.newOutputStream(tmpFile)) {
+            outputStream.accept(os);
+            os.close();
+            PathResource resource = new PathResource(tmpFile);
+            FileInfo fileInfo = this.createFileInfoFromRequest(param, resource);
+            fileSystemManager.getMainFileSystem().moveToSaveFile(uid, tmpFile, param.getPath(), fileInfo);
+        } finally {
+            Files.deleteIfExists(tmpFile);
+        }
     }
 }
