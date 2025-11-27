@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
+import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.VersionTag;
@@ -102,6 +103,9 @@ public class ConfigureInitializer implements ApplicationRunner {
 
         // 匿名留言开关
         helloService.bindConfigAsFeature(SysConfigName.Safe.ALLOW_ANONYMOUS_COMMENT, FeatureName.ALLOW_ANONYMOUS_COMMENT, Boolean.class);
+
+        // 网盘文件上传是否使用通用资源请求接口
+        helloService.bindConfigAsFeature(SysCommonConfig::getIsUseCommonUpload, FeatureName.IS_USE_COMMON_UPLOAD);
     }
 
     /**

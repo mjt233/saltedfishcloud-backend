@@ -27,17 +27,9 @@ public class SpringConfig implements WebMvcConfigurer {
     @Resource
     ProtectBlocker protectBlocker;
 
-    @Autowired
-    private FileUploadServlet fileUploadServlet;
-
     @Bean
     public HttpMessageConverter<Object> redirectableUrlHttpMessageConverter() {
         return new RedirectableUrlHttpMessageConverter();
-    }
-
-    @Bean
-    public ServletRegistrationBean<FileUploadServlet> fileUploadServletServletRegistrationBean() {
-        return new ServletRegistrationBean<>(fileUploadServlet, "/api/file/upload");
     }
 
     @Override

@@ -10,6 +10,11 @@ public interface FeatureName {
     String ARCHIVE_ENCODING = "archiveEncoding";
 
     /**
+     * 网盘文件上传是否使用通用资源请求接口/api/file/upload
+     */
+    String IS_USE_COMMON_UPLOAD = "isUseCommonUpload";
+
+    /**
      * 压缩的类型
      */
     String ARCHIVE_TYPE = "archiveType";

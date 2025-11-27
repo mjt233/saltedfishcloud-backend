@@ -19,6 +19,11 @@ import java.util.function.Consumer;
  */
 public class HttpMultipartRequestParser {
 
+    @FunctionalInterface
+    public interface MultipartItemHandler {
+        void process(MultipartItem item) throws IOException;
+    }
+
     /**
      * multipart item
      * @param name  表单key
@@ -67,9 +72,9 @@ public class HttpMultipartRequestParser {
 
     /**
      * 开始解析请求，读取servlet的输入流
-     * @param itemConsumer  解析完一项表单数据的header头定义时会调用一次该函数
+     * @param handler  解析完一项表单数据的header头定义时会调用一次该函数
      */
-    public void start(Consumer<MultipartItem> itemConsumer) throws IOException {
+    public void start(MultipartItemHandler handler) throws IOException {
         String boundary = this.getBoundary();
         String requiredFirstLine = "--" + boundary;
 
@@ -103,7 +108,7 @@ public class HttpMultipartRequestParser {
                         .map(this::parseContentDisposition)
                         .orElseGet(ContentDisposition::new);
 
-                itemConsumer.accept(new MultipartItem(contentDisposition.getName(), contentDisposition.getFileName(), headers, bufferInputStream));
+                handler.process(new MultipartItem(contentDisposition.getName(), contentDisposition.getFileName(), headers, bufferInputStream));
                 bufferInputStream.nextBoundary();
             }
         }

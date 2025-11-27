@@ -84,6 +84,15 @@ public class SysCommonConfig {
     private Version version;
 
     @ConfigProperty(
+            title = "网盘文件上传接口",
+            defaultValue = "false",
+            describe = "启用新的通用资源上传接口/api/file/upload（文件流实时写入到存储，更高的IO效率，更适合大文件上传）",
+            group = "common",
+            inputType = "switch"
+    )
+    private Boolean isUseCommonUpload;
+
+    @ConfigProperty(
             title = "缩略图源文件最大大小",
             defaultValue = "128",
             describe = "尝试提取一个文件的缩略图时，文件大小超过该值时会忽略提取缩略图。该项单位为：MiB",

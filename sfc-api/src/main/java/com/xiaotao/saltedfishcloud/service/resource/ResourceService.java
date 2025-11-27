@@ -1,12 +1,15 @@
 package com.xiaotao.saltedfishcloud.service.resource;
 
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.function.Consumer;
 
 /**
  * 系统资源服务
@@ -55,4 +58,11 @@ public interface ResourceService {
      * @param resource  待写入资源
      */
     void writeResource(ResourceRequest param, Resource resource) throws IOException;
+
+    /**
+     * 通过输出流的方式将文件写入到指定的资源中
+     * @param param 资源定位请求参数
+     * @param outputStream 待写入数据的输出流
+     */
+    void writeResource(ResourceRequest param, OutputStreamConsumer<OutputStream> outputStream) throws IOException;
 }

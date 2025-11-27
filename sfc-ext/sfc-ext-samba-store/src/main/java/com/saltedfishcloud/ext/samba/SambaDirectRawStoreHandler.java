@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -280,41 +281,19 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
         Session session = getSession();
         DiskShare diskShare = (DiskShare) session.connectShare(sambaProperty.getShareName());
         OutputStream originOutputStream = openFileWrite(diskShare, path).getOutputStream();
-        return new OutputStream() {
-            private boolean closed = false;
-            @Override
-            public void write(@NotNull byte[] b) throws IOException {
-                originOutputStream.write(b);
+        AtomicBoolean closed = new AtomicBoolean();
+        return com.xiaotao.saltedfishcloud.utils.StreamUtils.createCloseActionOutputStream(originOutputStream, () -> {
+            if (closed.get()) {
+                return;
             }
-
-            @Override
-            public void write(@NotNull byte[] b, int off, int len) throws IOException {
-                originOutputStream.write(b, off, len);
+            originOutputStream.close();
+            try {
+                diskShare.close();
+                closed.set(true);
+            } finally {
+                returnSession(session);
             }
-
-            @Override
-            public void flush() throws IOException {
-                originOutputStream.flush();
-            }
-
-            @Override
-            public void close() throws IOException {
-                if (closed) {
-                    return;
-                }
-                originOutputStream.close();
-                try {
-                    diskShare.close();
-                } finally {
-                    returnSession(session);
-                }
-            }
-
-            @Override
-            public void write(int b) throws IOException {
-                originOutputStream.write(b);
-            }
-        };
+        });
     }
 
     @Override

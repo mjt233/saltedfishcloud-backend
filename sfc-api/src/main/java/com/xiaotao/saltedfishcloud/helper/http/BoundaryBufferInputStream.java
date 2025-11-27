@@ -10,7 +10,7 @@ import java.util.Objects;
 
 /**
  * 带边界检测的缓冲区输入流，读取数据时如果读取到了边界，read方法则会返回-1防止越过边界。直到手动调用{@link #nextBoundary()}方法越过边界，进入下一段数据的读取。
- * <br>内部通过循环缓冲区队列数组实现，会从原输入流读取数据到缓冲区检测是否存在边界。
+ * <br>内部通过循环缓冲区队列数组实现，会从原输入流读取数据到缓冲区检测是否存在边界。通常用于解析multipart/form-data的http请求体。
  */
 public class BoundaryBufferInputStream extends InputStream {
     /**
@@ -173,7 +173,7 @@ public class BoundaryBufferInputStream extends InputStream {
      * 从原始输入流中抓取数据到缓冲区，尝试填满整个缓冲区
      */
     private void fetchData() throws IOException {
-        if (this.isEof) {
+        if (this.isEof || (!isAtBoundary() && !isEmpty())) {
             return;
         }
         int availableSpace = this.getAvailableSpace();

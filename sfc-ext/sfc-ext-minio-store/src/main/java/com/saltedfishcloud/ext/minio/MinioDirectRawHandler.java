@@ -4,6 +4,7 @@ import com.saltedfishcloud.ext.minio.utils.MinioUtils;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import io.minio.*;
 import io.minio.errors.*;
@@ -243,39 +244,14 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
         Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), StringUtils.getRandomString(32)));
         OutputStream outputStream = Files.newOutputStream(tempPath);
         log.info("{}<-创建输出流：{}，本地临时文件：{}", LOG_PREFIX, path, tempPath);
-
-        return new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-                outputStream.write(b);
+        return StreamUtils.createCloseActionOutputStream(outputStream, () -> {
+            log.info("{}->输出流关闭：{} 本地临时文件：{}", LOG_PREFIX, path, tempPath);
+            try(InputStream is = Files.newInputStream(tempPath)) {
+                store(null, path, Files.size(tempPath), is);
             }
-
-            @Override
-            public void write(byte[] b) throws IOException {
-                outputStream.write(b);
-            }
-
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException {
-                outputStream.write(b, off, len);
-            }
-
-            @Override
-            public void flush() throws IOException {
-                outputStream.flush();
-            }
-
-            @Override
-            public void close() throws IOException {
-                log.info("{}->输出流关闭：{} 本地临时文件：{}", LOG_PREFIX, path, tempPath);
-                outputStream.close();
-                try(InputStream is = Files.newInputStream(tempPath)) {
-                    store(null, path, Files.size(tempPath), is);
-                }
-                Files.deleteIfExists(tempPath);
-                log.info("{}->删除临时文件：{}", LOG_PREFIX, tempPath);
-            }
-        };
+            Files.deleteIfExists(tempPath);
+            log.info("{}->删除临时文件：{}", LOG_PREFIX, tempPath);
+        });
     }
 
     @Override

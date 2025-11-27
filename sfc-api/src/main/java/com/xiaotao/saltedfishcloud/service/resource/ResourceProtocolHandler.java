@@ -1,10 +1,17 @@
 package com.xiaotao.saltedfishcloud.service.resource;
 
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 
 /**
@@ -70,8 +77,27 @@ public interface ResourceProtocolHandler {
      * @param resource  待写入资源
      */
     default void writeResource(ResourceRequest param, Resource resource) throws IOException {
-
+        throw new UnsupportedOperationException();
     }
 
+
+    /**
+     * 通过输出流的方式将文件写入到指定的资源中
+     * @param param 资源定位请求参数
+     * @param outputStream 待写入数据的输出流
+     */
+    default void writeResource(ResourceRequest param, OutputStreamConsumer<OutputStream> outputStream) throws IOException {
+        if(!isWriteable()) {
+            throw new UnsupportedOperationException();
+        }
+        Path tmpFile = PathUtils.getTempPath().resolve(IdUtil.getUUID());
+        try(OutputStream os = Files.newOutputStream(tmpFile)) {
+            outputStream.accept(os);
+            os.close();
+            writeResource(param, new PathResource(tmpFile));
+        } finally {
+            Files.deleteIfExists(tmpFile);
+        }
+    }
 
 }
