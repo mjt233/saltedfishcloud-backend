@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.servlet;
 
 import com.xiaotao.saltedfishcloud.helper.http.HttpMultipartRequestParser;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
+import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -58,6 +59,7 @@ public class FileUploadServlet extends HttpServlet {
                             resourceService.writeResource(resourceRequest, os -> saveResourceFileStream(item.inputStream(), resourceRequest, os));
                         }
                     });
+            writeSuccess(resp);
         } catch (Throwable e) {
             log.error("servlet接收文件异常", e);
             int code = HttpStatus.INTERNAL_SERVER_ERROR.value();
@@ -75,6 +77,15 @@ public class FileUploadServlet extends HttpServlet {
         resp.setStatus(code);
         resp.setContentType("application/json;charset=utf8");
         String body = JsonResultImpl.getInstance(code, code, null, msg).toString();
+        resp.getWriter().print(body);
+        resp.flushBuffer();
+    }
+
+    private void writeSuccess(HttpServletResponse resp) throws IOException {
+        int code = HttpStatus.OK.value();
+        resp.setStatus(code);
+        resp.setContentType("application/json;charset=utf8");
+        String body = JsonResult.emptySuccess().getJsonStr();
         resp.getWriter().print(body);
         resp.flushBuffer();
     }

@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -12,6 +13,7 @@ import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import lombok.Getter;
@@ -24,6 +26,7 @@ import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -178,10 +181,21 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public void store(long uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
-        final String root = getUserFileRoot(uid);
-        final String savePath = StringUtils.appendPath(root, targetDir, fileInfo.getName());
-        handler.store(fileInfo, savePath, fileInfo.getSize(), input);
+    public void storeByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
+        final String root = getUserFileRoot(file.getUid());
+        final String rawPath = StringUtils.appendPath(root, savePath, file.getName());
+        final String tmpPath = rawPath + IdUtil.getId() + ".tmp";
+        boolean isSuccess = false;
+        try(OutputStream os = handler.newOutputStream(tmpPath)) {
+            streamConsumer.accept(os).applyTo(file);
+            os.close();
+            isSuccess = true;
+            handler.move(tmpPath, rawPath);
+        } finally {
+            if (!isSuccess) {
+                handler.delete(tmpPath);
+            }
+        }
     }
 
     @Override

@@ -3,8 +3,6 @@ package com.xiaotao.saltedfishcloud.helper.http;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -12,7 +10,6 @@ import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.function.Consumer;
 
 /**
  * 用于解析contentType为multipart/form-data的http请求
@@ -108,7 +105,7 @@ public class HttpMultipartRequestParser {
                         .map(this::parseContentDisposition)
                         .orElseGet(ContentDisposition::new);
 
-                handler.process(new MultipartItem(contentDisposition.getName(), contentDisposition.getFileName(), headers, bufferInputStream));
+                handler.process(new MultipartItem(contentDisposition.getName(), contentDisposition.getFileName(), headers, bufferInputStream.createCurBoundaryInputStreamView()));
                 bufferInputStream.nextBoundary();
             }
         }

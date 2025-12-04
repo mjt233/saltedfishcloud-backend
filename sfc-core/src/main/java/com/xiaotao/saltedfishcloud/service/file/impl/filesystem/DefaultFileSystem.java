@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
@@ -13,10 +14,7 @@ import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.redisson.api.RLock;
@@ -30,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -296,27 +295,51 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long saveFile(FileInfo file, String savePath) throws IOException {
-        // 获取上传的文件信息 并看情况计算MD5
-        if (file.getMd5() == null) {
-            file.updateMd5();
-        }
-        return saveFileWithDelete(file.getUid(), file.getStreamSource().getInputStream(), savePath, file);
+        saveFileByStream(file, savePath, os -> DiskFileSystemUtils.saveFile(file, os));
+        return SAVE_NEW_FILE;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
+        // 判断目录是否存在，若不存在则尝试创建
+        Long uid = file.getUid();
+        String nid = Optional.ofNullable(nodeService.getNodeIdByPathNoEx(uid, savePath)).orElseGet(() -> {
+            try {
+                return mkdirs(file.getUid(), savePath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // 判断是否存在同名文件，若存在同名文件则进行删除
+        LockUtils.execute(getStoreLockKey(uid, savePath, file.getName()), () -> {
+            FileInfo originInfo = fileRecordService.getFileInfoByNode(uid, nid, file.getName());
+            if (originInfo != null) {
+                if (originInfo.isDir()) {
+                    throw new IllegalArgumentException("无法使用文件来覆盖文件夹 path: " + savePath + " name:" + file.getName());
+                }
+                deleteFile(uid, savePath, Collections.singletonList(file.getName()));
+            }
+            storeServiceFactory.getService().storeByStream(file, savePath, streamConsumer);
+            fileRecordService.saveRecord(file, savePath);
+        });
     }
 
     private int saveFileWithDelete(long uid, InputStream file, String path, FileInfo fileInfo) throws IOException {
         String nid;
         // 判断目录是否存在，若不存在则尝试创建
-        nid = nodeService.getNodeIdByPathNoEx(uid, path);
-        if (nid == null) {
-            nid = mkdirs(uid, path);
-        }
-
+        nid = Optional.ofNullable(nodeService.getNodeIdByPathNoEx(uid, path)).orElseGet(() -> {
+            try {
+                return mkdirs(uid, path);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
         // 判断是否存在同名文件，若存在则依据md5判断文件内容是否相同
         // 如果文件内容相同，则不做任何处理
         // 若文件相同，则执行一次删除同名文件
-        RLock lock = redisson.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
-        try {
-            lock.lock();
+        return LockUtils.execute(getStoreLockKey(uid, path, fileInfo.getName()), () -> {
             FileInfo originInfo = fileRecordService.getFileInfoByNode(uid, nid, fileInfo.getName());
             boolean exist = false;
             if (originInfo != null) {
@@ -330,9 +353,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
             storeServiceFactory.getService().store(uid, file, path, fileInfo);
             fileRecordService.saveRecord(fileInfo, path);
             return exist ? SAVE_COVER : SAVE_NEW_FILE;
-        } finally {
-            lock.unlock();
-        }
+        });
     }
 
     @Override

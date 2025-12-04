@@ -66,6 +66,11 @@ public class BoundaryBufferInputStream extends InputStream {
     private int dataEndIndex = 0;
 
     /**
+     * 当前边界索引。每越过一个边界后就+1
+     */
+    private int curBoundaryIndex = 0;
+
+    /**
      * 最近一次检查边界结果
      */
     private BoundaryCheckResult lastBoundaryCheckResult;
@@ -321,6 +326,7 @@ public class BoundaryBufferInputStream extends InputStream {
 
         // 查找并更新越过边界之后的下一个边界信息
         this.updateDataEndIndex();
+        this.curBoundaryIndex++;
         return true;
     }
 
@@ -482,5 +488,35 @@ public class BoundaryBufferInputStream extends InputStream {
         dataEndIndex = 0;
         lastBoundaryCheckResult = null;
         inputStream.close();
+    }
+
+    /**
+     * 创建当前正在读取的边界内容的视图输入流，通过该视图流读数据，会消费 BoundaryBufferInputStream 内的缓存<br>
+     * 对该流的读取将被限定在调用该方法时 BoundaryBufferInputStream 的所处边界内。<br>
+     * 当 BoundaryBufferInputStream 越过了该边界，该输入流则不再能读取到数据。<br>
+     * 该方法常用于将流传入给会自动关闭流的方法，将边界处理和数据内容读取的两者逻辑进行解耦，防止外部能直接调用到 BoundaryBufferInputStream 的close方法导致边界解析关闭。<br>
+     */
+    public InputStream createCurBoundaryInputStreamView() {
+        BoundaryBufferInputStream that = this;
+        int curBoundaryIndex = this.curBoundaryIndex;
+        return new InputStream() {
+            @Override
+            public int read() throws IOException {
+                if (that.curBoundaryIndex == curBoundaryIndex) {
+                    return that.read();
+                } else {
+                    return -1;
+                }
+            }
+
+            @Override
+            public int read(@NotNull byte[] b, int off, int len) throws IOException {
+                if (that.curBoundaryIndex == curBoundaryIndex) {
+                    return that.read(b, off, len);
+                } else {
+                    return -1;
+                }
+            }
+        };
     }
 }
