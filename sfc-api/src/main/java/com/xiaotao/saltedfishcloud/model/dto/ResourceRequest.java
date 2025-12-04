@@ -63,10 +63,20 @@ public class ResourceRequest {
     private Boolean isCache;
 
     /**
+     * 文件大小
+     */
+    private Long size;
+
+    /**
+     * 文件md5
+     */
+    private String md5;
+
+    /**
      * 额外参数
      */
     @Builder.Default
-    private Map<String, String> params = new HashMap<>();
+    private Map<String, Object> params = new HashMap<>();
 
     /**
      * 是否为缩略图资源

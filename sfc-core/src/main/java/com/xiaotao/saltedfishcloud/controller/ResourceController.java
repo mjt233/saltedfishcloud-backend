@@ -84,7 +84,7 @@ public class ResourceController {
      * @param request           http请求对象
      */
     private void mergeParams(ResourceRequest resourceRequest, HttpServletRequest request) {
-        Map<String, String> paramsMap = new HashMap<>();
+        Map<String, Object> paramsMap = new HashMap<>();
         for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
             paramsMap.put(entry.getKey(), entry.getValue()[0]);
         }

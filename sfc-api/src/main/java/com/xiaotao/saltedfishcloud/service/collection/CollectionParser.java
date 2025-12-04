@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.model.po.CollectionField;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,11 @@ public class CollectionParser {
         for (CollectionField field : fields) {
             pattern = pattern.replaceAll("\\$\\{" + field.getName() + "}", fieldMap.get(field.getName()));
         }
-        pattern = pattern.replaceAll("\\$\\{__ext__}", FileUtils.getSuffix(filename));
-        return pattern;
+        String name = pattern.replaceAll("\\$\\{__ext__}", FileUtils.getSuffix(filename));
+
+        if(!FileNameValidator.valid(pattern)) {
+            throw new IllegalArgumentException("文件名不合法！" + name);
+        }
+        return name;
     }
 }

@@ -8,15 +8,12 @@ import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
-import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
+import com.xiaotao.saltedfishcloud.service.resource.AbstractWritableResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -24,10 +21,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 主文件系统的资源协议操作器，提供从主文件系统中获取文件及其缩略图。
@@ -35,22 +31,17 @@ import java.util.Objects;
  *
  */
 @Component
-public class MainResourceHandler implements ResourceProtocolHandler, InitializingBean {
-    @Autowired
-    private ResourceService resourceService;
+public class MainResourceHandler extends AbstractWritableResourceProtocolHandler<ResourceRequest> {
+
     @Autowired
     private DiskFileSystemManager fileSystemManager;
+
     @Autowired
     private UserService userService;
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        resourceService.addResourceHandler(this);
-    }
-
-    @Override
-    public PermissionInfo getPermissionInfo(ResourceRequest param) {
-        long targetId = Long.parseLong(param.getTargetId());
+    public PermissionInfo getPermissionInfo(ResourceRequest resourceRequest, ResourceRequest param) {
+        long targetId = Long.parseLong(resourceRequest.getTargetId());
         return PermissionInfo.builder()
                 .ownerUid(targetId)
                 .isReadable(UIDValidator.validate(targetId, false))
@@ -59,20 +50,20 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
     }
 
     @Override
-    public Resource getFileResource(ResourceRequest param) throws IOException {
-        if(!UIDValidator.validate(Long.parseLong(param.getTargetId()), false)) {
+    public Resource getFileResource(ResourceRequest resourceRequest, ResourceRequest param) throws IOException {
+        if(!UIDValidator.validate(Long.parseLong(resourceRequest.getTargetId()), false)) {
             throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
         }
-        if (param.getIsThumbnail()) {
-            return fileSystemManager.getMainFileSystem().getThumbnail(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
+        if (resourceRequest.getIsThumbnail()) {
+            return fileSystemManager.getMainFileSystem().getThumbnail(Long.parseLong(resourceRequest.getTargetId()), resourceRequest.getPath(), resourceRequest.getName());
         } else {
-            return fileSystemManager.getMainFileSystem().getResource(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
+            return fileSystemManager.getMainFileSystem().getResource(Long.parseLong(resourceRequest.getTargetId()), resourceRequest.getPath(), resourceRequest.getName());
         }
     }
 
     @Override
-    public String getPathMappingIdentity(ResourceRequest param) {
-        return SecureUtils.getMd5(param.getTargetId() + ":" + StringUtils.appendPath(param.getPath(), param.getName()));
+    public String getPathMappingIdentity(ResourceRequest resourceRequest, ResourceRequest param) {
+        return SecureUtils.getMd5(resourceRequest.getTargetId() + ":" + StringUtils.appendPath(resourceRequest.getPath(), resourceRequest.getName()));
     }
 
     @Override
@@ -85,73 +76,23 @@ public class MainResourceHandler implements ResourceProtocolHandler, Initializin
         return true;
     }
 
-    /**
-     * 校验文件写入参数
-     */
-    private void validWriteParam(ResourceRequest param) {
-        long uid = Long.parseLong(param.getTargetId());
+    @Override
+    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest) {
+        long uid = Long.parseLong(resourceRequest.getTargetId());
         User user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
-            String createUid = Objects.requireNonNull(param.getParams().get(ResourceRequest.CREATE_UID), "缺失权限上下文会话或创建人id");
-            user = Objects.requireNonNull(userService.getUserById(Long.valueOf(createUid)), "无效的创建人id");
+            Long createUid = Objects.requireNonNull(TypeUtils.toLong(resourceRequest.getParams().get(ResourceRequest.CREATE_UID)), "缺失权限上下文会话或创建人id");
+            user = Objects.requireNonNull(userService.getUserById(createUid), "无效的创建人id");
         }
         if(!UIDValidator.validate(user, uid, true)) {
             throw new IllegalArgumentException("访问拒绝");
         }
-    }
-
-    /**
-     * 根据请求信息创建一个文件信息
-     * @param param 请求参数
-     * @param resource  文件资源
-     */
-    private FileInfo createFileInfoFromRequest(ResourceRequest param, Resource resource) throws IOException {
-        FileInfo fileInfo = new FileInfo();
-        Date now = new Date();
-        long uid = Long.parseLong(param.getTargetId());
-        fileInfo.setCtime(now.getTime());
-        fileInfo.setStreamSource(resource);
-
-        fileInfo.setUid(uid);
-        fileInfo.setName(param.getName());
-        fileInfo.setSize(resource.contentLength());
-        if (param.getMtime() != null) {
-            fileInfo.setMtime(param.getMtime());
-        } else {
-            fileInfo.setMtime(resource.lastModified());
-        }
-        String md5 = param.getParams().get("md5");
-        if (md5 != null) {
-            fileInfo.setMd5(md5);
-        } else if (fileInfo.getMd5() == null) {
-            fileInfo.updateMd5();
-        }
-        return fileInfo;
+        return resourceRequest;
     }
 
     @Override
-    public void writeResource(ResourceRequest param, Resource resource) throws IOException {
-        if (Boolean.TRUE.equals(param.getIsThumbnail())) {
-            throw new IllegalArgumentException("不支持写入缩略图");
-        }
-        validWriteParam(param);
-        FileInfo fileInfo = this.createFileInfoFromRequest(param, resource);
-        fileSystemManager.getMainFileSystem().saveFile(fileInfo,param.getPath());
-    }
-
-    @Override
-    public void writeResource(ResourceRequest param, OutputStreamConsumer<OutputStream> outputStream) throws IOException {
-        long uid = Long.parseLong(param.getTargetId());
-
-        Path tmpFile = PathUtils.getTempPath().resolve(IdUtil.getUUID());
-        try(OutputStream os = Files.newOutputStream(tmpFile)) {
-            outputStream.accept(os);
-            os.close();
-            PathResource resource = new PathResource(tmpFile);
-            FileInfo fileInfo = this.createFileInfoFromRequest(param, resource);
-            fileSystemManager.getMainFileSystem().moveToSaveFile(uid, tmpFile, param.getPath(), fileInfo);
-        } finally {
-            Files.deleteIfExists(tmpFile);
-        }
+    public void handleWriteResource(ResourceRequest resourceRequest, ResourceRequest parsedParam, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
+        FileInfo fileInfo = this.createFileInfoFromRequest(resourceRequest, null);
+        fileSystemManager.getMainFileSystem().saveFileByStream(fileInfo, resourceRequest.getPath(), streamConsumer);
     }
 }

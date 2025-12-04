@@ -1,14 +1,17 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -173,11 +176,19 @@ public interface DiskFileSystem {
      * @param fileInfo          文件信息（一般只取name）
      * @throws IOException      存储出错
      */
-    void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException;
+    default void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
+        if (!Files.exists(nativeFilePath) || Files.isDirectory(nativeFilePath)) {
+            throw new IllegalArgumentException(nativeFilePath + " 不是文件或不存在");
+        }
+        try (InputStream is = Files.newInputStream(nativeFilePath)) {
+            saveFileByStream(fileInfo, path, os -> DiskFileSystemUtils.saveFileStream(fileInfo, is, os));
+            Files.deleteIfExists(nativeFilePath);
+        }
+    }
 
     /**
      * 保存上传的文件到网盘系统中
-     * @param file        接收到的文件对象
+     * @param file        接收到的文件对象，通过 {@link FileInfo#getStreamSource()} 获取文件内容
      * @param savePath    保存的文件路径
      * @return 新文件 - 1，旧文件覆盖 - 0，文件无变更 - 2
      * 常量见{@link DiskFileSystem#SAVE_COVER}、
@@ -185,7 +196,18 @@ public interface DiskFileSystem {
      * {@link DiskFileSystem#SAVE_NOT_CHANGE}
      * @throws IOException 文件写入失败时抛出
      */
-    long saveFile(FileInfo file, String savePath) throws IOException;
+    default long saveFile(FileInfo file, String savePath) throws IOException {
+        saveFileByStream(file, savePath, os -> DiskFileSystemUtils.saveFile(file, os));
+        return SAVE_NEW_FILE;
+    }
+
+    /**
+     * 通过二进制流的方式保存文件。
+     * @param file 要保存的文件对象
+     * @param savePath  要保存的文件所在目录路径
+     * @param streamConsumer    文件输出流消费函数，用于将数据拷贝写入的逻辑转移到外部实现。
+     */
+    void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException;
 
     /**
      * 创建文件夹

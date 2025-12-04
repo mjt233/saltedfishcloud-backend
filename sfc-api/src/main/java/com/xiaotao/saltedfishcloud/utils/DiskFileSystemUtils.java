@@ -11,9 +11,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -25,40 +26,38 @@ public class DiskFileSystemUtils {
     public final static int FILE_BUFFER_SIZE = 64 * _1KiB;
 
     /**
-     * 处理统一资源请求文件流的保存逻辑
-     * @param is    文件输入流
-     * @param resourceRequest   统一资源请求参数
-     * @param os    保存文件的输出流
+     * 保存文件流，并实时计算文件的md5和实际保存的大小，反写到参数file中
+     * @param file  通过streamSource获取文件输入流，同时用于接收文件大小和md5的文件信息
+     * @param os    文件输出流
      */
-    public static void saveResourceFileStream(InputStream is, ResourceRequest resourceRequest, OutputStream os) throws IOException {
-        String inputMd5 = Optional.ofNullable(resourceRequest.getParams()).map(m -> m.get("md5")).orElse(null);
-        try {
-            byte[] buffer = new byte[FILE_BUFFER_SIZE];
-            int len;
-            MessageDigest md5 = MessageDigest.getInstance("md5");
-
-            // 读取上传的文件数据后，同时计算md5和写入文件
-            while ( (len = is.read(buffer, 0, buffer.length)) != -1 ) {
-                md5.update(buffer, 0, len);
-                os.write(buffer, 0, len);
-            }
-            String actualMd5Value = new String(encodeHex(md5.digest()));
-
-            // 校验md5是否一致
-            if (org.springframework.util.StringUtils.hasText(inputMd5) && !actualMd5Value.equals(inputMd5)) {
-                throw new IllegalArgumentException("md5 is incorrect, actual md5 is " + actualMd5Value);
-            }
-
-            // 记录本次上传文件的md5
-            Optional.ofNullable(resourceRequest.getParams())
-                    .orElseGet(() -> {
-                        resourceRequest.setParams(new HashMap<>());
-                        return resourceRequest.getParams();
-                    })
-                    .put("md5", actualMd5Value);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+    public static StreamCopyResult saveFile(FileInfo file, OutputStream os) throws IOException {
+        if (file.getStreamSource() == null) {
+            throw new IllegalArgumentException("fileInfo缺少streamSource");
         }
+        try(InputStream is = file.getStreamSource().getInputStream()) {
+            return saveFileStream(file, is, os);
+        }
+    }
+
+    /**
+     * 保存文件流，并实时计算文件的md5和实际保存的大小，反写到参数file中
+     * @param file  接收文件大小和md5的文件信息
+     * @param is    文件输入流
+     * @param os    文件输出流
+     */
+    public static StreamCopyResult saveFileStream(FileInfo file, InputStream is, OutputStream os) throws IOException {
+        return StreamUtils.copyStreamAndComputeMd5(is, os, file.getMd5()).applyTo(file);
+    }
+
+    /**
+     * 处理统一资源请求文件流的保存逻辑
+     * @param is    文件输入流。方法调用完后不会关闭。
+     * @param resourceRequest   统一资源请求参数
+     * @param os    保存文件的输出流。方法调用完后不会关闭。
+     */
+    public static StreamCopyResult saveResourceFileStream(InputStream is, ResourceRequest resourceRequest, OutputStream os) throws IOException {
+        return StreamUtils.copyStreamAndComputeMd5(is, os, resourceRequest.getMd5())
+                .applyTo(resourceRequest);
     }
 
     /**
@@ -153,17 +152,5 @@ public class DiskFileSystemUtils {
 
             }
         } while (!pathQueue.isEmpty());
-    }
-
-
-    private static char[] encodeHex(byte[] bytes) {
-        char[] HEX_CHARS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-        char[] chars = new char[32];
-        for (int i = 0; i < chars.length; i = i + 2) {
-            byte b = bytes[i / 2];
-            chars[i] = HEX_CHARS[(b >>> 0x4) & 0xf];
-            chars[i + 1] = HEX_CHARS[b & 0xf];
-        }
-        return chars;
     }
 }

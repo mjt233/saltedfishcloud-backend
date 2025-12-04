@@ -1,14 +1,16 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -117,14 +119,30 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     }
 
     @Override
-    public void store(long uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
-        final String path = testAndGetMd5FilePath(fileInfo);
-        if (path == null) {
-            log.debug("[{}]文件重复命中：{}，保存路径：{}", LOG_TITLE, fileInfo.getName(), path);
-            return;
+    public void storeByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
+
+        final String tmpPath = StringUtils.appendPath(getRepoRoot(), IdUtil.getId() + ".tmp");
+        boolean isSuccess = false;
+        try(OutputStream tmpFileOutputStream = handler.newOutputStream(tmpPath)) {
+            streamConsumer.accept(tmpFileOutputStream).applyTo(file);
+            tmpFileOutputStream.close();
+
+            // 根据md5确认存储路径后，检查是否已有重复文件。如果有重复的则不需要保存，删掉临时文件
+            // 没有重复文件则将临时文件移动到目标存储目录
+            String storePath = testAndGetMd5FilePath(file);
+            if (storePath == null) {
+                log.debug("[{}]文件重复命中：{}，保存路径：{}", LOG_TITLE, file.getName(), storePath);
+                handler.delete(tmpPath);
+            } else {
+                log.debug("[{}]存储新文件：{}，保存路径：{}", LOG_TITLE, file.getName(), storePath);
+                handler.move(tmpPath, storePath);
+            }
+            isSuccess = true;
+        } finally {
+            if (!isSuccess) {
+                handler.delete(tmpPath);
+            }
         }
-        log.debug("[{}]存储新文件：{}，保存路径：{}", LOG_TITLE, fileInfo.getName(), path);
-        handler.store(fileInfo, path, fileInfo.getSize(), input);
     }
 
     @Override

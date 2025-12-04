@@ -23,7 +23,15 @@ public class CollectionRecord {
     @Id
     @SnowFlakeIdGenerator
     private Long id;
+
+    /**
+     * 文件收集任务id
+     */
     private Long cid;
+
+    /**
+     * 文件提交人用户id
+     */
     private Long uid;
 
     private String filename;

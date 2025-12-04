@@ -18,4 +18,9 @@ public interface ResourceProtocol {
      * 文件分享
      */
     String SHARE = "share";
+
+    /**
+     * 文件收集
+     */
+    String COLLECTION = "collection";
 }

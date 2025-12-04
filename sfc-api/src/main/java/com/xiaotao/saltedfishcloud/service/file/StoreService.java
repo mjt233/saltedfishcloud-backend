@@ -2,13 +2,16 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -127,7 +130,11 @@ public interface StoreService {
      * @throws UnableOverwriteException 保存位置存在同名的目录
      */
     default void store(long uid, InputStream input, String targetDir, FileInfo fileInfo) throws IOException {
-        throw new UnsupportedOperationException("不支持store操作");
+        this.storeByStream(fileInfo, targetDir, os -> DiskFileSystemUtils.saveFileStream(fileInfo, input, os));
+    }
+
+    default void storeByStream(FileInfo file, String savePath,  OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
+        throw new UnsupportedOperationException("不支持storeByStream操作");
     }
 
     /**

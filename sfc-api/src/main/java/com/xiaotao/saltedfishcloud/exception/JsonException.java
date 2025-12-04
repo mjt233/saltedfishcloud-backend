@@ -5,7 +5,13 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import lombok.Getter;
 
+import java.io.Serial;
+
+/**
+ * 业务异常
+ */
 public class JsonException extends RuntimeException {
+    @Serial
     private static final long serialVersionUID = -6859013370470905290L;
 
     @Getter
