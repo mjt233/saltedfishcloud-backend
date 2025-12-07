@@ -16,10 +16,13 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils.FILE_BUFFER_SIZE;
 import static com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils.saveResourceFileStream;
@@ -43,19 +46,18 @@ public class FileUploadServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
-            ResourceRequest resourceRequest = Optional.ofNullable(req.getParameter("p"))
-                    .filter(StringUtils::hasText)
-                    .map(p -> {
-                        try {
-                            return MapperHolder.parseJson(p, ResourceRequest.class);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .orElseThrow(() -> new IllegalArgumentException("parameter 'p' is require"));
+            AtomicReference<ResourceRequest> rr = new AtomicReference<>();
             HttpMultipartRequestParser.create(req, FILE_BUFFER_SIZE)
                     .start(item -> {
+                        if ("param".equals(item.name())) {
+                            rr.set(MapperHolder.parseJson(StreamUtils.copyToString(item.inputStream(), StandardCharsets.UTF_8), ResourceRequest.class));
+                        }
                         if ("file".equals(item.name()) && StringUtils.hasText(item.fileName())) {
+                            ResourceRequest resourceRequest = rr.get();
+                            if (resourceRequest == null) {
+                                throw new RuntimeException("在request body表单参数 \"file\" 之前 缺少参数 \"param\" ");
+                            }
+
                             resourceService.writeResource(resourceRequest, os -> saveResourceFileStream(item.inputStream(), resourceRequest, os));
                         }
                     });

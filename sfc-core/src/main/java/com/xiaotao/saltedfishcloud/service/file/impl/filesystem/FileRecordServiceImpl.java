@@ -9,10 +9,10 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
-import com.xiaotao.saltedfishcloud.service.node.cache.NodeCacheService;
-import com.xiaotao.saltedfishcloud.service.node.cache.annotation.RemoveNodeCache;
+import com.xiaotao.saltedfishcloud.utils.LockUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
@@ -21,7 +21,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.annotation.Resource;
 import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -101,6 +100,10 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException {
+        // 原地复制，不处理
+        if (uid == targetId && source.equals(target) && sourceName.equals(targetName)) {
+            return;
+        }
         PathBuilder pathBuilder = new PathBuilder();
         pathBuilder.setForcePrefix(true);
         int prefixLength = source.length() + 1 + sourceName.length();
@@ -337,11 +340,6 @@ public class FileRecordServiceImpl implements FileRecordService {
         return fileInfoRepo.save(newFile);
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public String mkdirs(long uid, String path) {
-        return this.mkdirs(uid, path, false);
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -363,6 +361,21 @@ public class FileRecordServiceImpl implements FileRecordService {
         }
         return nid;
     }
+
+    @Override
+    public String getAndMkdirs(long uid, String path, boolean isMount) {
+        return Optional.ofNullable(nodeService.getNodeIdByPathNoEx(uid, path))
+                .orElseGet(() -> {
+                    String lockKey = "getAndMkdirs:" + uid + ":" + path;
+                    return LockUtils.execute(
+                            lockKey,
+                            () -> Optional
+                                    .ofNullable(nodeService.getNodeIdByPathNoEx(uid, path))
+                                    .orElseGet(() -> mkdirs(uid, path, isMount))
+                    );
+                });
+    }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)

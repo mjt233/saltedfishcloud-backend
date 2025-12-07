@@ -45,7 +45,7 @@ public interface NodeDao {
      * @param parent    父节点
      * @return  插入的行数
      */
-    @Insert("INSERT IGNORE INTO node_list (name, id, parent, uid, is_mount) VALUES (#{name}, #{id}, #{parent}, #{uid}, #{isMount})")
+    @Insert("INSERT INTO node_list (name, id, parent, uid, is_mount) VALUES (#{name}, #{id}, #{parent}, #{uid}, #{isMount})")
     int addNode(@Param("uid") Long uid,
                 @Param("name") String name,
                 @Param("id") String id,
