@@ -15,10 +15,12 @@ import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -27,7 +29,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -129,18 +130,24 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         if (files.isEmpty()) {
             return false;
         }
-        FileInfo fileInfo = files.get(0);
-        String filePath = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
-        Resource resource = getResource(fileInfo.getUid(), filePath, fileInfo.getName());
+        FileInfo existMd5File = files.get(0);
+        String filePath = nodeService.getPathByNode(existMd5File.getUid(), existMd5File.getNode());
+        Resource resource = getResource(existMd5File.getUid(), filePath, existMd5File.getName());
         if (resource == null) {
             return false;
         }
         try {
-            fileInfo.setName(name);
-            FileInfo newFile = FileInfo.createFrom(fileInfo, false);
-            newFile.setUid(uid);
-            newFile.setStreamSource(resource);
-            saveFile(newFile, path);
+            StoreService storeService = storeServiceFactory.getService();
+            if (storeService.isUnique()) {
+                fileRecordService.copy(existMd5File.getUid(), filePath, path, uid, existMd5File.getName(), name, true);
+            } else {
+                fileRecordService.copy(existMd5File.getUid(), filePath, path, uid, existMd5File.getName(), name, true);
+                existMd5File.setName(name);
+                FileInfo newFile = FileInfo.createFrom(existMd5File, false);
+                newFile.setUid(uid);
+                newFile.setStreamSource(resource);
+                saveFile(newFile, path);
+            }
         } catch (IOException e) {
             log.trace("错误：{}", e.getMessage());
             return false;
@@ -175,7 +182,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         if (getResource(uid, parent, name) != null) {
             throw new UnsupportedOperationException("已存在同名文件：" + path);
         }
-        String nid = fileRecordService.mkdirs(uid, path);
+        String nid = fileRecordService.getAndMkdirs(uid, path, false);
         final StoreService storeService = storeServiceFactory.getService();
         if (!storeService.isUnique()) {
             storeService.mkdir(uid, path, "");
@@ -304,6 +311,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     public void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
         // 判断目录是否存在，若不存在则尝试创建
         Long uid = file.getUid();
+        StoreService storeService = storeServiceFactory.getService();
         String nid = Optional.ofNullable(nodeService.getNodeIdByPathNoEx(uid, savePath)).orElseGet(() -> {
             try {
                 return mkdirs(file.getUid(), savePath);
@@ -312,47 +320,26 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
             }
         });
 
-        // 判断是否存在同名文件，若存在同名文件则进行删除
         LockUtils.execute(getStoreLockKey(uid, savePath, file.getName()), () -> {
             FileInfo originInfo = fileRecordService.getFileInfoByNode(uid, nid, file.getName());
+            // 判断是否存在同名文件，若存在同名文件则先保存为临时文件后，再删除将临时文件重命名为同名文件覆盖
             if (originInfo != null) {
                 if (originInfo.isDir()) {
                     throw new IllegalArgumentException("无法使用文件来覆盖文件夹 path: " + savePath + " name:" + file.getName());
                 }
-                deleteFile(uid, savePath, Collections.singletonList(file.getName()));
-            }
-            storeServiceFactory.getService().storeByStream(file, savePath, streamConsumer);
-            fileRecordService.saveRecord(file, savePath);
-        });
-    }
+                FileInfo tmpFile = new FileInfo();
+                BeanUtils.copyProperties(file, tmpFile);
+                tmpFile.setName(tmpFile.getName() + "." + IdUtil.getId() + ".tmp");
 
-    private int saveFileWithDelete(long uid, InputStream file, String path, FileInfo fileInfo) throws IOException {
-        String nid;
-        // 判断目录是否存在，若不存在则尝试创建
-        nid = Optional.ofNullable(nodeService.getNodeIdByPathNoEx(uid, path)).orElseGet(() -> {
-            try {
-                return mkdirs(uid, path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                storeService.storeByStream(tmpFile, savePath, streamConsumer);
+                fileRecordService.saveRecord(tmpFile, savePath);
+
+                deleteFile(uid, savePath, Collections.singletonList(file.getName()));
+                rename(file.getUid(), savePath, tmpFile.getName(), file.getName());
+            } else {
+                storeService.storeByStream(file, savePath, streamConsumer);
+                fileRecordService.saveRecord(file, savePath);
             }
-        });
-        // 判断是否存在同名文件，若存在则依据md5判断文件内容是否相同
-        // 如果文件内容相同，则不做任何处理
-        // 若文件相同，则执行一次删除同名文件
-        return LockUtils.execute(getStoreLockKey(uid, path, fileInfo.getName()), () -> {
-            FileInfo originInfo = fileRecordService.getFileInfoByNode(uid, nid, fileInfo.getName());
-            boolean exist = false;
-            if (originInfo != null) {
-                if (originInfo.getMd5().equals(fileInfo.getMd5())) {
-                    return SAVE_NOT_CHANGE;
-                } else {
-                    deleteFile(uid, path, Collections.singletonList(fileInfo.getName()));
-                }
-                exist = true;
-            }
-            storeServiceFactory.getService().store(uid, file, path, fileInfo);
-            fileRecordService.saveRecord(fileInfo, path);
-            return exist ? SAVE_COVER : SAVE_NEW_FILE;
         });
     }
 
