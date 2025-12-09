@@ -53,7 +53,7 @@ public class NwtController {
      * @param id    WOL设备id
      */
     @GetMapping("wakeWolDevice")
-    public JsonResult<?> wakeWolDevice(Long id) throws IOException {
+    public JsonResult<?> wakeWolDevice(@RequestParam("id") Long id) throws IOException {
         wolDeviceService.wake(id);
         return JsonResult.emptySuccess();
     }
