@@ -37,6 +37,12 @@ public class FTPServerProperty {
     /**
      * 被动传输地址
      */
+    @ConfigProperty(value = "isUsePassive", title = "启用被动模式", defaultValue = "false", inputType = "switch", group = "passive")
+    private Boolean isUsePassive = false;
+
+    /**
+     * 被动传输地址
+     */
     @ConfigProperty(value = "passiveAddr", title = "被动传输地址", defaultValue = "localhost",describe = "被动模式下客户端使用连接传输数据的地址", group = "passive")
     private String passiveAddr = "localhost";
 
