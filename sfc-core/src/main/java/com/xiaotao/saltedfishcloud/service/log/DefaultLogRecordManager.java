@@ -20,7 +20,9 @@ import com.xiaotao.saltedfishcloud.model.vo.LogRecordStatisticVO;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
+import com.xiaotao.saltedfishcloud.utils.RequestContextUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import jakarta.servlet.ServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -91,7 +93,11 @@ public class DefaultLogRecordManager implements LogRecordManager, InitializingBe
 
     @Override
     public void saveRecord(LogRecord logRecord) {
-        saveRecordAsync(logRecord).join();
+        if (!Objects.equals(true, config.getEnableLog())) {
+            return;
+        }
+        this.initLogRecord(logRecord);
+        storageList.stream().filter(LogRecordStorage::isActive).forEach(storage -> storage.saveRecord(logRecord));
     }
 
 
@@ -101,6 +107,17 @@ public class DefaultLogRecordManager implements LogRecordManager, InitializingBe
         if (!Objects.equals(true, config.getEnableLog())) {
             return CompletableFuture.completedFuture(null);
         }
+        this.initLogRecord(logRecord);
+
+        CompletableFuture<Void>[] futures = (CompletableFuture<Void>[])storageList.stream()
+                .filter(LogRecordStorage::isActive)
+                .map(e -> CompletableFuture.runAsync(() -> e.saveRecord(logRecord), executor))
+                .toArray(CompletableFuture[]::new);
+
+        return CompletableFuture.allOf(futures);
+    }
+
+    private void initLogRecord(LogRecord logRecord) {
         if (logRecord.getProducerPid() == null || logRecord.getProducerHost() == null) {
             logRecord.setProducerPid(selfClusterNode.get().getPid());
             logRecord.setProducerHost(selfClusterNode.get().getHost());
@@ -111,13 +128,11 @@ public class DefaultLogRecordManager implements LogRecordManager, InitializingBe
         if (logRecord.getProducerThread() == null) {
             logRecord.setProducerThread(Thread.currentThread().getName());
         }
-
-        CompletableFuture<Void>[] futures = (CompletableFuture<Void>[])storageList.stream()
-                .filter(LogRecordStorage::isActive)
-                .map(e -> CompletableFuture.runAsync(() -> e.saveRecord(logRecord), executor))
-                .toArray(CompletableFuture[]::new);
-
-        return CompletableFuture.allOf(futures);
+        if (logRecord.getIp() == null) {
+            RequestContextUtils.getHttpServletRequest()
+                    .map(ServletRequest::getRemoteAddr)
+                    .ifPresent(logRecord::setIp);
+        }
     }
 
     public class SfcCustomAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {

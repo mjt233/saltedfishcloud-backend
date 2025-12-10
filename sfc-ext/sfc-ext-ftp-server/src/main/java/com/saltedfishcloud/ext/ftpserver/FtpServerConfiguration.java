@@ -2,7 +2,7 @@ package com.saltedfishcloud.ext.ftpserver;
 
 import com.saltedfishcloud.ext.ftpserver.core.DiskFtpFileSystemFactory;
 import com.saltedfishcloud.ext.ftpserver.core.DiskFtpUserManager;
-import com.saltedfishcloud.ext.ftpserver.ftplet.FtpUploadHandler;
+import com.saltedfishcloud.ext.ftpserver.ftplet.FtpUploadAndLogHandler;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -28,8 +28,8 @@ public class FtpServerConfiguration {
     }
 
     @Bean
-    public FtpUploadHandler ftpUploadHandler() {
-        return new FtpUploadHandler();
+    public FtpUploadAndLogHandler ftpUploadHandler() {
+        return new FtpUploadAndLogHandler();
     }
 
     @Bean

@@ -55,6 +55,11 @@ public class LogRecord extends AuditModel {
     private String msgAbstract;
 
     /**
+     * 客户端请求的IP地址
+     */
+    private String ip;
+
+    /**
      * 消息详情
      */
     @Lob
