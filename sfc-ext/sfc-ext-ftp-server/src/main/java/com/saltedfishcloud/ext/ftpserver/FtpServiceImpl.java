@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.saltedfishcloud.ext.ftpserver.constant.FtpConstant;
 import com.saltedfishcloud.ext.ftpserver.core.DiskFtpFileSystemFactory;
 import com.saltedfishcloud.ext.ftpserver.core.DiskFtpUserManager;
-import com.saltedfishcloud.ext.ftpserver.ftplet.FtpUploadHandler;
+import com.saltedfishcloud.ext.ftpserver.ftplet.FtpUploadAndLogHandler;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class FtpServiceImpl implements ApplicationRunner , FtpService {
     private DiskFtpFileSystemFactory ftpFileSystemFactory;
 
     @Autowired
-    private FtpUploadHandler ftpUploadHandler;
+    private FtpUploadAndLogHandler ftpUploadAndLogHandler;
 
     @Autowired
     private ConfigService configService;
@@ -180,7 +180,7 @@ public class FtpServiceImpl implements ApplicationRunner , FtpService {
         listenerFactory.setDataConnectionConfiguration(dataConnectionConfigurationFactory.createDataConnectionConfiguration());
 
         Map<String, Ftplet> ftplets = new HashMap<>();
-        ftplets.put("upload", ftpUploadHandler);
+        ftplets.put("upload", ftpUploadAndLogHandler);
 
         //  服务实例配置
         FtpServerFactory serverFactory = new FtpServerFactory();
