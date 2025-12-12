@@ -34,6 +34,7 @@ public class EncodeConvertRule {
 
     /**
      * 流类型，video，audio或subtitle
+     * @see com.saltedfishcloud.ext.ve.constant.VEConstants.EncoderType
      */
     private String type;
 

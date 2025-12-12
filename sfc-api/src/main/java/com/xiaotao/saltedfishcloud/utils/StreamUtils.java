@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.function.BiConsumer;
 
 import static com.xiaotao.saltedfishcloud.constant.ByteSize._1KiB;
 
@@ -38,6 +39,19 @@ public class StreamUtils {
      * @return  从输入流复制的数据的md5
      */
     public static StreamCopyResult copyStreamAndComputeMd5(InputStream is, OutputStream os, @Nullable String validMd5) throws IOException {
+        return copyStreamAndComputeMd5(is, os, validMd5, null);
+    }
+
+
+    /**
+     * 复制流并计算复制的流的数据的md5
+     * @param is    输入流
+     * @param os    输出流
+     * @param validMd5 待校验的md5。不为null时，复制完成后会将复制的md5与该参数对比，不一致时抛出 {@link IllegalArgumentException} 异常
+     * @param copyEvent 每次复制数据后的事件处理函数。参数0: 内部缓冲数组 参数1: 本次复制的数据长度
+     * @return  从输入流复制的数据的md5
+     */
+    public static StreamCopyResult copyStreamAndComputeMd5(InputStream is, OutputStream os, @Nullable String validMd5, @Nullable BiConsumer<byte[], Integer> copyEvent) throws IOException {
         try {
             byte[] buffer = new byte[FILE_BUFFER_SIZE];
             int len;
@@ -49,6 +63,9 @@ public class StreamUtils {
                 md5.update(buffer, 0, len);
                 os.write(buffer, 0, len);
                 size += len;
+                if (copyEvent != null) {
+                    copyEvent.accept(buffer, len);
+                }
             }
             String actualMd5 = new String(encodeHex(md5.digest()));
             if (validMd5 != null && !actualMd5.equals(validMd5) ) {

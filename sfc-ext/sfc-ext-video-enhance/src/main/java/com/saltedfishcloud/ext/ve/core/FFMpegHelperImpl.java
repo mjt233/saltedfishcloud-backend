@@ -209,12 +209,12 @@ public class FFMpegHelperImpl implements FFMpegHelper {
             args.add("-map");
             args.add("0:" + rule.getIndex());
 
-            switch (rule.getType()) {
-                case EncoderType.AUDIO: outputStreamIndex = outputAudioIndex++;break;
-                case EncoderType.VIDEO: outputStreamIndex = outputVideoIndex++;break;
-                case EncoderType.SUBTITLE: outputStreamIndex = outputSubtitleIndex++;break;
-                default: throw new IllegalArgumentException("未知的流类型：" + rule.getType());
-            }
+            outputStreamIndex = switch (rule.getType()) {
+                case EncoderType.AUDIO -> outputAudioIndex++;
+                case EncoderType.VIDEO -> outputVideoIndex++;
+                case EncoderType.SUBTITLE -> outputSubtitleIndex++;
+                default -> throw new IllegalArgumentException("未知的流类型：" + rule.getType());
+            };
 
             // 指定流的编码处理方式
             String outputStreamTag = rule.getTypeFlag() + ":" + outputStreamIndex;
