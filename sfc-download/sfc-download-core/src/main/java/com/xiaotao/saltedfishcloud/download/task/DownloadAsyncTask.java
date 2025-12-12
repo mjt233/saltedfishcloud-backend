@@ -31,8 +31,10 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
+import static com.xiaotao.saltedfishcloud.constant.ByteSize._1MiB;
+
 public class DownloadAsyncTask implements AsyncTask {
-    private final static int BUFFER_SIZE = 8192;
+    private final static int BUFFER_SIZE = 16 * _1MiB;
     private final String originParams;
 
     private final DownloadTaskParams params;

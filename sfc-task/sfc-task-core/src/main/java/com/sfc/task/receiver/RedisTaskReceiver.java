@@ -1,6 +1,7 @@
-package com.sfc.task;
+package com.sfc.task.receiver;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sfc.task.AsyncTaskConstants;
+import com.sfc.task.AsyncTaskReceiver;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.Builder;
@@ -15,8 +16,10 @@ import java.util.stream.Collectors;
 
 /**
  * 基于redis的简单异步任务队列接收器
+ * @deprecated 已改用 {@link DefaultTaskReceiver}。任务改为从数据库中接收，消息队列只用来通知拉取任务，不再用消息队列本身接收完整参数。
  */
 @Builder
+@Deprecated
 public class RedisTaskReceiver implements AsyncTaskReceiver {
     private final RedisTemplate<String, Object> redisTemplate;
 

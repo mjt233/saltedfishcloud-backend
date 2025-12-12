@@ -1,6 +1,7 @@
 package com.sfc.task.repo;
 
 import com.sfc.task.model.AsyncTaskRecord;
+import com.xiaotao.saltedfishcloud.dao.BaseRepo;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +14,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-public interface AsyncTaskRecordRepo extends JpaRepository<AsyncTaskRecord, Long>, JpaSpecificationExecutor<AsyncTaskRecord> {
+public interface AsyncTaskRecordRepo extends BaseRepo<AsyncTaskRecord> {
 
     /**
      * 根据用户id和状态查询任务记录

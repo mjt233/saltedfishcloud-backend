@@ -101,24 +101,24 @@ public class DownloadServiceImpl implements DownloadService {
     public String createTask(DownloadTaskParams params, long creator) throws IOException {
 
         // 初始化下载任务信息和录入数据库
-        DownloadTaskInfo info = new DownloadTaskInfo();
+        DownloadTaskInfo downloadTask = new DownloadTaskInfo();
         AsyncTaskRecord asyncTaskRecord = AsyncTaskRecord.builder()
                 .name("离线下载")
                 .taskType(AsyncTaskType.OFFLINE_DOWNLOAD)
                 .cpuOverhead(20)
                 .build();
         asyncTaskRecord.setId(IdUtil.getId());
-        asyncTaskRecord.setUid((long)creator);
+        asyncTaskRecord.setUid(creator);
 
-        info.setUrl(params.url);
-        info.setProxy(params.proxy);
-        info.setUid(params.uid);
-        info.setCreatedBy(creator);
-        info.setSavePath(params.savePath);
-        info.setAsyncTaskRecord(asyncTaskRecord);
-        downloadDao.save(info);
+        downloadTask.setUrl(params.url);
+        downloadTask.setProxy(params.proxy);
+        downloadTask.setUid(params.uid);
+        downloadTask.setCreatedBy(creator);
+        downloadTask.setSavePath(params.savePath);
+        downloadTask.setAsyncTaskRecord(asyncTaskRecord);
+        downloadDao.save(downloadTask);
 
-        params.downloadId = info.getId();
+        params.downloadId = downloadTask.getId();
         asyncTaskRecord.setParams(MapperHolder.toJson(params));
         asyncTaskManager.submitAsyncTask(asyncTaskRecord);
         return params.downloadId;
