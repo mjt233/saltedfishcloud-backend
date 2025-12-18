@@ -191,12 +191,12 @@
 									"formdata": [
 										{
 											"key": "passwd",
-											"value": "mojintao233",
+											"value": "test",
 											"type": "text"
 										},
 										{
 											"key": "user",
-											"value": "xiaotao",
+											"value": "test",
 											"type": "text"
 										}
 									]
@@ -224,12 +224,12 @@
 											"formdata": [
 												{
 													"key": "passwd",
-													"value": "mojintao233",
+													"value": "test",
 													"type": "text"
 												},
 												{
 													"key": "user",
-													"value": "xiaotao",
+													"value": "test",
 													"type": "text"
 												}
 											]
