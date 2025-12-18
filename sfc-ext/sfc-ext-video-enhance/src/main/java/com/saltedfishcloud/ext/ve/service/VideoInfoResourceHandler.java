@@ -21,7 +21,7 @@ public class VideoInfoResourceHandler extends AbstractResourceProtocolHandler<Re
     private ResourceService resourceService;
 
     @Override
-    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest) {
+    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
         return resourceRequest;
     }
 

@@ -128,7 +128,7 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
     }
 
     @Override
-    public FileCollectionResourceParam validAndParseParam(ResourceRequest resourceRequest) {
+    public FileCollectionResourceParam validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
         try {
             FileCollectionResourceParam parsedParam = MapperHolder.parseJson(MapperHolder.toJson(resourceRequest.getParams()), FileCollectionResourceParam.class);
             parsedParam.setCid(Long.valueOf(resourceRequest.getTargetId()));
@@ -136,7 +136,7 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
             if (info == null) {
                 throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
             }
-            if (parsedParam.getType() == FileCollectionResourceParam.Type.SUBMIT) {
+            if (parsedParam.getType() == FileCollectionResourceParam.Type.SUBMIT || isWrite) {
                 // 校验开关状态
                 if (info.getState() == CollectionInfo.State.CLOSED) {
                     throw new JsonException(CollectionError.COLLECTION_CLOSED);

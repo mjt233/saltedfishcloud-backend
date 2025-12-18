@@ -23,7 +23,7 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
     private VideoService videoService;
 
     @Override
-    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest) {
+    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
         return resourceRequest;
     }
 
