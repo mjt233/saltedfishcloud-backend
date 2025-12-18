@@ -25,9 +25,10 @@ public abstract class AbstractResourceProtocolHandler<T> implements ResourceProt
     /**
      * 校验并解析原始请求参数。不通过校验时应抛出异常
      * @param resourceRequest 原始请求参数
+     * @param isWrite 是否为资源写入动作。注意这里
      * @return  校验通过，返回解析后的参数
      */
-    public abstract T validAndParseParam(ResourceRequest resourceRequest);
+    public abstract T validAndParseParam(ResourceRequest resourceRequest, boolean isWrite);
 
     /**
      * 获取请求资源的权限信息
@@ -38,7 +39,7 @@ public abstract class AbstractResourceProtocolHandler<T> implements ResourceProt
 
     @Override
     public PermissionInfo getPermissionInfo(ResourceRequest resourceRequest) {
-        return getPermissionInfo(resourceRequest, validAndParseParam(resourceRequest));
+        return getPermissionInfo(resourceRequest, validAndParseParam(resourceRequest, false));
     }
 
     /**
@@ -50,7 +51,7 @@ public abstract class AbstractResourceProtocolHandler<T> implements ResourceProt
 
     @Override
     public Resource getFileResource(ResourceRequest resourceRequest) throws IOException {
-        return getFileResource(resourceRequest, validAndParseParam(resourceRequest));
+        return getFileResource(resourceRequest, validAndParseParam(resourceRequest, false));
     }
 
     /**
@@ -62,7 +63,7 @@ public abstract class AbstractResourceProtocolHandler<T> implements ResourceProt
 
     @Override
     public String getPathMappingIdentity(ResourceRequest resourceRequest) {
-        return getPathMappingIdentity(resourceRequest, validAndParseParam(resourceRequest));
+        return getPathMappingIdentity(resourceRequest, validAndParseParam(resourceRequest, false));
     }
 
     @Override

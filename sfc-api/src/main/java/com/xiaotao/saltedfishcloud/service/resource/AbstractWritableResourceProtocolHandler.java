@@ -37,7 +37,7 @@ public abstract class AbstractWritableResourceProtocolHandler<T> extends Abstrac
 
     @Override
     public void writeResource(ResourceRequest resourceRequest, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
-        T parsedParam = validAndParseParam(resourceRequest);
+        T parsedParam = validAndParseParam(resourceRequest, true);
         if (Boolean.TRUE.equals(resourceRequest.getIsThumbnail()) && this.isSupportedThumbnailWrite(resourceRequest, parsedParam)) {
             throw new IllegalArgumentException("不支持写入缩略图");
         }

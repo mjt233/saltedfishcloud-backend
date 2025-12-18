@@ -21,8 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.PathResource;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
 import java.io.*;
@@ -40,7 +38,6 @@ import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_LOG;
  * 异步任务执行器
  */
 @Slf4j
-@Component
 public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     /**
      * 系统最大负载
@@ -112,16 +109,6 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
         this.taskReceiver = taskReceiver;
     }
 
-    /**
-     * 创建一个基于redis的List作为消息队列接受任务的执行器
-     */
-    @Autowired
-    public DefaultAsyncTaskExecutor(RedisTemplate<String, Object> redisTemplate) {
-         this(RedisTaskReceiver.builder()
-                 .redisTemplate(redisTemplate)
-                 .build());
-    }
-
     @Override
     public void registerFactory(AsyncTaskFactory factory) {
         if (taskFactories.containsKey(factory.getTaskType())) {
@@ -191,6 +178,11 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 }
             }
             log.info("任务接收线程退出");
+            try {
+                taskReceiver.interrupt();
+            } finally {
+                running = false;
+            }
         });
     }
 

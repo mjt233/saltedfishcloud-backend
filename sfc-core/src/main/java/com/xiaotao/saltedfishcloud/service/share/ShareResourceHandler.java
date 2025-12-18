@@ -30,7 +30,7 @@ public class ShareResourceHandler extends AbstractResourceProtocolHandler<Resour
     private NodeService nodeService;
 
     @Override
-    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest) {
+    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
         Object vid = resourceRequest.getParams().get("vid");
         if (vid == null) {
             throw new JsonException("缺少参数：vid");

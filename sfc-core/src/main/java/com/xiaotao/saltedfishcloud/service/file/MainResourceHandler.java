@@ -77,14 +77,14 @@ public class MainResourceHandler extends AbstractWritableResourceProtocolHandler
     }
 
     @Override
-    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest) {
-        long uid = Long.parseLong(resourceRequest.getTargetId());
+    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
+        long resourceUid = Long.parseLong(resourceRequest.getTargetId());
         User user = SecureUtils.getSpringSecurityUser();
-        if (user == null) {
+        if (isWrite && user == null) {
             Long createUid = Objects.requireNonNull(TypeUtils.toLong(resourceRequest.getParams().get(ResourceRequest.CREATE_UID)), "缺失权限上下文会话或创建人id");
             user = Objects.requireNonNull(userService.getUserById(createUid), "无效的创建人id");
         }
-        if(!UIDValidator.validate(user, uid, true)) {
+        if(!UIDValidator.validate(user, resourceUid, isWrite)) {
             throw new IllegalArgumentException("访问拒绝");
         }
         return resourceRequest;

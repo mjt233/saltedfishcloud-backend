@@ -3,10 +3,7 @@ package com.xiaotao.saltedfishcloud.utils.db;
 import com.xiaotao.saltedfishcloud.utils.ClassUtils;
 import com.xiaotao.saltedfishcloud.utils.SFunc;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -17,17 +14,22 @@ import java.util.function.Consumer;
 public class JpaLambdaQueryWrapper<T> {
 
     /**
-     * 当前QueryWrapper已添加的条件
+     * 当前 QueryWrapper 已添加的条件
      */
     private final List<QueryCondition<T>> queryConditionList = new ArrayList<>();
 
     /**
-     * 当前QueryWrapper所绑定的实体类class
+     * 当前 QueryWrapper 已添加的排序字段
+     */
+    private final List<SortField> sortFieldList = new ArrayList<>();
+
+    /**
+     * 当前 QueryWrapper 所绑定的实体类class
      */
     private final Class<T> clazz;
 
     /**
-     * 当前QueryWrapper的配置属性
+     * 当前 QueryWrapper 的配置属性
      */
     private final QueryWrapperProperty property;
 
@@ -40,7 +42,31 @@ public class JpaLambdaQueryWrapper<T> {
      * 条件间的拼接逻辑，用于控制条件操作类型为 {@link Operate#SUB_CONDITION} 时，子条件间的拼接逻辑
      */
     public enum ConditionLogic {
-        AND,OR
+        /**
+         * 子条件使用 AND 连接
+         */
+        AND,
+
+        /**
+         * 子条件使用 OR 连接
+         */
+        OR
+    }
+
+    /**
+     * 字段排序类型
+     */
+    public enum SortType {
+
+        /**
+         * 字段排序为正序（从小到大）
+         */
+        ASC,
+
+        /**
+         * 字段排序为倒序（从大到小）
+         */
+        DESC
     }
 
     /**
@@ -53,6 +79,13 @@ public class JpaLambdaQueryWrapper<T> {
          */
         SUB_CONDITION
     }
+
+    /**
+     * 排序字段
+     * @param field 字段 (Java实体类字段名)
+     * @param type  排序类型
+     */
+    public record SortField(String field, SortType type) {}
 
     /**
      * 查询条件
@@ -170,6 +203,37 @@ public class JpaLambdaQueryWrapper<T> {
             return this;
         }
         return handleNullStrategy(field, Operate.EQ);
+    }
+
+    public JpaLambdaQueryWrapper<T> orderByAsc(String ...fields) {
+        return this.orderBy(SortType.ASC, fields);
+    }
+
+    @SafeVarargs
+    public final <R> JpaLambdaQueryWrapper<T> orderByAsc(SFunc<T, R>... fields) {
+        for (SFunc<T, R> s : fields) {
+            this.orderBy(SortType.ASC, getFieldName(s));
+        }
+        return this;
+    }
+
+    public JpaLambdaQueryWrapper<T> orderByDesc(String ...fields) {
+        return this.orderBy(SortType.DESC, fields);
+    }
+
+    @SafeVarargs
+    public final <R> JpaLambdaQueryWrapper<T> orderByDesc(SFunc<T, R>... fields) {
+        for (SFunc<T, R> s : fields) {
+            this.orderBy(SortType.DESC, getFieldName(s));
+        }
+        return this;
+    }
+
+    public  <R> JpaLambdaQueryWrapper<T> orderBy(SortType type, String ...field) {
+        for (String s : field) {
+            sortFieldList.add(new SortField(s, type));
+        }
+        return this;
     }
 
     public JpaLambdaQueryWrapper<T> and(Consumer<JpaLambdaQueryWrapper<T>> subWrapperConsumer) {
@@ -332,7 +396,24 @@ public class JpaLambdaQueryWrapper<T> {
                 jpaConditions.add(queryCondition.toPredicate(root, cb));
             }
 
-            return cb.and(jpaConditions.toArray(new Predicate[0]));
+            List<Order> orderList = sortFieldList.stream().map(f -> {
+                if (f.type() == SortType.ASC) {
+                    return cb.asc(root.get(f.field()));
+                } else {
+                    return cb.desc(root.get(f.field()));
+                }
+            }).toList();
+
+            if (query != null) {
+                query.where(jpaConditions.toArray(new Predicate[0]));
+                if (!sortFieldList.isEmpty()) {
+                    query.orderBy(orderList);
+                }
+                return query.getRestriction();
+            } else {
+                return cb.and(jpaConditions.toArray(new Predicate[0]));
+            }
+
         };
     }
 }

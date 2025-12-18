@@ -13,9 +13,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Setter;
 import org.springframework.http.HttpEntity;
@@ -31,8 +29,10 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
+import static com.xiaotao.saltedfishcloud.constant.ByteSize._1MiB;
+
 public class DownloadAsyncTask implements AsyncTask {
-    private final static int BUFFER_SIZE = 8192;
+    private final static int BUFFER_SIZE = 16 * _1MiB;
     private final String originParams;
 
     private final DownloadTaskParams params;
@@ -68,6 +68,12 @@ public class DownloadAsyncTask implements AsyncTask {
      * 接收文件时的输入流
      */
     private InputStream receiverInputStream;
+
+    /**
+     * 接收文件时流复制的结果
+     */
+    private StreamCopyResult streamCopyResult;
+
 
     @Setter
     private ProxyInfoService proxyInfoService;
@@ -269,14 +275,9 @@ public class DownloadAsyncTask implements AsyncTask {
                         // 开始接收文件流
                         logger.info("文件接收中....");
                         this.receiverInputStream = is;
-                        long s = 0;
                         this.progressRecord.setLoaded(0L);
                         loggerThread.start();
-                        byte[] buffer = new byte[BUFFER_SIZE];
-                        while ((s = is.read(buffer, 0, buffer.length)) > 0) {
-                            os.write(buffer, 0, (int) s);
-                            this.progressRecord.appendLoaded(s);
-                        }
+                        this.streamCopyResult = StreamUtils.copyStreamAndComputeMd5(is, os, null, (buf, len) -> this.progressRecord.appendLoaded(len));
                         logger.info("总大小: " + this.progressRecord.getTotal() + " 已下载: " + this.progressRecord.getLoaded());
                         // 文件传输完整时记录已下载量为总量
                         if (!isCancel) {
@@ -310,7 +311,10 @@ public class DownloadAsyncTask implements AsyncTask {
         logger.info("准备保存文件，计算文件哈希散列值中...");
 
         // 获取文件信息（包括md5）
-        FileInfo fileInfo = FileInfo.getLocal(tempFilePath.toString());
+        FileInfo fileInfo = FileInfo.getLocal(tempFilePath.toString(), streamCopyResult == null);
+        if (streamCopyResult != null) {
+            fileInfo.setMd5(streamCopyResult.md5());
+        }
 
         logger.info("计算完成，md5为：" + fileInfo.getMd5());
 

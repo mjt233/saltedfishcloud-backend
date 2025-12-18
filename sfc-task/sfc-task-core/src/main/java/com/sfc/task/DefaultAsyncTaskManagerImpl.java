@@ -1,6 +1,7 @@
 package com.sfc.task;
 
 import com.sfc.rpc.annotation.RPCResource;
+import com.sfc.task.constants.AsyncTaskMQTopic;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
@@ -168,17 +169,6 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
                 return;
             }
 
-            // 乐观锁，切换任务状态为运行中，并用于检查该任务是否被取消
-            boolean isCancel = repo.updateStatus(record.getId(), AsyncTaskConstants.Status.RUNNING, AsyncTaskConstants.Status.WAITING) == 0;
-            if (isCancel) {
-                // 标记为已取消，执行器在执行完事件后会判断这个状态，如果为已取消则不会执行任务
-                record.setStatus(AsyncTaskConstants.Status.CANCEL);
-
-                // 日志标记为已取消
-                saveCancelLog(record);
-                return;
-            }
-
             String hostName;
             try {
                 hostName = InetAddress.getLocalHost().getHostName();
@@ -235,7 +225,8 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
     public void submitAsyncTask(AsyncTaskRecord record) throws IOException {
         record.setStatus(AsyncTaskConstants.Status.WAITING);
         repo.save(record);
-        redisTemplate.opsForList().leftPush(AsyncTaskConstants.RedisKey.TASK_QUEUE, MapperHolder.toJson(record));
+        mqService.sendBroadcast(AsyncTaskMQTopic.TASK_PUBLISH, record.getId());
+//        redisTemplate.opsForList().leftPush(AsyncTaskConstants.RedisKey.TASK_QUEUE, MapperHolder.toJson(record));
     }
 
     @Override
