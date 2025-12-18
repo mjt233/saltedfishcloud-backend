@@ -28,7 +28,7 @@ public class MailProperties {
     /**
      * 发信协议
      */
-    @ConfigProperty(title = "启用SSL", inputType = "switch", group = "ssl", describe = "启用SSL描述")
+    @ConfigProperty(inputType = "switch", group = "ssl", describe = "启用SSL")
     private Boolean useSSL = false;
 
     /**
