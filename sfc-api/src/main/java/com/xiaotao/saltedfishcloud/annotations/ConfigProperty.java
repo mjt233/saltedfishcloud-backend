@@ -13,7 +13,7 @@ import java.lang.annotation.*;
 public @interface ConfigProperty {
 
     /**
-     * 配置项名称，若ConfigPropertiesEntity注解中配置了prefix，则会默认添加prefix + "."前缀。<br>
+     * 配置项唯一key，若ConfigPropertiesEntity注解中配置了prefix，则会默认添加prefix + "."前缀。<br>
      * 若未设定该值，则根据{@link #defaultKeyNameStrategy}指定的策略自动生成。<br>
      */
     String value() default "";
@@ -24,7 +24,7 @@ public @interface ConfigProperty {
     String defaultValue() default "";
 
     /**
-     * 配置描述
+     * 配置描述。当inputType为"switch"时，该值显示在开关组件的右侧。
      */
     String describe() default "";
 
@@ -44,7 +44,7 @@ public @interface ConfigProperty {
     boolean required() default false;
 
     /**
-     * 显示的标题名称
+     * 显示的标题名称。当inputType为"switch"时，该值显示在开关组件顶部。
      */
     String title() default "";
 

@@ -16,10 +16,10 @@ public class FTPServerProperty {
     /**
      * 是否启用FTP服务
      */
-    @ConfigProperty(value = "ftpEnable", title = "是否启用", inputType = "switch", defaultValue = "false")
+    @ConfigProperty(value = "ftpEnable", describe = "是否启用", inputType = "switch", defaultValue = "false")
     private boolean ftpEnable = false;
 
-    @ConfigProperty(value = "enableAnonymous", title = "是否允许匿名登录", inputType = "switch", defaultValue = "false")
+    @ConfigProperty(value = "enableAnonymous", describe = "是否允许匿名登录", inputType = "switch", defaultValue = "false")
     private boolean enableAnonymous = false;
 
     /**
@@ -37,7 +37,7 @@ public class FTPServerProperty {
     /**
      * 被动传输地址
      */
-    @ConfigProperty(value = "isUsePassive", title = "启用被动模式", defaultValue = "false", inputType = "switch", group = "passive")
+    @ConfigProperty(value = "isUsePassive", describe = "启用被动模式", defaultValue = "false", inputType = "switch", group = "passive")
     private Boolean isUsePassive = false;
 
     /**
