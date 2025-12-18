@@ -137,7 +137,7 @@ public class PropertyUtils {
                     configNode.setDescribe(p.describe());
                     configNode.setDefaultValue(p.defaultValue());
                     configNode.setInputType(p.inputType());
-                    configNode.setTitle(StringUtils.hasText(p.title()) ? p.title() : p.value() );
+                    configNode.setTitle(p.title());
                     configNode.setTemplate(p.template());
                     configNode.setReadonly(p.readonly());
 

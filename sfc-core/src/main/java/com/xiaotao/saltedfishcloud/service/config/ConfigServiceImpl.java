@@ -175,7 +175,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
                 try {
                     c.accept(nameValue.getValue());
                 } catch (Throwable e) {
-                    log.error("{}配置项{}值设置后置处理出错，变更内容：{}，错误：{}", LOG_PREFIX, nameValue.getName(), nameValue.getValue(), e);
+                    log.error("{}配置项{}值设置后置处理出错，变更内容：{}，错误", LOG_PREFIX, nameValue.getName(), nameValue.getValue(), e);
                 }
             }
         });
