@@ -2,6 +2,8 @@ package com.xiaotao.saltedfishcloud.service.hello;
 
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
+import com.xiaotao.saltedfishcloud.utils.SFunc;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +70,12 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
     @Override
     public Map<String, Object> getAllFeatureDetail() {
         return store;
+    }
+
+    @Override
+    public <T, R> void bindConfigAsFeature(SFunc<T, R> configKey, String mapKey) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(configKey);
+        this.bindConfigAsFeature(meta.getConfigName(), mapKey, meta.getField().getType());
     }
 
     @Override

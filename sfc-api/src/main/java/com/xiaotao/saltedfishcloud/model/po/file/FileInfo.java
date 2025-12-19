@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.model.po.file;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.springframework.beans.BeanUtils;
@@ -12,7 +13,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.persistence.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

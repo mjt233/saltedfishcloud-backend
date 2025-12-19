@@ -1,9 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.mail;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
+import com.xiaotao.saltedfishcloud.annotations.*;
 import lombok.Data;
 import org.springframework.util.StringUtils;
 
@@ -14,8 +12,10 @@ import org.springframework.util.StringUtils;
 @ConfigPropertyEntity(
         groups = {
                 @ConfigPropertiesGroup(id = "server", name = "服务器信息"),
+                @ConfigPropertiesGroup(id = "ssl", name = "SSL配置"),
                 @ConfigPropertiesGroup(id = "sender", name = "发送人信息")
-        }
+        },
+        defaultKeyNameStrategy = ConfigKeyNameStrategy.CAMEL_CASE
 )
 public class MailProperties {
     /**
@@ -23,6 +23,24 @@ public class MailProperties {
      */
     @ConfigProperty(title = "发信协议",group = "server")
     private String protocol = "smtp";
+
+
+    /**
+     * 发信服务器是否使用SSL/TLS连接
+     */
+    @ConfigProperty(inputType = "switch", group = "ssl", describe = "使用SSL/TLS安全连接")
+    private Boolean useSSL = false;
+
+    /**
+     * 当启用SSL连接时，使用的TLS版本
+     */
+    @ConfigProperty(title = "TLS版本", inputType = "select", group = "ssl", options = {
+//            @ConfigSelectOption(title = "TLSv1.0", value = "TLSv1.0"),
+//            @ConfigSelectOption(title = "TLSv1.1", value = "TLSv1.1"),
+            @ConfigSelectOption(title = "TLSv1.2(默认)", value = "TLSv1.2"),
+            @ConfigSelectOption(title = "TLSv1.3", value = "TLSv1.3"),
+    })
+    private String tlsProtocols = "";
 
     /**
      * 发信服务器主机名

@@ -10,9 +10,10 @@ spring:
     url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
     username: root
     password: test
-  redis:
-    host: 127.0.0.1
-    port: 6379
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
 logging:
   level:
     test: info
@@ -29,7 +30,7 @@ plugin:
   extra-resource:
 #    - sfc-ext/sfc-ext-quick-share
 #    - sfc-ext/sfc-ext-demo
-#    - sfc-ext/sfc-ext-ftp-server
+    - sfc-ext/sfc-ext-ftp-server
 #    - sfc-ext/sfc-ext-minio-store
 #    - sfc-ext/sfc-ext-samba-store
 #    - sfc-ext/sfc-ext-hadoop-store
@@ -38,8 +39,9 @@ plugin:
 #    - sfc-ext/sfc-ext-ftp-store
     - sfc-ext/sfc-ext-video-enhance
     - sfc-ext/sfc-ext-oss-store
-#    - sfc-ext/sfc-ext-network-tools
+    - sfc-ext/sfc-ext-network-tools
     - sfc-ext/sfc-ext-web-shell
+    - sfc-ext/sfc-ext-apk-parser
     - sfc-ext/sfc-ext-static-publish
     - sfc-ext/sfc-ext-only-office
 

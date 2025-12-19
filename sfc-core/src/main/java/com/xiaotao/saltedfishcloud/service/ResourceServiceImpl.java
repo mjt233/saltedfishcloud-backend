@@ -3,11 +3,12 @@ package com.xiaotao.saltedfishcloud.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileDCInfo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -23,8 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import javax.validation.Valid;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -114,5 +115,14 @@ public class ResourceServiceImpl implements ResourceService {
             throw new IllegalArgumentException("目标资源不支持数据写入");
         }
         handler.writeResource(param, resource);
+    }
+
+    @Override
+    public void writeResource(ResourceRequest param, OutputStreamConsumer<OutputStream> outputStream) throws IOException {
+        ResourceProtocolHandler handler = getResourceHandler(param.getProtocol());
+        if (!handler.isWriteable()) {
+            throw new IllegalArgumentException("目标资源不支持数据写入");
+        }
+        handler.writeResource(param, outputStream);
     }
 }

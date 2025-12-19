@@ -130,15 +130,6 @@ public interface FileRecordService {
     @Transactional(rollbackFor = Exception.class)
     String mkdir(long uid, String name, String path) throws NoSuchFileException;
 
-    /**
-     * 创建一个文件夹，若文件夹的祖先目录不存在，则一并创建
-     *
-     * @param uid  用户ID
-     * @param path 要创建的文件夹完整网盘路径
-     * @return 文件夹创建后的节点ID，若无文件夹成功创建则返回null
-     */
-    String mkdirs(long uid, String path);
-
 
     /**
      * 创建一个文件夹，若文件夹的祖先目录不存在，则一并创建
@@ -149,6 +140,15 @@ public interface FileRecordService {
      * @return 文件夹创建后的节点ID，若无文件夹成功创建则返回null
      */
     String mkdirs(long uid, String path, boolean isMount);
+
+    /**
+     * 从数据库中获取指定文件夹信息。如果该记录不存在则会创建一个。
+     * @param uid   用户id
+     * @param path  文件夹完整路径
+     * @param isMount   需要创建记录时，是否标记为挂载目录
+     * @return  指定路径的文件夹节点id(NodeInfo的id、FileInfo的md5）
+     */
+    String getAndMkdirs(long uid, String path, boolean isMount);
 
     /**
      * 删除文件记录。若文件是目录，则会连同本身、下级以及对应的NodeInfo与FileInfo记录一并删除。（注意：不检查权限）

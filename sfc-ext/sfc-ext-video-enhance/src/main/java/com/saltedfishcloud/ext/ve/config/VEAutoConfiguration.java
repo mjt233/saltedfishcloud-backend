@@ -1,6 +1,5 @@
 package com.saltedfishcloud.ext.ve.config;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelperImpl;
@@ -11,8 +10,8 @@ import com.saltedfishcloud.ext.ve.service.VideoInfoResourceHandler;
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -31,25 +30,21 @@ import java.util.Map;
 @ComponentScan("com.saltedfishcloud.ext.ve")
 @EntityScan("com.saltedfishcloud.ext.ve.model")
 @EnableJpaRepositories(basePackages = "com.saltedfishcloud.ext.ve.dao")
+@Slf4j
 public class VEAutoConfiguration implements SystemOverviewItemProvider {
+    private static final String LOG_PREFIX = "[视频增强配置]";
+
     @Autowired
     private ConfigService configService;
 
-    @Autowired
-    private ResourceService resourceService;
-
     @Bean
     public SubtitleResourceHandler subtitleResourceHandler() {
-        SubtitleResourceHandler handler = new SubtitleResourceHandler();
-        resourceService.addResourceHandler(handler);
-        return handler;
+        return new SubtitleResourceHandler();
     }
 
     @Bean
     public VideoInfoResourceHandler videoInfoResourceHandler() {
-        VideoInfoResourceHandler handler = new VideoInfoResourceHandler();
-        resourceService.addResourceHandler(handler);
-        return handler;
+        return new VideoInfoResourceHandler();
     }
 
     @Bean
@@ -106,8 +101,7 @@ public class VEAutoConfiguration implements SystemOverviewItemProvider {
                             .build()
                     );
         } catch (Exception e) {
-            e.printStackTrace();
-
+            log.error("{}加载配置出错: ", LOG_PREFIX, e);
             return List.of(
                     ConfigNode.builder()
                             .title("ffmpeg配置")

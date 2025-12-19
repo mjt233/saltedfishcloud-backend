@@ -20,9 +20,9 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.ConstraintViolationException;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.ConstraintViolationException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -97,9 +97,7 @@ public class ControllerAdvice {
             TaskNotFoundException.class
     })
     public JsonResult handle(Exception e) {
-        if (log.isDebugEnabled()) {
-            e.printStackTrace();
-        }
+        log.debug("{}", LOG_PREFIX, e);
         return responseError(404, e.getMessage());
     }
 

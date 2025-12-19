@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public class URLUtils {
     /**

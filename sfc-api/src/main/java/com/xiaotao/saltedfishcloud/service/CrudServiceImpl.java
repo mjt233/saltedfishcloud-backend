@@ -4,8 +4,7 @@ import com.xiaotao.saltedfishcloud.dao.BaseRepo;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import com.xiaotao.saltedfishcloud.service.CrudService;
-import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
+import com.xiaotao.saltedfishcloud.utils.ClassUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
@@ -16,7 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import reactor.util.function.Tuple2;
 
-import javax.persistence.Transient;
+import jakarta.persistence.Transient;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -122,8 +121,8 @@ public abstract class CrudServiceImpl<T extends AuditModel, R extends BaseRepo<T
         List<T> entityBatchList = new ArrayList<>();
         T sample = iterator.next();
         entityBatchList.add(sample);
-        List<Tuple2<String, Method>> fields = ObjectUtils.getClassEntityFieldGetter(sample.getClass());
-        String tableName = ObjectUtils.getEntityTableName(sample.getClass());
+        List<Tuple2<String, Method>> fields = ClassUtils.getClassEntityFieldGetter(sample.getClass());
+        String tableName = ClassUtils.getEntityTableName(sample.getClass());
 
         // INSERT INTO xxxx (xx,xx,xx) VALUES (?,?,?),(?,?,?)
         StringBuilder sqlBuilder = new StringBuilder();

@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
@@ -10,7 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 
 public interface CollectionService {
     /**
@@ -60,7 +61,7 @@ public interface CollectionService {
     CollectionInfo getCollectionWitchVerification(CollectionInfoId cid);
 
     /**
-     * 接受一个文件存到集合中
+     * 接收一个文件存到采集中
      * @param cid   收集ID
      * @param providerUid   提供者ID，游客使用0
      * @param fileInfo      基础文件信息（至少应包含文件名，大小，md5）
@@ -69,4 +70,17 @@ public interface CollectionService {
      */
     @Transactional(rollbackFor = Throwable.class)
     void collectFile(CollectionInfoId cid, long providerUid, FileInfo fileInfo, SubmitFile submitFile, String ip) throws IOException;
+
+
+    /**
+     * 通过流操作的方式接收一个文件存到采集中
+     * @param cid   收集ID
+     * @param providerUid   提供者ID，游客使用0
+     * @param fileInfo      基础文件信息（至少应包含文件名，大小，md5）
+     * @param ip            提交者的IP地址
+     * @param submitFile    提交的文件信息
+     * @param streamConsumer 用于接收提交的文件的输出流消费函数
+     */
+    @Transactional(rollbackFor = Throwable.class)
+    void collectFile(CollectionInfoId cid, long providerUid, FileInfo fileInfo, SubmitFile submitFile, String ip, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException;
 }

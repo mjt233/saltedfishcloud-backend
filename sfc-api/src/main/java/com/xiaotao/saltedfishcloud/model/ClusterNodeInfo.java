@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -15,7 +16,7 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ClusterNodeInfo {
+public class ClusterNodeInfo implements Serializable {
     /**
      * 实例id标识
      */
@@ -30,6 +31,11 @@ public class ClusterNodeInfo {
      * ip地址
      */
     private String ip;
+
+    /**
+     * 进程id
+     */
+    private Long pid;
 
     /**
      * http服务端口

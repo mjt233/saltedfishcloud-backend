@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.*;

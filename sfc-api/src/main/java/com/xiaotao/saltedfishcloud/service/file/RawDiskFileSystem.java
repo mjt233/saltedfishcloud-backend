@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
@@ -8,19 +9,18 @@ import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
+import java.io.OutputStream;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -167,25 +167,19 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
-        if (!Files.exists(nativeFilePath) || Files.isDirectory(nativeFilePath)) {
-            throw new IllegalArgumentException(nativeFilePath + " 不是文件或不存在");
-        }
-        try (InputStream is = Files.newInputStream(nativeFilePath)) {
-            storeHandler.store(fileInfo, StringUtils.appendPath(basePath, path, fileInfo.getName()), Files.size(nativeFilePath), is);
-        }
-
-    }
-
-    @Override
-    public long saveFile(FileInfo file, String requestPath) throws IOException {
-        long size = file.getSize();
-        InputStreamSource streamSource = file.getStreamSource();
-        if (streamSource == null) {
-            throw new IllegalArgumentException("文件缺失streamSource");
-        }
-        try (InputStream is = streamSource.getInputStream()) {
-            return storeHandler.store(file, StringUtils.appendPath(basePath, requestPath, file.getName()), size, is);
+    public void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
+        String finalTargetPath = StringUtils.appendPath(basePath, savePath, file.getName());
+        String tmpPath = finalTargetPath + "." + IdUtil.getId() + ".tmp";
+        boolean isSuccess = false;
+        try(OutputStream os = storeHandler.newOutputStream(tmpPath)) {
+            streamConsumer.accept(os).applyTo(file);
+            os.close();
+            isSuccess = true;
+            storeHandler.move(tmpPath, finalTargetPath);
+        } finally {
+            if (!isSuccess) {
+                storeHandler.delete(tmpPath);
+            }
         }
     }
 

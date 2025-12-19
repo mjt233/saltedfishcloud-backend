@@ -7,9 +7,11 @@ import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.utils.StringParser;
 import com.saltedfishcloud.ext.ve.utils.VideoResourceUtils;
 import com.sfc.task.AsyncTask;
+import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
+import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -71,6 +73,7 @@ public class VideoConvertTask implements AsyncTask {
      */
     private final String outputFile;
 
+    private final AsyncTaskRecord asyncTaskRecord;
     /**
      * ffmpeg任务进程包装对象
      */
@@ -81,8 +84,9 @@ public class VideoConvertTask implements AsyncTask {
     /**
      * 构造方法，根据{@link EncodeConvertTaskParam}对象的json进行反序列化作为参数
      */
-    public VideoConvertTask(String jsonParam, ResourceService resourceService, FFMpegHelper ffMpegHelper) {
+    public VideoConvertTask(String jsonParam, ResourceService resourceService, FFMpegHelper ffMpegHelper, AsyncTaskRecord asyncTaskRecord) {
         try {
+            this.asyncTaskRecord = asyncTaskRecord;
             this.originParams = jsonParam;
             this.resourceService = resourceService;
             this.ffMpegHelper = ffMpegHelper;
@@ -147,6 +151,7 @@ public class VideoConvertTask implements AsyncTask {
 
             // 转换完成，保存输出和清理临时文件
             logger.info(inputFile + "转码完成，保存中");
+            param.getTarget().getParams().put(ResourceRequest.CREATE_UID, asyncTaskRecord.getUid().toString());
             resourceService.writeResource(param.getTarget(), new PathResource(outputFile));
             logger.info("保存完毕" + param.getTarget().getPath() + File.separator + param.getTarget().getName());
         } catch (Exception e) {
@@ -207,8 +212,7 @@ public class VideoConvertTask implements AsyncTask {
         if (this.inputFile == null) {
             Resource resource = resourceService.getResource(param.getSource());
             Objects.requireNonNull(resource, "视频资源获取失败或已丢失");
-            VideoResourceUtils.toLocalPath(resource);
-            this.inputFile = ((PathResource) resource).getPath();
+            this.inputFile = VideoResourceUtils.toLocalPath(resource);
         }
     }
 

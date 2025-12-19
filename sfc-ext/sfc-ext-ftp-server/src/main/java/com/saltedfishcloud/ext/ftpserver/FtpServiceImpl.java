@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.saltedfishcloud.ext.ftpserver.constant.FtpConstant;
 import com.saltedfishcloud.ext.ftpserver.core.DiskFtpFileSystemFactory;
 import com.saltedfishcloud.ext.ftpserver.core.DiskFtpUserManager;
-import com.saltedfishcloud.ext.ftpserver.ftplet.FtpUploadHandler;
+import com.saltedfishcloud.ext.ftpserver.ftplet.FtpUploadAndLogHandler;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class FtpServiceImpl implements ApplicationRunner , FtpService {
     private DiskFtpFileSystemFactory ftpFileSystemFactory;
 
     @Autowired
-    private FtpUploadHandler ftpUploadHandler;
+    private FtpUploadAndLogHandler ftpUploadAndLogHandler;
 
     @Autowired
     private ConfigService configService;
@@ -85,8 +85,13 @@ public class FtpServiceImpl implements ApplicationRunner , FtpService {
         ftpServer = createServer();
         log.info("[FTP]监听地址：{}", ftpServerProperty.getListenAddr());
         log.info("[FTP]控制端口：{}", ftpServerProperty.getControlPort());
-        log.info("[FTP]被动地址：{}", ftpServerProperty.getPassiveAddr());
-        log.info("[FTP]被动端口：{}", ftpServerProperty.getPassivePort());
+        if (Boolean.TRUE.equals(ftpServerProperty.getIsUsePassive())) {
+            log.info("[FTP]启用被动传输模式");
+            log.info("[FTP]被动地址：{}", ftpServerProperty.getPassiveAddr());
+            log.info("[FTP]被动端口：{}", ftpServerProperty.getPassivePort());
+        } else {
+            log.info("[FTP]不启用被动传输模式");
+        }
         ftpServer.start();
         log.info("[FTP]==========  FTP服务已启动    ==========");
     }
@@ -165,8 +170,10 @@ public class FtpServiceImpl implements ApplicationRunner , FtpService {
 
         //  数据连接配置
         DataConnectionConfigurationFactory dataConnectionConfigurationFactory = new DataConnectionConfigurationFactory();
-        dataConnectionConfigurationFactory.setPassiveExternalAddress(ftpServerProperty.getPassiveAddr());
-        dataConnectionConfigurationFactory.setPassivePorts(ftpServerProperty.getPassivePort());
+        if (Boolean.TRUE.equals(ftpServerProperty.getIsUsePassive())) {
+            dataConnectionConfigurationFactory.setPassiveExternalAddress(ftpServerProperty.getPassiveAddr());
+            dataConnectionConfigurationFactory.setPassivePorts(ftpServerProperty.getPassivePort());
+        }
 
         //  控制连接配置
         ConnectionConfigFactory connectionConfigFactory = new ConnectionConfigFactory();
@@ -180,7 +187,7 @@ public class FtpServiceImpl implements ApplicationRunner , FtpService {
         listenerFactory.setDataConnectionConfiguration(dataConnectionConfigurationFactory.createDataConnectionConfiguration());
 
         Map<String, Ftplet> ftplets = new HashMap<>();
-        ftplets.put("upload", ftpUploadHandler);
+        ftplets.put("upload", ftpUploadAndLogHandler);
 
         //  服务实例配置
         FtpServerFactory serverFactory = new FtpServerFactory();

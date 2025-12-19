@@ -5,10 +5,10 @@
 
     <mirrors>
         <mirror>
-            <id>aliyunmaven</id>
+            <id>local-nexus</id>
             <mirrorOf>*</mirrorOf>
-            <name>aliyun-public-repo</name>
-            <url>https://maven.aliyun.com/repository/public</url>
+            <name>本地镜像仓库</name>
+            <url>http://xyy.com:8081/repository/maven-public/</url>
         </mirror>
     </mirrors>
 </settings>

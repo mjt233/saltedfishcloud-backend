@@ -26,7 +26,6 @@ import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -131,14 +130,14 @@ public class VideoService {
      * @return  如果资源请求未指定实际的资源来源，则返回本次请求参数本身
      */
     public ResourceRequest getSourceResourceRequest(ResourceRequest param) {
-        String sourceProtocol = param.getParams().get("sourceProtocol");
+        String sourceProtocol = TypeUtils.toString(param.getParams().get("sourceProtocol"));
 
         // 若指定了文件来源协议，则从来源协议处理器中获取资源（如：从文件分享中获取，或是其他拓展的协议）
         if (sourceProtocol != null) {
             if (sourceProtocol.equals(param.getProtocol())) {
                 throw new IllegalArgumentException("来源协议不能与请求协议相同");
             }
-            String sourceId = param.getParams().get("sourceId");
+            String sourceId = TypeUtils.toString(param.getParams().get("sourceId"));
             if (sourceId == null) {
                 throw new IllegalArgumentException("缺少sourceId");
             }
@@ -216,10 +215,10 @@ public class VideoService {
                 .build();
         record.setUid(uid);
 
-        asyncTaskManager.submitAsyncTask(record);
 
         taskPo.setAsyncTaskRecord(record);
         taskPo.setUid(uid);
+        asyncTaskManager.submitAsyncTask(record);
         encodeConvertTaskRepo.save(taskPo);
         return record.getId() + "";
     }

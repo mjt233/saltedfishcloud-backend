@@ -6,15 +6,15 @@ spring:
   jpa:
     database: mysql
   datasource:
-    druid:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://${DB_HOST}/${DB_NAME}?useSSL=false&serverTimezone=UTC
-      username: ${DB_USER:root}
-      password: ${DB_PASSWORD:test}
-  redis:
-    host: ${REDIS_HOST:127.0.0.1}
-    port: ${REDIS_PORT:6379}
-    database: ${REDIS_DB:0}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}/${DB_NAME:xyy}?useSSL=false&serverTimezone=UTC
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:test}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:1}
 #    password:
 
 sys:

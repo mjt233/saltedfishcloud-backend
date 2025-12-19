@@ -12,7 +12,10 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
   mapper-locations: classpath:mapper/*.xml
+
 spring:
+  main:
+    allow-circular-references: true
   jpa:
     database: mysql
     open-in-view: false
@@ -21,6 +24,7 @@ spring:
     properties:
       hibernate:
         order_inserts: true
+        enable_lazy_load_no_trans: true
         jdbc:
           batch_size: 200
 
@@ -29,14 +33,15 @@ spring:
     url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
     username: root
     password: test
-  redis:
-    host: 127.0.0.1
-    port: 6379
-    lettuce:
-      pool:
-        min-idle: 0
-        max-idle: 8
-        max-active: 8
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      lettuce:
+        pool:
+          min-idle: 0
+          max-idle: 8
+          max-active: 8
   servlet:
     multipart:
       max-file-size: 8192MB

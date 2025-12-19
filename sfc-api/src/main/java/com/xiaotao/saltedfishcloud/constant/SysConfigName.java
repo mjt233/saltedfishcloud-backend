@@ -1,5 +1,8 @@
 package com.xiaotao.saltedfishcloud.constant;
 
+/**
+ * todo 后续统一使用配置参数实体类维护
+ */
 public interface SysConfigName {
 
     /**
@@ -86,5 +89,4 @@ public interface SysConfigName {
          */
         String ALLOW_ANONYMOUS_COMMENT = "sys.safe.allow_anonymous_comments";
     }
-
 }

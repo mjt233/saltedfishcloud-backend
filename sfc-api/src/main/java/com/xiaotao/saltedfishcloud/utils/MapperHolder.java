@@ -132,6 +132,18 @@ public class MapperHolder {
         return mapper.writeValueAsString(val);
     }
 
+    /**
+     * 转为json字符串，不显式抛出异常，但会包装成RuntimeException
+     */
+    public static String toJsonNoEx(Object val) {
+        try {
+            return mapper.writeValueAsString(val);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     public static String toJsonWithType(Object val) throws JsonProcessingException {
         return withTypeMapper.writeValueAsString(val);
     }

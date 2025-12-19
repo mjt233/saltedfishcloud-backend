@@ -1,36 +1,32 @@
 package com.xiaotao.saltedfishcloud.download.model;
 
 import com.sfc.task.model.AsyncTaskRecord;
-import lombok.Data;
+import com.xiaotao.saltedfishcloud.annotations.id.SystemUuidGenerator;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
-import org.hibernate.annotations.Proxy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotEmpty;
 import java.util.Date;
 
 @Setter
 @Getter
 @Entity
-@Proxy(lazy = false)
 @Table(name = "download_task", indexes = {
         @Index(name = "idx_uid", columnList = "uid")
 })
 @EntityListeners(AuditingEntityListener.class)
-@GenericGenerator(name = "jpa-uuid", strategy = "uuid")
 public class DownloadTaskInfo {
     public enum State {
         WAITING, DOWNLOADING, FAILED, FINISH, CANCEL
     }
 
     @Id
-    @GeneratedValue(generator = "jpa-uuid")
+    @SystemUuidGenerator
     private String id;
 
     private long uid;
@@ -44,7 +40,7 @@ public class DownloadTaskInfo {
     @Enumerated(EnumType.STRING)
     private State state = State.WAITING;
 
-    @Column(columnDefinition = "text")
+    @Lob
     private String message;
 
     private long loaded;

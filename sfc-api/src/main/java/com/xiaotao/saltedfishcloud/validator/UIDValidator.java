@@ -7,8 +7,8 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class UIDValidator implements ConstraintValidator<UID, Object> {
     UID validUID;

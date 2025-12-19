@@ -1,7 +1,7 @@
 # 基于SpringBoot实现的咸鱼云网盘-后端
 
-![](https://img.shields.io/badge/SpringBoot-2.4-green.svg)
-![](https://img.shields.io/badge/Java-11-green.svg)
+![](https://img.shields.io/badge/SpringBoot-3.3.4-green.svg)
+![](https://img.shields.io/badge/Java-17-green.svg)
 
 ---
 
@@ -38,17 +38,16 @@
 - 兼容低版本到高版本的升级，自动更新数据库
 - 构建与部署简单，具有统一的属性参数配置系统，大部分参数都能在运行期间通过管理员界面进行动态配置。
 - 支持docker部署（文档待补充）
-- 支持在线重启
-- 系统启动失败会进入紧急模式，可通过`/api/error`查看启动失败原因，通过`/api/admin/sys/restart`重启
 
 #### 拓展功能（插件支持）
 
 - 发布目录为静态页面站点
 - WebShell
 - 支持存储集群
-- 外部存储目录挂载 - OSS对象存储, MinIO, HDFS, Samba, SFTP协议的外部存储读写支持
+- 外部存储目录挂载 - OSS对象存储, MinIO, HDFS, SFTP, FTP协议的外部存储读写支持
 - 自定义视频转码、字幕提取
 - 作为FTP服务端提供网盘文件访问
+- 通过ONLYOFFICE支持office文档在线编辑和预览
 
 ## 杂杂念
 
@@ -87,8 +86,7 @@ $ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 ### 2 关于数据表
 
-- 项目启动后会自动初始化数据库。若初始化失败，可尝试手动给数据库执行初始化脚本，脚本位于`sfc-core/src/main/resource/sql/full.sql`
-- 目前只在MySQL上测试过系统，不确保其他数据库管理系统可以正常运行
+- JPA自动完成数据表的创建和更新，无需手动操作
 
 ### 3. 可选插件
 
@@ -98,17 +96,22 @@ $ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 **目前有以下插件：**
 
-| 插件名           | 简介                                               |
-|---------------|--------------------------------------------------|
-| mp3-thumbnail | 为mp3文件提供缩率图显示支持                                  |
-| demo          | 没啥用，就是个demo，添加/ext/img和/ext/hello两个测试路由          |
-| hadoop-store  | 提供hdfs文件系统读写支持（主存储、挂载存储）                         |
-| oss-store     | 提供基于Amazon S3协议的OSS对象存储系统读写支持（挂载存储）              |
-| minio-store   | **\[将并入oss-store\]** 提供minio对象存储系统读写支持（主存储、挂载存储） |
-| sftp-store    | 提供基于SFTP文件传输的存储读写支持（挂载存储）                        |
-| ftp-store     | 提供基于FTP文件传输的存储读写支持（挂载存储）                         |
-| ftp-server    | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源                      |
-| video-enhance | 基于ffmpeg的视频增强服务，支持播放选择字幕、视频转码功能                  |
+| 插件名            | 简介                                               |
+|----------------|--------------------------------------------------|
+| mp3-thumbnail  | 为mp3文件提供缩率图显示支持                                  |
+| demo           | 没啥用，就是个demo，添加/ext/img和/ext/hello两个测试路由          |
+| hadoop-store   | 提供hdfs文件系统读写支持（主存储、挂载存储）                         |
+| oss-store      | 提供基于Amazon S3协议的OSS对象存储系统读写支持（挂载存储）              |
+| minio-store    | **\[将并入oss-store\]** 提供minio对象存储系统读写支持（主存储、挂载存储） |
+| sftp-store     | 提供基于SFTP文件传输的存储读写支持（挂载存储）                        |
+| ftp-store      | 提供基于FTP文件传输的存储读写支持（挂载存储）                         |
+| ftp-server     | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源                      |
+| video-enhance  | 基于ffmpeg的视频增强服务，支持播放选择字幕、视频转码功能                  |
+| web-shell      | 通过管理员后台直接通过web界面进行服务器shell交互                     |
+| static-publish | 将网盘的目录发布为独立的静态资源HTTP站点                           |
+| quick-share    | 文件极速传，快捷匿名发送和下载文件                                |
+| only-office    | 适配ONLYOFFICE，实现office文档在线预览和编辑                   |
+| network-tools  | 服务器网络工具，用于在管理后台查看网络接口信息，并给用户提供WOL支持              |
 
 
 ### 4. 插件的加载

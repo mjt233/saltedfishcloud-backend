@@ -16,5 +16,10 @@ public @interface ConfigPropertyEntity {
      */
     String prefix() default "";
 
+    /**
+     * 实体类字段的默认配置key命名生成策略
+     */
+    ConfigKeyNameStrategy defaultKeyNameStrategy() default ConfigKeyNameStrategy.KEBAB_CASE;
+
     ConfigPropertiesGroup[] groups() default { @ConfigPropertiesGroup(id = "base", name = "配置信息")};
 }

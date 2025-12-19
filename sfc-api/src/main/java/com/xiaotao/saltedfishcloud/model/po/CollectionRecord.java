@@ -1,11 +1,12 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
+import com.xiaotao.saltedfishcloud.annotations.id.SnowFlakeIdGenerator;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Date;
 
 @Entity
@@ -20,9 +21,17 @@ import java.util.Date;
 @EntityListeners(AuditingEntityListener.class)
 public class CollectionRecord {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @SnowFlakeIdGenerator
     private Long id;
+
+    /**
+     * 文件收集任务id
+     */
     private Long cid;
+
+    /**
+     * 文件提交人用户id
+     */
     private Long uid;
 
     private String filename;

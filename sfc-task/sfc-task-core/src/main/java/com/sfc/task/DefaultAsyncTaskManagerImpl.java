@@ -1,15 +1,15 @@
 package com.sfc.task;
 
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.sfc.rpc.annotation.RPCResource;
+import com.sfc.task.constants.AsyncTaskMQTopic;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import com.sfc.task.repo.AsyncTaskLogRecordRepo;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
+import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -34,12 +34,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_EXIT;
+import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_LOG;
+
 /**
  * 默认的异步任务管理器实现
  */
 @Component
 @Slf4j
 public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean {
+    private static final String LOG_PREFIX = "[异步任务管理]";
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -90,11 +94,11 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
 
         // 订阅异步任务完成事件，收到该事件后则对锁进行解锁
         AtomicReference<AsyncTaskRecord> resRef = new AtomicReference<>();
-        AtomicReference<IOException> exceptionRef = new AtomicReference<>();
-        long subscribeId = mqService.subscribeBroadcast(MQTopic.Prefix.ASYNC_TASK_EXIT + taskId, msg -> {
+        AtomicReference<Exception> exceptionRef = new AtomicReference<>();
+        long subscribeId = mqService.subscribeBroadcast(ASYNC_TASK_EXIT(taskId), msg -> {
             try {
-                resRef.set(MapperHolder.parseAsJson(msg.getBody(), AsyncTaskRecord.class));
-            } catch (IOException e) {
+                resRef.set(msg.body());
+            } catch (Exception e) {
                 exceptionRef.set(e);
             } finally {
                 semaphore.release();
@@ -106,9 +110,13 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
             if (!semaphore.tryAcquire(timeout, timeUnit)) {
                 throw new InterruptedException("wait task exit timeout");
             }
-            IOException exception = exceptionRef.get();
+            Exception exception = exceptionRef.get();
             if (exception != null) {
-                throw exception;
+                if (exception instanceof IOException) {
+                    throw (IOException) exception;
+                } else {
+                    throw new RuntimeException(exception);
+                }
             }
             return resRef.get();
         } finally {
@@ -161,22 +169,11 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
                 return;
             }
 
-            // 乐观锁，切换任务状态为运行中，并用于检查该任务是否被取消
-            boolean isCancel = repo.updateStatus(record.getId(), AsyncTaskConstants.Status.RUNNING, AsyncTaskConstants.Status.WAITING) == 0;
-            if (isCancel) {
-                // 标记为已取消，执行器在执行完事件后会判断这个状态，如果为已取消则不会执行任务
-                record.setStatus(AsyncTaskConstants.Status.CANCEL);
-
-                // 日志标记为已取消
-                saveCancelLog(record);
-                return;
-            }
-
             String hostName;
             try {
                 hostName = InetAddress.getLocalHost().getHostName();
             } catch (UnknownHostException e) {
-                e.printStackTrace();
+                log.error("{} InetAddress.getLocalHost() 解析主机名出错", LOG_PREFIX, e);
                 hostName = "unknown";
             }
             record.setExecuteDate(new Date());
@@ -193,7 +190,7 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
                 record.setIsFailed(true);
                 repo.save(record);
             } finally {
-                mqService.sendBroadcast(MQTopic.Prefix.ASYNC_TASK_EXIT + record.getId(), record);
+                mqService.sendBroadcast(ASYNC_TASK_EXIT(record.getId()), record);
             }
         });
         executor.addTaskFinishListener(record -> {
@@ -203,7 +200,7 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
                 record.setFailedDate(null);
                 repo.save(record);
             } finally {
-                mqService.sendBroadcast(MQTopic.Prefix.ASYNC_TASK_EXIT + record.getId(), record);
+                mqService.sendBroadcast(ASYNC_TASK_EXIT(record.getId()), record);
             }
         });
 
@@ -228,7 +225,8 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
     public void submitAsyncTask(AsyncTaskRecord record) throws IOException {
         record.setStatus(AsyncTaskConstants.Status.WAITING);
         repo.save(record);
-        redisTemplate.opsForList().leftPush(AsyncTaskConstants.RedisKey.TASK_QUEUE, MapperHolder.toJson(record));
+        mqService.sendBroadcast(AsyncTaskMQTopic.TASK_PUBLISH, record.getId());
+//        redisTemplate.opsForList().leftPush(AsyncTaskConstants.RedisKey.TASK_QUEUE, MapperHolder.toJson(record));
     }
 
     @Override
@@ -271,17 +269,10 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
             repo.setTaskOffline(stopIds);
         }
     }
-
     @Override
     public long listenLog(Long taskId, Consumer<String> consumer) {
         String group = "log_group_" + IdUtil.getId();
-        return mqService.subscribeMessageQueue(MQTopic.Prefix.ASYNC_TASK_LOG + taskId, group, msg -> {
-            try {
-                consumer.accept(MapperHolder.parseAsJson(msg.getBody(), String.class));
-            } catch (IOException e) {
-                log.error("[异步任务管理器]监听任务{}的日志出错", taskId, e);
-            }
-        });
+        return mqService.subscribeMessageQueue(ASYNC_TASK_LOG(taskId), group, msg -> consumer.accept(msg.body()));
     }
 
     @Override

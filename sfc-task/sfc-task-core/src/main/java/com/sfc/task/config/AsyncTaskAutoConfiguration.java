@@ -1,7 +1,13 @@
 package com.sfc.task.config;
 
+import com.sfc.task.AsyncTaskExecutor;
+import com.sfc.task.AsyncTaskReceiver;
+import com.sfc.task.DefaultAsyncTaskExecutor;
+import com.sfc.task.receiver.DefaultTaskReceiver;
+import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.xiaotao.saltedfishcloud.common.update.VersionUpdateManager;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -40,5 +46,15 @@ public class AsyncTaskAutoConfiguration implements InitializingBean {
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer(MapperHolder.mapper));
         template.setConnectionFactory(redisConnectionFactory);
         return template;
+    }
+
+    @Bean
+    public AsyncTaskReceiver asyncTaskReceiver(AsyncTaskRecordRepo asyncTaskRecordRepo, MQService mqService) {
+        return new DefaultTaskReceiver(asyncTaskRecordRepo, mqService);
+    }
+
+    @Bean
+    public AsyncTaskExecutor asyncTaskExecutor(AsyncTaskRecordRepo asyncTaskRecordRepo, MQService mqService) {
+        return new DefaultAsyncTaskExecutor(asyncTaskReceiver(asyncTaskRecordRepo, mqService));
     }
 }

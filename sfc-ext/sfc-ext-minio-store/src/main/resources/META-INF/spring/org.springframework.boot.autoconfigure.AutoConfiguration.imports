@@ -1,0 +1,2 @@
+com.saltedfishcloud.ext.minio.config.MinioStoreAutoConfiguration
+com.saltedfishcloud.ext.minio.config.MinioFileSystemAutoConfiguration

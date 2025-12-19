@@ -34,8 +34,7 @@ public class VEProperty {
 
     @ConfigProperty(
             value = "enableThumbnail",
-            title = "启用视频缩略图",
-            describe = "是否启用视频缩略图总开关",
+            describe = "启用视频缩略图",
             group = "feature",
             defaultValue = "false",
             inputType = "switch"
@@ -44,8 +43,7 @@ public class VEProperty {
 
     @ConfigProperty(
             value = "enableThumbnailOnMount",
-            title = "在挂载目录中启用视频缩略图",
-            describe = "控制是否为挂载目录中的视频创建缩略图",
+            describe = "为挂载目录中的视频创建缩略图",
             group = "feature",
             defaultValue = "false",
             inputType = "switch"

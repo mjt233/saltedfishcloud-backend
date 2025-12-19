@@ -18,7 +18,7 @@ public class VideoConvertTaskFactory implements AsyncTaskFactory {
 
     @Override
     public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
-        return new VideoConvertTask(params, resourceService, ffMpegHelper);
+        return new VideoConvertTask(params, resourceService, ffMpegHelper, asyncTaskRecord);
     }
 
     @Override

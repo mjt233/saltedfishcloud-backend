@@ -1,8 +1,12 @@
 package com.xiaotao.saltedfishcloud.model.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
+import lombok.NoArgsConstructor;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,6 +14,9 @@ import java.util.Map;
  * 统一的资源请求参数
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ResourceRequest {
     /**
      * 特殊参数 - 资源创建人id
@@ -56,12 +63,24 @@ public class ResourceRequest {
     private Boolean isCache;
 
     /**
+     * 文件大小
+     */
+    private Long size;
+
+    /**
+     * 文件md5
+     */
+    private String md5;
+
+    /**
      * 额外参数
      */
-    private Map<String, String> params = new HashMap<>();
+    @Builder.Default
+    private Map<String, Object> params = new HashMap<>();
 
     /**
      * 是否为缩略图资源
      */
+    @Builder.Default
     private Boolean isThumbnail = false;
 }

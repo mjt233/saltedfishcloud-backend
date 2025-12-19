@@ -30,9 +30,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
@@ -58,7 +58,7 @@ public class ResourceController {
     @AllowAnonymous
     public JsonResult<Object> uploadResource(@Validated ResourceRequest resourceRequest,
                                              HttpServletRequest request,
-                                             @MergeFile MultipartFile file
+                                             @MergeFile @RequestParam("file") MultipartFile file
                                              ) throws UnsupportedProtocolException, IOException {
         this.mergeParams(resourceRequest, request);
         ResourceProtocolHandler handler = resourceService.getResourceHandler(resourceRequest.getProtocol());
@@ -84,7 +84,7 @@ public class ResourceController {
      * @param request           http请求对象
      */
     private void mergeParams(ResourceRequest resourceRequest, HttpServletRequest request) {
-        Map<String, String> paramsMap = new HashMap<>();
+        Map<String, Object> paramsMap = new HashMap<>();
         for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
             paramsMap.put(entry.getKey(), entry.getValue()[0]);
         }

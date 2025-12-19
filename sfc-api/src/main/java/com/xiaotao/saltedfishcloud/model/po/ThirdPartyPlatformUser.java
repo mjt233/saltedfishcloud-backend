@@ -3,9 +3,9 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.Index;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 
 /**
  * 第三方用户登录认证

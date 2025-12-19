@@ -11,7 +11,7 @@ import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.security.RolesAllowed;
+import jakarta.annotation.security.RolesAllowed;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Collection;
@@ -53,7 +53,7 @@ public class NwtController {
      * @param id    WOL设备id
      */
     @GetMapping("wakeWolDevice")
-    public JsonResult<?> wakeWolDevice(Long id) throws IOException {
+    public JsonResult<?> wakeWolDevice(@RequestParam("id") Long id) throws IOException {
         wolDeviceService.wake(id);
         return JsonResult.emptySuccess();
     }

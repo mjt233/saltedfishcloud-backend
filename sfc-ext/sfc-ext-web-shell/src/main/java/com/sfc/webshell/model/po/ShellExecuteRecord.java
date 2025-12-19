@@ -7,11 +7,11 @@ import lombok.Setter;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.context.annotation.Description;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Index;
-import javax.persistence.Table;
-import javax.validation.constraints.NotBlank;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * shell命令执行记录

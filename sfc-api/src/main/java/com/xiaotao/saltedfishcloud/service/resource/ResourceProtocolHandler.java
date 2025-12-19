@@ -1,10 +1,14 @@
 package com.xiaotao.saltedfishcloud.service.resource;
 
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
+import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 
 /**
@@ -69,9 +73,20 @@ public interface ResourceProtocolHandler {
      * @param param     资源定位请求参数
      * @param resource  待写入资源
      */
-    default void writeResource(ResourceRequest param, Resource resource) throws IOException {
-
+    default void writeResource(ResourceRequest resourceRequest, Resource resource) throws IOException {
+        writeResource(resourceRequest, os -> {
+            try(InputStream is = resource.getInputStream()) {
+                return DiskFileSystemUtils.saveResourceFileStream(is, resourceRequest, os);
+            }
+        });
     }
 
+
+    /**
+     * 通过输出流的方式将文件写入到指定的资源中
+     * @param param 资源定位请求参数
+     * @param streamConsumer 待写入数据的输出流
+     */
+    void writeResource(ResourceRequest param, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException;
 
 }

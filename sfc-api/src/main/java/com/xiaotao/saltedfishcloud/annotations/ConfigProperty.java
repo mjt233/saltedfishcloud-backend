@@ -13,8 +13,8 @@ import java.lang.annotation.*;
 public @interface ConfigProperty {
 
     /**
-     * 配置项名称，若ConfigPropertiesEntity注解中配置了prefix，则会默认添加prefix前缀。<br>
-     * 若未设定该值，则默认使用字段名的短横线命名作为配置项名。如：isEnable会自动转为is-enable。若存在prefix如quickshare，则组合后为：quickshare.is-enable
+     * 配置项唯一key，若ConfigPropertiesEntity注解中配置了prefix，则会默认添加prefix + "."前缀。<br>
+     * 若未设定该值，则根据{@link #defaultKeyNameStrategy}指定的策略自动生成。<br>
      */
     String value() default "";
 
@@ -24,12 +24,12 @@ public @interface ConfigProperty {
     String defaultValue() default "";
 
     /**
-     * 配置描述
+     * 配置描述。当inputType为"switch"时，该值显示在开关组件的右侧。
      */
     String describe() default "";
 
     /**
-     * 输入类型，可选text、select、checkbox、radio
+     * 输入类型，可选text、select、checkbox、radio、switch
      */
     String inputType() default "text";
 
@@ -44,7 +44,7 @@ public @interface ConfigProperty {
     boolean required() default false;
 
     /**
-     * 显示的标题名称
+     * 显示的标题名称。当inputType为"switch"时，该值显示在开关组件顶部。
      */
     String title() default "";
 
@@ -73,4 +73,18 @@ public @interface ConfigProperty {
      */
     String templateParams() default "{}";
 
+    /**
+     * 字段的默认配置key命名生成策略。
+     */
+    ConfigKeyNameStrategy defaultKeyNameStrategy() default ConfigKeyNameStrategy.INHERIT;
+
+    /**
+     * 属性是否只读
+     */
+    boolean readonly() default false;
+
+    /**
+     * 子配置节点类型引用
+     */
+    Class<?> typeRef() default Object.class;
 }

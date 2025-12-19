@@ -2,13 +2,13 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.constant.ComponentType;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import jakarta.persistence.Lob;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.Entity;
-import javax.persistence.Index;
-import javax.persistence.Lob;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 
 @Entity
 @Getter

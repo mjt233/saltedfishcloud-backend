@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils.identifier;
 
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+
 import java.util.Optional;
 
 public class IdUtil {
@@ -15,5 +17,9 @@ public class IdUtil {
 
     public static long getId() {
         return snowFlakeInst.nextId();
+    }
+
+    public static String getUUID() {
+        return SecureUtils.getUUID();
     }
 }

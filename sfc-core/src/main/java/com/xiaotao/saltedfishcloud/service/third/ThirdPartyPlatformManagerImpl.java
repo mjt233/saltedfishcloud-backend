@@ -4,12 +4,16 @@ import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyPlatformUserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
+import com.xiaotao.saltedfishcloud.service.log.LogLevel;
+import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
@@ -22,7 +26,7 @@ import org.springframework.data.util.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
@@ -32,6 +36,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager {
+    private final static String LOG_TYPE = "第三方登录";
     private final static String LOG_PREFIX = "[第三方登录]";
 
     private final static String ACTION_RECORD_KEY = "third_action::";
@@ -47,6 +52,9 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
 
     @Autowired
     private TokenService tokenService;
+
+    @Autowired
+    private LogRecordManager logRecordManager;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -131,6 +139,12 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                         .user(UserVO.from(assocUser))
                         .actionId(actionId)
                         .build();
+                logRecordManager.saveRecordAsync(LogRecord.builder()
+                                .type(LOG_TYPE)
+                                .level(LogLevel.INFO)
+                                .msgAbstract("[" + assocUser.getUser() + "]通过[" + platformType + "]登录")
+                                .msgDetail(MapperHolder.toJsonNoEx(result))
+                        .build());
             } else {
                 // 登录过但未关联系统账号
                 result = ThirdPartyPlatformCallbackResult.builder()
@@ -138,6 +152,12 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                         .platformUser(existPlatformUser)
                         .actionId(actionId)
                         .build();
+                logRecordManager.saveRecordAsync(LogRecord.builder()
+                        .type(LOG_TYPE)
+                        .level(LogLevel.INFO)
+                        .msgAbstract("未绑定咸鱼云的用户通过[" + platformType + "]的[" + platformUser.getUserName() + "]登录")
+                        .msgDetail(MapperHolder.toJsonNoEx(result))
+                        .build());
             }
         } else {
             platformUser.setIsActive(false);
@@ -167,6 +187,12 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                     .user(UserVO.from(assocUser))
                     .actionId(actionId)
                     .build();
+            logRecordManager.saveRecordAsync(LogRecord.builder()
+                    .type(LOG_TYPE)
+                    .level(LogLevel.INFO)
+                    .msgAbstract("新用户通过[" + platformType + "]的[" + platformUser.getUserName() + "]登录")
+                    .msgDetail(MapperHolder.toJsonNoEx(result))
+                    .build());
         }
 
         setCallbackResult(actionId, result);
@@ -221,6 +247,15 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         platformUser.setUid(bindUserObj.getId());
         platformUserRepo.save(platformUser);
         bindUserObj.setToken(tokenService.generateUserToken(bindUserObj));
+        logRecordManager.saveRecordAsync(LogRecord.builder()
+                .type(LOG_TYPE)
+                .level(LogLevel.INFO)
+                .msgAbstract("用户[" + bindUserObj.getUser() + "]绑定[" + callbackResult.getPlatformUser().getPlatformType() + "]的[" + platformUser.getUserName() + "]")
+                .msgDetail(MapperHolder.toJsonNoEx(new HashMap<>(){{
+                    put("callbackResult", callbackResult);
+                    put("bindUserObj", bindUserObj);
+                }}))
+                .build());
         return bindUserObj;
     }
 

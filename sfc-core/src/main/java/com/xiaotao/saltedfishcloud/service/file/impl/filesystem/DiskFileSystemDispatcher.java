@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -25,7 +26,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -261,7 +263,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         FileInfo fileInfo;
         List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
         if (files.size() == 0) {
-            throw new NoSuchFileException("文件不存在: " + md5);
+            return null;
         }
         fileInfo = files.get(0);
         String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
@@ -491,16 +493,15 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
-    public long saveFile(FileInfo file, String requestPath) throws IOException {
+    public void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
         if(!FileNameValidator.valid(file.getName())) {
             throw new IllegalArgumentException("非法文件名，不可包含/\\<>?|:换行符，回车符或文件名为..");
         }
-        FileSystemMatchResult matchResult = matchFileSystem(file.getUid(), requestPath);
-        long res = matchResult.fileSystem.saveFile(file, matchResult.resolvedPath);
+        FileSystemMatchResult matchResult = matchFileSystem(file.getUid(), savePath);
+        matchResult.fileSystem.saveFileByStream(file, matchResult.resolvedPath, streamConsumer);
         if (matchResult.isProxyStoreRecordMountPoint()) {
-            fileRecordService.saveRecord(file, requestPath);
+            fileRecordService.saveRecord(file, savePath);
         }
-        return res;
     }
 
     @Override

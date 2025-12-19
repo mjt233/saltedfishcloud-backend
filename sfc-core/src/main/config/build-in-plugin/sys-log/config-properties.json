@@ -1,0 +1,22 @@
+[
+  {
+    "name": "log-config",
+    "title": "参数配置",
+    "typeRef": "com.xiaotao.saltedfishcloud.model.config.SysLogConfig"
+  },
+  {
+    "name": "log-history",
+    "title": "历史日志",
+    "nodes": [
+      {
+        "nodes": [
+          {
+            "name": "log-history-viewer-component",
+            "inputType": "template",
+            "template": "LogRecordHistoryViewer"
+          }
+        ]
+      }
+    ]
+  }
+]

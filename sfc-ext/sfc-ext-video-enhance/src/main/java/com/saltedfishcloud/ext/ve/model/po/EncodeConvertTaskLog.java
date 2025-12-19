@@ -1,12 +1,12 @@
 package com.saltedfishcloud.ext.ve.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
+import jakarta.persistence.Lob;
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.Index;
-import javax.persistence.Lob;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 
 @Entity
 @Getter

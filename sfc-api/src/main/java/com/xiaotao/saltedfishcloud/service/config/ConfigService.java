@@ -7,11 +7,13 @@ import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.SFunc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -51,6 +53,29 @@ public interface ConfigService {
      */
     String getConfig(String key);
 
+    /**
+     * 从配置表读取一个配置项的值
+     * @param keyLambdaFunc 配置实体类getter方法的lambda函数，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
+     */
+    <T,R> R getConfig(SFunc<T, R> keyLambdaFunc);
+
+    /**
+     * 从配置表读取一个配置项的值
+     * @param keyLambdaFunc 配置实体类getter方法的lambda函数，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
+     * @param defaultValue 默认值
+     */
+    <T,R> R getConfig(SFunc<T, R> keyLambdaFunc, R defaultValue);
+
+    /**
+     * 从配置表读取一个配置项的值
+     * @param key   配置名
+     * @param defaultValue 默认值
+     * @return      结果
+     */
+    default String getConfig(String key, String defaultValue) {
+        return Optional.ofNullable(getConfig(key)).orElse(defaultValue);
+    }
+
     default <T> T getJsonConfig(String key, Class<T> clazz) throws IOException {
         String config = getConfig(key);
         if (config == null) {
@@ -64,7 +89,14 @@ public interface ConfigService {
      * @param key       配置项
      * @param value     配置值
      */
-    boolean setConfig(String key, String value) throws IOException;
+    boolean setConfig(String key, String value);
+
+    /**
+     * 设置一个配置项
+     * @param keyLambdaFunc 被监听的配置实体类getter方法，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
+     * @param value     配置值
+     */
+    <T,R> boolean setConfig(SFunc<T, R> keyLambdaFunc, R value);
 
     /**
      * 批量设置配置项
@@ -85,12 +117,25 @@ public interface ConfigService {
     void addBeforeSetListener(String key, Consumer<String> listener);
 
     /**
+     * 添加一个监听指定配置被设置时触发的监听器
+     * @param keyLambdaFunc 被监听的配置实体类getter方法，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
+     * @param listener  监听器，参数为值
+     */
+    <T,R> void addBeforeSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener);
+
+    /**
      * 添加一个监听指定配置被设置后触发的监听器
      * @param key       被监听的key
      * @param listener  监听器，参数为值
      */
     void addAfterSetListener(String key, Consumer<String> listener);
 
+    /**
+     * 添加一个监听指定配置被设置后触发的监听器
+     * @param keyLambdaFunc 被监听的配置实体类getter方法，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
+     * @param listener  监听器，参数为值
+     */
+    <T,R> void addAfterSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener);
 
     /**
      * 设置存储类型

@@ -1,9 +1,10 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.constant.SysConfigName;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,15 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
- * 系统运行时配置信息，DiskConfig中的属性将逐步转移至这里
+ * 系统运行时配置信息
+ * todo 考虑统一的配置缓存功能
  */
 @Component
 @Slf4j
@@ -36,6 +36,9 @@ public class SysRuntimeConfig implements ApplicationRunner {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private MQService mqService;
 
     @Getter
     private boolean enableRegCode;
@@ -78,7 +81,7 @@ public class SysRuntimeConfig implements ApplicationRunner {
         }
 
         // 发布保护模式切换消息
-        redisTemplate.convertAndSend(MQTopic.PROTECT_LEVEL_SWITCH, level.toString());
+        mqService.sendBroadcast(MQTopicConstants.PROTECT_LEVEL_SWITCH, level);
     }
 
     protected void changeProtectModeLevel(ProtectLevel level) {
@@ -100,18 +103,26 @@ public class SysRuntimeConfig implements ApplicationRunner {
         }
 
         this.listenStoreTypeChange();
+        this.listenConfigChange();
+    }
+
+    /**
+     * 监听系统配置变更来更新注册方式
+     */
+    private void listenConfigChange() {
+        configService.addAfterSetListener(SysConfigName.Register.ENABLE_REG_CODE, value -> this.enableRegCode = "true".equals(value));
+        configService.addAfterSetListener(SysConfigName.Register.ENABLE_EMAIL_REG, value -> this.enableEmailReg = "true".equals(value));
     }
 
     /**
      * 监听分布式集群中触发保护级别切换信号
      */
     private void listenStoreTypeChange() {
-
-        redisMessageListenerContainer.addMessageListener((message, pattern) -> {
-            ProtectLevel level = ProtectLevel.valueOf((String)redisTemplate.getValueSerializer().deserialize(message.getBody()));
+        mqService.subscribeBroadcast(MQTopicConstants.PROTECT_LEVEL_SWITCH, msg -> {
+            ProtectLevel level = msg.body();
             log.debug("[Runtime Config]因消息通知,系统保护级别切换为：{}", level);
             changeProtectModeLevel(level);
-        }, new PatternTopic(MQTopic.PROTECT_LEVEL_SWITCH));
+        });
     }
 
 
@@ -125,11 +136,9 @@ public class SysRuntimeConfig implements ApplicationRunner {
         String enableEmailReg = configCache.get(SysConfigName.Register.ENABLE_EMAIL_REG);
         if (enableRegCode == null && enableEmailReg == null) {
             enableRegCode = "true";
-            try {
-                configService.setConfig(SysConfigName.Register.ENABLE_REG_CODE, "true");
-                configService.setConfig(SysConfigName.Register.ENABLE_EMAIL_REG, "false");
-                log.info("[注册规则初始化]未检测到注册规则配置，默认开启邀请码注册");
-            } catch (IOException ignore) { }
+            configService.setConfig(SysConfigName.Register.ENABLE_REG_CODE, "true");
+            configService.setConfig(SysConfigName.Register.ENABLE_EMAIL_REG, "false");
+            log.info("[注册规则初始化]未检测到注册规则配置，默认开启邀请码注册");
         }
         this.enableRegCode = "true".equals(enableRegCode == null ? null : enableRegCode.toLowerCase());
         this.enableEmailReg = "true".equals(enableEmailReg == null ? null : enableEmailReg.toLowerCase());

@@ -4,8 +4,6 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-@Component
-@Deprecated
 public class Md5PasswordEncoder implements PasswordEncoder {
     @Override
     public String encode(CharSequence rawPassword) {

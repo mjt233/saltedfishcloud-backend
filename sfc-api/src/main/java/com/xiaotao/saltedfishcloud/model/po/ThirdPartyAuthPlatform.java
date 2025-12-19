@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * 第三方认证平台配置

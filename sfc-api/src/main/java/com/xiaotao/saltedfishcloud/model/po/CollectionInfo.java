@@ -3,10 +3,12 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.annotations.id.SnowFlakeIdGenerator;
+import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionParser;
-import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -14,7 +16,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.util.StringUtils;
 
-import javax.persistence.*;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -37,61 +38,111 @@ public class CollectionInfo {
         OPEN, CLOSED
     }
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @SnowFlakeIdGenerator
     private Long id;
 
-    @Column(columnDefinition = "CHAR(32) COMMENT '校验码'")
+    /**
+     * 校验码
+     */
+    @Column(length = 32)
     private String verification;
 
-    @Column(columnDefinition = "BIGINT UNSIGNED COMMENT '创建者ID'", nullable = false)
+    @Column(nullable = false)
     private Long uid;
 
-    @Column(columnDefinition = "VARCHAR(128) COMMENT '接收者署名'", nullable = false)
+    /**
+     * 接收者署名
+     */
+    @Column(length = 128, nullable = false)
     private String nickname;
 
-    @Column(name = "`describe`", columnDefinition = "TEXT COMMENT '收集任务描述'")
+    /**
+     * 收集任务描述
+     */
+    @Lob
+    @Column(name = "`describe`")
     private String describe;
 
-    @Column(columnDefinition = "VARCHAR(128) COMMENT '标题'", nullable = false)
+    /**
+     * 标题
+     */
+    @Column(length = 128, nullable = false)
     private String title;
 
-    @Column(name = "max_size", columnDefinition = "BIGINT COMMENT '允许的文件最大大小（Byte），-1为无限制'", nullable = false)
+    /**
+     * 允许的文件最大大小（Byte），-1为无限制
+     */
+    @Column(nullable = false)
     private Long maxSize = ByteSize._1MiB * 128L;
 
-    @Column(name = "allow_anonymous",columnDefinition = "tinyint(1) COMMENT '是否允许匿名上传'", nullable = false)
+    /**
+     * 是否允许匿名上传
+     */
+    @Column(nullable = false)
     private Boolean allowAnonymous = true;
 
-    @Column(columnDefinition = "INT COMMENT '允许的最大收集文件数量，-1为无限制'", nullable = false)
+    /**
+     * 允许的最大收集文件数量，-1为无限制
+     */
+    @Column(nullable = false)
     private Integer allowMax = 100;
 
-    @Column(columnDefinition = "INT COMMENT '该收集可用容量（还可以接受的文件数）'", nullable = false)
+    /**
+     * 该收集可用容量（还可以接受的文件数）
+     */
+    @Column(nullable = false)
     private Integer available = 100;
 
-    @Column(columnDefinition = "VARCHAR(1024) COMMENT '文件名匹配表达式，可以是正则或字段拼接'")
+    /**
+     * 文件名匹配表达式，可以是正则或字段拼接
+     */
+    @Column(length = 1024)
     private String pattern;
 
-    @Column(name = "ext_pattern",columnDefinition = "VARCHAR(1024) COMMENT '允许的文件后缀名正则表达式，被测试的后缀名不带.'")
+    /**
+     * 允许的文件后缀名正则表达式，被测试的后缀名不带.
+     */
+    @Column(length = 1024)
     private String extPattern;
 
+    /**
+     * JSON类型数组，每个元素应包含name - 字段名称，pattern - 匹配正则，describe - 字段描述，type - 类型
+     * @see CollectionField
+     */
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    @Column(columnDefinition = "VARCHAR(1024) COMMENT 'JSON类型数组，每个元素应包含name - 字段名称，pattern - 匹配正则，describe - 字段描述，type - 类型'")
+    @Column(length = 1024)
     private String field;
 
-    @Column(name = "save_node",columnDefinition = "CHAR(32) COMMENT '收集到文件后保存到的网盘数据节点'", nullable = false)
+    /**
+     * 收集到文件后保存到的网盘数据节点
+     */
+    @Column(nullable = false)
     private String saveNode;
 
-    @Column(name = "save_path_snapshot", columnDefinition = "VARCHAR(1024) COMMENT '收集到文件后保存到的网盘位置快照（仅记录创建时的设定）'" ,nullable = false)
+    /**
+     * 收集到文件后保存到的网盘位置快照（仅记录创建时的设定）
+     */
+    @Column(length = 1024,nullable = false)
     private String savePathSnapshot;
 
-    @Column(name = "expired_at", columnDefinition = "DATETIME COMMENT '任务过期时间'", nullable = false)
+    /**
+     * 任务过期时间
+     */
+    @Column(nullable = false)
     private Date expiredAt;
 
+    /**
+     * 任务过期时间
+     */
     @CreatedDate
-    @Column(name = "created_at", columnDefinition = "DATETIME COMMENT '任务过期时间'", nullable = false)
+    @Column(nullable = false)
     private Date createdAt;
 
+    /**
+     * 状态，开放或关闭
+     */
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "enum('OPEN','CLOSED') COMMENT '状态，开放或关闭'", nullable = false)
+    @Column(nullable = false)
     private State state;
 
     public CollectionInfo setField(String field) {

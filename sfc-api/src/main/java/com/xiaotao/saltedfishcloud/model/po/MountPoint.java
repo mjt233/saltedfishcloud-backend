@@ -2,24 +2,19 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.Hibernate;
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Proxy;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.validation.annotation.Validated;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
-import java.util.Date;
 import java.util.Objects;
 
 @Getter
 @Setter
 @ToString
 @Entity
-@Proxy(lazy = false)
 @Table(
         name = "mount_point",
         indexes = {

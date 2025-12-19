@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.constant.MQTopic;
+import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
@@ -16,7 +16,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultModel;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
-import com.xiaotao.saltedfishcloud.service.MQService;
+import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -37,7 +37,7 @@ import oshi.hardware.GlobalMemory;
 import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.OperatingSystem;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -248,7 +248,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        mqService.subscribeBroadcast(MQTopic.RESTART, msg -> doRestart());
+        mqService.subscribeBroadcast(MQTopicConstants.RESTART, msg -> doRestart());
     }
 
     @Override
@@ -256,7 +256,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
         if (!withCluster) {
             doRestart();
         } else {
-            mqService.sendBroadcast(MQTopic.RESTART, "");
+            mqService.sendBroadcast(MQTopicConstants.RESTART, "");
         }
     }
 }
