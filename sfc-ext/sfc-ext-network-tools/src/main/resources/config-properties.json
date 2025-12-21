@@ -28,5 +28,19 @@
         }
       ]
     }]
+  },
+  {
+    "name": "network-tools-upnp-info",
+    "title": "UPnP设备",
+    "nodes": [{
+      "nodes": [
+        {
+          "name": "network-tools-upnp-list",
+          "title": "设备列表",
+          "inputType": "template",
+          "template": "upnp-info-card"
+        }
+      ]
+    }]
   }
 ]

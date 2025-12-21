@@ -26,13 +26,13 @@ public class MailProperties {
 
 
     /**
-     * 发信协议
+     * 发信服务器是否使用SSL/TLS连接
      */
-    @ConfigProperty(inputType = "switch", group = "ssl", describe = "启用SSL")
+    @ConfigProperty(inputType = "switch", group = "ssl", describe = "使用SSL/TLS安全连接")
     private Boolean useSSL = false;
 
     /**
-     * 发信协议
+     * 当启用SSL连接时，使用的TLS版本
      */
     @ConfigProperty(title = "TLS版本", inputType = "select", group = "ssl", options = {
 //            @ConfigSelectOption(title = "TLSv1.0", value = "TLSv1.0"),

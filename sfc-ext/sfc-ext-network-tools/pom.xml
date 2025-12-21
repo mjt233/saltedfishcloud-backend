@@ -17,11 +17,4 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>jpcap</groupId>
-            <artifactId>jpcap</artifactId>
-            <version>0.1.18-001</version>
-        </dependency>
-    </dependencies>
 </project>
