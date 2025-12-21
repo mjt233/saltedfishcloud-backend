@@ -88,7 +88,7 @@ public class SSDPServiceImpl implements SSDPService, SmartLifecycle {
         byte[] reqBuf = UpnpUtils.buildSSDPSearchMessage(st).getBytes();
         DatagramPacket packet = new DatagramPacket(reqBuf, 0, reqBuf.length, groupAddr);
         ms.send(packet);
-        log.info("发送 SSDP，搜索类型：{}", st);
+        log.debug("发送 SSDP，搜索类型：{}", st);
     }
 
     protected void joinMulticastGroup() throws IOException {
