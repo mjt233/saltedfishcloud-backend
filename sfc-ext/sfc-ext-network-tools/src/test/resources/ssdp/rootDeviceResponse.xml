@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0" xmlns:df="http://schemas.microsoft.com/windows/2008/09/devicefoundation" xmlns:microsoft="urn:schemas-microsoft-com:WMPDMR-1-0" xmlns:pnpx="http://schemas.microsoft.com/windows/pnpx/2005/11">
+    <specVersion>
+        <major>1</major>
+        <minor>0</minor>
+    </specVersion>
+    <device>
+        <deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType><friendlyName>XIAOTAO-AMD-YES</friendlyName><modelName>Windows Digital Media Renderer</modelName><modelDescription>Digital Media Renderer</modelDescription><manufacturer>Microsoft Corporation</manufacturer><manufacturerURL>https://www.microsoft.com</manufacturerURL><modelURL>https://windows.microsoft.com</modelURL>
+        <UDN>uuid:56e0d86a-31e8-456f-bd13-3c1c6c046e1d</UDN>
+        <df:X_containerId>{8900080C-3CEA-49FB-90FB-620C332A13D7}</df:X_containerId><dlna:X_DLNACAP xmlns:dlna="urn:schemas-dlna-org:device-1-0"></dlna:X_DLNACAP><dlna:X_DLNADOC xmlns:dlna="urn:schemas-dlna-org:device-1-0">DMR-1.50</dlna:X_DLNADOC><pnpx:X_deviceCategory>MediaDevices</pnpx:X_deviceCategory><pnpx:X_hardwareId>VEN_0125&amp;DEV_0010&amp;REV_0001 VEN_0125&amp;DEV_0010</pnpx:X_hardwareId>
+        <iconList><icon><mimetype>image/jpeg</mimetype><width>120</width><height>120</height><depth>24</depth><url>/upnphost/udhisapi.dll?content=uuid:4f97c6ff-b7c5-4a62-a56e-c93dae7c4322</url></icon><icon><mimetype>image/jpeg</mimetype><width>48</width><height>48</height><depth>24</depth><url>/upnphost/udhisapi.dll?content=uuid:bf761152-8d08-4aac-9220-aad09279bbd1</url></icon><icon><mimetype>image/png</mimetype><width>120</width><height>120</height><depth>24</depth><url>/upnphost/udhisapi.dll?content=uuid:59ee3a84-b4fc-4775-8df5-68522f4a4b97</url></icon><icon><mimetype>image/png</mimetype><width>48</width><height>48</height><depth>24</depth><url>/upnphost/udhisapi.dll?content=uuid:e8114cfc-dec8-47b8-9095-9c72dc04d414</url></icon></iconList>
+        <serviceList>
+            <service>
+                <serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
+                <serviceId>urn:upnp-org:serviceId:RenderingControl</serviceId>
+                <controlURL>/upnphost/udhisapi.dll?control=uuid:56e0d86a-31e8-456f-bd13-3c1c6c046e1d+urn:upnp-org:serviceId:RenderingControl</controlURL>
+                <eventSubURL>/upnphost/udhisapi.dll?event=uuid:56e0d86a-31e8-456f-bd13-3c1c6c046e1d+urn:upnp-org:serviceId:RenderingControl</eventSubURL>
+                <SCPDURL>/upnphost/udhisapi.dll?content=uuid:bd38e572-6058-49fc-86ea-831fc0c9f1a2</SCPDURL>
+            </service>
+            <service>
+                <serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType>
+                <serviceId>urn:upnp-org:serviceId:AVTransport</serviceId>
+                <controlURL>/upnphost/udhisapi.dll?control=uuid:56e0d86a-31e8-456f-bd13-3c1c6c046e1d+urn:upnp-org:serviceId:AVTransport</controlURL>
+                <eventSubURL>/upnphost/udhisapi.dll?event=uuid:56e0d86a-31e8-456f-bd13-3c1c6c046e1d+urn:upnp-org:serviceId:AVTransport</eventSubURL>
+                <SCPDURL>/upnphost/udhisapi.dll?content=uuid:6495f3a4-d1cc-4763-b3ee-aa2929555a89</SCPDURL>
+            </service>
+            <service>
+                <serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
+                <serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>
+                <controlURL>/upnphost/udhisapi.dll?control=uuid:56e0d86a-31e8-456f-bd13-3c1c6c046e1d+urn:upnp-org:serviceId:ConnectionManager</controlURL>
+                <eventSubURL>/upnphost/udhisapi.dll?event=uuid:56e0d86a-31e8-456f-bd13-3c1c6c046e1d+urn:upnp-org:serviceId:ConnectionManager</eventSubURL>
+                <SCPDURL>/upnphost/udhisapi.dll?content=uuid:93c86916-a0c2-4ee0-8fcc-c1f647961856</SCPDURL>
+            </service>
+        </serviceList>
+    </device>
+</root>
