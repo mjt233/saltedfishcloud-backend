@@ -19,4 +19,14 @@ public interface UpnpConstants {
          */
         String ROOT_DEVICES = "upnp:rootdevice";
     }
+
+    interface DeviceType {
+        String MEDIA_RENDERER = "urn:schemas-upnp-org:device:MediaRenderer:1";
+    }
+
+    interface ServiceType {
+        String RENDERING_CONTROL = "urn:schemas-upnp-org:service:RenderingControl:1";
+
+        String AVTransport = "urn:schemas-upnp-org:service:AVTransport:1";
+    }
 }

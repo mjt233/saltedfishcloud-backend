@@ -3,6 +3,7 @@ package com.sfc.nwt.config;
 import com.sfc.nwt.controller.NwtController;
 import com.sfc.nwt.model.po.WolDevice;
 import com.sfc.nwt.repo.WolDeviceRepo;
+import com.sfc.nwt.service.UpnpService;
 import com.sfc.nwt.service.WolDeviceService;
 import com.sfc.nwt.upnp.SSDPService;
 import com.sfc.nwt.upnp.UpnpDevicesManager;
@@ -39,5 +40,10 @@ public class NwtAutoConfiguration {
     @Bean
     public UpnpDevicesManager upnpDevicesManager(SSDPService ssdpService) {
         return new UpnpDevicesManager(ssdpService);
+    }
+
+    @Bean
+    public UpnpService upnpService(UpnpDevicesManager upnpDevicesManager) {
+        return new UpnpService(upnpDevicesManager);
     }
 }

@@ -1,6 +1,6 @@
 package com.sfc.nwt.upnp.model;
 
-import com.sfc.nwt.upnp.model.xml.UpnpDescribe;
+import com.sfc.nwt.upnp.model.xml.device.UpnpDescribe;
 import lombok.Data;
 
 /**
