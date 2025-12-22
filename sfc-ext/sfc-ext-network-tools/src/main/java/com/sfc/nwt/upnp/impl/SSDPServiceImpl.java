@@ -88,7 +88,7 @@ public class SSDPServiceImpl implements SSDPService, SmartLifecycle {
         byte[] reqBuf = UpnpUtils.buildSSDPSearchMessage(st).getBytes();
         DatagramPacket packet = new DatagramPacket(reqBuf, 0, reqBuf.length, groupAddr);
         ms.send(packet);
-        log.debug("发送 SSDP，搜索类型：{}", st);
+        log.debug("{} 发送 SSDP，搜索类型：{}", LOG_PREFIX, st);
     }
 
     protected void joinMulticastGroup() throws IOException {
@@ -144,7 +144,6 @@ public class SSDPServiceImpl implements SSDPService, SmartLifecycle {
                     // 接收组播消息
                     ms.receive(receivePacket);
                     InetAddress address = receivePacket.getAddress();
-                    log.debug("收到来自 {}/{} 的 SSDP 消息", address.getHostAddress(), address.getHostName());
 
                     // 构造事件，分发到监听器
                     SSDPEvent<? extends SsdpMessage> event = buildSSDPEvent(receivePacket, address);
@@ -188,6 +187,7 @@ public class SSDPServiceImpl implements SSDPService, SmartLifecycle {
             SsdpMessage message = new SsdpMessage(response);
             event = new SSDPEvent<>(response, message, address);
         }
+        log.debug("{} 收到 {} 消息 来自 {}", LOG_PREFIX, event.getMessage().getSsdpMethod(), address.getHostName());
         return event;
     }
 

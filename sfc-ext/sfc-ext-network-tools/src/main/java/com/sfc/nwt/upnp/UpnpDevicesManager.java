@@ -6,7 +6,7 @@ import com.sfc.nwt.upnp.event.SSDPEvent;
 import com.sfc.nwt.upnp.model.NotifySsdpMessage;
 import com.sfc.nwt.upnp.model.SsdpMessage;
 import com.sfc.nwt.upnp.model.UpnpDevice;
-import com.sfc.nwt.upnp.model.xml.UpnpDescribe;
+import com.sfc.nwt.upnp.model.xml.device.UpnpDescribe;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.SmartLifecycle;
@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
@@ -108,9 +107,9 @@ public class UpnpDevicesManager implements SSDPEventListener, SmartLifecycle {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                 .whenComplete((unused, throwable) -> {
                     log.debug(
-                            "{} UPnP 存活检查完成，耗时: {}s 存活设备: {} 失活设备: {}",
+                            "{} UPnP 存活检查完成，耗时: {}ms 存活设备: {} 失活设备: {}",
                             LOG_PREFIX,
-                            System.currentTimeMillis() - (double)startDate,
+                            System.currentTimeMillis() - startDate,
                             rootDeviceMap.size() - keys.size(),
                             keys
                     );
@@ -160,16 +159,7 @@ public class UpnpDevicesManager implements SSDPEventListener, SmartLifecycle {
     protected CompletableFuture<UpnpDescribe> getUpnpDescribe(String locationUrl) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                URL url = new URL(locationUrl);
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setConnectTimeout(2000);
-                try (InputStream is = urlConnection.getInputStream()) {
-                    String xmlDesc = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-                    is.close();
-                    return UpnpUtils.parseRootDesc(xmlDesc);
-                } finally {
-                    urlConnection.disconnect();
-                }
+                return UpnpUtils.getXMLByUrl(locationUrl, UpnpDescribe.class);
             } catch (IOException e) {
                 log.debug("{} 获取UPnP描述失败: {} 原因: {}", LOG_PREFIX, locationUrl, e.getMessage());
                 throw new RuntimeException(e);

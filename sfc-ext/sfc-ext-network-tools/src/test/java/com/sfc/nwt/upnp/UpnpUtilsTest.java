@@ -1,6 +1,6 @@
 package com.sfc.nwt.upnp;
 
-import com.sfc.nwt.upnp.model.xml.UpnpDescribe;
+import com.sfc.nwt.upnp.model.xml.device.UpnpDescribe;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;

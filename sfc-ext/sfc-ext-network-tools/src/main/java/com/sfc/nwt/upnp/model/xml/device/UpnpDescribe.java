@@ -1,4 +1,4 @@
-package com.sfc.nwt.upnp.model.xml;
+package com.sfc.nwt.upnp.model.xml.device;
 
 import jakarta.xml.bind.annotation.*;
 import lombok.Data;
@@ -237,5 +237,11 @@ public class UpnpDescribe {
          * <p>客户端通过此 URL 注册接收服务状态更新通知</p>
          */
         private String eventSubURL;
+
+        /**
+         * 服务信息 URL
+         */
+        @XmlElement(name = "SCPDURL")
+        private String SCPDURL;
     }
 }
