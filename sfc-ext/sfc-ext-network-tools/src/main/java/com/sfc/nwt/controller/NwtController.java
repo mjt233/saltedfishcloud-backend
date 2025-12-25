@@ -6,6 +6,7 @@ import com.sfc.nwt.service.UpnpService;
 import com.sfc.nwt.service.WolDeviceService;
 import com.sfc.nwt.upnp.UpnpDevicesManager;
 import com.sfc.nwt.upnp.UpnpUtils;
+import com.sfc.nwt.upnp.control.MediaRendererControlPoint;
 import com.sfc.nwt.upnp.model.ServiceActionInvokeParam;
 import com.sfc.nwt.upnp.model.UpnpDevice;
 import com.sfc.nwt.upnp.model.xml.device.UpnpDescribe;
@@ -104,7 +105,10 @@ public class NwtController {
      */
     @GetMapping("listUPnP")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<List<UpnpDevice>> listUPnP() {
+    public JsonResult<List<UpnpDevice>> listUPnP(@RequestParam(value = "forceCheckAlive", defaultValue = "false") Boolean isForceCheckAlive) {
+        if (Boolean.TRUE.equals(isForceCheckAlive)) {
+            upnpDevicesManager.checkAndUpdateDeviceAlive(true).join();
+        }
         return JsonResultImpl.getInstance(upnpDevicesManager.getUpnpDeviceList());
     }
 
@@ -165,4 +169,28 @@ public class NwtController {
         return JsonResultImpl.getInstance(upnpService.invokeUpnpService(param));
     }
 
+    /**
+     * 获取多媒体 UPnP 设备支持的媒体协议列表
+     * @param usn   根设备UDN/USN
+     */
+    @GetMapping("getMediaUpnpProtocolInfo")
+    public JsonResult<List<String>> getMediaUpnpProtocolInfo(@RequestParam("usn") String usn) throws IOException {
+        return JsonResultImpl.getInstance(new MediaRendererControlPoint(upnpDevicesManager.getByRootUSN(usn)).getProtocolInfo());
+    }
+
+    /**
+     * 视频投屏<br>
+     * 单独一个接口而不是使用通用的 UPnP 服务调用是为了方便后续进一步细分权限控制
+     * @param usn   媒体播放器根设备 UDN
+     * @param uri   要播放的 URI
+     * @param instanceId 播放器实例 ID
+     */
+    @PostMapping("castMedia")
+    @RolesAllowed("ADMIN")
+    public JsonResult<?> castMedia(@RequestParam("usn") String usn,
+                          @RequestParam("uri") String uri,
+                          @RequestParam(value = "instanceId", required = false) String instanceId) throws IOException {
+        new MediaRendererControlPoint(upnpDevicesManager.getByRootUSN(usn)).castMedia(instanceId, uri);
+        return JsonResult.emptySuccess();
+    }
 }

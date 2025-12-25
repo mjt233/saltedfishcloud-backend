@@ -27,6 +27,8 @@ public interface UpnpConstants {
     interface ServiceType {
         String RENDERING_CONTROL = "urn:schemas-upnp-org:service:RenderingControl:1";
 
-        String AVTransport = "urn:schemas-upnp-org:service:AVTransport:1";
+        String AV_TRANSPORT = "urn:schemas-upnp-org:service:AVTransport:1";
+
+        String CONNECTION_MANAGER = "urn:schemas-upnp-org:service:ConnectionManager:1";
     }
 }

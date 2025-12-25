@@ -275,10 +275,12 @@ public class UpnpUtils {
                 .append("<s:Body>")
                 .append("<u:").append(action).append(" xmlns:u=\"").append(serviceType).append("\">");
 
-        for (Pair<String, String> pair : params) {
-            sb.append("<").append(pair.getKey()).append(">")
-                    .append(pair.getValue())
-                    .append("</").append(pair.getKey()).append(">");
+        if (params != null) {
+            for (Pair<String, String> pair : params) {
+                sb.append("<").append(pair.getKey()).append(">")
+                        .append(pair.getValue())
+                        .append("</").append(pair.getKey()).append(">");
+            }
         }
 
         sb.append("</u:").append(action).append("></s:Body></s:Envelope>");
