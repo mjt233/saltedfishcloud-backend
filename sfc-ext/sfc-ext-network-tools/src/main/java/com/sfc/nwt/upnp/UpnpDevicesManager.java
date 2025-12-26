@@ -66,10 +66,15 @@ public class UpnpDevicesManager implements SSDPEventListener, SmartLifecycle {
         log.debug("{} 开始监听网络组播消息", LOG_PREFIX);
         this.isStarted = true;
         this.SSDPService.addEventListener(this);
-        aliveChecker.scheduleAtFixedRate(this::checkAndUpdateDeviceAlive, 45, 45, TimeUnit.SECONDS);
+        aliveChecker.scheduleAtFixedRate(() -> this.checkAndUpdateDeviceAlive(false), 45, 45, TimeUnit.SECONDS);
     }
 
-    protected void checkAndUpdateDeviceAlive() {
+    /**
+     * 检查已发现的 UPnP 设备列表是否有效，并在缓存时间过期时尝试重新获取信息
+     * @param isForceCheckAlive 是否忽略缓存时间强制重新获取信息，获取失败时将判定设备下线
+     * @return  下线的设备UDN/USN
+     */
+    public CompletableFuture<List<String>> checkAndUpdateDeviceAlive(boolean isForceCheckAlive) {
         long startDate = System.currentTimeMillis();
         log.debug("{} 开始检查 UPnP 是否存活", LOG_PREFIX);
         Deque<String> keys = new ConcurrentLinkedDeque<>();
@@ -81,7 +86,7 @@ public class UpnpDevicesManager implements SSDPEventListener, SmartLifecycle {
                         String rootUSN = entry.getKey();
                         UpnpDevice upnpDevice = entry.getValue();
                         long now = System.currentTimeMillis();
-                        if (upnpDevice.getExpireAt() > now) {
+                        if (upnpDevice.getExpireAt() > now && !isForceCheckAlive) {
                             return CompletableFuture.completedFuture(null);
                         }
                         return getUpnpDescribe(upnpDevice.getLocation())
@@ -104,7 +109,8 @@ public class UpnpDevicesManager implements SSDPEventListener, SmartLifecycle {
                     .toList();
         }
 
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApplyAsync(v -> (List<String>) new ArrayList<>(keys))
                 .whenComplete((unused, throwable) -> {
                     log.debug(
                             "{} UPnP 存活检查完成，耗时: {}ms 存活设备: {} 失活设备: {}",
