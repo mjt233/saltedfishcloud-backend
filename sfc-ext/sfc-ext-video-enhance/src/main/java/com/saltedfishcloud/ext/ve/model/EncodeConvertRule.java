@@ -53,7 +53,11 @@ public class EncodeConvertRule {
             return "v";
         } else if (SUBTITLE.equals(type)) {
             return "s";
-        } else {
+        } else if (ATTACHMENT.equals(type)) {
+            return "t";
+        } else if (DATA.equals(type)) {
+            return "d";
+        }else  {
             throw new IllegalArgumentException("未知类型：" + type);
         }
     }

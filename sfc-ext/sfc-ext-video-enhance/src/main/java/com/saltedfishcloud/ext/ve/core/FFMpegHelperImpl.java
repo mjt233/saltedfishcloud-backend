@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -200,21 +201,16 @@ public class FFMpegHelperImpl implements FFMpegHelper {
         args.add("-i");
         args.add(input);
 
-        int outputVideoIndex = 0;
-        int outputAudioIndex = 0;
-        int outputSubtitleIndex = 0;
+        Map<String, AtomicInteger> outputStreamIndexMap = new HashMap<>();
         for (EncodeConvertRule rule : rules) {
             int outputStreamIndex;
             // 指定要处理的输入流
             args.add("-map");
             args.add("0:" + rule.getIndex());
 
-            outputStreamIndex = switch (rule.getType()) {
-                case EncoderType.AUDIO -> outputAudioIndex++;
-                case EncoderType.VIDEO -> outputVideoIndex++;
-                case EncoderType.SUBTITLE -> outputSubtitleIndex++;
-                default -> throw new IllegalArgumentException("未知的流类型：" + rule.getType());
-            };
+            outputStreamIndex = outputStreamIndexMap
+                    .computeIfAbsent(rule.getType(), k -> new AtomicInteger(-1))
+                    .addAndGet(1);
 
             // 指定流的编码处理方式
             String outputStreamTag = rule.getTypeFlag() + ":" + outputStreamIndex;
@@ -232,7 +228,6 @@ public class FFMpegHelperImpl implements FFMpegHelper {
                 args.add("-b:" + outputStreamTag);
                 args.add(rule.getBitRate());
             }
-            outputVideoIndex++;
         }
 
         // 封装格式指定
