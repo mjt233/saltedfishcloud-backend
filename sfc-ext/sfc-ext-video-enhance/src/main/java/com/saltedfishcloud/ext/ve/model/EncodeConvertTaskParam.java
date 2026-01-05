@@ -19,4 +19,9 @@ public class EncodeConvertTaskParam extends EncodeConvertParam {
      * 转换产出目标存放点
      */
     private ResourceRequest target;
+
+    /**
+     * 新文件存在同名时，是否覆盖
+     */
+    private Boolean isOverwrite;
 }

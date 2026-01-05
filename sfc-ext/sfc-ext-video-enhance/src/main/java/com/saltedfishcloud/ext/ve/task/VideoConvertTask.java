@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Scanner;
 
 /**
@@ -123,18 +124,33 @@ public class VideoConvertTask implements AsyncTask {
 
             // 调用ffmpeg执行转换
             processWrap = ffMpegHelper.executeConvert(inputFile, outputFile, param);
+            Optional.ofNullable(processWrap.getExtraMessage()).ifPresent(logger::info);
 
             // 用scanner按行读取解析进度
             Scanner scanner = new Scanner(processWrap.getProcess().getInputStream());
             scanner.useDelimiter("\r\n?");
             String line;
             try {
+                boolean isRecordInProcessing = false;
                 logger.info("command: " + Strings.join(processWrap.getArgs(), ' '));
+                int lastProg = 0;
                 while ((line = scanner.nextLine()) != null) {
-                    logger.info(line);
                     Double progress = StringParser.parseTimeProgress(line);
                     if (progress != null) {
                         this.progress.setLoaded(progress.longValue());
+                        if (!isRecordInProcessing) {
+                            logger.info("已进入 ffmpeg 长耗时处理阶段，处理完成前不再记录ffmpeg原始输出日志");
+                            logger.info(line);
+                            isRecordInProcessing = true;
+                        }
+                        int curProg = (int)((double) this.progress.getLoaded() / this.progress.getTotal() * 100);
+                        if(curProg - lastProg >= 1) {
+                            lastProg = curProg;
+                            logger.info("进度更新: " + curProg + "%");
+                        }
+                    } else {
+                        // 进度日志不记录
+                        logger.info(line);
                     }
                 }
             } catch (NoSuchElementException ignore) { }
@@ -152,6 +168,15 @@ public class VideoConvertTask implements AsyncTask {
             // 转换完成，保存输出和清理临时文件
             logger.info(inputFile + "转码完成，保存中");
             param.getTarget().getParams().put(ResourceRequest.CREATE_UID, asyncTaskRecord.getUid().toString());
+            if (resourceService.getResource(param.getTarget()) != null) {
+                if (Boolean.TRUE.equals(param.getIsOverwrite())) {
+                    logger.warn("已存在同名文件，将覆盖原文件");
+                } else {
+                    String newName = asyncTaskRecord.getId() + "_" + param.getTarget().getName();
+                    logger.warn("已存在同名文件，新文件自动重命名为: " + newName);
+                    param.getTarget().setName(newName);
+                }
+            }
             resourceService.writeResource(param.getTarget(), new PathResource(outputFile));
             logger.info("保存完毕" + param.getTarget().getPath() + File.separator + param.getTarget().getName());
         } catch (Exception e) {
@@ -168,7 +193,6 @@ public class VideoConvertTask implements AsyncTask {
                 Files.deleteIfExists(Paths.get(outputFile));
                 logger.info("临时文件删除完成: " + outputFile);
             } catch (IOException e) {
-                e.printStackTrace();
                 logger.error("删除临时文件出错", e);
             }
             if (processWrap != null) {

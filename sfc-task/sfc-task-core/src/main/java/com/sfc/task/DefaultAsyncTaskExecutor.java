@@ -6,6 +6,7 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressDetector;
 import com.sfc.task.prog.ProgressRecord;
 import com.sfc.task.repo.AsyncTaskLogRecordRepo;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -237,7 +238,8 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 pi.connect(po);
 
                 // 绑定上下文用户信息
-                SecureUtils.bindUser(userService.getUserById(record.getUid()));
+                User executeUser = userService.getUserById(record.getUid());
+                SecureUtils.bindUser(executeUser);
                 // 添加进度事件监听
                 progressDetector.addObserve(asyncTask::getProgress, record.getId() + "");
 
@@ -261,7 +263,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
 
                 try {
                     // 执行任务本体
-                    CompletableFuture.runAsync(() -> asyncTask.execute(po)).join();
+                    asyncTask.execute(po);
                     record.setStatus(AsyncTaskConstants.Status.FINISH);
                     emit(finishListener, record);
                 } finally {

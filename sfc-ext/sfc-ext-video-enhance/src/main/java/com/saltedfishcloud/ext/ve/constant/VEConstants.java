@@ -22,6 +22,8 @@ public interface VEConstants {
         String VIDEO = "video";
         String AUDIO = "audio";
         String SUBTITLE = "subtitle";
+        String ATTACHMENT = "attachment";
+        String DATA = "data";
         String OTHER = "other";
     }
 
