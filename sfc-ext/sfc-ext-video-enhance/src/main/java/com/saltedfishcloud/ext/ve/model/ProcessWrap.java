@@ -8,4 +8,5 @@ import java.util.List;
 public class ProcessWrap {
     private Process process;
     private List<String> args;
+    private String extraMessage;
 }
