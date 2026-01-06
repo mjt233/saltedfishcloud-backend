@@ -24,6 +24,7 @@ public class EncodeConvertRule {
 
     /**
      * 处理方法,copy或convert
+     * @see com.saltedfishcloud.ext.ve.constant.VEConstants.EncodeMethod
      */
     private String method;
 

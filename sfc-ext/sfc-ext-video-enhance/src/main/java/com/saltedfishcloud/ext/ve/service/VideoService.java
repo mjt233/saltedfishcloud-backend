@@ -4,10 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.dao.EncodeConvertTaskRepo;
-import com.saltedfishcloud.ext.ve.model.EncodeConvertRule;
-import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
-import com.saltedfishcloud.ext.ve.model.VEProperty;
-import com.saltedfishcloud.ext.ve.model.VideoInfo;
+import com.saltedfishcloud.ext.ve.model.*;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTaskLog;
 import com.saltedfishcloud.ext.ve.utils.VideoResourceUtils;
@@ -194,6 +191,28 @@ public class VideoService {
         }
         String localPath = VideoResourceUtils.toLocalPath(resource);
         return ffMpegHelper.extractSubtitle(localPath, streamNo, type);
+    }
+
+    /**
+     * 单独提取视频文件中的某个流
+     * @param resource  视频源
+     * @param output 输出路径
+     * @param streamIndex 流索引
+     * @param format    提取格式
+     * @param encoder   流的编码
+     * @param encoderType 流的类型，见{@link EncoderType}
+     */
+    public ProcessWrap extractStream(Resource resource, String output, String streamIndex, String format, String encoder, String encoderType) throws IOException {
+        String localPath = VideoResourceUtils.toLocalPath(resource);
+        return ffMpegHelper.executeConvert(localPath, output, EncodeConvertParam.builder()
+                .format(format)
+                .rules(List.of(EncodeConvertRule.builder()
+                        .method("convert")
+                        .encoder(encoder)
+                        .index(streamIndex)
+                        .type(encoderType)
+                        .build()))
+                .build());
     }
 
     /**

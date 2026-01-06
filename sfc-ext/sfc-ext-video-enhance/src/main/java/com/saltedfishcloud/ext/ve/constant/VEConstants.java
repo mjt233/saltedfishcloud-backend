@@ -13,6 +13,8 @@ public interface VEConstants {
         String WEBVTT = "webvtt";
         String SRT = "srt";
         String ASS = "ass";
+        String SSA = "ssa";
+        String SUP = "sup";
     }
 
     /**
