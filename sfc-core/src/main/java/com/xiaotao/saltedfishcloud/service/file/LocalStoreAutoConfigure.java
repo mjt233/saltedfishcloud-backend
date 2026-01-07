@@ -17,8 +17,8 @@ public class LocalStoreAutoConfigure implements FeatureProvider {
     private FileResourceMd5Resolver md5Resolver;
 
     @Bean
-    public StoreServiceFactory storeServiceFactory() {
-        return new LocalStoreServiceFactory(localStoreService());
+    public StoreServiceFactory storeServiceFactory(LocalStoreService localStoreService) {
+        return new LocalStoreServiceFactory(localStoreService);
     }
 
     @Bean

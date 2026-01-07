@@ -218,6 +218,12 @@ public class FFMpegHelperImpl implements FFMpegHelper {
             return Set.of(
                     VIDEO, AUDIO ,SUBTITLE, DATA, ATTACHMENT
             );
+        } else if (SubtitleType.ASS.equals(format) ||
+                SubtitleType.SRT.equals(format) ||
+                SubtitleType.WEBVTT.equals(format) ||
+                SubtitleType.SSA.equals(format) ||
+                SubtitleType.SUP.equals(format)) {
+            return Set.of(SUBTITLE);
         } else {
             return Set.of(VIDEO, AUDIO);
         }

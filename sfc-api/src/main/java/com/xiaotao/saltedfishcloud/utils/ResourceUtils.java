@@ -55,10 +55,14 @@ public class ResourceUtils {
      */
     public static ResponseEntity<Resource> wrapResource(Resource resource, String filename, Map<String, String> extraHeaders) throws UnsupportedEncodingException {
         String ct = null;
-        if (resource instanceof ResponseResource) {
-            ct = ((ResponseResource) resource).getContentType();
+        String resourceFileName;
+        if (resource instanceof ResponseResource r) {
+            ct = r.getContentType();
+            resourceFileName = Optional.ofNullable(r.getFilename()).filter(StringUtils::hasText).orElse(filename);
+        } else {
+            resourceFileName = filename;
         }
-        String disposition = generateContentDisposition(filename);
+        String disposition = generateContentDisposition(resourceFileName);
         ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
                 .header("Content-Type", Optional.ofNullable(ct).orElseGet(() -> FileUtils.getContentType(filename)))
                 .header("Content-Disposition", disposition);

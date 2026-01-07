@@ -9,14 +9,17 @@ import com.saltedfishcloud.ext.ve.utils.VideoResourceUtils;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -25,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -115,6 +119,7 @@ public class VideoConvertTask implements AsyncTask {
         running = true;
         logger = new CustomLogger(logOutputStream);
 
+        Path nativeOutputFile = Paths.get(outputFile);
         try {
             initInputFile();
             FileUtils.createParentDirectory(outputFile);
@@ -143,8 +148,8 @@ public class VideoConvertTask implements AsyncTask {
                             logger.info(line);
                             isRecordInProcessing = true;
                         }
-                        int curProg = (int)((double) this.progress.getLoaded() / this.progress.getTotal() * 100);
-                        if(curProg - lastProg >= 1) {
+                        int curProg = (int) ((double) this.progress.getLoaded() / this.progress.getTotal() * 100);
+                        if (curProg - lastProg >= 1) {
                             lastProg = curProg;
                             logger.info("进度更新: " + curProg + "%");
                         }
@@ -153,7 +158,8 @@ public class VideoConvertTask implements AsyncTask {
                         logger.info(line);
                     }
                 }
-            } catch (NoSuchElementException ignore) { }
+            } catch (NoSuchElementException ignore) {
+            }
 
             // 输出流中断，进程可能结束了
             logger.info("子进程控制台输出结束");
@@ -161,7 +167,7 @@ public class VideoConvertTask implements AsyncTask {
             int ret = processWrap.getProcess().waitFor();
             // 判断是不是异常退出
             if (ret != 0) {
-                logger.info("子进程异常退出，代码: "+ ret);
+                logger.info("子进程异常退出，代码: " + ret);
                 throw new RuntimeException("ffmpeg异常退出: " + ret);
             }
 
@@ -177,12 +183,32 @@ public class VideoConvertTask implements AsyncTask {
                     param.getTarget().setName(newName);
                 }
             }
-            resourceService.writeResource(param.getTarget(), new PathResource(outputFile));
+            if (ResourceProtocol.MAIN.equals(param.getTarget().getProtocol())) {
+                logger.info("目标保存位置在网盘主文件系统，通过文件移动保存");
+                long targetId = Long.parseLong(param.getTarget().getTargetId());
+                UIDValidator.validateWithException(targetId, true);
+                logger.info("开始计算文件md5");
+                FileInfo fileInfo = FileInfo.getLocal(outputFile, true);
+                fileInfo.setName(param.getTarget().getName());
+                logger.info("开始保存");
+                SpringContextUtils.getContext()
+                        .getBean(DiskFileSystemManager.class)
+                        .getMainFileSystem()
+                        .moveToSaveFile(
+                                targetId,
+                                nativeOutputFile,
+                                param.getTarget().getPath(),
+                                fileInfo
+                        );
+            } else {
+                logger.info("目标保存位置不在网盘主文件系统，使用通用资源写入功能保存");
+                resourceService.writeResource(param.getTarget(), new PathResource(outputFile));
+            }
             logger.info("保存完毕" + param.getTarget().getPath() + File.separator + param.getTarget().getName());
         } catch (Exception e) {
             logger.error("编码转换失败:", e);
             if (e instanceof RuntimeException) {
-                throw (RuntimeException)e;
+                throw (RuntimeException) e;
             } else {
                 throw new RuntimeException("编码转换失败:" + e);
             }
@@ -190,7 +216,7 @@ public class VideoConvertTask implements AsyncTask {
         } finally {
             logger.info("删除临时输出文件: " + outputFile);
             try {
-                Files.deleteIfExists(Paths.get(outputFile));
+                Files.deleteIfExists(nativeOutputFile);
                 logger.info("临时文件删除完成: " + outputFile);
             } catch (IOException e) {
                 logger.error("删除临时文件出错", e);

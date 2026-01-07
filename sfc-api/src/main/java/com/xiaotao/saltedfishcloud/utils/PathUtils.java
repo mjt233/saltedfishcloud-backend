@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.utils;
 
 
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -70,8 +71,20 @@ public class PathUtils {
      * @param prefix    临时文件前缀
      * @return  创建的临时文件路径
      */
-    public static Path createTemplateFilePath(String prefix) {
-        return getTempPath().resolve(prefix + IdUtil.getUUID() + ".tmp");
+    public static Path createTemplateFilePath(@Nullable String prefix) {
+        if (prefix == null || prefix.isEmpty()) {
+            return getTempPath().resolve(IdUtil.getUUID() + ".tmp");
+        } else {
+            return getTempPath().resolve(prefix + IdUtil.getUUID() + ".tmp");
+        }
+    }
+
+    /**
+     * 在临时目录下随机创建一个临时文件路径
+     * @return  创建的临时文件路径
+     */
+    public static Path createTemplateFilePath() {
+        return createTemplateFilePath(null);
     }
 
     /**
