@@ -15,6 +15,8 @@ import com.xiaotao.saltedfishcloud.service.resource.AbstractResourceProtocolHand
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 
@@ -25,6 +27,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<ResourceRequest> {
@@ -37,6 +41,10 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
 
     @Autowired
     private StoreServiceFactory storeServiceFactory;
+
+    private final Semaphore semaphore = new Semaphore(
+            Math.max(1, Runtime.getRuntime().availableProcessors() - 1)
+    );
 
     private final static Set<String> SUBTITLE_BIT_ENCODERS = Set.of("hdmv_pgs_subtitle", "dvb_subtitle", "dvd_subtitle");
 
@@ -97,11 +105,10 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
             contentType = "text/vtt";
         }
 
-        Resource output;
         String cacheFileName;
         // 获取临时存储服务并确保字幕缓存目录存在
         TempStoreService tempStoreService = storeServiceFactory.getTempStoreService();
-        if(!tempStoreService.exist("ve/subtitle")) {
+        if (!tempStoreService.exist("ve/subtitle")) {
             tempStoreService.mkdirs("ve/subtitle");
         }
 
@@ -110,33 +117,59 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
 
             // 本地文件：使用文件路径、修改时间和大小生成MD5
             File file = resource.getFile();
-            cacheFileName = SecureUtils.getMd5(file.getPath() + "_" + file.lastModified() + "_" + file.length()) + "." + format;
+            cacheFileName = SecureUtils.getMd5(file.getPath() + "_" + file.lastModified() + "_" + file.length())
+                    + "_" + streamIndex + "." + format;
         } else {
 
             // 远程资源：使用路径、文件名、修改时间和内容长度生成MD5
             cacheFileName = SecureUtils.getMd5(
                     StringUtils.appendPath(resourceRequest.getPath(), resource.getFilename()) + "_"
                             + resource.lastModified() + "_"
-                            + resource.contentLength()) + "."
-                    + format;
+                            + resource.contentLength())
+                    + "_" + streamIndex + "." + format;
         }
+
+        // 快速检查是否有缓存
         String cachePath = "ve/subtitle/" + cacheFileName;
-        if (!tempStoreService.exist(cachePath)) {
-            Path tmpFilePath = PathUtils.getTempPath().resolve(cacheFileName);
-            String tmpFile = tmpFilePath.toString();
-            try {
-                this.generateSubtitleFile(resource, tmpFile, streamIndex);
-                try (InputStream inputStream = Files.newInputStream(tmpFilePath)) {
-                    tempStoreService.store(FileInfo.getLocal(tmpFile), cachePath, Files.size(tmpFilePath), inputStream);
-                }
-            } finally {
-                Files.deleteIfExists(tmpFilePath);
-            }
+        if (tempStoreService.exist(cachePath)) {
+            return ResponseResource.create(tempStoreService.getResource(cachePath))
+                    .setResponseFilename(FileUtils.parseName(resourceRequest.getName())[0] + "." + format)
+                    .setContentType(contentType);
         }
-        output = tempStoreService.getResource(cachePath);
-        return ResponseResource.create(output)
-                .setResponseFilename(FileUtils.parseName(resourceRequest.getName())[0] + "." + format)
-                .setContentType(contentType);
+
+        // 无缓存，加锁后重新检查，若依然无缓存则执行字幕提取
+        return LockUtils.execute(cacheFileName, () -> {
+            try {
+                if(!semaphore.tryAcquire(1, 10, TimeUnit.MINUTES)) {
+                    throw new RuntimeException("subtitle extract service busy");
+                }
+                try {
+                    Resource output;
+                    if (!tempStoreService.exist(cachePath)) {
+                        Path tmpFilePath = PathUtils.getTempPath().resolve(cacheFileName);
+                        String tmpFile = tmpFilePath.toString();
+                        try {
+                            this.generateSubtitleFile(resource, tmpFile, streamIndex);
+                            try (InputStream inputStream = Files.newInputStream(tmpFilePath)) {
+                                tempStoreService.store(FileInfo.getLocal(tmpFile), cachePath, Files.size(tmpFilePath), inputStream);
+                            }
+                        } finally {
+                            Files.deleteIfExists(tmpFilePath);
+                        }
+                    }
+                    output = tempStoreService.getResource(cachePath);
+                    return ResponseResource.create(output)
+                            .setResponseFilename(FileUtils.parseName(resourceRequest.getName())[0] + "." + format)
+                            .setContentType(contentType);
+                } finally {
+                    semaphore.release();
+                }
+            } catch (InterruptedException e) {
+                log.error("字幕提取操作取消", e);
+                throw new RuntimeException("action interrupted");
+            }
+        });
+
     }
 
     private void generateSubtitleFile(Resource videoResource, String savePath, String streamIndex) throws IOException {
