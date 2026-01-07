@@ -15,8 +15,6 @@ import com.xiaotao.saltedfishcloud.service.resource.AbstractResourceProtocolHand
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 
@@ -91,18 +89,26 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
         // 根据字幕编码格式确定输出格式和Content-Type
         String format;
         String contentType;
+        String encoder;
+        String ffmpegFormat;
         if (SUBTITLE_BIT_ENCODERS.contains(streamInfo.getCodecName())) {
             // 位图字幕格式（如SUP）
             format = VEConstants.SubtitleType.SUP;
             contentType = "application/x-sup";
+            encoder = "copy";
+            ffmpegFormat = null;
         } else if (VEConstants.SubtitleType.ASS.equals(streamInfo.getCodecName()) || VEConstants.SubtitleType.SSA.equals(streamInfo.getCodecName())) {
             // ASS/SSA字幕格式
             format = VEConstants.SubtitleType.ASS;
             contentType = "text/x-ass";
+            encoder = "copy";
+            ffmpegFormat = "ass";
         } else {
             // 默认转换为WEBVTT格式（Web标准字幕格式）
             format = VEConstants.SubtitleType.WEBVTT;
             contentType = "text/vtt";
+            encoder = "webvtt";
+            ffmpegFormat = "webvtt";
         }
 
         String cacheFileName;
@@ -149,7 +155,7 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
                         Path tmpFilePath = PathUtils.getTempPath().resolve(cacheFileName);
                         String tmpFile = tmpFilePath.toString();
                         try {
-                            this.generateSubtitleFile(resource, tmpFile, streamIndex);
+                            this.generateSubtitleFile(resource, tmpFile, streamIndex, ffmpegFormat, encoder);
                             try (InputStream inputStream = Files.newInputStream(tmpFilePath)) {
                                 tempStoreService.store(FileInfo.getLocal(tmpFile), cachePath, Files.size(tmpFilePath), inputStream);
                             }
@@ -172,11 +178,11 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
 
     }
 
-    private void generateSubtitleFile(Resource videoResource, String savePath, String streamIndex) throws IOException {
-        ProcessWrap wrap = videoService.extractStream(videoResource, savePath, streamIndex, null, "copy", VEConstants.EncoderType.SUBTITLE);
+    private void generateSubtitleFile(Resource videoResource, String savePath, String streamIndex, String ffmpegFormat, String encoder) throws IOException {
+        ProcessWrap wrap = videoService.extractStream(videoResource, savePath, streamIndex, ffmpegFormat, encoder, VEConstants.EncoderType.SUBTITLE);
         String errMsg = wrap.waitProcess();
         if (errMsg != null) {
-            log.error("FFmpeg调用出错: {}", errMsg);
+            log.error("FFmpeg调用出错: 执行命令: {}\nffmepg 输出:\n {}", String.join(" ", wrap.getArgs()), errMsg);
             throw new RuntimeException("字幕获取失败");
         }
     }
