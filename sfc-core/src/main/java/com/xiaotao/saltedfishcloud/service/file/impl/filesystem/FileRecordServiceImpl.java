@@ -238,7 +238,7 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     public FileInfo saveRecord(FileInfo fileInfo, String path) {
         if (fileInfo.getId() == null && fileInfo.getNode() == null) {
-            String nodeId = nodeService.getNodeIdByPathNoEx(fileInfo.getUid(), path);
+            String nodeId = getAndMkdirs(fileInfo.getUid(), path, Boolean.TRUE.equals(fileInfo.getIsMount()));
             fileInfo.setNode(nodeId);
         }
         FileInfo existFile;
