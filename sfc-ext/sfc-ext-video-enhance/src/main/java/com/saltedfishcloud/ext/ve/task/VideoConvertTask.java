@@ -125,7 +125,9 @@ public class VideoConvertTask implements AsyncTask {
             FileUtils.createParentDirectory(outputFile);
             // 获取视频基础信息，记录总长
             VideoInfo videoInfo = ffMpegHelper.getVideoInfo(inputFile);
-            progress.setTotal(videoInfo.getFormat().getDuration().longValue());
+
+            // 进度总量+1是除了转码任务，还有转码完成后的存入网盘动作
+            progress.setTotal(videoInfo.getFormat().getDuration().longValue() + 1);
 
             // 调用ffmpeg执行转换
             processWrap = ffMpegHelper.executeConvert(inputFile, outputFile, param);
@@ -205,6 +207,7 @@ public class VideoConvertTask implements AsyncTask {
                 resourceService.writeResource(param.getTarget(), new PathResource(outputFile));
             }
             logger.info("保存完毕" + param.getTarget().getPath() + File.separator + param.getTarget().getName());
+            this.progress.setLoaded(this.progress.getTotal());
         } catch (Exception e) {
             logger.error("编码转换失败:", e);
             if (e instanceof RuntimeException) {

@@ -238,7 +238,7 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     public FileInfo saveRecord(FileInfo fileInfo, String path) {
         if (fileInfo.getId() == null && fileInfo.getNode() == null) {
-            String nodeId = nodeService.getNodeIdByPathNoEx(fileInfo.getUid(), path);
+            String nodeId = getAndMkdirs(fileInfo.getUid(), path, Boolean.TRUE.equals(fileInfo.getIsMount()));
             fileInfo.setNode(nodeId);
         }
         FileInfo existFile;
@@ -364,16 +364,37 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public String getAndMkdirs(long uid, String path, boolean isMount) {
-        return Optional.ofNullable(nodeService.getNodeIdByPathNoEx(uid, path))
-                .orElseGet(() -> {
-                    String lockKey = "getAndMkdirs:" + uid + ":" + path;
-                    return LockUtils.execute(
-                            lockKey,
-                            () -> Optional
-                                    .ofNullable(nodeService.getNodeIdByPathNoEx(uid, path))
-                                    .orElseGet(() -> mkdirs(uid, path, isMount))
-                    );
-                });
+        String nodeId = nodeService.getNodeIdByPathNoEx(uid, path);
+        if (nodeId != null) {
+            return nodeId;
+        }
+
+        String lockKey = "getAndMkdirs:" + uid + ":" + path;
+        return LockUtils.execute(lockKey, () -> {
+            int interval = 200;
+            int maxTryCount = 60 * 1000 / interval;
+            int tryCount = 0;
+            while (tryCount < maxTryCount) {
+                // 双重检查
+                String newestNodeId = nodeService.getNodeIdByPathNoEx(uid, path);
+                if (newestNodeId != null) {
+                    return newestNodeId;
+                }
+
+                try {
+                    return mkdirs(uid, path, isMount);
+                } catch (DuplicateKeyException e) {
+                    // 捕获唯一约束异常，重试查询
+                    log.warn("getAndMkdirs并发创建冲突，重试查询: uid={}, path={}",  uid, path);
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException ignore) { }
+                }
+                tryCount++;
+            }
+            log.error("getAndMkdirs并发创建失败: uid={}, path={}",  uid, path);
+            throw new RuntimeException("getAndMkdir concurrent handle error");
+        });
     }
 
 

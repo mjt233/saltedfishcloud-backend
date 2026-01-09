@@ -142,7 +142,7 @@ public interface FileRecordService {
     String mkdirs(long uid, String path, boolean isMount);
 
     /**
-     * 从数据库中获取指定文件夹信息。如果该记录不存在则会创建一个。
+     * 从数据库中获取指定文件夹节点id信息。如果该记录不存在则会创建一个。
      * @param uid   用户id
      * @param path  文件夹完整路径
      * @param isMount   需要创建记录时，是否标记为挂载目录
