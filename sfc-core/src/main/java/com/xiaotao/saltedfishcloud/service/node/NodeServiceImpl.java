@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.NoSuchFileException;
@@ -206,6 +207,7 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public String getNodeIdByPathNoEx(long uid, String path) {
         Deque<NodeInfo> list = this.getPathNodeByPathNoEx(uid, path);
         if (list == null) {
