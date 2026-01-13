@@ -10,9 +10,11 @@ import com.saltedfishcloud.ext.ve.service.VideoInfoResourceHandler;
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -31,7 +33,7 @@ import java.util.Map;
 @EntityScan("com.saltedfishcloud.ext.ve.model")
 @EnableJpaRepositories(basePackages = "com.saltedfishcloud.ext.ve.dao")
 @Slf4j
-public class VEAutoConfiguration implements SystemOverviewItemProvider {
+public class VEAutoConfiguration implements SystemOverviewItemProvider, InitializingBean {
     private static final String LOG_PREFIX = "[视频增强配置]";
 
     @Autowired
@@ -110,5 +112,10 @@ public class VEAutoConfiguration implements SystemOverviewItemProvider {
                             .build()
             );
         }
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        FileUtils.setContentTypeMapping("wasm", "application/wasm");
     }
 }
