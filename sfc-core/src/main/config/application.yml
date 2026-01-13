@@ -4,7 +4,7 @@ server:
     encoding:
       charset: utf-8
       enabled: true
-      force: true
+      force: false
   tomcat:
     remoteip:
       remote-ip-header: X-Real-IP

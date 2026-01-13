@@ -29,7 +29,7 @@ public class FileUtils {
         map.put("json", "application/json;charset=utf-8");
         map.put("css", "text/css;charset=utf-8");
         map.put("txt", "text/plain;charset=utf-8");
-        map.put(".otf" , "application/x-font-otf");
+        map.put("otf" , "application/x-font-otf");
 
         // 图片
         map.put("gif", "image/gif");
@@ -57,6 +57,14 @@ public class FileUtils {
 
         // 视频
         map.put("pdf", "application/pdf");
+    }
+
+    /**
+     * 注册一个文件拓展名对应的 ContentType
+     * @param extName   文件拓展名（不带.）
+     */
+    public static void setContentTypeMapping(String extName, String contentType) {
+        map.put(extName, contentType);
     }
 
     /**
