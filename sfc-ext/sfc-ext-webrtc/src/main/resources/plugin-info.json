@@ -1,0 +1,16 @@
+{
+  "name": "web-rtc",
+  "alias": "WebRTC",
+  "describe": "基于WebRTC实现的相关服务功能，提供文件p2p传输、视频流传输功能",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-server-network",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
+}
