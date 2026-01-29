@@ -9,5 +9,8 @@
   "email": "mjt233@qq.com",
   "apiVersion": "^api.version^",
   "version": "^project.version^",
-  "autoLoad": []
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
 }
