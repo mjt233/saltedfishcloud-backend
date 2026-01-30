@@ -2,10 +2,8 @@ package com.sfc.ext.webrtc.config;
 
 import com.sfc.ext.webrtc.controller.WebRTCSignalingHandler;
 import com.sfc.ext.webrtc.model.RTCProperty;
-import com.sfc.ext.webrtc.model.RTCPropertyVO;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;

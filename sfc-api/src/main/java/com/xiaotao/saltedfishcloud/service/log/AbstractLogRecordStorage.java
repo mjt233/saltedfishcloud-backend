@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.log;
 
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
-import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;

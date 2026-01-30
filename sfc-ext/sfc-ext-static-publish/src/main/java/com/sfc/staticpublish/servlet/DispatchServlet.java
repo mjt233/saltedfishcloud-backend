@@ -20,7 +20,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.util.StreamUtils;
 import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.TemplateSpec;
 import org.thymeleaf.context.Context;
 
 import jakarta.servlet.ServletException;

@@ -2,7 +2,6 @@ package com.sfc.archive.extractor;
 
 import com.sfc.archive.ArchiveEventListenable;
 import com.sfc.archive.model.ArchiveFile;
-import com.sfc.archive.model.ArchiveParam;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 

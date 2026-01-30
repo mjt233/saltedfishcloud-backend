@@ -7,7 +7,6 @@ import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.sfc.archive.service.DiskFileSystemArchiveService;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
@@ -29,7 +28,6 @@ import java.util.Map;
 public class WrapServiceImpl implements WrapService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final NodeService nodeService;
-    private final DiskFileSystemManager fileSystemProvider;
     private final DiskFileSystemArchiveService archiveService;
 
     @Autowired

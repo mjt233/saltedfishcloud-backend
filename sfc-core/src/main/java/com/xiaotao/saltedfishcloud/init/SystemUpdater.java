@@ -20,7 +20,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
-import jakarta.persistence.EntityManager;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -47,9 +46,6 @@ public class SystemUpdater {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
-
-    @Autowired
-    private EntityManager entityManager;
 
     private void executeSqlResource(String sqlFileClassPath) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {

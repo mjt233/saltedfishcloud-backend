@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 /**
  * 基于Minio的存储直接操作器
@@ -52,11 +53,9 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
                     .prefix(MinioUtils.toDirectoryName(path))
                     .maxKeys(2)
                     .build());
-            int cnt=0;
-            for (Result<Item> ignored : results) {
-                cnt++;
-            }
-            return cnt == 1;
+            return StreamSupport.stream(results.spliterator(), false)
+                .limit(2)
+                .count() <= 1;
         } catch (Exception e) {
             throw new IOException(e);
         }

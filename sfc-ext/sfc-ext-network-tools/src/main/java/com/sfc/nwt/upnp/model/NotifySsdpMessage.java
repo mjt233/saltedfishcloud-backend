@@ -1,7 +1,6 @@
 package com.sfc.nwt.upnp.model;
 
 import com.sfc.nwt.upnp.constants.UpnpConstants;
-import com.sfc.nwt.upnp.constants.UpnpResponseType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

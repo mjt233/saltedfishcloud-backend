@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.model.dto;
 import com.xiaotao.saltedfishcloud.model.param.FileInfoSaveParam;
 import lombok.*;
 
-import jakarta.validation.constraints.NotBlank;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.service.sync.handler;
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;

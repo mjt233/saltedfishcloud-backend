@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;

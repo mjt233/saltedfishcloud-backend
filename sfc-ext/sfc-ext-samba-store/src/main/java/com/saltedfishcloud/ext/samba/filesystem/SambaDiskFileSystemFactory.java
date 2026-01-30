@@ -16,12 +16,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class SambaDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<SambaProperty, RawDiskFileSystem> {
     @Autowired
     private ThumbnailService thumbnailService;
-    private final Map<SambaProperty, SambaDiskFileSystem> CACHE = new ConcurrentHashMap<>();
     private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
             .isPublic(true)
             .protocol("samba")

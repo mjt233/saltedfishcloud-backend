@@ -6,7 +6,6 @@ import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 

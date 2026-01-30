@@ -35,7 +35,7 @@ public class AsyncTaskController {
 
     @GetMapping("getById")
     public JsonResult<AsyncTaskRecord> getById(@RequestParam("taskId") Long taskId) {
-        return JsonResultImpl.getInstance(asyncTaskRecordRepo.getOne(taskId));
+        return JsonResultImpl.getInstance(asyncTaskRecordRepo.getReferenceById(taskId));
     }
 
     /**
@@ -67,7 +67,7 @@ public class AsyncTaskController {
 
     @RequestMapping("/interrupt")
     public JsonResult<Object> interrupt(@RequestParam("taskId") Long taskId) throws IOException {
-        AsyncTaskRecord record = asyncTaskRecordRepo.getOne(taskId);
+        AsyncTaskRecord record = asyncTaskRecordRepo.getReferenceById(taskId);
         UIDValidator.validate(record.getUid(), true);
         asyncTaskManager.interrupt(taskId);
         return JsonResult.emptySuccess();

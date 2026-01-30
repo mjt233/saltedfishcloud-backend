@@ -29,8 +29,8 @@ import java.util.Optional;
 public class MediaRendererControlPoint {
     private UpnpDevice upnpDevice;
     private UpnpDescribe.Service atvTransportService;
-    private UpnpDescribe.Service renderingControlService;
-    private UpnpDescribe.Service connectionManagerService;
+    // private UpnpDescribe.Service renderingControlService;
+    // private UpnpDescribe.Service connectionManagerService;
 
     private Scpd scpd;
 
@@ -206,7 +206,7 @@ public class MediaRendererControlPoint {
         this.upnpDevice = device;
         this.atvTransportService = Optional.ofNullable(UpnpUtils.findService(device.getDescribe(), s -> UpnpConstants.ServiceType.AV_TRANSPORT.equals(s.getServiceType())))
                 .orElseThrow(() -> new IllegalArgumentException("device is not exist ATVTransport service"));
-        this.renderingControlService = UpnpUtils.findService(device.getDescribe(), s -> UpnpConstants.ServiceType.RENDERING_CONTROL.equals(s.getServiceType()));
-        this.connectionManagerService = UpnpUtils.findService(device.getDescribe(), s -> UpnpConstants.ServiceType.CONNECTION_MANAGER.equals(s.getServiceType()));
+        // this.renderingControlService = UpnpUtils.findService(device.getDescribe(), s -> UpnpConstants.ServiceType.RENDERING_CONTROL.equals(s.getServiceType()));
+        // this.connectionManagerService = UpnpUtils.findService(device.getDescribe(), s -> UpnpConstants.ServiceType.CONNECTION_MANAGER.equals(s.getServiceType()));
     }
 }

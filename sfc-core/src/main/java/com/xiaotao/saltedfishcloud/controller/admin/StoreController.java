@@ -43,7 +43,7 @@ public class StoreController {
      * todo 支持精准同步参数控制
      */
     @PostMapping("sync")
-    public JsonResult sync(@RequestParam(name = "all", defaultValue = "false") Boolean all) throws Exception {
+    public JsonResult<Object> sync(@RequestParam(name = "all", defaultValue = "false") Boolean all) throws Exception {
         if (sysProperties.getStore().getMode() == StoreMode.UNIQUE) {
             return JsonResultImpl.getInstance(400, null, "UNIQUE模式不需要同步");
         }

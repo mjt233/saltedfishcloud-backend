@@ -94,7 +94,6 @@ public class DefaultTaskManager implements TaskManager {
      */
     @Override
     public void save(String id, String part, InputStream stream) throws IOException {
-        String root = TaskStorePath.getRoot(id);
         if (queryTask(id) == null) {
             throw new TaskNotFoundException(id);
         }

@@ -25,7 +25,7 @@ public class ProxyInfoServiceImpl extends CrudServiceImpl<ProxyInfo, ProxyInfoRe
     @Cacheable(cacheNames = CacheNames.PROXY_TEST_RESULT, key = "#proxyId", condition = "#useCache")
     @CacheEvict(cacheNames = CacheNames.PROXY_TEST_RESULT, key = "#proxyId", condition = "!#useCache")
     public boolean testProxy(Long proxyId, int timeout, boolean useCache) {
-        ProxyInfo proxyInfo = repository.getOne(proxyId);
+        ProxyInfo proxyInfo = repository.getReferenceById(proxyId);
         proxyInfo.toProxy();
 
         IgnoreSSLHttpRequestFactory factory = new IgnoreSSLHttpRequestFactory();

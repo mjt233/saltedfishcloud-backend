@@ -2,7 +2,6 @@ package com.sfc.task;
 
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
-import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.util.Collection;

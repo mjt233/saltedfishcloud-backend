@@ -2,8 +2,6 @@ package com.sfc.staticpublish.service;
 
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.xiaotao.saltedfishcloud.service.CrudService;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 public interface StaticPublishRecordService extends CrudService<StaticPublishRecord> {
 

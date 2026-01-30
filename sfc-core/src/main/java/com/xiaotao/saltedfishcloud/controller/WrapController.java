@@ -26,7 +26,7 @@ public class WrapController {
      * @return  打包信息
      */
     @PostMapping("create")
-    public JsonResult createWrap(@RequestBody WrapParam param) {
+    public JsonResult<String> createWrap(@RequestBody WrapParam param) {
         String wid = wrapService.registerWrap(param);
         return JsonResultImpl.getInstance(wid);
     }

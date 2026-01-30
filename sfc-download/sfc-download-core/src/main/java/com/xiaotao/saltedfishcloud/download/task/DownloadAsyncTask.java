@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.download.task;
 
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
-import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.download.IgnoreSSLHttpRequestFactory;
 import com.xiaotao.saltedfishcloud.download.model.DownloadProgressRecord;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
@@ -29,10 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
-import static com.xiaotao.saltedfishcloud.constant.ByteSize._1MiB;
-
 public class DownloadAsyncTask implements AsyncTask {
-    private final static int BUFFER_SIZE = 16 * _1MiB;
     private final String originParams;
 
     private final DownloadTaskParams params;

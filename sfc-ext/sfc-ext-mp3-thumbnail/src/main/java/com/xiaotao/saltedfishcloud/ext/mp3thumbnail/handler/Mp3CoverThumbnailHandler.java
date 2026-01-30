@@ -10,7 +10,6 @@ import com.xiaotao.saltedfishcloud.utils.ImageUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.util.ArrayList;

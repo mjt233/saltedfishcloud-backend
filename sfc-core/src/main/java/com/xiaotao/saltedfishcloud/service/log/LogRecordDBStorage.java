@@ -21,7 +21,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class LogRecordDBStorage extends AbstractLogRecordStorage implements LogRecordStorage {
+public class LogRecordDBStorage extends AbstractLogRecordStorage {
     @Autowired
     private LogRecordService logRecordService;
 

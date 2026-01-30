@@ -2,13 +2,10 @@ package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.common.RedirectableUrlHttpMessageConverter;
 import com.xiaotao.saltedfishcloud.interceptor.ProtectBlocker;
-import com.xiaotao.saltedfishcloud.servlet.FileUploadServlet;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;

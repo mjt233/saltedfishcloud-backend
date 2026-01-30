@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.collection;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
-import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionRecordRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
@@ -47,11 +46,6 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
 
     @Autowired
     private NodeService nodeService;
-
-    @Autowired
-    private CollectionInfoRepo collectionDao;
-
-    private CollectionRecordRepo recordDao;
 
     @Override
     public boolean isWriteable() {

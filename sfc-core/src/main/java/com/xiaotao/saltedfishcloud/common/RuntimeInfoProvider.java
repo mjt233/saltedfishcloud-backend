@@ -25,8 +25,8 @@ public class RuntimeInfoProvider implements SystemOverviewItemProvider {
         Runtime runtime = Runtime.getRuntime();
 
         OperatingSystemMXBean operatingSystemMXBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-        long totalPhysicalMemorySize = operatingSystemMXBean.getTotalPhysicalMemorySize();
-        long freePhysicalMemorySize = operatingSystemMXBean.getFreePhysicalMemorySize();
+        long totalPhysicalMemorySize = operatingSystemMXBean.getTotalMemorySize();
+        long freePhysicalMemorySize = operatingSystemMXBean.getFreeMemorySize();
         long max = runtime.maxMemory();
         long used = runtime.totalMemory() - runtime.freeMemory();
         int cpu = runtime.availableProcessors();

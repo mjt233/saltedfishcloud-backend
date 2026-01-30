@@ -81,12 +81,12 @@ public class OfficeController {
     @ResponseBody
     public String saveCallback(@Validated ResourceRequest resourceRequest,
                                HttpServletRequest request) throws IOException {
-
-        Scanner scanner = new Scanner(request.getInputStream()).useDelimiter("\\A");
-        String body = scanner.hasNext() ? scanner.next() : "";
-        Callback callback = MapperHolder.parseJson(body, Callback.class);
-        officeService.handleCallback(resourceRequest, callback);
-        return "{\"error\":0}";
+        try(Scanner scanner = new Scanner(request.getInputStream()).useDelimiter("\\A")) {
+            String body = scanner.hasNext() ? scanner.next() : "";
+            Callback callback = MapperHolder.parseJson(body, Callback.class);
+            officeService.handleCallback(resourceRequest, callback);
+            return "{\"error\":0}";
+        }
     }
 
 
