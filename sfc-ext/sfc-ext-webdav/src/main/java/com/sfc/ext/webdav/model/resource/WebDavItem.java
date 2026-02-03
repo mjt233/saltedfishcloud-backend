@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Date;
+import java.util.Optional;
 
 @Data
 @AllArgsConstructor
@@ -80,8 +81,8 @@ public class WebDavItem {
         WebDavItem item = fileInfo.isDir() ? new WebDavDir() : new WebDavFile();
         item.setName(fileInfo.getName());
         item.setUid(fileInfo.getUid());
-        item.setModifiedDate(fileInfo.getUpdateAt());
-        item.setCreateDate(fileInfo.getCreateAt());
+        item.setModifiedDate(Optional.ofNullable(fileInfo.getUpdateAt()).or(() -> Optional.ofNullable(fileInfo.getCreateAt())).orElse(new Date()));
+        item.setCreateDate(Optional.ofNullable(fileInfo.getCreateAt()).or(() -> Optional.ofNullable(fileInfo.getUpdateAt())).orElse(new Date()));
         item.setPath(StringUtils.appendPath(basePath, fileInfo.getName()));
         item.setResourceArea(fileInfo.getUid() == User.PUBLIC_USER_ID ? ResourceArea.PUBLIC : ResourceArea.PRIVATE);
         if (item instanceof WebDavFile f) {

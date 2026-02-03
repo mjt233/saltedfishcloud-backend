@@ -1,10 +1,10 @@
 package com.sfc.ext.webdav.core;
 
-import com.sfc.ext.webdav.controller.WebDavResourceController;
 import com.sfc.ext.webdav.enums.Constants;
 import com.sfc.ext.webdav.enums.ResourceArea;
 import com.sfc.ext.webdav.model.property.WebDavProperty;
 import com.sfc.ext.webdav.model.resource.WebDavItem;
+import com.sfc.ext.webdav.model.resource.WebDavRoot;
 import com.sfc.ext.webdav.service.WebDavAuthService;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -72,7 +72,7 @@ public class SfcSecurityManager implements SecurityManager {
 
 
         // 根资源和虚拟根目录只允许读
-        if (source instanceof WebDavResourceController) {
+        if (source instanceof WebDavRoot) {
             return isRead;
         }
         if (!(source instanceof WebDavItem item)) {
