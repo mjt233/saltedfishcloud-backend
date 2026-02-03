@@ -16,6 +16,7 @@ import io.milton.http.SecurityManager;
 import io.milton.http.annotated.AnnoResource;
 import io.milton.http.http11.auth.DigestResponse;
 import io.milton.resource.Resource;
+import io.milton.servlet.MiltonServlet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.util.Lazy;
 
@@ -51,6 +52,23 @@ public class SfcSecurityManager implements SecurityManager {
                 .isPresent();
     }
 
+    /**
+     * 判断是否对虚拟目录本身的请求
+     */
+    private boolean isVirtualRootPathRequest(Request request) {
+        String requirePath = Optional.ofNullable(request.getDestinationHeader())
+                .or(() -> Optional.ofNullable(request.getAbsoluteUrl()))
+                .map(url -> url.replaceAll("/+$", ""))
+                .orElse(null);
+        if (requirePath == null || requirePath.equals("/") || requirePath.isEmpty()) {
+            return true;
+        }
+        String host = request.getHostHeader();
+        String scheme = MiltonServlet.request().getScheme();
+        return requirePath.equals(scheme + "://" + host + "/" + ResourceArea.PUBLIC.getName()) ||
+                requirePath.equals(scheme + "://" + host + "/" + ResourceArea.PRIVATE.getName());
+    }
+
     @Override
     public boolean authorise(Request request, Request.Method method, Auth auth, Resource resource) {
         if (!(resource instanceof AnnoResource r)) {
@@ -61,13 +79,18 @@ public class SfcSecurityManager implements SecurityManager {
         // 针对 Windows 处理，不允许匿名登录，强制要求输入用户名和密码以确保有权限访问private目录
         // 匿名登录情况下访问private触发401会导致整个Windows拒绝访问整个 WebDAV 服务，再也无法访问该WebDAV服务
         boolean isNotAllowAnonymous = !Boolean.TRUE.equals(webDavProperty.get().getIsAllowAnonymous()) || isFromWindow(request);
-        if (isNotAllowAnonymous && (auth == null || auth.getTag() == null)) {
+        User sessionUser = (User) MiltonServlet.request().getSession().getAttribute("userObj");
+        User authUser = Optional.ofNullable(sessionUser)
+                .or(() -> Optional.ofNullable(auth)
+                        .map(Auth::getTag)
+                        .filter(tag -> tag instanceof User)
+                        .map(tag -> (User) tag))
+                .orElse(null);
+
+        if (isNotAllowAnonymous && authUser == null) {
             return false;
         }
-        boolean isRead = switch (method) {
-            case GET, OPTIONS, HEAD, PROPFIND -> true;
-            default -> false;
-        };
+        boolean isRead = !method.isWrite;
         boolean isWrite = !isRead;
 
 
@@ -78,7 +101,7 @@ public class SfcSecurityManager implements SecurityManager {
         if (!(source instanceof WebDavItem item)) {
             return false;
         }
-        if (item.isVirtualRoot() && isWrite) {
+        if (item.isVirtualRoot() && isWrite && Request.Method.MKCOL != method && isVirtualRootPathRequest(request)) {
             return false;
         }
 
@@ -92,23 +115,20 @@ public class SfcSecurityManager implements SecurityManager {
 
         // 私人网盘资源 需要验证登录人是资源所属人
         // 公共网盘资源写操作 需要验证登录人是管理员
-        User user = (User) Optional.ofNullable(auth)
-                .map(Auth::getTag)
-                .filter(tag -> tag instanceof User).orElse(null);
-        if (user == null) {
+        if (authUser == null) {
             return false;
         }
         Long requireUid;
         if (item.getUid() == null) {
             if (r.getParent() == r.getRoot()) {
-                requireUid = user.getId();
+                requireUid = authUser.getId();
             } else {
                 return false;
             }
         } else {
             requireUid = item.getUid();
         }
-        return UIDValidator.validate(user, requireUid, true);
+        return UIDValidator.validate(authUser, requireUid, true);
     }
 
     @Override

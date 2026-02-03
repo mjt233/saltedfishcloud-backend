@@ -17,6 +17,7 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import io.milton.annotations.*;
 import io.milton.http.HttpManager;
 import io.milton.http.Request;
+import io.milton.http.exceptions.BadRequestException;
 import io.milton.servlet.MiltonServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Stream;
+
+import static com.sfc.ext.webdav.enums.ResourceArea.PRIVATE;
+import static com.sfc.ext.webdav.enums.ResourceArea.PUBLIC;
 
 @Slf4j
 @ResourceController
@@ -48,17 +52,17 @@ public class WebDavResourceController {
         Date date = new Date();
         List<WebDavItem> list = new ArrayList<>();
         list.add(WebDavDir.builder()
-                .name("public")
+                .name(PUBLIC.getName())
                 .createDate(date)
                 .modifiedDate(date)
-                .resourceArea(ResourceArea.PUBLIC)
+                .resourceArea(PUBLIC)
                 .uid(User.PUBLIC_USER_ID)
                 .isVirtualRoot(true)
                 .path("/")
                 .build());
 
         list.add(WebDavDir.builder()
-                .name("private")
+                .name(PRIVATE.getName())
                 .createDate(date)
                 .modifiedDate(date)
                 .resourceArea(ResourceArea.PRIVATE)
@@ -88,7 +92,7 @@ public class WebDavResourceController {
 
     @ChildrenOf
     public List<WebDavItem> getFileList(WebDavDir f) throws IOException {
-        boolean isPublic = f.getResourceArea() == ResourceArea.PUBLIC;
+        boolean isPublic = f.getResourceArea() == PUBLIC;
         String requirePath = f.getPath();
         try {
             Long uid = isPublic ? User.PUBLIC_USER_ID : getCurUser(f.getUid()).getId();
@@ -112,7 +116,7 @@ public class WebDavResourceController {
 
     @MakeCollection
     public WebDavItem mkdir(WebDavDir parent, String newName) throws IOException {
-        long uid = parent.getResourceArea() == ResourceArea.PUBLIC ? User.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
+        long uid = parent.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         fileSystem.mkdir(uid, parent.getPath(), newName);
         
@@ -120,8 +124,8 @@ public class WebDavResourceController {
     }
 
     @PutChild
-    public WebDavItem upload(WebDavItem parent, String name, InputStream in, Long contentLength, String contentType) throws IOException {
-        long uid = parent.getResourceArea() == ResourceArea.PUBLIC ? User.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
+    public WebDavItem upload(WebDavDir parent, String name, InputStream in, Long contentLength, String contentType) throws IOException {
+        long uid = parent.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         FileInfo fileInfo = new FileInfo();
         fileInfo.setName(name);
@@ -135,7 +139,10 @@ public class WebDavResourceController {
      * 重命名文件或目录
      */
     @Move
-    public WebDavItem renameOrMove(WebDavItem source, WebDavItem newParent, String newName) throws IOException {
+    public WebDavItem renameOrMove(WebDavItem source, WebDavItem newParent, String newName) throws IOException, BadRequestException {
+        if (source.isVirtualRoot()) {
+            throw new BadRequestException("Can not handle virtual directory");
+        }
         String sourceParent = PathUtils.getParentPath(source.getPath());
         if (Objects.equals(sourceParent, newParent.getPath())) {
             // 父级目录相同，执行重命名
@@ -147,7 +154,7 @@ public class WebDavResourceController {
     }
 
     public WebDavItem doRename(WebDavItem source, WebDavItem newParent, String newName) throws IOException {
-        long uid = source.getResourceArea() == ResourceArea.PUBLIC ? User.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
+        long uid = source.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String parentPath = PathUtils.getParentPath(source.getPath());
         fileSystem.rename(uid, parentPath, source.getName(), newName);
@@ -159,7 +166,7 @@ public class WebDavResourceController {
      * 移动文件或目录
      */
     public WebDavItem doMove(WebDavItem source, WebDavItem newParent, String newName) throws IOException {
-        long uid = source.getResourceArea() == ResourceArea.PUBLIC ? User.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
+        long uid = source.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String sourcePath = PathUtils.getParentPath(source.getPath());
         String targetPath = PathUtils.getParentPath(newParent.getPath());
@@ -201,8 +208,11 @@ public class WebDavResourceController {
      * 删除文件或目录
      */
     @Delete
-    public void delete(WebDavItem item) throws IOException {
-        long uid = item.getResourceArea() == ResourceArea.PUBLIC ? User.PUBLIC_USER_ID : getCurUser(item.getUid()).getId();
+    public void delete(WebDavItem item) throws IOException, BadRequestException {
+        if (item.isVirtualRoot()) {
+            throw new BadRequestException("Can not handle virtual directory");
+        }
+        long uid = item.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(item.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String parentPath = PathUtils.getParentPath(item.getPath());
         fileSystem.deleteFile(uid, parentPath, Collections.singletonList(item.getName()));
@@ -212,15 +222,17 @@ public class WebDavResourceController {
      * 复制文件或目录
      */
     @Copy
-    public void copy(WebDavItem item, WebDavItem destination, String newName) throws IOException {
-        long uid = item.getResourceArea() == ResourceArea.PUBLIC ? User.PUBLIC_USER_ID : getCurUser(item.getUid()).getId();
+    public void copy(WebDavItem source, WebDavItem newParent, String newName) throws IOException, BadRequestException {
+        if (source.isVirtualRoot()) {
+            throw new BadRequestException("Can not handle virtual directory");
+        }
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
-        String sourcePath = PathUtils.getParentPath(item.getPath());
-        String targetPath = PathUtils.getParentPath(destination.getPath());
+        String sourcePath = PathUtils.getParentPath(source.getPath());
+        String targetPath = PathUtils.getParentPath(newParent.getPath());
 
         // 如果目标目录不是当前目录，需要先检查是否存在同名文件
-        String targetName = (newName != null && !newName.isEmpty()) ? newName : item.getName();
-        fileSystem.copy(uid, sourcePath, targetPath, uid, item.getName(), targetName, true);
+        String targetName = (newName != null && !newName.isEmpty()) ? newName : source.getName();
+        fileSystem.copy(source.getUid(), sourcePath, targetPath, newParent.getUid(), source.getName(), targetName, true);
     }
 
 
