@@ -1,0 +1,7 @@
+[
+  {
+    "name": "webdav",
+    "title": "基础配置",
+    "typeRef": "com.sfc.ext.webdav.model.property.WebDavProperty"
+  }
+]

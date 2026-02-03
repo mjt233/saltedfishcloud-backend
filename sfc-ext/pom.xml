@@ -39,6 +39,7 @@
         <module>sfc-ext-only-office</module>
         <module>sfc-ext-apk-parser</module>
         <module>sfc-ext-webrtc</module>
+        <module>sfc-ext-webdav</module>
     </modules>
 
 
