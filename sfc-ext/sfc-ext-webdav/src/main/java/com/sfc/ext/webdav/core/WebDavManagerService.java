@@ -2,6 +2,7 @@ package com.sfc.ext.webdav.core;
 
 import com.sfc.ext.webdav.model.property.WebDavProperty;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import io.milton.http.annotated.AnnotationResourceFactory;
 import io.milton.servlet.MiltonFilter;
 import jakarta.servlet.ServletContext;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
+import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.servlets.DefaultServlet;
 import org.apache.catalina.startup.Tomcat;
@@ -46,8 +48,13 @@ public class WebDavManagerService {
 
         // 创建一个 Tomcat 实例用于 Milton 的 WebDAV服务
         Tomcat tomcat = new Tomcat();
+        Connector connector = new Connector();
+        connector.setPort(Optional.ofNullable(webDavProperty.getListenPort()).orElse(8086));
+        Optional.ofNullable(webDavProperty.getListenIp())
+                .filter(StringUtils::hasText)
+                .ifPresent(ip -> connector.setProperty("address", ip));
         tomcat.setAddDefaultWebXmlToWebapp(false);
-        tomcat.setPort(Optional.ofNullable(webDavProperty.getServerPort()).orElse(8086));
+        tomcat.setConnector(connector);
 
         Path tomcatTmpPath = PathUtils.getAndCreateTempDirPath("webdav");
         Context ctx = tomcat.addWebapp("", tomcatTmpPath.toAbsolutePath().toString());

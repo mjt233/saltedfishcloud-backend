@@ -89,6 +89,9 @@ public class TypeUtils {
         // 其他转BigInteger，直接toString后舍弃小数点
         if (BigInteger.class.isAssignableFrom(target)) {
             String inputStr = input.toString();
+            if (inputStr.isEmpty()) {
+                return null;
+            }
             final int pos = inputStr.indexOf('.');
             if (pos != -1) {
                 inputStr = inputStr.substring(0, pos);
