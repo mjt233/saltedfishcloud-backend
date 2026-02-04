@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * 文件系统的参数描述对象

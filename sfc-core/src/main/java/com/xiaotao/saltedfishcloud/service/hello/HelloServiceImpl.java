@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * 问好服务默认实现类
@@ -64,12 +65,28 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
 
     @Override
     public Object getDetail(String name) {
-        return store.get(name);
+        Object val = store.get(name);
+        if (val instanceof Supplier<?> s) {
+            return s.get();
+        }
+        return val;
+    }
+
+    @Override
+    public void setFeature(String name, Supplier<Object> detail) {
+        store.put(name, detail);
     }
 
     @Override
     public Map<String, Object> getAllFeatureDetail() {
-        return store;
+        Map<String, Object> view = new HashMap<>(store);
+        // 遍历view，当value是Supplier的，则调用get()方法获取值
+        for (Map.Entry<String, Object> entry : view.entrySet()) {
+            if (entry.getValue() instanceof Supplier<?> s) {
+                entry.setValue(s.get());
+            }
+        }
+        return view;
     }
 
     @Override

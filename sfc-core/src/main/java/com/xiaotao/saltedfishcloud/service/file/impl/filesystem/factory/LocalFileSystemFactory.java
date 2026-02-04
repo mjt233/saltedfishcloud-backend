@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<String, RawDiskFileSystem> implements InitializingBean {
@@ -42,8 +41,6 @@ public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<Str
                 .isPublic(false)
                 .build();
     }
-
-    private final Map<String, DiskFileSystem> CACHE = new ConcurrentHashMap<>();
 
     @Autowired
     private DiskFileSystemManager diskFileSystemManager;

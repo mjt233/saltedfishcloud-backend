@@ -10,7 +10,6 @@ import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
@@ -21,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.Resource;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -45,8 +43,6 @@ import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_LOG;
 public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean {
     private static final String LOG_PREFIX = "[异步任务管理]";
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
     private AsyncTaskRecordRepo repo;
@@ -126,7 +122,7 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
 
     @Override
     public void interrupt(Long taskId) throws IOException {
-        AsyncTaskRecord record = repo.getOne(taskId);
+        AsyncTaskRecord record = repo.getReferenceById(taskId);
 
         // 若任务等待中，则直接修改数据库的任务状态
         if (AsyncTaskConstants.Status.WAITING.equals(record.getStatus())) {

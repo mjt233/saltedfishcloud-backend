@@ -76,6 +76,7 @@ public class ConfigNode {
     /**
      * 排序
      */
+    @Builder.Default
     private long sort = 0;
 
     /**

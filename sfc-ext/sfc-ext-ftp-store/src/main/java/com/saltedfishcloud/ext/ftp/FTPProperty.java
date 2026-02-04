@@ -23,6 +23,7 @@ public class FTPProperty {
      * 端口
      */
     @ConfigProperty(value = "port", required = true, title = "端口")
+    @Builder.Default
     private Integer port = 21;
 
 

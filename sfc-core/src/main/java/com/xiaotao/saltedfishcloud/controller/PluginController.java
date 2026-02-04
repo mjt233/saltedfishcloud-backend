@@ -35,13 +35,13 @@ public class PluginController {
 
     @GetMapping("/listAvailablePlugins")
     @RolesAllowed({"ADMIN"})
-    public JsonResult getAllPlugins() throws IOException {
+    public JsonResult<List<PluginInfo>> getAllPlugins() throws IOException {
         return JsonResultImpl.getInstance(pluginService.listAvailablePlugins());
     }
 
     @PostMapping("/deletePlugin")
     @RolesAllowed({"ADMIN"})
-    public JsonResult deletePlugin(@RequestParam("name") String name) throws IOException {
+    public JsonResult<Object> deletePlugin(@RequestParam("name") String name) throws IOException {
         pluginService.deletePlugin(name);
         return JsonResult.emptySuccess();
     }
@@ -72,7 +72,7 @@ public class PluginController {
      */
     @GetMapping("/listPluginAutoLoadList")
     @AllowAnonymous
-    public JsonResult listPluginAutoLoadList() {
+    public JsonResult<List<PluginInfo>> listPluginAutoLoadList() {
         List<PluginInfo> pluginInfos = pluginService.listPlugins().stream().filter(e -> e.getAutoLoad() != null && !e.getAutoLoad().isEmpty()).collect(Collectors.toList());
         return JsonResultImpl.getInstance(pluginInfos);
     }
@@ -96,14 +96,14 @@ public class PluginController {
 
     @PostMapping("/uploadPlugin")
     @RolesAllowed({"ADMIN"})
-    public JsonResult uploadPlugin(@RequestParam("file") MultipartFile file) throws IOException {
+    public JsonResult<PluginInfoVo> uploadPlugin(@RequestParam("file") MultipartFile file) throws IOException {
         PluginInfoVo pluginInfoVo = pluginService.uploadPlugin(file.getResource());
         return JsonResultImpl.getInstance(pluginInfoVo);
     }
 
     @PostMapping("/installPlugin")
     @RolesAllowed({"ADMIN"})
-    public JsonResult installPlugin(@RequestParam("tempId") Long tempId, @RequestParam("fileName") String fileName) throws IOException {
+    public JsonResult<Object> installPlugin(@RequestParam("tempId") Long tempId, @RequestParam("fileName") String fileName) throws IOException {
         pluginService.installPlugin(tempId, fileName);
         return JsonResult.emptySuccess();
     }

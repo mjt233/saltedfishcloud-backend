@@ -25,14 +25,14 @@ public class QuickShareController {
     @PostMapping("upload")
     @BreakPoint
     @AllowAnonymous
-    public JsonResult upload(@MergeFile @RequestParam("file") MultipartFile file, QuickShare quickShare) throws IOException {
+    public JsonResult<String> upload(@MergeFile @RequestParam("file") MultipartFile file, QuickShare quickShare) throws IOException {
         String code = quickShareService.saveTempFile(file.getResource(), quickShare);
         return JsonResultImpl.getInstance(code);
     }
 
     @GetMapping("getByCode")
     @AllowAnonymous
-    public JsonResult getByCode(@RequestParam("code") String code) {
+    public JsonResult<QuickShare> getByCode(@RequestParam("code") String code) {
         return JsonResultImpl.getInstance(quickShareService.getByCode(code));
     }
 

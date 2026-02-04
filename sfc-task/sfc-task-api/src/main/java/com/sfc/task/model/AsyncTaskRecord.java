@@ -3,7 +3,6 @@ package com.sfc.task.model;
 import com.sfc.task.AsyncTaskConstants;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
-import org.hibernate.annotations.Proxy;
 
 import jakarta.persistence.*;
 import java.util.Date;

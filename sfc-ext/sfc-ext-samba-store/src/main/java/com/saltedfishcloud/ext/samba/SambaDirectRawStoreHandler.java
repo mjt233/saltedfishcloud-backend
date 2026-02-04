@@ -31,7 +31,6 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -314,16 +313,6 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
         return true;
     }
 
-
-    /**
-     * 将请求的相对分享目录的路径转为完整的smb协议url格式的路径。
-     * 如： /我的文件夹/文件1.jpg -> \\192.168.2.233\share\我的文件夹\文件1.jpg
-     * @param path 请求的路径
-     */
-    private String toFullShareUrl(String path) {
-        return "\\" + StringUtils.appendPath(sambaProperty.getHost(), sambaProperty.getShareName(), path)
-                .replaceAll("/+", "\\\\");
-    }
 
     /**
      * 将请求路径转换为smb协议的反斜杠分隔符形式

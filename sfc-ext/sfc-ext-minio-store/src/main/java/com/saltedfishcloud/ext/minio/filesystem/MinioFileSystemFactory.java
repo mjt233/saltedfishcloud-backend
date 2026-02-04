@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class MinioFileSystemFactory extends AbstractRawDiskFileSystemFactory<MinioProperties, RawDiskFileSystem> {
     @Setter
@@ -36,7 +35,6 @@ public class MinioFileSystemFactory extends AbstractRawDiskFileSystemFactory<Min
                             ))
                     .build()))
             .build();
-    private final Map<MinioProperties, DiskFileSystem> CACHE = new ConcurrentHashMap<>();
 
 
     @Override

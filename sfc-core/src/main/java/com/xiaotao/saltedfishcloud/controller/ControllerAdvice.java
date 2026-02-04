@@ -39,7 +39,7 @@ public class ControllerAdvice {
     private HttpServletResponse response;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public JsonResult validFormError(MethodArgumentNotValidException e) {
+    public JsonResult<String> validFormError(MethodArgumentNotValidException e) {
         BindingResult bindingResult = e.getBindingResult();
         StringBuilder sb = new StringBuilder();
         bindingResult.getFieldErrors().forEach(error -> sb.append(error.getField()).append(error.getDefaultMessage()).append(";"));
@@ -47,7 +47,7 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(BindException.class)
-    public JsonResult validError(BindException e) {
+    public JsonResult<String> validError(BindException e) {
         List<FieldError> errors = e.getFieldErrors();
         StringBuilder sb = new StringBuilder();
         errors.forEach(error -> sb.append(error.getField()).append(' ').append(error.getDefaultMessage()).append(";"));
@@ -55,12 +55,12 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public JsonResult requestParamsError(MissingServletRequestParameterException e) {
+    public JsonResult<String> requestParamsError(MissingServletRequestParameterException e) {
         return JsonResultImpl.getInstance(422, null, e.getMessage());
     }
 
     @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class})
-    public JsonResult paramsError(Exception e) {
+    public JsonResult<String> paramsError(Exception e) {
         if (log.isDebugEnabled()) {
             log.debug("{}校验错误：",LOG_PREFIX, e);
         }
@@ -70,7 +70,8 @@ public class ControllerAdvice {
 
 
     @ExceptionHandler(JsonException.class)
-    public JsonResult handle(JsonException e, HttpServletResponse response) {
+    @SuppressWarnings("unchecked")
+    public JsonResult<Object> handle(JsonException e, HttpServletResponse response) {
         if (log.isDebugEnabled()) {
             log.error("{}错误：",LOG_PREFIX, e);
         }
@@ -87,7 +88,7 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public JsonResult handle(AccessDeniedException e) {
+    public JsonResult<String> handle(AccessDeniedException e) {
         return responseError(403, e.getMessage());
     }
 
@@ -96,13 +97,13 @@ public class ControllerAdvice {
             NoSuchFileException.class,
             TaskNotFoundException.class
     })
-    public JsonResult handle(Exception e) {
+    public JsonResult<String> handle(Exception e) {
         log.debug("{}", LOG_PREFIX, e);
         return responseError(404, e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
-    public JsonResult defaultHandle(Exception e) {
+    public JsonResult<String> defaultHandle(Exception e) {
         log.error("异常", e);
         if (e instanceof MessageException) {
             return responseError(500, e.getMessage());
@@ -113,7 +114,7 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(DuplicateKeyException.class)
-    public JsonResult handle(DuplicateKeyException e) {
+    public JsonResult<String> handle(DuplicateKeyException e) {
         return responseError(400, e.getMessage());
     }
 
@@ -131,7 +132,7 @@ public class ControllerAdvice {
         }
     }
 
-    private JsonResult responseError(int code, String message) {
+    private JsonResult<String> responseError(int code, String message) {
         setStatusCode(code);
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes != null) {

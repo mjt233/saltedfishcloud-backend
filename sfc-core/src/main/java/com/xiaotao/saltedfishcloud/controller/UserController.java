@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping(UserController.PREFIX)

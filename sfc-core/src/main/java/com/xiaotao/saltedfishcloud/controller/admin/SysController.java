@@ -7,7 +7,6 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
-import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;

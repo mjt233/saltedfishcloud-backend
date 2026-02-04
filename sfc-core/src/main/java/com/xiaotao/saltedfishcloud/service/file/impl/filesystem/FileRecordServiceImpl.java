@@ -444,7 +444,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public void deleteFileInfo(long id) {
-        FileInfo file = fileInfoRepo.getOne(id);
+        FileInfo file = fileInfoRepo.getReferenceById(id);
         deleteFileInfo(file);
     }
 

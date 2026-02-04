@@ -7,7 +7,6 @@ import lombok.Setter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import java.util.Date;
 
 /**
  * 定时任务记录

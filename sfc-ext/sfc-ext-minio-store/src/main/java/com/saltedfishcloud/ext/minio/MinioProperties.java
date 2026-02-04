@@ -14,21 +14,25 @@ public class MinioProperties {
     /**
      * endpoint URL地址
      */
+    @Builder.Default
     private String endpoint = "http://127.0.0.1:9000";
 
     /**
      * key
      */
+    @Builder.Default
     private String accessKey = "xyy";
 
     /**
      * 密钥
      */
+    @Builder.Default
     private String secretKey = "xyy123456";
 
     /**
      * 存储桶
      */
+    @Builder.Default
     private String bucket = "xyy";
 
     @Override

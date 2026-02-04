@@ -36,7 +36,7 @@ public class ShareController {
     private final ShareService shareService;
 
     @DeleteMapping("{sid}")
-    public JsonResult deleteShare(@PathVariable("sid") Long sid) {
+    public JsonResult<Object> deleteShare(@PathVariable("sid") Long sid) {
         User user = SecureUtils.getSpringSecurityUser();
 
         assert user != null;
@@ -57,7 +57,7 @@ public class ShareController {
     @PostMapping("/wrap/{sid}/{verification}")
     @AllowAnonymous
     @Deprecated
-    public JsonResult createWarp(@PathVariable("sid") Long sid,
+    public JsonResult<String> createWarp(@PathVariable("sid") Long sid,
                                  @PathVariable("verification") String verification,
                                  @RequestParam(value = "code", required = false) String code,
                                  @RequestBody FileTransferInfo fileTransferInfo) {
@@ -79,7 +79,7 @@ public class ShareController {
      */
     @GetMapping("/{sid}/{verification}")
     @AllowAnonymous
-    public JsonResult getShare(@PathVariable("sid") Long sid,
+    public JsonResult<ShareInfo> getShare(@PathVariable("sid") Long sid,
                                @PathVariable("verification") String verification,
                                @RequestParam(value = "code", required = false) String extractCode) {
         ShareInfo share = shareService.getShare(sid, verification);
@@ -98,7 +98,7 @@ public class ShareController {
             "/view/{sid}/{verification}",
     })
     @AllowAnonymous
-    public JsonResult getDirContent(@PathVariable("sid") Long sid,
+    public JsonResult<List<FileInfo>[]> getDirContent(@PathVariable("sid") Long sid,
                                     @PathVariable("verification") String verification,
                                     @RequestParam(value = "code", required = false) String extractCode,
                                     HttpServletRequest request) throws IOException {
@@ -111,7 +111,7 @@ public class ShareController {
      * 创建分享
      */
     @PostMapping
-    public JsonResult createShare(@RequestBody @Valid ShareDTO shareDTO, Principal principal) {
+    public JsonResult<ShareInfo> createShare(@RequestBody @Valid ShareDTO shareDTO, Principal principal) {
         System.out.println(principal);
         User user = SecureUtils.getSpringSecurityUser();
         assert user != null;
@@ -127,7 +127,7 @@ public class ShareController {
             "/user"
     })
     @AllowAnonymous
-    public JsonResult getUserShare(@PathVariable(value = "uid", required = false) Long uid,
+    public JsonResult<CommonPageInfo<ShareInfo>> getUserShare(@PathVariable(value = "uid", required = false) Long uid,
                                    @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
                                    @RequestParam(value = "size", defaultValue = "5") @Min(5) @Valid Integer size) {
         boolean emptyUid = false;

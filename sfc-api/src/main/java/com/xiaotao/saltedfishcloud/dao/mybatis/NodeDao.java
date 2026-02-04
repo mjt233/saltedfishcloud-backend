@@ -1,10 +1,8 @@
 package com.xiaotao.saltedfishcloud.dao.mybatis;
 
-import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import org.apache.ibatis.annotations.*;
 
-import java.util.Collection;
 import java.util.List;
 
 public interface NodeDao {

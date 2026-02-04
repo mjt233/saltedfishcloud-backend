@@ -11,8 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -30,12 +28,6 @@ public class SysRuntimeConfig implements ApplicationRunner {
 
     @Autowired
     private ConfigService configService;
-
-    @Autowired
-    private RedisMessageListenerContainer redisMessageListenerContainer;
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
     private MQService mqService;

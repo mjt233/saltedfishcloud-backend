@@ -180,14 +180,6 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
      * 获取存储对象的下载URL
      * @param objKey    存储对象Key
      */
-    private URL getObjectUrl(String objKey) {
-        return getObjectUrlSupplier(objKey).get();
-    }
-
-    /**
-     * 获取存储对象的下载URL
-     * @param objKey    存储对象Key
-     */
     private Supplier<URL> getObjectUrlSupplier(String objKey) {
         return Lazy.of(() -> {
             Calendar calendar = Calendar.getInstance();
@@ -280,7 +272,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(fileInfo.getSize());
         metadata.setLastModified(new Date(fileInfo.getMtime()));
-        PutObjectResult res = s3Client.putObject(property.getBucket(), ossPath, inputStream, metadata);
+        s3Client.putObject(property.getBucket(), ossPath, inputStream, metadata);
         return fileInfo.getSize();
     }
 
@@ -324,7 +316,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
         }
         String ossSrcPath = srcFile.isFile() ? OSSPathUtils.toOSSObjectName(src) : OSSPathUtils.toDirectoryName(src);
         String ossDestPath = srcFile.isFile() ? OSSPathUtils.toOSSObjectName(dest) : OSSPathUtils.toDirectoryName(dest);
-        CopyObjectResult res = s3Client.copyObject(property.getBucket(), ossSrcPath, property.getBucket(), ossDestPath);
+        s3Client.copyObject(property.getBucket(), ossSrcPath, property.getBucket(), ossDestPath);
         return true;
     }
 

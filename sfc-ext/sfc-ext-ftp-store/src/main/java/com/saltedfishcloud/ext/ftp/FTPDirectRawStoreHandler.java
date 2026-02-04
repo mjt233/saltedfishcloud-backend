@@ -176,14 +176,6 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
         }
     }
 
-    private FileInfo createDirFileInfo(String name) {
-        FileInfo fileInfo = new FileInfo();
-        fileInfo.setName(name);
-        fileInfo.setSize(-1L);
-        fileInfo.setType(FileInfo.TYPE_DIR);
-        return fileInfo;
-    }
-
     @Override
     public boolean delete(String path) throws IOException {
         try (FTPSession session = getSession()) {

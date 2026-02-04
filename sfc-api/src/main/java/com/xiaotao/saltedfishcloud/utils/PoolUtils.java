@@ -5,6 +5,7 @@ import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
+import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
@@ -47,9 +48,9 @@ public class PoolUtils {
         defaultConfig.setMinIdle(0);
         defaultConfig.setMaxIdle(8);
         defaultConfig.setMaxTotal(32);
-        defaultConfig.setMaxWaitMillis(10000);
+        defaultConfig.setMaxWait(Duration.ofSeconds(10));
         // 10s一次空闲检测
-        defaultConfig.setTimeBetweenEvictionRunsMillis(10000);
+        defaultConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(10));
         config.accept(defaultConfig);
         return new GenericObjectPool<T>(objectFactory, defaultConfig);
     }

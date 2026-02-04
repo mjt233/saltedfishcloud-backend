@@ -58,7 +58,7 @@ public class DownloadServiceImpl implements DownloadService {
 
     @Override
     public void interrupt(String id) throws IOException {
-        final DownloadTaskInfo info = downloadDao.getOne(id);
+        final DownloadTaskInfo info = downloadDao.getReferenceById(id);
         AsyncTaskRecord asyncTaskRecord = info.getAsyncTaskRecord();
         if (asyncTaskRecord == null) {
             throw new IllegalArgumentException("没有关联异步任务id");

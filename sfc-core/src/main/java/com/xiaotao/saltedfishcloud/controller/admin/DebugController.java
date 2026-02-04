@@ -25,7 +25,7 @@ public class DebugController {
     private SysProperties sysProperties;
 
     @PutMapping("readOnly")
-    public JsonResult setReadOnlyLevel(@RequestParam String level) {
+    public JsonResult<Object> setReadOnlyLevel(@RequestParam String level) {
         ProtectLevel r;
         try {
             r = ProtectLevel.valueOf(level);
@@ -37,12 +37,12 @@ public class DebugController {
     }
 
     @GetMapping("readOnly")
-    public JsonResult getReadOnlyLevel() {
+    public JsonResult<ProtectLevel> getReadOnlyLevel() {
         return JsonResultImpl.getInstance(SysRuntimeConfig.getInstance().getProtectModeLevel());
     }
 
     @GetMapping("options")
-    public JsonResult getAllOptions() {
+    public JsonResult<LinkedHashMap<String, Object>> getAllOptions() {
         LinkedHashMap<String, Object> data = JsonResultImpl.getDataMap();
         List<Pair<String, String>> conf = configDao.getAllConfig();
         if (conf != null) {

@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.schedule;
 import com.xiaotao.saltedfishcloud.annotations.ClusterScheduleJob;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

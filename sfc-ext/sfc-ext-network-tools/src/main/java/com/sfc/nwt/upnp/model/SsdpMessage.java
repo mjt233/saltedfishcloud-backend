@@ -59,23 +59,24 @@ public class SsdpMessage {
      * 通过解析 Ssdp 报文来实例化
      */
     public SsdpMessage(String rawResponseBody) {
-        Scanner scanner = new Scanner(rawResponseBody);
-        scanner.useDelimiter("\r\n");
+        try(Scanner scanner = new Scanner(rawResponseBody)) {
+            scanner.useDelimiter("\r\n");
 
-        // 读取第一行
-        String method = Optional.ofNullable(scanner.nextLine())
-                .map(line -> line.split(" ")[0])
-                .orElseThrow(() -> new IllegalArgumentException("is not ssdp response"));
-        this.setSsdpMethod(method);
+            // 读取第一行
+            String method = Optional.ofNullable(scanner.nextLine())
+                    .map(line -> line.split(" ")[0])
+                    .orElseThrow(() -> new IllegalArgumentException("is not ssdp response"));
+            this.setSsdpMethod(method);
 
-        String line;
-        while ( scanner.hasNext() ) {
-            line = scanner.nextLine();
-            String[] s = line.split(": ", 2);
-            if (s.length < 2) {
-                continue;
+            String line;
+            while ( scanner.hasNext() ) {
+                line = scanner.nextLine();
+                String[] s = line.split(": ", 2);
+                if (s.length < 2) {
+                    continue;
+                }
+                processHeader(s[0], s[1]);
             }
-            processHeader(s[0], s[1]);
         }
     }
 

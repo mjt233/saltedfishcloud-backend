@@ -6,7 +6,6 @@ import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.Getter;
 import lombok.Setter;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
