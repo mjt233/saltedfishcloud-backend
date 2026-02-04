@@ -29,9 +29,12 @@ nav:
     - 插件:
         - 插件系统说明: extension/index.md
         - FTP服务 ftp-server: extension/ftp-server.md
-        - OSS对象存储 oss-store: extension/ftp-server.md
+        - OSS对象存储 oss-store: extension/oss-store.md
         - Minio对象存储 minio-store: extension/minio-store.md
         - mp3缩略图 mp3-thumbnail: extension/mp3-thumbnail.md
+        - OnlyOffice在线文档 only-office: extension/onlyoffice.md
+        - WebRTC应用 webrtc: extension/webrtc.md
+        - WebDAV文件共享 webdav: extension/webdav.md
         - Hadoop存储 hadoop-store: extension/hadoop-store.md
         - Samba文件共享 samba-store: extension/samba-store.md
         - SFTP存储 sftp-store: extension/sftp-store.md
