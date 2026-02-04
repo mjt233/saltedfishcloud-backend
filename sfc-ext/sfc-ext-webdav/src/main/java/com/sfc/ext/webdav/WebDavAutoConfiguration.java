@@ -9,6 +9,7 @@ import com.sfc.ext.webdav.model.property.WebDavProperty;
 import com.sfc.ext.webdav.core.WebDavManagerService;
 import com.sfc.ext.webdav.service.WebDavAuthService;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
+import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import io.milton.common.StreamUtils;
 import io.milton.http.http11.auth.DigestGenerator;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +37,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class WebDavAutoConfiguration implements ApplicationRunner {
 
     @Bean
-    public WebDavProperty webDavProperty(ConfigService configService) {
+    public WebDavProperty webDavProperty(ConfigService configService, HelloService helloService) {
         WebDavProperty property = new WebDavProperty();
         configService.bindPropertyEntity(property);
+        helloService.setFeature("webDavConfig", () -> property);
         return property;
     }
 

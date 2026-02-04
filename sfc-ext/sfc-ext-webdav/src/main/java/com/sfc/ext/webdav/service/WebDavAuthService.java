@@ -1,8 +1,5 @@
 package com.sfc.ext.webdav.service;
 
-import java.util.Objects;
-import java.util.Optional;
-
 import com.sfc.ext.webdav.dao.WebDavAuthRepo;
 import com.sfc.ext.webdav.enums.Constants;
 import com.sfc.ext.webdav.model.po.WebDavAuth;
@@ -11,20 +8,27 @@ import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.LockUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-
-import io.milton.http.HttpManager;
-import io.milton.http.Request;
 import io.milton.http.http11.auth.DigestGenerator;
 import io.milton.http.http11.auth.DigestResponse;
 import io.milton.servlet.MiltonServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Objects;
+import java.util.Optional;
+
 @RequiredArgsConstructor
 public class WebDavAuthService {
     private final WebDavAuthRepo webDavAuthRepo;
     private final DigestGenerator digestGenerator;
     private final UserService userService;
+
+    /**
+     * 检查是否已存在 WebDAV 认证配置
+     */
+    public boolean existAuth(Long uid) {
+        return webDavAuthRepo.findOneByUid(uid) != null;
+    }
 
     
     public User authenticate(String username, String password) {
