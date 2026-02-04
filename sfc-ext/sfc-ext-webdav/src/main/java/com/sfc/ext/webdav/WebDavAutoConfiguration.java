@@ -7,6 +7,7 @@ import com.sfc.ext.webdav.dao.WebDavAuthRepo;
 import com.sfc.ext.webdav.model.po.WebDavAuth;
 import com.sfc.ext.webdav.model.property.WebDavProperty;
 import com.sfc.ext.webdav.core.WebDavManagerService;
+import com.sfc.ext.webdav.model.property.WebDavPropertyVO;
 import com.sfc.ext.webdav.service.WebDavAuthService;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
@@ -40,7 +41,8 @@ public class WebDavAutoConfiguration implements ApplicationRunner {
     public WebDavProperty webDavProperty(ConfigService configService, HelloService helloService) {
         WebDavProperty property = new WebDavProperty();
         configService.bindPropertyEntity(property);
-        helloService.setFeature("webDavConfig", () -> property);
+        WebDavPropertyVO vo = new WebDavPropertyVO(property);
+        helloService.setFeature("webDavConfig", () -> vo);
         return property;
     }
 
@@ -66,7 +68,7 @@ public class WebDavAutoConfiguration implements ApplicationRunner {
                 throw new RuntimeException(e);
             }
         };
-        configService.addAfterSetListener(WebDavProperty::getServerPort, port -> resetTomcat.run());
+        configService.addAfterSetListener(WebDavProperty::getListenPort, port -> resetTomcat.run());
         configService.addAfterSetListener(WebDavProperty::getIsEnable, port -> resetTomcat.run());
         resetTomcat.run();
         return managerService;
