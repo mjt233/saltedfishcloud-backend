@@ -27,7 +27,7 @@ public abstract class CopyAndMoveHandler {
         this.reader = reader;
     }
 
-    public static CopyAndMoveHandler createByStoreHandler(DirectRawStoreHandler handler) {
+    public static CopyAndMoveHandler createByStoreHandler(DirectRawStoreHandler handler, CopyAndMoveProperty property) {
         return new CopyAndMoveHandler(handler) {
             @Override
             public boolean copyFile(String src, String dest) throws IOException {
@@ -41,7 +41,7 @@ public abstract class CopyAndMoveHandler {
 
             @Override
             protected boolean isMoveWithRecursion() {
-                return true;
+                return property.isMoveWithRecursion();
             }
 
             @Override
@@ -156,7 +156,6 @@ public abstract class CopyAndMoveHandler {
 
                     // 遇到文件，直接复制
                     // 仅当overwrite为true时才对已存在的同名文件进行覆盖存储
-                    copyFile(srcPath, dstPath);
                     if (!reader.exist(dstPath) || overwrite) {
                         if (isMove) {
                             moveFile(srcPath, dstPath);

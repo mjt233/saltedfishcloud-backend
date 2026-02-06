@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
@@ -51,10 +52,27 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
             basePath = ".";
         }
         if(!storeHandler.exist(basePath)) {
-            throw new IllegalArgumentException("[" + basePath + "]为无效路径");
+            throw new IllegalArgumentException("文件系统创建失败，无法验证路径有效：" + basePath);
         }
         this.storeHandler = storeHandler;
-        camHandler = CopyAndMoveHandler.createByStoreHandler(storeHandler);
+        camHandler = CopyAndMoveHandler.createByStoreHandler(storeHandler, CopyAndMoveProperty.builder().build());
+        this.basePath = basePath;
+    }
+
+    /**
+     * 将直接存储操作器封装为文件系统操作
+     * @param storeHandler  存储操作器
+     * @param basePath      统一给所有操作添加的路径前缀
+     */
+    public RawDiskFileSystem(DirectRawStoreHandler storeHandler, String basePath, CopyAndMoveProperty property) throws IOException {
+        if ("".equals(basePath)) {
+            basePath = ".";
+        }
+        if(!storeHandler.exist(basePath)) {
+            throw new IllegalArgumentException("文件系统创建失败，无法验证路径有效：" + basePath);
+        }
+        this.storeHandler = storeHandler;
+        camHandler = CopyAndMoveHandler.createByStoreHandler(storeHandler, property);
         this.basePath = basePath;
     }
 
@@ -135,7 +153,7 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
 
     @Override
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
-        camHandler.copy(StringUtils.appendPath(basePath, source, name), StringUtils.appendPath(basePath, target, name), overwrite);
+        camHandler.move(StringUtils.appendPath(basePath, source, name), StringUtils.appendPath(basePath, target, name), overwrite);
     }
 
     @Override

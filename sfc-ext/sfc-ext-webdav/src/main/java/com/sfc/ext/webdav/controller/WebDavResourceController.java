@@ -169,7 +169,7 @@ public class WebDavResourceController {
         long uid = source.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String sourcePath = PathUtils.getParentPath(source.getPath());
-        String targetPath = PathUtils.getParentPath(newParent.getPath());
+        String targetPath = newParent.getPath();
 
         String targetName = newName;
         
@@ -228,7 +228,7 @@ public class WebDavResourceController {
         }
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String sourcePath = PathUtils.getParentPath(source.getPath());
-        String targetPath = PathUtils.getParentPath(newParent.getPath());
+        String targetPath = newParent.getPath();
 
         // 如果目标目录不是当前目录，需要先检查是否存在同名文件
         String targetName = (newName != null && !newName.isEmpty()) ? newName : source.getName();

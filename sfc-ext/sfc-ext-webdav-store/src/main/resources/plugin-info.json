@@ -1,0 +1,13 @@
+{
+  "name": "webdav-store",
+  "alias": "WebDAV存储挂载",
+  "describe": "挂载第三方系统的WebDAV存储服务",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-server",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^",
+  "autoLoad": []
+}

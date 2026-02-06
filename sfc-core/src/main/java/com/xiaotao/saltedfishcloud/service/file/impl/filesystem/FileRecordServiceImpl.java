@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.utils.DBUtils;
 import com.xiaotao.saltedfishcloud.utils.LockUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -19,6 +20,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.NoSuchFileException;
@@ -370,7 +372,7 @@ public class FileRecordServiceImpl implements FileRecordService {
         }
 
         String lockKey = "getAndMkdirs:" + uid + ":" + path;
-        return LockUtils.execute(lockKey, () -> {
+        return LockUtils.execute(lockKey, () -> DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRES_NEW, () -> {
             int interval = 200;
             int maxTryCount = 60 * 1000 / interval;
             int tryCount = 0;
@@ -394,7 +396,7 @@ public class FileRecordServiceImpl implements FileRecordService {
             }
             log.error("getAndMkdirs并发创建失败: uid={}, path={}",  uid, path);
             throw new RuntimeException("getAndMkdir concurrent handle error");
-        });
+        }));
     }
 
 

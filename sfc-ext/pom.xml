@@ -40,6 +40,7 @@
         <module>sfc-ext-apk-parser</module>
         <module>sfc-ext-webrtc</module>
         <module>sfc-ext-webdav</module>
+        <module>sfc-ext-webdav-store</module>
     </modules>
 
 

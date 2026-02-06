@@ -1,5 +1,13 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import org.jetbrains.annotations.NotNull;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -51,5 +59,50 @@ public class DBUtils {
         boolean ret = res.next();
         res.close();
         return !ret;
+    }
+
+    /**
+     * 在新事务中执行Runnable
+     * @param propagationBehavior 事务传播行为，使用TransactionDefinition中的常量如PROPAGATION_REQUIRED等
+     * @param runnable 要执行的任务
+     * @see TransactionDefinition
+     */
+    public static void executeWithTransactional(int propagationBehavior, Runnable runnable) {
+        TransactionTemplate transactionTemplate = SpringContextUtils.getContext().getBean(TransactionTemplate.class);
+        DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+        def.setPropagationBehavior(propagationBehavior);
+        transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+            @Override
+            protected void doInTransactionWithoutResult(@NotNull TransactionStatus status) {
+                runnable.run();
+            }
+        });
+    }
+
+    /**
+     * 在新事务中执行Callable并返回结果
+     * @param propagationBehavior 事务传播行为，使用TransactionDefinition中的常量如PROPAGATION_REQUIRED等
+     * @param callable 要执行的任务，支持返回值
+     * @param <T> 返回值类型
+     * @return 任务执行结果
+     */
+    public static <T> T executeWithTransactional(int propagationBehavior, java.util.concurrent.Callable<T> callable) {
+        TransactionTemplate transactionTemplate = SpringContextUtils.getContext().getBean(TransactionTemplate.class);
+        DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+        def.setPropagationBehavior(propagationBehavior);
+        return transactionTemplate.execute(new TransactionCallback<T>() {
+            @Override
+            public T doInTransaction(@NotNull TransactionStatus status) {
+                try {
+                    return callable.call();
+                } catch (Exception e) {
+                    if (e instanceof RuntimeException) {
+                        throw (RuntimeException) e;
+                    } else {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        });
     }
 }
