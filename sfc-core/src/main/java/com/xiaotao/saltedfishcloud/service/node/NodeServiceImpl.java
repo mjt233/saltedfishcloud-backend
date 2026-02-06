@@ -207,7 +207,6 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public String getNodeIdByPathNoEx(long uid, String path) {
         Deque<NodeInfo> list = this.getPathNodeByPathNoEx(uid, path);
         if (list == null) {
