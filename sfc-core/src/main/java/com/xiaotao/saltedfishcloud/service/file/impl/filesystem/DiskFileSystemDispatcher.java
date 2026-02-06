@@ -281,9 +281,9 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
 
         FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, sourceDir);
         FileSystemMatchResult targetMatchResult = matchFileSystem(targetUid, targetDir);
-        if (Objects.equals(sourceMatchResult.fileSystem, mainFileSystem) && Objects.equals(targetMatchResult.fileSystem, mainFileSystem)) {
+        if (Objects.equals(sourceMatchResult.fileSystem, targetMatchResult.fileSystem)) {
             log.debug("{}相同文件系统内copy: {}/{} -> {}/{}", LOG_PREFIX, sourceDir, sourceName, targetDir, targetName);
-            sourceMatchResult.fileSystem.copy(uid, sourceDir, targetDir, targetUid, sourceName, targetName, overwrite);
+            sourceMatchResult.fileSystem.copy(uid, sourceMatchResult.resolvedPath, targetMatchResult.resolvedPath, targetUid, sourceName, targetName, overwrite);
             return;
         }
 
@@ -432,7 +432,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         }
 
         if (Objects.equals(sourceMatchResult.fileSystem, targetMatchResult.fileSystem)) {
-            sourceMatchResult.fileSystem.move(uid, source, target, name, overwrite);
+            sourceMatchResult.fileSystem.move(uid, sourceMatchResult.resolvedPath, targetMatchResult.resolvedPath, name, overwrite);
         } else {
             copy(uid, source, target, uid, name, name, true);
             deleteFile(uid, source, Collections.singletonList(name));
