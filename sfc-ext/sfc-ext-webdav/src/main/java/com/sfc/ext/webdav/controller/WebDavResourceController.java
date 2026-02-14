@@ -1,10 +1,7 @@
 package com.sfc.ext.webdav.controller;
 
 import com.sfc.ext.webdav.enums.ResourceArea;
-import com.sfc.ext.webdav.model.resource.WebDavDir;
-import com.sfc.ext.webdav.model.resource.WebDavFile;
-import com.sfc.ext.webdav.model.resource.WebDavItem;
-import com.sfc.ext.webdav.model.resource.WebDavRoot;
+import com.sfc.ext.webdav.model.resource.*;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
@@ -90,12 +87,40 @@ public class WebDavResourceController {
                 .toList();
     }
 
+    @ChildOf
+    public WebDavItem findChild(WebDavDir parent, String name) {
+        // 访问私人网盘时，需要确保当前会话有一个关联的用户验证信息，如果没有则返回一个未验证的资源，让 SecurityManager 直接拒绝请求
+        // 以便让客户端发送用户验证信息
+        if (parent.getResourceArea() == PRIVATE) {
+            User user = getCurUser(parent.getUid());
+            if (user == null) {
+                return UnAuthoriseWebDavItem.get(parent, name);
+            }
+        }
+        return null;
+    }
+
+    @ChildOf
+    public WebDavItem findChild(UnAuthoriseWebDavItem parent, String name) {
+        return UnAuthoriseWebDavItem.get(parent, name);
+    }
+
     @ChildrenOf
     public List<WebDavItem> getFileList(WebDavDir f) throws IOException {
         boolean isPublic = f.getResourceArea() == PUBLIC;
         String requirePath = f.getPath();
         try {
-            Long uid = isPublic ? User.PUBLIC_USER_ID : getCurUser(f.getUid()).getId();
+            Long uid;
+            if (isPublic) {
+                uid = User.PUBLIC_USER_ID;
+            } else {
+                User user = getCurUser(f.getUid());
+                if (user == null) {
+                    return Collections.singletonList(UnAuthoriseWebDavItem.get(f, ""));
+                } else {
+                    uid = user.getId();
+                }
+            }
             return getDiskFileList(uid, requirePath);
         } catch (Exception e) {
             log.error("{}uid: {} path: {} 获取文件列表失败", LOG_PREFIX, f.getUid(), requirePath, e);
