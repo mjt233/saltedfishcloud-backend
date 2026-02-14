@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.sfc.ext.oss.OSSProperty;
 import com.sfc.ext.oss.util.OSSPathUtils;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -64,7 +65,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
 
     @Override
     public boolean isEmptyDirectory(String path) throws IOException {
-        return listFiles(path).size() == 0;
+        return listFiles(path).isEmpty();
     }
 
     @Override
@@ -325,6 +326,11 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
         copy(src, dest);
         delete(src);
         return true;
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
@@ -224,5 +225,10 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
         if (storeHandler instanceof Closeable) {
             ((Closeable) storeHandler).close();
         }
+    }
+
+    @Override
+    public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        storeHandler.updateTime(StringUtils.appendPath(basePath, path), names, attribute);
     }
 }

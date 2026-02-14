@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.*;
@@ -40,9 +41,13 @@ import java.util.stream.Collectors;
 import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PRIVATE;
 import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PUBLIC;
 
+/**
+ * 默认的文件系统实现，采用 文件元数据节点记录服务 + 文件内容存储服务 结合的结构
+ */
 @Slf4j
 @Component
 public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, InitializingBean {
+    private final static String LOG_PREFIX = "[默认文件系统]";
 
     @Autowired
     private StoreServiceFactory storeServiceFactory;
@@ -78,6 +83,25 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Override
     public void afterPropertiesSet() throws Exception {
         diskFileSystemManager.setMainFileSystem(this);
+    }
+
+    @Override
+    public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        StoreService storeService = storeServiceFactory.getService();
+        NodeInfo node = nodeService.getNodeByPath(uid, path);
+        if (node == null) {
+            log.warn("{} 找不到路径{}:{}对应的节点，无法修改文件日期信息", LOG_PREFIX, uid, path);
+            return;
+        }
+        List<FileInfo> fileInfoList = fileRecordService.findByUidAndNodeId(uid, node.getId(), names);
+        fileInfoList.forEach(f -> {
+            if (attribute.apply(f)) {
+                fileRecordService.save(f);
+            }
+        });
+        if (!storeService.isUnique()) {
+            storeService.updateTime(uid, path, names, attribute);
+        }
     }
 
     /**

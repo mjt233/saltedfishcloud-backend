@@ -11,7 +11,6 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import io.milton.http.http11.auth.DigestGenerator;
 import io.milton.http.http11.auth.DigestResponse;
 import io.milton.servlet.MiltonServlet;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Objects;
@@ -36,7 +35,6 @@ public class WebDavAuthService {
                 .filter(u -> Objects.equals(u.getPassword(), SecureUtils.getPassswd(password)))
                 .orElse(null);
         Optional.ofNullable(MiltonServlet.request())
-                .map(HttpServletRequest::getSession)
                 .ifPresent(s -> s.setAttribute("userObj", user));
         return user;
     }
@@ -47,7 +45,6 @@ public class WebDavAuthService {
                 .map(auth -> userService.getUserById(auth.getUid()))
                 .orElse(null);
         Optional.ofNullable(MiltonServlet.request())
-                .map(HttpServletRequest::getSession)
                 .ifPresent(s -> s.setAttribute("userObj", user));
         return user;
     }

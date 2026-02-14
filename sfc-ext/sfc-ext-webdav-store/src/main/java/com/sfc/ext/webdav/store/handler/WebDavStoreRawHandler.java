@@ -8,22 +8,27 @@ import com.sfc.archive.constant.RejectRegex;
 import com.sfc.ext.webdav.store.WebDavFileResource;
 import com.sfc.ext.webdav.store.model.WebDavClientProperty;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 
+import javax.xml.namespace.QName;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.regex.Pattern;
 
+@Slf4j
 public class WebDavStoreRawHandler implements DirectRawStoreHandler {
     private final WebDavClientProperty property;
     private final Sardine sardine;
@@ -119,9 +124,10 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler {
 
     /**
      * 调用sardine的原始list方法，并处理文件不存在异常，文件不存在直接返回null而不是抛出异常
+     *
      * @param path  查找的路径
      * @param depth The depth to look at (use 0 for single resource, 1 for directory listing,
-     * 	               -1 for infinite recursion)
+     *              -1 for infinite recursion)
      * @return
      * @throws IOException
      */
@@ -166,12 +172,23 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler {
     public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
         checkReadOnly();
         String encodedFileName = encodePath(fileInfo.getName());
+        String mTime = Optional.ofNullable(fileInfo.getMtime())
+                .or(() -> Optional.ofNullable(fileInfo.getCtime()))
+                .or(() -> Optional.ofNullable(fileInfo.getUpdateAt()).map(Date::getTime))
+                .or(() -> Optional.ofNullable(fileInfo.getCreateAt()).map(Date::getTime))
+                .map(t -> String.valueOf(t / 1000))
+                .orElseGet(() -> String.valueOf(System.currentTimeMillis() / 1000));
+
         sardine.put(
                 getFullPath(path) + StringUtils.appendPath("/", encodedFileName),
-                inputStream
+                inputStream,
+                // 兼容 NextCloud 的文件修改日期header
+                Map.of("X-OC-MTime", mTime)
         );
         return size;
     }
+
+
 
     @Override
     public OutputStream newOutputStream(String path) throws IOException {
@@ -185,9 +202,10 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler {
         Semaphore semaphore = new Semaphore(1);
         try {
             semaphore.acquire(1);
-        } catch (InterruptedException ignore) { }
+        } catch (InterruptedException ignore) {
+        }
         new Thread(() -> {
-            try (pipedInputStream){
+            try (pipedInputStream) {
                 store(fileInfo, parentPath, -1, pipedInputStream);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -197,6 +215,7 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler {
         }).start();
         return new FilterOutputStream(pipedOutputStream) {
             private volatile boolean closed = false;
+
             @Override
             public void close() throws IOException {
                 if (closed) {
@@ -209,7 +228,8 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler {
                     super.close();
                     try {
                         semaphore.acquire(1);
-                    } catch (InterruptedException ignore) { }
+                    } catch (InterruptedException ignore) {
+                    }
                     closed = true;
                 }
             }
@@ -241,5 +261,54 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler {
         checkReadOnly();
         sardine.move(getFullPath(src), getFullPath(dest), true);
         return true;
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        checkReadOnly();
+
+        if (names == null || names.isEmpty() || attribute == null) {
+            return;
+        }
+
+        // 预转换时间，避免在循环中重复格式化
+        String mTimeStr = attribute.getModifyTime() != null ? formatToWin32Time(attribute.getModifyTime()) : null;
+        String cTimeStr = attribute.getCreateTime() != null ? formatToWin32Time(attribute.getCreateTime()) : null;
+
+        // WebDAV协议中，通常使用PROPPATCH方法来设置文件属性
+        // Sardine库提供了patch方法来实现这一点
+        // 模拟 Windows WebDAV 客户端行为
+        for (String name : names) {
+            String fullPath = StringUtils.appendPath(path, name);
+            String encodedPath = getFullPath(fullPath);
+            // 构建要设置的属性
+            Map<QName, String> patchData = new HashMap<>();
+
+            if (attribute.getModifyTime() != null) {
+                patchData.put(new QName("urn:schemas-microsoft-com:", "Win32LastModifiedTime"), mTimeStr);
+            }
+
+            if (attribute.getCreateTime() != null) {
+                patchData.put(new QName("urn:schemas-microsoft-com:", "Win32CreationTime"), cTimeStr);
+            }
+
+            // 执行属性更新
+            if (!patchData.isEmpty()) {
+                sardine.patch(encodedPath, patchData);
+            }
+        }
+    }
+
+    public String formatToWin32Time(Date date) {
+        if (date == null) return null;
+
+        // 1. 将旧版 Date 转换为现代的 OffsetDateTime，并锁定为 GMT/UTC 时区
+        OffsetDateTime gmtTime = date.toInstant()
+                .atZone(ZoneId.of("GMT"))
+                .toOffsetDateTime();
+
+        // 2. 使用内置的 RFC_1123_DATE_TIME 格式化器
+        // 注意：必须指定 Locale.US，否则星期和月份会被格式化为中文（如“周一”）导致服务器无法识别
+        return gmtTime.format(DateTimeFormatter.RFC_1123_DATE_TIME.withLocale(Locale.US));
     }
 }

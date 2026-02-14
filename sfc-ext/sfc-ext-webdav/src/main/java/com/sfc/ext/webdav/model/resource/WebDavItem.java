@@ -28,6 +28,10 @@ public class WebDavItem {
 
     private ResourceArea resourceArea;
 
+    /**
+     * 文件在WebDAV文件系统中，排除掉资源区域前缀后的完整网盘路径。<br>
+     * 如：WebDAV路径/private/backups/photos 对应的网盘路径为 /backups/photos，则path也为 /backups/photos
+     */
     private String path;
 
     /**
@@ -47,9 +51,10 @@ public class WebDavItem {
 
     /**
      * 从一个错误消息构造一个虚拟的文件
-     * @param errorMessage  错误消息
-     * @param uid   访问的目标用户 id
-     * @param basePath 文件所在路径（不包括自己）
+     *
+     * @param errorMessage 错误消息
+     * @param uid          访问的目标用户 id
+     * @param basePath     文件所在路径（不包括自己）
      */
     public static WebDavItem fromError(String errorMessage, Long uid, String basePath) {
         WebDavFile file = new WebDavFile();
@@ -74,15 +79,30 @@ public class WebDavItem {
 
     /**
      * 从一个网盘文件信息 FileInfo 对象中构造
-     * @param fileInfo  网盘文件信息
-     * @param basePath  文件的所在目录（不包括本身）
+     *
+     * @param fileInfo 网盘文件信息
+     * @param basePath 文件的所在目录（不包括本身）
      */
     public static WebDavItem fromFileInfo(FileInfo fileInfo, String basePath) {
         WebDavItem item = fileInfo.isDir() ? new WebDavDir() : new WebDavFile();
         item.setName(fileInfo.getName());
         item.setUid(fileInfo.getUid());
-        item.setModifiedDate(Optional.ofNullable(fileInfo.getUpdateAt()).or(() -> Optional.ofNullable(fileInfo.getCreateAt())).orElse(new Date()));
-        item.setCreateDate(Optional.ofNullable(fileInfo.getCreateAt()).or(() -> Optional.ofNullable(fileInfo.getUpdateAt())).orElse(new Date()));
+        item.setModifiedDate(
+                Optional.ofNullable(fileInfo.getMtime())
+                        .or(() -> Optional.ofNullable(fileInfo.getCtime()))
+                        .map(Date::new)
+                        .or(() -> Optional.ofNullable(fileInfo.getUpdateAt()))
+                        .or(() -> Optional.ofNullable(fileInfo.getCreateAt()))
+                        .orElse(new Date())
+        );
+        item.setCreateDate(
+                Optional.ofNullable(fileInfo.getCtime())
+                        .or(() -> Optional.ofNullable(fileInfo.getMtime()))
+                        .map(Date::new)
+                        .or(() -> Optional.ofNullable(fileInfo.getCreateAt()))
+                        .or(() -> Optional.ofNullable(fileInfo.getUpdateAt()))
+                        .orElse(new Date())
+        );
         item.setPath(StringUtils.appendPath(basePath, fileInfo.getName()));
         item.setResourceArea(fileInfo.getUid() == User.PUBLIC_USER_ID ? ResourceArea.PUBLIC : ResourceArea.PRIVATE);
         if (item instanceof WebDavFile f) {

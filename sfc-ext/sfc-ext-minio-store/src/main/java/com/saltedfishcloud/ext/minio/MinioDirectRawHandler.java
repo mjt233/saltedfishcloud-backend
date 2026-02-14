@@ -1,6 +1,7 @@
 package com.saltedfishcloud.ext.minio;
 
 import com.saltedfishcloud.ext.minio.utils.MinioUtils;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -320,5 +321,10 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
     @Override
     public boolean mkdirs(String path) throws IOException {
         return mkdir(path);
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+
     }
 }

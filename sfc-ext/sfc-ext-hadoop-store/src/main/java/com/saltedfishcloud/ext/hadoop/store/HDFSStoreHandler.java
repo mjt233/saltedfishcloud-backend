@@ -2,6 +2,7 @@ package com.saltedfishcloud.ext.hadoop.store;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -16,6 +17,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandler, Closeable {
     private final FileSystem fs;
@@ -93,5 +95,14 @@ public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandle
     @Override
     public boolean move(String src, String dest) throws IOException {
         return fs.rename(new Path(src), new Path(dest));
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        fs.setTimes(
+                new Path(path),
+                attribute.getModifyTime() == null ? -1 : attribute.getModifyTime().getTime(),
+                attribute.getCreateTime() == null ? -1 : attribute.getCreateTime().getTime()
+        );
     }
 }

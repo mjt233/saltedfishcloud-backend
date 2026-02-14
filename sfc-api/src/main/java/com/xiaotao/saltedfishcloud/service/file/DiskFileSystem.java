@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.jetbrains.annotations.Nullable;
@@ -237,6 +238,15 @@ public interface DiskFileSystem {
      * @param newName 新文件名
      */
     void rename(long uid, String path, String name, String newName) throws IOException;
+
+    /**
+     * 更新文件的时间信息。注意并非所有文件系统都支持此操作，调用可能不生效。
+     * @param uid   用户id
+     * @param path  文件所在的父目录
+     * @param names 文件名列表
+     * @param attribute 时间信息
+     */
+    void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException;
 
     /**
      * 获取文件系统状态

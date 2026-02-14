@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
@@ -14,6 +15,7 @@ import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
@@ -556,7 +558,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                 matchResult.mountPoint.setName(newName);
                 mountPointService.saveMountPoint(matchResult.mountPoint);
             } catch (FileSystemParameterException e) {
-                e.printStackTrace();
+                log.error("{}重命名文件时发生错误", LOG_PREFIX, e);
                 throw new JsonException(e.getMessage());
             }
         } else {
@@ -568,8 +570,25 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                 matchResult.fileSystem.rename(uid, matchResult.resolvedPath, name, newName);
             }
         }
+    }
 
-
+    @Override
+    public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        for (String name : names) {
+            String filePath = StringUtils.appendPath(path, name);
+            FileSystemMatchResult r = matchFileSystem(uid, filePath);
+            r.fileSystem.updateTime(uid, PathUtils.getParentPath(r.resolvedPath), names, attribute);
+            if (r.isProxyStoreRecordMountPoint()) {
+                FileInfo fileInfo = fileRecordService.getFileInfo(uid, path, name);
+                if (fileInfo == null) {
+                    log.warn("{}文件记录不存在，忽略日期修改操作：{}", LOG_PREFIX, filePath);
+                    continue;
+                }
+                if (attribute.apply(fileInfo)) {
+                    fileRecordService.save(fileInfo);
+                }
+            }
+        }
     }
 
     @Override

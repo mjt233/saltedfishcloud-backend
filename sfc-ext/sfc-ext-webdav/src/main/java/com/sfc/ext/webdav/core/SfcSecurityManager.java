@@ -3,6 +3,7 @@ package com.sfc.ext.webdav.core;
 import com.sfc.ext.webdav.enums.Constants;
 import com.sfc.ext.webdav.enums.ResourceArea;
 import com.sfc.ext.webdav.model.property.WebDavProperty;
+import com.sfc.ext.webdav.model.resource.UnAuthoriseWebDavItem;
 import com.sfc.ext.webdav.model.resource.WebDavItem;
 import com.sfc.ext.webdav.model.resource.WebDavRoot;
 import com.sfc.ext.webdav.service.WebDavAuthService;
@@ -75,6 +76,9 @@ public class SfcSecurityManager implements SecurityManager {
             return false;
         }
         Object source = r.getSource();
+        if (source instanceof UnAuthoriseWebDavItem || (source instanceof WebDavItem i && i.getResourceArea() == ResourceArea.PRIVATE && i.getUid() == null)) {
+            return false;
+        }
 
         // 针对 Windows 处理，不允许匿名登录，强制要求输入用户名和密码以确保有权限访问private目录
         // 匿名登录情况下访问private触发401会导致整个Windows拒绝访问整个 WebDAV 服务，再也无法访问该WebDAV服务
