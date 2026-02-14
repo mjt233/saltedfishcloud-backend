@@ -93,9 +93,9 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     public List<FileInfo> findByUidAndNodeId(Long uid, String nodeId,@Nullable Collection<String> nameList) {
         if (nameList == null || nameList.isEmpty()) {
-            return fileInfoRepo.findFileInfoByNames(uid, nameList, nodeId);
-        } else {
             return findByUidAndNodeId(uid, nodeId);
+        } else {
+            return fileInfoRepo.findFileInfoByNames(uid, nameList, nodeId);
         }
     }
 

@@ -1,10 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.file.store;
 
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 /**
  * 提供存储系统的资源创建与删除能力
@@ -70,4 +72,13 @@ public interface StoreWriter {
      * @param dest  目标路径
      */
     boolean move(String src, String dest) throws IOException;
+
+
+    /**
+     * 更新文件的时间信息。注意并非所有文件系统都支持此操作，调用可能不生效
+     * @param path  文件所在的父目录
+     * @param names 文件名列表
+     * @param attribute 时间信息
+     */
+    void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException;
 }

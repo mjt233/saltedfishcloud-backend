@@ -27,6 +27,8 @@ public class FileSystemStatus {
 
     /**
      * 属性所属区域
+     * @see #AREA_PRIVATE
+     * @see #AREA_PUBLIC
      */
     private String area;
 

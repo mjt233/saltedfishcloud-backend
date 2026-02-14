@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.springframework.core.io.Resource;
@@ -191,4 +192,14 @@ public interface StoreService {
     default long delete(long uid, String path, Collection<String> files) throws IOException {
         throw new UnsupportedOperationException("不支持delete操作");
     }
+
+
+    /**
+     * 更新文件的时间信息。注意并非所有文件系统都支持此操作，调用可能不生效。
+     * @param uid   用户id
+     * @param path  文件所在的父目录
+     * @param names 文件名列表
+     * @param attribute 时间信息
+     */
+    void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException;
 }

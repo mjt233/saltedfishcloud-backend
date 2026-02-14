@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -360,5 +361,11 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     @Override
     public List<FileSystemStatus> getStatus() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        String parentPath = StringUtils.appendPath(getUserFileRoot(uid), path);
+        this.handler.updateTime(parentPath, names, attribute);
     }
 }

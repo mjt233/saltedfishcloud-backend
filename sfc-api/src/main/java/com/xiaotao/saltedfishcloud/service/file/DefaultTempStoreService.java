@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -95,6 +96,15 @@ public class DefaultTempStoreService implements TempStoreService {
         return handler.move(
                 StringUtils.appendPath(tempRootDir, src),
                 StringUtils.appendPath(tempRootDir, dest)
+        );
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        handler.updateTime(
+                StringUtils.appendPath(tempRootDir, path),
+                names,
+                attribute
         );
     }
 }
