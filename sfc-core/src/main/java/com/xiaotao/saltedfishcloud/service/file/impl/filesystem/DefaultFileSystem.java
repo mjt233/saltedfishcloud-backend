@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
@@ -17,6 +18,7 @@ import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.redisson.api.RLock;
@@ -437,9 +439,42 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         helloService.appendFeatureDetail(FeatureName.EXTRACT_ARCHIVE_TYPE, "zip");
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        return obj == this;
+    /**
+     * 文件数量和用户使用量大小的统计会查询数据库，文件数量较多时会严重影响性能，因此使用懒加载，只有在用到的时候再去统计
+     * todo 考虑使用缓存，完善用户配额统计和限制功能
+     */
+    @RequiredArgsConstructor
+    private static class LazyFileSystemStatus extends FileSystemStatus {
+        @JsonIgnore
+        private transient final FileAnalyseDao fileAnalyseDao;
+
+        private boolean isPrivate() {
+            return AREA_PRIVATE.equals(this.getArea());
+        }
+
+        @Override
+        public Long getFileCount() {
+            if (super.getFileCount() == null) {
+                this.setFileCount(isPrivate() ? fileAnalyseDao.getUserFileCount() : fileAnalyseDao.getPublicFileCount());
+            }
+            return super.getFileCount();
+        }
+
+        @Override
+        public Long getDirCount() {
+            if (super.getDirCount() == null) {
+                this.setDirCount(isPrivate() ? fileAnalyseDao.getUserDirCount() : fileAnalyseDao.getPublicDirCount());
+            }
+            return super.getDirCount();
+        }
+
+        @Override
+        public Long getSysUsed() {
+            if (super.getSysUsed() == null) {
+                this.setSysUsed(isPrivate() ? fileAnalyseDao.getUserTotalSize() : fileAnalyseDao.getPublicTotalSize());
+            }
+            return super.getSysUsed();
+        }
     }
 
     @Override
@@ -456,16 +491,14 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         areaMap.putIfAbsent(AREA_PUBLIC, FileSystemStatus.builder().area(AREA_PUBLIC).build());
 
         FileSystemStatus publicStatus = areaMap.get(AREA_PUBLIC);
-        publicStatus.setFileCount(fileAnalyseDao.getPublicFileCount());
-        publicStatus.setDirCount(fileAnalyseDao.getPublicDirCount());
-        publicStatus.setSysUsed(fileAnalyseDao.getPublicTotalSize());
+        LazyFileSystemStatus lazyPublicStatus = new LazyFileSystemStatus(fileAnalyseDao);
+        BeanUtils.copyProperties(publicStatus, lazyPublicStatus);
 
 
         FileSystemStatus privateStatus = areaMap.get(FileSystemStatus.AREA_PRIVATE);
-        privateStatus.setFileCount(fileAnalyseDao.getUserFileCount());
-        privateStatus.setDirCount(fileAnalyseDao.getUserDirCount());
-        privateStatus.setSysUsed(fileAnalyseDao.getUserTotalSize());
+        LazyFileSystemStatus lazyPrivateStatus = new LazyFileSystemStatus(fileAnalyseDao);
+        BeanUtils.copyProperties(privateStatus, lazyPrivateStatus);
 
-        return Arrays.asList(publicStatus, privateStatus);
+        return Arrays.asList(lazyPublicStatus, lazyPrivateStatus);
     }
 }

@@ -146,6 +146,14 @@ public class WebDavResourceController {
         return getFileItemFromPath(uid, parent.getPath(), newName);
     }
 
+    @MakeCollection
+    public WebDavItem rootMkdir(WebDavRoot root, String newName) {
+        if (newName.equals(PUBLIC.getName()) || newName.equals(PRIVATE.getName())) {
+            return getRootList(root).stream().filter(r -> r.getName().equals(PRIVATE.getName())).findAny().orElse(null);
+        }
+        return null;
+    }
+
     @PutChild
     public WebDavItem upload(WebDavDir parent, String name, InputStream in, Long contentLength) throws IOException {
         long uid = parent.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
@@ -294,7 +302,7 @@ public class WebDavResourceController {
      */
     private User getCurUser(@Nullable Long uid) {
         HttpServletRequest servletRequest = MiltonServlet.request();
-        Object userObj = servletRequest.getSession().getAttribute("userObj");
+        Object userObj = servletRequest.getAttribute("userObj");
         if (userObj != null) {
             return (User) userObj;
         }
@@ -304,7 +312,7 @@ public class WebDavResourceController {
                     Object tag = authorization.getTag();
                     if (tag == null) {
                         tag = userServiceLazy.get().getUserByAccount(authorization.getUser());
-                        servletRequest.getSession().setAttribute("userObj", tag);
+                        servletRequest.setAttribute("userObj", tag);
                     }
                     return tag;
                 })
@@ -312,7 +320,7 @@ public class WebDavResourceController {
                 .orElse(null);
         if (user == null && uid != null) {
             user = userServiceLazy.get().getUserById(uid);
-            servletRequest.getSession().setAttribute("userObj", user);
+            servletRequest.setAttribute("userObj", user);
         }
         if (user == null) {
             log.warn("{} 无法获取到当前登录用户", LOG_PREFIX);
