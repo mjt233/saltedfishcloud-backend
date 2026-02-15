@@ -146,6 +146,14 @@ public class WebDavResourceController {
         return getFileItemFromPath(uid, parent.getPath(), newName);
     }
 
+    @MakeCollection
+    public WebDavItem rootMkdir(WebDavRoot root, String newName) {
+        if (newName.equals(PUBLIC.getName()) || newName.equals(PRIVATE.getName())) {
+            return getRootList(root).stream().filter(r -> r.getName().equals(PRIVATE.getName())).findAny().orElse(null);
+        }
+        return null;
+    }
+
     @PutChild
     public WebDavItem upload(WebDavDir parent, String name, InputStream in, Long contentLength) throws IOException {
         long uid = parent.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
