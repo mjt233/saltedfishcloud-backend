@@ -2,10 +2,7 @@ package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 存储整个目录树的结构，通常使用{@link com.xiaotao.saltedfishcloud.service.file.FileRecordService#getFullTree(long)}获取。<br>
@@ -42,7 +39,7 @@ public class NodeTree implements Iterable<FileInfo> {
         if (id.length() < 32) {
             return "/";
         }
-        LinkedList<String> paths = new LinkedList<>();
+        Deque<String> paths = new ArrayDeque<>();
         StringBuilder sb = new StringBuilder();
         FileInfo t;
         while ( !(id.length() < 32) && (t = payload.get(id)) != null ) {

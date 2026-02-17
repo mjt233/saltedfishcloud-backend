@@ -1,59 +1,52 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
-import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.FileRecordServiceImpl;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 
-import jakarta.annotation.Resource;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
-@RunWith(SpringRunner.class)
+@ExtendWith(MockitoExtension.class)
 class NodeTreeTest {
-    @Resource
-    private NodeService nodeService;
-    @Resource
-    private DiskFileSystemManager fileService;
+
+    @Mock
+    private FileInfoRepo fileInfoRepo;
+
+    @InjectMocks
+    private FileRecordServiceImpl fileRecordService;
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testGetNode() throws IOException {
-        String targetPath = "/nodetest/folder2/deepfolder";
-
-        DiskFileSystem fileService = this.fileService.getMainFileSystem();
-        // 初始化环境
-        fileService.mkdir(0, "/", "nodetest");
-        fileService.mkdir(0, "/nodetest", "folder2");
-        fileService.mkdir(0, "/nodetest/folder2", "deepfolder");
-
-        // 获取目标路径的节点ID
-        String node = nodeService.getNodeIdByPath(0, targetPath);
-        NodeTree fullTree = nodeService.getFullTree(0);
-        String res = fullTree.getPath(node);
-
-        // 清理环境
-        fileService.deleteFile(0, "/", Collections.singletonList("nodetest"));
-
-        System.out.println("从节点树取得的路径：" + res);
-        assertEquals(targetPath, res);
-
-    }
-
-    @Test
-    public void testIterator() {
-
-        NodeTree tree = nodeService.getFullTree(0);
-        for (FileInfo nodeInfo : tree) {
-            System.out.print(nodeInfo.getName() + " ");
+        String id1 = SecureUtils.getUUID();
+        String id2 = SecureUtils.getUUID();
+        String id3 = SecureUtils.getUUID();
+         when(fileInfoRepo.findAll(Mockito.any(Specification.class))).thenReturn(List.of(
+                 new FileInfo().setNode("").setName("nodeTest").setMd5(id1),
+                 new FileInfo().setNode(id1).setName("folder2").setMd5(id2),
+                 new FileInfo().setNode(id2).setName("deepFolder").setMd5(id3)
+         ));
+        NodeTree t = fileRecordService.getFullTree(0);
+        int count = 0;
+        for (FileInfo fileInfo : t) {
+            count++;
         }
-        System.out.println();
-        tree.forEach(System.out::println);
+        assertEquals(4, count);
+        assertEquals("folder2", t.getNode(id2).getName());
+        assertEquals("/nodeTest/folder2/deepFolder", t.getPath(id3));
+        assertEquals("/", t.getPath("0"));
+
     }
 }
