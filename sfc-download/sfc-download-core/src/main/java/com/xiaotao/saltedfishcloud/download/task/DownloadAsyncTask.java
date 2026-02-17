@@ -2,16 +2,18 @@ package com.xiaotao.saltedfishcloud.download.task;
 
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.download.IgnoreSSLHttpRequestFactory;
 import com.xiaotao.saltedfishcloud.download.model.DownloadProgressRecord;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Setter;
@@ -25,7 +27,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Proxy;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 public class DownloadAsyncTask implements AsyncTask {
@@ -75,7 +76,7 @@ public class DownloadAsyncTask implements AsyncTask {
     private ProxyInfoService proxyInfoService;
 
     @Setter
-    private NodeService nodeService;
+    private FileRecordService fileRecordService;
 
     @Setter
     private DiskFileSystem diskFileSystem;
@@ -162,12 +163,9 @@ public class DownloadAsyncTask implements AsyncTask {
     private void validPath() {
 
         // 校验参数合法性
-        try {
-            logger.info("检查路径" + params.uid + " - " + params.savePath);
-            nodeService.getPathNodeByPath(params.uid, params.savePath);
-        } catch (NoSuchFileException e) {
-            throw new IllegalArgumentException("保存路径不存在" + params.savePath);
-        }
+        logger.info("检查路径" + params.uid + " - " + params.savePath);
+        fileRecordService.getByPath(params.uid, params.savePath)
+                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND.getCode(), "无效的保存路径" + params.savePath));
     }
 
     /**

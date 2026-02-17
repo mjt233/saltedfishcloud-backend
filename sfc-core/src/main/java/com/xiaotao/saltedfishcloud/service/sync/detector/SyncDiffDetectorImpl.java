@@ -1,21 +1,17 @@
 package com.xiaotao.saltedfishcloud.service.sync.detector;
 
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.file.StoreService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.node.NodeTree;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 import com.xiaotao.saltedfishcloud.service.sync.model.SyncDiffResultDefaultImpl;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SetUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,12 +19,13 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class SyncDiffDetectorImpl implements SyncDiffDetector {
-    @Resource
-    private NodeService nodeService;
+
     @Resource
     private DiskFileSystemManager fileService;
     @Resource
     private StoreServiceFactory storeServiceFactory;
+    @Resource
+    private FileRecordService fileRecordService;
 
     /**
      * 通过存储服务获取用户的完整目录和文件
@@ -68,11 +65,11 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
      */
     private Map<String, Collection<? extends FileInfo>> fetchDbFiles(long uid) {
         Map<String, Collection<? extends FileInfo>> dbFile = new HashMap<>();
-        NodeTree tree = nodeService.getFullTree(uid);
+        NodeTree tree = fileRecordService.getFullTree(uid);
         DiskFileSystem fileSystem = fileService.getMainFileSystem();
         tree.forEach(n -> {
-            Collection<? extends FileInfo>[] fileList = fileSystem.getUserFileListByNodeId(uid, n.getId());
-            String path = tree.getPath(n.getId());
+            Collection<? extends FileInfo>[] fileList = fileSystem.getUserFileListByNodeId(uid, n.getMd5());
+            String path = tree.getPath(n.getMd5());
             dbFile.put(path, fileList[1]);
         });
         return dbFile;

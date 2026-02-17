@@ -81,7 +81,7 @@ public class FtpPathInfo {
      * @return 文件名
      */
     public String getName() {
-        return isFtpRoot() ? "" : pathBuilder.getPath().getLast();
+        return isFtpRoot() ? "" : pathBuilder.getPathLast();
     }
 
     public String getResourceParent() {

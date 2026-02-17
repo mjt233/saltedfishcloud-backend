@@ -1,13 +1,16 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.node.NodeTree;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 为网盘系统提供不依赖存储服务的情况下提供文件系统文件信息的读取和搜索能力（仅文件信息，不包含文件内容）<br>
@@ -15,6 +18,86 @@ import java.util.List;
  *
  */
 public interface FileRecordService {
+
+    /**
+     * 获取用户文件树
+     * @param uid   用户ID
+     * @return      用户文件树
+     */
+    NodeTree getFullTree(long uid);
+
+    /**
+     * 按文件路径获取文件信息
+     * @param uid   用户ID
+     * @param path  文件所在路径
+     * @return      文件信息
+     */
+    Optional<FileInfo> getByPath(long uid, String path);
+
+
+    /**
+     * 使用广度优先遍历，列出指定目录下的所有类型为目录的文件信息
+     * @param uid   用户id
+     * @param node  要查询的目录所在节点
+     * @param depth 遍历深度，0表示只获取一级目录，负数表示无限遍历
+     * @return      不包括自己的指定遍历深度的所有子目录信息（不包括文件）
+     */
+    List<FileInfo> listChildDirs(long uid, String node, int depth);
+
+
+    /**
+     * 获取访问指定路径下途径的所有文件节点
+     * @param uid   用户id
+     * @param path  要查找的路径
+     * @return      访问该路径时途径的所有 FileInfo 信息，首元素为起始节点，末元素为目标最终节点。对于 FileInfo#getNode() 为用户id的，表示该节点在根目录下。对于根目录，返回的队列长度为1。
+     */
+    Deque<FileInfo> getVisitPathInfo(long uid, String path);
+
+
+    /**
+     * 获取指定父节点下的指定名称的文件
+     * @param uid       用户ID
+     * @param parentId  父节点ID
+     * @param name      文件名称
+     * @return          文件信息，没有则返回null
+     */
+    FileInfo getByParentId(long uid, String parentId, String name);
+
+
+    /**
+     * 获取路径对应的节点<br>
+     * @param uid   用户ID
+     * @param path  请求的路径
+     * @return  节点
+     */
+    Optional<String> getNodeIdByPath(long uid, String path);
+
+
+    /**
+     * 根据路径获取对应的节点对象
+     * @param uid   用户id
+     * @param path  路径
+     */
+    Optional<FileInfo> getNodeByPath(long uid, String path);
+
+
+    /**
+     * 通过目录节点ID 获取节点所在的完整路径位置。对于目录，FileInfo#getMd5即为目录节点id。
+     * @param uid       用户ID
+     * @param nodeId    目录节点ID(FileInfo的getMd5)
+     * @return          完整路径
+     */
+    Optional<String> getPathByNodeId(long uid, String nodeId);
+
+
+    /**
+     * 根据节点id取出节点的所有父节点
+     * @param uid       用户id
+     * @param nodeId    查找的节点id
+     * @return          所有父节点
+     */
+    Optional<Deque<FileInfo>> listAllParentByNodeId(long uid, String nodeId);
+
 
     /**
      * 判断给定的资源路径是否存在
@@ -49,6 +132,12 @@ public interface FileRecordService {
      */
     List<FileInfo> getFileInfoByMd5(String md5, int limit);
 
+    /**
+     * 根据目录节点id获取用户的目录信息
+     * @param uid   用户id
+     * @param md5   目录节点id（FileInfo#getMd5）
+     */
+    Optional<FileInfo> getDirByMd5(Long uid, String md5);
 
     /**
      * 操作数据库复制网盘文件或目录到指定目录下

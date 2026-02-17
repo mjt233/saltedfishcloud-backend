@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,11 +37,8 @@ public class NodeServiceImpl implements NodeService {
     @Autowired
     private NodeInfoRepo nodeInfoRepo;
 
-//    @Autowired
-//    private NodeCacheService cacheService;
-
-//    @Autowired
-//    private NodeService self;
+    @Autowired
+    private FileRecordService fileRecordService;
 
     @Override
 //    @Cacheable(cacheNames = CacheNames.PATH, key = "#uid+':node:'+#nid")
@@ -56,13 +54,7 @@ public class NodeServiceImpl implements NodeService {
 
     @Override
     public NodeTree getFullTree(long uid) {
-        NodeTree tree = new NodeTree();
-        List<NodeInfo> allNode = nodeDao.getAllNode(uid);
-        tree.putNode(NodeInfo.getRootNode(uid));
-        if (allNode != null) {
-            allNode.forEach(tree::putNode);
-        }
-        return tree;
+        return fileRecordService.getFullTree(uid);
     }
 
     @Override

@@ -3,7 +3,8 @@ package com.xiaotao.saltedfishcloud.service.node.cache;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,7 @@ import java.util.Set;
 public class NodeCacheService {
     private final RedisTemplate<String, String> redisTemplate;
     private final RedisDao redisDao;
-    private final NodeService nodeService;
+    private final FileRecordService fileRecordService;
 
     public void deleteNodeCache(long uid, Collection<String> nodeIds) {
         try {
@@ -54,7 +55,7 @@ public class NodeCacheService {
      * @param nodeIds   要被删除的节点ID列表
      */
     private void deleteNodeCache(long uid, Collection<String> nodeIds, boolean queryParent) throws JsonProcessingException {
-        if (nodeIds.size() == 0) return;
+        if (nodeIds.isEmpty()) return;
         log.debug("[NodeCache]<<==== 开始删除节点缓存 uid:{} 节点id集合: {}", uid, nodeIds);
 
         List<String> keys = new LinkedList<>();
@@ -81,8 +82,12 @@ public class NodeCacheService {
              * 由最初的节点id搜索查找得到的子节点id在进入下一轮递归之前就已删除了.
              */
             if (queryParent) {
-                NodeInfo nodeInfo = nodeService.getNodeById(uid, nid);
-                redisTemplate.delete(NodeCacheKeyGenerator.generatePnidKey(uid, nodeInfo.getParent(), nodeInfo.getName()));
+                FileInfo fileInfo = fileRecordService.getDirByMd5(uid, nid).orElse(null);
+                if (fileInfo == null) {
+                    log.warn("丢失节点{}:{}的信息", uid, nid);
+                    continue;
+                }
+                redisTemplate.delete(NodeCacheKeyGenerator.generatePnidKey(uid, fileInfo.getNode(), fileInfo.getName()));
             }
             keys.add("path::" + uid + ":node:" + nid);
             keys.add("path::" + uid + ":path:" + nid);

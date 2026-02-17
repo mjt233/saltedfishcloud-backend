@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
 import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,7 @@ class NodeTreeTest {
     public void testIterator() {
 
         NodeTree tree = nodeService.getFullTree(0);
-        for (NodeInfo nodeInfo : tree) {
+        for (FileInfo nodeInfo : tree) {
             System.out.print(nodeInfo.getName() + " ");
         }
         System.out.println();
