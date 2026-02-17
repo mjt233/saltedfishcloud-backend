@@ -543,6 +543,9 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public Optional<Deque<FileInfo>> listAllParentByNodeId(long uid, String nodeId) {
+        if (nodeId == null) {
+            return Optional.empty();
+        }
         ArrayDeque<FileInfo> res = new ArrayDeque<>();
         String prevNodeId = nodeId;
         String rootId = uid + "";
@@ -624,7 +627,7 @@ public class FileRecordServiceImpl implements FileRecordService {
         int idx = 0;
         for (String dirName : parts) {
             idx++;
-            String parentNodeId = visitedPath.isEmpty() ? strId : visitedPath.getLast().getNode();
+            String parentNodeId = visitedPath.isEmpty() ? strId : visitedPath.getLast().getMd5();
             FileInfo file = this.getByParentId(uid, parentNodeId, dirName);
             if (file == null) {
                 log.warn("{}路径不存在:{}", LOG_PREFIX, path);
