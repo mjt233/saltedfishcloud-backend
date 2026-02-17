@@ -1,10 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
-import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
@@ -34,8 +32,6 @@ import java.util.stream.Collectors;
 public class FileRecordServiceImpl implements FileRecordService {
     private final static String LOG_PREFIX = "[文件记录]";
 
-    @Resource
-    private NodeDao nodeDao;
 //    @Resource
 //    private NodeCacheService cacheService;
 
@@ -221,7 +217,6 @@ public class FileRecordServiceImpl implements FileRecordService {
 //                cacheService.deleteNodeCache(uid, Collections.singleton(sourceFileInfo.getMd5()));
                 sourceFileInfo.setNode(targetNode);
                 fileInfoRepo.save(sourceFileInfo);
-                nodeDao.move(uid, sourceFileInfo.getMd5(), targetNode);
             }
         } else {
             if (targetFileInfo != null) {
@@ -361,13 +356,13 @@ public class FileRecordServiceImpl implements FileRecordService {
         String parentNode = String.valueOf(uid);
         String nid = null;
         for (String name : pb.getPath()) {
-            NodeInfo nodeInfo = nodeDao.getNodeByParentId(uid, parentNode, name);
-            if (nodeInfo == null) {
+            FileInfo fileInfo = getByParentId(uid, parentNode, name);
+            if (fileInfo == null) {
                 nid = SecureUtils.getUUID();
                 addDirRecord(uid, name, parentNode, nid, isMount);
                 parentNode = nid;
             } else {
-                parentNode = nodeInfo.getId();
+                parentNode = fileInfo.getMd5();
             }
         }
         return nid;
@@ -419,9 +414,6 @@ public class FileRecordServiceImpl implements FileRecordService {
             throw new JsonException(404, "文件不存在");
         }
 //        cacheService.deleteNodeCache(uid, Collections.singleton(nodeId));
-        if (fileInfo.isDir()) {
-            nodeDao.changeName(uid, nodeDao.getNodeByParentId(uid, nodeId, oldName).getId(), newName);
-        }
         fileInfo.setName(newName);
         if (fileInfo.isDir()) {
             fileInfo.setMtime(System.currentTimeMillis());
