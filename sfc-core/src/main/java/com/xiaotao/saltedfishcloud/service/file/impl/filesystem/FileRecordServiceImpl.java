@@ -108,7 +108,6 @@ public class FileRecordServiceImpl implements FileRecordService {
         }
         PathBuilder pathBuilder = new PathBuilder();
         pathBuilder.setForcePrefix(true);
-        int prefixLength = source.length() + 1 + sourceName.length();
 
 
         String sourceNodeId = this.getNodeIdByPath(uid, source).orElseThrow(() -> new JsonException(404, "源文件所在目录不存在"));
@@ -133,6 +132,7 @@ public class FileRecordServiceImpl implements FileRecordService {
         //  需要遍历的目录列表
         Deque<PathIdPair> needProcessSourceDirList = new ArrayDeque<>();
         String sourceRoot = StringUtils.appendPath(source, sourceName);
+        int prefixLength = sourceRoot.length();
         needProcessSourceDirList.add(new PathIdPair(sourceRoot, this.getNodeIdByPath(uid, sourceRoot).orElseThrow(() -> new JsonException(404, "源文件所在目录不存在"))));
 
         do {
@@ -652,7 +652,7 @@ public class FileRecordServiceImpl implements FileRecordService {
             FileInfo info = new FileInfo();
             info.setId(uid);
             info.setUid(uid);
-            info.setNode(strId);
+            info.setMd5(strId);
             info.setPath("/");
             visitedPath.add(info);
         }
