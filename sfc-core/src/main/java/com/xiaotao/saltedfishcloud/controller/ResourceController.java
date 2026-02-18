@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -123,12 +124,9 @@ public class ResourceController {
     @GetMapping({"node/**", "node"})
     @AllowAnonymous
     @NotBlock
-    public JsonResult<FileInfo> pathToNodeList(@PathVariable("uid") @UID long uid, HttpServletRequest request) throws NoSuchFileException {
+    public JsonResult<Deque<FileInfo>> pathToNodeList(@PathVariable("uid") @UID long uid, HttpServletRequest request) throws NoSuchFileException {
         String path = URLUtils.getRequestFilePath(PREFIX + "/" + uid + "/node", request);
-        return JsonResultImpl.getInstance(
-                fileRecordService.getNodeByPath(uid, "/" + path)
-                        .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND))
-        );
+        return JsonResultImpl.getInstance(fileRecordService.getVisitPathInfo(uid, "/" + path));
     }
 
     /**
