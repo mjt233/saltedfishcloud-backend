@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import org.jetbrains.annotations.NotNull;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
@@ -68,9 +69,9 @@ public class DBUtils {
      * @see TransactionDefinition
      */
     public static void executeWithTransactional(int propagationBehavior, Runnable runnable) {
-        TransactionTemplate transactionTemplate = SpringContextUtils.getContext().getBean(TransactionTemplate.class);
-        DefaultTransactionDefinition def = new DefaultTransactionDefinition();
-        def.setPropagationBehavior(propagationBehavior);
+        PlatformTransactionManager transactionManager = SpringContextUtils.getContext().getBean(PlatformTransactionManager.class);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(propagationBehavior);
         transactionTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             protected void doInTransactionWithoutResult(@NotNull TransactionStatus status) {
@@ -87,20 +88,17 @@ public class DBUtils {
      * @return 任务执行结果
      */
     public static <T> T executeWithTransactional(int propagationBehavior, java.util.concurrent.Callable<T> callable) {
-        TransactionTemplate transactionTemplate = SpringContextUtils.getContext().getBean(TransactionTemplate.class);
-        DefaultTransactionDefinition def = new DefaultTransactionDefinition();
-        def.setPropagationBehavior(propagationBehavior);
-        return transactionTemplate.execute(new TransactionCallback<T>() {
-            @Override
-            public T doInTransaction(@NotNull TransactionStatus status) {
-                try {
-                    return callable.call();
-                } catch (Exception e) {
-                    if (e instanceof RuntimeException) {
-                        throw (RuntimeException) e;
-                    } else {
-                        throw new RuntimeException(e);
-                    }
+        PlatformTransactionManager transactionManager = SpringContextUtils.getContext().getBean(PlatformTransactionManager.class);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(propagationBehavior);
+        return transactionTemplate.execute(status -> {
+            try {
+                return callable.call();
+            } catch (Exception e) {
+                if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                } else {
+                    throw new RuntimeException(e);
                 }
             }
         });

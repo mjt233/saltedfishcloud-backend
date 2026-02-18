@@ -12,6 +12,7 @@ import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +21,9 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.NoSuchFileException;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 
@@ -343,7 +346,7 @@ public class FileRecordServiceImpl implements FileRecordService {
         long now = System.currentTimeMillis();
         newFile.setCtime(now);
         newFile.setMtime(now);
-        return fileInfoRepo.save(newFile);
+        return fileInfoRepo.saveAndFlush(newFile);
     }
 
 
@@ -368,6 +371,16 @@ public class FileRecordServiceImpl implements FileRecordService {
         return nid;
     }
 
+    private void safeSleep(int tryCount) {
+        if (tryCount == 0) {
+            return;
+        }
+        try {
+            Thread.sleep(Math.min(tryCount * 10, 200));
+        } catch (InterruptedException ignore) {
+        }
+    }
+
     @Override
     public String getAndMkdirs(long uid, String path, boolean isMount) {
         Optional<String> quickQueryRes = this.getNodeIdByPath(uid, path);
@@ -376,32 +389,45 @@ public class FileRecordServiceImpl implements FileRecordService {
         }
 
         String lockKey = "getAndMkdirs:" + uid + ":" + path;
-        return LockUtils.execute(lockKey, () -> DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRES_NEW, () -> {
-            int interval = 200;
-            int maxTryCount = 60 * 1000 / interval;
-            int tryCount = 0;
-            while (tryCount < maxTryCount) {
-                // 双重检查
-                Optional<String> newestNodeId = this.getNodeIdByPath(uid, path);
-                if (newestNodeId.isPresent()) {
-                    return newestNodeId.get();
-                }
-
-                try {
-                    return mkdirs(uid, path, isMount);
-                } catch (DuplicateKeyException e) {
-                    // 捕获唯一约束异常，重试查询
-                    log.warn("getAndMkdirs并发创建冲突，重试查询: uid={}, path={}", uid, path);
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException ignore) {
+        return LockUtils.execute(lockKey, () -> {
+            int maxTryCount = 25;
+            AtomicInteger tryCount = new AtomicInteger();
+            while (tryCount.get() < maxTryCount) {
+                String nodeId = DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRES_NEW, () -> {
+                    // 双重检查
+                    Optional<String> newestNodeId = this.getNodeIdByPath(uid, path);
+                    if (newestNodeId.isPresent()) {
+                        return newestNodeId.get();
                     }
+
+                    try {
+                        return mkdirs(uid, path, isMount);
+                    } catch (DataIntegrityViolationException e) {
+                        boolean isDuplicate = false;
+                        if (e instanceof DuplicateKeyException) {
+                            isDuplicate = true;
+                        } else if (e.getMostSpecificCause() instanceof SQLException se) {
+                            // 23000 是 SQL 标准中代表 Integrity Constraint Violation 的状态码
+                            // 1062 是 MySQL 特有的 Duplicate Entry 错误码
+                            isDuplicate = "23000".equals(se.getSQLState()) || se.getErrorCode() == 1062;
+                        }
+                        if (!isDuplicate) {
+                            throw e;
+                        }
+                        // 捕获唯一约束异常，重试查询
+                        log.warn("getAndMkdirs并发创建冲突，重试查询: uid={}, path={}", uid, path);
+                    }
+                    return null;
+                });
+                if (nodeId != null) {
+                    return nodeId;
                 }
-                tryCount++;
+                safeSleep(tryCount.get());
+                tryCount.incrementAndGet();
             }
             log.error("getAndMkdirs并发创建失败: uid={}, path={}", uid, path);
             throw new RuntimeException("getAndMkdir concurrent handle error");
-        }));
+        });
     }
 
 
