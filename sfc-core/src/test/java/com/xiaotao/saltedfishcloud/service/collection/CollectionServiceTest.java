@@ -1,15 +1,15 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +33,9 @@ class CollectionServiceTest {
     @Autowired
     private UserDao userDao;
     @Autowired
-    private NodeService nodeService;
-    @Autowired
     private DiskFileSystemManager diskFileSystem;
+    @Autowired
+    private FileRecordService fileRecordService;
 
     @Test
     void testGet() {
@@ -62,7 +62,7 @@ class CollectionServiceTest {
         Calendar calender = Calendar.getInstance();
         calender.add(Calendar.DATE, 7);
 
-        String node = nodeService.getNodeIdByPath(u.getId(), savePath);
+        String node = fileRecordService.getNodeIdByPath(u.getId(), savePath).orElseThrow();
         // 创建收集任务
         CollectionDTO colI = new CollectionDTO("测试收集样例", node, calender.getTime(), u.getUsername());
         colI.setPattern("\\.(doc|docx)$");

@@ -13,7 +13,7 @@ import com.xiaotao.saltedfishcloud.model.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.resource.AbstractWritableResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -45,7 +45,7 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
     private DiskFileSystemManager diskFileSystemManager;
 
     @Autowired
-    private NodeService nodeService;
+    private FileRecordService fileRecordService;
 
     @Override
     public boolean isWriteable() {
@@ -77,7 +77,7 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
 
                     log.warn("文件采集无法按提交的文件md5查询到文件 cid - {} recordId - {}", collectionInfo.getId(), record.getId());
                     return Optional.ofNullable(collectionInfo.getSaveNode())
-                            .map(nodeId -> nodeService.getPathByNode(uid, nodeId))
+                            .flatMap(nodeId -> fileRecordService.getPathByNodeId(uid, nodeId))
                             .map(path -> {
                                 try {
                                     return diskFileSystemManager.getMainFileSystem().getResource(uid, path, record.getFilename());
@@ -109,9 +109,9 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
         Long uid = collectionInfo.getUid();
 
         String path = Optional.ofNullable(collectionInfo.getSaveNode())
-                .map(nodeId -> {
+                .flatMap(nodeId -> {
                     try {
-                        return nodeService.getPathByNode(uid, nodeId);
+                        return fileRecordService.getPathByNodeId(uid, nodeId);
                     } catch (Exception e) {
                         return null;
                     }

@@ -13,7 +13,6 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
@@ -104,9 +103,6 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
 
     @Autowired
     private FileRecordService fileRecordService;
-
-    @Autowired
-    private NodeService nodeService;
 
 
     public void setMainFileSystem(DiskFileSystem mainFileSystem) {
@@ -264,11 +260,12 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         }
         FileInfo fileInfo;
         List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
-        if (files.size() == 0) {
+        if (files.isEmpty()) {
             return null;
         }
         fileInfo = files.get(0);
-        String path = nodeService.getPathByNode(fileInfo.getUid(), fileInfo.getNode());
+        String path = fileRecordService.getPathByNodeId(fileInfo.getUid(), fileInfo.getNode())
+                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
         fileInfo.setPath(path + "/" + fileInfo.getName());
         Resource resource = getResource(fileInfo.getUid(), path, fileInfo.getName());
         return ResourceUtils.bindFileInfo(resource, fileInfo);
@@ -307,7 +304,10 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             newFile.setStreamSource(sourceResource);
             targetMatchResult.fileSystem.saveFile(newFile, targetMatchResult.resolvedPath);
             if (targetMatchResult.isProxyStoreRecordMountPoint()) {
-                newFile.setNode(nodeService.getNodeIdByPath(targetUid, targetDir));
+                newFile.setNode(
+                        fileRecordService.getNodeIdByPath(targetUid, targetDir)
+                                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND))
+                );
                 newFile.setIsMount(true);
                 fileRecordService.saveRecord(newFile, targetDir);
             }
@@ -330,7 +330,13 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         List<FileInfo> fileList = sourceFileList[1];
         // 先复制文件
         if (fileList != null) {
-            String fileNodeId = targetMatchResult.isProxyStoreRecordMountPoint() ? nodeService.getNodeIdByPath(targetUid, StringUtils.appendPath(targetDir, targetName)) : null;
+            String fileNodeId;
+            if (targetMatchResult.isProxyStoreRecordMountPoint()) {
+                fileNodeId = fileRecordService.getNodeIdByPath(targetUid, StringUtils.appendPath(targetDir, targetName))
+                        .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+            } else {
+                fileNodeId = null;
+            }
             for (FileInfo fileInfo : fileList) {
                 Resource resource = sourceMatchResult.fileSystem.getResource(uid, resolvedSourcePath, fileInfo.getName());
                 fileInfo.setStreamSource(resource);
@@ -420,7 +426,8 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
 
             // 如果移动的是挂载点本身，那么只需要修改挂载点的nid就好了
             if (sourceFullMatchResult.isMountPath(sourcePath)) {
-                String nodeId = nodeService.getNodeIdByPath(uid, target);
+                String nodeId = fileRecordService.getNodeIdByPath(uid, target)
+                        .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
                 MountPoint mountPoint = sourceFullMatchResult.mountPoint;
                 mountPoint.setNid(nodeId);
                 try {

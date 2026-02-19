@@ -39,7 +39,7 @@ public class FileInfo extends AuditModel {
     public final static int TYPE_FILE = 2;
 
     /**
-     * 文件所在目录节点
+     * 文件所在目录节点，即父节点的 {@link FileInfo#getNode()}
      */
     @Column(length = 32)
     private String node;
@@ -63,6 +63,7 @@ public class FileInfo extends AuditModel {
     /**
      * 文件md5，若记录为目录则表示目录的节点id
      */
+    @Column(length = 32)
     private String md5;
 
 
@@ -89,12 +90,6 @@ public class FileInfo extends AuditModel {
      * 是否为外部挂载的文件系统文件
      */
     private Boolean isMount;
-
-    /**
-     * 上级目录节点的名称
-     */
-    @Transient
-    private String parent;
 
 
     @JsonIgnore
@@ -143,6 +138,20 @@ public class FileInfo extends AuditModel {
         fileInfo.setType(type);
         fileInfo.setStreamSource(resource);
         return fileInfo;
+    }
+
+    /**
+     * 获取用户表示根目录的虚拟文件信息
+     */
+    public static FileInfo getRoot(Long uid) {
+        FileInfo root = new FileInfo()
+                .setSize(-1L)
+                .setMd5(uid + "")
+                .setType(TYPE_DIR)
+                .setIsMount(false);
+        root.setUid(uid);
+        root.setId(uid);
+        return root;
     }
 
     /**

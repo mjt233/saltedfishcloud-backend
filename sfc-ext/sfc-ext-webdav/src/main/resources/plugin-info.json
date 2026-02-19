@@ -1,6 +1,6 @@
 {
   "name": "webdav",
-  "alias": "WebDAV",
+  "alias": "WebDAV 服务器",
   "describe": "通过WebDAV服务访问网盘文件",
   "loadType": "merge",
   "type": "jar",

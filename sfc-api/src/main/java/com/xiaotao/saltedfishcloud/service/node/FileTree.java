@@ -1,32 +1,32 @@
 package com.xiaotao.saltedfishcloud.service.node;
 
-import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 
 import java.util.*;
 
 /**
- * 存储整个目录树的结构，通常使用{@link NodeService}的getFullTree方法获取。<br>
+ * 存储整个目录树的结构，通常使用{@link com.xiaotao.saltedfishcloud.service.file.FileRecordService#getFullTree(long)}获取。<br>
  * 用于对大量数据的高速查询，避免频繁的数据库操作
  */
-public class NodeTree implements Iterable<NodeInfo> {
+public class FileTree implements Iterable<FileInfo> {
 
-    private final Map<String, NodeInfo> payload = new HashMap<>();
+    private final Map<String, FileInfo> payload = new HashMap<>();
 
     /**
      * 添加一个节点信息到内部的存储库中，若节点ID重复则会覆盖原有信息
-     * @param nodeInfo 节点信息
+     * @param fileInfo 节点信息
      */
-    public void putNode(NodeInfo nodeInfo) {
-        payload.put(nodeInfo.getId(), nodeInfo);
+    public void putNode(FileInfo fileInfo) {
+        payload.put(fileInfo.getMd5(), fileInfo);
     }
 
     /**
      * 从内部的存储库中通过节点ID获取对应的节点ID信息
-     * @param id    节点ID
+     * @param nodeId    节点ID(FileInfo#getMd5)
      * @return  节点信息，若无对应数据则为null
      */
-    public NodeInfo getNode(String id) {
-        return payload.get(id);
+    public FileInfo getNode(String nodeId) {
+        return payload.get(nodeId);
     }
 
     /**
@@ -39,21 +39,21 @@ public class NodeTree implements Iterable<NodeInfo> {
         if (id.length() < 32) {
             return "/";
         }
-        LinkedList<String> paths = new LinkedList<>();
+        Deque<String> paths = new ArrayDeque<>();
         StringBuilder sb = new StringBuilder();
-        NodeInfo t;
+        FileInfo t;
         while ( !(id.length() < 32) && (t = payload.get(id)) != null ) {
             paths.addFirst(t.getName());
-            id = t.getParent();
+            id = t.getNode();
         }
         paths.forEach(e -> sb.append('/').append(e));
-        return paths.size() == 0 ? null : sb.toString();
+        return paths.isEmpty() ? null : sb.toString();
     }
 
 
     @Override
-    public Iterator<NodeInfo> iterator() {
-        return new NodeTreeIterator(payload);
+    public Iterator<FileInfo> iterator() {
+        return new FileTreeIterator(payload);
     }
 
 }

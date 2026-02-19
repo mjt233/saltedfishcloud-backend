@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -9,13 +10,11 @@ import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
-import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.RequiredArgsConstructor;
@@ -64,9 +63,6 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     private FileRecordService fileRecordService;
 
     @Autowired
-    private NodeService nodeService;
-
-    @Autowired
     private CustomStoreService customStoreService;
 
     @Autowired
@@ -90,12 +86,12 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Override
     public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
         StoreService storeService = storeServiceFactory.getService();
-        NodeInfo node = nodeService.getNodeByPath(uid, path);
-        if (node == null) {
+        FileInfo fileInfo = fileRecordService.getByPath(uid, path).orElse(null);
+        if (fileInfo == null || fileInfo.isFile()) {
             log.warn("{} 找不到路径{}:{}对应的节点，无法修改文件日期信息", LOG_PREFIX, uid, path);
             return;
         }
-        List<FileInfo> fileInfoList = fileRecordService.findByUidAndNodeId(uid, node.getId(), names);
+        List<FileInfo> fileInfoList = fileRecordService.findByUidAndNodeId(uid, fileInfo.getNode(), names);
         fileInfoList.forEach(f -> {
             if (attribute.apply(f)) {
                 fileRecordService.save(f);
@@ -157,7 +153,11 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
             return false;
         }
         FileInfo existMd5File = files.get(0);
-        String filePath = nodeService.getPathByNode(existMd5File.getUid(), existMd5File.getNode());
+        String filePath = fileRecordService.getPathByNodeId(existMd5File.getUid(), existMd5File.getNode())
+                .orElse(null);
+        if (filePath == null) {
+            return false;
+        }
         Resource resource = getResource(existMd5File.getUid(), filePath, existMd5File.getName());
         if (resource == null) {
             return false;
@@ -255,35 +255,35 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     public List<FileInfo>[] getUserFileList(long uid, String path) throws IOException {
-        String nodeId = nodeService.getNodeIdByPath(uid, path);
-        return getUserFileListByNodeId(uid, nodeId);
+        return fileRecordService.getNodeIdByPath(uid, path)
+                .map(nodeId -> getUserFileListByNodeId(uid, nodeId))
+                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
     }
 
     @Override
     public List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException {
-        String nodeId = nodeService.getNodeIdByPath(uid, path);
-        return fileRecordService.findByUidAndNodeId(uid, nodeId, nameList);
+
+        return fileRecordService.getNodeIdByPath(uid, path)
+                .map(nodeId -> fileRecordService.findByUidAndNodeId(uid, nodeId, nameList))
+                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
     }
 
     @Override
     public LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse) {
         LinkedHashMap<String, List<FileInfo>> res = new LinkedHashMap<>();
-        List<NodeInfo> nodes = new LinkedList<>();
+        List<FileInfo> dirs = new LinkedList<>();
 
         // 根目录使用用户id作为id
         String strId = "" + uid;
-        nodes.add(NodeInfo.builder()
-                .uid(uid)
-                .id(strId)
-                .build()
-        );
-        nodes.addAll(nodeService.getChildNodes(uid, strId));
+        dirs.add(FileInfo.getRoot(uid));
+        dirs.addAll(fileRecordService.listChildDirs(uid, strId, -1));
 
         //  获取目录结构
-        if (reverse) Collections.reverse(nodes);
-        for (NodeInfo node : nodes) {
-            String dir = nodeService.getPathByNode(uid, node.getId());
-            res.put(dir, fileRecordService.findByUidAndNodeId(uid, node.getId()));
+        if (reverse) Collections.reverse(dirs);
+        for (FileInfo dirInfo : dirs) {
+            String dir = fileRecordService.getPathByNodeId(uid, dirInfo.getMd5())
+                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "数据移除，节点信息" + dirInfo.getMd5() + "丢失"));
+            res.put(dir, fileRecordService.findByUidAndNodeId(uid, dirInfo.getMd5()));
         }
         return res;
     }
@@ -338,7 +338,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         // 判断目录是否存在，若不存在则尝试创建
         Long uid = file.getUid();
         StoreService storeService = storeServiceFactory.getService();
-        String nid = Optional.ofNullable(nodeService.getNodeIdByPathNoEx(uid, savePath)).orElseGet(() -> {
+        String nid = fileRecordService.getNodeIdByPath(uid, savePath).orElseGet(() -> {
             try {
                 return mkdirs(file.getUid(), savePath);
             } catch (IOException e) {

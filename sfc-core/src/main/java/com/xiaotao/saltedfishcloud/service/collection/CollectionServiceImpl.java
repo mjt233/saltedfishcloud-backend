@@ -12,11 +12,10 @@ import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
-import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -38,7 +37,7 @@ import java.util.Optional;
 public class CollectionServiceImpl implements CollectionService {
     private final CollectionInfoRepo collectionDao;
     private final CollectionRecordRepo recordDao;
-    private final NodeService nodeService;
+    private final FileRecordService fileRecordService;
     private final DiskFileSystemManager fileSystem;
 
     @Override
@@ -70,11 +69,8 @@ public class CollectionServiceImpl implements CollectionService {
         if(!CollectionValidator.validateCreate(info)) {
             throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED);
         }
-        NodeInfo node = nodeService.getNodeById(uid, info.getSaveNode());
-        if (node == null) {
-            throw new JsonException(FileSystemError.NODE_NOT_FOUND);
-        }
-        String savePath = nodeService.getPathByNode(uid, node.getId());
+        String savePath = fileRecordService.getPathByNodeId(uid, info.getSaveNode())
+                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
         CollectionInfo ci = new CollectionInfo(uid, info);
         ci.setVerification(SecureUtils.getUUID());
 
@@ -147,7 +143,8 @@ public class CollectionServiceImpl implements CollectionService {
         // 解析文件名变量并重命名
         String filename = CollectionParser.parseFilename(collectionInfo, submitFile);
         DiskFileSystem fileSystem = this.fileSystem.getMainFileSystem();
-        String path = nodeService.getPathByNode(collectionInfo.getUid(), collectionInfo.getSaveNode());
+        String path = fileRecordService.getPathByNodeId(collectionInfo.getUid(), collectionInfo.getSaveNode())
+                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
         String[] pair = FileUtils.parseName(filename);
 
         int cnt = 1;

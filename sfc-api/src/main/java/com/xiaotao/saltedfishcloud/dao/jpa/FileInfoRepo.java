@@ -24,6 +24,17 @@ public interface FileInfoRepo extends BaseRepo<FileInfo> {
 
     List<FileInfo> findByUidAndNode(Long uid, String node);
 
+    @Query("SELECT f FROM FileInfo f WHERE f.uid = :uid AND f.md5 = :md5 AND f.size = -1")
+    FileInfo findDirByUidAndMd5(Long uid, String md5);
+
+    /**
+     * 获取指定目录节点下的所有目录信息
+     * @param uid   用户id
+     * @param node  目录节点id(FileInfo#getMd5)
+     */
+    @Query("SELECT f FROM FileInfo f WHERE f.node = :node AND f.uid = :uid AND f.size = -1")
+    List<FileInfo> findDirByUidAndNode(@Param("uid") Long uid, @Param("node") String node);
+
     @Query("DELETE FROM FileInfo WHERE uid = :uid AND node = :node AND name IN :names")
     @Modifying
     @Transactional

@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -13,8 +13,8 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
@@ -22,6 +22,9 @@ import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
@@ -30,11 +33,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,7 +50,7 @@ import java.util.Map;
 public class ResourceController {
     public static final String PREFIX = "/api/resource/";
     private final DiskFileSystemManager fileService;
-    private final NodeService nodeService;
+    private final FileRecordService fileRecordService;
     private final ResourceService resourceService;
     private final ThumbnailService thumbnailService;
 
@@ -123,9 +124,9 @@ public class ResourceController {
     @GetMapping({"node/**", "node"})
     @AllowAnonymous
     @NotBlock
-    public JsonResult<Object> pathToNodeList(@PathVariable("uid") @UID long uid, HttpServletRequest request) throws NoSuchFileException {
+    public JsonResult<Deque<FileInfo>> pathToNodeList(@PathVariable("uid") @UID long uid, HttpServletRequest request) throws NoSuchFileException {
         String path = URLUtils.getRequestFilePath(PREFIX + "/" + uid + "/node", request);
-        return JsonResultImpl.getInstance(nodeService.getPathNodeByPath(uid, "/" + path));
+        return JsonResultImpl.getInstance(fileRecordService.getVisitPathInfo(uid, "/" + path));
     }
 
     /**
@@ -136,9 +137,10 @@ public class ResourceController {
     @GetMapping("path/{node}")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<Object> getPath(@PathVariable("uid") @UID long uid,
+    public JsonResult<String> getPath(@PathVariable("uid") @UID long uid,
                               @PathVariable("node") String node) {
-        return JsonResultImpl.getInstance(nodeService.getPathByNode(uid, node));
+        return JsonResultImpl.getInstance(fileRecordService.getPathByNodeId(uid, node)
+                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND)));
     }
 
     /**
