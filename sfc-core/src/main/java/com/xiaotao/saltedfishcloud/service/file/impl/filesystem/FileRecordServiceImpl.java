@@ -680,6 +680,7 @@ public class FileRecordServiceImpl implements FileRecordService {
             info.setUid(uid);
             info.setMd5(strId);
             info.setPath("/");
+            info.setSize(-1L);
             visitedPath.add(info);
         }
         if (log.isDebugEnabled()) {

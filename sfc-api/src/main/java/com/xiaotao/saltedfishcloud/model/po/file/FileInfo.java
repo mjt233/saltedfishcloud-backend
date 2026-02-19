@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -117,7 +118,7 @@ public class FileInfo extends AuditModel {
      * @return 后缀名
      */
     public String getSuffix() {
-        return FileUtils.getSuffix(name);
+        return Optional.ofNullable(name).map(FileUtils::getSuffix).orElse(null);
     }
 
     /**
