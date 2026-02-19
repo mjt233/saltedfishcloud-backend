@@ -9,9 +9,12 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import io.milton.annotations.*;
+import io.milton.http.ExistingEntityHandler;
 import io.milton.http.HttpManager;
 import io.milton.http.Request;
+import io.milton.http.Response;
 import io.milton.http.exceptions.BadRequestException;
+import io.milton.resource.Resource;
 import io.milton.servlet.MiltonServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -135,6 +138,16 @@ public class WebDavResourceController {
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String parentPath = PathUtils.getParentPath(file.getPath());
         return fileSystem.getResource(file.getUid(), parentPath, file.getName()).getInputStream();
+    }
+
+    /**
+     * Milton在响应401未认证之前，会先检查资源控制器是否有兼容对应参数类型的GET方法，如果没有会直接响应501。<br>
+     * 部分WebDAV客户端（如Sardine）在发起GET请求时可能不会携带认证信息，会先判断触发了401后自动再次请求才会携带认证信息。而Sardine检测到响应码是501而不是401时，会当作请求异常处理。
+     * @see io.milton.http.ResourceHandlerHelper#processResource(HttpManager, Request, Response, Resource, ExistingEntityHandler, boolean, Map, Map) Milton库逻辑
+     */
+    @Get
+    public InputStream getUnAuthoriseFile(UnAuthoriseWebDavItem item) {
+        return new ByteArrayInputStream(new byte[0]);
     }
 
     @MakeCollection
