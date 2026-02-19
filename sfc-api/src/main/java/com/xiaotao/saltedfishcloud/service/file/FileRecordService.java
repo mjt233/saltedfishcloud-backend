@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.node.NodeTree;
+import com.xiaotao.saltedfishcloud.service.node.FileTree;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +24,7 @@ public interface FileRecordService {
      * @param uid   用户ID
      * @return      用户文件树
      */
-    NodeTree getFullTree(long uid);
+    FileTree getFullTree(long uid);
 
     /**
      * 按文件路径获取文件信息

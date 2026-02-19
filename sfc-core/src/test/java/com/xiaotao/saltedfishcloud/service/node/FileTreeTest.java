@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class NodeTreeTest {
+class FileTreeTest {
 
     @Mock
     private FileInfoRepo fileInfoRepo;
@@ -38,7 +38,7 @@ class NodeTreeTest {
                  new FileInfo().setNode(id1).setName("folder2").setMd5(id2),
                  new FileInfo().setNode(id2).setName("deepFolder").setMd5(id3)
          ));
-        NodeTree t = fileRecordService.getFullTree(0);
+        FileTree t = fileRecordService.getFullTree(0);
         int count = 0;
         for (FileInfo fileInfo : t) {
             count++;

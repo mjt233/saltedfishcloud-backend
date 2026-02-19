@@ -8,7 +8,7 @@ import java.util.*;
  * 存储整个目录树的结构，通常使用{@link com.xiaotao.saltedfishcloud.service.file.FileRecordService#getFullTree(long)}获取。<br>
  * 用于对大量数据的高速查询，避免频繁的数据库操作
  */
-public class NodeTree implements Iterable<FileInfo> {
+public class FileTree implements Iterable<FileInfo> {
 
     private final Map<String, FileInfo> payload = new HashMap<>();
 
@@ -53,7 +53,7 @@ public class NodeTree implements Iterable<FileInfo> {
 
     @Override
     public Iterator<FileInfo> iterator() {
-        return new NodeTreeIterator(payload);
+        return new FileTreeIterator(payload);
     }
 
 }

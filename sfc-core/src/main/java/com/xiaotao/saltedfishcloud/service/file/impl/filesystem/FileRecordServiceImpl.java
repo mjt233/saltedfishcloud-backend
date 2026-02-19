@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
-import com.xiaotao.saltedfishcloud.service.node.NodeTree;
+import com.xiaotao.saltedfishcloud.service.node.FileTree;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import jakarta.annotation.Resource;
@@ -526,8 +526,8 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
-    public NodeTree getFullTree(long uid) {
-        NodeTree tree = new NodeTree();
+    public FileTree getFullTree(long uid) {
+        FileTree tree = new FileTree();
         fileInfoRepo
                 .findAll(JpaLambdaQueryWrapper.get(FileInfo.class)
                         .eq(FileInfo::getUid, uid)

@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.sync.detector;
 
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.*;
-import com.xiaotao.saltedfishcloud.service.node.NodeTree;
+import com.xiaotao.saltedfishcloud.service.node.FileTree;
 import com.xiaotao.saltedfishcloud.service.sync.model.FileChangeInfo;
 import com.xiaotao.saltedfishcloud.service.sync.model.SyncDiffResultDefaultImpl;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -65,7 +65,7 @@ public class SyncDiffDetectorImpl implements SyncDiffDetector {
      */
     private Map<String, Collection<? extends FileInfo>> fetchDbFiles(long uid) {
         Map<String, Collection<? extends FileInfo>> dbFile = new HashMap<>();
-        NodeTree tree = fileRecordService.getFullTree(uid);
+        FileTree tree = fileRecordService.getFullTree(uid);
         DiskFileSystem fileSystem = fileService.getMainFileSystem();
         tree.forEach(n -> {
             Collection<? extends FileInfo>[] fileList = fileSystem.getUserFileListByNodeId(uid, n.getMd5());
