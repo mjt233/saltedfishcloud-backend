@@ -18,6 +18,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     @Resource
     private ConfigDao configDao;
     @Resource
+    @Lazy
     private StoreTypeSwitch storeTypeSwitch;
 
     @Resource

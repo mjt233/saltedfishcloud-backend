@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalDirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -44,6 +45,7 @@ public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<Str
     }
 
     @Autowired
+    @Lazy
     private ThumbnailService thumbnailService;
 
     private void checkParams(Map<String, Object> params) {

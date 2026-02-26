@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -96,9 +97,11 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     private DiskFileSystem mainFileSystem;
 
     @Autowired
+    @Lazy
     private MountPointService mountPointService;
 
     @Autowired
+    @Lazy
     private DiskFileSystemManager diskFileSystemManager;
 
     @Autowired

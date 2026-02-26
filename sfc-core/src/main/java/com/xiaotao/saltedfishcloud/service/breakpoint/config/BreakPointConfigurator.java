@@ -19,21 +19,19 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  */
 @Configuration
 @RequiredArgsConstructor
-public class BreakPointConfigurator implements InitializingBean {
+public class BreakPointConfigurator {
     private final RequestMappingHandlerMapping requestMappingHandlerMapping;
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        mappingInitializer().init();
-    }
 
     /**
      * 控制路由注册
      */
     @Bean
     @ConditionalOnMissingBean(MappingInitializer.class)
-    public MappingInitializer mappingInitializer() throws NoSuchMethodException {
-        return new MappingInitializer(controller(), requestMappingHandlerMapping);
+    public MappingInitializer mappingInitializer(BreakPointController controller) throws NoSuchMethodException {
+        MappingInitializer initializer = new MappingInitializer(controller, requestMappingHandlerMapping);
+        initializer.init();
+        return initializer;
     }
 
     /**
@@ -58,13 +56,13 @@ public class BreakPointConfigurator implements InitializingBean {
      * 控制器代理增强
      */
     @Bean
-    public ProxyProcessor proxyProcessor() {
-        return new ProxyProcessor(taskManager(), mergeBreakpointMultipartFileProvider());
+    public ProxyProcessor proxyProcessor(TaskManager taskManager) {
+        return new ProxyProcessor(taskManager, mergeBreakpointMultipartFileProvider(taskManager));
     }
 
     @Bean
     @ConditionalOnMissingBean(MergeBreakpointFileProvider.class)
-    public MergeBreakpointFileProvider mergeBreakpointMultipartFileProvider() {
-        return new MergeBreakpointFileProviderImpl(taskManager());
+    public MergeBreakpointFileProvider mergeBreakpointMultipartFileProvider(TaskManager taskManager) {
+        return new MergeBreakpointFileProviderImpl(taskManager);
     }
 }
