@@ -17,6 +17,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
@@ -106,6 +107,7 @@ public class SaltedfishcloudApplication {
                 EmergencyApplication.errorDate = new Date();
                 new Thread(SpringContextUtils::startEmergencyMode).start();
             });
+            sa.setApplicationStartup(new BufferingApplicationStartup(20480));
             return sa;
         };
     }

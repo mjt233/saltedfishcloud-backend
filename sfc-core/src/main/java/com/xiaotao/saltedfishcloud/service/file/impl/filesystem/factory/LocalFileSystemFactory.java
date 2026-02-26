@@ -2,10 +2,11 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem.factory;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.*;
+import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
+import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalDirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<String, RawDiskFileSystem> implements InitializingBean {
+public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<String, RawDiskFileSystem> {
     private static final List<ConfigNode> CONFIG_NODE_LIST = new ArrayList<>();
     private static final DiskFileSystemDescribe DESCRIBE;
     static {
@@ -41,9 +42,6 @@ public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<Str
                 .isPublic(false)
                 .build();
     }
-
-    @Autowired
-    private DiskFileSystemManager diskFileSystemManager;
 
     @Autowired
     private ThumbnailService thumbnailService;
@@ -72,10 +70,5 @@ public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<Str
     @Override
     public DiskFileSystemDescribe getDescribe() {
         return DESCRIBE;
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        diskFileSystemManager.registerFileSystem(this);
     }
 }

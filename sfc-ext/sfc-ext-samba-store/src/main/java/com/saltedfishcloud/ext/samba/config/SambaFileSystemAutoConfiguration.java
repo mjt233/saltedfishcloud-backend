@@ -2,6 +2,7 @@ package com.saltedfishcloud.ext.samba.config;
 
 import com.saltedfishcloud.ext.samba.filesystem.SambaDiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +21,7 @@ public class SambaFileSystemAutoConfiguration implements InitializingBean {
     }
 
     @Bean
-    public SambaDiskFileSystemFactory sambaDiskFileSystemFactory() {
-        SambaDiskFileSystemFactory factory = new SambaDiskFileSystemFactory();
-        diskFileSystemManager.registerFileSystem(factory);
-        return factory;
+    public SambaDiskFileSystemFactory sambaDiskFileSystemFactory(ThumbnailService thumbnailService) {
+        return new SambaDiskFileSystemFactory(thumbnailService);
     }
 }

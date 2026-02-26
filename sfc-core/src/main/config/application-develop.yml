@@ -23,6 +23,11 @@ logging:
     com.xiaotao: debug
     com.saltedfishcloud: debug
     com.xiaotao.saltedfishcloud.dao.mybatis: warn
+management:
+  endpoints:
+    web:
+      exposure:
+        include: startup
 
 # 插件系统配置
 plugin:
