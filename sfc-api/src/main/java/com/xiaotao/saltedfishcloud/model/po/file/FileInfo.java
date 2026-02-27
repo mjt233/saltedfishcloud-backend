@@ -26,7 +26,7 @@ import java.util.Optional;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-@SuperBuilder
+@Builder
 @Accessors(chain = true)
 @Table(
         name = "file_table",
