@@ -100,11 +100,11 @@ public interface DiskFileSystem {
 
     /**
      * 复制指定用户的文件或目录到指定用户的某个目录下
-     * @param uid
+     * @param sourceUid
      *      原资源的用户ID
-     * @param source
+     * @param sourceDir
      *      要操作的文件所在的网盘目录
-     * @param target
+     * @param targetDir
      *      复制到的目的地目录
      * @param targetUid
      *      目标用户ID
@@ -115,7 +115,7 @@ public interface DiskFileSystem {
      * @param overwrite
      *      是否覆盖
      */
-    void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException;
+    void copy(long sourceUid, String sourceDir, String targetDir, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException;
 
     /**
      * 移动网盘中的文件或目录到指定目录下

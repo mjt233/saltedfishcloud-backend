@@ -2,6 +2,13 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.event.cm.DirCopyEvent;
+import com.xiaotao.saltedfishcloud.event.cm.DirMoveEvent;
+import com.xiaotao.saltedfishcloud.event.cm.FileCopyEvent;
+import com.xiaotao.saltedfishcloud.event.cm.FileMoveEvent;
+import com.xiaotao.saltedfishcloud.event.file.FileDeleteEvent;
+import com.xiaotao.saltedfishcloud.event.file.FileStoreEvent;
+import com.xiaotao.saltedfishcloud.event.dir.MkdirEvent;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
@@ -13,15 +20,13 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -107,6 +112,9 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Autowired
     private FileRecordService fileRecordService;
 
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
 
     public void setMainFileSystem(DiskFileSystem mainFileSystem) {
         if (this.mainFileSystem != null) {
@@ -136,7 +144,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
      * @param path  请求路径
      * @return      若匹配到挂载点，则返回，否则为null
      */
-    protected MountPoint matchMountPoint(long uid, String path) {
+    private MountPoint matchMountPoint(long uid, String path) {
         Map<String, MountPoint> mountPointMap = mountPointService.findMountPointPathByUid(uid);
         String name = StringUtils.getURLLastName(path);
         if (name == null) {
@@ -158,7 +166,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
      * @param path  请求的路径
      * @return      匹配结果
      */
-    protected FileSystemMatchResult matchFileSystem(long uid, String path) {
+    private FileSystemMatchResult matchFileSystem(long uid, String path) {
         MountPoint mountPoint = matchMountPoint(uid, path);
         if (mountPoint == null) {
             return new FileSystemMatchResult(mainFileSystem, null, path);
@@ -179,7 +187,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
      * @param requestPath   请求路径
      * @return              挂载点下的相对路径
      */
-    protected String resolvePath(String mountPath, String requestPath) {
+    private String resolvePath(String mountPath, String requestPath) {
         int prefixLength;
         if (mountPath.endsWith("/")) {
             prefixLength = mountPath.length() - 1;
@@ -217,13 +225,17 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                             CommonError.MOUNT_POINT_FILE_RECORD_PROXY_ERROR.getMessage() + ": 找不到节点id。位置: " + path + "/" + name + " 文件md5: " + md5)
                     );
         }
+
+        if (isSuccess) {
+            this.publishFileStoreEvent(matchResult.fileSystem, uid, path, name, StringUtils.appendPath(path, name), null);
+        }
         return isSuccess;
     }
 
     @Override
     public boolean exist(long uid, String path) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
-        if (matchResult.mountPoint != null && (matchResult.resolvedPath.equals("/") || matchResult.resolvedPath.equals(""))) {
+        if (matchResult.mountPoint != null && (matchResult.resolvedPath.equals("/") || matchResult.resolvedPath.isEmpty())) {
             return true;
         } else {
             if (matchResult.isProxyStoreRecordMountPoint()) {
@@ -248,11 +260,12 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         if (matchResult.isMountPath(path)) {
             throw new JsonException(FileSystemError.MOUNT_POINT_EXIST);
         }
-        String mkdirsResult = matchResult.fileSystem.mkdirs(uid, matchResult.resolvedPath);
+        String dirNodeId = matchResult.fileSystem.mkdirs(uid, matchResult.resolvedPath);
         if (matchResult.isProxyStoreRecordMountPoint()) {
             fileRecordService.mkdirs(uid, path, true);
         }
-        return mkdirsResult;
+        eventPublisher.publishEvent(new MkdirEvent(this, uid, path, dirNodeId));
+        return dirNodeId;
     }
 
     @Override
@@ -272,6 +285,55 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         fileInfo.setPath(path + "/" + fileInfo.getName());
         Resource resource = getResource(fileInfo.getUid(), path, fileInfo.getName());
         return ResourceUtils.bindFileInfo(resource, fileInfo);
+    }
+
+    /**
+     * 发布文件保存事件
+     * @param diskFileSystem    最终保存到的目标文件系统
+     * @param uid   用户id
+     * @param path  文件在目标文件系统上的所在目录的路径
+     * @param name  文件名
+     * @param fullPath  在主文件系统中的完整路径
+     */
+    private void publishFileStoreEvent(DiskFileSystem diskFileSystem, Long uid, String path, String name, String fullPath, FileInfo fileInfo) {
+        eventPublisher.publishEvent(new FileStoreEvent(this, uid, fullPath, () -> {
+            try {
+                if (fileInfo != null) {
+                    return fileInfo;
+                }
+                List<FileInfo> r = diskFileSystem.getUserFileList(uid, path, Collections.singletonList(name));
+                if (r == null || r.isEmpty()) {
+                    log.warn("{} 文件保存事件中未查询到文件信息 uid: {} fullPath: {}", LOG_PREFIX, uid, fullPath);
+                    return null;
+                }
+                FileInfo f = r.get(0);
+                f.setPath(fullPath);
+                return f;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }));
+    }
+
+    private void publishFileCopyOrMoveEvent(long sourceUid, String sourceDir, String targetDir, long targetUid, String sourceName, String targetName, boolean isMove) throws IOException {
+        List<FileInfo> r = this.getMainFileSystem().getUserFileList(targetUid, targetDir, Collections.singletonList(targetName));
+        if (r == null || r.isEmpty()) {
+            log.warn("{} 未查询到文件信息，没能发布文件复制事件 uid: {} fullPath: {}", LOG_PREFIX, targetUid, StringUtils.appendPath(targetDir, targetName));
+        } else {
+            if(r.get(0).isFile()) {
+                if (isMove) {
+                    eventPublisher.publishEvent(new FileMoveEvent(this, sourceUid, StringUtils.appendPath(sourceDir, sourceName), targetUid, StringUtils.appendPath(targetDir, targetName)));
+                } else {
+                    eventPublisher.publishEvent(new FileCopyEvent(this, sourceUid, StringUtils.appendPath(sourceDir, sourceName), targetUid, StringUtils.appendPath(targetDir, targetName)));
+                }
+            } else {
+                if (isMove) {
+                    eventPublisher.publishEvent(new DirMoveEvent(this, sourceUid, StringUtils.appendPath(sourceDir, sourceName), targetUid, StringUtils.appendPath(targetDir, targetName)));
+                } else {
+                    eventPublisher.publishEvent(new DirCopyEvent(this, sourceUid, StringUtils.appendPath(sourceDir, sourceName), targetUid, StringUtils.appendPath(targetDir, targetName)));
+                }
+            }
+        }
     }
 
     private void doCopy(long uid, String sourceDir, String targetDir, long targetUid, String sourceName, String targetName, Boolean overwrite, int depth) throws IOException {
@@ -398,8 +460,9 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        doCopy(uid, source, target, targetUid, sourceName, targetName, overwrite, 0);
+    public void copy(long sourceUid, String sourceDir, String targetDir, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
+        doCopy(sourceUid, sourceDir, targetDir, targetUid, sourceName, targetName, overwrite, 0);
+        this.publishFileCopyOrMoveEvent(sourceUid, sourceDir, targetDir, targetUid, sourceName, targetName, false);
     }
 
     @Override
@@ -435,6 +498,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                 mountPoint.setNid(nodeId);
                 try {
                     mountPointService.saveMountPoint(mountPoint);
+                    this.publishFileCopyOrMoveEvent(uid, source, target, uid, name, name, true);
                     return;
                 } catch (FileSystemParameterException e) {
                     throw new RuntimeException(e);
@@ -444,16 +508,19 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         }
 
         if (Objects.equals(sourceMatchResult.fileSystem, targetMatchResult.fileSystem)) {
+            // 同文件系统，直接移动
             sourceMatchResult.fileSystem.move(uid, sourceMatchResult.resolvedPath, targetMatchResult.resolvedPath, name, overwrite);
         } else {
-            copy(uid, source, target, uid, name, name, true);
-            deleteFile(uid, source, Collections.singletonList(name));
+            // 跨文件系统，采用复制+删除分步操作
+            doCopy(uid, source, target, uid, name, name, overwrite, 0);
+            doDeleteFile(uid, source, Collections.singletonList(name));
         }
 
         // 挂载点被移动，需要清理掉缓存
         if (mountPoints != null && !mountPoints.isEmpty()) {
             mountPointService.clearCache(uid);
         }
+        this.publishFileCopyOrMoveEvent(uid, source, target, uid, name, name, true);
     }
 
     @Override
@@ -502,6 +569,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             fileInfo.setUid(uid);
             fileRecordService.saveRecord(fileInfo, path);
         }
+        this.publishFileStoreEvent(matchResult.fileSystem, uid, matchResult.resolvedPath, fileInfo.getName(), StringUtils.appendPath(path, fileInfo.getName()), null);
     }
 
     @Override
@@ -514,6 +582,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         if (matchResult.isProxyStoreRecordMountPoint()) {
             fileRecordService.saveRecord(file, savePath);
         }
+        this.publishFileStoreEvent(matchResult.fileSystem, file.getUid(), savePath, file.getName(), StringUtils.appendPath(savePath, file.getName()), file);
     }
 
     @Override
@@ -526,9 +595,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         }
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public long deleteFile(long uid, String path, List<String> name) throws IOException {
+    private long doDeleteFile(long uid, String path, List<String> name) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         // 得到挂载完整路径 -> 挂载点 的map
         Map<String, MountPoint> mountPointMap = mountPointService.findMountPointPathByUid(uid);
@@ -553,6 +620,14 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             fileRecordService.deleteRecords(uid, path, name);
         }
         return matchResult.fileSystem.deleteFile(uid, matchResult.resolvedPath, name);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public long deleteFile(long uid, String path, List<String> name) throws IOException {
+        long res = this.doDeleteFile(uid, path, name);
+        eventPublisher.publishEvent(new FileDeleteEvent(this, uid, path, name));
+        return res;
     }
 
     @Override
