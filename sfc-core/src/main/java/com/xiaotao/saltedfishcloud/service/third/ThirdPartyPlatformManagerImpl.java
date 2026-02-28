@@ -251,7 +251,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
      * 缓存用户头像，将头像数据缓存到网盘的存储系统并转为base64
      */
     private void cacheAvatar(ThirdPartyPlatformUser user) {
-        if(!StringUtils.hasText(user.getAvatarUrl())) {
+        if(!StringUtils.hasText(user.getAvatarUrl()) || user.getAvatarUrl().startsWith("data:")) {
             return;
         }
 
