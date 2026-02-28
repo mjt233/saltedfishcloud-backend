@@ -1,9 +1,8 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import lombok.*;
-
 import jakarta.persistence.*;
+import lombok.*;
 
 /**
  * 第三方认证平台配置
@@ -52,6 +51,9 @@ public class ThirdPartyAuthPlatform extends AuditModel {
      */
     private Boolean isAllowRegister;
 
+    /**
+     * 该平台的登录地址
+     */
     @Transient
     private String authUrl;
 }

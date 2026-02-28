@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import lombok.*;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import lombok.*;
 
 /**
  * 第三方用户登录认证
@@ -55,4 +55,10 @@ public class ThirdPartyPlatformUser extends AuditModel {
      * 第三方平台账号的唯一标识
      */
     private String thirdPartyUserId;
+
+    /**
+     * 第三方平台头像 URL
+     */
+    @Lob
+    private String avatarUrl;
 }

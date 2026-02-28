@@ -4,11 +4,9 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Lazy;
 import org.springframework.http.HttpEntity;
@@ -63,6 +61,7 @@ public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
                 .thirdPartyUserId(githubUserInfo.getId().toString())
                 .email(githubUserInfo.getEmail())
                 .userName(githubUserInfo.getLogin())
+                .avatarUrl(githubUserInfo.getAvatarUrl())
                 .build();
     }
 

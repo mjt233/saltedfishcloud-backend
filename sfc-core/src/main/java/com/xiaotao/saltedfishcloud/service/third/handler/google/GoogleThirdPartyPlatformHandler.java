@@ -42,6 +42,9 @@ public class GoogleThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
     @Override
     public String getAuthUrl(ThirdPartyAuthPlatform partyAuthPlatform) {
         try {
+            if (isNotConfig(partyAuthPlatform)) {
+                return null;
+            }
             GooglePlatformProperty property = getProperty(partyAuthPlatform);
             return "https://accounts.google.com/o/oauth2/auth?client_id=" + property.getClientId()
                     + "&redirect_uri=" + URLEncoder.encode(Optional.ofNullable(property.getRedirectUrl()).orElse(""), StandardCharsets.UTF_8)
@@ -67,15 +70,15 @@ public class GoogleThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
         
         // 获取用户信息
         GoogleUserInfo userInfo = getUserInfo(accessToken);
-        
+
         return ThirdPartyPlatformUser.builder()
                 .platformType(getType())
                 .thirdPartyUserId(userInfo.getSub())
                 .email(userInfo.getEmail())
                 .userName(userInfo.getName())
+                .avatarUrl(userInfo.getPicture())
                 .build();
     }
-
 
     /**
      * 获取Google访问令牌
