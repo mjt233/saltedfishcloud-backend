@@ -23,9 +23,7 @@ import java.util.function.Supplier;
 
 @Component
 @Slf4j
-public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandler, InitializingBean {
-    @Autowired
-    private ThirdPartyPlatformManager thirdPartyPlatformManager;
+public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandler {
 
     @Autowired
     private RestTemplate restTemplate;
@@ -34,11 +32,6 @@ public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
         List<ConfigNode> list = new ArrayList<>(PropertyUtils.getConfigNodeFromEntityClass(GithubPlatformProperty.class).values());
         return Collections.unmodifiableList(list);
     });
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        thirdPartyPlatformManager.registerPlatformHandler(this);
-    }
 
     @Override
     public String getType() {

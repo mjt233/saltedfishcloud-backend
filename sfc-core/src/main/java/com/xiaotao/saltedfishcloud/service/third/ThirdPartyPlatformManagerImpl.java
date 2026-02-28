@@ -61,13 +61,21 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
 
     private final Map<String, ThirdPartyPlatformHandler> handlerMap = new ConcurrentHashMap<>();
 
+    @Autowired(required = false)
+    public void setThirdPartyPlatformHandler(List<ThirdPartyPlatformHandler> handlers) {
+        if (handlers == null || handlers.isEmpty()) {
+            return;
+        }
+        handlers.forEach(this::registerPlatformHandler);
+    }
+
     @Override
     public void registerPlatformHandler(ThirdPartyPlatformHandler handler) {
         if(handlerMap.containsKey(handler.getType())) {
             throw new IllegalArgumentException("类型为" + handler.getType() + "的第三方平台已注册");
         }
         handlerMap.put(handler.getType(), handler);
-
+        log.info("{}注册第三方平台账号登录: {}", LOG_PREFIX, handler.getType());
     }
 
     @Override
