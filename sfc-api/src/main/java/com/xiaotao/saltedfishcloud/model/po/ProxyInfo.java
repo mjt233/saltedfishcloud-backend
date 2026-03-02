@@ -36,6 +36,11 @@ public class ProxyInfo extends AuditModel {
     private Integer port;
 
     /**
+     * 作为系统公共代理时，是否不公开使用，仅限系统内部功能或管理员使用
+     */
+    private Boolean isProtect;
+
+    /**
      * 测试代理是否正常工作用的url
      */
     private String testUrl;

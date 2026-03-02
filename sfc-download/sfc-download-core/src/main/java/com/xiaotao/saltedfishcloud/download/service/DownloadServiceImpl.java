@@ -16,6 +16,7 @@ import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -130,6 +131,9 @@ public class DownloadServiceImpl implements DownloadService {
         Long currentUid = SecureUtils.getCurrentUid();
         if (currentUid != null) {
             res.addAll(proxyInfoService.findByUid(currentUid));
+        }
+        if (!UIDValidator.validate(User.PUBLIC_USER_ID, true)) {
+            return res.stream().filter(proxy -> proxy.getUid().equals(User.PUBLIC_USER_ID) && !Boolean.TRUE.equals(proxy.getIsProtect())).toList();
         }
         return res;
     }

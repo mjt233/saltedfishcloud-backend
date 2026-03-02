@@ -3,8 +3,12 @@ package com.xiaotao.saltedfishcloud.service;
 import com.xiaotao.saltedfishcloud.constant.CacheNames;
 import com.xiaotao.saltedfishcloud.dao.jpa.ProxyInfoRepo;
 import com.xiaotao.saltedfishcloud.download.IgnoreSSLHttpRequestFactory;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -14,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
