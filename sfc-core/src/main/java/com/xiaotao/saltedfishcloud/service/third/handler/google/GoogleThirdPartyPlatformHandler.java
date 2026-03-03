@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.third.handler.AbstractThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
@@ -34,8 +35,8 @@ public class GoogleThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
     });
 
     @Autowired
-    public GoogleThirdPartyPlatformHandler(ProxyInfoService proxyInfoService) {
-        super(proxyInfoService);
+    public GoogleThirdPartyPlatformHandler(ProxyInfoService proxyInfoService, StoreServiceFactory storeServiceFactory) {
+        super(proxyInfoService, storeServiceFactory);
     }
 
     @Override
@@ -104,7 +105,7 @@ public class GoogleThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
                 "&redirect_uri=" + java.net.URLEncoder.encode(property.getRedirectUrl(), java.nio.charset.StandardCharsets.UTF_8);
         
         try {
-            RestClient restClient = getHttpClient(platform);
+            RestClient restClient = getRestClient(platform);
             Map<String, Object> response = restClient.post()
                     .uri(url)
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -130,7 +131,7 @@ public class GoogleThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
         String url = "https://www.googleapis.com/oauth2/v3/userinfo";
         
         try {
-            RestClient restClient = getHttpClient(platform);
+            RestClient restClient = getRestClient(platform);
             return restClient.get()
                     .uri(url)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
