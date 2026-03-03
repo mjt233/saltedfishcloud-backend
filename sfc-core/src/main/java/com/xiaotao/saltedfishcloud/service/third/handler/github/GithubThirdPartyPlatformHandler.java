@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.service.third.handler.AbstractThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Lazy;
@@ -46,7 +47,7 @@ public class GithubThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
 
     @Override
     protected ThirdPartyPlatformUser handleCallback(ThirdPartyAuthPlatform thirdPartyAuthPlatform, GithubPlatformProperty property, Map<String, Object> platformCallbackParam) throws IOException {
-        String code = platformCallbackParam.get("code").toString();
+        String code = Objects.requireNonNull(TypeUtils.toString(platformCallbackParam.get("code")), "缺少参数 code");
         String accessToken = getAccessToken(thirdPartyAuthPlatform, property, code);
         GithubUserInfo githubUserInfo = getUserInfo(thirdPartyAuthPlatform, accessToken);
         return ThirdPartyPlatformUser.builder()
