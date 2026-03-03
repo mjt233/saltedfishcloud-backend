@@ -48,6 +48,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     private List<ThumbnailHandler> handlerList;
 
     @Autowired
+    @Lazy
     private ConfigService configService;
 
     /**

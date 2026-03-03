@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.PathResource;

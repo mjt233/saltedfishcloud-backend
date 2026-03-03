@@ -19,19 +19,22 @@ import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformUserService;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,6 +66,9 @@ public class OAuthController {
     @Autowired
     private ThirdPartyPlatformUserService thirdPartyPlatformUserService;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
 
     @ApiOperation("使用第三方登录创建新账号")
     @AllowAnonymous
@@ -81,6 +87,13 @@ public class OAuthController {
     @AllowAnonymous
     public ModelAndView callback(@PathVariable("platformType") String platformType, HttpServletRequest request) {
         try {
+            String key = "oauth::cb::" + platformType + "::" + Optional.ofNullable(request.getQueryString()).map(SecureUtils::getMd5).orElse("");
+            Boolean isSuccess = redisTemplate.opsForValue().setIfAbsent(key, true, Duration.ofSeconds(20));
+            if (!Boolean.TRUE.equals(isSuccess)) {
+                return new ModelAndView("thirdPlatformCallback")
+                        .addObject("error", "不能重复访问");
+            }
+
             ThirdPartyPlatformCallbackResult callbackResult = thirdPartyPlatformManager.doCallback(platformType, request);
             return new ModelAndView("thirdPlatformCallback")
                     .addObject("result", MapperHolder.toJson(callbackResult))

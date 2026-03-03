@@ -43,6 +43,12 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
     @Autowired
     private DiskFileSystemDispatcher dispatcher;
 
+    @Autowired(required = false)
+    public void setFactories(List<DiskFileSystemFactory> factories) {
+        if (factories != null) {
+            factories.forEach(this::registerFileSystem);
+        }
+    }
 
     @Override
     public List<DiskFileSystemFactory> listAllFileSystem() {

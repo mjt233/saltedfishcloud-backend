@@ -14,8 +14,6 @@ mybatis:
   mapper-locations: classpath:mapper/*.xml
 
 spring:
-  main:
-    allow-circular-references: true
   jpa:
     database: mysql
     open-in-view: false

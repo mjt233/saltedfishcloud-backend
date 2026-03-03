@@ -46,6 +46,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
     private MountPointRepo mountPointRepo;
 
     @Autowired
+    @org.springframework.context.annotation.Lazy
     private DiskFileSystemManager fileSystemManager;
 
     @Autowired
