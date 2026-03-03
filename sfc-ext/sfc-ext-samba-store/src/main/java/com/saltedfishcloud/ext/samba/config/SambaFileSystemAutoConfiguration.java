@@ -12,8 +12,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Slf4j
 public class SambaFileSystemAutoConfiguration implements InitializingBean {
-    @Autowired
-    private DiskFileSystemManager diskFileSystemManager;
 
     @Override
     public void afterPropertiesSet() throws Exception {
