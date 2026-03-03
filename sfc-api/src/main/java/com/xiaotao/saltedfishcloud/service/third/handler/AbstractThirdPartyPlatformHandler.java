@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
@@ -65,7 +66,7 @@ public abstract class AbstractThirdPartyPlatformHandler<T> implements ThirdParty
      * @param platform  第三方平台原始配置对象
      * @param property  解析的定制配置对象，见{@link #getProperty(ThirdPartyAuthPlatform)}
      */
-    protected abstract boolean isConfigurationIncomplete(ThirdPartyAuthPlatform platform, T property);
+    protected abstract boolean isConfigurationIncomplete(ThirdPartyAuthPlatform platform,@Nullable T property);
 
     /**
      * 获取跳转第三方平台的登录认证url
@@ -98,6 +99,6 @@ public abstract class AbstractThirdPartyPlatformHandler<T> implements ThirdParty
         if (isConfigurationIncomplete(partyAuthPlatform, property)) {
             throw new IllegalArgumentException("第三方平台" + getType() + "登录参数未配置");
         }
-        return null;
+        return handleCallback(partyAuthPlatform, property, platformCallbackParam);
     }
 }

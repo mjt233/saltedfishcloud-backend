@@ -3,17 +3,18 @@ package com.xiaotao.saltedfishcloud.service.third.handler.github;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
+import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
+import com.xiaotao.saltedfishcloud.service.third.handler.AbstractThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Lazy;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
 import java.util.*;
@@ -21,10 +22,12 @@ import java.util.function.Supplier;
 
 @Component
 @Slf4j
-public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandler {
+public class GithubThirdPartyPlatformHandler extends AbstractThirdPartyPlatformHandler<GithubPlatformProperty> {
 
     @Autowired
-    private RestTemplate restTemplate;
+    public GithubThirdPartyPlatformHandler(ProxyInfoService proxyInfoService) {
+        super(proxyInfoService);
+    }
 
     private final Supplier<List<ConfigNode>> configNodeList = Lazy.of(() -> {
         List<ConfigNode> list = new ArrayList<>(PropertyUtils.getConfigNodeFromEntityClass(GithubPlatformProperty.class).values());
@@ -37,25 +40,15 @@ public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
     }
 
     @Override
-    public String getAuthUrl(ThirdPartyAuthPlatform partyAuthPlatform) {
-        try {
-            if (isNotConfig(partyAuthPlatform)) {
-                return null;
-            }
-            GithubPlatformProperty property = getProperty(partyAuthPlatform);
-            return "https://github.com/login/oauth/authorize?scope=user:email&client_id=" + property.getClientId();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    protected String getAuthenticationUrl(ThirdPartyAuthPlatform platform, GithubPlatformProperty property) {
+        return "https://github.com/login/oauth/authorize?scope=user:email&client_id=" + property.getClientId();
     }
 
     @Override
-    public ThirdPartyPlatformUser callback(ThirdPartyAuthPlatform partyAuthPlatform, Map<String, Object> platformCallbackParam) throws IOException {
-        if(!platformCallbackParam.containsKey("code")) {
-            throw new IllegalArgumentException("缺少参数code");
-        }
-        String accessToken = getAccessToken(getProperty(partyAuthPlatform), platformCallbackParam.get("code").toString());
-        GithubUserInfo githubUserInfo = getUserInfo(accessToken);
+    protected ThirdPartyPlatformUser handleCallback(ThirdPartyAuthPlatform thirdPartyAuthPlatform, GithubPlatformProperty property, Map<String, Object> platformCallbackParam) throws IOException {
+        String code = platformCallbackParam.get("code").toString();
+        String accessToken = getAccessToken(thirdPartyAuthPlatform, property, code);
+        GithubUserInfo githubUserInfo = getUserInfo(thirdPartyAuthPlatform, accessToken);
         return ThirdPartyPlatformUser.builder()
                 .platformType(getType())
                 .thirdPartyUserId(githubUserInfo.getId().toString())
@@ -65,15 +58,22 @@ public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
                 .build();
     }
 
-    private boolean isNotConfig(ThirdPartyAuthPlatform platform) {
-        return platform.getConfig() == null || platform.getConfig().isBlank() || platform.getConfig().equals("{}");
+    @Override
+    protected boolean isConfigurationIncomplete(ThirdPartyAuthPlatform platform,@Nullable GithubPlatformProperty property) {
+        return property == null || property.getClientId() == null || property.getClientId().isBlank()
+                || property.getClientSecret() == null || property.getClientSecret().isBlank();
     }
-
-    private GithubPlatformProperty getProperty(ThirdPartyAuthPlatform platform) throws IOException {
-        if (this.isNotConfig(platform)) {
-            throw new IllegalArgumentException("Github平台参数未配置，请联系系统管理员");
+    
+    @Override
+    protected GithubPlatformProperty getProperty(ThirdPartyAuthPlatform platform) {
+        try {
+            if (platform == null || platform.getConfig() == null) {
+                return null;
+            }
+            return MapperHolder.parseJson(platform.getConfig(), GithubPlatformProperty.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return MapperHolder.parseJson(platform.getConfig(), GithubPlatformProperty.class);
     }
 
     @Override
@@ -87,35 +87,38 @@ public class GithubThirdPartyPlatformHandler implements ThirdPartyPlatformHandle
                 .build();
     }
 
-    private GithubUserInfo getUserInfo(String accessToken) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "token " + accessToken);
-        headers.add("accept", "application/json");
-        return restTemplate.exchange(
-                "https://api.github.com/user",
-                HttpMethod.GET,
-                new HttpEntity<>(new HashMap<>(), headers),
-                GithubUserInfo.class
-        ).getBody();
+    private GithubUserInfo getUserInfo(ThirdPartyAuthPlatform thirdPartyAuthPlatform, String accessToken) {
+        RestClient restClient = getHttpClient(thirdPartyAuthPlatform);
+        return restClient.get()
+                .uri("https://api.github.com/user")
+                .header("Authorization", "token " + accessToken)
+                .header("accept", "application/json")
+                .retrieve()
+                .body(GithubUserInfo.class);
     }
 
     @SuppressWarnings("unchecked")
-    private String getAccessToken(GithubPlatformProperty property, String code) {
+    private String getAccessToken(ThirdPartyAuthPlatform thirdPartyAuthPlatform, GithubPlatformProperty property, String code) {
         Map<String, Object> param = new HashMap<>();
         param.put("client_id", property.getClientId());
         param.put("client_secret", property.getClientSecret());
         param.put("code", code);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("accept", "application/json");
-
-        Map<String, Object> res = (Map<String, Object>)restTemplate.exchange(
-                "https://github.com/login/oauth/access_token",
-                HttpMethod.POST,
-                new HttpEntity<>(param, headers),
-                Map.class
-        ).getBody();
+            
+        RestClient restClient = getHttpClient(thirdPartyAuthPlatform);
+        Map<String, Object> res = restClient.post()
+                .uri("https://github.com/login/oauth/access_token")
+                .header("Accept", "application/json")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(param)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, resp) -> {
+                    // 如果 GitHub 返回了 4xx 或 5xx，这里可以捕获
+                    log.error("GitHub OAuth 响应错误状态码: {}", resp.getStatusCode());
+                })
+                .body(Map.class);
+            
         if (res == null || res.containsKey("error")) {
-            log.error("Github登录获取accessToken出错: {}", res);
+            log.error("Github 登录获取 accessToken 出错：{}", res);
             throw new RuntimeException(res == null ? "" : String.valueOf(res.get("error_description")));
         }
         return res.get("access_token").toString();

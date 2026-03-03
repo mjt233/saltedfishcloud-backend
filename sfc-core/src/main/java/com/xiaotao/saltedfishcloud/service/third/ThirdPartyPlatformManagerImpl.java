@@ -137,7 +137,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         ThirdPartyPlatformUser platformUser;
         try {
             platformUser = handler.callback(platform, param);
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("{}平台{}回调出错", LOG_PREFIX, platformType, e);
             throw new RuntimeException("系统内部错误，请联系管理员检查系统日志");
         }
