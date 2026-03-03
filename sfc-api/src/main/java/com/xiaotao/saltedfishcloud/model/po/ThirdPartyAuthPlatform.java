@@ -41,6 +41,11 @@ public class ThirdPartyAuthPlatform extends AuditModel {
     private Boolean isEnable;
 
     /**
+     * 配置的代理id
+     */
+    private Long proxyId;
+
+    /**
      * json格式配置参数
      */
     @Column(length = 2048)
