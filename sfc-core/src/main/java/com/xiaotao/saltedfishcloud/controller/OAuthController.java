@@ -1,18 +1,23 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.BindUserParam;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformUserService;
@@ -42,7 +47,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Validated
+
 @Controller
 @RequestMapping("/api/oauth")
 @Slf4j
@@ -69,6 +74,9 @@ public class OAuthController {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
+    @Autowired
+    private ThirdPartyAppService thirdPartyAppService;
+
 
     @ApiOperation("使用第三方登录创建新账号")
     @AllowAnonymous
@@ -77,8 +85,8 @@ public class OAuthController {
     public JsonResult<ThirdPartyPlatformCallbackResult> createUser(@RequestParam("actionId") String actionId) {
         UserVO user = thirdPartyPlatformManager.createUser(actionId);
         return JsonResultImpl.getInstance(ThirdPartyPlatformCallbackResult.builder()
-                        .newToken(tokenService.generateUserToken(user))
-                        .user(user)
+                .newToken(tokenService.generateUserToken(user))
+                .user(user)
                 .build());
     }
 
@@ -175,7 +183,7 @@ public class OAuthController {
             Objects.requireNonNull(param.getAccount(), "用户名不能为空");
             Objects.requireNonNull(param.getPassword(), "密码不能为空");
             User specifyUser = Optional.ofNullable(userService.getUserByAccount(param.getAccount())).orElseThrow(UserNoExistException::new);
-            if(!passwordEncoder.encode(param.getPassword()).equals(specifyUser.getPassword())) {
+            if (!passwordEncoder.encode(param.getPassword()).equals(specifyUser.getPassword())) {
                 throw new JsonException("用户名或密码错误");
             }
             user = thirdPartyPlatformManager.bindUser(param.getActionId(), specifyUser);
@@ -191,5 +199,35 @@ public class OAuthController {
     @ResponseBody
     public JsonResult<List<ThirdPartyPlatformUser>> listAssocPlatformUser(@RequestParam("uid") @UID Long uid) {
         return JsonResultImpl.getInstance(thirdPartyPlatformUserService.findByUid(uid));
+    }
+
+    @ApiOperation("保存一个第三方平台应用")
+    @PostMapping("saveThirdPartyApp")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<Object> saveThirdPartyApp(@RequestBody @Validated ThirdPartyApp app) {
+        if (app.getId() == null && app.getUid() == null) {
+            app.setUid(SecureUtils.getCurrentUid());
+        }
+        thirdPartyAppService.save(app);
+        return JsonResult.emptySuccess();
+    }
+
+    @ApiOperation("列出系统中的第三方平台应用")
+    @GetMapping("listThirdPartyApp")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<CommonPageInfo<ThirdPartyApp>> listThirdPartyApp(PageableRequest pageableRequest) {
+        return JsonResultImpl.getInstance(thirdPartyAppService.listApps(pageableRequest));
+    }
+
+
+    @ApiOperation("列出系统中的第三方平台应用")
+    @PostMapping("deleteThirdPartyApp")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<Object> deleteThirdPartyApp(@RequestBody List<Long> idList) {
+        thirdPartyAppService.batchDelete(idList);
+        return JsonResult.emptySuccess();
     }
 }
