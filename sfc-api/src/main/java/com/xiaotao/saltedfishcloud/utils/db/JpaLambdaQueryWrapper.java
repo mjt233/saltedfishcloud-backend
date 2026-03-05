@@ -73,7 +73,7 @@ public class JpaLambdaQueryWrapper<T> {
      * SQL对比操作符
      */
     public enum Operate {
-        EQ, LT, GT, LE, GE, BT, IN, IS_NULL, NOT_NULL, LIKE,
+        EQ, NE, LT, GT, LE, GE, BT, IN, IS_NULL, NOT_NULL, LIKE,
         /**
          * 子条件
          */
@@ -105,6 +105,7 @@ public class JpaLambdaQueryWrapper<T> {
             Path<Object> objectPath = field() == null ? null : root.get(field());
             return switch (op()) {
                 case EQ -> cb.equal(objectPath, val());
+                case NE -> cb.notEqual(objectPath, val());
                 case GE -> cb.gt(root.get(field()), getNumberVal());
                 case GT -> cb.ge(root.get(field()), getNumberVal());
                 case LT -> cb.lt(root.get(field()), getNumberVal());
@@ -203,6 +204,18 @@ public class JpaLambdaQueryWrapper<T> {
             return this;
         }
         return handleNullStrategy(field, Operate.EQ);
+    }
+
+    public <R> JpaLambdaQueryWrapper<T> ne(SFunc<T, R> func, Object value) {
+        return this.ne(getFieldName(func), value);
+    }
+
+    public JpaLambdaQueryWrapper<T> ne(String field, Object val) {
+        if (isCanUseDirect(val)) {
+            queryConditionList.add(new QueryCondition<>(field, Operate.NE, ConditionLogic.AND, val, null));
+            return this;
+        }
+        return handleNullStrategy(field, Operate.NE);
     }
 
     public JpaLambdaQueryWrapper<T> orderByAsc(String ...fields) {

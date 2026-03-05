@@ -24,7 +24,22 @@ public class ThirdPartyAppKey extends AuditModel {
     private Long appId;
 
     /**
-     * 客户端密钥
+     * 客户端密钥的哈希值
      */
-    private String clientSecret;
+    private String clientSecretHash;
+
+    /**
+     * 客户端密钥原文的部分遮掩参考值
+     */
+    private String clientSecretMaskValue;
+
+    /**
+     * 名称标记
+     */
+    private String name;
+
+    /**
+     * 备注
+     */
+    private String remark;
 }

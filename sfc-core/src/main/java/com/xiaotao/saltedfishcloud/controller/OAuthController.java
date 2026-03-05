@@ -16,11 +16,9 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppKeyVo;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformUserService;
+import com.xiaotao.saltedfishcloud.service.third.*;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -32,6 +30,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -76,6 +75,9 @@ public class OAuthController {
 
     @Autowired
     private ThirdPartyAppService thirdPartyAppService;
+
+    @Autowired
+    private ThirdPartyAppKeyService thirdPartyAppKeyService;
 
 
     @ApiOperation("使用第三方登录创建新账号")
@@ -201,19 +203,19 @@ public class OAuthController {
         return JsonResultImpl.getInstance(thirdPartyPlatformUserService.findByUid(uid));
     }
 
-    @ApiOperation("保存一个第三方平台应用")
+    @ApiOperation("保存/新增一个第三方OAuth应用")
     @PostMapping("saveThirdPartyApp")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
-    public JsonResult<Object> saveThirdPartyApp(@RequestBody @Validated ThirdPartyApp app) {
+    public JsonResult<ThirdPartyApp> saveThirdPartyApp(@RequestBody @Validated ThirdPartyApp app) {
         if (app.getId() == null && app.getUid() == null) {
             app.setUid(SecureUtils.getCurrentUid());
         }
         thirdPartyAppService.save(app);
-        return JsonResult.emptySuccess();
+        return JsonResultImpl.getInstance(app);
     }
 
-    @ApiOperation("列出系统中的第三方平台应用")
+    @ApiOperation("列出系统中的第三方OAuth应用")
     @GetMapping("listThirdPartyApp")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
@@ -222,12 +224,46 @@ public class OAuthController {
     }
 
 
-    @ApiOperation("列出系统中的第三方平台应用")
+    @ApiOperation("删除系统中的第三方OAuth应用")
     @PostMapping("deleteThirdPartyApp")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
     public JsonResult<Object> deleteThirdPartyApp(@RequestBody List<Long> idList) {
         thirdPartyAppService.batchDelete(idList);
+        return JsonResult.emptySuccess();
+    }
+
+    @ApiOperation("新生成一个第三方OAuth应用密钥")
+    @GetMapping("generateNewOauthAppKey")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<ThirdPartyAppKeyVo> generateNewOauthAppKey(@RequestParam Long appId, @RequestParam(required = false) String name) {
+        return JsonResultImpl.getInstance(thirdPartyAppKeyService.generateNewKey(appId, name));
+    }
+
+    @ApiOperation("列出第三方OAuth应用的密钥")
+    @GetMapping("listOAuthAppKey")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<List<ThirdPartyAppKeyVo>> listOAuthAppKey(@RequestParam Long appId) {
+        return JsonResultImpl.getInstance(thirdPartyAppKeyService.listKeyByAppId(appId));
+    }
+
+    @ApiOperation("删除第三方OAuth应用密钥")
+    @PostMapping("deleteOAuthAppKey")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<Object> deleteOAuthAppKey(@RequestBody List<Long> idList) {
+        thirdPartyAppKeyService.batchDelete(idList);
+        return JsonResult.emptySuccess();
+    }
+
+    @ApiOperation("修改第三方OAuth应用密钥信息")
+    @PostMapping("changeOAuthAppKey")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<Object> changeOAuthAppKey(@RequestBody ThirdPartyAppKeyVo keyVo) {
+        thirdPartyAppKeyService.changeKeyInfo(keyVo);
         return JsonResult.emptySuccess();
     }
 }
