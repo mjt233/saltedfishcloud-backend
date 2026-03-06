@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import jakarta.servlet.http.Cookie;
 import lombok.Setter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -52,6 +53,11 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
         response.setContentType("application/json;charset=utf-8");
         User user = (User)authResult.getPrincipal();
         String token = tokenDao.generateUserToken(user);
+        if ("1".equals(request.getParameter("getCookie"))) {
+            Cookie cookie = new Cookie("token", token);
+            cookie.setHttpOnly(true);
+            response.addCookie(cookie);
+        }
         response.getWriter().print(JsonResultImpl.getInstance(token));
         userService.updateLoginDate(user.getId());
         logRecordManager.saveRecordAsync(LogRecord.builder()

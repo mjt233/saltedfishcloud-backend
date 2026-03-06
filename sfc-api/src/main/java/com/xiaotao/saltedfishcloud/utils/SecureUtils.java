@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.model.po.User;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -42,6 +44,28 @@ public class SecureUtils {
      */
     public static String getMd5(String input) {
         return DigestUtils.md5DigestAsHex(input.getBytes());
+    }
+
+    /**
+     * 从HTTP Servlet请求对象中获取有效的token凭证字符串
+     */
+    public static String getToken(HttpServletRequest req) {
+        // 先从header获取token
+        String token = req.getHeader(JwtUtils.AUTHORIZATION);
+        if (token == null) {
+            // 获取不到再从表单获取
+            token = req.getParameter(JwtUtils.AUTHORIZATION);
+        }
+        // 最后从cookie中获取
+        if (token == null && req.getCookies() != null) {
+            for (Cookie cookie : req.getCookies()) {
+                if (!"token".equals(cookie.getName())) {
+                    continue;
+                }
+                token = cookie.getValue();
+            }
+        }
+        return token;
     }
 
     /**

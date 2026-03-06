@@ -17,6 +17,7 @@ import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.core.io.Resource;
@@ -38,8 +39,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping(UserController.PREFIX)
@@ -174,8 +177,35 @@ public class UserController {
         if (user == null) {
             throw new JsonException(401, "未登录");
         }
-        tokenDao.setToken(user.getId(), request.getHeader(JwtUtils.AUTHORIZATION));
+        Optional.ofNullable(request.getHeader(JwtUtils.AUTHORIZATION))
+                .or(() -> Arrays.stream(request.getCookies())
+                        .filter(c -> "token".equals(c.getName()))
+                        .map(Cookie::getValue)
+                        .findAny())
+                .ifPresent(token -> tokenDao.setToken(user.getId(), token));
         return JsonResultImpl.getInstance(user);
+    }
+
+    /**
+     * 登出
+     */
+    @PostMapping("logout")
+    @ResponseBody
+    public JsonResult<Object> logout(HttpServletRequest request, HttpServletResponse response) {
+        // 获取原token
+        String token = SecureUtils.getToken(request);
+
+        // 清理cookie
+        Cookie cookie = new Cookie("token", "");
+        cookie.setMaxAge(0);
+        cookie.setPath("/");
+        response.addCookie(cookie);
+
+        // 令token失效
+        if (token != null) {
+            tokenDao.invalidToken(SecureUtils.getCurrentUid(), token);
+        }
+        return JsonResult.emptySuccess();
     }
 
 

@@ -4,16 +4,16 @@ import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 
@@ -30,24 +30,12 @@ public class JwtValidateFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
+
         // 先从header获取token
-        String token = req.getHeader(JwtUtils.AUTHORIZATION);
-        if (token == null) {
-            // 获取不到再从表单获取
-            token = req.getParameter(JwtUtils.AUTHORIZATION);
-        }
-        // 最后从cookie中获取
-        if (token == null && req.getCookies() != null) {
-            for (Cookie cookie : req.getCookies()) {
-                if (!"token".equals(cookie.getName())) {
-                    continue;
-                }
-                token = cookie.getValue();
-            }
-        }
+        String token = SecureUtils.getToken(req);
 
         // 还是获取不到或获取到个空的token当作无鉴权
-        if (token == null || token.length() == 0) {
+        if (token == null || token.isEmpty()) {
             chain.doFilter(req, response);
             return;
         } else {
