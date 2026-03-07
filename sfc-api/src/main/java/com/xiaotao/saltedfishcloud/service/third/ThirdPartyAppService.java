@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.service.CrudService;
-import org.springframework.lang.Nullable;
 
 public interface ThirdPartyAppService extends CrudService<ThirdPartyApp> {
 
@@ -13,4 +12,9 @@ public interface ThirdPartyAppService extends CrudService<ThirdPartyApp> {
      * @param pageableRequest 分页参数
      */
     CommonPageInfo<ThirdPartyApp> listApps(PageableRequest pageableRequest);
+
+    /**
+     * 检查应用是否有效并获取应用信息。只有当应用存在且处于正常启用状态才正常返回对象，否则该方法会抛出异常。
+     */
+    ThirdPartyApp checkAndGetById(Long appId);
 }

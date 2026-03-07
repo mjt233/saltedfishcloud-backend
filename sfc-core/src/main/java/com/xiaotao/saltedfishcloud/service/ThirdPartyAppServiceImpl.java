@@ -62,4 +62,16 @@ public class ThirdPartyAppServiceImpl extends CrudServiceImpl<ThirdPartyApp, Thi
                 PageRequest.of(pageableRequest.getPage(), pageableRequest.getSize())
         ));
     }
+
+    @Override
+    public ThirdPartyApp checkAndGetById(Long appId) {
+        ThirdPartyApp app = findById(appId);
+        if (app == null) {
+            throw new JsonException("无效的appId");
+        }
+        if (!Boolean.TRUE.equals(app.getIsEnabled())) {
+            throw new JsonException("该应用已被停用");
+        }
+        return app;
+    }
 }

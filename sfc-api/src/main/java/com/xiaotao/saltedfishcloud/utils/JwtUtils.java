@@ -20,7 +20,7 @@ public class JwtUtils {
     /**
      * 生成一个包含了data作为负载信息的token
      * @param data  要附加的数据
-     * @param expr  token有效时间，单位为秒
+     * @param expr  token有效时间，单位为秒。小于等于0的值则表示永久有效。
      * @return  token字符串
      */
     public static String generateToken(Object data, int expr) {
