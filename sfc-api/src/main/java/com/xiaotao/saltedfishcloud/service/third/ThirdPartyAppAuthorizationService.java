@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
-import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppTokenPayload;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.CrudService;
 
@@ -18,19 +17,14 @@ public interface ThirdPartyAppAuthorizationService extends CrudService<ThirdPart
      * @param appId 要授权的第三方OAuth应用app
      * @param uid 系统用户id
      * @param scope 授权的权限范围，多个权限使用空格分割。该值为追加授权范围，可不必传入该用户已授权的权限。
-     * @return 一次性生效授权码，第三方OAuth应用需要通过该授权码获取Access Token
+     * @return 授权后的用户授权对象信息
      */
-    String authorize(Long appId, Long uid, String scope);
+    ThirdPartyAppAuthorization authorize(Long appId, Long uid, String scope);
 
     /**
-     * 根据授权码获取开放接口的访问token，随后授权码将失效
-     * @param code 授权码
-     * @return  接口访问token
+     * 撤销权限授权
+     * @param appId 要授权的第三方OAuth应用app
+     * @param uid 系统用户id
      */
-    String getAccessToken(String code);
-
-    /**
-     * 解析并验证token是否有效
-     */
-    ThirdPartyAppTokenPayload parseAndValidateToken(String token);
+    void revoke(Long appId, Long uid);
 }

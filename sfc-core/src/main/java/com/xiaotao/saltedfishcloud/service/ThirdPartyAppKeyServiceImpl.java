@@ -29,9 +29,6 @@ import java.util.Objects;
 public class ThirdPartyAppKeyServiceImpl extends CrudServiceImpl<ThirdPartyAppKey, ThirdPartyAppKeyRepo> implements ThirdPartyAppKeyService {
     private final ThirdPartyAppService appService;
 
-    // 由于系统历史数据原因，系统默认的PasswordEncoder是基于MD5的，现在更主流的做法是使用BCrypt或Argon2
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
     @Override
     public List<ThirdPartyAppKeyVo> listKeyByAppId(Long appId) {
         return getRepository().findAll(JpaLambdaQueryWrapper.get(ThirdPartyAppKey.class).eq(ThirdPartyAppKey::getAppId, appId).build())
@@ -73,7 +70,7 @@ public class ThirdPartyAppKeyServiceImpl extends CrudServiceImpl<ThirdPartyAppKe
         key.setName(StringUtils.hasText(name) ? name : "Default");
         key.setAppId(appId);
         key.setUid(SecureUtils.getCurrentUid());
-        key.setClientSecretHash(passwordEncoder.encode(rawKey));
+        key.setClientSecretHash(SecureUtils.getBCryptPasswordEncoder().encode(rawKey));
         key.setClientSecretMaskValue(generateSecretMaskValue(rawKey));
         this.save(key);
 
@@ -86,7 +83,9 @@ public class ThirdPartyAppKeyServiceImpl extends CrudServiceImpl<ThirdPartyAppKe
 
     @Override
     public boolean validate(Long appId, String clientSecret) {
-        return getRepository().findByAppIdAndSecret(appId, passwordEncoder.encode(clientSecret)) != null;
+        return getRepository().findByAppId(appId)
+                .stream()
+                .anyMatch(k -> SecureUtils.getBCryptPasswordEncoder().matches(clientSecret, k.getClientSecretHash()));
     }
 
     @Override

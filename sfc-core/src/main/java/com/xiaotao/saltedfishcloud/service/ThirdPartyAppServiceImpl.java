@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service;
 
+import com.xiaotao.saltedfishcloud.constant.error.OAuthError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRepo;
 import com.xiaotao.saltedfishcloud.event.oauth.ThirdPartyAppDeleteEvent;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -67,10 +68,10 @@ public class ThirdPartyAppServiceImpl extends CrudServiceImpl<ThirdPartyApp, Thi
     public ThirdPartyApp checkAndGetById(Long appId) {
         ThirdPartyApp app = findById(appId);
         if (app == null) {
-            throw new JsonException("无效的appId");
+            throw new JsonException(OAuthError.INVALID_APP_ID);
         }
         if (!Boolean.TRUE.equals(app.getIsEnabled())) {
-            throw new JsonException("该应用已被停用");
+            throw new JsonException(OAuthError.APP_DISABLED);
         }
         return app;
     }

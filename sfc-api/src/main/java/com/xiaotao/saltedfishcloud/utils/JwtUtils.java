@@ -53,6 +53,23 @@ public class JwtUtils {
     }
 
     /**
+     * 检查JWT是否已过期
+     * @param token 待检查的token
+     * @return  true表示已过期，false表示未过期、仍有效
+     */
+    public static boolean checkIsExpired(String token) {
+        try {
+            Jwts.parser()
+                    .setSigningKey(SECRET)
+                    .parseClaimsJws(token)
+                    .getBody();
+            return false;
+        } catch (ExpiredJwtException e) {
+            return true;
+        }
+    }
+
+    /**
      * 解析一个token中的负载数据的json
      * @param token 输入的token
      * @return json字符串

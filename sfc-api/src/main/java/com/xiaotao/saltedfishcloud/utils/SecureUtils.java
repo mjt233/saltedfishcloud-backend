@@ -8,6 +8,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.DigestUtils;
 
 import java.util.Optional;
@@ -17,6 +19,7 @@ import java.util.UUID;
  * 安全与哈希相关的工具类
  */
 public class SecureUtils {
+    private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     final static private String SALT = "1145141919810";
 
@@ -26,6 +29,13 @@ public class SecureUtils {
      */
     public static String getUUID() {
         return UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
+    /**
+     * 由于系统历史数据原因，系统默认的PasswordEncoder是基于MD5的，现在更主流的做法是使用BCrypt或Argon2对密码加密
+     */
+    public static BCryptPasswordEncoder getBCryptPasswordEncoder() {
+        return passwordEncoder;
     }
 
     /**

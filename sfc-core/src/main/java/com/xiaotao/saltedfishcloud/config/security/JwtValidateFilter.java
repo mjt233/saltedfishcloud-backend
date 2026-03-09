@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
-import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -22,9 +22,9 @@ import java.io.IOException;
  */
 @Slf4j
 public class JwtValidateFilter extends OncePerRequestFilter {
-    private final TokenServiceImpl tokenDao;
+    private final TokenService tokenDao;
 
-    public JwtValidateFilter(TokenServiceImpl tokenDao) {
+    public JwtValidateFilter(TokenService tokenDao) {
         this.tokenDao = tokenDao;
     }
 
