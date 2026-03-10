@@ -17,5 +17,5 @@ public enum OpenAuthorizationScope {
     /**
      * 私人网盘数据修改权限
      */
-    STORAGE_READ_WRITE
+    STORAGE_WRITE
 }

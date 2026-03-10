@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
+import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
@@ -40,7 +41,7 @@ public class JwtOpenApiTicketFilter extends OncePerRequestFilter {
         Long uid = apiTicketPayload.getUid();
         User user = userService.getUserById(uid);
         List<GrantedAuthority> authorities = new ArrayList<>(user.getAuthorities());
-        authorities.add(new SimpleGrantedAuthority("ROLE_OAUTH_USER"));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + SysRole.OAUTH_USER));
         Arrays.stream(apiTicketPayload.getScope().split(" "))
                 .filter(s -> !s.isEmpty())
                 .forEach(scope -> authorities.add(new SimpleGrantedAuthority("SCOPE_" + scope)));

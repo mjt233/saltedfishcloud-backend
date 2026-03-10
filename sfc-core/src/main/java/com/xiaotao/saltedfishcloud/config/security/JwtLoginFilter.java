@@ -55,6 +55,7 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
         String token = tokenDao.generateUserToken(user);
         if ("1".equals(request.getParameter("getCookie"))) {
             Cookie cookie = new Cookie("token", token);
+            cookie.setPath("/");
             cookie.setHttpOnly(true);
             response.addCookie(cookie);
         }
