@@ -52,6 +52,11 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
+    public void invalidToken(Long uid, String token) {
+        redisTemplate.delete(TokenService.getTokenKey(uid, token));
+    }
+
+    @Override
     public void cleanUserToken(Long uid) {
         redisTemplate.delete(redisDao.scanKeys("xyy::token::" + uid + "::*"));
     }

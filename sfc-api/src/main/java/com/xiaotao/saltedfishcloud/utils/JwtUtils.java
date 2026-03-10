@@ -20,7 +20,7 @@ public class JwtUtils {
     /**
      * 生成一个包含了data作为负载信息的token
      * @param data  要附加的数据
-     * @param expr  token有效时间，单位为秒
+     * @param expr  token有效时间，单位为秒。小于等于0的值则表示永久有效。
      * @return  token字符串
      */
     public static String generateToken(Object data, int expr) {
@@ -50,6 +50,23 @@ public class JwtUtils {
      */
     public static String generateToken(Object data) {
         return generateToken(data, EXPIRATION_TIME);
+    }
+
+    /**
+     * 检查JWT是否已过期
+     * @param token 待检查的token
+     * @return  true表示已过期，false表示未过期、仍有效
+     */
+    public static boolean checkIsExpired(String token) {
+        try {
+            Jwts.parser()
+                    .setSigningKey(SECRET)
+                    .parseClaimsJws(token)
+                    .getBody();
+            return false;
+        } catch (ExpiredJwtException e) {
+            return true;
+        }
     }
 
     /**

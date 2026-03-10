@@ -1,13 +1,12 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.config.security.service.UserDetailsServiceImpl;
-import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.helper.Md5PasswordEncoder;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,6 +17,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -39,23 +39,9 @@ import java.util.*;
 public class SecurityConfig {
 
     private static final String LOGIN_URI = "/api/user/token";
-    @Resource
-    private RequestMappingHandlerMapping requestMappingHandlerMapping;
-
-    @Resource
-    private TokenServiceImpl tokenDao;
-
-    @Resource
-    private UserDetailsServiceImpl userDetailsService;
-
-    @Resource
-    private LogRecordManager logRecordManager;
-
-    @Resource
-    private UserService userService;
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public PasswordEncoder md5PasswordEncoder() {
         return new Md5PasswordEncoder();
     }
 
@@ -65,17 +51,26 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           AuthenticationConfiguration authenticationConfiguration,
+                                           ThirdPartyAppTokenService thirdPartyAppTokenService,
+                                           UserService userService,
+                                           LogRecordManager logRecordManager,
+                                           UserDetailsService userDetailsService,
+                                           TokenService tokenService,
+                                           RequestMappingHandlerMapping requestMappingHandlerMapping
+    ) throws Exception {
         http.cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()));
         http.sessionManagement(httpSecuritySessionManagementConfigurer -> httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
 
         //  添加Jwt登录和验证过滤器
-        JwtLoginFilter loginFilter = new JwtLoginFilter(LOGIN_URI, authenticationManager(authenticationConfiguration), tokenDao);
+        JwtLoginFilter loginFilter = new JwtLoginFilter(LOGIN_URI, authenticationManager(authenticationConfiguration), tokenService);
         loginFilter.setLogRecordManager(logRecordManager);
         loginFilter.setUserService(userService);
         http.addFilterBefore(loginFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new JwtValidateFilter(tokenDao), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtValidateFilter(tokenService), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtOpenApiTicketFilter(thirdPartyAppTokenService, userService), UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable);
 
         //  处理过滤器链中出现的异常
@@ -89,9 +84,13 @@ public class SecurityConfig {
 
         //  放行公共API和登录API
         http.authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/","/static-extension.json", "/api/oauth/callback/**","/ext/**", "/assets/**","/static/**", "/api/static/**", "/favicon.ico", "/index.*", "/api/file/upload")
+                .requestMatchers(
+                        "/","/static-extension.json", "/api/oauth/callback/**","/ext/**",
+                        "/assets/**", "/oauth/assets/**", "/oauth/index.html", "/oauth", "/oauth/",
+                        "/static/**", "/api/static/**", "/favicon.ico", "/index.*"
+                )
                 .permitAll()
-                .requestMatchers(getAnonymousUrls()).permitAll()
+                .requestMatchers(getAnonymousUrls(requestMappingHandlerMapping)).permitAll()
                 .requestMatchers(HttpMethod.POST, LOGIN_URI).permitAll()
                 .anyRequest()
                 .authenticated()
@@ -115,7 +114,7 @@ public class SecurityConfig {
      * 获取已注册的控制器路由中允许匿名访问的URL
      * @return 允许匿名访问的URL
      */
-    public String[] getAnonymousUrls() {
+    public String[] getAnonymousUrls(RequestMappingHandlerMapping requestMappingHandlerMapping) {
         Map<RequestMappingInfo, HandlerMethod> handlerMethods = requestMappingHandlerMapping.getHandlerMethods();
         Set<String> res = new HashSet<>();
         handlerMethods.forEach((info, method) -> {

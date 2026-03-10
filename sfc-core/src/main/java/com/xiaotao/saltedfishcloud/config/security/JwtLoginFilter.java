@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
-import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
+import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.User;
@@ -8,6 +8,10 @@ import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.Setter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,9 +20,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
@@ -26,14 +27,14 @@ import java.io.IOException;
  */
 public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
     private final static String LOGIN_LOG_TYPE = "用户登录";
-    private final TokenServiceImpl tokenDao;
+    private final TokenService tokenDao;
     @Setter
     private LogRecordManager logRecordManager;
 
     @Setter
     private UserService userService;
 
-    protected JwtLoginFilter(String defaultFilterProcessesUrl, AuthenticationManager authenticationManager, TokenServiceImpl tokenDao) {
+    protected JwtLoginFilter(String defaultFilterProcessesUrl, AuthenticationManager authenticationManager, TokenService tokenDao) {
         super(new AntPathRequestMatcher(defaultFilterProcessesUrl));
         setAuthenticationManager(authenticationManager);
         this.tokenDao = tokenDao;
@@ -52,6 +53,12 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
         response.setContentType("application/json;charset=utf-8");
         User user = (User)authResult.getPrincipal();
         String token = tokenDao.generateUserToken(user);
+        if ("1".equals(request.getParameter("getCookie"))) {
+            Cookie cookie = new Cookie("token", token);
+            cookie.setPath("/");
+            cookie.setHttpOnly(true);
+            response.addCookie(cookie);
+        }
         response.getWriter().print(JsonResultImpl.getInstance(token));
         userService.updateLoginDate(user.getId());
         logRecordManager.saveRecordAsync(LogRecord.builder()

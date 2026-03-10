@@ -17,6 +17,13 @@ public interface TokenService {
     }
 
     /**
+     * 使一个用户的token失效
+     * @param uid 用户id
+     * @param token 该用户的token
+     */
+    void invalidToken(Long uid, String token);
+
+    /**
      * 创建一个用户token
      *
      * @param uid 用户ID
