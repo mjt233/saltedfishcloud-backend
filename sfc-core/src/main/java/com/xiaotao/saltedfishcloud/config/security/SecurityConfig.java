@@ -84,7 +84,11 @@ public class SecurityConfig {
 
         //  放行公共API和登录API
         http.authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/","/static-extension.json", "/api/oauth/callback/**","/ext/**", "/assets/**","/static/**", "/api/static/**", "/favicon.ico", "/index.*", "/api/file/upload")
+                .requestMatchers(
+                        "/","/static-extension.json", "/api/oauth/callback/**","/ext/**",
+                        "/assets/**", "/oauth/assets/**", "/oauth/index.html", "/oauth", "/oauth/",
+                        "/static/**", "/api/static/**", "/favicon.ico", "/index.*"
+                )
                 .permitAll()
                 .requestMatchers(getAnonymousUrls(requestMappingHandlerMapping)).permitAll()
                 .requestMatchers(HttpMethod.POST, LOGIN_URI).permitAll()
