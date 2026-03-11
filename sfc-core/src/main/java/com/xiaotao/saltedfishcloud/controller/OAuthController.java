@@ -295,4 +295,20 @@ public class OAuthController {
         data.put("redirectUrl", redirectUrl);
         return JsonResultImpl.getInstance(data);
     }
+
+    @ApiOperation("撤销第三方OAuth应用授权")
+    @PostMapping("revoke")
+    @ResponseBody
+    public JsonResult<Object> revoke(@UID @RequestParam("uid") Long uid,
+                                     @RequestParam("appId") Long appId) {
+        thirdPartyAppTokenService.revoke(appId, uid);
+        return JsonResult.emptySuccess();
+    }
+
+    @ApiOperation("列出用户所有已关联的第三方OAuth应用授权")
+    @GetMapping("listUserAuthentication")
+    @ResponseBody
+    public JsonResult<List<ThirdPartyAppAuthorization>> listUserAuthentication(@RequestParam("uid") @UID Long uid) {
+        return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.findByUid(uid));
+    }
 }
