@@ -73,8 +73,13 @@ Authentication: ApiTicket eyJhbGciOiJIUzI1NiJ9...
 - **HTTPS要求**: 所有通信必须使用HTTPS
 - **及时撤销**: 应用不再需要时，及时撤销授权
 
+
+## 下一步
+
+- [获取授权用户的信息](../user/profile.md): 获取授权用户的信息
+
 ## 相关接口
 
 - [获取Access Token接口](get-access-token.md): 获取Access Token
-- [OAuth授权流程](../oauth/index.md): 完整的授权流程说明
-- [开放接口列表](apis.md): 可用API接口列表
+- [OAuth授权流程](../../index.md): 完整的授权流程说明
+- [开放接口列表](../index.md): 可用API接口列表

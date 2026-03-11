@@ -63,35 +63,9 @@ Content-Type: application/json
 | `60004` | 未授权的操作 | 403 |
 | `60005` | Client Secret验证失败 | 400 |
 
-## 用户相关接口
-
-### 获取用户基本信息
-
-**接口路径**: `GET /api/openApi/user/profile/v1`
-
-**权限要求**: `profile`
-
-**功能说明**: 获取授权用户的基本信息
-
-**请求参数**: 无
-
-**成功响应示例**: 
-```json
-{
-    "data": {
-        "id": "1054223881344122880",
-        "username": "admin",
-        "email": "",
-        "avatar": "http://127.0.0.1:8087/api/user/avatar/admin?uid=1054223881344122880"
-    },
-    "msg": "OK",
-    "code": 200,
-    "businessCode": 200
-}
-```
 
 ## 相关文档
 
-- [OAuth授权流程](index.md): 完整的授权流程说明
-- [获取Access Token接口](get-access-token.md): 获取Access Token
-- [获取ApiTicket接口](get-api-ticket.md): 获取ApiTicket
+- [OAuth授权流程](../index.md): 完整的授权流程说明
+- [获取Access Token接口](auth/get-access-token.md): 获取Access Token
+- [获取ApiTicket接口](auth/get-api-ticket.md): 获取ApiTicket

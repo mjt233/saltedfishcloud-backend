@@ -101,7 +101,7 @@ https://your-callback-domain/callback?code={authorization_code}
 GET /api/openApi/auth/getAccessToken/v1?code={code}&clientSecret={clientSecret}
 ```
 
-**接口详情**：参见[获取Access Token接口文档](get-access-token.md)
+**接口详情**：参见[获取Access Token接口文档](api/auth/get-access-token.md)
 
 #### 步骤4：获取ApiTicket
 
@@ -111,7 +111,7 @@ GET /api/openApi/auth/getAccessToken/v1?code={code}&clientSecret={clientSecret}
 GET /api/openApi/auth/getApiTicket/v1?appId={appId}&uid={uid}&accessToken={accessToken}
 ```
 
-**接口详情**：参见[获取ApiTicket接口文档](get-api-ticket.md)
+**接口详情**：参见[获取ApiTicket接口文档](api/auth/get-api-ticket.md)
 
 
 #### 步骤5：调用开放接口
@@ -147,6 +147,6 @@ A: 用户可以在咸鱼云网盘的个人中心 - 第三方应用授权 中撤�
 
 ## 下一步
 
-- [获取Access Token接口文档](get-access-token.md)
-- [获取ApiTicket接口文档](get-api-ticket.md)
-- [开放接口列表](apis.md)
+- [获取Access Token接口文档](api/auth/get-access-token.md)
+- [获取ApiTicket接口文档](api/auth/get-api-ticket.md)
+- [开放接口列表](api/index.md)

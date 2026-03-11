@@ -69,9 +69,10 @@
 - Client Secret错误时，检查应用配置
 - 网络错误时，应有重试机制
 
+## 下一步
 
+- [获取ApiTicket接口](get-api-ticket.md): 使用Access Token获取ApiTicket
 
 ## 相关接口
 
-- [获取ApiTicket接口](get-api-ticket.md): 使用Access Token获取ApiTicket
-- [OAuth授权流程](../oauth/index.md): 完整的授权流程说明
+- [OAuth授权流程](../../index.md): 完整的授权流程说明
