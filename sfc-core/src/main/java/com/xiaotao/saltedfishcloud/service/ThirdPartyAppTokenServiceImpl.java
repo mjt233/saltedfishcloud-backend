@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -54,9 +56,10 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
 
     @Override
     public String getApiTicket(Long appId, Long uid, String accessToken) {
+        Date now = new Date();
         // 获取 Access Token 对应的用户授权信息
         ThirdPartyAppToken tokenRecord = Optional.ofNullable(repository.findByAppIdAndUid(appId, uid))
-                .filter(t -> SecureUtils.getBCryptPasswordEncoder().matches(accessToken, t.getAccessToken()) )
+                .filter(t -> SecureUtils.getBCryptPasswordEncoder().matches(accessToken, t.getAccessToken()) && now.before(t.getAccessTokenExpiredDate()) )
                 .orElseThrow(() -> new JsonException(OAuthError.INVALID_TOKEN));
         ThirdPartyAppUserAuthorizationVo authorizationVo = authorizationService.getUserAppAuthorization(tokenRecord.getAppId(), tokenRecord.getUid());
         String originApiTicket = tokenRecord.getApiTicket();
@@ -145,6 +148,10 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
                     return newTokenRecord;
                 });
         tokenRecord.setAccessToken(SecureUtils.getBCryptPasswordEncoder().encode(accessToken));
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.add(Calendar.DAY_OF_YEAR, 90);
+        tokenRecord.setAccessTokenExpiredDate(calendar.getTime());
 
         // 保存Access Token
         save(tokenRecord);

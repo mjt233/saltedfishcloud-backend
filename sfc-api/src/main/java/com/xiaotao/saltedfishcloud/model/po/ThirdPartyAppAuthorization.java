@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.enums.OpenAuthorizationScope;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,6 +12,10 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Table(indexes = {
+        @Index(name = "idx_app_id", columnList = "appId"),
+        @Index(name = "idx_app_uid", columnList = "appId,uid"),
+})
 public class ThirdPartyAppAuthorization extends AuditModel {
 
     /**
@@ -24,4 +28,8 @@ public class ThirdPartyAppAuthorization extends AuditModel {
      * @see OpenAuthorizationScope
      */
     private String scope;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "appId", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private ThirdPartyApp thirdPartyApp;
 }
