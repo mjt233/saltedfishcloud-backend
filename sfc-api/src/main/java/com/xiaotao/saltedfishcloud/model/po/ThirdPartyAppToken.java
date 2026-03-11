@@ -8,6 +8,8 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.Date;
+
 @Entity
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -29,7 +31,12 @@ public class ThirdPartyAppToken extends AuditModel {
     private String apiTicket;
 
     /**
-     * 永久的token哈希（作为refresh token）
+     * Access Token的 BCrypt哈希值
      */
     private String accessToken;
+
+    /**
+     * Access Token 到期日期
+     */
+    private Date accessTokenExpiredDate;
 }
