@@ -93,6 +93,11 @@ public class FileInfo extends AuditModel {
      */
     private Boolean isMount;
 
+    /**
+     * 上级目录节点的名称(前端用)
+     */
+    @Transient
+    private String parent;
 
     @JsonIgnore
     @Transient
