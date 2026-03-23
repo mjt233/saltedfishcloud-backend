@@ -6,7 +6,7 @@
                f.*,
                n.name AS parent
         FROM file_table f
-        JOIN file_table n ON f.node = n.md5
+        LEFT JOIN file_table n ON f.node = n.md5
         WHERE f.uid = #{uid} AND f.name like #{key} COLLATE utf8mb4_general_ci
     </select>
 </mapper>
