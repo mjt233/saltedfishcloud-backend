@@ -14,8 +14,6 @@ import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.*;
@@ -50,7 +48,7 @@ public class VideoConvertTask implements AsyncTask {
     /**
      * 序列化后参数
      */
-    private final EncodeConvertTaskParam param;
+    private final EncodeConvertTaskParam taskParam;
 
     /**
      * 任务进度
@@ -95,12 +93,12 @@ public class VideoConvertTask implements AsyncTask {
             this.originParams = jsonParam;
             this.resourceService = resourceService;
             this.ffMpegHelper = ffMpegHelper;
-            this.param = MapperHolder.parseJson(jsonParam, EncodeConvertTaskParam.class);
+            this.taskParam = MapperHolder.parseJson(jsonParam, EncodeConvertTaskParam.class);
             // 临时目录/ve/时间戳_文件名
             this.outputFile = StringUtils.appendSystemPath(
                     PathUtils.getTempDirectory(),
                     "ve",
-                    System.currentTimeMillis() + "_" + param.getTarget().getName()
+                    System.currentTimeMillis() + "_" + taskParam.getTarget().getName()
             );
         } catch (IOException e) {
             throw new IllegalArgumentException("任务序列化失败:" + e.getMessage(), e);
@@ -130,7 +128,7 @@ public class VideoConvertTask implements AsyncTask {
             progress.setTotal(videoInfo.getFormat().getDuration().longValue() + 1);
 
             // 调用ffmpeg执行转换
-            processWrap = ffMpegHelper.executeConvert(inputFile, outputFile, param);
+            processWrap = ffMpegHelper.executeConvert(inputFile, outputFile, taskParam.getEncodeConvertParam());
             Optional.ofNullable(processWrap.getExtraMessage()).ifPresent(logger::info);
 
             // 用scanner按行读取解析进度
@@ -175,23 +173,23 @@ public class VideoConvertTask implements AsyncTask {
 
             // 转换完成，保存输出和清理临时文件
             logger.info(inputFile + "转码完成，保存中");
-            param.getTarget().getParams().put(ResourceRequest.CREATE_UID, asyncTaskRecord.getUid().toString());
-            if (resourceService.getResource(param.getTarget()) != null) {
-                if (Boolean.TRUE.equals(param.getIsOverwrite())) {
+            taskParam.getTarget().getParams().put(ResourceRequest.CREATE_UID, asyncTaskRecord.getUid().toString());
+            if (resourceService.getResource(taskParam.getTarget()) != null) {
+                if (Boolean.TRUE.equals(taskParam.getIsOverwrite())) {
                     logger.warn("已存在同名文件，将覆盖原文件");
                 } else {
-                    String newName = asyncTaskRecord.getId() + "_" + param.getTarget().getName();
+                    String newName = asyncTaskRecord.getId() + "_" + taskParam.getTarget().getName();
                     logger.warn("已存在同名文件，新文件自动重命名为: " + newName);
-                    param.getTarget().setName(newName);
+                    taskParam.getTarget().setName(newName);
                 }
             }
-            if (ResourceProtocol.MAIN.equals(param.getTarget().getProtocol())) {
+            if (ResourceProtocol.MAIN.equals(taskParam.getTarget().getProtocol())) {
                 logger.info("目标保存位置在网盘主文件系统，通过文件移动保存");
-                long targetId = Long.parseLong(param.getTarget().getTargetId());
+                long targetId = Long.parseLong(taskParam.getTarget().getTargetId());
                 UIDValidator.validateWithException(targetId, true);
                 logger.info("开始计算文件md5");
                 FileInfo fileInfo = FileInfo.getLocal(outputFile, true);
-                fileInfo.setName(param.getTarget().getName());
+                fileInfo.setName(taskParam.getTarget().getName());
                 logger.info("开始保存");
                 SpringContextUtils.getContext()
                         .getBean(DiskFileSystemManager.class)
@@ -199,14 +197,14 @@ public class VideoConvertTask implements AsyncTask {
                         .moveToSaveFile(
                                 targetId,
                                 nativeOutputFile,
-                                param.getTarget().getPath(),
+                                taskParam.getTarget().getPath(),
                                 fileInfo
                         );
             } else {
                 logger.info("目标保存位置不在网盘主文件系统，使用通用资源写入功能保存");
-                resourceService.writeResource(param.getTarget(), new PathResource(outputFile));
+                resourceService.writeResource(taskParam.getTarget(), new PathResource(outputFile));
             }
-            logger.info("保存完毕" + param.getTarget().getPath() + File.separator + param.getTarget().getName());
+            logger.info("保存完毕" + taskParam.getTarget().getPath() + File.separator + taskParam.getTarget().getName());
             this.progress.setLoaded(this.progress.getTotal());
         } catch (Exception e) {
             logger.error("编码转换失败:", e);
@@ -263,7 +261,7 @@ public class VideoConvertTask implements AsyncTask {
      */
     private void initInputFile() throws UnsupportedProtocolException, IOException {
         if (this.inputFile == null) {
-            Resource resource = resourceService.getResource(param.getSource());
+            Resource resource = resourceService.getResource(taskParam.getSource());
             Objects.requireNonNull(resource, "视频资源获取失败或已丢失");
             this.inputFile = VideoResourceUtils.toLocalPath(resource);
         }

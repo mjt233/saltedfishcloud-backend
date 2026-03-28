@@ -35,26 +35,13 @@ public class OfficeController {
     @Autowired
     private OfficeService officeService;
 
-    /**
-     * 读取所有请求参数，设置到params中
-     * @param resourceRequest   通用资源请求参数
-     * @param request           http请求对象
-     */
-    private void mergeParams(ResourceRequest resourceRequest, HttpServletRequest request) {
-        Map<String, Object> paramsMap = new HashMap<>();
-        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
-            paramsMap.put(entry.getKey(), entry.getValue()[0]);
-        }
-        resourceRequest.setParams(paramsMap);
-    }
-
 
     @RequestMapping("editor")
     @AllowAnonymous
     public ModelAndView editor(@RequestParam(value = "isView", defaultValue = "false") boolean isView, @Validated ResourceRequest resourceRequest, HttpServletRequest request) throws MalformedURLException {
 
         try {
-            mergeParams(resourceRequest, request);
+            resourceRequest.mergeParams(request);
             Config config = officeService.getResourceConfig(resourceRequest, new URL(request.getRequestURL().toString() + "?" + request.getQueryString()), isView);
             ModelAndView modelAndView = new ModelAndView();
             modelAndView.addObject("property", officeConfigProperty);

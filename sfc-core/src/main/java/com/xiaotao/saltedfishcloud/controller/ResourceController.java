@@ -61,7 +61,7 @@ public class ResourceController {
                                              HttpServletRequest request,
                                              @MergeFile @RequestParam("file") MultipartFile file
                                              ) throws UnsupportedProtocolException, IOException {
-        this.mergeParams(resourceRequest, request);
+        resourceRequest.mergeParams(request);
         ResourceProtocolHandler handler = resourceService.getResourceHandler(resourceRequest.getProtocol());
         if (handler == null) {
             throw new UnsupportedProtocolException(resourceRequest.getProtocol());
@@ -79,23 +79,10 @@ public class ResourceController {
         return JsonResult.emptySuccess();
     }
 
-    /**
-     * 读取所有请求参数，设置到params中
-     * @param resourceRequest   通用资源请求参数
-     * @param request           http请求对象
-     */
-    private void mergeParams(ResourceRequest resourceRequest, HttpServletRequest request) {
-        Map<String, Object> paramsMap = new HashMap<>();
-        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
-            paramsMap.put(entry.getKey(), entry.getValue()[0]);
-        }
-        resourceRequest.setParams(paramsMap);
-    }
-
     @GetMapping("get")
     @AllowAnonymous
     public HttpEntity<Resource> getResource(@Validated ResourceRequest resourceRequest, HttpServletRequest request) throws UnsupportedProtocolException, IOException {
-        this.mergeParams(resourceRequest, request);
+        resourceRequest.mergeParams(request);
 
         // 根据请求对象获取资源
         Resource resource = resourceService.getResource(resourceRequest);

@@ -3,19 +3,13 @@ package com.saltedfishcloud.ext.ve.config;
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelperImpl;
-import com.saltedfishcloud.ext.ve.model.FFMpegInfo;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
-import com.saltedfishcloud.ext.ve.service.SubtitleResourceHandler;
-import com.saltedfishcloud.ext.ve.service.VideoInfoResourceHandler;
-import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -23,34 +17,16 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 @Configuration
 @ComponentScan("com.saltedfishcloud.ext.ve")
 @EntityScan("com.saltedfishcloud.ext.ve.model")
 @EnableJpaRepositories(basePackages = "com.saltedfishcloud.ext.ve.dao")
 @Slf4j
-public class VEAutoConfiguration implements SystemOverviewItemProvider, InitializingBean {
-    private static final String LOG_PREFIX = "[视频增强配置]";
-
-    @Autowired
-    private ConfigService configService;
+public class VEAutoConfiguration implements InitializingBean {
 
     @Bean
-    public SubtitleResourceHandler subtitleResourceHandler() {
-        return new SubtitleResourceHandler();
-    }
-
-    @Bean
-    public VideoInfoResourceHandler videoInfoResourceHandler() {
-        return new VideoInfoResourceHandler();
-    }
-
-    @Bean
-    public FFMpegHelper ffMpegHelper() throws IOException {
+    public FFMpegHelper ffMpegHelper(ConfigService configService) throws IOException {
         VEProperty property = configService.getJsonConfig(VEConstants.PROPERTY_KEY, VEProperty.class);
         if (property == null) {
             property = new VEProperty();
@@ -62,56 +38,11 @@ public class VEAutoConfiguration implements SystemOverviewItemProvider, Initiali
             try {
                 VEProperty newProperty = MapperHolder.parseJson(json, VEProperty.class);
                 BeanUtils.copyProperties(newProperty, ffMpegHelper.getProperty());
-
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("视频增强插件配置更新出错", e);
             }
         });
         return ffMpegHelper;
-    }
-
-    @Override
-    public List<ConfigNode> provideItem(Map<String, ConfigNode> existItem) {
-        try {
-            VEProperty property = ffMpegHelper().getProperty();
-            FFMpegInfo ffMpegInfo = ffMpegHelper().getFFMpegInfo();
-            return Arrays.asList(
-                    ConfigNode.builder()
-                            .title("ffmpeg配置")
-                            .name("ffmpeg-configure")
-                            .nodes(Arrays.asList(
-                                    new ConfigNode("ffmpeg路径", property.getFfmpegPath()),
-                                    new ConfigNode("版本", ffMpegInfo.getVersion()),
-                                    new ConfigNode("构建信息", ffMpegInfo.getBuilt()),
-                                    new ConfigNode("编译参数", ffMpegInfo.getConfiguration())
-                                            .useTemplate("configure-info")
-                            ))
-                            .build(),
-                    ConfigNode.builder()
-                            .title("ffmpeg编码器信息")
-                            .name("ffmpeg-encoders")
-                            .nodes(Arrays.asList(
-                                    new ConfigNode("视频编码器", ffMpegInfo.getVideoEncoders())
-                                            .useTemplate("encoder-info"),
-                                    new ConfigNode("音频编码器", ffMpegInfo.getAudioEncoders())
-                                            .useTemplate("encoder-info"),
-                                    new ConfigNode("字幕编码器", ffMpegInfo.getSubtitleEncoders())
-                                            .useTemplate("encoder-info"),
-                                    new ConfigNode("其他编码器", ffMpegInfo.getOtherEncoders())
-                                            .useTemplate("encoder-info")
-                            ))
-                            .build()
-                    );
-        } catch (Exception e) {
-            log.error("{}加载配置出错: ", LOG_PREFIX, e);
-            return List.of(
-                    ConfigNode.builder()
-                            .title("ffmpeg配置")
-                            .name("ffmpeg-config")
-                            .nodes(Collections.singletonList(new ConfigNode("错误", e.getMessage())))
-                            .build()
-            );
-        }
     }
 
     @Override

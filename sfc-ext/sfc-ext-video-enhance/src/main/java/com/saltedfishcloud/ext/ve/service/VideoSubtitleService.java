@@ -5,79 +5,48 @@ import com.saltedfishcloud.ext.ve.model.ProcessWrap;
 import com.saltedfishcloud.ext.ve.model.StreamInfo;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.xiaotao.saltedfishcloud.common.ResponseResource;
-import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
-import com.xiaotao.saltedfishcloud.model.PermissionInfo;
+import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
-import com.xiaotao.saltedfishcloud.service.resource.AbstractResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.*;
+import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+
+@Service
+@RequiredArgsConstructor
 @Slf4j
-public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<ResourceRequest> {
-
-    @Autowired
-    private ResourceService resourceService;
-
-    @Autowired
-    private VideoService videoService;
-
-    @Autowired
-    private StoreServiceFactory storeServiceFactory;
+public class VideoSubtitleService {
+    private final ResourceService resourceService;
+    private final VideoService videoService;
+    private final StoreServiceFactory storeServiceFactory;
 
     private final Semaphore semaphore = new Semaphore(
             Math.max(1, Runtime.getRuntime().availableProcessors() - 1)
     );
-
     private final static Set<String> SUBTITLE_BIT_ENCODERS = Set.of("hdmv_pgs_subtitle", "dvb_subtitle", "dvd_subtitle");
 
-    @Override
-    public ResourceRequest validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
-        return resourceRequest;
-    }
+    @Validated
+    public Resource getSubtitleResource(ResourceRequest videoResourceRequest, @NotBlank String streamIndex) throws UnsupportedProtocolException, IOException {
 
-    @Override
-    public String getPathMappingIdentity(ResourceRequest resourceRequest, ResourceRequest param) {
-        ResourceRequest sourceResourceRequest = videoService.getSourceResourceRequest(param);
-        if (sourceResourceRequest != param) {
-            return resourceService.getResourceHandler(sourceResourceRequest.getProtocol()).getPathMappingIdentity(sourceResourceRequest) + "#" + getProtocolName();
-        } else {
-            return resourceService.getResourceHandler(ResourceProtocol.MAIN).getPathMappingIdentity(param) + "#" + getProtocolName();
-        }
-    }
-
-    @Override
-    public PermissionInfo getPermissionInfo(ResourceRequest resourceRequest, ResourceRequest param) {
-        PermissionInfo permissionInfo = resourceService.getResourceHandler(param.getProtocol())
-                .getPermissionInfo(videoService.getSourceResourceRequest(param));
-        return PermissionInfo.builder()
-                .isReadable(permissionInfo.isReadable())
-                .isWritable(false)
-                .ownerUid(permissionInfo.getOwnerUid())
-                .build();
-    }
-
-    @Override
-    public Resource getFileResource(ResourceRequest resourceRequest, ResourceRequest param) throws IOException {
         // 获取视频资源
-        Resource resource = videoService.getResource(param);
-        // 从请求参数中获取字幕流索引，并进行非空校验
-        String streamIndex = Objects.requireNonNull(TypeUtils.toString(param.getParams().get("stream")), "param.stream不能为空");
+        Resource resource = resourceService.getResource(videoResourceRequest);
 
         // 获取视频信息并提取指定的流信息，并验证所选流是否为字幕流
         VideoInfo videoInfo = videoService.getVideoInfo(resource);
@@ -129,7 +98,7 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
 
             // 远程资源：使用路径、文件名、修改时间和内容长度生成MD5
             cacheFileName = SecureUtils.getMd5(
-                    StringUtils.appendPath(resourceRequest.getPath(), resource.getFilename()) + "_"
+                    StringUtils.appendPath(videoResourceRequest.getPath(), resource.getFilename()) + "_"
                             + resource.lastModified() + "_"
                             + resource.contentLength())
                     + "_" + streamIndex + "." + format;
@@ -139,14 +108,14 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
         String cachePath = "ve/subtitle/" + cacheFileName;
         if (tempStoreService.exist(cachePath)) {
             return ResponseResource.create(tempStoreService.getResource(cachePath))
-                    .setResponseFilename(FileUtils.parseName(resourceRequest.getName())[0] + "." + format)
+                    .setResponseFilename(FileUtils.parseName(videoResourceRequest.getName())[0] + "." + format)
                     .setContentType(contentType);
         }
 
         // 无缓存，加锁后重新检查，若依然无缓存则执行字幕提取
         return LockUtils.execute(cacheFileName, () -> {
             try {
-                if(!semaphore.tryAcquire(1, 10, TimeUnit.MINUTES)) {
+                if (!semaphore.tryAcquire(1, 10, TimeUnit.MINUTES)) {
                     throw new RuntimeException("subtitle extract service busy");
                 }
                 try {
@@ -165,7 +134,7 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
                     }
                     output = tempStoreService.getResource(cachePath);
                     return ResponseResource.create(output)
-                            .setResponseFilename(FileUtils.parseName(resourceRequest.getName())[0] + "." + format)
+                            .setResponseFilename(FileUtils.parseName(videoResourceRequest.getName())[0] + "." + format)
                             .setContentType(contentType);
                 } finally {
                     semaphore.release();
@@ -178,6 +147,7 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
 
     }
 
+
     private void generateSubtitleFile(Resource videoResource, String savePath, String streamIndex, String ffmpegFormat, String encoder) throws IOException {
         ProcessWrap wrap = videoService.extractStream(videoResource, savePath, streamIndex, ffmpegFormat, encoder, VEConstants.EncoderType.SUBTITLE);
         String errMsg = wrap.waitProcess();
@@ -185,10 +155,5 @@ public class SubtitleResourceHandler extends AbstractResourceProtocolHandler<Res
             log.error("FFmpeg调用出错: 执行命令: {}\nffmepg 输出:\n {}", String.join(" ", wrap.getArgs()), errMsg);
             throw new RuntimeException("字幕获取失败");
         }
-    }
-
-    @Override
-    public String getProtocolName() {
-        return "subtitle";
     }
 }
