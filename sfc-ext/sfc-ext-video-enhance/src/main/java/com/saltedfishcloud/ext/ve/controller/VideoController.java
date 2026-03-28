@@ -6,16 +6,18 @@ import com.saltedfishcloud.ext.ve.model.FFMpegInfo;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTaskLog;
-import com.saltedfishcloud.ext.ve.model.request.VideoRequest;
 import com.saltedfishcloud.ext.ve.service.VideoService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -25,15 +27,11 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/api/video")
 @Validated
+@RequiredArgsConstructor
 public class VideoController {
-    @Autowired
-    private VideoService videoService;
-
-    @Autowired
-    private DiskFileSystemManager fileSystemManager;
-
-    @Autowired
-    private FFMpegHelper ffMpegHelper;
+    private final VideoService videoService;
+    private final ResourceService resourceService;
+    private final FFMpegHelper ffMpegHelper;
 
     @GetMapping("listConvertTask")
     public JsonResult<CommonPageInfo<EncodeConvertTask>> listConvertTask(@RequestParam("uid") @UID Long uid,
@@ -75,17 +73,22 @@ public class VideoController {
 
     @AllowAnonymous
     @GetMapping("getVideoInfo")
-    public JsonResult<VideoInfo> listSubtitle(VideoRequest request) throws IOException {
-        Resource resource = fileSystemManager.getMainFileSystem().getResource(request.getUid(), request.getPath(), request.getName());
+    public JsonResult<VideoInfo> getVideoInfo(ResourceRequest resourceRequest) throws IOException, UnsupportedProtocolException {
+        Resource resource = resourceService.getResource(resourceRequest);
         return JsonResultImpl.getInstance(videoService.getVideoInfo(resource));
     }
 
 
     @AllowAnonymous
     @GetMapping("getSubtitle")
-    public String getSubtitle(VideoRequest request) throws IOException {
-        Resource resource = fileSystemManager.getMainFileSystem().getResource(request.getUid(), request.getPath(), request.getName());
-        return videoService.getSubtitleText(resource, request.getStream(), request.getType());
+    public String getSubtitle(ResourceRequest resourceRequest,
+                              String stream,
+                              String type,
+                              HttpServletRequest request
+    ) throws IOException, UnsupportedProtocolException {
+        Resource resource = resourceService.getResource(resourceRequest);
+        resourceRequest.mergeParams(request);
+        return videoService.getSubtitleText(resource, stream, type);
     }
 
     /**

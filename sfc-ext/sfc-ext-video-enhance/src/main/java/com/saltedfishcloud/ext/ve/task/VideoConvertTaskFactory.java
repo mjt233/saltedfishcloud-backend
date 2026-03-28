@@ -6,15 +6,14 @@ import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class VideoConvertTaskFactory implements AsyncTaskFactory {
-    @Autowired
-    private FFMpegHelper ffMpegHelper;
-    @Autowired
-    private ResourceService resourceService;
+    private final FFMpegHelper ffMpegHelper;
+    private final ResourceService resourceService;
 
     @Override
     public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
