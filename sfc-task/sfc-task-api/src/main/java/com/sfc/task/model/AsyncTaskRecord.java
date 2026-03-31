@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * 异步任务记录
  */
-@Entity(name = "async_task_record")
+@Entity
 @Table(indexes = {
         @Index(name = "idx_uid", columnList = "uid")
 })
@@ -77,6 +77,12 @@ public class AsyncTaskRecord extends AuditModel {
      * 如100表示该任务可能会耗尽1个CPU核心的计算能力
      */
     private Integer cpuOverhead;
+
+    /**
+     * 是否为临时任务<br>
+     * 临时任务无需等待排队认领任务，可立即执行，且不具备生命周期管理的自动重试功能
+     */
+    private Boolean isTemp;
 
     @Transient
     private Boolean isFailed;
