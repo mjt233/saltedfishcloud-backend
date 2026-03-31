@@ -41,6 +41,12 @@ public interface AsyncTaskManager {
     void submitAsyncTask(AsyncTaskRecord record) throws IOException;
 
     /**
+     * 立即执行异步任务，不加入队列调度
+     * @param record    任务记录
+     */
+    void executeAsyncTask(AsyncTaskRecord record) throws IOException;
+
+    /**
      * 获取任务的执行日志流
      * @param taskId        任务id
      * @param withHistory   是否需要包含该任务的历史日志数据。若不包含则表示只获取实时产生的日志数据。（目前暂不支持实时流）

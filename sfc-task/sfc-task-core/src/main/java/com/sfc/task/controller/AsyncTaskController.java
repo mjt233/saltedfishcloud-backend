@@ -2,6 +2,7 @@ package com.sfc.task.controller;
 
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.AsyncTaskRecordService;
+import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskQueryParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
@@ -9,11 +10,13 @@ import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -36,6 +39,28 @@ public class AsyncTaskController {
     @GetMapping("getById")
     public JsonResult<AsyncTaskRecord> getById(@RequestParam("taskId") Long taskId) {
         return JsonResultImpl.getInstance(asyncTaskRecordRepo.getReferenceById(taskId));
+    }
+
+    /**
+     * 创建异步任务
+     */
+    @PostMapping("create")
+    public JsonResult<Long> create(@RequestBody AsyncTaskCreateParam param) throws IOException {
+        AsyncTaskRecord record = AsyncTaskRecord.builder()
+                .name(param.getName())
+                .taskType(param.getTaskType())
+                .params(param.getParams())
+                .cpuOverhead(param.getCpuOverhead())
+                .isTemp(param.getIsTemp())
+                .build();
+        record.setUid(Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getId());
+
+        if (Boolean.TRUE.equals(param.getImmediate())) {
+            asyncTaskManager.executeAsyncTask(record);
+        } else {
+            asyncTaskManager.submitAsyncTask(record);
+        }
+        return JsonResultImpl.getInstance(record.getId());
     }
 
     /**

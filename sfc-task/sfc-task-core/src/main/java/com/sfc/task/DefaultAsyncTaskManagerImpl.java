@@ -226,6 +226,12 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
     }
 
     @Override
+    public void executeAsyncTask(AsyncTaskRecord record) throws IOException {
+        repo.save(record);
+        executor.execute(record);
+    }
+
+    @Override
     public Resource getTaskLog(Long taskId, boolean withHistory) throws IOException {
         // 任务可能会被多次重试执行，从而产生多比日志记录，这里需要拼接起来
         List<AsyncTaskLogRecord> logs = logRepo.findByTaskId(taskId);
