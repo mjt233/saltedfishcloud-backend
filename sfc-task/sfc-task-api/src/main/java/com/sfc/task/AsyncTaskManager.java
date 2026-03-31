@@ -1,5 +1,6 @@
 package com.sfc.task;
 
+import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import org.springframework.core.io.Resource;
@@ -45,6 +46,13 @@ public interface AsyncTaskManager {
      * @param record    任务记录
      */
     void executeAsyncTask(AsyncTaskRecord record) throws IOException;
+
+    /**
+     * 快捷创建一个异步任务并提交执行
+     * @param param 创建参数
+     * @return 任务记录对象
+     */
+    AsyncTaskRecord createTask(AsyncTaskCreateParam param) throws IOException;
 
     /**
      * 获取任务的执行日志流

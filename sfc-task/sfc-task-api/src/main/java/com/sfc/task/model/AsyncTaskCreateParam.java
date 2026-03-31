@@ -1,23 +1,28 @@
 package com.sfc.task.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
 
 /**
  * 异步任务创建参数
  */
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class AsyncTaskCreateParam {
 
     /**
      * 任务名称
      */
+    @NotBlank
     private String name;
 
     /**
      * 任务类型
      */
+    @NotBlank
     private String taskType;
 
     /**
