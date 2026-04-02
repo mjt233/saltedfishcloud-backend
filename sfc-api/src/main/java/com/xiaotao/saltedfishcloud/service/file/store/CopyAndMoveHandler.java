@@ -179,6 +179,9 @@ public abstract class CopyAndMoveHandler {
                 if (callback != null) {
                     callback.onDirStart(target);
                 }
+                if (callback != null && callback.shouldInterrupt()) {
+                    return;
+                }
                 mkdir(target);
                 if (callback != null) {
                     callback.onDirComplete(target);
@@ -209,6 +212,9 @@ public abstract class CopyAndMoveHandler {
                         if (callback != null) {
                             callback.onFileStart(record);
                         }
+                        if (callback != null && callback.shouldInterrupt()) {
+                            return;
+                        }
                         if (isMove) {
                             moveFile(srcPath, dstPath);
                         } else {
@@ -220,6 +226,9 @@ public abstract class CopyAndMoveHandler {
                     }
                 } else {
                     // 遇到目录，继续递归遍历
+                    if (callback != null && callback.shouldInterrupt()) {
+                        return;
+                    }
                     doCopyWithProgress(srcPath, dstPath, overwrite, nextDepth, isMove, callback);
                 }
             }
@@ -237,6 +246,9 @@ public abstract class CopyAndMoveHandler {
                 callback.onFileStart(record);
             }
             boolean res;
+            if (callback != null && callback.shouldInterrupt()) {
+                return;
+            }
             if (isMove) {
                 res = moveFile(source, target);
             } else {
