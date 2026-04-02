@@ -1,18 +1,19 @@
 package com.xiaotao.saltedfishcloud.model.progress;
 
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.lang.Nullable;
 
 import java.util.Optional;
 
-@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
-public class CopyProgressEvent {
+public abstract class CopyProgressEvent {
     /**
      * 事件等级
      */
-    @Builder.Default
     private CopyProgressEventLevel level = CopyProgressEventLevel.INFO;
 
     /**

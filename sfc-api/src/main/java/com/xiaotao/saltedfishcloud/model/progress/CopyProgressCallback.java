@@ -1,7 +1,5 @@
 package com.xiaotao.saltedfishcloud.model.progress;
 
-import java.io.IOException;
-
 /**
  * 文件复制进度回调接口
  */
@@ -55,29 +53,5 @@ public interface CopyProgressCallback {
      */
     default void interrupt() {
         getProgressRecord().setInterrupted(true);
-    }
-
-    /**
-     * 设置错误信息
-     * @param error 错误信息
-     */
-    default void setError(String error) {
-        getProgressRecord().setError(error);
-    }
-
-    /**
-     * 标记为已完成
-     */
-    default void complete() {
-        getProgressRecord().setCompleted(true);
-    }
-
-    /**
-     * 当复制过程中发生错误时调用
-     * @param error 错误信息
-     * @param e 异常对象
-     */
-    default void onError(String error, IOException e) {
-        setError(error);
     }
 }

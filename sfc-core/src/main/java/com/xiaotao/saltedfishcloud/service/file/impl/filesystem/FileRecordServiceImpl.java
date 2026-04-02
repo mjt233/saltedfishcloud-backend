@@ -7,9 +7,9 @@ import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEventLevel;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
+import com.xiaotao.saltedfishcloud.model.progress.event.EnterDirEvent;
+import com.xiaotao.saltedfishcloud.model.progress.event.MountPointSkipEvent;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.FileTree;
@@ -210,6 +210,9 @@ public class FileRecordServiceImpl implements FileRecordService {
         if (depth >= 32) {
             throw new JsonException(FileSystemError.DIR_TOO_DEPTH, depth + "");
         }
+        if (callback != null && callback.shouldInterrupt()) {
+            return;
+        }
 
         // 查询待复制的源文件
         String sourceNodeId = getNodeIdByPath(param.getSourceUid(), param.getSourcePath()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, param.getSourcePath()));
@@ -237,45 +240,46 @@ public class FileRecordServiceImpl implements FileRecordService {
                 .peek(f -> {
                     f.setMountId(null);
                     if(callback != null) {
-                        callback.onAdditionalEvent(CopyProgressEvent.builder()
-                                        .level(CopyProgressEventLevel.WARN)
-                                        .name("mount_point_skip")
-                                        .message("挂载点 " + f.getName() + " 本身及其挂载点下的文件跳过复制")
-                                        .transferItem(FileTransferItem.builder()
-                                                .fileInfo(f)
-                                                .from(StringUtils.appendPath(param.getSourcePath(), f.getName()))
-                                                .to(StringUtils.appendPath(param.getTargetPath(), f.getName()))
-                                                .isSkip(true)
-                                                .build())
-                                .build());
+                        String from = StringUtils.appendPath(param.getSourcePath(), f.getName());
+                        String to = StringUtils.appendPath(param.getTargetPath(), f.getName());
+                        callback.onAdditionalEvent(MountPointSkipEvent.of(f.getName(), from, to,
+                                FileTransferItem.builder()
+                                        .fileInfo(f)
+                                        .from(from)
+                                        .to(to)
+                                        .build()
+                        ));
                     }
                 })
                 .map(BaseModel::getId).collect(Collectors.toSet());
 
         // 查询目标位置的节点id，将源文件批量保存到目标位置下
         String targetNodeId = getNodeIdByPath(param.getTargetUid(), param.getTargetPath()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, param.getTargetPath()));
+        if (callback != null && callback.shouldInterrupt()) {
+            return;
+        }
         this.batchSaveFileInSameNode(param.getTargetUid(), targetNodeId, Boolean.TRUE.equals(param.getIsOverwrite()), sourceFileItemList);
 
         // 从待复制的源文件中筛选出目录，继续递归处理（挂载点除外）
         sourceFileItemList.stream().filter(f -> f.isDir() && !mountPointDirIdSet.contains(f.getId())).forEach(dir -> {
+            if (callback != null && callback.shouldInterrupt()) {
+                return;
+            }
             String nextSourcePath = StringUtils.appendPath(param.getSourcePath(), dir.getName());
             String nextTargetPath = StringUtils.appendPath(param.getTargetPath(), dir.getName());
             if (callback != null) {
                 if (callback.shouldInterrupt()) {
                     return;
                 }
-                callback.onAdditionalEvent(CopyProgressEvent.builder()
-                        .level(CopyProgressEventLevel.INFO)
-                        .name("enter dir")
-                        .message("进入目录递归处理 " + nextSourcePath)
-                        .transferItem(
-                                FileTransferItem.builder()
-                                        .from(nextSourcePath)
-                                        .to(nextTargetPath)
-                                        .fileInfo(dir)
-                                        .build()
-                        )
-                        .build());
+                callback.onAdditionalEvent(EnterDirEvent.of(
+                        nextSourcePath,
+                        nextTargetPath,
+                        FileTransferItem.builder()
+                                .from(nextSourcePath)
+                                .to(nextTargetPath)
+                                .fileInfo(dir)
+                                .build()
+                ));
             }
             SimpleFileTransferParam nextParam = SimpleFileTransferParam.builder()
                     .sourceUid(param.getSourceUid())

@@ -13,9 +13,9 @@ import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEventLevel;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
+import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
+import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
@@ -230,20 +230,11 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
                 .to(param.getTargetPath())
                 .build();
         if (callback != null) {
-            callback.onAdditionalEvent(CopyProgressEvent.builder()
-                    .level(CopyProgressEventLevel.INFO)
-                    .name("update_file_record_start")
-                    .message("更新文件记录信息开始执行")
-                    .build());
+            callback.onAdditionalEvent(UpdateFileRecordStartEvent.of());
         }
         fileRecordService.copy(param, callback);
         if (callback != null) {
-            callback.onAdditionalEvent(CopyProgressEvent.builder()
-                    .level(CopyProgressEventLevel.INFO)
-                    .name("update_file_record_complete")
-                    .message("更新文件记录信息完成")
-                    .transferItem(transferItem)
-                    .build());
+            callback.onAdditionalEvent(UpdateFileRecordCompleteEvent.of(transferItem));
         }
         StoreService storeService = storeServiceFactory.getService();
         if (!storeService.isUnique()) {

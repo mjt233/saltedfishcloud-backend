@@ -402,6 +402,10 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                 .collect(Collectors.toMap(FileInfo::getName, f -> ObjectUtils.clone(f, FileInfo::new)));
 
         for (FileInfo sourceFile : sourceFileList) {
+            if (callback != null && callback.shouldInterrupt()) {
+                log.debug("{} 复制操作被中断", LOG_PREFIX);
+                return;
+            }
             // 将文件信息更新为目标位置的信息
             sourceFile.setUid(targetUid);
             sourceFile.setPath(targetMatchResult.resolvedPath);
@@ -422,10 +426,10 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     .fileInfo(sourceFile)
                     .total(sourceFile.isDir() ? 0 : sourceFile.getSize())
                     .build();
-            if (callback != null) {
-                callback.onFileStart(transferRecord);
-            }
             if (sourceFile.isFile()) {
+                if (callback != null) {
+                    callback.onFileStart(transferRecord);
+                }
                 // 如果未开启覆盖，存在同名文件则应该跳过
                 if (!Boolean.TRUE.equals(param.getIsOverwrite()) && existFile != null) {
                     transferRecord.setIsSkip(true);
@@ -435,28 +439,37 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     continue;
                 }
                 // 文件直接复制
+                if (callback != null && callback.shouldInterrupt()) {
+                    log.debug("{} 复制操作被中断", LOG_PREFIX);
+                    return;
+                }
                 Resource resource = sourceMatchResult.fileSystem.getResource(sourceUid, sourceMatchResult.resolvedPath, sourceFile.getName());
                 sourceFile.setStreamSource(resource);
                 targetMatchResult.fileSystem.saveFile(sourceFile, targetMatchResult.resolvedPath);
+                if (callback != null) {
+                    callback.onFileComplete(transferRecord);
+                }
             } else {
-                // 目录则先创建目录，然后递归处理
-                targetMatchResult.fileSystem.mkdir(targetUid, targetMatchResult.resolvedPath, sourceFile.getName());
                 String nextSourcePath = StringUtils.appendPath(sourcePath, sourceFile.getName());
                 String nextTargetPath = StringUtils.appendPath(targetPath, sourceFile.getName());
+                if (callback != null) {
+                    callback.onDirStart(nextTargetPath);
+                }
+                // 目录则先创建目录，然后递归处理
+                targetMatchResult.fileSystem.mkdir(targetUid, targetMatchResult.resolvedPath, sourceFile.getName());
                 doCopyInternal(SimpleFileTransferParam.builder()
                         .sourceUid(sourceUid)
                         .sourcePath(nextSourcePath)
                         .targetUid(targetUid)
                         .targetPath(nextTargetPath)
                         .build(), callback, depth + 1);
+                if (callback != null) {
+                    callback.onDirComplete(nextTargetPath);
+                }
             }
             if (targetMatchResult.isProxyStoreRecordMountPoint()) {
                 fileRecordService.saveRecord(sourceFile, param.getTargetPath());
             }
-            if (callback != null) {
-                callback.onFileComplete(transferRecord);
-            }
-
         }
     }
 
