@@ -15,6 +15,8 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.*;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.StandardOutputCopyProgressCallback;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
@@ -23,6 +25,7 @@ import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.Api;
@@ -259,22 +262,12 @@ public class FileController {
 
     /**
      * 支持跨用户网盘的文件复制
-     * @param uid       源文件所在用户id
-     * @param info      复制参数
      */
     @ApiOperation("网盘文件复制（支持跨用户网盘）")
     @PostMapping("copy")
-    public JsonResult<Object> copy( @PathVariable("uid") @UID(true) long uid,
-                            @RequestBody @Validated FileTransferParam info) throws IOException {
-        long sourceUid = uid;
-        long targetUid = info.getTargetUid();
-        for (FileItemTransferParam item : info.getFiles()) {
-            String source = PathUtils.getParentPath(item.getSource());
-            String sourceName = PathUtils.getLastNode(item.getSource());
-            String target = PathUtils.getParentPath(item.getTarget());
-            String targetName = PathUtils.getLastNode(item.getTarget());
-            fileSystemManager.getMainFileSystem().copy(sourceUid, source, target, targetUid, sourceName, targetName, true);
-        }
+    public JsonResult<Object> copy(@RequestBody @Validated SimpleFileTransferParam param) throws IOException {
+        CopyProgressCallback callback = null; // new StandardOutputCopyProgressCallback();
+        fileSystemManager.getMainFileSystem().copy(param, callback);
         return JsonResult.emptySuccess();
     }
 
@@ -293,24 +286,6 @@ public class FileController {
             String sourceName = PathUtils.getLastNode(item.getSource());
             String target = PathUtils.getParentPath(item.getTarget());
             fileSystemManager.getMainFileSystem().move(sourceUid, source, target, sourceName,true);
-        }
-        return JsonResult.emptySuccess();
-    }
-
-    /**
-     * 复制文件或目录
-     * 复制文件或目录到指定目录下
-     */
-    @PostMapping("fromPath/**")
-    @Deprecated
-    public JsonResult<Object> copy( @PathVariable("uid") @UID(true) long uid,
-                            @RequestBody @Validated FileCopyOrMoveInfo info,
-                            HttpServletRequest request) throws IOException {
-        String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
-        String source = URLDecoder.decode(requestPath, StandardCharsets.UTF_8);
-        String target = URLDecoder.decode(info.getTarget(), StandardCharsets.UTF_8);
-        for (NamePair file : info.getFiles()) {
-            fileSystemManager.getMainFileSystem().copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
         }
         return JsonResult.emptySuccess();
     }

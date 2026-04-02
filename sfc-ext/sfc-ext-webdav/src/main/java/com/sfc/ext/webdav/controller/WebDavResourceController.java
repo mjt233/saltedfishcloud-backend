@@ -2,6 +2,7 @@ package com.sfc.ext.webdav.controller;
 
 import com.sfc.ext.webdav.enums.ResourceArea;
 import com.sfc.ext.webdav.model.resource.*;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
@@ -284,7 +285,14 @@ public class WebDavResourceController {
 
         // 如果目标目录不是当前目录，需要先检查是否存在同名文件
         String targetName = (newName != null && !newName.isEmpty()) ? newName : source.getName();
-        fileSystem.copy(source.getUid(), sourcePath, targetPath, newParent.getUid(), source.getName(), targetName, true);
+        fileSystem.copy(SimpleFileTransferParam.builder()
+                        .files(List.of(targetName))
+                        .isOverwrite(true)
+                        .sourceUid(source.getUid())
+                        .sourcePath(sourcePath)
+                        .targetUid(newParent.getUid())
+                        .targetPath(targetPath)
+                .build(), null);
     }
 
 

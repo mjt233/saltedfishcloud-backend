@@ -1,7 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -219,7 +221,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     }
 
     @Override
-    public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
+    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
         throw new UnsupportedOperationException();
     }
 

@@ -6,22 +6,26 @@ import com.xiaotao.saltedfishcloud.event.cm.DirCopyEvent;
 import com.xiaotao.saltedfishcloud.event.cm.DirMoveEvent;
 import com.xiaotao.saltedfishcloud.event.cm.FileCopyEvent;
 import com.xiaotao.saltedfishcloud.event.cm.FileMoveEvent;
+import com.xiaotao.saltedfishcloud.event.dir.MkdirEvent;
 import com.xiaotao.saltedfishcloud.event.file.FileDeleteEvent;
 import com.xiaotao.saltedfishcloud.event.file.FileStoreEvent;
-import com.xiaotao.saltedfishcloud.event.dir.MkdirEvent;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
+import jakarta.persistence.EntityManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -336,162 +340,153 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         }
     }
 
-    private void doCopy(long uid, String sourceDir, String targetDir, long targetUid, String sourceName, String targetName, Boolean overwrite, int depth) throws IOException {
-        log.debug("{}执行复制：{}/{} -> {}/{}", LOG_PREFIX, sourceDir, sourceName, targetDir, targetName);
-        if (depth >= 64) {
-            throw new IOException("目录嵌套层数过大！（不能大于64）");
-        }
-
-
-        FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, sourceDir);
-        FileSystemMatchResult targetMatchResult = matchFileSystem(targetUid, targetDir);
-        if (Objects.equals(sourceMatchResult.fileSystem, targetMatchResult.fileSystem)) {
-            log.debug("{}相同文件系统内copy: {}/{} -> {}/{}", LOG_PREFIX, sourceDir, sourceName, targetDir, targetName);
-            sourceMatchResult.fileSystem.copy(uid, sourceMatchResult.resolvedPath, targetMatchResult.resolvedPath, targetUid, sourceName, targetName, overwrite);
-            return;
-        }
-
-        log.debug("{}不同文件系统间copy: {}/{} -> {}/{}，文件系统：{} -> {}", LOG_PREFIX, sourceDir, sourceName, targetDir, targetName, sourceMatchResult, targetMatchResult);
-
-        // 如果能拿到Resource 说明被复制对象是文件，直接复制文件即可
-        Resource sourceResource = sourceMatchResult.fileSystem.getResource(uid, sourceMatchResult.resolvedPath, sourceName);
-        if (sourceResource != null) {
-            List<FileInfo>[] userFileList = sourceMatchResult.fileSystem.getUserFileList(uid, sourceMatchResult.resolvedPath);
-            FileInfo fileInfo = Optional.ofNullable(userFileList[1])
-                    .orElseThrow(() -> new IOException(sourceDir + " 下获取不到文件列表"))
-                    .stream()
-                    .filter(e -> e.getName().equals(sourceName))
-                    .findAny()
-                    .orElseThrow(() -> new IOException(sourceDir + "/" + sourceName + " 不存在"));
-            fileInfo.setStreamSource(sourceResource);
-            FileInfo newFile = FileInfo.createFrom(fileInfo, false);
-            newFile.setUid(targetUid);
-            newFile.setStreamSource(sourceResource);
-            targetMatchResult.fileSystem.saveFile(newFile, targetMatchResult.resolvedPath);
-            if (targetMatchResult.isProxyStoreRecordMountPoint()) {
-                newFile.setNode(
-                        fileRecordService.getNodeIdByPath(targetUid, targetDir)
-                                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND))
-                );
-                newFile.setIsMount(true);
-                fileRecordService.saveRecord(newFile, targetDir);
-            }
-            return;
-        }
-
-        // 被复制对象是目录
-        String resolvedSourcePath = StringUtils.appendPath(sourceMatchResult.resolvedPath, sourceName);
-        String resolvedTargetPath = StringUtils.appendPath(targetMatchResult.resolvedPath, targetName);
-        if (targetMatchResult.isProxyStoreRecordMountPoint()) {
-            if (!fileRecordService.exist(targetUid, targetDir, targetName)) {
-                fileRecordService.mkdirs(targetUid, StringUtils.appendPath(targetDir, targetName), true);
-                targetMatchResult.fileSystem.mkdir(targetUid, targetMatchResult.resolvedPath, targetName);
-            }
-        } else if(!targetMatchResult.fileSystem.exist(targetUid, resolvedTargetPath)) {
-            targetMatchResult.fileSystem.mkdir(targetUid, targetMatchResult.resolvedPath, targetName);
-        }
-
-        List<FileInfo>[] sourceFileList = sourceMatchResult.fileSystem.getUserFileList(uid, resolvedSourcePath);
-        List<FileInfo> fileList = sourceFileList[1];
-        // 先复制文件
-        if (fileList != null) {
-            String fileNodeId;
-            if (targetMatchResult.isProxyStoreRecordMountPoint()) {
-                fileNodeId = fileRecordService.getNodeIdByPath(targetUid, StringUtils.appendPath(targetDir, targetName))
-                        .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
-            } else {
-                fileNodeId = null;
-            }
-            for (FileInfo fileInfo : fileList) {
-                Resource resource = sourceMatchResult.fileSystem.getResource(uid, resolvedSourcePath, fileInfo.getName());
-                fileInfo.setStreamSource(resource);
-                FileInfo newFile = FileInfo.createFrom(fileInfo, false);
-                newFile.setUid(targetUid);
-                targetMatchResult.fileSystem.saveFile(newFile, resolvedTargetPath);
-                if (targetMatchResult.isProxyStoreRecordMountPoint()) {
-                    newFile.setNode(fileNodeId);
-                    newFile.setIsMount(true);
-                    fileRecordService.saveRecord(newFile, targetDir);
-                }
-            }
-        }
-
-        // 再复制目录
-        List<FileInfo> dirList = sourceFileList[0];
-        if (dirList != null) {
-
-            List<FileInfo>[] targetList = targetMatchResult.fileSystem.getUserFileList(targetUid, resolvedTargetPath);
-            List<FileInfo> targetFileList = targetList[0];
-            List<FileInfo> targetDirList = targetList[1];
-            Set<String> existDir;
-            Set<String> existFile;
-            if (targetDirList != null) {
-                existDir = targetDirList.stream().map(FileInfo::getName).collect(Collectors.toSet());
-            } else {
-                existDir = Collections.emptySet();
-            }
-
-            if (targetFileList != null) {
-                existFile = targetFileList.stream().map(FileInfo::getName).collect(Collectors.toSet());
-            } else {
-                existFile = Collections.emptySet();
-            }
-
-            int nextDepth = depth + 1;
-            for (FileInfo fileInfo : dirList) {
-                // 跳过挂载点
-                if (fileInfo.getMountId() != null) {
-                    continue;
-                }
-                if (!existDir.contains(fileInfo.getName())) {
-                    if (existFile.contains(fileInfo.getName())) {
-                        log.warn("{}复制目标路径已存在同名文件：{}/{}", LOG_PREFIX, resolvedTargetPath, fileInfo.getName());
-                        continue;
-                    }
-                    targetMatchResult.fileSystem.mkdir(targetUid, resolvedTargetPath, fileInfo.getName());
-                    if (targetMatchResult.isProxyStoreRecordMountPoint()) {
-                        fileRecordService.mkdirs(targetUid, StringUtils.appendPath(targetDir, fileInfo.getName()), true);
-                    }
-                }
-                doCopy(uid, StringUtils.appendPath(sourceDir, sourceName), StringUtils.appendPath(targetDir, targetName), targetUid, fileInfo.getName(), fileInfo.getName(), overwrite, nextDepth);
-            }
-        }
-    }
-
+    /**
+     * 使用 SimpleFileTransferParam 参数批量复制文件，支持进度回调和中断
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void copy(long sourceUid, String sourceDir, String targetDir, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        doCopy(sourceUid, sourceDir, targetDir, targetUid, sourceName, targetName, overwrite, 0);
-        this.publishFileCopyOrMoveEvent(sourceUid, sourceDir, targetDir, targetUid, sourceName, targetName, false);
+    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+        doCopyInternal(param, callback, 0);
+    }
+
+    /**
+     * 核心复制方法，支持进度回调（可为null）
+     */
+    private void doCopyInternal(SimpleFileTransferParam param, CopyProgressCallback callback, int depth) throws IOException {
+        if (depth > 32) {
+            throw new JsonException(FileSystemError.DIR_TOO_DEPTH, "目录深度超过32");
+        }
+        Long sourceUid = param.getSourceUid();
+        String sourcePath = param.getSourcePath();
+        Long targetUid = param.getTargetUid();
+        String targetPath = param.getTargetPath();
+        Boolean overwrite = param.getIsOverwrite();
+        if (sourceUid == null || targetUid == null || sourcePath == null || targetPath == null) {
+            throw new IllegalArgumentException("sourceUid, targetUid, sourcePath, targetPath 不能为 null");
+        }
+
+        // 相同内的复制，直接调用文件系统自己的copy方法
+        log.debug("{}执行复制：{} -> {}", LOG_PREFIX, sourcePath, targetPath);
+        FileSystemMatchResult sourceMatchResult = matchFileSystem(sourceUid, sourcePath);
+        FileSystemMatchResult targetMatchResult = matchFileSystem(targetUid, targetPath);
+        if (Objects.equals(sourceMatchResult.fileSystem, targetMatchResult.fileSystem)) {
+            log.debug("{}相同文件系统内copy: {} -> {}", LOG_PREFIX, sourcePath, targetPath);
+            if (callback != null && callback.shouldInterrupt()) {
+                log.debug("{} 复制操作被中断", LOG_PREFIX);
+                return;
+            }
+            sourceMatchResult.fileSystem.copy(SimpleFileTransferParam.builder()
+                            .sourceUid(sourceUid)
+                            .sourcePath(sourceMatchResult.resolvedPath)
+                            .files(param.getFiles())
+                            .targetUid(targetUid)
+                            .targetPath(targetMatchResult.resolvedPath)
+                            .isOverwrite(overwrite)
+                    .build(), callback);
+            return;
+        }
+
+        // 不同的文件系统间复制，采用普通的读取源文件保存到目标位置的方式
+        log.debug("{}不同文件系统间copy: {} -> {}，文件系统：{} -> {}", LOG_PREFIX, sourcePath, sourcePath, sourceMatchResult, targetMatchResult);
+        org.springframework.data.util.Lazy<String> nodeId = org.springframework.data.util.Lazy
+                .of(() -> fileRecordService.getNodeIdByPath(targetUid, targetPath)
+                        .orElseThrow(() -> new JsonException(404, "路径" + targetPath + "节点信息丢失"))
+                );
+        List<FileInfo> sourceFileList = ObjectUtils.cloneListElement(
+                this.getUserFileList(sourceUid, sourcePath, param.getFiles()),
+                FileInfo::new
+        );
+        List<String> sourceNames =  sourceFileList.stream().map(FileInfo::getName).toList();
+        Map<String, FileInfo> targetExistFileMap = this.getUserFileList(targetUid, targetPath, sourceNames)
+                .stream()
+                .collect(Collectors.toMap(FileInfo::getName, f -> ObjectUtils.clone(f, FileInfo::new)));
+
+        for (FileInfo sourceFile : sourceFileList) {
+            // 将文件信息更新为目标位置的信息
+            sourceFile.setUid(targetUid);
+            sourceFile.setPath(targetMatchResult.resolvedPath);
+            if (targetMatchResult.isProxyStoreRecordMountPoint()) {
+                sourceFile.setNode(nodeId.get());
+                sourceFile.setIsMount(true);
+            }
+
+            // 检查目标与源文件是否同为文件或文件夹
+            FileInfo existFile = targetExistFileMap.get(sourceFile.getName());
+            if (existFile != null && existFile.isDir() != sourceFile.isDir()) {
+                throw new JsonException(sourceFile.isFile() ? FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR : FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE);
+            }
+
+            FileTransferItem transferRecord = FileTransferItem.builder()
+                    .from(StringUtils.appendPath(sourcePath, sourceFile.getName()))
+                    .to(StringUtils.appendPath(targetPath, sourceFile.getName()))
+                    .fileInfo(sourceFile)
+                    .total(sourceFile.isDir() ? 0 : sourceFile.getSize())
+                    .build();
+            if (callback != null) {
+                callback.onFileStart(transferRecord);
+            }
+            if (sourceFile.isFile()) {
+                // 如果未开启覆盖，存在同名文件则应该跳过
+                if (!Boolean.TRUE.equals(param.getIsOverwrite()) && existFile != null) {
+                    transferRecord.setIsSkip(true);
+                    if (callback != null) {
+                        callback.onFileComplete(transferRecord);
+                    }
+                    continue;
+                }
+                // 文件直接复制
+                Resource resource = sourceMatchResult.fileSystem.getResource(sourceUid, sourceMatchResult.resolvedPath, sourceFile.getName());
+                sourceFile.setStreamSource(resource);
+                targetMatchResult.fileSystem.saveFile(sourceFile, targetMatchResult.resolvedPath);
+            } else {
+                // 目录则先创建目录，然后递归处理
+                targetMatchResult.fileSystem.mkdir(targetUid, targetMatchResult.resolvedPath, sourceFile.getName());
+                String nextSourcePath = StringUtils.appendPath(sourcePath, sourceFile.getName());
+                String nextTargetPath = StringUtils.appendPath(targetPath, sourceFile.getName());
+                doCopyInternal(SimpleFileTransferParam.builder()
+                        .sourceUid(sourceUid)
+                        .sourcePath(nextSourcePath)
+                        .targetUid(targetUid)
+                        .targetPath(nextTargetPath)
+                        .build(), callback, depth + 1);
+            }
+            if (targetMatchResult.isProxyStoreRecordMountPoint()) {
+                fileRecordService.saveRecord(sourceFile, param.getTargetPath());
+            }
+            if (callback != null) {
+                callback.onFileComplete(transferRecord);
+            }
+
+        }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
-        String sourcePath = StringUtils.appendPath(source, name);
-        String targetPath = StringUtils.appendPath(target, name);
+        String fullSourcePath = StringUtils.appendPath(source, name);
+        String fullTargetPath = StringUtils.appendPath(target, name);
         FileSystemMatchResult targetMatchResult = matchFileSystem(uid, target);
         FileSystemMatchResult sourceMatchResult = matchFileSystem(uid, source);
-        FileSystemMatchResult sourceFullMatchResult = matchFileSystem(uid, sourcePath);
-        FileSystemMatchResult targetFullMatchResult = matchFileSystem(uid, targetPath);
+        FileSystemMatchResult sourceFullMatchResult = matchFileSystem(uid, fullSourcePath);
+        FileSystemMatchResult targetFullMatchResult = matchFileSystem(uid, fullTargetPath);
 
         List<MountPoint> mountPoints = null;
         Resource resource = sourceMatchResult.fileSystem.getResource(uid, sourceMatchResult.resolvedPath, name);
         if (resource == null) {
-            mountPoints = mountPointService.listByPath(uid, sourcePath);
+            mountPoints = mountPointService.listByPath(uid, fullSourcePath);
 
             // 如果目标位置是挂载点位置，需要判断源目标中是否包含挂载点，如果有挂载点是不允许的，防止挂载点内出现嵌套，不好处理。
-            if (targetMatchResult.mountPoint != null || targetFullMatchResult.isMountPath(targetPath)) {
+            if (targetMatchResult.mountPoint != null || targetFullMatchResult.isMountPath(fullTargetPath)) {
                 if (mountPoints != null && !mountPoints.isEmpty()) {
                     throw new JsonException("目录包含挂载点，不能移动到其他挂载点下");
                 }
-                if (sourceFullMatchResult.isMountPath(sourcePath)) {
+                if (sourceFullMatchResult.isMountPath(fullSourcePath)) {
                     throw new JsonException("挂载点不允许移动到其他挂载点下");
                 }
             }
 
             // 如果移动的是挂载点本身，那么只需要修改挂载点的nid就好了
-            if (sourceFullMatchResult.isMountPath(sourcePath)) {
+            if (sourceFullMatchResult.isMountPath(fullSourcePath)) {
                 String nodeId = fileRecordService.getNodeIdByPath(uid, target)
                         .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
                 MountPoint mountPoint = sourceFullMatchResult.mountPoint;
@@ -512,7 +507,13 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             sourceMatchResult.fileSystem.move(uid, sourceMatchResult.resolvedPath, targetMatchResult.resolvedPath, name, overwrite);
         } else {
             // 跨文件系统，采用复制+删除分步操作
-            doCopy(uid, source, target, uid, name, name, overwrite, 0);
+            doCopyInternal(SimpleFileTransferParam.builder()
+                    .sourceUid(uid)
+                    .sourcePath(source)
+                    .files(List.of(name))
+                    .targetUid(uid)
+                    .targetPath(target)
+                    .build(), null, 0);
             doDeleteFile(uid, source, Collections.singletonList(name));
         }
 

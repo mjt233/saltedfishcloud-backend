@@ -3,11 +3,14 @@ package com.xiaotao.saltedfishcloud.service.file.store;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * 通用的文件系统复制与移动操作器。
@@ -105,8 +108,20 @@ public abstract class CopyAndMoveHandler {
      * @throws IOException  任意IO错误
      */
     public void copy(String src, String dest, boolean overwrite) throws IOException {
+        copy(src, dest, overwrite, null);
+    }
+
+    /**
+     * 复制文件，如果复制的是目录，则整个目录复制。复制目录时，若存储系统中已存在dest目录，则进行目录合并，文件是否覆盖由overwrite决定
+     * @param src       待复制的文件或目录路径
+     * @param dest      粘贴路径
+     * @param overwrite 同名文件是否覆盖，true覆盖，false跳过
+     * @param callback  进度回调接口，可为 null
+     * @throws IOException  任意IO错误
+     */
+    public void copy(String src, String dest, boolean overwrite, CopyProgressCallback callback) throws IOException {
         checkCopyOrMove(src, dest);
-        doCopy(src, dest, overwrite, 0, false);
+        doCopyWithProgress(src, dest, overwrite, 0, false, callback);
     }
 
     /**
@@ -117,9 +132,21 @@ public abstract class CopyAndMoveHandler {
      * @throws IOException  任意IO错误
      */
     public void move(String src, String dest, boolean overwrite) throws IOException {
+        move(src, dest, overwrite, null);
+    }
+
+    /**
+     * 移动文件或目录。移动目录时，若存储系统中已存在dest目录，则进行目录合并，文件是否覆盖由overwrite决定
+     * @param src       待移动的文件或目录路径
+     * @param dest      粘贴路径
+     * @param overwrite 同名文件是否覆盖，true覆盖，false跳过
+     * @param callback  进度回调接口，可为 null
+     * @throws IOException  任意IO错误
+     */
+    public void move(String src, String dest, boolean overwrite, CopyProgressCallback callback) throws IOException {
         checkCopyOrMove(src, dest);
         if (isMoveWithRecursion()) {
-            doCopy(src, dest, overwrite, 0, true);
+            doCopyWithProgress(src, dest, overwrite, 0, true, callback);
         } else {
             moveFile(src, dest);
         }
@@ -132,45 +159,83 @@ public abstract class CopyAndMoveHandler {
      * @param overwrite     同名文件是否覆盖
      * @param depth         当前递归深度
      * @param isMove        是否为移动操作，为true时执行移动，false时执行复制
+     * @param callback      进度回调接口，可为 null
      * @throws IOException  任意IO错误
      */
-    protected void doCopy(String source, String target, boolean overwrite, int depth, boolean isMove) throws IOException {
+    protected void doCopyWithProgress(String source, String target, boolean overwrite, int depth, boolean isMove, CopyProgressCallback callback) throws IOException {
         if (depth > MAX_DEPTH) {
             throw new JsonException(FileSystemError.DIR_TOO_DEPTH);
         }
 
+        // 检查是否被中断
+        if (callback != null && callback.shouldInterrupt()) {
+            return;
+        }
 
         if (isDirectory(source)) {
 
             // 待复制的资源为目录
             if (!reader.exist(target)) {
+                if (callback != null) {
+                    callback.onDirStart(target);
+                }
                 mkdir(target);
+                if (callback != null) {
+                    callback.onDirComplete(target);
+                }
             }
 
             int nextDepth = depth + 1;
 
             for (FileInfo file : reader.listFiles(source)) {
+                // 检查是否被中断
+                if (callback != null && callback.shouldInterrupt()) {
+                    return;
+                }
+
                 String srcPath = StringUtils.appendPath(source, file.getName());
                 String dstPath = StringUtils.appendPath(target, file.getName());
+                FileTransferItem record = FileTransferItem.builder()
+                        .from(srcPath)
+                        .to(dstPath)
+                        .fileInfo(file)
+                        .total(file.isDir() ? 0 : file.getSize())
+                        .build();
                 if (!file.isDir()) {
 
                     // 遇到文件，直接复制
                     // 仅当overwrite为true时才对已存在的同名文件进行覆盖存储
                     if (!reader.exist(dstPath) || overwrite) {
+                        if (callback != null) {
+                            callback.onFileStart(record);
+                        }
                         if (isMove) {
                             moveFile(srcPath, dstPath);
                         } else {
                             copyFile(srcPath, dstPath);
                         }
+                        if (callback != null) {
+                            callback.onFileComplete(record);
+                        }
                     }
                 } else {
-
                     // 遇到目录，继续递归遍历
-                    doCopy(srcPath, dstPath,overwrite, nextDepth, isMove);
+                    doCopyWithProgress(srcPath, dstPath, overwrite, nextDepth, isMove, callback);
                 }
             }
         } else {
             // 待复制的资源为文件，直接复制
+            FileInfo fileInfo = Optional.ofNullable(reader.getFileInfo(source))
+                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, source));
+            FileTransferItem record = FileTransferItem.builder()
+                    .from(source)
+                    .to(target)
+                    .fileInfo(fileInfo)
+                    .total(fileInfo.isDir() ? 0 : fileInfo.getSize())
+                    .build();
+            if (callback != null) {
+                callback.onFileStart(record);
+            }
             boolean res;
             if (isMove) {
                 res = moveFile(source, target);
@@ -180,8 +245,10 @@ public abstract class CopyAndMoveHandler {
             if (!res) {
                 log.warn("[CopyAndMove]文件{}失败：{} -> {}", isMove ? "移动" : "复制", source, target);
             }
+            if (callback != null) {
+                callback.onFileComplete(record);
+            }
         }
-
     }
 
     /**

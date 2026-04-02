@@ -4,7 +4,9 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
@@ -99,23 +101,12 @@ public interface DiskFileSystem {
     }
 
     /**
-     * 复制指定用户的文件或目录到指定用户的某个目录下
-     * @param sourceUid
-     *      原资源的用户ID
-     * @param sourceDir
-     *      要操作的文件所在的网盘目录
-     * @param targetDir
-     *      复制到的目的地目录
-     * @param targetUid
-     *      目标用户ID
-     * @param sourceName
-     *      源文件或目录名
-     * @param targetName
-     *      目标文件或目录名，
-     * @param overwrite
-     *      是否覆盖
+     * 使用 SimpleFileTransferParam 参数批量复制文件，支持进度回调和中断
+     * @param param 文件传输参数
+     * @param callback 进度回调接口，可为 null 表示不监听进度
+     * @throws IOException IO异常
      */
-    void copy(long sourceUid, String sourceDir, String targetDir, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException;
+    void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException;
 
     /**
      * 移动网盘中的文件或目录到指定目录下
@@ -190,7 +181,7 @@ public interface DiskFileSystem {
     /**
      * 保存上传的文件到网盘系统中
      * @param file        接收到的文件对象，通过 {@link FileInfo#getStreamSource()} 获取文件内容
-     * @param savePath    保存的文件路径
+     * @param savePath    保存的文件所在目录的路径
      * @return 新文件 - 1，旧文件覆盖 - 0，文件无变更 - 2
      * 常量见{@link DiskFileSystem#SAVE_COVER}、
      * {@link DiskFileSystem#SAVE_NEW_FILE}、

@@ -2,7 +2,9 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
@@ -20,9 +22,7 @@ import org.springframework.core.io.Resource;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -90,7 +90,11 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
                 ).collect(Collectors.toList());
             }
         }
-        return storeHandler.listFiles(StringUtils.appendPath(basePath, path));
+        Set<String> nameSet = new HashSet<>(nameList);
+        return storeHandler.listFiles(StringUtils.appendPath(basePath, path))
+                .stream()
+                .filter(f -> nameSet.contains(f.getName()))
+                .toList();
     }
 
     @Override
@@ -144,12 +148,36 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        if (uid != targetUid) {
-            throw new UnsupportedOperationException("不支持跨用户网盘复制");
+    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+        if (param.getSourceUid() == null || param.getTargetUid() == null) {
+            throw new IllegalArgumentException("sourceUid 和 targetUid 不能为空");
+        }
+        if (!param.getSourceUid().equals(param.getTargetUid())) {
+            throw new UnsupportedOperationException("默认的RawDiskFileSystem不支持跨用户网盘复制");
         }
 
-        camHandler.copy(StringUtils.appendPath(basePath, source, sourceName), StringUtils.appendPath(basePath, target, targetName), overwrite);
+        List<String> files = param.getFiles();
+        if (files == null || files.isEmpty()) {
+            files = storeHandler.listFiles(param.getSourcePath()).stream().map(FileInfo::getName).toList();
+        }
+
+        boolean overwrite = Boolean.TRUE.equals(param.getIsOverwrite());
+        String sourcePath = param.getSourcePath();
+        String targetPath = param.getTargetPath();
+
+        for (String fileName : files) {
+            // 检查是否被中断
+            if (callback != null && callback.shouldInterrupt()) {
+                return;
+            }
+
+            camHandler.copy(
+                    StringUtils.appendPath(basePath, sourcePath, fileName),
+                    StringUtils.appendPath(basePath, targetPath, fileName),
+                    overwrite,
+                    callback
+            );
+        }
     }
 
     @Override

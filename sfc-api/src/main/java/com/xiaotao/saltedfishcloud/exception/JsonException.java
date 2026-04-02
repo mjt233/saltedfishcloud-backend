@@ -46,6 +46,11 @@ public class JsonException extends RuntimeException {
         this.errorInfo = error;
     }
 
+    public JsonException(ErrorInfo error, String appendMessage) {
+        res = JsonResultImpl.getInstance(error.getStatus(), error.getCode(), null, error.getMessage() + " " + appendMessage);
+        this.errorInfo = error;
+    }
+
     @Override
     public String getMessage() {
         return res.getMsg();

@@ -10,7 +10,12 @@ import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEventLevel;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
@@ -104,9 +109,10 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     /**
      * 获取写文件时用到分布式锁key
-     * @param uid   用户id
-     * @param path  文件所在路径
-     * @param name  文件名
+     *
+     * @param uid  用户id
+     * @param path 文件所在路径
+     * @param name 文件名
      */
     private static String getStoreLockKey(long uid, String path, String name) {
         return uid + ":" + StringUtils.appendPath(path, name);
@@ -123,8 +129,9 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     /**
      * 获取写文件时用到分布式锁key
-     * @param uid   用户id
-     * @param dest  文件所在路径
+     *
+     * @param uid  用户id
+     * @param dest 文件所在路径
      */
     public static String getStoreLockKey(long uid, String dest) {
         return uid + ":" + dest;
@@ -217,23 +224,34 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        RLock lock = redisson.getLock(getStoreLockKey(uid, target, targetName));
-        try {
-            lock.lock();
-            fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
-            final StoreService service = storeServiceFactory.getService();
-            if (!service.isUnique()) {
-                service.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
-            }
-        } finally {
-            lock.unlock();
+    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+        FileTransferItem transferItem = FileTransferItem.builder()
+                .from(param.getSourcePath())
+                .to(param.getTargetPath())
+                .build();
+        if (callback != null) {
+            callback.onAdditionalEvent(CopyProgressEvent.builder()
+                    .level(CopyProgressEventLevel.INFO)
+                    .name("update_file_record_start")
+                    .message("更新文件记录信息开始执行")
+                    .build());
+        }
+        fileRecordService.copy(param, callback);
+        if (callback != null) {
+            callback.onAdditionalEvent(CopyProgressEvent.builder()
+                    .level(CopyProgressEventLevel.INFO)
+                    .name("update_file_record_complete")
+                    .message("更新文件记录信息完成")
+                    .transferItem(transferItem)
+                    .build());
+        }
+        StoreService storeService = storeServiceFactory.getService();
+        if (!storeService.isUnique()) {
+            storeService.copy(param, callback);
         }
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
         RLock lock = redisson.getLock(getStoreLockKey(uid, target, name));
         try {
@@ -261,7 +279,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException {
+    public List<FileInfo> getUserFileList(long uid, String path, @Nullable Collection<String> nameList) throws IOException {
 
         return fileRecordService.getNodeIdByPath(uid, path)
                 .map(nodeId -> fileRecordService.findByUidAndNodeId(uid, nodeId, nameList))
@@ -373,7 +391,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Transactional(rollbackFor = Exception.class)
     public void mkdir(long uid, String path, String name) throws IOException {
         final StoreService storeService = storeServiceFactory.getService();
-        if ( !storeService.isUnique() && !storeService.mkdir(uid, path, name) ) {
+        if (!storeService.isUnique() && !storeService.mkdir(uid, path, name)) {
             throw new IOException("在" + path + "创建文件夹失败");
         }
         fileRecordService.mkdir(uid, name, path);
