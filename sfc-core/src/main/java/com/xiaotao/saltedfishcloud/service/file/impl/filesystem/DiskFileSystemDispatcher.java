@@ -445,9 +445,13 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                 }
                 Resource resource = sourceMatchResult.fileSystem.getResource(sourceUid, sourceMatchResult.resolvedPath, sourceFile.getName());
                 sourceFile.setStreamSource(resource);
+                sourceFile.setId(null);
                 targetMatchResult.fileSystem.saveFile(sourceFile, targetMatchResult.resolvedPath);
                 if (callback != null) {
                     callback.onFileComplete(transferRecord);
+                }
+                if (targetMatchResult.isProxyStoreRecordMountPoint()) {
+                    fileRecordService.saveRecord(sourceFile, param.getTargetPath());
                 }
             } else {
                 String nextSourcePath = StringUtils.appendPath(sourcePath, sourceFile.getName());
@@ -466,9 +470,6 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                 if (callback != null) {
                     callback.onDirComplete(nextTargetPath);
                 }
-            }
-            if (targetMatchResult.isProxyStoreRecordMountPoint()) {
-                fileRecordService.saveRecord(sourceFile, param.getTargetPath());
             }
         }
     }
