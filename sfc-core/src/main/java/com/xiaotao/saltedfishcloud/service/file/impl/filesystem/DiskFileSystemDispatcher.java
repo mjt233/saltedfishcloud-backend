@@ -19,6 +19,8 @@ import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
+import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
+import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
@@ -374,6 +376,15 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
             if (callback != null && callback.shouldInterrupt()) {
                 log.debug("{} 复制操作被中断", LOG_PREFIX);
                 return;
+            }
+            if (sourceMatchResult.isProxyStoreRecordMountPoint()) {
+                if(callback != null) {
+                    callback.onAdditionalEvent(new UpdateFileRecordStartEvent());
+                }
+                fileRecordService.copy(param, callback);
+                if(callback != null) {
+                    callback.onAdditionalEvent(new UpdateFileRecordCompleteEvent());
+                }
             }
             sourceMatchResult.fileSystem.copy(SimpleFileTransferParam.builder()
                             .sourceUid(sourceUid)

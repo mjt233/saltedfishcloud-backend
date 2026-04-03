@@ -143,19 +143,6 @@ public interface FileRecordService {
 
     /**
      * 操作数据库复制网盘文件或目录到指定目录下
-     *
-     * @param uid        用户ID
-     * @param source     要复制的文件或目录所在目录
-     * @param target     复制到的目标目录
-     * @param targetId   复制到的目标目录所属用户ID
-     * @param sourceName 要复制的文件或目录名
-     * @param overwrite  是否覆盖已存在的文件
-     */
-    @Transactional(rollbackFor = Exception.class)
-    void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException;
-
-    /**
-     * 操作数据库复制网盘文件或目录到指定目录下
      */
     void copy(SimpleFileTransferParam param,@Nullable CopyProgressCallback callback);
 
