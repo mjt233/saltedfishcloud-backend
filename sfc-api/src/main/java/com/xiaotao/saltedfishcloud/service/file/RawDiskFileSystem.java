@@ -222,7 +222,12 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
             streamConsumer.accept(os).applyTo(file);
             os.close();
             isSuccess = true;
-            storeHandler.move(tmpPath, finalTargetPath);
+            if(!storeHandler.move(tmpPath, finalTargetPath)) {
+                if(storeHandler.exist(finalTargetPath)) {
+                    storeHandler.delete(finalTargetPath);
+                }
+                storeHandler.move(tmpPath, finalTargetPath);
+            }
         } finally {
             if (!isSuccess) {
                 storeHandler.delete(tmpPath);
