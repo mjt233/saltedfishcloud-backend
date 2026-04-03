@@ -358,6 +358,10 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         if (depth > 32) {
             throw new JsonException(FileSystemError.DIR_TOO_DEPTH, "目录深度超过32");
         }
+        // 复制的目标位置不能是源位置的子目录（源位置为根目录除外）
+        if (Objects.equals(param.getSourceUid(), param.getTargetUid()) && !PathUtils.isRoot(param.getSourcePath()) && PathUtils.isSubDir(param.getSourcePath(), param.getTargetPath())) {
+            throw new JsonException(FileSystemError.TARGET_IS_SUB_DIR, param.getSourcePath());
+        }
         Long sourceUid = param.getSourceUid();
         String sourcePath = param.getSourcePath();
         Long targetUid = param.getTargetUid();
@@ -457,6 +461,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                 Resource resource = sourceMatchResult.fileSystem.getResource(sourceUid, sourceMatchResult.resolvedPath, sourceFile.getName());
                 sourceFile.setStreamSource(resource);
                 sourceFile.setId(null);
+                sourceFile.setNode(null);
                 targetMatchResult.fileSystem.saveFile(sourceFile, targetMatchResult.resolvedPath);
                 if (callback != null) {
                     callback.onFileComplete(transferRecord);
@@ -471,12 +476,13 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     callback.onDirStart(nextTargetPath);
                 }
                 // 目录则先创建目录，然后递归处理
-                targetMatchResult.fileSystem.mkdir(targetUid, targetMatchResult.resolvedPath, sourceFile.getName());
+                this.mkdir(targetUid, targetPath, sourceFile.getName());
                 doCopyInternal(SimpleFileTransferParam.builder()
                         .sourceUid(sourceUid)
                         .sourcePath(nextSourcePath)
                         .targetUid(targetUid)
                         .targetPath(nextTargetPath)
+                        .isOverwrite(param.getIsOverwrite())
                         .build(), callback, depth + 1);
                 if (callback != null) {
                     callback.onDirComplete(nextTargetPath);
@@ -538,6 +544,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     .files(List.of(name))
                     .targetUid(uid)
                     .targetPath(target)
+                    .isOverwrite(overwrite)
                     .build(), null, 0);
             doDeleteFile(uid, source, Collections.singletonList(name));
         }

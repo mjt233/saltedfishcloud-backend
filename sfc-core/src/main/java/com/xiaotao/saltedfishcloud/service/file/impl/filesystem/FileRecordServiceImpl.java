@@ -117,91 +117,6 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException {
-        // 原地复制，不处理
-        if (uid == targetId && source.equals(target) && sourceName.equals(targetName)) {
-            return;
-        }
-        PathBuilder pathBuilder = new PathBuilder();
-        pathBuilder.setForcePrefix(true);
-
-
-        String sourceNodeId = this.getNodeIdByPath(uid, source).orElseThrow(() -> new JsonException(404, "源文件所在目录不存在"));
-        FileInfo sourceInfo = fileInfoRepo.findFileInfo(uid, sourceName, sourceNodeId);
-        if (sourceInfo == null) {
-            throw new NoSuchFileException("文件 " + source + "/" + sourceName + " 不存在");
-        }
-
-        // 文件直接添加单条记录
-        if (sourceInfo.isFile()) {
-            FileInfo newRecord = FileInfo.createFrom(sourceInfo, false);
-            newRecord.setUid(targetId);
-            newRecord.setName(targetName);
-            saveRecord(newRecord, target);
-            return;
-        }
-
-        if (targetId == uid && sourceName.equals(targetName) && PathUtils.isSubDir(StringUtils.appendPath(source, sourceName), StringUtils.appendPath(target, targetName))) {
-            throw new IllegalArgumentException("目标目录不能是源目录的子目录");
-        }
-
-        //  需要遍历的目录列表
-        Deque<PathIdPair> needProcessSourceDirList = new ArrayDeque<>();
-        String sourceRoot = StringUtils.appendPath(source, sourceName);
-        int prefixLength = sourceRoot.length();
-        needProcessSourceDirList.add(new PathIdPair(sourceRoot, this.getNodeIdByPath(uid, sourceRoot).orElseThrow(() -> new JsonException(404, "源文件所在目录不存在"))));
-
-        do {
-            //  更新目录列表
-            PathIdPair pairInfo = needProcessSourceDirList.getLast();
-            needProcessSourceDirList.removeLast();
-            String newDirPath = target + "/" + targetName + "/" + pairInfo.path.substring(prefixLength);
-            pathBuilder.update(newDirPath);
-            PathIdPair newPathInfo;
-            try {
-                newPathInfo = new PathIdPair(newDirPath, mkdir(targetId, pathBuilder.getPathLast(), pathBuilder.range(-1)));
-            } catch (DuplicateKeyException e) {
-                newPathInfo = new PathIdPair(newDirPath, this.getNodeIdByPath(targetId, newDirPath).orElseThrow(() -> new JsonException(404, "源文件所在目录不存在")));
-            }
-
-
-            //  遍历一个目录并追加该目录下的子目录
-            List<FileInfo> sourceFileList = fileInfoRepo.findByUidAndNode(uid, pairInfo.nid);
-            for (FileInfo sourceFile : sourceFileList) {
-                // 跳过挂载文件
-                // todo 作为可选项
-                if (Boolean.TRUE.equals(sourceFile.getIsMount()) || sourceFile.getMountId() != null) {
-                    continue;
-                }
-                if (sourceFile.isDir()) {
-                    needProcessSourceDirList.add(new PathIdPair(pairInfo.path + "/" + sourceFile.getName(), sourceFile.getMd5()));
-                } else {
-                    FileInfo existFile = fileInfoRepo.findFileInfo(targetId, sourceFile.getName(), newPathInfo.nid);
-                    if (existFile == null) {
-                        FileInfo newFile = FileInfo.createFrom(sourceFile, false);
-                        newFile.setNode(newPathInfo.nid);
-                        newFile.setUid(targetId);
-                        fileInfoRepo.save(newFile);
-                        log.debug("addFile: " + sourceFile.getName() + " at " + newPathInfo.nid);
-                    } else {
-                        if (overwrite) {
-                            existFile.setMd5(sourceFile.getMd5());
-                            existFile.setSize(sourceFile.getSize());
-                            existFile.setCtime(sourceFile.getCtime());
-                            existFile.setMtime(sourceFile.getMtime());
-                            fileInfoRepo.save(existFile);
-                            log.debug("overwrite " + sourceFile.getName() + " at " + newPathInfo.nid);
-                        } else {
-                            log.error("addFile failed: " + sourceFile.getName() + " at " + newPathInfo.nid);
-                        }
-                    }
-                }
-            }
-        } while (!needProcessSourceDirList.isEmpty());
-    }
-
-    @Override
     public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) {
         this.doCopy(param, callback, 0);
     }
@@ -397,7 +312,14 @@ public class FileRecordServiceImpl implements FileRecordService {
                 // 当移动目录时存在同名文件或目录
                 if (targetFileInfo.isDir()) {
                     // 目录 -> 目录 同名的是目录，则根据overwrite规则合并
-                    copy(uid, source, target, uid, name, name, overwrite);
+                    copy(SimpleFileTransferParam.builder()
+                            .sourceUid(uid)
+                            .targetUid(uid)
+                            .sourcePath(source)
+                            .targetPath(target)
+                            .files(List.of(name))
+                            .isOverwrite(overwrite)
+                            .build(), null);
                     deleteRecords(uid, source, Collections.singleton(name));
                 } else {
                     // 目录 -> 文件 同名的是文件，不支持的操作，需要手动解决

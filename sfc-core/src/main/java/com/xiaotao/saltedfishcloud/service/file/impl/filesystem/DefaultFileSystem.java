@@ -154,12 +154,13 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
         List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
         if (files.isEmpty()) {
             return false;
         }
-        FileInfo existMd5File = files.get(0);
+        FileInfo existMd5File = ObjectUtils.clone(files.get(0), FileInfo::new);
         String filePath = fileRecordService.getPathByNodeId(existMd5File.getUid(), existMd5File.getNode())
                 .orElse(null);
         if (filePath == null) {
@@ -171,15 +172,15 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         }
         try {
             StoreService storeService = storeServiceFactory.getService();
-            if (storeService.isUnique()) {
-                fileRecordService.copy(existMd5File.getUid(), filePath, path, uid, existMd5File.getName(), name, true);
-            } else {
-                fileRecordService.copy(existMd5File.getUid(), filePath, path, uid, existMd5File.getName(), name, true);
-                existMd5File.setName(name);
-                FileInfo newFile = FileInfo.createFrom(existMd5File, false);
-                newFile.setUid(uid);
-                newFile.setStreamSource(resource);
+            FileInfo newFile = FileInfo.createFrom(existMd5File, false);
+            newFile.setId(null);
+            newFile.setUid(uid);
+            newFile.setStreamSource(resource);
+            newFile.setName(name);
+            if (!storeService.isUnique()) {
                 saveFile(newFile, path);
+            } else {
+                fileRecordService.saveRecord(newFile, path);
             }
         } catch (IOException e) {
             log.trace("错误：{}", e.getMessage());
@@ -274,7 +275,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
         return fileRecordService.getNodeIdByPath(uid, path)
                 .map(nodeId -> fileRecordService.findByUidAndNodeId(uid, nodeId, nameList))
-                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
+                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, path));
     }
 
     @Override
