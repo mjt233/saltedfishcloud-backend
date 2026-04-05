@@ -110,6 +110,11 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         protected boolean mkdir(String path) throws IOException {
             return handler.mkdirs(path);
         }
+
+        @Override
+        protected boolean rmdir(String path) throws IOException {
+            return handler.delete(path);
+        }
     }
 
     /**

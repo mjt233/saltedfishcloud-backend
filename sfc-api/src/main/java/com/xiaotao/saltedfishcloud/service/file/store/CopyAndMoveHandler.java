@@ -51,6 +51,11 @@ public abstract class CopyAndMoveHandler {
             protected boolean mkdir(String path) throws IOException {
                 return handler.mkdir(path);
             }
+
+            @Override
+            protected boolean rmdir(String path) throws IOException {
+                return handler.delete(path);
+            }
         };
     }
 
@@ -87,6 +92,14 @@ public abstract class CopyAndMoveHandler {
      * @throws IOException  任意IO错误
      */
     protected abstract boolean mkdir(String path) throws IOException;
+
+    /**
+     * 删除单个目录（目录必须为空）
+     * @param path  目录完整路径
+     * @return      成功true，否则false
+     * @throws IOException  任意IO错误
+     */
+    protected abstract boolean rmdir(String path) throws IOException;
 
 
     /**
@@ -231,6 +244,11 @@ public abstract class CopyAndMoveHandler {
                     }
                     doCopyWithProgress(srcPath, dstPath, overwrite, nextDepth, isMove, callback);
                 }
+            }
+
+            // 递归移动完成后，删除源目录（移动操作且未被中断时）
+            if (isMove && (callback == null || !callback.shouldInterrupt())) {
+                rmdir(source);
             }
         } else {
             // 待复制的资源为文件，直接复制
