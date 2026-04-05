@@ -28,6 +28,14 @@ public interface DiskFileSystemFactory {
     }
 
     /**
+     * 清理指定的完全匹配的文件系统参数下创建的文件系统缓存
+     * @param params
+     */
+    default void clearCache(Map<String, Object> params) {
+
+    }
+
+    /**
      * 获取该文件系统的描述信息，
      * @return  协议名称
      */

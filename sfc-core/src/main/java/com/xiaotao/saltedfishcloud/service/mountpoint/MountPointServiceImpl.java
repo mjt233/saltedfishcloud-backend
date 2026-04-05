@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.MountPointRepo;
@@ -113,6 +114,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         }
         mountPointList.forEach(m -> UIDValidator.validateWithException(m.getUid(), true));
         mountPointList.forEach(this::clearFileRecord);
+        mountPointList.forEach(this::clearFileSystemFactoryCache);
         clearCache(uid);
         mountPointRepo.batchDeleteById(ids);
     }
@@ -121,7 +123,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
     @Transactional(rollbackFor = Exception.class)
     public void remove(@Validated @UID long uid, long id) {
         MountPoint mountPoint = mountPointRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("不存在该id"));
-
+        clearFileSystemFactoryCache(mountPoint);
         clearFileRecord(mountPoint);
         clearCache(uid);
         String path = fileRecordService.getPathByNodeId(uid, mountPoint.getNid()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
@@ -131,7 +133,17 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         } catch (NoSuchFileException e) {
             throw new JsonException(e.getMessage());
         }
+    }
 
+    /**
+     * 清理挂载点文件系统的缓存
+     */
+    private void clearFileSystemFactoryCache(MountPoint mountPoint) {
+        try {
+            fileSystemManager.getFileSystemFactory(mountPoint.getProtocol()).clearCache(MapperHolder.parseJsonToMap(mountPoint.getParams()));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -170,6 +182,8 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
                     .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "原节点丢失"));
             fileRecordService.move(uid, originNodePath, newNodePath.get().orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "移动失败，节点丢失")), dbObj.getName(), true);
         }
+        // 清理该挂载点的缓存
+        clearFileSystemFactoryCache(dbObj);
 
 
         // 文件发生变化，执行重命名逻辑
