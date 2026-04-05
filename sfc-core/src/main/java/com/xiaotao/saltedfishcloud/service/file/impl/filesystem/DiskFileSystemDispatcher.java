@@ -515,6 +515,9 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         if (Objects.equals(sourceMatchResult.fileSystem, targetMatchResult.fileSystem)) {
             // 同文件系统，直接移动
             sourceMatchResult.fileSystem.move(uid, sourceMatchResult.resolvedPath, targetMatchResult.resolvedPath, name, overwrite);
+            if (sourceMatchResult.isProxyStoreRecordMountPoint()) {
+                fileRecordService.move(uid, source, target, name, overwrite);
+            }
         } else {
             // 跨文件系统，采用复制+删除分步操作
             doCopyInternal(SimpleFileTransferParam.builder()
