@@ -243,7 +243,7 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler, Closeable {
     public boolean rename(String path, String newName) throws IOException {
         checkReadOnly();
         String sourceFullPath = getFullPath(path);
-        String targetFullPath = getFullPath(StringUtils.appendPath(PathUtils.getParentPath(path), encodePath(newName)));
+        String targetFullPath = getFullPath(StringUtils.appendPath(PathUtils.getParentPath(path), newName));
         sardine.move(
                 sourceFullPath,
                 targetFullPath,
