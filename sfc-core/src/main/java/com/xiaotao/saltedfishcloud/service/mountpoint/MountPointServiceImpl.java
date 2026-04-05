@@ -196,6 +196,13 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
             }
         }
         mountPointRepo.save(mountPoint);
+
+        // 挂载点的存储记录代理配置发生变化时，清空掉原有存储记录信息
+        if(Boolean.TRUE.equals(dbObj.getIsProxyStoreRecord()) != Boolean.TRUE.equals(mountPoint.getIsProxyStoreRecord())) {
+            String mountPath = fileRecordService.getPathByNodeId(mountPoint.getUid(), mountPoint.getNid())
+                    .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND, mountPoint.getNid() + " " + mountPoint.getPath()));
+            fileRecordService.deleteRecords(mountPoint.getUid(), mountPath, List.of(mountPoint.getName()));
+        }
     }
 
 
