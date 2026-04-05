@@ -424,16 +424,7 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String mkdir(long uid, String name, String path) throws NoSuchFileException {
-        log.debug("mkdir " + name + " at " + path);
-        String nodeId = this.getNodeIdByPath(uid, path).orElseThrow(() -> new JsonException("上级目录不存在"));
-        String newNodeId = SecureUtils.getUUID();
-        FileInfo existFile = fileInfoRepo.findFileInfo(uid, name, nodeId);
-        if (existFile != null) {
-            throw new DuplicateKeyException("目录已存在");
-        }
-        addDirRecord(uid, name, nodeId, newNodeId, false);
-        log.debug("mkdir finish: " + newNodeId);
-        return newNodeId;
+        return getAndMkdirs(uid, StringUtils.appendPath(path, name), false);
     }
 
     /**
@@ -463,6 +454,10 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String mkdirs(long uid, String path, boolean isMount) {
+        return getAndMkdirs(uid, path, isMount);
+    }
+
+    private String doMkdirs(long uid, String path, boolean isMount) {
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         // 起始的根目录节点id与用户id相同
@@ -511,7 +506,7 @@ public class FileRecordServiceImpl implements FileRecordService {
                     }
 
                     try {
-                        return mkdirs(uid, path, isMount);
+                        return doMkdirs(uid, path, isMount);
                     } catch (DataIntegrityViolationException e) {
                         boolean isDuplicate = false;
                         if (e instanceof DuplicateKeyException) {
