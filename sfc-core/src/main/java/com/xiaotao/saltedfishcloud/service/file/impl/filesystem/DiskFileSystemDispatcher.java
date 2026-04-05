@@ -2,9 +2,6 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.event.cm.DirCopyEvent;
-import com.xiaotao.saltedfishcloud.event.cm.DirMoveEvent;
-import com.xiaotao.saltedfishcloud.event.cm.FileCopyEvent;
 import com.xiaotao.saltedfishcloud.event.cm.FileMoveEvent;
 import com.xiaotao.saltedfishcloud.event.dir.MkdirEvent;
 import com.xiaotao.saltedfishcloud.event.file.FileDeleteEvent;
@@ -27,7 +24,6 @@ import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
-import jakarta.persistence.EntityManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -321,25 +317,8 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         }));
     }
 
-    private void publishFileCopyOrMoveEvent(long sourceUid, String sourceDir, String targetDir, long targetUid, String sourceName, String targetName, boolean isMove) throws IOException {
-        List<FileInfo> r = this.getMainFileSystem().getUserFileList(targetUid, targetDir, Collections.singletonList(targetName));
-        if (r == null || r.isEmpty()) {
-            log.warn("{} 未查询到文件信息，没能发布文件复制事件 uid: {} fullPath: {}", LOG_PREFIX, targetUid, StringUtils.appendPath(targetDir, targetName));
-        } else {
-            if(r.get(0).isFile()) {
-                if (isMove) {
-                    eventPublisher.publishEvent(new FileMoveEvent(this, sourceUid, StringUtils.appendPath(sourceDir, sourceName), targetUid, StringUtils.appendPath(targetDir, targetName)));
-                } else {
-                    eventPublisher.publishEvent(new FileCopyEvent(this, sourceUid, StringUtils.appendPath(sourceDir, sourceName), targetUid, StringUtils.appendPath(targetDir, targetName)));
-                }
-            } else {
-                if (isMove) {
-                    eventPublisher.publishEvent(new DirMoveEvent(this, sourceUid, StringUtils.appendPath(sourceDir, sourceName), targetUid, StringUtils.appendPath(targetDir, targetName)));
-                } else {
-                    eventPublisher.publishEvent(new DirCopyEvent(this, sourceUid, StringUtils.appendPath(sourceDir, sourceName), targetUid, StringUtils.appendPath(targetDir, targetName)));
-                }
-            }
-        }
+    private void publishFileMoveEvent(String sourcePath, String targetPath) {
+        eventPublisher.publishEvent(new FileMoveEvent(this, sourcePath, targetPath));
     }
 
     /**
@@ -524,7 +503,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                 mountPoint.setNid(nodeId);
                 try {
                     mountPointService.saveMountPoint(mountPoint);
-                    this.publishFileCopyOrMoveEvent(uid, source, target, uid, name, name, true);
+                    this.publishFileMoveEvent(fullSourcePath, fullTargetPath);
                     return;
                 } catch (FileSystemParameterException e) {
                     throw new RuntimeException(e);
@@ -553,7 +532,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         if (mountPoints != null && !mountPoints.isEmpty()) {
             mountPointService.clearCache(uid);
         }
-        this.publishFileCopyOrMoveEvent(uid, source, target, uid, name, name, true);
+        this.publishFileMoveEvent(fullSourcePath, fullTargetPath);
     }
 
     @Override
