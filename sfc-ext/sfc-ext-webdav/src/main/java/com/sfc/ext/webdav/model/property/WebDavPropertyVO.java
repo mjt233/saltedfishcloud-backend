@@ -18,9 +18,4 @@ public class WebDavPropertyVO {
     public String getDisplayUrl() {
         return Optional.ofNullable(delegate.getDisplayUrl()).filter(StringUtils::hasText).orElseGet(() -> "{protocol}//{hostname}:" + delegate.getListenPort());
     }
-
-    public Boolean getIsAllowAnonymous() {
-        return delegate.getIsAllowAnonymous();
-    }
-
 }

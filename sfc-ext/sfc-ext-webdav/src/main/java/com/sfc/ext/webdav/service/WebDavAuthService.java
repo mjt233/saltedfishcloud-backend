@@ -35,7 +35,10 @@ public class WebDavAuthService {
                 .filter(u -> Objects.equals(u.getPassword(), SecureUtils.getPassswd(password)))
                 .orElse(null);
         Optional.ofNullable(MiltonServlet.request())
-                .ifPresent(s -> s.setAttribute("userObj", user));
+                .ifPresent(req -> {
+                    req.setAttribute("userObj", user);
+                    req.getSession(true).setAttribute("userObj", user);
+                });
         return user;
     }
 
@@ -45,7 +48,10 @@ public class WebDavAuthService {
                 .map(auth -> userService.getUserById(auth.getUid()))
                 .orElse(null);
         Optional.ofNullable(MiltonServlet.request())
-                .ifPresent(s -> s.setAttribute("userObj", user));
+                .ifPresent(req -> {
+                    req.setAttribute("userObj", user);
+                    req.getSession(true).setAttribute("userObj", user);
+                });
         return user;
     }
 

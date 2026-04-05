@@ -29,7 +29,7 @@ import java.util.concurrent.Semaphore;
 import java.util.regex.Pattern;
 
 @Slf4j
-public class WebDavStoreRawHandler implements DirectRawStoreHandler {
+public class WebDavStoreRawHandler implements DirectRawStoreHandler, Closeable {
     private final WebDavClientProperty property;
     private final Sardine sardine;
 
@@ -42,6 +42,9 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler {
         } else {
             this.sardine = SardineFactory.begin(property.getUsername(), property.getPassword());
         }
+        // 启用预认证，在第一次请求时就发送认证信息
+        // 这可以避免服务器返回401，减少请求往返
+        this.sardine.enablePreemptiveAuthentication(property.getHost());
     }
 
     private void validProperty() {
@@ -310,5 +313,10 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler {
         // 2. 使用内置的 RFC_1123_DATE_TIME 格式化器
         // 注意：必须指定 Locale.US，否则星期和月份会被格式化为中文（如“周一”）导致服务器无法识别
         return gmtTime.format(DateTimeFormatter.RFC_1123_DATE_TIME.withLocale(Locale.US));
+    }
+
+    @Override
+    public void close() throws IOException {
+        this.sardine.shutdown();
     }
 }

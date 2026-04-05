@@ -2,6 +2,8 @@ package com.sfc.ext.webdav.controller;
 
 import com.sfc.ext.webdav.enums.ResourceArea;
 import com.sfc.ext.webdav.model.resource.*;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -41,7 +43,11 @@ public class WebDavResourceController {
 
     @Root
     public WebDavRoot getRoot() {
-        return new WebDavRoot(Optional.ofNullable(getCurUser()).map(User::getId).orElse(null));
+        User curUser = getCurUser();
+        if (curUser == null) {
+            return new UnAuthoriseWebDavRoot();
+        }
+        return new WebDavRoot(curUser.getId());
     }
 
 
@@ -90,14 +96,10 @@ public class WebDavResourceController {
 
     @ChildOf
     public WebDavItem findChild(WebDavDir parent, String name) {
-        // 访问私人网盘时，需要确保当前会话有一个关联的用户验证信息，如果没有则返回一个未验证的资源，让 SecurityManager 直接拒绝请求
-        // 以便让客户端发送用户验证信息
-
-        if (parent.getResourceArea() == PRIVATE) {
-            User user = getCurUser(parent.getUid());
-            if (user == null) {
-                return UnAuthoriseWebDavItem.get(parent, name);
-            }
+        // 访问资源必须要求要有用户认证信息
+        User user = getCurUser(parent.getUid());
+        if (user == null) {
+            return UnAuthoriseWebDavItem.get(parent, name);
         }
         return null;
     }
@@ -138,7 +140,11 @@ public class WebDavResourceController {
 
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String parentPath = PathUtils.getParentPath(file.getPath());
-        return fileSystem.getResource(file.getUid(), parentPath, file.getName()).getInputStream();
+        org.springframework.core.io.Resource fileResource = fileSystem.getResource(file.getUid(), parentPath, file.getName());
+        if (fileResource == null) {
+            throw new JsonException(FileSystemError.FILE_NOT_FOUND, file.getPath());
+        }
+        return fileResource.getInputStream();
     }
 
     /**
@@ -323,10 +329,24 @@ public class WebDavResourceController {
      */
     private User getCurUser(@Nullable Long uid) {
         HttpServletRequest servletRequest = MiltonServlet.request();
+
+        // 1. 首先从request attribute获取
         Object userObj = servletRequest.getAttribute("userObj");
-        if (userObj != null) {
+        if (userObj instanceof User) {
             return (User) userObj;
         }
+
+        // 2. 从session获取（认证成功后会同步到session）
+        userObj = Optional.ofNullable(servletRequest.getSession(false))
+                .map(session -> session.getAttribute("userObj"))
+                .filter(obj -> obj instanceof User)
+                .orElse(null);
+        if (userObj != null) {
+            servletRequest.setAttribute("userObj", userObj);
+            return (User) userObj;
+        }
+
+        // 3. 从Authorization获取
         User user = (User) Optional.of(HttpManager.request())
                 .map(Request::getAuthorization)
                 .map(authorization -> {
@@ -339,6 +359,8 @@ public class WebDavResourceController {
                 })
                 .filter(t -> t instanceof User)
                 .orElse(null);
+
+        // 4. 如果仍然没有且提供了uid，根据uid查询
         if (user == null && uid != null) {
             user = userServiceLazy.get().getUserById(uid);
             servletRequest.setAttribute("userObj", user);
