@@ -167,7 +167,12 @@ public class WebDavStoreRawHandler implements DirectRawStoreHandler, Closeable {
     @Override
     public boolean mkdir(String path) throws IOException {
         checkReadOnly();
-        sardine.createDirectory(getFullPath(path));
+        String fullPath = getFullPath(path);
+        if(sardine.exists(fullPath)) {
+            return false;
+        } else {
+            sardine.createDirectory(fullPath);
+        }
         return true;
     }
 

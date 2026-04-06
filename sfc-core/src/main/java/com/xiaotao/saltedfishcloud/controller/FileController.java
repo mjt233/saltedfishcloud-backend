@@ -4,6 +4,10 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
 import com.sfc.archive.service.DiskFileSystemArchiveService;
+import com.sfc.task.AsyncTaskManager;
+import com.sfc.task.model.AsyncTaskCreateParam;
+import com.sfc.task.model.AsyncTaskRecord;
+import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
@@ -22,6 +26,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
@@ -60,6 +65,7 @@ public class FileController {
     private final DiskFileSystemManager fileSystemManager;
     private final DiskFileSystemArchiveService archiveService;
     private final WrapService wrapService;
+    private final AsyncTaskManager asyncTaskManager;
 
 
     /*
@@ -269,6 +275,23 @@ public class FileController {
         CopyProgressCallback callback = null; // new StandardOutputCopyProgressCallback();
         fileSystemManager.getMainFileSystem().copy(param, callback);
         return JsonResult.emptySuccess();
+    }
+
+    /**
+     * 支持跨用户网盘的文件复制
+     */
+    @ApiOperation("异步执行网盘文件复制（支持跨用户网盘）")
+    @PostMapping("asyncCopy")
+    public JsonResult<AsyncTaskRecord> asyncCopy(@RequestBody @Validated SimpleFileTransferParam param) throws IOException {
+        AsyncTaskRecord record = asyncTaskManager.createTask(AsyncTaskCreateParam.builder()
+                .name("复制文件")
+                .params(MapperHolder.toJson(param))
+                .isTemp(true)
+                .immediate(true)
+                .cpuOverhead(10)
+                .taskType(AsyncTaskType.FILE_COPY)
+                .build());
+        return JsonResultImpl.getInstance(record);
     }
 
     /**

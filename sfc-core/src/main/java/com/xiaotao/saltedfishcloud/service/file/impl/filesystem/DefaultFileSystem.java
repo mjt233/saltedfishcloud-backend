@@ -13,6 +13,8 @@ import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEventLevel;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
@@ -239,6 +241,18 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         }
         StoreService storeService = storeServiceFactory.getService();
         if (!storeService.isUnique()) {
+            if (callback != null) {
+                callback.onAdditionalEvent(new CopyProgressEvent() {
+                    {
+                        setMessage("哈希存储模式下，物理存储无需操作，已跳过");
+                        setName("Store Skip");
+                    }
+                    @Override
+                    public CopyProgressEventLevel getLevel() {
+                        return CopyProgressEventLevel.INFO;
+                    }
+                });
+            }
             storeService.copy(param, callback);
         }
     }
