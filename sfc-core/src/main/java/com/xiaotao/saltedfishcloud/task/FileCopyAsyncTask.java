@@ -175,19 +175,120 @@ public class FileCopyAsyncTask implements AsyncTask {
                     }
                 });
             }
+            if (CollectionUtils.isEmpty(param.getFiles())) {
+                log("开始文件复制: " + param.getSourcePath() + " -> " + param.getTargetPath());
+            } else {
+                for (String file : param.getFiles()) {
+                    log("开始文件复制: " + StringUtils.appendPath(param.getSourcePath(), file) + " -> " + StringUtils.appendPath(param.getTargetPath(), file));
+                }
+            }
+
+            // 创建自定义的复制进度回调
+            this.progressCallback = new CopyProgressCallback() {
+                private final CopyProgressRecord record = new CopyProgressRecord();
+
+                @Override
+                public void onFileStart(FileTransferItem item) {
+                    String fileName = item.getFileInfo() != null ? item.getFileInfo().getName() : "未知文件";
+                    log(item.getFrom() + " -> " + item.getTo());
+                    record.setCurrentFile(fileName);
+                    record.setCurrentType("file");
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                @Override
+                public void onFileComplete(FileTransferItem item) {
+                    if (Boolean.TRUE.equals(item.getIsSkip())) {
+                        log("跳过: " + (item.getFileInfo() != null ? item.getFileInfo().getName() : "未知文件"));
+                    }
+                    if (item.getFileInfo() != null && item.getFileInfo().isFile()) {
+                        progressRecord.setLoaded(progressRecord.getLoaded() + item.getFileInfo().getSize());
+                    }
+                }
+
+                @Override
+                public void onDirStart(String dirPath) {
+                    record.setCurrentFile(dirPath);
+                    record.setCurrentType("dir");
+                }
+
+                @Override
+                public void onDirComplete(String dirPath) {
+                    record.setCreatedDirCount(record.getCreatedDirCount() + 1);
+                }
+
+                @Override
+                public void onAdditionalEvent(CopyProgressEvent event) {
+                    if (event.getMessage() != null) {
+                        log(event.getMessage());
+                    }
+                }
+
+                @Override
+                public CopyProgressRecord getProgressRecord() {
+                    return record;
+                }
+
+                @Override
+                public boolean shouldInterrupt() {
+                    return interrupted.get();
+                }
+            };
+
+            // 执行文件复制
+            for (String sourcePath : getSourcePaths()) {
+                DiskFileSystemUtils.walk(diskFileSystem, param.getSourceUid(), sourcePath, new FileVisitor<>() {
+                    @NotNull
+                    @Override
+                    public FileVisitResult preVisitDirectory(FileInfo dir, @NotNull BasicFileAttributes attrs) throws IOException {
+                        if (dir.getMountId() != null) {
+                            return FileVisitResult.SKIP_SIBLINGS;
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @NotNull
+                    @Override
+                    public FileVisitResult visitFile(FileInfo file, @NotNull BasicFileAttributes attrs) throws IOException {
+                        if (file.isFile()) {
+                            if (progressRecord.getTotal() < 0) {
+                                progressRecord.setTotal(0);
+                            }
+                            progressRecord.setTotal(progressRecord.getTotal() + file.getSize());
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @NotNull
+                    @Override
+                    public FileVisitResult visitFileFailed(FileInfo file, @NotNull IOException exc) throws IOException {
+                        return FileVisitResult.TERMINATE;
+                    }
+
+                    @NotNull
+                    @Override
+                    public FileVisitResult postVisitDirectory(FileInfo dir, @Nullable IOException exc) throws IOException {
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            }
             diskFileSystem.copy(param, progressCallback);
 
             // 任务完成
-            log("复制完成: " + StringUtils.getFormatSize(progressCallback.getProgressRecord().getCopiedFileSize()));
+            log("复制完成: " + StringUtils.getFormatSize(progressRecord.getLoaded()));
 
-        } catch (IOException e) {
-            log.error("文件复制任务执行失败", e);
-            log("复制失败: " + e.getMessage());
-            throw new RuntimeException("文件复制失败", e);
         } catch (Exception e) {
             log.error("文件复制任务执行异常", e);
             log("复制异常: " + e.getMessage());
-            throw e;
+            if (e instanceof RuntimeException re) {
+                throw re;
+            } else {
+                throw new RuntimeException(e);
+            }
         } finally {
             running.set(false);
             executeThread.set(null);
