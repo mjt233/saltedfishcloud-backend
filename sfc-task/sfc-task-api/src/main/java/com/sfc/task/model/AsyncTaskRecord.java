@@ -1,6 +1,7 @@
 package com.sfc.task.model;
 
 import com.sfc.task.AsyncTaskConstants;
+import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 
@@ -22,7 +23,8 @@ import java.util.Date;
 public class AsyncTaskRecord extends AuditModel {
 
     /**
-     * 任务类型，用于区分任务的所属类型，如按下载任务、视频转码任务等进行划分，具体由各任务创建者决定。
+     * 任务类型，用于区分任务的所属类型，如按下载任务、视频转码任务等进行划分，具体由各任务创建者决定。<br>
+     * 系统内置的任务类型可参考 {@link AsyncTaskType}
      */
     private String taskType;
 
