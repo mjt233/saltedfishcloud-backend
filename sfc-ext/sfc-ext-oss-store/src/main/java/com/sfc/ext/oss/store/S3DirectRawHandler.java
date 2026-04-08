@@ -10,6 +10,7 @@ import com.sfc.ext.oss.OSSProperty;
 import com.sfc.ext.oss.util.OSSPathUtils;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
@@ -17,6 +18,7 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.cglib.proxy.MethodInterceptor;
 import org.springframework.core.io.AbstractResource;
@@ -305,12 +307,12 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
 
     @Override
     public boolean rename(String path, String newName) throws IOException {
-        move(path, PathUtils.getParentPath(path) + "/" + newName);
+        move(path, PathUtils.getParentPath(path) + "/" + newName, null);
         return true;
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         FileInfo srcFile = getFileInfo(src);
         if (srcFile == null) {
             return false;
@@ -322,8 +324,8 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
-        copy(src, dest);
+    public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
+        copy(src, dest, item);
         delete(src);
         return true;
     }

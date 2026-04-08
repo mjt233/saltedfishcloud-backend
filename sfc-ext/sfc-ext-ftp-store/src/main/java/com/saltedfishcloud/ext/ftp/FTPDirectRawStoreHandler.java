@@ -2,6 +2,7 @@ package com.saltedfishcloud.ext.ftp;
 
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
@@ -15,6 +16,7 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -220,21 +222,30 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         try (OutputStream os = newOutputStream(dest)) {
             Resource resource = getResource(src);
             if (resource == null) {
                 throw new IOException("文件不存在：" + src);
             }
             try (InputStream is = resource.getInputStream()) {
-                StreamUtils.copy(is, os);
+                if (item != null) {
+                    long total = resource.contentLength();
+                    item.setTotal(total);
+                    item.setLoaded(0L);
+                    com.xiaotao.saltedfishcloud.utils.StreamUtils.copyStream(is, os, (buf, len) -> {
+                        item.setLoaded(item.getLoaded() + len);
+                    });
+                } else {
+                    com.xiaotao.saltedfishcloud.utils.StreamUtils.copyStream(is, os);
+                }
             }
         }
         return true;
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
+    public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         try (FTPSession session = getSession()) {
             return session.rename(src, dest);
         }

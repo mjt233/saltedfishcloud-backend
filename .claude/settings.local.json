@@ -1,7 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mvn compile:*)",
       "mcp__IDEA__search_symbol",
       "mcp__IDEA__read_file",
       "mcp__IDEA__find_files_by_glob",
@@ -12,7 +11,9 @@
       "mcp__IDEA__build_project",
       "mcp__IDEA__get_file_problems",
       "mcp__IDEA__get_file_text_by_path",
-      "mcp__IDEA__search_text"
+      "mcp__IDEA__search_text",
+      "mcp__IDEA__search_file",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }
