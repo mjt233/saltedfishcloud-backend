@@ -27,6 +27,7 @@ import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.*;
@@ -419,6 +421,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     .to(StringUtils.appendPath(targetPath, sourceFile.getName()))
                     .fileInfo(sourceFile)
                     .total(sourceFile.isDir() ? 0 : sourceFile.getSize())
+                    .loaded(0L)
                     .build();
             if (sourceFile.isFile()) {
                 if (callback != null) {
@@ -438,10 +441,18 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     return;
                 }
                 Resource resource = sourceMatchResult.fileSystem.getResource(sourceUid, sourceMatchResult.resolvedPath, sourceFile.getName());
-                sourceFile.setStreamSource(resource);
-                sourceFile.setId(null);
-                sourceFile.setNode(null);
-                targetMatchResult.fileSystem.saveFile(sourceFile, targetMatchResult.resolvedPath);
+                FileInfo targetFile = new FileInfo();
+                BeanUtils.copyProperties(sourceFile, targetFile);
+                targetFile.setStreamSource(resource);
+                targetFile.setId(null);
+                targetFile.setNode(null);
+                targetMatchResult.fileSystem.saveFileByStream(targetFile, targetMatchResult.resolvedPath, os -> {
+                    try (InputStream is = resource.getInputStream()) {
+                        return StreamUtils.copyStreamAndComputeMd5(is, os, sourceFile.getMd5(), (buf, len) -> {
+                            transferRecord.setLoaded(transferRecord.getLoaded() + len);
+                        }).applyTo(targetFile);
+                    }
+                });
                 if (callback != null) {
                     callback.onFileComplete(transferRecord);
                 }

@@ -47,6 +47,16 @@ public class FileCopyAsyncTask implements AsyncTask {
     private final AtomicReference<Thread> executeThread = new AtomicReference<>();
     private CopyProgressCallback progressCallback;
 
+    /**
+     * 当前正在复制的文件项，用于实时进度计算
+     */
+    private volatile FileTransferItem currentItem;
+
+    /**
+     * 已完成复制的文件总大小
+     */
+    private long completedSize;
+
     private final ProgressRecord progressRecord = new ProgressRecord();
 
     public FileCopyAsyncTask(String originParams, SimpleFileTransferParam param) {
@@ -80,18 +90,20 @@ public class FileCopyAsyncTask implements AsyncTask {
                 log(item.getFrom() + " -> " + item.getTo());
                 record.setCurrentFile(fileName);
                 record.setCurrentType("file");
+                // 设置当前正在复制的文件项
+                currentItem = item;
             }
 
             @Override
             public void onFileComplete(FileTransferItem item) {
+                // 清除当前文件项
+                currentItem = null;
                 if (Boolean.TRUE.equals(item.getIsSkip())) {
                     log("跳过: " + (item.getFileInfo() != null ? item.getFileInfo().getName() : "未知文件"));
                 }
                 if (item.getFileInfo() != null && item.getFileInfo().isFile()) {
-                    progressRecord.setLoaded(progressRecord.getLoaded() + item.getFileInfo().getSize());
-                    CopyProgressRecord callbackProgressRecord = progressCallback.getProgressRecord();
-                    callbackProgressRecord.setCopiedFileSize(progressRecord.getLoaded());
-                    callbackProgressRecord.setCopiedFileCount(callbackProgressRecord.getCopiedFileCount() + 1);
+                    completedSize += item.getFileInfo().getSize();
+                    record.setCopiedFileCount(record.getCopiedFileCount() + 1);
                 }
             }
 
@@ -193,10 +205,10 @@ public class FileCopyAsyncTask implements AsyncTask {
             diskFileSystem.copy(param, progressCallback);
 
             // 任务完成，更新进度
-            getProgress().setLoaded(getProgress().getTotal());
+            completedSize = getProgress().getTotal();
             CopyProgressRecord callbackProgressRecord = progressCallback.getProgressRecord();
-            callbackProgressRecord.setCopiedFileSize(getProgress().getTotal());
-            log("复制完成: " + StringUtils.getFormatSize(getProgress().getLoaded()));
+            callbackProgressRecord.setCopiedFileSize(completedSize);
+            log("复制完成: " + StringUtils.getFormatSize(completedSize));
 
         } catch (Exception e) {
             log.error("文件复制任务执行异常", e);
@@ -243,6 +255,13 @@ public class FileCopyAsyncTask implements AsyncTask {
 
     @Override
     public ProgressRecord getProgress() {
+        // 计算实时进度：已完成大小 + 当前文件已复制大小
+        long currentLoaded = 0;
+        FileTransferItem item = currentItem;
+        if (item != null && item.getLoaded() != null) {
+            currentLoaded = item.getLoaded();
+        }
+        progressRecord.setLoaded(completedSize + currentLoaded);
         return progressRecord;
     }
 }
