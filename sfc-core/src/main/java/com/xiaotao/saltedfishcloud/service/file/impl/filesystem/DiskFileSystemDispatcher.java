@@ -441,6 +441,9 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     return;
                 }
                 Resource resource = sourceMatchResult.fileSystem.getResource(sourceUid, sourceMatchResult.resolvedPath, sourceFile.getName());
+                if (resource == null) {
+                    throw new JsonException(FileSystemError.FILE_NOT_FOUND, StringUtils.appendPath(sourcePath, sourceFile.getName()));
+                }
                 FileInfo targetFile = new FileInfo();
                 BeanUtils.copyProperties(sourceFile, targetFile);
                 targetFile.setStreamSource(resource);
@@ -612,7 +615,6 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void mkdir(long uid, String path, String name) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         matchResult.fileSystem.mkdir(uid, matchResult.resolvedPath, name);

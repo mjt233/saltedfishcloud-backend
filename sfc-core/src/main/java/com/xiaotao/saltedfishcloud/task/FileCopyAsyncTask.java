@@ -121,7 +121,7 @@ public class FileCopyAsyncTask implements AsyncTask {
             @Override
             public void onAdditionalEvent(CopyProgressEvent event) {
                 if (event.getMessage() != null) {
-                    log(event.getMessage());
+                    log("事件:" + event.getName() + " 消息:" +event.getMessage());
                 }
             }
 

@@ -422,9 +422,8 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public String mkdir(long uid, String name, String path) throws NoSuchFileException {
-        return getAndMkdirs(uid, StringUtils.appendPath(path, name), false);
+        return doGetAndMkdirs(uid, StringUtils.appendPath(path, name), false);
     }
 
     /**
@@ -453,7 +452,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public String mkdirs(long uid, String path, boolean isMount) {
-        return doMkdirs(uid, path, isMount);
+        return doGetAndMkdirs(uid, path, isMount);
     }
 
     private String doMkdirs(long uid, String path, boolean isMount) {
@@ -487,6 +486,11 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public String getAndMkdirs(long uid, String path, boolean isMount) {
+        return doGetAndMkdirs(uid, path, isMount);
+    }
+
+
+    private String doGetAndMkdirs(long uid, String path, boolean isMount) {
         Optional<String> quickQueryRes = this.getNodeIdByPath(uid, path);
         if (quickQueryRes.isPresent()) {
             return quickQueryRes.get();
@@ -497,7 +501,7 @@ public class FileRecordServiceImpl implements FileRecordService {
             int maxTryCount = 25;
             AtomicInteger tryCount = new AtomicInteger();
             while (tryCount.get() < maxTryCount) {
-                String nodeId = DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRES_NEW, () -> {
+                String nodeId = DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRES_NEW, TransactionDefinition.ISOLATION_READ_COMMITTED, () -> {
                     // 双重检查
                     Optional<String> newestNodeId = this.getNodeIdByPath(uid, path);
                     if (newestNodeId.isPresent()) {
@@ -533,7 +537,6 @@ public class FileRecordServiceImpl implements FileRecordService {
             throw new RuntimeException("getAndMkdir concurrent handle error");
         });
     }
-
 
     @Override
     @Transactional(rollbackFor = Exception.class)

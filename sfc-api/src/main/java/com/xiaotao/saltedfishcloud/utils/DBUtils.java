@@ -1,15 +1,12 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import reactor.util.function.Tuple2;
@@ -178,9 +175,23 @@ public class DBUtils {
      * @return 任务执行结果
      */
     public static <T> T executeWithTransactional(int propagationBehavior, java.util.concurrent.Callable<T> callable) {
+        return executeWithTransactional(propagationBehavior, TransactionDefinition.ISOLATION_DEFAULT ,callable);
+    }
+
+
+    /**
+     * 在新事务中执行Callable并返回结果
+     * @param propagationBehavior 事务传播行为，使用TransactionDefinition中的常量如PROPAGATION_REQUIRED等
+     * @param isolationLevel 事务隔离级别 使用TransactionDefinition中的常量如ISOLATION_DEFAULT等
+     * @param callable 要执行的任务，支持返回值
+     * @param <T> 返回值类型
+     * @return 任务执行结果
+     */
+    public static <T> T executeWithTransactional(int propagationBehavior, int isolationLevel, java.util.concurrent.Callable<T> callable) {
         PlatformTransactionManager transactionManager = SpringContextUtils.getContext().getBean(PlatformTransactionManager.class);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(propagationBehavior);
+        transactionTemplate.setIsolationLevel(isolationLevel);
         return transactionTemplate.execute(status -> {
             try {
                 return callable.call();
