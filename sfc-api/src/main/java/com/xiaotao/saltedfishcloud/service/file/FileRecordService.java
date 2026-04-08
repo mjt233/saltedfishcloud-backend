@@ -165,7 +165,6 @@ public interface FileRecordService {
      * @param overwrite 是否覆盖原文件信息
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
-    @Transactional(rollbackFor = Exception.class)
     void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException;
 
 
@@ -207,7 +206,6 @@ public interface FileRecordService {
      * @param name 文件名列表
      * @return 删除的文件列表
      */
-    @Transactional(rollbackFor = Exception.class)
     List<FileInfo> deleteRecords(long uid, String path, Collection<String> name) throws NoSuchFileException;
 
     /**
@@ -219,7 +217,6 @@ public interface FileRecordService {
      * @throws DuplicateKeyException 当目标目录已存在时抛出
      * @throws NoSuchFileException   当父级目录不存在时抛出
      */
-    @Transactional(rollbackFor = Exception.class)
     String mkdir(long uid, String name, String path) throws NoSuchFileException;
 
 
@@ -234,7 +231,7 @@ public interface FileRecordService {
     String mkdirs(long uid, String path, boolean isMount);
 
     /**
-     * 从数据库中获取指定文件夹节点id信息。如果该记录不存在则会创建一个。
+     * 从数据库中获取指定文件夹节点id信息。如果该记录不存在则会创建一个。注意：如果存在数据库事务，该方法会在一个独立的新事务中执行。
      * @param uid   用户id
      * @param path  文件夹完整路径
      * @param isMount   需要创建记录时，是否标记为挂载目录

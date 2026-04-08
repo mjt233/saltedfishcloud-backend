@@ -452,9 +452,8 @@ public class FileRecordServiceImpl implements FileRecordService {
 
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public String mkdirs(long uid, String path, boolean isMount) {
-        return getAndMkdirs(uid, path, isMount);
+        return doMkdirs(uid, path, isMount);
     }
 
     private String doMkdirs(long uid, String path, boolean isMount) {

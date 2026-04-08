@@ -400,7 +400,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         if (!storeService.isUnique() && !storeService.mkdir(uid, path, name)) {
             throw new IOException("在" + path + "创建文件夹失败");
         }
-        fileRecordService.mkdir(uid, name, path);
+        fileRecordService.mkdirs(uid, StringUtils.appendPath(path, name), false);
     }
 
     @Override
