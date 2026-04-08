@@ -136,7 +136,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
                 handler.delete(tmpPath);
             } else {
                 log.debug("[{}]存储新文件：{}，保存路径：{}", LOG_TITLE, file.getName(), storePath);
-                handler.move(tmpPath, storePath);
+                handler.move(tmpPath, storePath, null);
             }
             isSuccess = true;
         } finally {
@@ -155,7 +155,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
             return;
         }
         log.debug("[{}]存储新文件：{}，保存路径：{}", LOG_TITLE, fileInfo.getName(), path);
-        handler.move(nativePath.toString(), path);
+        handler.move(nativePath.toString(), path, null);
     }
 
     @Override

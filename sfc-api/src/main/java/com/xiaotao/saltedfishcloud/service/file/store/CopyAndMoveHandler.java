@@ -33,13 +33,13 @@ public abstract class CopyAndMoveHandler {
     public static CopyAndMoveHandler createByStoreHandler(DirectRawStoreHandler handler, CopyAndMoveProperty property) {
         return new CopyAndMoveHandler(handler) {
             @Override
-            public boolean copyFile(String src, String dest) throws IOException {
-                return handler.copy(src, dest);
+            public boolean copyFile(String src, String dest, FileTransferItem transferItem) throws IOException {
+                return handler.copy(src, dest, transferItem);
             }
 
             @Override
-            public boolean moveFile(String src, String dest) throws IOException {
-                return handler.move(src, dest);
+            public boolean moveFile(String src, String dest, FileTransferItem transferItem) throws IOException {
+                return handler.move(src, dest, transferItem);
             }
 
             @Override
@@ -66,16 +66,17 @@ public abstract class CopyAndMoveHandler {
      * @return      复制成功为true，否则为false
      * @throws IOException  任意IO错误
      */
-    public abstract boolean copyFile(String src, String dest) throws IOException;
+    public abstract boolean copyFile(String src, String dest, FileTransferItem transferItem) throws IOException;
 
     /**
      * 移动单个文件
      * @param src   待移动的源文件路径
      * @param dest  粘贴路径
+     * @param transferItem
      * @return      移动成功为true，否则为false
      * @throws IOException  任意IO错误
      */
-    public abstract boolean moveFile(String src, String dest) throws IOException;
+    public abstract boolean moveFile(String src, String dest, FileTransferItem transferItem) throws IOException;
 
     /**
      * 文件移动是否需要递归执行。
@@ -161,7 +162,30 @@ public abstract class CopyAndMoveHandler {
         if (isMoveWithRecursion()) {
             doCopyWithProgress(src, dest, overwrite, 0, true, callback);
         } else {
-            moveFile(src, dest);
+            FileInfo fileInfo = null;
+            FileTransferItem item = null;
+            if (callback != null) {
+                fileInfo = reader.getFileInfo(src);
+                item = new FileTransferItem();
+                item.setFrom(src);
+                item.setTo(dest);
+                item.setFileInfo(fileInfo);
+            }
+            if (callback != null && fileInfo != null) {
+                if (fileInfo.isFile()) {
+                    callback.onFileStart(item);
+                } else {
+                    callback.onDirStart(dest);
+                }
+            }
+            moveFile(src, dest, item);
+            if (callback != null && fileInfo != null) {
+                if (fileInfo.isFile()) {
+                    callback.onFileStart(item);
+                } else {
+                    callback.onDirComplete(dest);
+                }
+            }
         }
     }
 
@@ -229,9 +253,9 @@ public abstract class CopyAndMoveHandler {
                             return;
                         }
                         if (isMove) {
-                            moveFile(srcPath, dstPath);
+                            moveFile(srcPath, dstPath, record);
                         } else {
-                            copyFile(srcPath, dstPath);
+                            copyFile(srcPath, dstPath, record);
                         }
                         if (callback != null) {
                             callback.onFileComplete(record);
@@ -268,9 +292,9 @@ public abstract class CopyAndMoveHandler {
                 return;
             }
             if (isMove) {
-                res = moveFile(source, target);
+                res = moveFile(source, target, record);
             } else {
-                res = copyFile(source, target);
+                res = copyFile(source, target, record);
             }
             if (!res) {
                 log.warn("[CopyAndMove]文件{}失败：{} -> {}", isMove ? "移动" : "复制", source, target);

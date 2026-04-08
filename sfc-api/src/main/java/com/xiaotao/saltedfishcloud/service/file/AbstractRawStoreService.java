@@ -11,6 +11,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -22,6 +23,7 @@ import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -97,13 +99,13 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         }
 
         @Override
-        public boolean copyFile(String src, String dest) throws IOException {
-            return handler.copy(src, dest);
+        public boolean copyFile(String src, String dest, @Nullable FileTransferItem item) throws IOException {
+            return handler.copy(src, dest, item);
         }
 
         @Override
-        public boolean moveFile(String src, String dest) throws IOException {
-            return handler.move(src, dest);
+        public boolean moveFile(String src, String dest, @Nullable FileTransferItem item) throws IOException {
+            return handler.move(src, dest, item);
         }
 
         @Override
@@ -199,7 +201,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
             streamConsumer.accept(os).applyTo(file);
             os.close();
             isSuccess = true;
-            handler.move(tmpPath, rawPath);
+            handler.move(tmpPath, rawPath, null);
         } finally {
             if (!isSuccess) {
                 handler.delete(tmpPath);

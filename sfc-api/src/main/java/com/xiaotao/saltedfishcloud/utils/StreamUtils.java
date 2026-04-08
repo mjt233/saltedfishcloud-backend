@@ -42,6 +42,47 @@ public class StreamUtils {
         return copyStreamAndComputeMd5(is, os, validMd5, null);
     }
 
+    /**
+     * 复制流数据（复制完成后流不会在该方法中被关闭）
+     * @param is    输入流
+     * @param os    输出流
+     * @param copyEvent 每次复制数据后的事件处理函数。参数0: 内部缓冲数组 参数1: 本次复制的数据长度
+     * @return 总复制的字节数
+     */
+    public static long copyStream(InputStream is, OutputStream os, @Nullable BiConsumer<byte[], Integer> copyEvent) throws IOException {
+        try {
+            byte[] buffer = new byte[FILE_BUFFER_SIZE];
+            int len;
+            long totalSize = 0;
+            MessageDigest md5 = MessageDigest.getInstance("md5");
+
+            // 读取上传的文件数据后，同时计算md5和写入文件
+            while ( (len = is.read(buffer, 0, buffer.length)) != -1 ) {
+                md5.update(buffer, 0, len);
+                os.write(buffer, 0, len);
+                totalSize += len;
+                if (copyEvent != null) {
+                    copyEvent.accept(buffer, len);
+                }
+            }
+            return totalSize;
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
+    /**
+     * 复制流数据（复制完成后流不会在该方法中被关闭）
+     * @param is    输入流
+     * @param os    输出流
+     * @return 总复制的字节数
+     */
+    public static long copyStream(InputStream is, OutputStream os) throws IOException {
+        return copyStream(is, os, null);
+    }
+
 
     /**
      * 复制流并计算复制的流的数据的md5
@@ -53,20 +94,14 @@ public class StreamUtils {
      */
     public static StreamCopyResult copyStreamAndComputeMd5(InputStream is, OutputStream os, @Nullable String validMd5, @Nullable BiConsumer<byte[], Integer> copyEvent) throws IOException {
         try {
-            byte[] buffer = new byte[FILE_BUFFER_SIZE];
-            int len;
-            long size = 0;
             MessageDigest md5 = MessageDigest.getInstance("md5");
-
-            // 读取上传的文件数据后，同时计算md5和写入文件
-            while ( (len = is.read(buffer, 0, buffer.length)) != -1 ) {
-                md5.update(buffer, 0, len);
-                os.write(buffer, 0, len);
-                size += len;
+            long size = copyStream(is, os, (buf, len) -> {
+                md5.update(buf, 0, len);
                 if (copyEvent != null) {
-                    copyEvent.accept(buffer, len);
+                    copyEvent.accept(buf, len);
                 }
-            }
+            });
+
             String actualMd5 = new String(encodeHex(md5.digest()));
             if (validMd5 != null && !actualMd5.equals(validMd5) ) {
                 throw new IllegalArgumentException("md5 " + validMd5 + " is incorrect, actual md5 is " + actualMd5);

@@ -2,6 +2,8 @@ package com.xiaotao.saltedfishcloud.service.file.store;
 
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,15 +65,17 @@ public interface StoreWriter {
      * 不要求复制目录。
      * @param src   源路径
      * @param dest  目标路径
+     * @param transferItem 当前正在复制的文件信息。如果复制过程中能够获取复制进度与文件大小，可修改该对象的loaded与total字段。
      */
-    boolean copy(String src, String dest) throws IOException;
+    boolean copy(String src, String dest,@Nullable FileTransferItem transferItem) throws IOException;
 
     /**
      * 将指定路径的文件或目录移动为指定的路径。
      * @param src   源路径
      * @param dest  目标路径
+     * @param transferItem 当前正在移动的文件信息。如果移动过程中能够获取复制进度与文件大小，可修改该对象的loaded与total字段。
      */
-    boolean move(String src, String dest) throws IOException;
+    boolean move(String src, String dest,@Nullable FileTransferItem transferItem) throws IOException;
 
 
     /**
