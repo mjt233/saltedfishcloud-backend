@@ -81,7 +81,8 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
         if (AsyncTaskConstants.Status.FAILED.equals(status)) {
             asyncTaskRecord.setIsFailed(true);
             return asyncTaskRecord;
-        } else if (AsyncTaskConstants.Status.CANCEL.equals(status) || AsyncTaskConstants.Status.OFFLINE.equals(status)) {
+        }
+        if (AsyncTaskConstants.Status.FINISH.equals(status) || AsyncTaskConstants.Status.CANCEL.equals(status) || AsyncTaskConstants.Status.OFFLINE.equals(status)) {
             return asyncTaskRecord;
         }
 

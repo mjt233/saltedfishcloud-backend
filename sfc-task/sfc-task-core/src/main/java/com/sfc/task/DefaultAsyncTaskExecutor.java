@@ -312,8 +312,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
 
                     // 移除任务实例
                     runningTask.remove(recordId);
-                    // 移除进度监听
-                    this.removeProgressDetect(record);
+                    // 5s后延迟移除进度监听，确保任务结束后前端轮询还能获取到最后的进度信息
+                    CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS)
+                            .execute(() -> this.removeProgressDetect(record));
                 } finally {
                     synchronized (giveUpRecord) {
                         giveUpRecord.remove(recordId);
