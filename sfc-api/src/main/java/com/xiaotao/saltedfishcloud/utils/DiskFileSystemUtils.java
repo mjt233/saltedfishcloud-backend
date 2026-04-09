@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.DiskFileAttributes;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -94,6 +96,20 @@ public class DiskFileSystemUtils {
     public static void walk(DiskFileSystem fileSystem, Long uid, String startPath, FileVisitor<FileInfo> visitor) throws IOException {
         Deque<String> pathQueue = new ArrayDeque<>();
         pathQueue.add(startPath);
+
+        // 判断传入的路径是否为非目录路径而是文件路径。如果是文件路径则直接触发visitFile回调即可
+        boolean isFile = fileSystem.getResource(uid, startPath, null) != null;
+        if (isFile) {
+            List<FileInfo> l = fileSystem.getUserFileList(uid, PathUtils.getParentPath(startPath), Collections.singletonList(PathUtils.getLastNode(startPath)));
+            if (CollectionUtils.isEmpty(l)) {
+                throw new JsonException(FileSystemError.FILE_NOT_FOUND, startPath);
+            }
+            FileInfo f = l.get(0);
+            f.setPath(startPath);
+            visitor.visitFile(f, DiskFileAttributes.from(f));
+            return;
+        }
+
         do {
             int newSubDirCount = 0;
             String curPath = pathQueue.pop();
@@ -102,12 +118,7 @@ public class DiskFileSystemUtils {
             if (userFileList == null || userFileList.length == 0) {
                 continue;
             }
-            if (Objects.equals(curPath, startPath) && !PathUtils.isRoot(curPath) && userFileList[0].isEmpty()) {
-                // 参数的startPath可能传了个指向文件的路径，此时应把这个文件查出来触发回调
-                fileList = fileSystem.getUserFileList(uid, PathUtils.getParentPath(curPath), Collections.singletonList(PathUtils.getLastNode(curPath)));
-            } else {
-                fileList = Stream.concat(userFileList[0].stream(), userFileList[1].stream()).toList();
-            }
+            fileList = Stream.concat(userFileList[0].stream(), userFileList[1].stream()).toList();
 
             boolean isSkipSibling = false;
             for (FileInfo file : fileList) {
