@@ -460,7 +460,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
                     callback.onFileComplete(transferRecord);
                 }
                 if (targetMatchResult.isProxyStoreRecordMountPoint()) {
-                    fileRecordService.saveRecord(sourceFile, param.getTargetPath());
+                    fileRecordService.saveRecord(targetFile, param.getTargetPath());
                 }
             } else {
                 String nextSourcePath = StringUtils.appendPath(sourcePath, sourceFile.getName());
