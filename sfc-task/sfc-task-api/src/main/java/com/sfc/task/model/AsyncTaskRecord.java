@@ -1,6 +1,7 @@
 package com.sfc.task.model;
 
 import com.sfc.task.AsyncTaskConstants;
+import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import lombok.*;
 
@@ -10,7 +11,7 @@ import java.util.Date;
 /**
  * 异步任务记录
  */
-@Entity(name = "async_task_record")
+@Entity
 @Table(indexes = {
         @Index(name = "idx_uid", columnList = "uid")
 })
@@ -22,7 +23,8 @@ import java.util.Date;
 public class AsyncTaskRecord extends AuditModel {
 
     /**
-     * 任务类型，用于区分任务的所属类型，如按下载任务、视频转码任务等进行划分，具体由各任务创建者决定。
+     * 任务类型，用于区分任务的所属类型，如按下载任务、视频转码任务等进行划分，具体由各任务创建者决定。<br>
+     * 系统内置的任务类型可参考 {@link AsyncTaskType}
      */
     private String taskType;
 
@@ -77,6 +79,12 @@ public class AsyncTaskRecord extends AuditModel {
      * 如100表示该任务可能会耗尽1个CPU核心的计算能力
      */
     private Integer cpuOverhead;
+
+    /**
+     * 是否为临时任务<br>
+     * 临时任务无需等待排队认领任务，可立即执行，且不具备生命周期管理的自动重试功能
+     */
+    private Boolean isTemp;
 
     @Transient
     private Boolean isFailed;

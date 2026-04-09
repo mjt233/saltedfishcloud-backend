@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 public interface FileInfoRepo extends BaseRepo<FileInfo> {
     @Query("SELECT f FROM FileInfo f WHERE f.uid = :uid AND f.node = :node AND f.name = :name")
@@ -21,6 +22,9 @@ public interface FileInfoRepo extends BaseRepo<FileInfo> {
 
     @Query("SELECT f FROM FileInfo f WHERE f.md5 = :md5 ORDER BY f.isMount DESC")
     Page<FileInfo> findByMd5(@Param("md5") String md5, Pageable pageable);
+
+    @Query("SELECT DISTINCT f.md5 FROM FileInfo f WHERE f.md5 IN :md5List")
+    Set<String> findByMd5List(@Param("md5List") Collection<String> md5List);
 
     List<FileInfo> findByUidAndNode(Long uid, String node);
 

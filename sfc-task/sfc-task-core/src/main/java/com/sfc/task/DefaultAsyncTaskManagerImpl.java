@@ -2,6 +2,7 @@ package com.sfc.task;
 
 import com.sfc.rpc.annotation.RPCResource;
 import com.sfc.task.constants.AsyncTaskMQTopic;
+import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
@@ -12,6 +13,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -79,7 +81,8 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
         if (AsyncTaskConstants.Status.FAILED.equals(status)) {
             asyncTaskRecord.setIsFailed(true);
             return asyncTaskRecord;
-        } else if (AsyncTaskConstants.Status.CANCEL.equals(status) || AsyncTaskConstants.Status.OFFLINE.equals(status)) {
+        }
+        if (AsyncTaskConstants.Status.FINISH.equals(status) || AsyncTaskConstants.Status.CANCEL.equals(status) || AsyncTaskConstants.Status.OFFLINE.equals(status)) {
             return asyncTaskRecord;
         }
 
@@ -223,6 +226,37 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
         repo.save(record);
         mqService.sendBroadcast(AsyncTaskMQTopic.TASK_PUBLISH, record.getId());
 //        redisTemplate.opsForList().leftPush(AsyncTaskConstants.RedisKey.TASK_QUEUE, MapperHolder.toJson(record));
+    }
+
+    @Override
+    public void executeAsyncTask(AsyncTaskRecord record) throws IOException {
+        repo.save(record);
+        executor.execute(record);
+    }
+
+    @Override
+    public AsyncTaskRecord createTask(AsyncTaskCreateParam param) throws IOException {
+        if (!StringUtils.hasText(param.getName())) {
+            throw new IllegalArgumentException("任务名称 name 不能为空");
+        }
+        if (!StringUtils.hasText(param.getTaskType())) {
+            throw new IllegalArgumentException("任务类型 taskType 不能为空");
+        }
+        AsyncTaskRecord record = AsyncTaskRecord.builder()
+                .name(param.getName())
+                .taskType(param.getTaskType())
+                .params(param.getParams())
+                .cpuOverhead(param.getCpuOverhead())
+                .isTemp(param.getIsTemp())
+                .build();
+        record.setUid(Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getId());
+
+        if (Boolean.TRUE.equals(param.getImmediate())) {
+            executeAsyncTask(record);
+        } else {
+            submitAsyncTask(record);
+        }
+        return record;
     }
 
     @Override

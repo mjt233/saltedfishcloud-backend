@@ -110,4 +110,10 @@ public interface AsyncTaskExecutor {
      * 获取任务接收器
      */
     AsyncTaskReceiver getReceiver();
+
+    /**
+     * 直接执行任务，不加入队列调度
+     * @param record 任务记录
+     */
+    void execute(AsyncTaskRecord record);
 }

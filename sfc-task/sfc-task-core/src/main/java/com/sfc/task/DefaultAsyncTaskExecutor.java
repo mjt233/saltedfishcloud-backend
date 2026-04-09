@@ -195,16 +195,26 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
      * 提交任务执行
      */
     private void submitExecute(TaskContext taskContext) {
+        submitExecute(taskContext, true);
+    }
+
+    /**
+     * 提交任务执行
+     * @param taskContext 任务上下文
+     * @param updateLoad 是否更新负载计数，为false时不受系统负载约束
+     */
+    private void submitExecute(TaskContext taskContext, boolean updateLoad) {
         AsyncTask asyncTask = taskContext.task;
         AsyncTaskRecord record = taskContext.record;
         record.setStatus(AsyncTaskConstants.Status.RUNNING);
 
         // 更新负载记录值
         int cpuOverhead = Optional.ofNullable(record.getCpuOverhead()).orElse(0);
-        if (cpuOverhead > 0) {
+        if (updateLoad && cpuOverhead > 0) {
             currentLoad.addAndGet(cpuOverhead);
         }
         Long recordId = taskContext.record.getId();
+        final int finalCpuOverhead = updateLoad ? cpuOverhead : 0;
         threadPool.execute(() -> {
             emit(startListener, record);
             runningTask.put(recordId, asyncTask);
@@ -214,8 +224,8 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 log.info("忽略处理任务队列中被取消的任务: {}-{}",record.getName(), recordId);
                 runningTask.remove(recordId);
                 // 任务完成，添加负载值到待清算的队列
-                if (cpuOverhead > 0) {
-                    loadCleanQueue.add(cpuOverhead);
+                if (finalCpuOverhead > 0) {
+                    loadCleanQueue.add(finalCpuOverhead);
                 }
                 emit(failedListener, record);
                 return;
@@ -291,8 +301,8 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 SecureUtils.unbind();
                 try {
                     // 任务完成，添加负载值到待清算的队列
-                    if (cpuOverhead > 0) {
-                        loadCleanQueue.add(cpuOverhead);
+                    if (finalCpuOverhead > 0) {
+                        loadCleanQueue.add(finalCpuOverhead);
                     }
 
                     // 若任务未被因故障转移而放弃，则保存任务日志
@@ -302,8 +312,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
 
                     // 移除任务实例
                     runningTask.remove(recordId);
-                    // 移除进度监听
-                    this.removeProgressDetect(record);
+                    // 5s后延迟移除进度监听，确保任务结束后前端轮询还能获取到最后的进度信息
+                    CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS)
+                            .execute(() -> this.removeProgressDetect(record));
                 } finally {
                     synchronized (giveUpRecord) {
                         giveUpRecord.remove(recordId);
@@ -400,16 +411,20 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
         if (record.getId() == null) {
             record.setId(IdUtil.getId());
         }
+        AsyncTaskFactory asyncTaskFactory = this.getTaskFactory(record);
+
+        AsyncTask task = asyncTaskFactory.createTask(record.getParams(), record);
+        return new TaskContext(task, record);
+    }
+
+    public AsyncTaskFactory getTaskFactory(AsyncTaskRecord record) {
         AsyncTaskFactory asyncTaskFactory = taskFactories.get(record.getTaskType());
 
         if (asyncTaskFactory == null) {
             emit(unsupportedListener, record);
             throw new IllegalArgumentException("找不到任务类型为 " + record.getTaskType() + " 的任务工厂");
         }
-
-        AsyncTask task = asyncTaskFactory.createTask(record.getParams(), record);
-        return new TaskContext(task, record);
-
+        return asyncTaskFactory;
     }
 
     /**
@@ -518,5 +533,15 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     @Override
     public void addTaskExitListener(Consumer<AsyncTaskRecord> listener) {
         taskExitListener.add(listener);
+    }
+
+    @Override
+    public void execute(AsyncTaskRecord record) {
+        if (record.getId() == null) {
+            record.setId(IdUtil.getId());
+        }
+        AsyncTaskFactory asyncTaskFactory = getTaskFactory(record);
+        AsyncTask task = asyncTaskFactory.createTask(record.getParams(), record);
+        submitExecute(new TaskContext(task, record), false);
     }
 }

@@ -31,6 +31,8 @@ spring:
     url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
     username: root
     password: test
+    hikari:
+      transaction-isolation: TRANSACTION_READ_COMMITTED
   data:
     redis:
       host: 127.0.0.1

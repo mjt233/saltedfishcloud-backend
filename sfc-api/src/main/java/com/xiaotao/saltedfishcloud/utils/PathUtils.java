@@ -174,6 +174,12 @@ public class PathUtils {
         return res;
     }
 
+    /**
+     * 判断路径是否标识了根目录的路径
+     */
+    public static boolean isRoot(String path) {
+        return "/".equals(path);
+    }
 
     /**
      * 判断b是否为a的子目录，如<br>

@@ -3,6 +3,7 @@ package com.saltedfishcloud.ext.sftp;
 import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
@@ -16,6 +17,7 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -263,10 +265,17 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         Resource srcResource = getResource(src);
-        try(OutputStream os = newOutputStream(dest)) {
-            try(InputStream is = srcResource.getInputStream()) {
+        try (OutputStream os = newOutputStream(dest);InputStream is = srcResource.getInputStream()) {
+            if (item != null) {
+                long total = srcResource.contentLength();
+                item.setTotal(total);
+                item.setLoaded(0L);
+                com.xiaotao.saltedfishcloud.utils.StreamUtils.copyStream(is, os, (buf, len) -> {
+                    item.setLoaded(item.getLoaded() + len);
+                });
+            } else {
                 StreamUtils.copy(is, os);
             }
         }
@@ -274,7 +283,7 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
+    public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         try (SFTPClient sftpClient = getSFTPClient()) {
             sftpClient.rename(src, dest);
         }

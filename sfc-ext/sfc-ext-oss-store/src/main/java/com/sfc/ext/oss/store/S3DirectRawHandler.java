@@ -10,20 +10,26 @@ import com.sfc.ext.oss.OSSProperty;
 import com.sfc.ext.oss.util.OSSPathUtils;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
+import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.cglib.proxy.Enhancer;
-import org.springframework.cglib.proxy.MethodInterceptor;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.util.Lazy;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -281,36 +287,35 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
     public OutputStream newOutputStream(String path) throws IOException {
         Path tmpPath = PathUtils.getTempPath().resolve("oss_upload_tmp_" + IdUtil.getId());
         log.debug("{}为{}创建outputStream, 本地临时文件: {}", LOG_PREFIX, path, tmpPath);
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(FileOutputStream.class);
-        enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -> {
-            if (method.getName().equals("close")) {
-                log.debug("{}{}outputStream开始关闭", LOG_PREFIX, path);
-                Object invokeRes = method.invoke(obj, args);
-                log.debug("{}{}outputStream关闭完成，开始保存到OSS", LOG_PREFIX, path);
+        return StreamUtils.createCloseActionOutputStream(Files.newOutputStream(tmpPath), () -> {
+            try {
+                log.debug("{}{}outputStream关闭，开始保存到OSS", LOG_PREFIX, path);
                 FileInfo tmpFile = FileInfo.getLocal(tmpPath.toString(), false);
+                tmpFile.setStreamSource(() -> Files.newInputStream(tmpPath));
+                tmpFile.setName(PathUtils.getLastNode(path));
                 try (InputStream is = Files.newInputStream(tmpPath)) {
-                    store(tmpFile, tmpPath.toString(), tmpFile.getSize(), is);
+                    store(tmpFile, path, tmpFile.getSize(), is);
                 }
                 log.debug("{}{}通过outputStream保存OSS完成", LOG_PREFIX, path);
+            } finally {
                 log.debug("{}{}删除本地outputStream临时文件", LOG_PREFIX, tmpPath);
                 Files.deleteIfExists(tmpPath);
-                return invokeRes;
-            } else {
-                return method.invoke(obj, args);
             }
         });
-        return (OutputStream) enhancer.create(new Class[]{File.class}, new Object[]{tmpPath.toFile()});
     }
 
     @Override
     public boolean rename(String path, String newName) throws IOException {
-        move(path, PathUtils.getParentPath(path) + "/" + newName);
+        String parentPath = PathUtils.getParentPath(path);
+        String newPath = (parentPath.equals("/") ? "" : parentPath) + "/" + newName;
+        CopyAndMoveHandler.createByStoreHandler(this, CopyAndMoveProperty.builder().isMoveWithRecursion(true).build())
+                        .copy(path, newPath, true);
+        delete(path);
         return true;
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         FileInfo srcFile = getFileInfo(src);
         if (srcFile == null) {
             return false;
@@ -322,8 +327,8 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
-        copy(src, dest);
+    public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
+        copy(src, dest, item);
         delete(src);
         return true;
     }

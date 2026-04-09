@@ -1,21 +1,31 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
+import com.xiaotao.saltedfishcloud.model.progress.event.EnterDirEvent;
+import com.xiaotao.saltedfishcloud.model.progress.event.MountPointSkipEvent;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.FileTree;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
+import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +34,7 @@ import java.nio.file.NoSuchFileException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -34,6 +45,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class FileRecordServiceImpl implements FileRecordService {
     private final static String LOG_PREFIX = "[文件记录]";
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
 //    @Resource
 //    private NodeCacheService cacheService;
@@ -87,8 +101,8 @@ public class FileRecordServiceImpl implements FileRecordService {
     public Optional<FileInfo> getDirByMd5(Long uid, String md5) {
         return fileInfoRepo.findOne(JpaLambdaQueryWrapper
                 .get(FileInfo.class)
-                        .eq(FileInfo::getMd5, md5)
-                        .eq(FileInfo::getUid, uid)
+                .eq(FileInfo::getMd5, md5)
+                .eq(FileInfo::getUid, uid)
                 .build()
         );
     }
@@ -103,88 +117,177 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException {
-        // 原地复制，不处理
-        if (uid == targetId && source.equals(target) && sourceName.equals(targetName)) {
-            return;
+    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) {
+        this.doCopy(param, callback, 0);
+    }
+
+    private void doCopy(SimpleFileTransferParam param,@Nullable CopyProgressCallback callback, int depth) {
+        if (depth >= 32) {
+            throw new JsonException(FileSystemError.DIR_TOO_DEPTH, depth + "");
         }
-        PathBuilder pathBuilder = new PathBuilder();
-        pathBuilder.setForcePrefix(true);
-
-
-        String sourceNodeId = this.getNodeIdByPath(uid, source).orElseThrow(() -> new JsonException(404, "源文件所在目录不存在"));
-        FileInfo sourceInfo = fileInfoRepo.findFileInfo(uid, sourceName, sourceNodeId);
-        if (sourceInfo == null) {
-            throw new NoSuchFileException("文件 " + source + "/" + sourceName + " 不存在");
-        }
-
-        // 文件直接添加单条记录
-        if (sourceInfo.isFile()) {
-            FileInfo newRecord = FileInfo.createFrom(sourceInfo, false);
-            newRecord.setUid(targetId);
-            newRecord.setName(targetName);
-            saveRecord(newRecord, target);
+        if (callback != null && callback.shouldInterrupt()) {
             return;
         }
 
-        if (targetId == uid && sourceName.equals(targetName) && PathUtils.isSubDir(StringUtils.appendPath(source, sourceName), StringUtils.appendPath(target, targetName))) {
-            throw new IllegalArgumentException("目标目录不能是源目录的子目录");
-        }
+        // 查询待复制的源文件
+        String sourceNodeId = getNodeIdByPath(param.getSourceUid(), param.getSourcePath()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, param.getSourcePath()));
+        List<FileInfo> sourceFileItemList = findByUidAndNodeId(param.getSourceUid(), sourceNodeId, param.getFiles())
+                .stream()
+                .map(f -> {
+                    FileInfo fileInfo = new FileInfo();
+                    BeanUtils.copyProperties(f, fileInfo);
 
-        //  需要遍历的目录列表
-        Deque<PathIdPair> needProcessSourceDirList = new ArrayDeque<>();
-        String sourceRoot = StringUtils.appendPath(source, sourceName);
-        int prefixLength = sourceRoot.length();
-        needProcessSourceDirList.add(new PathIdPair(sourceRoot, this.getNodeIdByPath(uid, sourceRoot).orElseThrow(() -> new JsonException(404, "源文件所在目录不存在"))));
+                    // 生成一个新ID
+                    fileInfo.setId(IdUtil.getId());
 
-        do {
-            //  更新目录列表
-            PathIdPair pairInfo = needProcessSourceDirList.getLast();
-            needProcessSourceDirList.removeLast();
-            String newDirPath = target + "/" + targetName + "/" + pairInfo.path.substring(prefixLength);
-            pathBuilder.update(newDirPath);
-            PathIdPair newPathInfo;
-            try {
-                newPathInfo = new PathIdPair(newDirPath, mkdir(targetId, pathBuilder.getPathLast(), pathBuilder.range(-1)));
-            } catch (DuplicateKeyException e) {
-                newPathInfo = new PathIdPair(newDirPath, this.getNodeIdByPath(targetId, newDirPath).orElseThrow(() -> new JsonException(404, "源文件所在目录不存在")));
-            }
-
-
-            //  遍历一个目录并追加该目录下的子目录
-            List<FileInfo> sourceFileList = fileInfoRepo.findByUidAndNode(uid, pairInfo.nid);
-            for (FileInfo sourceFile : sourceFileList) {
-                // 跳过挂载文件
-                // todo 作为可选项
-                if (Boolean.TRUE.equals(sourceFile.getIsMount()) || sourceFile.getMountId() != null) {
-                    continue;
-                }
-                if (sourceFile.isDir()) {
-                    needProcessSourceDirList.add(new PathIdPair(pairInfo.path + "/" + sourceFile.getName(), sourceFile.getMd5()));
-                } else {
-                    FileInfo existFile = fileInfoRepo.findFileInfo(targetId, sourceFile.getName(), newPathInfo.nid);
-                    if (existFile == null) {
-                        FileInfo newFile = FileInfo.createFrom(sourceFile, false);
-                        newFile.setNode(newPathInfo.nid);
-                        newFile.setUid(targetId);
-                        fileInfoRepo.save(newFile);
-                        log.debug("addFile: " + sourceFile.getName() + " at " + newPathInfo.nid);
-                    } else {
-                        if (overwrite) {
-                            existFile.setMd5(sourceFile.getMd5());
-                            existFile.setSize(sourceFile.getSize());
-                            existFile.setCtime(sourceFile.getCtime());
-                            existFile.setMtime(sourceFile.getMtime());
-                            fileInfoRepo.save(existFile);
-                            log.debug("overwrite " + sourceFile.getName() + " at " + newPathInfo.nid);
-                        } else {
-                            log.error("addFile failed: " + sourceFile.getName() + " at " + newPathInfo.nid);
-                        }
+                    // 目录类型的文件要设置个新的目录节点id标识
+                    if (fileInfo.isDir()) {
+                        fileInfo.setMd5(SecureUtils.getUUID());
                     }
-                }
+                    return fileInfo;
+                })
+                .toList();
+
+        // 找出挂载点，不复制挂载点下面的文件，并消除挂载信息
+        Set<Long> mountPointDirIdSet = sourceFileItemList
+                .stream()
+                .filter(f -> f.getMountId() != null)
+                .peek(f -> {
+                    f.setMountId(null);
+                    if(callback != null) {
+                        String from = StringUtils.appendPath(param.getSourcePath(), f.getName());
+                        String to = StringUtils.appendPath(param.getTargetPath(), f.getName());
+                        callback.onAdditionalEvent(MountPointSkipEvent.of(f.getName(), from, to,
+                                FileTransferItem.builder()
+                                        .fileInfo(f)
+                                        .from(from)
+                                        .to(to)
+                                        .build()
+                        ));
+                    }
+                })
+                .map(BaseModel::getId).collect(Collectors.toSet());
+
+        // 查询目标位置的节点id，将源文件批量保存到目标位置下
+        String targetNodeId = getNodeIdByPath(param.getTargetUid(), param.getTargetPath()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, param.getTargetPath()));
+        if (callback != null && callback.shouldInterrupt()) {
+            return;
+        }
+        this.batchSaveFileInSameNode(param.getTargetUid(), targetNodeId, Boolean.TRUE.equals(param.getIsOverwrite()), sourceFileItemList);
+
+        // 从待复制的源文件中筛选出目录，继续递归处理（挂载点除外）
+        sourceFileItemList.stream().filter(f -> f.isDir() && !mountPointDirIdSet.contains(f.getId())).forEach(dir -> {
+            if (callback != null && callback.shouldInterrupt()) {
+                return;
             }
-        } while (!needProcessSourceDirList.isEmpty());
+            String nextSourcePath = StringUtils.appendPath(param.getSourcePath(), dir.getName());
+            String nextTargetPath = StringUtils.appendPath(param.getTargetPath(), dir.getName());
+            if (callback != null) {
+                if (callback.shouldInterrupt()) {
+                    return;
+                }
+                callback.onAdditionalEvent(EnterDirEvent.of(
+                        nextSourcePath,
+                        nextTargetPath,
+                        FileTransferItem.builder()
+                                .from(nextSourcePath)
+                                .to(nextTargetPath)
+                                .fileInfo(dir)
+                                .build()
+                ));
+            }
+            SimpleFileTransferParam nextParam = SimpleFileTransferParam.builder()
+                    .sourceUid(param.getSourceUid())
+                    .sourcePath(nextSourcePath)
+                    .targetUid(param.getTargetUid())
+                    .targetPath(nextTargetPath)
+                    .isOverwrite(param.getIsOverwrite())
+                    .build();
+            doCopy(nextParam, callback, depth + 1);
+        });
+    }
+
+    /**
+     *
+     * 在同一个目录节点中批量新增文件信息。如果已存在同名文件，会根据isOverwrite策略判断是否覆盖。
+     *
+     * @param uid         文件所属的用户id
+     * @param nodeId      文件所在目录路径的节点id
+     * @param isOverwrite 是否覆盖同名文件。当已存在的文件与源文件不是同为文件 或 不是同为文件夹时，会抛出异常。
+     * @param fileInfos   要批量新增的文件
+     */
+    private void batchSaveFileInSameNode(long uid, String nodeId, boolean isOverwrite, List<FileInfo> fileInfos) {
+        if (fileInfos == null || fileInfos.isEmpty()) {
+            return;
+        }
+        for (List<FileInfo> files : CollectionUtils.partition(fileInfos, 512)) {
+
+            // 检查该目录下是否存在同名文件
+            List<String> requireNames = files.stream().map(FileInfo::getName).toList();
+            List<FileInfo> existFiles = fileInfoRepo.findFileInfoByNames(uid, requireNames, nodeId);
+            Map<String, FileInfo> existFileMap = existFiles.stream().collect(Collectors.toMap(
+                    FileInfo::getName,
+                    Function.identity()
+            ));
+            List<FileInfo> toInsertFiles;
+            if (isOverwrite) {
+                // 检查当存在同名文件，但不是同为文件/目录则抛出异常
+                files.stream()
+                        .filter(f -> Optional.ofNullable(existFileMap.get(f.getName()))
+                                .filter(ef -> ef.isDir() != f.isDir())
+                                .isPresent()
+                        )
+                        .findAny()
+                        .ifPresent(f -> {
+                            throw new JsonException(f.isDir() ? FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE : FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR);
+                        });
+
+                if (existFileMap.isEmpty()) {
+                    toInsertFiles = files;
+                } else {
+                    // 如果有同名文件，则先删除
+                    List<String> existNames = existFiles.stream().filter(FileInfo::isFile).map(FileInfo::getName).toList();
+                    if (!existNames.isEmpty()) {
+                        fileInfoRepo.deleteFiles(uid, nodeId, existNames);
+                    }
+
+                    // 有同名的目录则需要排除，不操作
+                    toInsertFiles = files.stream().filter(f -> {
+                        if (f.isFile()) {
+                            // 文件可直接保存（同名的前面已删除）
+                            return true;
+                        } else {
+                            // 已存在的同名目录则不用动，只有不存在的目录才需要保存
+                            return !existFileMap.containsKey(f.getName());
+                        }
+                    }).toList();
+                }
+
+            } else {
+                toInsertFiles = files.stream().filter(f -> !existFileMap.containsKey(f.getName())).toList();
+            }
+
+            // 批量插入数据库
+            for (FileInfo f : toInsertFiles) {
+                f.setNode(nodeId);
+                f.setUid(uid);
+            }
+            if (toInsertFiles.isEmpty()) {
+                return;
+            }
+            DBUtils.batchInsert(jdbcTemplate, toInsertFiles);
+        }
+    }
+
+    @Override
+    public void batchSaveFileInSameDirectory(long uid, String path, boolean isOverwrite, List<FileInfo> fileInfos) {
+        if (fileInfos == null || fileInfos.isEmpty()) {
+            return;
+        }
+
+        // 先获取目录id，如果不存在则创建
+        String nodeId = this.getAndMkdirs(uid, path, false);
+        this.batchSaveFileInSameNode(uid, nodeId, isOverwrite, fileInfos);
     }
 
     @Override
@@ -209,7 +312,14 @@ public class FileRecordServiceImpl implements FileRecordService {
                 // 当移动目录时存在同名文件或目录
                 if (targetFileInfo.isDir()) {
                     // 目录 -> 目录 同名的是目录，则根据overwrite规则合并
-                    copy(uid, source, target, uid, name, name, overwrite);
+                    copy(SimpleFileTransferParam.builder()
+                            .sourceUid(uid)
+                            .targetUid(uid)
+                            .sourcePath(source)
+                            .targetPath(target)
+                            .files(List.of(name))
+                            .isOverwrite(overwrite)
+                            .build(), null);
                     deleteRecords(uid, source, Collections.singleton(name));
                 } else {
                     // 目录 -> 文件 同名的是文件，不支持的操作，需要手动解决
@@ -312,18 +422,8 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public String mkdir(long uid, String name, String path) throws NoSuchFileException {
-        log.debug("mkdir " + name + " at " + path);
-        String nodeId = this.getNodeIdByPath(uid, path).orElseThrow(() -> new JsonException("上级目录不存在"));
-        String newNodeId = SecureUtils.getUUID();
-        FileInfo existFile = fileInfoRepo.findFileInfo(uid, name, nodeId);
-        if (existFile != null) {
-            throw new DuplicateKeyException("目录已存在");
-        }
-        addDirRecord(uid, name, nodeId, newNodeId, false);
-        log.debug("mkdir finish: " + newNodeId);
-        return newNodeId;
+        return doGetAndMkdirs(uid, StringUtils.appendPath(path, name), false);
     }
 
     /**
@@ -351,8 +451,11 @@ public class FileRecordServiceImpl implements FileRecordService {
 
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public String mkdirs(long uid, String path, boolean isMount) {
+        return doGetAndMkdirs(uid, path, isMount);
+    }
+
+    private String doMkdirs(long uid, String path, boolean isMount) {
         PathBuilder pb = new PathBuilder();
         pb.append(path);
         // 起始的根目录节点id与用户id相同
@@ -383,6 +486,11 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public String getAndMkdirs(long uid, String path, boolean isMount) {
+        return doGetAndMkdirs(uid, path, isMount);
+    }
+
+
+    private String doGetAndMkdirs(long uid, String path, boolean isMount) {
         Optional<String> quickQueryRes = this.getNodeIdByPath(uid, path);
         if (quickQueryRes.isPresent()) {
             return quickQueryRes.get();
@@ -393,7 +501,7 @@ public class FileRecordServiceImpl implements FileRecordService {
             int maxTryCount = 25;
             AtomicInteger tryCount = new AtomicInteger();
             while (tryCount.get() < maxTryCount) {
-                String nodeId = DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRES_NEW, () -> {
+                String nodeId = DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRED, TransactionDefinition.ISOLATION_READ_COMMITTED, () -> {
                     // 双重检查
                     Optional<String> newestNodeId = this.getNodeIdByPath(uid, path);
                     if (newestNodeId.isPresent()) {
@@ -401,7 +509,7 @@ public class FileRecordServiceImpl implements FileRecordService {
                     }
 
                     try {
-                        return mkdirs(uid, path, isMount);
+                        return doMkdirs(uid, path, isMount);
                     } catch (DataIntegrityViolationException e) {
                         boolean isDuplicate = false;
                         if (e instanceof DuplicateKeyException) {
@@ -429,7 +537,6 @@ public class FileRecordServiceImpl implements FileRecordService {
             throw new RuntimeException("getAndMkdir concurrent handle error");
         });
     }
-
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -478,6 +585,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public void deleteFileInfo(FileInfo fileInfo) {
+        log.debug("{} 删除文件: {}", LOG_PREFIX, fileInfo.getName());
         if (fileInfo.isFile()) {
             fileInfoRepo.delete(fileInfo);
         } else {

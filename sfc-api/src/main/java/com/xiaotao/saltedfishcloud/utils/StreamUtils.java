@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.function.BiConsumer;
@@ -42,6 +39,47 @@ public class StreamUtils {
         return copyStreamAndComputeMd5(is, os, validMd5, null);
     }
 
+    /**
+     * 复制流数据（复制完成后流不会在该方法中被关闭）
+     * @param is    输入流
+     * @param os    输出流
+     * @param copyEvent 每次复制数据后的事件处理函数。参数0: 内部缓冲数组 参数1: 本次复制的数据长度
+     * @return 总复制的字节数
+     */
+    public static long copyStream(InputStream is, OutputStream os, @Nullable BiConsumer<byte[], Integer> copyEvent) throws IOException {
+        try {
+            byte[] buffer = new byte[FILE_BUFFER_SIZE];
+            int len;
+            long totalSize = 0;
+            MessageDigest md5 = MessageDigest.getInstance("md5");
+
+            // 读取上传的文件数据后，同时计算md5和写入文件
+            while ( (len = is.read(buffer, 0, buffer.length)) != -1 ) {
+                md5.update(buffer, 0, len);
+                os.write(buffer, 0, len);
+                totalSize += len;
+                if (copyEvent != null) {
+                    copyEvent.accept(buffer, len);
+                }
+            }
+            return totalSize;
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
+    /**
+     * 复制流数据（复制完成后流不会在该方法中被关闭）
+     * @param is    输入流
+     * @param os    输出流
+     * @return 总复制的字节数
+     */
+    public static long copyStream(InputStream is, OutputStream os) throws IOException {
+        return copyStream(is, os, null);
+    }
+
 
     /**
      * 复制流并计算复制的流的数据的md5
@@ -53,20 +91,14 @@ public class StreamUtils {
      */
     public static StreamCopyResult copyStreamAndComputeMd5(InputStream is, OutputStream os, @Nullable String validMd5, @Nullable BiConsumer<byte[], Integer> copyEvent) throws IOException {
         try {
-            byte[] buffer = new byte[FILE_BUFFER_SIZE];
-            int len;
-            long size = 0;
             MessageDigest md5 = MessageDigest.getInstance("md5");
-
-            // 读取上传的文件数据后，同时计算md5和写入文件
-            while ( (len = is.read(buffer, 0, buffer.length)) != -1 ) {
-                md5.update(buffer, 0, len);
-                os.write(buffer, 0, len);
-                size += len;
+            long size = copyStream(is, os, (buf, len) -> {
+                md5.update(buf, 0, len);
                 if (copyEvent != null) {
-                    copyEvent.accept(buffer, len);
+                    copyEvent.accept(buf, len);
                 }
-            }
+            });
+
             String actualMd5 = new String(encodeHex(md5.digest()));
             if (validMd5 != null && !actualMd5.equals(validMd5) ) {
                 throw new IllegalArgumentException("md5 " + validMd5 + " is incorrect, actual md5 is " + actualMd5);
@@ -96,20 +128,11 @@ public class StreamUtils {
      * @return  新产生的OutputStream修饰类，在原输出流close执行后被调用
      */
     public static OutputStream createCloseActionOutputStream(OutputStream outputStream, Closeable closeable) {
-        return new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-                outputStream.write(b);
-            }
-
-            @Override
-            public void write(@NotNull byte[] b) throws IOException {
-                outputStream.write(b);
-            }
-
+        return new FilterOutputStream(outputStream) {
+            private volatile boolean closed = false;
             @Override
             public void write(@NotNull byte[] b, int off, int len) throws IOException {
-                outputStream.write(b, off, len);
+                out.write(b, off, len);
             }
 
             @Override
@@ -119,8 +142,17 @@ public class StreamUtils {
 
             @Override
             public void close() throws IOException {
-                outputStream.close();
-                closeable.close();
+                if (closed) {
+                    return;
+                }
+                synchronized (this) {
+                    if (closed) {
+                        return;
+                    }
+                    super.close();
+                    closeable.close();
+                    closed = true;
+                }
             }
         };
     }

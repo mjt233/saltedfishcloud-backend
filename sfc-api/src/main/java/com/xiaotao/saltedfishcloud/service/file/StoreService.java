@@ -5,7 +5,9 @@ import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
@@ -19,7 +21,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 网盘文件存储服务，负责用户网盘文件物理数据的存取
+ * 网盘文件存储服务，负责用户网盘文件物理数据的存取。通常作为文件系统接口 {@link DiskFileSystem} 的内部实际数据存储实现
  */
 public interface StoreService {
     /**
@@ -107,15 +109,10 @@ public interface StoreService {
 
     /**
      * 在网盘中复制文件，若目录名相同则合并目录
-     * @param uid     用户ID
-     * @param source  所在网盘路径
-     * @param targetId 目的地网盘的用户ID
-     * @param target  目的地网盘路径
-     * @param sourceName    源文件名
-     * @param targetName    目标文件名
-     * @param overwrite 是否覆盖，若非true，则跳过该文件
+     * @param param 复制参数
+     * @param callback 复制执行过程回调
      */
-    default void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
+    default void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
         throw new UnsupportedOperationException("不支持copy操作");
     }
 

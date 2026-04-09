@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 离线下载服务实现类
@@ -86,10 +87,12 @@ public class DownloadServiceImpl implements DownloadService {
             AsyncTaskRecord asyncTaskRecord = e.getAsyncTaskRecord();
             if (asyncTaskRecord != null && AsyncTaskConstants.Status.RUNNING.equals(asyncTaskRecord.getStatus())) {
                 try {
-                    ProgressRecord progress = asyncTaskManager.getProgress(asyncTaskRecord.getId());
-                    e.setLoaded(progress.getLoaded());
-                    e.setSize(progress.getTotal());
-                    e.setSpeed(progress.getSpeed());
+                    Optional.ofNullable(asyncTaskManager.getProgress(asyncTaskRecord.getId()))
+                    .ifPresent(progress -> {
+                        e.setLoaded(progress.getLoaded());
+                        e.setSize(progress.getTotal());
+                        e.setSpeed(progress.getSpeed());
+                    });
                 } catch (IOException ex) {
                     log.error("{}获取离线下载任务进度失败", LOG_TITLE, ex);
                 }

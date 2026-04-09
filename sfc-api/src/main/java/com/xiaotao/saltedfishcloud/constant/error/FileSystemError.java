@@ -14,7 +14,9 @@ public enum FileSystemError implements ErrorInfo {
     DIR_TOO_DEPTH(1005, 400, "目录深度过大"),
     TARGET_IS_SUB_DIR(1006, 400, "目标位置不能是子目录"),
     MOUNT_POINT_EXIST(1007, 400, "已存在同名挂载点"),
-    FILE_EXIST(1008, 400, "已存在同名文件");
+    FILE_EXIST(1008, 400, "已存在同名文件"),
+    NOT_ALLOW_FILE_OVERWRITE_DIR(1009, 400, "不能用文件覆盖目录"),
+    NOT_ALLOW_DIR_OVERWRITE_FILE(1009, 400, "不能用目录覆盖文件");
 
     private final int code;
     private final int status;

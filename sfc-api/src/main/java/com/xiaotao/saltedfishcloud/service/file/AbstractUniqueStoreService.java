@@ -1,7 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -134,7 +136,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
                 handler.delete(tmpPath);
             } else {
                 log.debug("[{}]存储新文件：{}，保存路径：{}", LOG_TITLE, file.getName(), storePath);
-                handler.move(tmpPath, storePath);
+                handler.move(tmpPath, storePath, null);
             }
             isSuccess = true;
         } finally {
@@ -153,7 +155,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
             return;
         }
         log.debug("[{}]存储新文件：{}，保存路径：{}", LOG_TITLE, fileInfo.getName(), path);
-        handler.move(nativePath.toString(), path);
+        handler.move(nativePath.toString(), path, null);
     }
 
     @Override
@@ -219,7 +221,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     }
 
     @Override
-    public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
+    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
         throw new UnsupportedOperationException();
     }
 

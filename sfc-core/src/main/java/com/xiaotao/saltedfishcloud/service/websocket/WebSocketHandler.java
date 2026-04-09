@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sfc.task.AsyncTaskManager;
-import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.WebSocketConstant;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketRequest;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketResponse;
@@ -20,7 +19,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_EXIT;
+import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_LOG;
 
 // todo 使用Spring提供的Websocket框架重构
 @Slf4j
@@ -52,11 +51,11 @@ public class WebSocketHandler {
     public void onMessage(String message, Session session) throws IOException {
         WebSocketRequest request = MapperHolder.parseAsJson(message, WebSocketRequest.class);
         Long taskId = TypeUtils.toLong(request.getData());
-        MQTopic<AsyncTaskRecord> mqTopic = ASYNC_TASK_EXIT(taskId);
+        MQTopic<String> mqTopic = ASYNC_TASK_LOG(taskId);
         String topic = mqTopic.getTopic();
 
-        // 订阅异步任务日志动作
         if(WebSocketConstant.Action.SUBSCRIBE_TASK_LOG.equals(request.getAction())) {
+            // 订阅异步任务日志动作
             if(subscribedTopic.containsKey(topic)) {
                 return;
             }

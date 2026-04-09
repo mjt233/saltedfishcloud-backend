@@ -17,11 +17,12 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisStreamCommands;
-import org.springframework.data.redis.connection.stream.*;
+import org.springframework.data.redis.connection.stream.MapRecord;
+import org.springframework.data.redis.connection.stream.ReadOffset;
+import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
-import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
 import org.springframework.stereotype.Service;
@@ -67,19 +68,11 @@ public class RedisMQService implements MQService {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void push(String topic, Object message) throws JsonProcessingException {
         String messageBody = message instanceof CharSequence ? message.toString() : MapperHolder.toJson(message);
-        MapRecord<String, String, String> record = StreamRecords.newRecord()
-                .ofMap(Collections.singletonMap("msg", messageBody))
-                .withStreamKey(MQTopicConstants.Prefix.STREAM_PREFIX + topic);
-        ByteRecord byteRecord = record.serialize(
-                (RedisSerializer<? super String>)redisTemplate.getKeySerializer(),
-                (RedisSerializer<? super String>)redisTemplate.getHashKeySerializer(),
-                (RedisSerializer<? super String>)redisTemplate.getHashValueSerializer()
-        );
-        RedisStreamCommands.XAddOptions options = RedisStreamCommands.XAddOptions.maxlen(4096);
-        Objects.requireNonNull(redisTemplate.getConnectionFactory()).getConnection().xAdd(byteRecord, options);
+        String key = MQTopicConstants.Prefix.STREAM_PREFIX + topic;
+        RedisStreamCommands.XAddOptions options = RedisStreamCommands.XAddOptions.maxlen(4096).approximateTrimming(true);
+        redisTemplate.opsForStream().add(key, Collections.singletonMap("msg", messageBody), options);
     }
 
     @Override
@@ -128,13 +121,15 @@ public class RedisMQService implements MQService {
         }
 
         String key = MQTopicConstants.Prefix.STREAM_PREFIX + topic;
-        log.debug("{}新增对流{} 的订阅组: {}", LOG_PREFIX, key, group);
-        redisTemplate.opsForStream().createGroup(key, group);
+        this.ensureGroupExists(key, group);
         long id = IdUtil.getId();
         Subscription subscription = stringStreamMessageListenerContainer.receive(
                 org.springframework.data.redis.connection.stream.Consumer.from(group, id + ""),
                 StreamOffset.create(key, offset),
                 message -> {
+                    if (isDummy(message)) {
+                        return;
+                    }
                     MQMessage msg = MQMessage.builder()
                             .topic(topic)
                             .body(message.getValue().get("msg"))
@@ -147,12 +142,32 @@ public class RedisMQService implements MQService {
         return id;
     }
 
+    /**
+     * 判断是否为仅用于创建流的dummy假消息
+     */
+    private boolean isDummy(MapRecord<String, String, String> message) {
+        return "1".equals(message.getValue().get("_init"));
+    }
+
+    private void ensureGroupExists(String key, String group) {
+        // 1. 检查 Key 是否存在，不存在则发送一个 dummy 消息触发 Key 创建
+        if (!redisTemplate.hasKey(key)) {
+            redisTemplate.opsForStream().add(key, Collections.singletonMap("_init", "1"));
+        }
+        // 2. 创建消费组，从头开始消费使用 "0-0"，从最新开始使用 "$"
+        redisTemplate.opsForStream().createGroup(key, ReadOffset.from("0-0"), group);
+        log.debug("{}新增对流{} 的订阅组: {}", LOG_PREFIX, key, group);
+    }
+
     @Override
     public void unsubscribeMessageQueue(Long id) {
         Tuple3<String, String, Subscription> tuple = topicGroupMap.get(id);
         stringStreamMessageListenerContainer.remove(tuple.getT3());
-        log.debug("{}移除对流{}的订阅组: {}", LOG_PREFIX, MQTopicConstants.Prefix.STREAM_PREFIX + tuple.getT1(), tuple.getT2());
-        redisTemplate.opsForStream().destroyGroup(MQTopicConstants.Prefix.STREAM_PREFIX + tuple.getT1(), tuple.getT2());
+        String key = MQTopicConstants.Prefix.STREAM_PREFIX + tuple.getT1();
+        log.debug("{}移除对流{}的订阅组: {}", LOG_PREFIX, key, tuple.getT2());
+        if (redisTemplate.hasKey(key)) {
+            redisTemplate.opsForStream().destroyGroup(key, tuple.getT2());
+        }
     }
 
     @Override

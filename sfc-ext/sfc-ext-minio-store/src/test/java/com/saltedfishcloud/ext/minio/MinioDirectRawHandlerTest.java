@@ -95,7 +95,7 @@ class MinioDirectRawHandlerTest {
         assertTrue(handler.exist("a"));
 
         // 复制目录
-        handler.copy("a/b", "a/bb");
+        handler.copy("a/b", "a/bb", null);
         assertTrue(handler.exist("a/bb/c"));
         assertTrue(handler.exist("a/bb/c/d"));
         handler.delete("a/b");
@@ -106,7 +106,7 @@ class MinioDirectRawHandlerTest {
         assertTrue(handler.exist("a/new-b/c/d"));
 
         // 移动
-        handler.move("a","root-a");
+        handler.move("a","root-a", null);
         assertFalse(handler.exist("a"));
         assertTrue(handler.exist("root-a"));
     }

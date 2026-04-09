@@ -2,13 +2,9 @@ package com.sfc.ext.webdav.core;
 
 import com.sfc.ext.webdav.enums.Constants;
 import com.sfc.ext.webdav.enums.ResourceArea;
-import com.sfc.ext.webdav.model.property.WebDavProperty;
-import com.sfc.ext.webdav.model.resource.UnAuthoriseWebDavItem;
-import com.sfc.ext.webdav.model.resource.WebDavItem;
-import com.sfc.ext.webdav.model.resource.WebDavRoot;
+import com.sfc.ext.webdav.model.resource.*;
 import com.sfc.ext.webdav.service.WebDavAuthService;
 import com.xiaotao.saltedfishcloud.model.po.User;
-import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import io.milton.http.Auth;
@@ -18,6 +14,7 @@ import io.milton.http.annotated.AnnoResource;
 import io.milton.http.http11.auth.DigestResponse;
 import io.milton.resource.Resource;
 import io.milton.servlet.MiltonServlet;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.util.Lazy;
 
@@ -25,14 +22,7 @@ import java.util.Optional;
 
 @Slf4j
 public class SfcSecurityManager implements SecurityManager {
-    private final Lazy<UserService> userService = Lazy.of(() -> SpringContextUtils.getContext().getBean(UserService.class));
     private final Lazy<WebDavAuthService> webDavAuthService = Lazy.of(() -> SpringContextUtils.getContext().getBean(WebDavAuthService.class));
-    private final Lazy<WebDavProperty> webDavProperty = Lazy.of(() -> SpringContextUtils.getContext().getBean(WebDavProperty.class));
-
-    public Optional<User> getUser(String username) {
-        return userService.getOptional()
-                .map(us -> us.getUserByAccount(username));
-    }
 
     @Override
     public Object authenticate(DigestResponse digestRequest) {
@@ -42,6 +32,35 @@ public class SfcSecurityManager implements SecurityManager {
     @Override
     public Object authenticate(String username, String password) {
         return webDavAuthService.get().authenticate(username, password);
+    }
+
+    /**
+     * 获取已认证的用户对象
+     * 按优先级从多个位置查找：Auth.tag -> request attribute -> session
+     */
+    private User getAuthenticatedUser(Auth auth) {
+        HttpServletRequest servletRequest = MiltonServlet.request();
+
+        // 1. 首先从Auth.tag获取（Milton标准的认证结果存储位置）
+        User authUser = (User) Optional.ofNullable(auth)
+                .map(Auth::getTag)
+                .filter(tag -> tag instanceof User).orElse(null);
+
+        if (authUser != null) {
+            return authUser;
+        }
+
+        // 2. 从request attribute获取
+        authUser = (User) Optional.ofNullable(servletRequest.getAttribute("userObj"))
+                .filter(obj -> obj instanceof User).orElse(null);
+        if (authUser != null) {
+            return authUser;
+        }
+
+        // 3. 从session中获取
+        return (User)Optional.ofNullable(servletRequest.getSession())
+                .map(session -> session.getAttribute("userObj"))
+                .filter(obj -> obj instanceof User).orElse(null);
     }
 
     /**
@@ -76,22 +95,13 @@ public class SfcSecurityManager implements SecurityManager {
             return false;
         }
         Object source = r.getSource();
-        if (source instanceof UnAuthoriseWebDavItem || (source instanceof WebDavItem i && i.getResourceArea() == ResourceArea.PRIVATE && i.getUid() == null)) {
+        if (source instanceof UnAuthoriseResource || (source instanceof WebDavItem i && i.getResourceArea() == ResourceArea.PRIVATE && i.getUid() == null)) {
             return false;
         }
 
-        // 针对 Windows 处理，不允许匿名登录，强制要求输入用户名和密码以确保有权限访问private目录
-        // 匿名登录情况下访问private触发401会导致整个Windows拒绝访问整个 WebDAV 服务，再也无法访问该WebDAV服务
-        boolean isNotAllowAnonymous = !Boolean.TRUE.equals(webDavProperty.get().getIsAllowAnonymous()) || isFromWindow(request);
-        User sessionUser = (User) MiltonServlet.request().getSession().getAttribute("userObj");
-        User authUser = Optional.ofNullable(sessionUser)
-                .or(() -> Optional.ofNullable(auth)
-                        .map(Auth::getTag)
-                        .filter(tag -> tag instanceof User)
-                        .map(tag -> (User) tag))
-                .orElse(null);
-
-        if (isNotAllowAnonymous && authUser == null) {
+        // 未认证，拒绝任何请求
+        User authUser = getAuthenticatedUser(auth);
+        if (authUser == null) {
             return false;
         }
         boolean isRead = !method.isWrite;
@@ -119,9 +129,6 @@ public class SfcSecurityManager implements SecurityManager {
 
         // 私人网盘资源 需要验证登录人是资源所属人
         // 公共网盘资源写操作 需要验证登录人是管理员
-        if (authUser == null) {
-            return false;
-        }
         Long requireUid;
         if (item.getUid() == null) {
             if (r.getParent() == r.getRoot()) {

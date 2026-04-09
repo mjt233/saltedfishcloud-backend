@@ -8,6 +8,7 @@ import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.xiaotao.saltedfishcloud.annotations.ClusterScheduleJob;
 import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -112,7 +113,9 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
             Long recordId = asyncTaskRecord.getId();
             String key = getHoldKey(recordId);
             if (!Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
-                taskId.add(recordId);
+                if (!Boolean.TRUE.equals(asyncTaskRecord.getIsTemp())) {
+                    taskId.add(recordId);
+                }
                 log.info("发现运行中的任务{}离线", recordId);
             }
         }
@@ -131,10 +134,12 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
      */
     public void republishTask() {
         // 1. 获取离线任务
-        List<AsyncTaskRecord> republishTaskList = new ArrayList<>(
-                Optional.ofNullable(asyncTaskRecordRepo.listOfflineTask())
-                        .orElseGet(Collections::emptyList)
-        );
+        List<AsyncTaskRecord> republishTaskList = asyncTaskRecordRepo.findAll(JpaLambdaQueryWrapper.get(AsyncTaskRecord.class)
+                .eq(AsyncTaskRecord::getStatus, AsyncTaskConstants.Status.OFFLINE)
+                .or(s -> s.ne(AsyncTaskRecord::getIsTemp, Boolean.TRUE)
+                    .isNull(AsyncTaskRecord::getIsTemp)
+                )
+            .build());
 
         // 2. 获取未在队列中的任务，若队列为空，则获取数据库中状态为等待中的任务重新发布。
         // 这些任务可能是曾经发布到队列但队列数据丢失了。

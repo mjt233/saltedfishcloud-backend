@@ -3,6 +3,8 @@ package com.xiaotao.saltedfishcloud.service.file;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * 为存储服务提供唯一存储模式下的文件定位能力
@@ -23,6 +25,12 @@ public interface FileResourceMd5Resolver {
      * @return      存在引用为true，否则为false
      */
     boolean hasRef(String md5);
+
+    /**
+     * 批量检查md5是否存在引用
+     * @return 仍存在引用的md5
+     */
+    Set<String> checkHasRef(Collection<String> md5List);
 
     /**
      * 通过MD5获取文件资源

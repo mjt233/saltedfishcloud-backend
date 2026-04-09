@@ -19,7 +19,4 @@ public class WebDavProperty {
 
     @ConfigProperty(title = "展示的服务地址", describe = "仅用于用户查看 WebDAV 信息配置页面中显示的地址。当通过其他Web服务反向代理原始的WebDAV服务后，引导用户访问经过反代后暴露的地址")
     private String displayUrl;
-
-    @ConfigProperty(title = "匿名访问", defaultValue = "false", inputType = "switch", describe = "允许匿名访问(Windows资源管理器不受控)")
-    private Boolean isAllowAnonymous = false;
 }

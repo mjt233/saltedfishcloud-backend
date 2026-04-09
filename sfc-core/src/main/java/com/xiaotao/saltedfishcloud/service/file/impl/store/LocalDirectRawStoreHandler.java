@@ -2,13 +2,15 @@ package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.util.StreamUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -112,11 +114,11 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
 
     @Override
     public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
-        int cnt;
+        long cnt;
         final Path savePath = Paths.get(path);
         FileUtils.createParentDirectory(savePath);
         try (final OutputStream os = Files.newOutputStream(savePath)) {
-            cnt = StreamUtils.copy(inputStream, os);
+            cnt = StreamUtils.copyStream(inputStream, os);
             inputStream.close();
             os.close();
             if (fileInfo.getMtime() != null) {
@@ -135,13 +137,26 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
-        Files.copy(Paths.get(src), Paths.get(dest), StandardCopyOption.REPLACE_EXISTING);
+    public boolean copy(String src, String dest,@Nullable FileTransferItem item) throws IOException {
+        Path srcPath = Paths.get(src);
+        Path destPath = Paths.get(dest);
+        FileTransferItem transferItem = item == null ? new FileTransferItem() : item;
+        transferItem.setLoaded(0L);
+        if (!Files.isDirectory(srcPath)) {
+            transferItem.setTotal(Files.size(srcPath));
+            try(InputStream is = Files.newInputStream(srcPath); OutputStream os = Files.newOutputStream(destPath)) {
+                StreamUtils.copyStream(is, os, (buf, len) -> transferItem.setLoaded(transferItem.getLoaded() + len));
+            }
+            // 数据写入完成后，复制源路径文件的修改日期
+            Files.setLastModifiedTime(destPath, Files.getLastModifiedTime(srcPath));
+        } else {
+            Files.copy(srcPath, destPath, StandardCopyOption.REPLACE_EXISTING);
+        }
         return true;
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
+    public boolean move(String src, String dest, FileTransferItem item) throws IOException {
         return new File(src).renameTo(new File(dest));
     }
 

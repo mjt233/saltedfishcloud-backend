@@ -10,7 +10,14 @@ import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEventLevel;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
+import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
+import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
@@ -104,9 +111,10 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     /**
      * 获取写文件时用到分布式锁key
-     * @param uid   用户id
-     * @param path  文件所在路径
-     * @param name  文件名
+     *
+     * @param uid  用户id
+     * @param path 文件所在路径
+     * @param name 文件名
      */
     private static String getStoreLockKey(long uid, String path, String name) {
         return uid + ":" + StringUtils.appendPath(path, name);
@@ -123,8 +131,9 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     /**
      * 获取写文件时用到分布式锁key
-     * @param uid   用户id
-     * @param dest  文件所在路径
+     *
+     * @param uid  用户id
+     * @param dest 文件所在路径
      */
     public static String getStoreLockKey(long uid, String dest) {
         return uid + ":" + dest;
@@ -147,12 +156,13 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
         List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
         if (files.isEmpty()) {
             return false;
         }
-        FileInfo existMd5File = files.get(0);
+        FileInfo existMd5File = ObjectUtils.clone(files.get(0), FileInfo::new);
         String filePath = fileRecordService.getPathByNodeId(existMd5File.getUid(), existMd5File.getNode())
                 .orElse(null);
         if (filePath == null) {
@@ -164,15 +174,15 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         }
         try {
             StoreService storeService = storeServiceFactory.getService();
-            if (storeService.isUnique()) {
-                fileRecordService.copy(existMd5File.getUid(), filePath, path, uid, existMd5File.getName(), name, true);
-            } else {
-                fileRecordService.copy(existMd5File.getUid(), filePath, path, uid, existMd5File.getName(), name, true);
-                existMd5File.setName(name);
-                FileInfo newFile = FileInfo.createFrom(existMd5File, false);
-                newFile.setUid(uid);
-                newFile.setStreamSource(resource);
+            FileInfo newFile = FileInfo.createFrom(existMd5File, false);
+            newFile.setId(null);
+            newFile.setUid(uid);
+            newFile.setStreamSource(resource);
+            newFile.setName(name);
+            if (!storeService.isUnique()) {
                 saveFile(newFile, path);
+            } else {
+                fileRecordService.saveRecord(newFile, path);
             }
         } catch (IOException e) {
             log.trace("错误：{}", e.getMessage());
@@ -217,23 +227,37 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        RLock lock = redisson.getLock(getStoreLockKey(uid, target, targetName));
-        try {
-            lock.lock();
-            fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
-            final StoreService service = storeServiceFactory.getService();
-            if (!service.isUnique()) {
-                service.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+        FileTransferItem transferItem = FileTransferItem.builder()
+                .from(param.getSourcePath())
+                .to(param.getTargetPath())
+                .build();
+        if (callback != null) {
+            callback.onAdditionalEvent(UpdateFileRecordStartEvent.of());
+        }
+        fileRecordService.copy(param, callback);
+        if (callback != null) {
+            callback.onAdditionalEvent(UpdateFileRecordCompleteEvent.of(transferItem));
+        }
+        StoreService storeService = storeServiceFactory.getService();
+        if (!storeService.isUnique()) {
+            if (callback != null) {
+                callback.onAdditionalEvent(new CopyProgressEvent() {
+                    {
+                        setMessage("哈希存储模式下，物理存储无需操作，已跳过");
+                        setName("Store Skip");
+                    }
+                    @Override
+                    public CopyProgressEventLevel getLevel() {
+                        return CopyProgressEventLevel.INFO;
+                    }
+                });
             }
-        } finally {
-            lock.unlock();
+            storeService.copy(param, callback);
         }
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
         RLock lock = redisson.getLock(getStoreLockKey(uid, target, name));
         try {
@@ -261,11 +285,11 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException {
+    public List<FileInfo> getUserFileList(long uid, String path, @Nullable Collection<String> nameList) throws IOException {
 
         return fileRecordService.getNodeIdByPath(uid, path)
                 .map(nodeId -> fileRecordService.findByUidAndNodeId(uid, nodeId, nameList))
-                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
+                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, path));
     }
 
     @Override
@@ -373,10 +397,10 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Transactional(rollbackFor = Exception.class)
     public void mkdir(long uid, String path, String name) throws IOException {
         final StoreService storeService = storeServiceFactory.getService();
-        if ( !storeService.isUnique() && !storeService.mkdir(uid, path, name) ) {
+        if (!storeService.isUnique() && !storeService.mkdir(uid, path, name)) {
             throw new IOException("在" + path + "创建文件夹失败");
         }
-        fileRecordService.mkdir(uid, name, path);
+        fileRecordService.mkdirs(uid, StringUtils.appendPath(path, name), false);
     }
 
     @Override
@@ -396,11 +420,19 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
             // 唯一存储下确认文件无引用后再执行通过md5删除
             if (storeService.isUnique()) {
-                for (FileInfo fileInfo : fileInfos) {
-
-                    // todo 使用批量查询和求集合差级操作进行引用判断提高性能
-                    if (fileInfo.getMd5() != null && !md5Resolver.hasRef(fileInfo.getMd5())) {
-                        storeService.delete(fileInfo.getMd5());
+                Map<String, List<FileInfo>> md5FileGroup = fileInfos.stream().filter(FileInfo::isFile)
+                        .collect(Collectors.groupingBy(FileInfo::getMd5));
+                Set<String> inRefMd5Set = CollectionUtils.partition(md5FileGroup.keySet(), 500)
+                        .stream()
+                        .flatMap(md5List -> md5Resolver.checkHasRef(md5List).stream())
+                        .collect(Collectors.toSet());
+                List<String> toDeleteMd5 = md5FileGroup.keySet()
+                        .stream()
+                        .filter(s -> !inRefMd5Set.contains(s))
+                        .toList();
+                if (!toDeleteMd5.isEmpty()) {
+                    for (String md5 : toDeleteMd5) {
+                        storeService.delete(md5);
                     }
                 }
             } else {

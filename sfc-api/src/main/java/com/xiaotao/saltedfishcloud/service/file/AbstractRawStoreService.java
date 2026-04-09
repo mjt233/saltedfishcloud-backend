@@ -5,10 +5,13 @@ import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -20,6 +23,7 @@ import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -33,6 +37,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 原始存储服务的抽象模板类，同时实现了{@link StoreService}和{@link CustomStoreService}。
@@ -94,18 +99,23 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         }
 
         @Override
-        public boolean copyFile(String src, String dest) throws IOException {
-            return handler.copy(src, dest);
+        public boolean copyFile(String src, String dest, @Nullable FileTransferItem item) throws IOException {
+            return handler.copy(src, dest, item);
         }
 
         @Override
-        public boolean moveFile(String src, String dest) throws IOException {
-            return handler.move(src, dest);
+        public boolean moveFile(String src, String dest, @Nullable FileTransferItem item) throws IOException {
+            return handler.move(src, dest, item);
         }
 
         @Override
         protected boolean mkdir(String path) throws IOException {
             return handler.mkdirs(path);
+        }
+
+        @Override
+        protected boolean rmdir(String path) throws IOException {
+            return handler.delete(path);
         }
     }
 
@@ -191,7 +201,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
             streamConsumer.accept(os).applyTo(file);
             os.close();
             isSuccess = true;
-            handler.move(tmpPath, rawPath);
+            handler.move(tmpPath, rawPath, null);
         } finally {
             if (!isSuccess) {
                 handler.delete(tmpPath);
@@ -319,11 +329,21 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
-        final String src = StringUtils.appendPath(getUserFileRoot(uid), source, sourceName);
-        final String dst = StringUtils.appendPath(getUserFileRoot(targetId), target, targetName);
-        copyAndMoveHandler.copy(src, dst, overwrite);
-
+    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+        List<String> sourceFileNames = Optional.ofNullable(param.getFiles())
+                .filter(files -> !files.isEmpty())
+                .orElseGet(() -> {
+                    try {
+                        return lists(param.getSourceUid(), param.getSourcePath()).stream().map(FileInfo::getName).toList();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+        for (String sourceFileName : sourceFileNames) {
+            final String src = StringUtils.appendPath(getUserFileRoot(param.getSourceUid()), param.getSourcePath(), sourceFileName);
+            final String dst = StringUtils.appendPath(getUserFileRoot(param.getTargetUid()), param.getTargetPath(), sourceFileName);
+            copyAndMoveHandler.copy(src, dst, param.getIsOverwrite(), callback);
+        }
     }
 
     @Override

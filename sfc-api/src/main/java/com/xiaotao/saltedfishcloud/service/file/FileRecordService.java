@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
 import com.xiaotao.saltedfishcloud.service.node.FileTree;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
@@ -141,16 +143,17 @@ public interface FileRecordService {
 
     /**
      * 操作数据库复制网盘文件或目录到指定目录下
-     *
-     * @param uid        用户ID
-     * @param source     要复制的文件或目录所在目录
-     * @param target     复制到的目标目录
-     * @param targetId   复制到的目标目录所属用户ID
-     * @param sourceName 要复制的文件或目录名
-     * @param overwrite  是否覆盖已存在的文件
      */
-    @Transactional(rollbackFor = Exception.class)
-    void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException;
+    void copy(SimpleFileTransferParam param,@Nullable CopyProgressCallback callback);
+
+    /**
+     * 在同一个目录中批量新增文件信息。如果path不存在会自动创建。如果已存在同名文件，会根据isOverwrite策略判断是否覆盖。
+     * @param uid   文件所属的用户id
+     * @param path  文件所在目录路径
+     * @param isOverwrite 是否覆盖同名文件。当已存在的文件与源文件不是同为文件 或 不是同为文件夹时，会抛出异常。
+     * @param fileInfos 要批量新增的文件
+     */
+    void batchSaveFileInSameDirectory(long uid, String path, boolean isOverwrite, List<FileInfo> fileInfos);
 
     /**
      * 操作数据库移动网盘文件或目录到指定目录下
@@ -162,7 +165,6 @@ public interface FileRecordService {
      * @param overwrite 是否覆盖原文件信息
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
-    @Transactional(rollbackFor = Exception.class)
     void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException;
 
 
@@ -204,7 +206,6 @@ public interface FileRecordService {
      * @param name 文件名列表
      * @return 删除的文件列表
      */
-    @Transactional(rollbackFor = Exception.class)
     List<FileInfo> deleteRecords(long uid, String path, Collection<String> name) throws NoSuchFileException;
 
     /**
@@ -216,7 +217,6 @@ public interface FileRecordService {
      * @throws DuplicateKeyException 当目标目录已存在时抛出
      * @throws NoSuchFileException   当父级目录不存在时抛出
      */
-    @Transactional(rollbackFor = Exception.class)
     String mkdir(long uid, String name, String path) throws NoSuchFileException;
 
 
@@ -231,7 +231,7 @@ public interface FileRecordService {
     String mkdirs(long uid, String path, boolean isMount);
 
     /**
-     * 从数据库中获取指定文件夹节点id信息。如果该记录不存在则会创建一个。
+     * 从数据库中获取指定文件夹节点id信息。如果该记录不存在则会创建一个。注意：如果存在数据库事务，该方法会在一个独立的新事务中执行。
      * @param uid   用户id
      * @param path  文件夹完整路径
      * @param isMount   需要创建记录时，是否标记为挂载目录

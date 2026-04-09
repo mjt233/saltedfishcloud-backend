@@ -108,6 +108,6 @@ public class LocalStoreService extends AbstractRawStoreService implements Applic
             }
             handler.delete(savePath);
         }
-        handler.move(nativePath.toString(), savePath);
+        handler.move(nativePath.toString(), savePath, null);
     }
 }

@@ -17,6 +17,14 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>jetbrains-intellij-dependencies</id>
+            <name>JetBrains IntelliJ Dependencies</name>
+            <url>https://cache-redirector.jetbrains.com/intellij-dependencies</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>com.xiaotao</groupId>
@@ -40,6 +48,10 @@
                 <exclusion>
                     <artifactId>annotations</artifactId>
                     <groupId>org.jetbrains</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jetbrains.pty4j</groupId>
+                    <artifactId>purejavacomm</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

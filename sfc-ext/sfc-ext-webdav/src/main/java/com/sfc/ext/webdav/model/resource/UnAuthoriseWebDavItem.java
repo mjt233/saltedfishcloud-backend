@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
  */
 @SuperBuilder
 @NoArgsConstructor
-public class UnAuthoriseWebDavItem extends WebDavItem {
+public class UnAuthoriseWebDavItem extends WebDavItem implements UnAuthoriseResource {
     public static UnAuthoriseWebDavItem get(WebDavItem parent, String name) {
         return UnAuthoriseWebDavItem.builder()
                 .name(PathUtils.getLastNode(name))
