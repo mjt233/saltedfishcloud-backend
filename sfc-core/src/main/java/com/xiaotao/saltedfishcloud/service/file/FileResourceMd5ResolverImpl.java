@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,10 +9,15 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Set;
 
 @Component
 public class FileResourceMd5ResolverImpl implements FileResourceMd5Resolver {
     private final FileRecordService fileRecordService;
+
+    @Autowired
+    private FileInfoRepo fileInfoRepo;
 
     @Autowired
     @Lazy
@@ -35,6 +41,10 @@ public class FileResourceMd5ResolverImpl implements FileResourceMd5Resolver {
         return !fileRecordService.getFileInfoByMd5(md5, 1).isEmpty();
     }
 
+    @Override
+    public Set<String> checkHasRef(Collection<String> md5List) {;
+        return fileInfoRepo.findByMd5List(md5List);
+    }
 
     @Override
     public Resource getResourceByMd5(String md5) throws IOException {

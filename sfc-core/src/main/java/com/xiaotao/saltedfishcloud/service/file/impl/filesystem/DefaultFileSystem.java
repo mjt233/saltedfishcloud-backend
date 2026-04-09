@@ -420,11 +420,19 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
             // 唯一存储下确认文件无引用后再执行通过md5删除
             if (storeService.isUnique()) {
-                for (FileInfo fileInfo : fileInfos) {
-
-                    // todo 使用批量查询和求集合差级操作进行引用判断提高性能
-                    if (fileInfo.getMd5() != null && !md5Resolver.hasRef(fileInfo.getMd5())) {
-                        storeService.delete(fileInfo.getMd5());
+                Map<String, List<FileInfo>> md5FileGroup = fileInfos.stream().filter(FileInfo::isFile)
+                        .collect(Collectors.groupingBy(FileInfo::getMd5));
+                Set<String> inRefMd5Set = CollectionUtils.partition(md5FileGroup.keySet(), 500)
+                        .stream()
+                        .flatMap(md5List -> md5Resolver.checkHasRef(md5List).stream())
+                        .collect(Collectors.toSet());
+                List<String> toDeleteMd5 = md5FileGroup.keySet()
+                        .stream()
+                        .filter(s -> !inRefMd5Set.contains(s))
+                        .toList();
+                if (!toDeleteMd5.isEmpty()) {
+                    for (String md5 : toDeleteMd5) {
+                        storeService.delete(md5);
                     }
                 }
             } else {
