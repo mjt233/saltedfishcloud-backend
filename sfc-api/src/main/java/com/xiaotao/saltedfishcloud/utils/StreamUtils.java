@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.function.BiConsumer;
@@ -131,20 +128,11 @@ public class StreamUtils {
      * @return  新产生的OutputStream修饰类，在原输出流close执行后被调用
      */
     public static OutputStream createCloseActionOutputStream(OutputStream outputStream, Closeable closeable) {
-        return new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-                outputStream.write(b);
-            }
-
-            @Override
-            public void write(@NotNull byte[] b) throws IOException {
-                outputStream.write(b);
-            }
-
+        return new FilterOutputStream(outputStream) {
+            private volatile boolean closed = false;
             @Override
             public void write(@NotNull byte[] b, int off, int len) throws IOException {
-                outputStream.write(b, off, len);
+                out.write(b, off, len);
             }
 
             @Override
@@ -154,8 +142,17 @@ public class StreamUtils {
 
             @Override
             public void close() throws IOException {
-                outputStream.close();
-                closeable.close();
+                if (closed) {
+                    return;
+                }
+                synchronized (this) {
+                    if (closed) {
+                        return;
+                    }
+                    super.close();
+                    closeable.close();
+                    closed = true;
+                }
             }
         };
     }

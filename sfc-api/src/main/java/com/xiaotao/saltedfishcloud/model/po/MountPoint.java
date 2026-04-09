@@ -46,6 +46,7 @@ public class MountPoint extends AuditModel {
     /**
      * 文件系统参数
      */
+    @Lob
     private String params;
 
     /**
