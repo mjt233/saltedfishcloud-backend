@@ -501,7 +501,7 @@ public class FileRecordServiceImpl implements FileRecordService {
             int maxTryCount = 25;
             AtomicInteger tryCount = new AtomicInteger();
             while (tryCount.get() < maxTryCount) {
-                String nodeId = DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRES_NEW, TransactionDefinition.ISOLATION_READ_COMMITTED, () -> {
+                String nodeId = DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRED, TransactionDefinition.ISOLATION_READ_COMMITTED, () -> {
                     // 双重检查
                     Optional<String> newestNodeId = this.getNodeIdByPath(uid, path);
                     if (newestNodeId.isPresent()) {
@@ -585,6 +585,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public void deleteFileInfo(FileInfo fileInfo) {
+        log.debug("{} 删除文件: {}", LOG_PREFIX, fileInfo.getName());
         if (fileInfo.isFile()) {
             fileInfoRepo.delete(fileInfo);
         } else {

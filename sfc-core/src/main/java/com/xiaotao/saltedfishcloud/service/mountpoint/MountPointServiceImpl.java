@@ -324,9 +324,10 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         if (nodeId == null) {
             return;
         }
-        List<FileInfo> existRecord = fileRecordService.findByUidAndNodeId(mountPoint.getUid(), nodeId, Collections.singletonList(mountPoint.getName()));
+        // 找出挂载点下的所有子文件和目录，全部删除
+        List<FileInfo> existRecord = fileRecordService.findByUidAndNodeId(mountPoint.getUid(), nodeId, null);
         for (FileInfo fileInfo : existRecord) {
-            fileRecordService.deleteFileInfo(fileInfo.getId());
+            fileRecordService.deleteFileInfo(fileInfo);
         }
     }
 

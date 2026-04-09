@@ -32,7 +32,7 @@ public class MountPoint extends AuditModel {
     private Long uid;
 
     /**
-     * 挂载点所在的节点id
+     * 挂载点所在的目录节点id
      */
     @NotNull
     private String nid;
