@@ -92,4 +92,15 @@ public class OSSProperty {
     )
     @Builder.Default
     private Boolean useUrlRedirect = Boolean.TRUE;
+
+    @ConfigProperty(
+            value = "maxConnections",
+            title = "最大连接数",
+            describe = "S3连接池大小，默认50",
+            inputType = ConfigInputType.TEXT,
+            defaultValue = "50",
+            group = "base"
+    )
+    @Builder.Default
+    private Integer maxConnections = 50;
 }
