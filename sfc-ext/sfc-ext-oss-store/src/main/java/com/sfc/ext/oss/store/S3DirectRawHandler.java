@@ -1,5 +1,6 @@
 package com.sfc.ext.oss.store;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
@@ -48,7 +49,12 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
 
     public S3DirectRawHandler(OSSProperty ossProperty) {
         this.property = ossProperty;
+        ClientConfiguration clientConfig = new ClientConfiguration();
+        clientConfig.setMaxConnections(ossProperty.getMaxConnections() != null ? ossProperty.getMaxConnections() : 50);
+        clientConfig.setConnectionTimeout(5000);
+        clientConfig.setRequestTimeout(10000);
         this.s3Client = AmazonS3ClientBuilder.standard()
+                .withClientConfiguration(clientConfig)
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(ossProperty.getAccessKey(), ossProperty.getSecretKey())))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
                         ossProperty.getServiceEndPoint(),
@@ -136,7 +142,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
 
     @Override
     public FileInfo getFileInfo(String path) throws IOException {
-        S3Object object;
+        ObjectMetadata objectMetadata;
         String ossPath = OSSPathUtils.toOSSObjectName(path);
         if ("".equals(ossPath)) {
             return FileInfo.builder()
@@ -147,13 +153,13 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
                     .build();
         }
         try {
-            object = s3Client.getObject(property.getBucket(), ossPath);
+            objectMetadata = s3Client.getObjectMetadata(property.getBucket(), ossPath);
         } catch (AmazonS3Exception e) {
             // 文件无法获取到时，可能是目录，在末尾加上/再试一次
             if (e.getStatusCode() == 404) {
                 try {
                     ossPath += "/";
-                    object = s3Client.getObject(property.getBucket(), ossPath);
+                    objectMetadata = s3Client.getObjectMetadata(property.getBucket(), ossPath);
                 } catch (AmazonS3Exception e2) {
                     if (e2.getStatusCode() == 404) {
                         return null;
@@ -166,10 +172,9 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
             }
         }
 
-        ObjectMetadata objectMetadata = object.getObjectMetadata();
         boolean isDir = OSSPathUtils.isDir(ossPath);
+        final String objectKey = ossPath;
         FileInfo fileInfo = new FileInfo();
-        String objectKey = object.getKey();
         fileInfo.setName(StringUtils.getURLLastName(objectKey));
         fileInfo.setSize(isDir ? -1L : objectMetadata.getContentLength());
         fileInfo.setType(isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
