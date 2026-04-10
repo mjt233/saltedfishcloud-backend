@@ -77,7 +77,7 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
             StreamInfo attachedPicStream = findAttachedPicStream(videoInfo);
             if (attachedPicStream != null) {
                 // 提取内置封面
-                return extractAttachedPic(videoFile.getAbsolutePath(), attachedPicStream.getIndex(), outputStream);
+                return extractAttachedPic(videoFile.getAbsolutePath(), attachedPicStream, outputStream);
             } else {
                 // 生成缩略图（取前30%位置的帧）
                 return generateThumbnailFromVideo(videoFile.getAbsolutePath(), videoInfo, outputStream);
@@ -121,30 +121,62 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
     /**
      * 提取内置封面
      * @param videoFilePath 视频文件路径
-     * @param streamIndex 流索引
+     * @param streamInfo 封面数据流信息
      * @param outputStream 输出流
      * @return 是否成功
      */
-    private boolean extractAttachedPic(String videoFilePath, String streamIndex, OutputStream outputStream) throws IOException {
-        // 使用ffmpeg提取内置封面流，输出为jpg格式到输出流
-        // 命令：ffmpeg -i input -map 0:streamIndex -c copy -f mjpeg -
-        List<String> args = new ArrayList<>();
-        args.add("-map");
-        args.add("0:" + streamIndex);
-        args.add("-c");
-        args.add("copy");
-        args.add("-f");
-        args.add("mjpeg");
+    private boolean extractAttachedPic(String videoFilePath, StreamInfo streamInfo, OutputStream outputStream) throws IOException {
+        // 输入参数（放在 -i 之前）
+        List<String> inputArgs = new ArrayList<>();
+        inputArgs.add("-rw_timeout");
+        inputArgs.add("5000000");
 
-        ProcessWrap processWrap = ffMpegHelper.executeFFMpeg(videoFilePath, "-", args, null);
-        try (InputStream is = processWrap.getProcess().getInputStream()) {
-            StreamUtils.copyStream(is, outputStream);
+        // 输出参数（放在 -i 之后）
+        List<String> outputArgs = new ArrayList<>();
+        // 1. 指定流索引
+        outputArgs.add("-map");
+        outputArgs.add("0:" + streamInfo.getIndex());
+
+        // FFmpeg 中 jpg 对应的 codecName 通常是 "mjpeg"
+        if ("mjpeg".equalsIgnoreCase(streamInfo.getCodecName())) {
+            log.debug("检测到内置封面为MJPEG编码，使用copy模式提取");
+            outputArgs.add("-c:v");
+            outputArgs.add("copy");
+        } else {
+            log.debug("检测到内置封面为{}编码，执行转码提取", streamInfo.getCodecName());
+            outputArgs.add("-c:v");
+            outputArgs.add("mjpeg");
+            outputArgs.add("-q:v"); // 仅转码时需要质量参数
+            outputArgs.add("2");
+        }
+
+        // 3. 强制只输出一帧（防止某些异常文件包含多个图片流）
+        outputArgs.add("-frames:v");
+        outputArgs.add("1");
+        // 4. 设置图片质量 (1-31, 越小质量越好)
+        outputArgs.add("-q:v");
+        outputArgs.add("2");
+        // 5. 指定封装格式为 mjpeg 并输出到 pipe
+        outputArgs.add("-f");
+        outputArgs.add("mjpeg");
+
+        Path templateFilePath = PathUtils.createTemplateFilePath();
+        ProcessWrap processWrap = ffMpegHelper.executeFFMpeg(videoFilePath, templateFilePath.toString(), inputArgs, outputArgs);
+        try {
             int exitCode = processWrap.getProcess().waitFor();
-            return exitCode == 0;
+            if (exitCode != 0) {
+                return false;
+            }
+            try (InputStream is = Files.newInputStream(templateFilePath)) {
+                StreamUtils.copyStream(is, outputStream);
+            }
+            return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("提取内置封面被中断", e);
             return false;
+        } finally {
+            Files.deleteIfExists(templateFilePath);
         }
     }
 
