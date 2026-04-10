@@ -29,6 +29,12 @@ public interface ThumbnailHandler extends FeatureProvider {
      */
     List<String> getSupportType();
 
+    /**
+     * 获取该类型缩略图生成器的人类阅读友好名称<br>
+     * 注意：需确保该值为系统全局唯一
+     */
+    String getName();
+
 
     default void registerFeature(HelloService helloService) {
         for (String s : getSupportType()) {

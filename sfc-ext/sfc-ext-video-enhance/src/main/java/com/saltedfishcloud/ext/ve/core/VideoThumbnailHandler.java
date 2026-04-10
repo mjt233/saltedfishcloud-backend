@@ -212,4 +212,9 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
     public List<String> getSupportType() {
         return SUPPORTED_TYPES;
     }
+
+    @Override
+    public String getName() {
+        return "视频封面";
+    }
 }

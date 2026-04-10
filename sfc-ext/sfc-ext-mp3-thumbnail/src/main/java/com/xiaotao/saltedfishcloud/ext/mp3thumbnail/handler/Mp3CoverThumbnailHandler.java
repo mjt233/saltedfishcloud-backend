@@ -67,4 +67,9 @@ public class Mp3CoverThumbnailHandler implements ThumbnailHandler {
     public List<String> getSupportType() {
         return SUPPORT_LIST;
     }
+
+    @Override
+    public String getName() {
+        return "MP3封面";
+    }
 }
