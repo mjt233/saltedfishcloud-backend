@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.thumbnail;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
@@ -9,7 +11,10 @@ import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -23,8 +28,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
@@ -32,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner {
     private final static String LOG_TITLE = "[Thumbnail]";
+    private final static long DEFAULT_SOURCE_FILE_MAX_SIZE_LIMIT = 32L;
     /**
      * key - 文件拓展名，value - 对应的缩略图生成器
      */
@@ -40,6 +48,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     private final StoreServiceFactory storeServiceFactory;
     private final FileResourceMd5Resolver md5Resolver;
     private final RedissonClient redisson;
+    private final SysCommonConfig sysCommonConfig;
 
     @Autowired(required = false)
     @Lazy
@@ -49,15 +58,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     @Lazy
     private ConfigService configService;
 
-    /**
-     * 最大可提取缩略图的源文件大小限制
-     */
-    private Double maxThumbnailResourceSize = 128D;
-
-    /**
-     * 是否停用缩略图缓存
-     */
-    private Boolean disableThumbnailCache = false;
+    private final Map<String, Long> sourceFileMaxSizeCache = new ConcurrentHashMap<>();
 
     /**
      * 获取主存储服务中的缩略图文件缓存路径
@@ -76,19 +77,6 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     }
 
     /**
-     * 寻找合适的缩略图生成器
-     * @param ext   缩略图源文件拓展名类型
-     * @return      缩略图生成器
-     */
-    protected ThumbnailHandler findHandler(String ext) {
-        ThumbnailHandler handler = handlerCache.get(ext);
-        if (handler == null) {
-            throw new NullPointerException("为" + ext + "类型找不到合适的生成器");
-        }
-        return handler;
-    }
-
-    /**
      * 生成缩略图
      * @param resource 待生成缩略图的源资源
      * @param ext   源文件类型（拓展名）
@@ -102,7 +90,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
         }
 
         final TempStoreService tempHandler = storeServiceFactory.getService().getTempFileHandler();
-        if (resource == null || resource.contentLength() == 0 || resource.contentLength() > ByteSize._1MiB * maxThumbnailResourceSize) {
+        if (resource == null || resource.contentLength() == 0 || checkSourceFileMaxSizeLimit(resource.contentLength(), handler)) {
             return null;
         }
 
@@ -121,11 +109,14 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
             return null;
         }
 
-        // 生成成功，如果缓存未禁用，则保存到临时文件
+        // 生成成功，如果缓存没有显式禁用，则保存到临时文件
         String thumbnailPath = getThumbnailTempPath(id);
-        if (!disableThumbnailCache) {
+        if (!Boolean.TRUE.equals(sysCommonConfig.getDisableThumbnailCache())) {
             log.debug("{}保存缩略图缓存 {}", LOG_TITLE, thumbnailPath);
             FileInfo tempFile = new FileInfo();
+            tempFile.setName(PathUtils.getLastNode(thumbnailPath));
+            tempFile.setSize((long)baos.size());
+            tempFile.setPath(thumbnailPath);
             try(InputStream is = new ByteArrayInputStream(baos.toByteArray())) {
                 tempHandler.store(tempFile, thumbnailPath, baos.size(), is);
             }
@@ -140,7 +131,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
      * @return          缩略图资源，若不存在则为null
      */
     protected Resource getFromCache(String fileIdentify) throws IOException {
-        if (disableThumbnailCache) {
+        if (Boolean.TRUE.equals(sysCommonConfig.getDisableThumbnailCache())) {
             return null;
         }
         final String thumbnailPath = getThumbnailTempPath(fileIdentify);
@@ -196,10 +187,43 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     }
 
     @Override
+    public List<ThumbnailHandler> getRegisteredHandler() {
+        return new ArrayList<>(handlerCache.values());
+    }
+
+    @Override
     public void run(ApplicationArguments args) throws Exception {
         refreshRegister();
-        configService.addAfterSetListener(SysCommonConfig::getMaxThumbnailResourceSize, val -> this.maxThumbnailResourceSize = val);
-        configService.addAfterSetListener(SysCommonConfig::getDisableThumbnailCache, val -> this.disableThumbnailCache = val);
+        configService.addAfterSetListener(SysCommonConfig::getMaxThumbnailResourceSizeConfig, this::updateMaxSourceFileSizeConfigCache);
+        updateMaxSourceFileSizeConfigCache(sysCommonConfig.getMaxThumbnailResourceSizeConfig());
+    }
+
+    private void updateMaxSourceFileSizeConfigCache(String configJson) {
+        try {
+            if (!StringUtils.hasText(configJson)) {
+                return;
+            }
+            MapperHolder.parseJsonToList(configJson, NameValueType.class).forEach(e -> sourceFileMaxSizeCache.put(
+                    e.getName(),
+                    Optional.ofNullable(TypeUtils.toLong(e.getValue())).orElse(DEFAULT_SOURCE_FILE_MAX_SIZE_LIMIT)
+            ));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 检查文件大小是否超出了该缩略图可生成缩略图的源文件大小的限制
+     * @param sourceFileSize    源文件大小
+     * @param thumbnailHandler  缩略图生成器
+     * @return  超出限制返回true，否则返回false
+     */
+    private boolean checkSourceFileMaxSizeLimit(long sourceFileSize, ThumbnailHandler thumbnailHandler) {
+        long maxSize = Optional.ofNullable(sourceFileMaxSizeCache.get(thumbnailHandler.getName())).orElse(DEFAULT_SOURCE_FILE_MAX_SIZE_LIMIT);
+        if (maxSize < 0) {
+            return false;
+        }
+        return sourceFileSize > maxSize * ByteSize._1MiB;
     }
 
     @Override

@@ -30,7 +30,7 @@ public interface StoreWriter {
     /**
      * 直接存储数据流为指定路径的文件
      * @param fileInfo      文件信息
-     * @param path          保存路径
+     * @param path          包含文件名本身的保存路径
      * @param size          文件大小，-1为未知
      * @param inputStream   文件输入流，方法内不需要关闭该流，由外部调用方维护流的关闭操作。
      * @return              保存的数据量大小（Byte）

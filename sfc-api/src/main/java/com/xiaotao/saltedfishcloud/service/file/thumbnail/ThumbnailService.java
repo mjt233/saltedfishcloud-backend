@@ -4,6 +4,7 @@ package com.xiaotao.saltedfishcloud.service.file.thumbnail;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * 缩略图服务，能为网盘系统中的文件生成缩略图资源。
@@ -41,6 +42,10 @@ public interface ThumbnailService {
      */
     void registerHandler(ThumbnailHandler thumbnailHandler);
 
+    /**
+     * 获取所有已注册的缩略图操作器
+     */
+    List<ThumbnailHandler> getRegisteredHandler();
 
     /**
      * 刷新注册
