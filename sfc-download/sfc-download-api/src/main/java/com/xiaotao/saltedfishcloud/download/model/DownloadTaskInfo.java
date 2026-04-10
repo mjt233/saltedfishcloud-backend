@@ -66,8 +66,15 @@ public class DownloadTaskInfo {
 
     private long createdBy;
 
+    private Long taskId;
+
     @OneToOne
-    @JoinColumn(name = "task_id", referencedColumnName = "id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @JoinColumn(
+            name = "taskId", referencedColumnName = "id",
+            foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT),
+            insertable = false,
+            updatable = false
+    )
     @NotFound(action = NotFoundAction.IGNORE)
     private AsyncTaskRecord asyncTaskRecord;
 
