@@ -7,9 +7,10 @@
 
 更多内容请参考项目[在线文档](https://mjt233.github.io/saltedfishcloud-backend/) (逐步完善中)
 
-## 提示 
+## 提示
 
-该项目仅为后端，不带前端，前端项目请移步[Gitee](https://gitee.com/xiaotao233/saltedfishcloud-frontend) 或 [GitHub](https://github.com/mjt233/saltedfishcloud-backend)
+该项目仅为后端，不带前端，前端项目请移步[Gitee](https://gitee.com/xiaotao233/saltedfishcloud-frontend)
+或 [GitHub](https://github.com/mjt233/saltedfishcloud-backend)
 
 ## 项目介绍
 
@@ -32,7 +33,7 @@
 - 文本文件在线编辑，markdown编辑实时预览
 - 视频在线播放
 
-#### 其他技术特性  
+#### 其他技术特性
 
 - 具有插件系统
 - 兼容低版本到高版本的升级，自动更新数据库
@@ -55,7 +56,7 @@
 
 欢迎各路大佬提出批评、建议和issue。也欢迎感兴趣的大佬贡献代码。
 
-## 快速开始    
+## 快速开始
 
 ### 0. 打包与编译
 
@@ -66,11 +67,14 @@ $ mvn package
 ```
 
 如果单独是对某个拓展模块打包，需要先install sfc-api模块。（若全模块打包失败也可先install sfc-api模块）
+
 ```shell
 $ cd sfc-api; mvn install;
 $ cd ../sfc-ext/sfc-ext-demo; mvn package
 ```
+
 输出目录：
+
 - 主程序: `release/sfc-core.jar`
 - 拓展插件：`release/ext-available/*.jar`
 
@@ -79,10 +83,10 @@ $ cd ../sfc-ext/sfc-ext-demo; mvn package
 启动前需要在配置文件`config.yml`确认MySQL数据库与Redis连接配置，确认或修改无误后
 
 基础启动命令：
+
 ```shell
 $ java -jar sfc-core.jar --spring.config.import=file:config.yml
 ```
-
 
 ### 2 关于数据表
 
@@ -98,21 +102,23 @@ $ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 | 插件名            | 简介                                               |
 |----------------|--------------------------------------------------|
-| mp3-thumbnail  | 为mp3文件提供缩率图显示支持                                  |
+| apk-parser     | 创建apk文件图标缩略图                                     |
 | demo           | 没啥用，就是个demo，添加/ext/img和/ext/hello两个测试路由          |
+| ftp-server     | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源                      |
+| ftp-store      | 提供基于FTP文件传输的存储读写支持（挂载存储）                         |
 | hadoop-store   | 提供hdfs文件系统读写支持（主存储、挂载存储）                         |
+| mp3-thumbnail  | 为mp3文件提供缩率图显示支持                                  |
+| network-tools  | 服务器网络工具，用于在管理后台查看网络接口信息，并给用户提供WOL支持              |
+| only-office    | 适配ONLYOFFICE，实现office文档在线预览和编辑                   |
 | oss-store      | 提供基于Amazon S3协议的OSS对象存储系统读写支持（挂载存储）              |
+| quick-share    | 文件极速传，快捷匿名发送和下载文件                                |
 | minio-store    | **\[将并入oss-store\]** 提供minio对象存储系统读写支持（主存储、挂载存储） |
 | sftp-store     | 提供基于SFTP文件传输的存储读写支持（挂载存储）                        |
-| ftp-store      | 提供基于FTP文件传输的存储读写支持（挂载存储）                         |
-| ftp-server     | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源                      |
-| video-enhance  | 基于ffmpeg的视频增强服务，支持播放选择字幕、视频转码功能                  |
-| web-shell      | 通过管理员后台直接通过web界面进行服务器shell交互                     |
 | static-publish | 将网盘的目录发布为独立的静态资源HTTP站点                           |
-| quick-share    | 文件极速传，快捷匿名发送和下载文件                                |
-| only-office    | 适配ONLYOFFICE，实现office文档在线预览和编辑                   |
-| network-tools  | 服务器网络工具，用于在管理后台查看网络接口信息，并给用户提供WOL支持              |
-
+| video-enhance  | 基于ffmpeg的视频增强服务，支持播放选择字幕、视频转码、视频封面图标展示功能         |
+| web-shell      | 通过管理员后台直接通过web界面进行服务器shell交互                     |
+| webdav         | 提供WebDAV协议访问服务                                   |
+| webdav-store   | 提供外部WebDAV挂载点支持                                  |
 
 ### 4. 插件的加载
 
@@ -120,10 +126,10 @@ $ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 如果有已经打包好的插件（jar包），那么直接把插件放到`运行目录/ext`后，启动主程序即可
 
-
 #### 开发模式
 
 在maven的`develop`配置文件环境下，对`application-develop.yml`的`plugin.extra-resource`数组补充`sfc-ext/插件项目`，如：
+
 ```yaml
 plugin:
   extra-resource:
@@ -132,6 +138,7 @@ plugin:
 ```
 
 tips：
+
 1. 插件项目需要使用`sfc-ext`作为父级，并确保本地仓库安装了`sfc-api`
 2. 插件项目初创或修改了`pom.xml`后，需要执行`mvn clean compile`。
 3. 启动主程序之前，若修改了插件项目的代码，需要手动构建后再启动主程序，否则加载插件时不会加载到修改后的代码
