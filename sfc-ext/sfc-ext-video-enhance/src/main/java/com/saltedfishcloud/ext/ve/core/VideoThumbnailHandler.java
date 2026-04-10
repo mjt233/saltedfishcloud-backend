@@ -136,7 +136,7 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
         args.add("-f");
         args.add("mjpeg");
 
-        ProcessWrap processWrap = ffMpegHelper.executeFFMpeg(videoFilePath, "-", args);
+        ProcessWrap processWrap = ffMpegHelper.executeFFMpeg(videoFilePath, "-", args, null);
         try (InputStream is = processWrap.getProcess().getInputStream()) {
             StreamUtils.copyStream(is, outputStream);
             int exitCode = processWrap.getProcess().waitFor();
@@ -172,21 +172,26 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
 
             // 构建ffmpeg参数：取指定时间点的帧，缩放到合适大小
             // 命令：ffmpeg -i input -ss [time] -vframes 1 -vf "scale='min(320,iw)':-1" -q:v 2 -f image2pipe output
-            List<String> args = new ArrayList<>();
+            // 输入参数：负责快速定位和超时
+            List<String> inputArgs = new ArrayList<>();
             if (ssParam != null) {
-                args.add("-ss");
-                args.add(ssParam);
+                inputArgs.add("-ss");
+                inputArgs.add(ssParam);
             }
-            args.add("-vframes");
-            args.add("1");
-            args.add("-vf");
-            args.add("scale='min(320,iw)':-1");
-            args.add("-q:v");
-            args.add("2");
-            args.add("-f");
-            args.add("image2pipe");
+            inputArgs.add("-rw_timeout");
+            inputArgs.add("5000000"); // 5秒超时防止卡死
 
-            ProcessWrap processWrap = ffMpegHelper.executeFFMpeg(videoFilePath, tempFile.toString(), args);
+            // 输出参数：负责转换逻辑
+            List<String> outputArgs = new ArrayList<>();
+            outputArgs.add("-vframes");
+            outputArgs.add("1");
+            outputArgs.add("-vf");
+            outputArgs.add("scale='min(640,iw)':-1");
+            outputArgs.add("-q:v");
+            outputArgs.add("2");
+
+            // 执行
+            ProcessWrap processWrap = ffMpegHelper.executeFFMpeg(videoFilePath, tempFile.toString(), inputArgs, outputArgs);
             int exitCode = processWrap.getProcess().waitFor();
             if (exitCode != 0) {
                 log.error("FFmpeg生成缩略图失败，退出码：{}", exitCode);
