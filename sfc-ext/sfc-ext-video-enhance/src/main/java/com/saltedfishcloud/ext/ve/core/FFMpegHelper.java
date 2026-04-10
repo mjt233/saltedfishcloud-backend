@@ -20,9 +20,10 @@ public interface FFMpegHelper {
      * 执行原始ffmpeg命令
      * @param input     视频的输入文件
      * @param output    输出文件
-     * @param args  除输入文件和输出文件外的所有ffmpeg命令行参数
+     * @param inputArgs 输入文件参数（-i 之前的参数）
+     * @param outputArgs 输出文件参数（[-i 输入参数] 之后的参数）
      */
-    ProcessWrap executeFFMpeg(String input, String output, List<String> args) throws IOException;
+    ProcessWrap executeFFMpeg(String input, String output, List<String> inputArgs, List<String> outputArgs) throws IOException;
 
     /**
      * 提取视频字幕

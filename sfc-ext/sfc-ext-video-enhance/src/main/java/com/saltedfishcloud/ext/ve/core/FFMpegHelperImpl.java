@@ -231,14 +231,19 @@ public class FFMpegHelperImpl implements FFMpegHelper {
 
 
     @Override
-    public ProcessWrap executeFFMpeg(String input, String output, List<String> args) throws IOException {
+    public ProcessWrap executeFFMpeg(String input, String output, List<String> inputArgs, List<String> outputArgs) throws IOException {
         List<String> finalArgs = new ArrayList<>();
         finalArgs.add(property.getFFMpegExecPath());
         finalArgs.add("-hide_banner");
         finalArgs.add("-y");
+        if (inputArgs != null) {
+            finalArgs.addAll(inputArgs);
+        }
         finalArgs.add("-i");
         finalArgs.add(input);
-        finalArgs.addAll(args);
+        if (outputArgs != null) {
+            finalArgs.addAll(outputArgs);
+        }
         finalArgs.add(output);
         return executeCmd(finalArgs);
     }
