@@ -94,11 +94,13 @@ public class SysCommonConfig {
 
     @ConfigProperty(
             title = "缩略图源文件最大大小",
-            defaultValue = "128",
-            describe = "尝试提取一个文件的缩略图时，文件大小超过该值时会忽略提取缩略图。该项单位为：MiB",
-            group = "thumbnail"
+            defaultValue = "[]",
+            describe = "尝试提取一个文件的缩略图时，文件大小超过该值时会忽略提取缩略图。该项单位为：MiB。如果未配置则视为默认值32 MiB",
+            group = "thumbnail",
+            inputType = "template",
+            template = "sysThumbnailResourceSizeConfig"
     )
-    private Double maxThumbnailResourceSize;
+    private String maxThumbnailResourceSizeConfig;
 
     @ConfigProperty(
             title = "停用缩略图缓存",
@@ -111,7 +113,7 @@ public class SysCommonConfig {
 
     @ConfigProperty(
             title = "发信服务器配置",
-            defaultValue = "1.0.0.0-SNAPSHOT",
+            defaultValue = "{}",
             describe = "系统发送邮件时连接的发信服务器配置",
             inputType = "form",
             group = "common",

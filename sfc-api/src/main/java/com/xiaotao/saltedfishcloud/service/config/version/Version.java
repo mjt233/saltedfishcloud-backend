@@ -54,6 +54,32 @@ public final class Version implements Comparable<Version>{
         this.tag = tag;
     }
 
+    public Version(String versionText) {
+        String[] s = versionText.split("[.\\-]", 5);
+        int fixVer = 0;
+        VersionTag versionTag;
+        if (s.length == 5) {
+            fixVer = Integer.parseInt(s[3]);
+            versionTag = VersionTag.valueOf(s[4]);
+        } else {
+            char c = s[s.length - 1].charAt(0);
+            if (c < '0' || c > '9' ) {
+                versionTag = VersionTag.valueOf(s[3]);
+            } else {
+                // 缺少版本标签类型，默认RELEASE
+                versionTag = VersionTag.RELEASE;
+                if (s.length == 4) {
+                    fixVer = Integer.parseInt(s[s.length - 1]);
+                }
+            }
+        }
+        this.bigVer = Integer.parseInt(s[0]);
+        this.mdVer = Integer.parseInt(s[1]);
+        this.smVer = Integer.parseInt(s[2]);
+        this.bugFixVer = fixVer;
+        this.tag = versionTag;
+    }
+
     /**
      * 从字符串解析为Version版本信息<br>
      * 例子：1.2.3.4-SNAPSHOT,依次为{大版本号}.{中版本号}.{小版本号}.{修正号}-{版本标签}<br>
@@ -69,36 +95,7 @@ public final class Version implements Comparable<Version>{
      * @return  Version对象
      */
     public static Version valueOf(String version) {
-        try {
-            String[] s = version.split("[.\\-]", 5);
-            int fixVer = 0;
-            VersionTag vt;
-            if (s.length == 5) {
-                fixVer = Integer.parseInt(s[3]);
-                vt = VersionTag.valueOf(s[4]);
-            } else {
-                char c = s[s.length - 1].charAt(0);
-                if (c < '0' || c > '9' ) {
-                    vt = VersionTag.valueOf(s[3]);
-                } else {
-                    // 缺少版本标签类型，默认RELEASE
-                    vt = VersionTag.RELEASE;
-                    if (s.length == 4) {
-                        fixVer = Integer.parseInt(s[s.length - 1]);
-                    }
-                }
-            }
-            return new Version(
-                    Integer.parseInt(s[0]),
-                    Integer.parseInt(s[1]),
-                    Integer.parseInt(s[2]),
-                    fixVer,
-                    vt
-            );
-        } catch (RuntimeException e) {
-            log.error("{}", LOG_PREFIX,e);
-            throw new IllegalArgumentException("Illegal version format: " + version);
-        }
+        return new Version(version);
     }
 
     /**

@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @Configuration
 @ComponentScan("com.saltedfishcloud.ext.ve")
@@ -26,23 +27,25 @@ import java.io.IOException;
 public class VEAutoConfiguration implements InitializingBean {
 
     @Bean
-    public FFMpegHelper ffMpegHelper(ConfigService configService) throws IOException {
-        VEProperty property = configService.getJsonConfig(VEConstants.PROPERTY_KEY, VEProperty.class);
-        if (property == null) {
-            property = new VEProperty();
-        }
-        FFMpegHelper ffMpegHelper = new FFMpegHelperImpl(property);
+    public VEProperty veProperty(ConfigService configService) throws IOException {
+        VEProperty property = Optional.ofNullable(configService.getJsonConfig(VEConstants.PROPERTY_KEY, VEProperty.class))
+                .orElseGet(VEProperty::new);
 
         // 配置更新时，操作器也跟着更新
         configService.addBeforeSetListener(VEConstants.PROPERTY_KEY, json -> {
             try {
                 VEProperty newProperty = MapperHolder.parseJson(json, VEProperty.class);
-                BeanUtils.copyProperties(newProperty, ffMpegHelper.getProperty());
+                BeanUtils.copyProperties(newProperty, property);
             } catch (IOException e) {
                 log.error("视频增强插件配置更新出错", e);
             }
         });
-        return ffMpegHelper;
+        return property;
+    }
+
+    @Bean
+    public FFMpegHelper ffMpegHelper(VEProperty veProperty) throws IOException {
+        return new FFMpegHelperImpl(veProperty);
     }
 
     @Override

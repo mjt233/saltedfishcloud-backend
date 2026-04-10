@@ -39,4 +39,8 @@ public class SimpleImageThumbnailHandler implements ThumbnailHandler {
         return supportList;
     }
 
+    @Override
+    public String getName() {
+        return "图片文件";
+    }
 }

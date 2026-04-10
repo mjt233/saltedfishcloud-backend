@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -200,6 +201,29 @@ public class TypeUtils {
         } else if (isEnum(targetType)) {
             return (T)Enum.valueOf((Class<? extends Enum>) targetType, input.toString());
         } else {
+            // 检查是否有 @ConfigPropertyEntity 注解且 input 为字符串，通过 JSON 反序列化创建对象
+            if (input instanceof String && targetType.isAnnotationPresent(ConfigPropertyEntity.class)) {
+                try {
+                    return MapperHolder.parseJson((String) input, targetType);
+                } catch (Exception e) {
+                    // 忽略，继续尝试其他方式
+                }
+            }
+
+            // 尝试通过构造方法转换
+            for (java.lang.reflect.Constructor<?> constructor : targetType.getDeclaredConstructors()) {
+                if (constructor.getParameterCount() == 1) {
+                    Class<?> paramType = constructor.getParameterTypes()[0];
+                    if (paramType.isAssignableFrom(input.getClass()) || isSupportConvert(paramType)) {
+                        try {
+                            constructor.setAccessible(true);
+                            return (T) constructor.newInstance(input);
+                        } catch (Exception e) {
+                            // 忽略，继续尝试其他构造方法
+                        }
+                    }
+                }
+            }
             throw new UnsupportedOperationException("无法将 " + input.getClass() + " 转为 " + targetType);
         }
     }
