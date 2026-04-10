@@ -17,6 +17,14 @@ public interface FFMpegHelper {
     ProcessWrap executeConvert(String input, String output, EncodeConvertParam param) throws IOException;
 
     /**
+     * 执行原始ffmpeg命令
+     * @param input     视频的输入文件
+     * @param output    输出文件
+     * @param args  除输入文件和输出文件外的所有ffmpeg命令行参数
+     */
+    ProcessWrap executeFFMpeg(String input, String output, List<String> args) throws IOException;
+
+    /**
      * 提取视频字幕
      *
      * @param localFile 本地文件路径

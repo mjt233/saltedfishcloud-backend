@@ -17,15 +17,15 @@ public interface ThumbnailHandler extends FeatureProvider {
     /**
      * 从流中读取数据数据生成缩略图
      * @param resource      原图资源
-     * @param type          文件类型
-     * @param outputStream  缩略图输出流
+     * @param type          文件类型（文件拓展名，不带.前缀）
+     * @param outputStream  缩略图输出流，内部不close该流
      * @return 是否生成成功
      */
     boolean generate(Resource resource, String type, OutputStream outputStream) throws IOException;
 
     /**
      * 获取支持的缩略图类型
-     * @return  支持的缩略图类型
+     * @return  支持的缩略图类型（即文件拓展名，不带.前缀）
      */
     List<String> getSupportType();
 
