@@ -41,42 +41,36 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
         }
 
         // 检查是否启用挂载目录缩略图功能
-        if (!resource.isFile() && !veProperty.isEnableThumbnailOnMount()) {
+        if (!resource.isFile() && !veProperty.isEnableThumbnailOnRemote()) {
             log.debug("视频缩略图生成失败：资源不在本机文件系统中且未启用挂载目录缩略图功能");
             return false;
         }
 
         File videoFile;
-        boolean isTempFile = false;
+        boolean isTempFile = !resource.isFile();
+
+        if (isTempFile) {
+            // 保存为临时文件
+            log.debug("从流中保存资源到本地为临时文件");
+            String tempDir = PathUtils.getTempDirectory();
+            videoFile = FileUtils.saveStreamAsLocalTempFile(resource, tempDir);
+            log.debug("临时文件已保存，路径：{}", videoFile.getAbsolutePath());
+        } else {
+            videoFile = resource.getFile();
+        }
 
         try {
-            videoFile = resource.getFile();
-        } catch (FileNotFoundException e) {
-            if (veProperty.isEnableThumbnailOnMount()) {
-                // 保存为临时文件
-                log.debug("从流中保存资源到本地为临时文件");
-                String tempDir = PathUtils.getTempDirectory();
-                videoFile = FileUtils.saveStreamAsLocalTempFile(resource, tempDir);
-                log.debug("临时文件已保存，路径：{}", videoFile.getAbsolutePath());
-                isTempFile = true;
-            } else {
-                log.debug("无法获取视频文件：{}", e.getMessage());
+            // 检查视频文件是否存在
+            if (!videoFile.exists()) {
+                log.debug("视频文件不存在：{}", videoFile.getAbsolutePath());
+                // 清理临时文件
+                if (isTempFile && videoFile.exists()) {
+                    boolean deleted = videoFile.delete();
+                    log.debug("清理临时文件{}，结果：{}", videoFile.getAbsolutePath(), deleted);
+                }
                 return false;
             }
-        }
 
-        // 检查视频文件是否存在
-        if (!videoFile.exists()) {
-            log.debug("视频文件不存在：{}", videoFile.getAbsolutePath());
-            // 清理临时文件
-            if (isTempFile && videoFile.exists()) {
-                boolean deleted = videoFile.delete();
-                log.debug("清理临时文件{}，结果：{}", videoFile.getAbsolutePath(), deleted);
-            }
-            return false;
-        }
-
-        try {
             // 获取视频信息
             VideoInfo videoInfo = ffMpegHelper.getVideoInfo(videoFile.getAbsolutePath());
             // 检查是否有内置封面/海报/缩略图资源
