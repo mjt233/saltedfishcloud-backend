@@ -47,7 +47,8 @@ nav:
   - 开发手册:
       - 简介: develop/index.md
       - 项目构建: develop/build.md
-      - 系统架构:
+      - 系统功能架构:
+          - 文件操作: develop/framework/file-operations.md
           - 集群兼容: develop/framework/cluster.md
           - 异步任务: develop/framework/async-task.md
           - 定时任务: develop/framework/schedule.md
