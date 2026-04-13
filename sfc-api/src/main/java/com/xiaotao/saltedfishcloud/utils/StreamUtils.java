@@ -123,7 +123,7 @@ public class StreamUtils {
 
     /**
      * 创建一个输出流的close方法修饰类，附加自定义的close逻辑
-     * @param outputStream  输出流
+     * @param outputStream  输出流。在该方法中被修饰，close方法被调用时会先执行原输出流的close方法，再执行附加的close逻辑
      * @param closeable 需要额外附加的自定义的close逻辑
      * @return  新产生的OutputStream修饰类，在原输出流close执行后被调用
      */

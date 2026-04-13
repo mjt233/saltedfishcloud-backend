@@ -6,7 +6,6 @@ import com.hierynomus.msfscc.FileAttributes;
 import com.hierynomus.msfscc.fileinformation.FileAllInformation;
 import com.hierynomus.msfscc.fileinformation.FileBasicInformation;
 import com.hierynomus.msfscc.fileinformation.FileIdBothDirectoryInformation;
-import com.hierynomus.msfscc.fileinformation.FileSettableInformation;
 import com.hierynomus.mssmb2.SMB2CreateDisposition;
 import com.hierynomus.mssmb2.SMB2ShareAccess;
 import com.hierynomus.mssmb2.SMBApiException;
@@ -42,8 +41,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -96,7 +95,11 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
 
     @Override
     public void close() {
-        sessionObjectPool.close();
+        try {
+            sessionObjectPool.close();
+        } finally {
+            client.close();
+        }
     }
 
     @Override
@@ -104,13 +107,7 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
         if ("/".equals(path)) {
             return true;
         }
-        return getDiskShare(share -> {
-            boolean exists = share.fileExists(path);
-            if (!exists) {
-                exists = share.folderExists(path);
-            }
-            return exists;
-        });
+        return getFileInfo(path) != null;
     }
 
     public void returnSession(Session session) {
@@ -153,17 +150,11 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     }
 
     public File openFileWrite(DiskShare share, String path) {
-        return share.openFile(path, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OVERWRITE_IF, null);
+        return share.openFile(convertDelimiter(path), ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OVERWRITE_IF, null);
     }
 
     public File openFileRead(DiskShare share, String path) {
-        return share.openFile(path, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
-    }
-
-    public Directory openDir(String path) {
-        return getDiskShare(diskShare -> {
-            return diskShare.openDirectory(path, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
-        });
+        return share.openFile(convertDelimiter(path), ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
     }
 
     @Override
@@ -177,13 +168,13 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
         if (fileInfo == null || fileInfo.isDir()) {
             return null;
         }
-        return new SambaResource(this, path);
+        return new SambaResource(this, path, fileInfo.getName(), fileInfo.getMtime(), convertDelimiter(path));
     }
 
     @Override
     public List<FileInfo> listFiles(String path) {
         return getDiskShare(diskShare -> {
-            List<FileIdBothDirectoryInformation> list = diskShare.list(path);
+            List<FileIdBothDirectoryInformation> list = diskShare.list(convertDelimiter(path));
             List<FileInfo> res = new ArrayList<>(list.size());
             for (FileIdBothDirectoryInformation info : list) {
                 if (info.getFileName().equals(".") || info.getFileName().equals("..")) {
@@ -197,7 +188,7 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
 
     private FileInfo convertToFileInfo(FileIdBothDirectoryInformation info) {
         FileInfo fileInfo = new FileInfo();
-        if (info.getFileAttributes() == FileAttributes.FILE_ATTRIBUTE_DIRECTORY.getValue()) {
+        if (isDirectory(info.getFileAttributes())) {
             fileInfo.setSize(-1L);
             fileInfo.setType(FileInfo.TYPE_DIR);
         } else {
@@ -215,7 +206,7 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     private FileInfo convertToFileInfo(FileAllInformation info) {
         FileInfo fileInfo = new FileInfo();
         FileBasicInformation baseInfo = info.getBasicInformation();
-        boolean isDir = baseInfo.getFileAttributes() == FileAttributes.FILE_ATTRIBUTE_DIRECTORY.getValue();
+        boolean isDir = isDirectory(baseInfo.getFileAttributes());
         fileInfo.setMtime(baseInfo.getLastWriteTime().toDate().getTime());
         fileInfo.setName(info.getNameInformation());
         fileInfo.setSize(isDir ? -1 : info.getStandardInformation().getEndOfFile());
@@ -230,10 +221,9 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     public FileInfo getFileInfo(String path) {
         return getDiskShare(diskShare -> {
             try {
-                FileAllInformation fileInformation = diskShare.getFileInformation(path);
+                FileAllInformation fileInformation = diskShare.getFileInformation(convertDelimiter(path));
                 return convertToFileInfo(fileInformation);
-            } catch (SMBApiException e) {
-                e.printStackTrace();
+            } catch (SMBApiException ignore) {
                 return null;
             }
         });
@@ -241,22 +231,57 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
 
     @Override
     public boolean delete(String path) {
-        getDiskShare(diskShare -> {
-            try {
-                diskShare.rm(path);
-            } catch (SMBApiException e) {
-                if(e.getStatusCode() == NtStatus.STATUS_FILE_IS_A_DIRECTORY.getValue()) {
-                    if(!isEmptyDirectory(path)) {
-                        List<FileInfo> fileInfos = listFiles(path);
-                        for (FileInfo file : fileInfos) {
-                            delete(StringUtils.appendPath(path, file.getName()));
-                        }
-                    }
-                }
-                diskShare.rmdir(path, true);
-            }
-        });
+        getDiskShare((Consumer<DiskShare>) diskShare -> delete(diskShare, convertDelimiter(path)));
         return true;
+    }
+
+    private void delete(DiskShare diskShare, String path) {
+        Deque<String> pending = new ArrayDeque<>();
+        Deque<String> directories = new ArrayDeque<>();
+        pending.push(path);
+
+        while (!pending.isEmpty()) {
+            String currentPath = pending.pop();
+            try {
+                diskShare.rm(currentPath);
+            } catch (SMBApiException e) {
+                if (e.getStatusCode() == NtStatus.STATUS_FILE_IS_A_DIRECTORY.getValue()) {
+                    // 删除非空文件夹时会抛出这个异常，此时需要先删除文件夹内的内容
+                    directories.push(currentPath);
+                    List<FileIdBothDirectoryInformation> fileInfos = diskShare.list(currentPath);
+                    for (FileIdBothDirectoryInformation file : fileInfos) {
+                        String fileName = file.getFileName();
+                        if (".".equals(fileName) || "..".equals(fileName)) {
+                            continue;
+                        }
+                        pending.push(convertDelimiter(StringUtils.appendPath(currentPath, fileName)));
+                    }
+                    continue;
+                }
+
+                if (e.getStatusCode() == NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.getValue()) {
+                    // 文件已经不存在了，跳过
+                    continue;
+                }
+
+                // 其他错误直接抛出异常
+                throw e;
+            }
+        }
+
+        // 删除上面遍历期间遇到的所有文件夹，经过删除文件后，这些文件夹都是空文件夹，可以直接删除了
+        while (!directories.isEmpty()) {
+            String directoryPath = directories.pop();
+            try {
+                diskShare.rmdir(directoryPath, true);
+            } catch (SMBApiException e) {
+                if (e.getStatusCode() != NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.getValue()) {
+                    // 文件已经不存在了，跳过
+                    continue;
+                }
+                throw e;
+            }
+        }
     }
 
     @Override
@@ -282,19 +307,36 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     @Override
     public OutputStream newOutputStream(String path) throws IOException {
         Session session = getSession();
-        DiskShare diskShare = (DiskShare) session.connectShare(sambaProperty.getShareName());
-        OutputStream originOutputStream = openFileWrite(diskShare, path).getOutputStream();
-        AtomicBoolean closed = new AtomicBoolean();
-        return com.xiaotao.saltedfishcloud.utils.StreamUtils.createCloseActionOutputStream(originOutputStream, () -> {
-            if (closed.get()) {
-                return;
-            }
-            originOutputStream.close();
-            try {
-                diskShare.close();
-                closed.set(true);
-            } finally {
+        DiskShare diskShare = null;
+        File file = null;
+        OutputStream originOutputStream = null;
+        boolean success = false;
+        try {
+            diskShare = (DiskShare) session.connectShare(sambaProperty.getShareName());
+            file = openFileWrite(diskShare, path);
+            originOutputStream = file.getOutputStream();
+            success = true;
+        } finally {
+            if (!success) {
+                closeQuietly(originOutputStream);
+                closeQuietly(file);
+                closeQuietly(diskShare);
                 returnSession(session);
+            }
+        }
+
+        File openedFile = file;
+        DiskShare openedShare = diskShare;
+        OutputStream openedOutputStream = originOutputStream;
+        return com.xiaotao.saltedfishcloud.utils.StreamUtils.createCloseActionOutputStream(openedOutputStream, () -> {
+            try {
+                closeQuietly(openedFile);
+            } finally {
+                try {
+                    closeQuietly(openedShare);
+                } finally {
+                    returnSession(session);
+                }
             }
         });
     }
@@ -305,16 +347,34 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
                 .replaceAll("^[/\\\\]+", "")
                 .replaceAll("/", "\\\\");
         String smbPath = convertDelimiter(path);
-        FileInfo fileInfo = getFileInfo(smbPath);
-        if (fileInfo.isDir()) {
-            openDir(smbPath).rename(newPath, false);
-        } else {
-            getDiskShare(share -> {
-                File sourceFile = openFileRead(share, smbPath);
-                sourceFile.rename(newPath, false);
-            });
-        }
+        renameInternal(smbPath, newPath);
         return true;
+    }
+
+    private void renameInternal(String sourcePath, String targetPath) {
+        String smbPath = convertDelimiter(sourcePath);
+        String smbTargetPath = convertDelimiter(targetPath)
+                .replaceAll("^[/\\\\]+", "");
+        getDiskShare(share -> {
+            try {
+                FileAllInformation fileInformation = share.getFileInformation(smbPath);
+                boolean isDirectory = isDirectory(fileInformation.getBasicInformation().getFileAttributes());
+                if (isDirectory) {
+                    try (Directory directory = share.openDirectory(smbPath, ACCESS_MASK_SET, null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+                        directory.rename(smbTargetPath, false);
+                    }
+                } else {
+                    try (File sourceFile = openFileRead(share, smbPath)) {
+                        sourceFile.rename(smbTargetPath, false);
+                    }
+                }
+            } catch (SMBApiException e) {
+                if (e.getStatusCode() == NtStatus.STATUS_OBJECT_NAME_COLLISION.getValue()) {
+                    throw new RuntimeException(new FileAlreadyExistsException(smbTargetPath));
+                }
+                throw e;
+            }
+        });
     }
 
 
@@ -328,8 +388,8 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     @Override
     public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         getDiskShare(share -> {
-            try {
-                openFileRead(share, src).remoteCopyTo(openFileWrite(share, dest));
+            try (File sourceFile = openFileRead(share, src); File targetFile = openFileWrite(share, dest)) {
+                sourceFile.remoteCopyTo(targetFile);
             } catch (Buffer.BufferException | TransportException e) {
                 throw new RuntimeException(e);
             }
@@ -339,14 +399,27 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
 
     @Override
     public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
-        getDiskShare(share -> {
-            openFileRead(share, src).rename(dest);
-        });
+        renameInternal(src, dest);
         return true;
     }
 
     @Override
     public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
 
+    }
+
+    private void closeQuietly(@Nullable AutoCloseable closeable) {
+        if (closeable == null) {
+            return;
+        }
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            log.debug("{}关闭资源失败 {} ", LOG_PREFIX, closeable, e);
+        }
+    }
+
+    private boolean isDirectory(long fileAttributes) {
+        return (fileAttributes & FileAttributes.FILE_ATTRIBUTE_DIRECTORY.getValue()) != 0;
     }
 }

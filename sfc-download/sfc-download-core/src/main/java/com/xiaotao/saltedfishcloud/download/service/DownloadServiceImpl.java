@@ -111,20 +111,24 @@ public class DownloadServiceImpl implements DownloadService {
                 .taskType(AsyncTaskType.OFFLINE_DOWNLOAD)
                 .cpuOverhead(20)
                 .build();
-        asyncTaskRecord.setId(IdUtil.getId());
         asyncTaskRecord.setUid(creator);
 
+        // 先保存 DownloadTask 表
         downloadTask.setUrl(params.url);
         downloadTask.setProxy(params.proxy);
         downloadTask.setUid(params.uid);
         downloadTask.setCreatedBy(creator);
         downloadTask.setSavePath(params.savePath);
-        downloadTask.setAsyncTaskRecord(asyncTaskRecord);
         downloadDao.save(downloadTask);
 
+        // 拿到 DownloadTask 的id后，再提交 AsyncTaskRecord
         params.downloadId = downloadTask.getId();
         asyncTaskRecord.setParams(MapperHolder.toJson(params));
         asyncTaskManager.submitAsyncTask(asyncTaskRecord);
+
+        // 在 DownloadTask 中反向记录 AsyncTaskRecord的id
+        downloadTask.setTaskId(asyncTaskRecord.getId());
+        downloadDao.save(downloadTask);
         return params.downloadId;
     }
 

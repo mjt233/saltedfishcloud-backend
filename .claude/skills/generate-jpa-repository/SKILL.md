@@ -1,10 +1,8 @@
-            ---
-            name: jpa-repo-generator
-            title: jpa-repo-generator
-            description: 创建一个JPA仓库接口
-            ---
+---
+name: generate-jpa-repository
+description: 实体类创建一个对应的JPA Repository接口 
+---
 
-            # jpa-repo-generator
 
 Repository的数据实体类Entity需要满足以下条件：
 - 继承`com.xiaotao.saltedfishcloud.model.template.AuditModel`
@@ -30,7 +28,7 @@ Repository的数据实体类Entity需要满足以下条件：
    
    ```
 3. 保存位置遵循以下规则:
-   - 如果实体类的所在的maven模块是在sfc-api下的，则生成到sfc-api/src/main/java/com/xiaotao/saltedfishcloud/dao/jpa
+    - 如果实体类的所在的maven模块是在sfc-api下的，则生成到sfc-api/src/main/java/com/xiaotao/saltedfishcloud/dao/jpa
       如：
-   - 如果实体类的所在的maven模块不在sfc-api下，则生成到与实体类相同的maven模块目录下，包位置则取实体类所在的package中名为`model`的package同级的名为`repo`下  
+    - 如果实体类的所在的maven模块不在sfc-api下，则生成到与实体类相同的maven模块目录下，包位置则取实体类所在的package中名为`model`的package同级的名为`repo`下  
       如: 实体类 `com.sfc.webshell.model.po.ShellExecuteRecord` 对应的Repository则为 `com.sfc.webshell.repo.ShellExecuteRecordRepo`

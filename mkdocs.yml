@@ -47,10 +47,15 @@ nav:
   - 开发手册:
       - 简介: develop/index.md
       - 项目构建: develop/build.md
-      - 系统架构:
+      - 系统功能架构:
+          - 文件操作: develop/framework/file-operations.md
           - 集群兼容: develop/framework/cluster.md
           - 异步任务: develop/framework/async-task.md
           - 定时任务: develop/framework/schedule.md
+      - 插件开发指南:
+          - 创建插件: develop/plugin/create-plugin.md
+          - Spring Boot集成: develop/plugin/springboot-integration.md
+          - 插件配置参数: develop/plugin/config-properties.md
   - OAuth开放平台:
       - 概述: oauth/index.md
       - 开放接口列表:
