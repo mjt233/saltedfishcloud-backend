@@ -12,7 +12,7 @@ import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
 import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEventLevel;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
@@ -227,7 +227,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+    public void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
         FileTransferItem transferItem = FileTransferItem.builder()
                 .from(param.getSourcePath())
                 .to(param.getTargetPath())

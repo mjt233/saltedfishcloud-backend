@@ -4,7 +4,7 @@ import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.CopyProgressRecord;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
@@ -45,7 +45,7 @@ public class FileCopyAsyncTask implements AsyncTask {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean interrupted = new AtomicBoolean(false);
     private final AtomicReference<Thread> executeThread = new AtomicReference<>();
-    private CopyProgressCallback progressCallback;
+    private FileTransferCallback progressCallback;
 
     /**
      * 当前正在复制的文件项，用于实时进度计算
@@ -81,7 +81,7 @@ public class FileCopyAsyncTask implements AsyncTask {
 
     private void initCallback() {
         // 创建自定义的复制进度回调
-        this.progressCallback = new CopyProgressCallback() {
+        this.progressCallback = new FileTransferCallback() {
             private final CopyProgressRecord record = new CopyProgressRecord();
 
             @Override

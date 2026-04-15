@@ -10,7 +10,7 @@ import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
@@ -329,7 +329,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+    public void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
         List<String> sourceFileNames = Optional.ofNullable(param.getFiles())
                 .filter(files -> !files.isEmpty())
                 .orElseGet(() -> {

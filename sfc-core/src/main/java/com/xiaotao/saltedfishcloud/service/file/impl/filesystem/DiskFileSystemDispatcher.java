@@ -14,7 +14,7 @@ import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
@@ -277,14 +277,14 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+    public void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
         doCopyInternal(param, callback, 0);
     }
 
     /**
      * 核心复制方法，支持进度回调（可为null）
      */
-    private void doCopyInternal(SimpleFileTransferParam param, CopyProgressCallback callback, int depth) throws IOException {
+    private void doCopyInternal(SimpleFileTransferParam param, FileTransferCallback callback, int depth) throws IOException {
         if (depth > 32) {
             throw new JsonException(FileSystemError.DIR_TOO_DEPTH, "目录深度超过32");
         }

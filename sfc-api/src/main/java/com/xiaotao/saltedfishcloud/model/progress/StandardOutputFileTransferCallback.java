@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.progress;
 
-public class StandardOutputCopyProgressCallback implements CopyProgressCallback {
+public class StandardOutputFileTransferCallback implements FileTransferCallback {
     private final CopyProgressRecord record = new CopyProgressRecord();
     @Override
     public CopyProgressRecord getProgressRecord() {

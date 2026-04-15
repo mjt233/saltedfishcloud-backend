@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.model.progress.event.EnterDirEvent;
 import com.xiaotao.saltedfishcloud.model.progress.event.MountPointSkipEvent;
@@ -117,11 +117,11 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
-    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) {
+    public void copy(SimpleFileTransferParam param, FileTransferCallback callback) {
         this.doCopy(param, callback, 0);
     }
 
-    private void doCopy(SimpleFileTransferParam param,@Nullable CopyProgressCallback callback, int depth) {
+    private void doCopy(SimpleFileTransferParam param, @Nullable FileTransferCallback callback, int depth) {
         if (depth >= 32) {
             throw new JsonException(FileSystemError.DIR_TOO_DEPTH, depth + "");
         }

@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file.store;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -133,7 +133,7 @@ public abstract class CopyAndMoveHandler {
      * @param callback  进度回调接口，可为 null
      * @throws IOException  任意IO错误
      */
-    public void copy(String src, String dest, boolean overwrite, CopyProgressCallback callback) throws IOException {
+    public void copy(String src, String dest, boolean overwrite, FileTransferCallback callback) throws IOException {
         checkCopyOrMove(src, dest);
         doCopyWithProgress(src, dest, overwrite, 0, false, callback);
     }
@@ -157,7 +157,7 @@ public abstract class CopyAndMoveHandler {
      * @param callback  进度回调接口，可为 null
      * @throws IOException  任意IO错误
      */
-    public void move(String src, String dest, boolean overwrite, CopyProgressCallback callback) throws IOException {
+    public void move(String src, String dest, boolean overwrite, FileTransferCallback callback) throws IOException {
         checkCopyOrMove(src, dest);
         if (isMoveWithRecursion()) {
             doCopyWithProgress(src, dest, overwrite, 0, true, callback);
@@ -199,7 +199,7 @@ public abstract class CopyAndMoveHandler {
      * @param callback      进度回调接口，可为 null
      * @throws IOException  任意IO错误
      */
-    protected void doCopyWithProgress(String source, String target, boolean overwrite, int depth, boolean isMove, CopyProgressCallback callback) throws IOException {
+    protected void doCopyWithProgress(String source, String target, boolean overwrite, int depth, boolean isMove, FileTransferCallback callback) throws IOException {
         if (depth > MAX_DEPTH) {
             throw new JsonException(FileSystemError.DIR_TOO_DEPTH);
         }

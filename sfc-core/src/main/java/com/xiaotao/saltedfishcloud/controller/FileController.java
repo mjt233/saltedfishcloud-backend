@@ -19,7 +19,6 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.*;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
