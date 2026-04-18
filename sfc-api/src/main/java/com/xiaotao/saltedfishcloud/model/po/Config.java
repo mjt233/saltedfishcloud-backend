@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.constant.SysConfigName;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,9 +21,9 @@ public class Config {
      * @see SysConfigName
      */
     @Id
-    @Column(name = "`key`", nullable = false)
-    private String key;
+    private String itemKey;
 
-    private String value;
+    @Lob
+    private String itemValue;
 }
 

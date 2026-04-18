@@ -101,9 +101,9 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
 
     @Override
     public Map<String, String> listConfig(Collection<String> keys) {
-        return configDao.findByKeyIn(keys)
+        return configDao.findByItemKeyIn(keys)
                 .stream()
-                .collect(Collectors.toMap(Config::getKey, Config::getValue, (oldVal, newVal) -> newVal));
+                .collect(Collectors.toMap(Config::getItemKey, Config::getItemValue, (oldVal, newVal) -> newVal));
     }
 
     /**
@@ -112,8 +112,8 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     @Override
     public Map<String, String> getAllConfig() {
         Map<String, String> dbConfig = configDao.getAllConfig().stream().collect(Collectors.toMap(
-                Config::getKey,
-                Config::getValue
+                Config::getItemKey,
+                Config::getItemValue
         ));
 
         Map<String, String> res = new ConcurrentHashMap<>();
@@ -260,7 +260,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
             };
 
             addAfterSetListener(configName, configConsumer);
-            configConsumer.accept(getConfig(configName));
+            configConsumer.accept(getConfig(configName, property.defaultValue()));
         }
     }
 

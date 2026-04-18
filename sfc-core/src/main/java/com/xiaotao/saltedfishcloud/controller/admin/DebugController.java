@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
-import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
 import com.xiaotao.saltedfishcloud.model.po.Config;
@@ -48,7 +47,7 @@ public class DebugController {
         List<Config> conf = configDao.getAllConfig();
         if (conf != null) {
             conf.forEach(e -> {
-                data.put(e.getKey(), e.getValue());
+                data.put(e.getItemKey(), e.getItemValue());
             });
         }
         data.put("READ_ONLY_LEVEL", SysRuntimeConfig.getInstance().getProtectModeLevel());

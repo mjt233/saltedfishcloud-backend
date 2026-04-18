@@ -18,7 +18,7 @@ public interface ConfigRepo extends JpaRepository<Config, String> {
      * @return 配置值
      */
     default String getConfig(String key) {
-        return findById(key).map(Config::getKey).orElse(null);
+        return findById(key).map(Config::getItemKey).orElse(null);
     }
 
     /**
@@ -62,7 +62,7 @@ public interface ConfigRepo extends JpaRepository<Config, String> {
      * @param keys 键列表
      * @return 匹配的配置项列表
      */
-    List<Config> findByKeyIn(Collection<String> keys);
+    List<Config> findByItemKeyIn(Collection<String> keys);
 }
 
 
