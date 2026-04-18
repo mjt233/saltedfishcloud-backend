@@ -11,6 +11,7 @@ import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import reactor.util.function.Tuple2;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -212,10 +213,10 @@ public class DBUtils {
      * @param tableName  表名（不区分大小写）
      * @return 是否存在
      */
-    public static boolean tableExists(javax.sql.DataSource dataSource, String tableName) {
+    public static boolean tableExists(DataSource dataSource, String tableName) {
         try (Connection conn = dataSource.getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
-            try (ResultSet rs = meta.getTables(null, null, null, new String[]{"TABLE"})) {
+            try (ResultSet rs = meta.getTables(conn.getCatalog(), conn.getSchema(), null, new String[]{"TABLE"})) {
                 while (rs.next()) {
                     if (rs.getString("TABLE_NAME").equalsIgnoreCase(tableName)) {
                         return true;
