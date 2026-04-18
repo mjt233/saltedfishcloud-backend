@@ -46,9 +46,7 @@ public class DebugController {
         LinkedHashMap<String, Object> data = JsonResultImpl.getDataMap();
         List<Config> conf = configDao.getAllConfig();
         if (conf != null) {
-            conf.forEach(e -> {
-                data.put(e.getItemKey(), e.getItemValue());
-            });
+            conf.forEach(e -> data.put(e.getItemKey(), e.getItemValue()));
         }
         data.put("READ_ONLY_LEVEL", SysRuntimeConfig.getInstance().getProtectModeLevel());
         data.put("read_only_level", SysRuntimeConfig.getInstance().getProtectModeLevel());
