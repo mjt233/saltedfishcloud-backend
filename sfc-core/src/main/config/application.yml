@@ -51,8 +51,6 @@ spring:
   web:
     resources:
       add-mappings: false
-  mvc:
-    throw-exception-if-no-handler-found: true
 logging:
   file:
     name: ./log/output.log
@@ -64,5 +62,10 @@ logging:
     com.saltedfishcloud: info
     com.xiaotao.saltedfishcloud.dao.mybatis: warn
 #    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
+
+management:
+  health:
+    mail:
+      enabled: false
 app:
   version: ^project.version^
