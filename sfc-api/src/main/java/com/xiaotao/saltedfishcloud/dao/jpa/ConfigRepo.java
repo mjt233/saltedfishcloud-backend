@@ -18,7 +18,7 @@ public interface ConfigRepo extends JpaRepository<Config, String> {
      * @return 配置值
      */
     default String getConfig(String key) {
-        return findById(key).map(Config::getItemKey).orElse(null);
+        return findById(key).map(Config::getItemValue).orElse(null);
     }
 
     /**
