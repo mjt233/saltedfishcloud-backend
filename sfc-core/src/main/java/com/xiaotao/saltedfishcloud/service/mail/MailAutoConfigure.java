@@ -18,44 +18,28 @@ import org.springframework.context.annotation.Lazy;
  */
 @Configuration
 @Slf4j
-public class MailAutoConfigure implements ApplicationRunner {
+public class MailAutoConfigure {
 
-    @Autowired
-    @Lazy
-    private ConfigService configService;
-
-    @Autowired
-    @Lazy
-    private LogRecordManager logRecordManager;
-
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
-        this.configureProperties();
+    @Bean
+    public MailProperties mailProperties(ConfigService configService) {
+        MailProperties mailProperties = new MailProperties();
+        // 监听发信服务器的配置信息修改，更新发信服务器配置bean信息
+        configService.addAfterSetListener(SysCommonConfig::getMailProperties, e -> BeanUtils.copyProperties(e, mailProperties));
+        MailProperties curProperties = configService.getConfig(SysCommonConfig::getMailProperties);
+        if (curProperties != null) {
+            BeanUtils.copyProperties(curProperties, mailProperties);
+        }
+        return mailProperties;
     }
 
-    private void configureProperties() {
-
-        // 监听发信服务器的配置信息修改，更新发信服务器配置bean信息
+    @Bean
+    public SfcMailSender javaMailSender(MailProperties mailProperties, LogRecordManager logRecordManager, ConfigService configService) {
+        SfcMailSender sender = new SfcMailSender(logRecordManager);
+        sender.loadConfiguration(mailProperties);
         configService.addAfterSetListener(SysCommonConfig::getMailProperties, e -> {
-            BeanUtils.copyProperties(e, this.mailProperties());
-            javaMailSender().onConfigurationChange(e);
+            sender.loadConfiguration(mailProperties);
             log.debug("邮件发信服务器配置更改：{}", e);
         });
-    }
-
-    @Bean
-    public MailProperties mailProperties() {
-        return configService.getConfig(SysCommonConfig::getMailProperties);
-    }
-
-    @Bean
-    public SfcMailSender javaMailSender() {
-        MailProperties properties = configService.getConfig(SysCommonConfig::getMailProperties);
-        if (!properties.isValid()) {
-            log.warn("邮件发信服务器信息参数无效，需要进行配置");
-        }
-        SfcMailSender sender = new SfcMailSender(logRecordManager);
-        sender.loadConfiguration(properties);
         return sender;
     }
 }

@@ -17,6 +17,12 @@ import java.util.List;
 public interface UserService {
 
 
+    /**
+     * 初始化创建一个管理员账号
+     * @param user 管理员账号默认用户名
+     * @param password 管理员账号默认密码
+     */
+    void initAdminUser(String user, String password);
 
     CommonPageInfo<User> listUsers(PageableRequest request);
 
@@ -135,7 +141,7 @@ public interface UserService {
     int modifyPasswd(Long uid, String oldPassword, String newPassword);
 
     /**
-     * 直接添加用户
+     * 直接添加用户（不允许通过该方法创建管理员用户）
      * @param user      用户名
      * @param passwd    密码原文（即密码原文）
      * @param email     用户邮箱
@@ -145,7 +151,7 @@ public interface UserService {
     int addUser(@Username @Valid String user, String passwd, String email, Integer type);
 
     /**
-     * 通过邀请码或邮箱注册用户的形式添加用户
+     * 通过邀请码或邮箱注册用户的形式添加用户（不允许通过该方法创建管理员用户）
      * @param user          用户名
      * @param passwd        密码
      * @param email         注册邮箱

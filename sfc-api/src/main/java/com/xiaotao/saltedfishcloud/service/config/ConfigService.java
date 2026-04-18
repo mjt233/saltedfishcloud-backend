@@ -11,6 +11,7 @@ import com.xiaotao.saltedfishcloud.utils.SFunc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,11 +36,10 @@ public interface ConfigService {
     List<PluginConfigNodeInfo> listPluginConfig();
 
     /**
-     * 按自定义SQL操作符和表达式获取配置
-     * @param operation     SQL运算符，如：=、like、in
-     * @param keyPattern    SQL表达式，如：('a','b')
+     * 批量查询配置
+     * @param keys  待查询的配置key
      */
-    Map<String, String> listConfig(String operation, String keyPattern);
+    Map<String, String> listConfig(Collection<String> keys);
 
     /**
      * 获取存在的所有配置

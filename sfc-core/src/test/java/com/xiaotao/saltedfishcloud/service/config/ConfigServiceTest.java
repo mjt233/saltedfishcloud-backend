@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
-import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +16,7 @@ class ConfigServiceTest {
     @Resource
     private ConfigServiceImpl configService;
     @Resource
-    private ConfigDao configDao;
+    private ConfigRepo configDao;
 
     @Test
     void setStoreType() throws IOException {

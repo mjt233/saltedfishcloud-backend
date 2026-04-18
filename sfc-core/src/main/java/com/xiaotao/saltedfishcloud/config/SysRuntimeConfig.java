@@ -32,11 +32,6 @@ public class SysRuntimeConfig implements ApplicationRunner {
     @Autowired
     private MQService mqService;
 
-    @Getter
-    private boolean enableRegCode;
-    @Getter
-    private boolean enableEmailReg;
-
     public static SysRuntimeConfig getInstance() {
         if (GLOBAL_HOLD_INST == null) {
             throw new IllegalStateException("SysRuntimeConfig 未实例化");
@@ -89,21 +84,7 @@ public class SysRuntimeConfig implements ApplicationRunner {
         fetchConfig();
         SysRuntimeConfig.GLOBAL_HOLD_INST = this;
 
-        log.info("[注册规则]当前注册规则配置： 注册邀请码 - {} 邮箱注册 - {}", enableRegCode ? '√': 'X', enableEmailReg ? '√': 'X');
-        if (!this.isEnableEmailReg() && !this.isEnableRegCode()) {
-            log.warn("[注册关闭]系统未开启任何用户注册方式");
-        }
-
         this.listenStoreTypeChange();
-        this.listenConfigChange();
-    }
-
-    /**
-     * 监听系统配置变更来更新注册方式
-     */
-    private void listenConfigChange() {
-        configService.addAfterSetListener(SysConfigName.Register.ENABLE_REG_CODE, value -> this.enableRegCode = "true".equals(value));
-        configService.addAfterSetListener(SysConfigName.Register.ENABLE_EMAIL_REG, value -> this.enableEmailReg = "true".equals(value));
     }
 
     /**
@@ -132,7 +113,5 @@ public class SysRuntimeConfig implements ApplicationRunner {
             configService.setConfig(SysConfigName.Register.ENABLE_EMAIL_REG, "false");
             log.info("[注册规则初始化]未检测到注册规则配置，默认开启邀请码注册");
         }
-        this.enableRegCode = "true".equals(enableRegCode == null ? null : enableRegCode.toLowerCase());
-        this.enableEmailReg = "true".equals(enableEmailReg == null ? null : enableEmailReg.toLowerCase());
     }
 }

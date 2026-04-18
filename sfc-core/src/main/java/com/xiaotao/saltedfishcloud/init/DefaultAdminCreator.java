@@ -31,7 +31,7 @@ public class DefaultAdminCreator  implements ApplicationRunner {
         User admin;
         log.info("当前系统存在用户数：" + cnt);
         if (cnt == 0 || (admin = userDao.getUserByUser("admin")) == null ) {
-            userService.addUser("admin", "admin666", "", UserType.ADMIN);
+            userService.initAdminUser("admin", "admin666");
             log.warn("创建初始管理员用户：admin 密码：admin666，建议及时修改密码");
         } else if (admin.getType() != User.TYPE_ADMIN) {
             userDao.grant(admin.getId(), User.TYPE_ADMIN);
