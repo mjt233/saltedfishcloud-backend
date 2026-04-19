@@ -46,10 +46,27 @@ public interface HelloService {
 
     /**
      * 将一个配置项的值绑定到feature中。feature中的值将保持和配置项的值同步。
+     * 当配置项的值为null时，将使用默认值。
+     * @param configKey     配置项key
+     * @param mapKey        绑定映射的特性key
+     * @param type          数据类型
+     * @param defaultValue  默认值
+     */
+    <T> void bindConfigAsFeature(String configKey, String mapKey, Class<T> type, T defaultValue);
+
+    /**
+     * 将一个配置项的值绑定到feature中。feature中的值将保持和配置项的值同步。
      * @param configKey     配置项key
      * @param mapKey        绑定映射的特性key
      */
     <T,R> void bindConfigAsFeature(SFunc<T,R> configKey, String mapKey);
+
+    /**
+     * 将一个配置项的值绑定到feature中。feature中的值将保持和配置项的值同步。
+     * @param configKey     配置项key
+     * @param mapKey        绑定映射的特性key
+     */
+    <T,R> void bindConfigAsFeature(SFunc<T,R> configKey, String mapKey, R defaultValue);
 
     /**
      * 获取所有特性详情

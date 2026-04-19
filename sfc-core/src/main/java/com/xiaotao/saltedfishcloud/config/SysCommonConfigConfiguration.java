@@ -83,13 +83,13 @@ public class SysCommonConfigConfiguration {
         helloService.bindConfigAsFeature(SysConfigName.Bg.SYS_BG_MAIN, FeatureName.BG_MAIN, Map.class);
 
         // 是否允许邮箱/注册码注册
-        helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_EMAIL_REG, FeatureName.ENABLE_EMAIL_REG, Boolean.class);
-        helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_REG_CODE, FeatureName.ENABLE_REG_CODE, Boolean.class);
+        helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_EMAIL_REG, FeatureName.ENABLE_EMAIL_REG, Boolean.class, Boolean.FALSE);
+        helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_REG_CODE, FeatureName.ENABLE_REG_CODE, Boolean.class, Boolean.TRUE);
 
         // 匿名留言开关
-        helloService.bindConfigAsFeature(SysConfigName.Safe.ALLOW_ANONYMOUS_COMMENT, FeatureName.ALLOW_ANONYMOUS_COMMENT, Boolean.class);
+        helloService.bindConfigAsFeature(SysConfigName.Safe.ALLOW_ANONYMOUS_COMMENT, FeatureName.ALLOW_ANONYMOUS_COMMENT, Boolean.class, Boolean.FALSE);
 
         // 网盘文件上传是否使用通用资源请求接口
-        helloService.bindConfigAsFeature(SysCommonConfig::getIsUseCommonUpload, FeatureName.IS_USE_COMMON_UPLOAD);
+        helloService.bindConfigAsFeature(SysCommonConfig::getIsUseCommonUpload, FeatureName.IS_USE_COMMON_UPLOAD, Boolean.TRUE);
     }
 }

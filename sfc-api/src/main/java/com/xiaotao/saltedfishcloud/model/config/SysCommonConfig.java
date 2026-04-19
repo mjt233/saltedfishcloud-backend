@@ -85,7 +85,7 @@ public class SysCommonConfig {
 
     @ConfigProperty(
             title = "网盘文件上传接口",
-            defaultValue = "false",
+            defaultValue = "true",
             describe = "启用新的通用资源上传接口/api/file/upload（文件流实时写入到存储，更高的IO效率，更适合大文件上传）",
             group = "common",
             inputType = "switch"
