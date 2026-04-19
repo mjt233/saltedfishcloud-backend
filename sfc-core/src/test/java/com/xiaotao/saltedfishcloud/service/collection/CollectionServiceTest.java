@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.collection;
 import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
+import com.xiaotao.saltedfishcloud.model.dto.CollectionRecordDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
@@ -102,9 +103,9 @@ class CollectionServiceTest {
     @Test
     void getSubmits() {
         int page = 0, size = 2;
-        Page<CollectionRecord> submits = cs.getSubmits(5L, page, size);
+        Page<CollectionRecordDTO> submits = cs.getSubmits(5L, page, size);
         while (submits.getNumberOfElements() > 0) {
-            for (CollectionRecord record : submits.getContent()) {
+            for (CollectionRecordDTO record : submits.getContent()) {
                 System.out.println(record);
             }
             submits = cs.getSubmits(5L, ++page, size);

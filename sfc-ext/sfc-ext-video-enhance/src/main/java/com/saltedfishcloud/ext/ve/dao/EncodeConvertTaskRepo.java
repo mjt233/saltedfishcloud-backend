@@ -15,10 +15,6 @@ public interface EncodeConvertTaskRepo extends JpaRepository<EncodeConvertTask, 
      * @param status    任务状态{@link com.sfc.task.AsyncTaskConstants.Status}
      * @param pageable  分页信息
      */
-//    @Query( nativeQuery = true, value = "SELECT convert_task.*,record.status as task_status FROM encode_convert_task convert_task" +
-//            " LEFT JOIN async_task_record record ON convert_task.task_id = record.id " +
-//            " WHERE convert_task.uid = ?1 AND record.status = ?2" +
-//            " ORDER BY record.create_at DESC")
     @Query("SELECT task FROM EncodeConvertTask task " +
             "WHERE task.uid = :uid AND task.asyncTaskRecord.status = :status " +
             "ORDER BY task.createAt DESC")
