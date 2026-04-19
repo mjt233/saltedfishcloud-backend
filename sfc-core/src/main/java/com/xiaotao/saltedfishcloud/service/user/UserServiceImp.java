@@ -20,7 +20,6 @@ import com.xiaotao.saltedfishcloud.service.mail.MailValidateType;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.ServletRequest;
@@ -90,15 +89,13 @@ public class UserServiceImp implements UserService {
     public CommonPageInfo<User> searchUsers(String keyword, PageableRequest request) {
         int page = Optional.ofNullable(request.getPage()).orElse(0);
         int size = Optional.ofNullable(request.getSize()).orElse(10);
-        String pattern = "%" + keyword + "%";
 
-        Page<User> res = userRepo.findAll(
-                JpaLambdaQueryWrapper.get(UserInfo.class)
-                        .or(w -> w
-                                .like(UserInfo::getUser, pattern)
-                                .like(UserInfo::getEmail, pattern)
-                        )
-                        .build(),
+        String k = keyword
+                .replaceAll("\\\\", "\\\\\\\\")
+                .replaceAll("_", "\\\\_")
+                .replaceAll("%", "\\\\%");
+        Page<User> res = userRepo.searchUsers(
+                k,
                 PageRequest.of(page, size)
         ).map(UserRepo::toUser);
         return CommonPageInfo.of(res);
