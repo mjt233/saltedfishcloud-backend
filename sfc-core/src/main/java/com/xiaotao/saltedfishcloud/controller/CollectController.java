@@ -55,7 +55,7 @@ public class CollectController {
         if (!info.getUid().equals(u.getId())) {
             throw new JsonException(CommonError.FORMAT_ERROR);
         }
-        return PageUtils.getInstanceWithPage(collectionService.getSubmits(cid, page - 1, size));
+        return JsonResultImpl.getInstance(collectionService.getSubmits(cid, page - 1, size));
     }
 
     /**

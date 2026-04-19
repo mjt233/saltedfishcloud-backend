@@ -3,13 +3,15 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
-import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
+import com.xiaotao.saltedfishcloud.dao.jpa.projection.FileInfoSearchResult;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
@@ -34,6 +36,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,10 +65,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     private StoreServiceFactory storeServiceFactory;
 
     @Autowired
-    private FileDao fileDao;
-
-    @Autowired
-    private FileAnalyseDao fileAnalyseDao;
+    private FileInfoRepo fileInfoRepo;
 
     @Autowired
     private FileRecordService fileRecordService;
@@ -330,9 +331,19 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public List<FileInfo> search(long uid, String key) {
-        key = "%" + key.replaceAll("%", "\\%").replaceAll("/s+", "%") + "%";
-        return fileDao.search(uid, key);
+    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
+        // todo 重构搜索功能，支持异步任务/遍历式搜索，更丰富的参数控制
+        key = key.replace("%", "").replaceAll("\\s+", "%");
+        Page<FileInfoSearchResult> searchResult = fileInfoRepo.search(uid, key, PageRequest.of(page, 10));
+        CommonPageInfo<FileInfo> pageInfo = new CommonPageInfo<>();
+        pageInfo.setTotalPage(searchResult.getTotalPages());
+        pageInfo.setTotalCount(searchResult.getTotalElements());
+        pageInfo.setContent(searchResult.getContent().stream().map(r -> {
+            FileInfo fileInfo = r.getFileInfo();
+            fileInfo.setParent(r.getParent());
+            return fileInfo;
+        }).toList());
+        return pageInfo;
     }
 
     @Override
@@ -478,7 +489,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @RequiredArgsConstructor
     private static class LazyFileSystemStatus extends FileSystemStatus {
         @JsonIgnore
-        private transient final FileAnalyseDao fileAnalyseDao;
+        private transient final FileInfoRepo fileInfoRepo;
 
         private boolean isPrivate() {
             return AREA_PRIVATE.equals(this.getArea());
@@ -487,7 +498,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         @Override
         public Long getFileCount() {
             if (super.getFileCount() == null) {
-                this.setFileCount(isPrivate() ? fileAnalyseDao.getUserFileCount() : fileAnalyseDao.getPublicFileCount());
+                this.setFileCount(isPrivate() ? fileInfoRepo.getUserFileCount() : fileInfoRepo.getPublicFileCount());
             }
             return super.getFileCount();
         }
@@ -495,7 +506,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         @Override
         public Long getDirCount() {
             if (super.getDirCount() == null) {
-                this.setDirCount(isPrivate() ? fileAnalyseDao.getUserDirCount() : fileAnalyseDao.getPublicDirCount());
+                this.setDirCount(isPrivate() ? fileInfoRepo.getUserDirCount() : fileInfoRepo.getPublicDirCount());
             }
             return super.getDirCount();
         }
@@ -503,7 +514,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         @Override
         public Long getSysUsed() {
             if (super.getSysUsed() == null) {
-                this.setSysUsed(isPrivate() ? fileAnalyseDao.getUserTotalSize() : fileAnalyseDao.getPublicTotalSize());
+                this.setSysUsed(isPrivate() ? fileInfoRepo.getUserTotalSize() : fileInfoRepo.getPublicTotalSize());
             }
             return super.getSysUsed();
         }
@@ -523,12 +534,12 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         areaMap.putIfAbsent(AREA_PUBLIC, FileSystemStatus.builder().area(AREA_PUBLIC).build());
 
         FileSystemStatus publicStatus = areaMap.get(AREA_PUBLIC);
-        LazyFileSystemStatus lazyPublicStatus = new LazyFileSystemStatus(fileAnalyseDao);
+        LazyFileSystemStatus lazyPublicStatus = new LazyFileSystemStatus(fileInfoRepo);
         BeanUtils.copyProperties(publicStatus, lazyPublicStatus);
 
 
         FileSystemStatus privateStatus = areaMap.get(FileSystemStatus.AREA_PRIVATE);
-        LazyFileSystemStatus lazyPrivateStatus = new LazyFileSystemStatus(fileAnalyseDao);
+        LazyFileSystemStatus lazyPrivateStatus = new LazyFileSystemStatus(fileInfoRepo);
         BeanUtils.copyProperties(privateStatus, lazyPrivateStatus);
 
         return Arrays.asList(lazyPublicStatus, lazyPrivateStatus);

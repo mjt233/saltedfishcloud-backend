@@ -22,9 +22,15 @@ import java.util.Date;
 @Getter
 @Setter
 public class UserInfo extends BaseModel {
+    /**
+     * 用户名
+     */
     @Username
     protected String user;
 
+    /**
+     * 密码的加盐哈希
+     */
     @JsonIgnore
     protected String pwd;
 
@@ -34,19 +40,14 @@ public class UserInfo extends BaseModel {
     protected Integer type = User.TYPE_COMMON;
 
     /**
-     * 用户id，后续将改为Long类型
-     */
-    protected Long id;
-
-    /**
      * 上次登录日期
      */
     protected Integer lastLogin;
 
     /**
-     * 空间配额（暂时没用上）
+     * 空间配额（单位：GiB，暂时没用上）
      */
-    protected Integer quota;
+    protected Long quota;
 
     /**
      * 绑定邮箱

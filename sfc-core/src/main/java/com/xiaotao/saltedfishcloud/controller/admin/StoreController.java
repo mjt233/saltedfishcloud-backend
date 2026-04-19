@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
@@ -26,7 +26,7 @@ public class StoreController {
     @Resource
     private FileRecordSyncService syncService;
     @Resource
-    private UserDao userDao;
+    private UserRepo userRepo;
     @Resource
     private SysCommonConfig sysCommonConfig;
 
@@ -48,7 +48,7 @@ public class StoreController {
             return JsonResultImpl.getInstance(400, null, "UNIQUE模式不需要同步");
         }
         if (all) {
-            List<User> users = userDao.getUserList();
+            List<User> users = userRepo.getUserList();
             users.add(User.getPublicUser());
             for (User user : users) {
                 try {

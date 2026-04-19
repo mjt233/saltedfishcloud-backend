@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ShareRepo;
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
@@ -42,7 +42,7 @@ import static com.xiaotao.saltedfishcloud.utils.StringUtils.appendPath;
 @RequiredArgsConstructor
 public class ShareServiceImpl implements ShareService {
     private final ShareRepo shareRepo;
-    private final UserDao userDao;
+    private final UserRepo userRepo;
     private final DiskFileSystemManager fileSystemFactory;
     private final FileRecordService fileRecordService;
 
@@ -208,7 +208,7 @@ public class ShareServiceImpl implements ShareService {
         if (!po.getVerification().equals(verification)) throw new JsonException(ShareError.SHARE_NOT_FOUND);
         if (po.isExpired()) throw new JsonException(ShareError.SHARE_EXPIRED);
 
-        User user = userDao.getUserById(po.getUid());
+        User user = userRepo.getUserById(po.getUid());
         if (user != null) po.setUsername(user.getUsername());
         return po;
     }

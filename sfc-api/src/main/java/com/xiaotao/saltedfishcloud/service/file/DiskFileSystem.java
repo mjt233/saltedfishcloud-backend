@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
@@ -157,7 +158,7 @@ public interface DiskFileSystem {
      */
     List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId);
 
-    List<FileInfo> search(long uid, String key);
+    CommonPageInfo<FileInfo> search(long uid, String key, Integer page);
 
     /**
      * 通过移动本地文件的方式存储文件

@@ -1,10 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -14,6 +12,7 @@ import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserInfo;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.mail.MailMessageGenerator;
@@ -21,7 +20,6 @@ import com.xiaotao.saltedfishcloud.service.mail.MailValidateType;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.ServletRequest;
@@ -30,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -39,7 +38,10 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -47,7 +49,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class UserServiceImp implements UserService {
     private final TokenServiceImpl tokenDao;
-    private final UserDao userDao;
+    private final UserRepo userRepo;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SysCommonConfig sysCommonConfig;
 
@@ -68,29 +70,28 @@ public class UserServiceImp implements UserService {
     public User getUserByAccount(String account) {
         User user;
         if (account.indexOf('@') != -1) {
-            user = userDao.getByEmail(account);
+            user = userRepo.getByEmail(account);
         } else {
-            user = userDao.getUserByUser(account);
+            user = userRepo.getUserByUser(account);
         }
         return user;
     }
 
     @Override
     public CommonPageInfo<User> listUsers(PageableRequest request) {
-        PageHelper.startPage(request.getPage(), request.getSize());
-        List<User> userList = Optional.ofNullable(userDao.getUserList()).orElseGet(Collections::emptyList);
-        PageInfo<User> pageInfo = new PageInfo<>(userList);
-        return CommonPageInfo.of(pageInfo);
+        int page = Optional.ofNullable(request.getPage()).orElse(1);
+        int size = Optional.ofNullable(request.getSize()).orElse(10);
+        return CommonPageInfo.of(userRepo.findAll(PageRequest.of(Math.max(page - 1, 0), size)).map(UserRepo::toUser));
     }
 
     @Override
     public List<User> findBaseInfoByIds(Collection<Long> ids) {
-        return userDao.findBaseInfoByIds(ids);
+        return userRepo.findBaseInfoByIds(ids);
     }
 
     @Override
     public User getUserByEmail(String email) {
-        return userDao.getByEmail(email);
+        return userRepo.getByEmail(email);
     }
 
     @Override
@@ -98,13 +99,13 @@ public class UserServiceImp implements UserService {
         if (id == 0) {
             return User.getPublicUser();
         } else {
-            return userDao.getUserById(id);
+            return userRepo.getUserById(id);
         }
     }
 
     @Override
     public String sendBindEmail(Long uid, String email) throws MessagingException, UnsupportedEncodingException {
-        if (userDao.getByEmail(email) != null) throw new JsonException(AccountError.EMAIL_EXIST);
+        if (userRepo.getByEmail(email) != null) throw new JsonException(AccountError.EMAIL_EXIST);
         String code = StringUtils.getRandomString(6, false);
         redisTemplate.opsForValue().set(
                 RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL),
@@ -149,7 +150,7 @@ public class UserServiceImp implements UserService {
         String record = (String) redisTemplate.opsForValue().get(key);
         if (code == null || !code.equalsIgnoreCase(record)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
 
-        userDao.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
+        userRepo.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
         redisTemplate.delete(key);
         tokenDao.cleanUserToken(user.getId());
     }
@@ -185,15 +186,15 @@ public class UserServiceImp implements UserService {
 
     @Override
     public void setEmail(Long uid, String email) {
-        final User user = userDao.getUserById(uid);
+        final User user = userRepo.getUserById(uid);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
-        userDao.updateEmail(uid, email);
+        userRepo.updateEmail(uid, email);
     }
 
 
     @Override
     public void bindEmail(Long uid, String email, String originCode, String newCode) {
-        final User user = userDao.getUserById(uid);
+        final User user = userRepo.getUserById(uid);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
         String originKey = null, originRecord = null, newKey = null, newRecord = null;
 
@@ -212,7 +213,7 @@ public class UserServiceImp implements UserService {
 
 
 
-        userDao.updateEmail(uid, email);
+        userRepo.updateEmail(uid, email);
         if (originKey != null) redisTemplate.delete(originKey);
         redisTemplate.delete(newKey);
     }
@@ -224,7 +225,7 @@ public class UserServiceImp implements UserService {
         if (!sysCommonConfig.getEnableEmailReg()) throw new JsonException(AccountError.EMAIL_REG_DISABLE);
 
         // 先判断邮箱是否已被使用
-        User user = userDao.getByEmail(email);
+        User user = userRepo.getByEmail(email);
         if (user != null) { throw new JsonException(AccountError.EMAIL_EXIST); }
 
 
@@ -243,36 +244,41 @@ public class UserServiceImp implements UserService {
     @Override
     public void grant(long uid, int type) {
         if (type > 1 || type < 0) throw new IllegalArgumentException("不合法的用户类型");
-        User user = userDao.getUserById(uid);
+        User user = userRepo.getUserById(uid);
         if (user == null) throw new UserNoExistException(404, "用户不存在");
         if (type == User.TYPE_COMMON && "admin".equals(user.getUsername())) {
             throw new IllegalArgumentException("不允许撤销admin用户的管理员权限");
         }
-        userDao.grant(uid, type);
+        userRepo.grant(uid, type);
         tokenDao.cleanUserToken(user.getId());
     }
 
 
     @Override
     public User getUserByUser(String user) throws UserNoExistException {
-        return userDao.getUserByUser(user);
+        return userRepo.getUserByUser(user);
     }
 
     @Override
     public int modifyPasswd(Long uid, String oldPassword, String newPassword) {
-        User user = userDao.getUserById(uid);
+        User user = userRepo.getUserById(uid);
         if (user == null) throw new UserNoExistException(404, "用户不存在");
         if (!SecureUtils.getPassswd(oldPassword).equals(user.getPwd())) {
             throw new JsonException(403, "原密码错误");
         }
-        tokenDao.cleanUserToken(user.getId());
-        return userDao.modifyPassword(uid, SecureUtils.getPassswd(newPassword));
+        return resetPasswd(uid, newPassword);
+    }
+
+    @Override
+    public int resetPasswd(Long uid, String newPassword) {
+        tokenDao.cleanUserToken(uid);
+        return userRepo.modifyPassword(uid, SecureUtils.getPassswd(newPassword));
     }
 
     @Override
     public int updateLoginDate(Long uid) {
 
-        return userDao.updateLoginDate(uid, new Date().getTime()/1000);
+        return userRepo.updateLoginDate(uid, new Date().getTime()/1000);
     }
 
     @Override
@@ -315,11 +321,16 @@ public class UserServiceImp implements UserService {
     private int doAddUser(String user, String passwd, String email, Integer type) {
         String pwd = SecureUtils.getPassswd(passwd);
         try {
-            long userId = IdUtil.getId();
-            int res = userDao.addUser(user, pwd, email, type, userId);
+            UserInfo userInfo = new com.xiaotao.saltedfishcloud.model.po.UserInfo();
+            userInfo.setUser(user);
+            userInfo.setPwd(pwd);
+            userInfo.setEmail(email);
+            userInfo.setType(type);
+            userInfo.setQuota(sysCommonConfig.getDefaultQuota());
+            userRepo.save(userInfo);
             redisTemplate.delete(RedisKeyGenerator.getRegCodeKey(email));
-            addRegLog(userDao.getUserById(userId));
-            return res;
+            addRegLog(userRepo.getUserById(userInfo.getId()));
+            return 1;
         } catch (DuplicateKeyException e) {
             throw new JsonException(AccountError.USER_EXIST);
         }
@@ -331,7 +342,10 @@ public class UserServiceImp implements UserService {
         if (User.SYS_NAME_PUBLIC.equals(upperName) || User.SYS_NAME_ADMIN.equals(upperName)) {
             throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
         }
-        if (email != null && !email.isEmpty() && userDao.getByEmail(email) != null) {
+        if(userRepo.findByUser(user) != null) {
+            throw new JsonException(AccountError.USER_EXIST);
+        }
+        if (email != null && !email.isEmpty() && userRepo.getByEmail(email) != null) {
             throw new JsonException(AccountError.EMAIL_EXIST);
         }
         return doAddUser(user, passwd, email, type);

@@ -1,7 +1,5 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
 import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.task.AsyncTaskManager;
@@ -14,6 +12,7 @@ import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
@@ -226,13 +225,10 @@ public class FileController {
     @GetMapping("fileList/byName/{name}")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<PageInfo<FileInfo>> search(@PathVariable("name") String key,
+    public JsonResult<CommonPageInfo<FileInfo>> search(@PathVariable("name") String key,
                              @PathVariable @UID long uid,
                              @RequestParam(value = "page", defaultValue = "1") Integer page) {
-        PageHelper.startPage(page, 10);
-        List<FileInfo> res = fileSystemManager.getMainFileSystem().search(uid, key);
-        PageInfo<FileInfo> pageInfo = new PageInfo<>(res);
-        return JsonResultImpl.getInstance(pageInfo);
+        return JsonResultImpl.getInstance(fileSystemManager.getMainFileSystem().search(uid, key, page));
     }
 
     /**

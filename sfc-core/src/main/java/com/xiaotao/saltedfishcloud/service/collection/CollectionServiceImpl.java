@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionRecordRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionRecordDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
@@ -42,8 +43,8 @@ public class CollectionServiceImpl implements CollectionService {
     private final DiskFileSystemManager fileSystem;
 
     @Override
-    public Page<CollectionRecordDTO> getSubmits(Long cid, int page, int size) {
-        return recordDao.findByCid(cid, PageRequest.of(page, size));
+    public CommonPageInfo<CollectionRecordDTO> getSubmits(Long cid, int page, int size) {
+        return CommonPageInfo.of(recordDao.findByCid(cid, PageRequest.of(page, size)));
     }
 
     @Override

@@ -652,6 +652,11 @@ public class FileRecordServiceImpl implements FileRecordService {
     }
 
     @Override
+    public Long getUsage(long uid) {
+        return fileInfoRepo.getFileUsage(uid);
+    }
+
+    @Override
     public Optional<String> getNodeIdByPath(long uid, String path) {
         return Optional.ofNullable(getVisitPathInfo(uid, path))
                 .map(Deque::getLast)

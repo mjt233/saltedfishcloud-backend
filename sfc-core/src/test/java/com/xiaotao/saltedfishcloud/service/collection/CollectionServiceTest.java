@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionRecordDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
@@ -32,7 +33,7 @@ class CollectionServiceTest {
     @Autowired
     private CollectionService cs;
     @Autowired
-    private UserDao userDao;
+    private UserRepo userRepo;
     @Autowired
     private DiskFileSystemManager diskFileSystem;
     @Autowired
@@ -41,7 +42,7 @@ class CollectionServiceTest {
     @Test
     void testGet() {
         CollectionDTO nodeInfo = new CollectionDTO("t", StringUtils.getRandomString(32), new Date(), "adminTest");
-        User admin = userDao.getUserByUser("admin");
+        User admin = userRepo.getUserByUser("admin");
         try {
             cs.createCollection(admin.getId(), nodeInfo);
             fail();
@@ -55,7 +56,7 @@ class CollectionServiceTest {
 
     @Test
     void collectFile() throws IOException {
-        User u = userDao.getUserByUser("admin");
+        User u = userRepo.getUserByUser("admin");
         String title = "测试收集样例";
         String savePath = "/我的收集" + "/" + title;
 
@@ -103,8 +104,8 @@ class CollectionServiceTest {
     @Test
     void getSubmits() {
         int page = 0, size = 2;
-        Page<CollectionRecordDTO> submits = cs.getSubmits(5L, page, size);
-        while (submits.getNumberOfElements() > 0) {
+        CommonPageInfo<CollectionRecordDTO> submits = cs.getSubmits(5L, page, size);
+        while (submits.getTotalCount() > 0) {
             for (CollectionRecordDTO record : submits.getContent()) {
                 System.out.println(record);
             }

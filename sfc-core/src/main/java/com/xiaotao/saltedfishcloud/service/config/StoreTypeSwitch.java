@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
@@ -31,7 +31,7 @@ import java.util.Map;
 @Slf4j
 public class StoreTypeSwitch {
     @Autowired
-    private UserDao userDao;
+    private UserRepo userRepo;
     @Autowired
     private StoreServiceFactory storeServiceFactory;
 
@@ -52,7 +52,7 @@ public class StoreTypeSwitch {
 
     private void doSwitch(StoreMode targetMode) throws IOException {
         log.info("[Store Switch]切换到{}", targetMode);
-        List<User> users = userDao.getUserList();
+        List<User> users = userRepo.getUserList();
         users.add(User.getPublicUser());
 
         final StoreService srcStoreService = targetMode == StoreMode.UNIQUE ?

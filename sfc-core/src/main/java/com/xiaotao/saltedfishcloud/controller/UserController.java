@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.constant.ByteSize;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -13,11 +14,9 @@ import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MultipartFileResource;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.ApiOperation;
 import jakarta.annotation.security.RolesAllowed;
@@ -35,6 +34,7 @@ import org.hibernate.validator.constraints.Length;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -57,7 +57,7 @@ public class UserController {
 
     private final UserService userService;
     private final DiskFileSystemManager fileSystemFactory;
-    private final UserDao userDao;
+    private final UserRepo userRepo;
     private final TokenServiceImpl tokenDao;
     private final SysCommonConfig sysCommonConfig;
 
@@ -307,8 +307,12 @@ public class UserController {
      */
     @GetMapping("quota")
     public JsonResult<QuotaInfo> getQuotaUsed() {
-        QuotaInfo used = userDao.getUserQuotaUsed(SecureUtils.getSpringSecurityUser().getId());
-        return JsonResultImpl.getInstance(used);
+        Long uid = SecureUtils.getCurrentUid();
+        User user = userService.getUserById(uid);
+        QuotaInfo quotaInfo = new QuotaInfo();
+        quotaInfo.setUsed(Optional.ofNullable(SpringContextUtils.getContext().getBean(FileRecordService.class).getUsage(user.getId())).orElse(0L));
+        quotaInfo.setQuota(Optional.ofNullable(user.getQuota()).orElse(0L) * ByteSize._1GiB);
+        return JsonResultImpl.getInstance(quotaInfo);
     }
 
     /**
@@ -327,12 +331,10 @@ public class UserController {
             if (user == null || user.getType() != User.TYPE_ADMIN) {
                 throw new AccessDeniedException("非管理员不允许使用force参数");
             } else {
-                userDao.modifyPassword(uid, SecureUtils.getPassswd(newPasswd));
-                tokenDao.cleanUserToken(uid);
+                userService.resetPasswd(uid, newPasswd);
                 return JsonResultImpl.getInstance(200, null, "force reset");
             }
         } else {
-            tokenDao.cleanUserToken(uid);
             int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
             return JsonResultImpl.getInstance(200, i, "ok");
         }

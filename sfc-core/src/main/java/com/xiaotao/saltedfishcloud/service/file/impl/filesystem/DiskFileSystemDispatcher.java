@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.event.file.FileStoreEvent;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
@@ -549,8 +550,8 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
-    public List<FileInfo> search(long uid, String key) {
-        return mainFileSystem.search(uid, key);
+    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
+        return mainFileSystem.search(uid, key, page);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionRecordDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
@@ -22,7 +23,7 @@ public interface CollectionService {
      * @param size  每页的大小
      * @return      分页信息
      */
-    Page<CollectionRecordDTO> getSubmits(Long cid, int page, int size);
+    CommonPageInfo<CollectionRecordDTO> getSubmits(Long cid, int page, int size);
 
     /**
      * 删除一个文件收集

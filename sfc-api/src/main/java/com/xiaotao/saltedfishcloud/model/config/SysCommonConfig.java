@@ -48,6 +48,14 @@ public class SysCommonConfig {
     private Boolean enableRegCode;
 
     @ConfigProperty(
+            title = "新用户默认配额（GiB）",
+            defaultValue = "10",
+            describe = "新注册的用户默认分配的存储空间额度（注意：空间额度限制功能未开发）",
+            group = "register"
+    )
+    private Long defaultQuota;
+
+    @ConfigProperty(
             value = "mode",
             title = "存储模式",
             defaultValue = "UNIQUE",

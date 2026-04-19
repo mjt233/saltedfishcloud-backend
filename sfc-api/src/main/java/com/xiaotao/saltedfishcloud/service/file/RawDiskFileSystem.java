@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -209,7 +210,7 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public List<FileInfo> search(long uid, String key) {
+    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
         throw new UnsupportedOperationException();
     }
 

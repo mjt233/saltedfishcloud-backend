@@ -141,6 +141,13 @@ public interface UserService {
     int modifyPasswd(Long uid, String oldPassword, String newPassword);
 
     /**
+     * 强制重置密码
+     * @param uid          用户id
+     * @param newPassword   新密码
+     */
+    int resetPasswd(Long uid, String newPassword);
+
+    /**
      * 直接添加用户（不允许通过该方法创建管理员用户）
      * @param user      用户名
      * @param passwd    密码原文（即密码原文）

@@ -29,6 +29,13 @@ public interface FileRecordService {
     FileTree getFullTree(long uid);
 
     /**
+     * 获取用户在主文件系统中的存储用量
+     * @param uid   用户id
+     * @return  文件大小（Byte）
+     */
+    Long getUsage(long uid);
+
+    /**
      * 按文件路径获取文件信息
      * @param uid   用户ID
      * @param path  文件所在路径
