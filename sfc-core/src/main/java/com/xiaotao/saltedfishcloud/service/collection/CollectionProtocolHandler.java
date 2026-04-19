@@ -125,7 +125,6 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
     public FileCollectionResourceParam validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
         try {
             FileCollectionResourceParam parsedParam = MapperHolder.parseJson(MapperHolder.toJson(resourceRequest.getParams()), FileCollectionResourceParam.class);
-            parsedParam.setCid(Long.valueOf(resourceRequest.getTargetId()));
             CollectionInfo info = collectionService.getCollectionWitchVerification(new CollectionInfoId(parsedParam.getCid(), parsedParam.getVerification()));
             if (info == null) {
                 throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
