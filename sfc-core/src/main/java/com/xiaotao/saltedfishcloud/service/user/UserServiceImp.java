@@ -20,6 +20,7 @@ import com.xiaotao.saltedfishcloud.service.mail.MailValidateType;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.ServletRequest;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -79,9 +81,27 @@ public class UserServiceImp implements UserService {
 
     @Override
     public CommonPageInfo<User> listUsers(PageableRequest request) {
-        int page = Optional.ofNullable(request.getPage()).orElse(1);
+        int page = Optional.ofNullable(request.getPage()).orElse(0);
         int size = Optional.ofNullable(request.getSize()).orElse(10);
-        return CommonPageInfo.of(userRepo.findAll(PageRequest.of(Math.max(page - 1, 0), size)).map(UserRepo::toUser));
+        return CommonPageInfo.of(userRepo.findAll(PageRequest.of(page, size)).map(UserRepo::toUser));
+    }
+
+    @Override
+    public CommonPageInfo<User> searchUsers(String keyword, PageableRequest request) {
+        int page = Optional.ofNullable(request.getPage()).orElse(0);
+        int size = Optional.ofNullable(request.getSize()).orElse(10);
+        String pattern = "%" + keyword + "%";
+
+        Page<User> res = userRepo.findAll(
+                JpaLambdaQueryWrapper.get(UserInfo.class)
+                        .or(w -> w
+                                .like(UserInfo::getUser, pattern)
+                                .like(UserInfo::getEmail, pattern)
+                        )
+                        .build(),
+                PageRequest.of(page, size)
+        ).map(UserRepo::toUser);
+        return CommonPageInfo.of(res);
     }
 
     @Override

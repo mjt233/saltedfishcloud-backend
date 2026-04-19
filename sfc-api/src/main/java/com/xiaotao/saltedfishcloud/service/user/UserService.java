@@ -27,6 +27,14 @@ public interface UserService {
     CommonPageInfo<User> listUsers(PageableRequest request);
 
     /**
+     * 按用户名或邮箱模糊搜索用户（分页）
+     * @param keyword   搜索关键词，模糊匹配用户名或邮箱
+     * @param request   分页参数
+     * @return          分页用户结果
+     */
+    CommonPageInfo<User> searchUsers(String keyword, PageableRequest request);
+
+    /**
      * 根据id批量查询用户的基本信息（仅包含用户名等基础数据）
      * @param ids   用户id集合
      * @return      查询结果

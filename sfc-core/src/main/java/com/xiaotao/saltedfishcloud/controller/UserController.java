@@ -371,4 +371,20 @@ public class UserController {
         return JsonResultImpl.getInstance(res);
     }
 
+    /**
+     * 按用户名或邮箱模糊搜索用户（分页），仅管理员可用
+     * @param keyword   搜索关键词，模糊匹配用户名或邮箱
+     * @param page      页数（从1开始）
+     * @param size      每页大小
+     */
+    @GetMapping("search")
+    @RolesAllowed({"ADMIN"})
+    public JsonResult<CommonPageInfo<User>> searchUsers(@RequestParam("keyword") String keyword,
+                                                        @RequestParam(value = "page", defaultValue = "1") int page,
+                                                        @RequestParam(value = "size", defaultValue = "10") @Max(500) @Min(5) @Valid int size) {
+        CommonPageInfo<User> res = userService.searchUsers(keyword, new PageableRequest().setPage(page).setSize(size));
+        res.getContent().forEach(e -> e.setPwd(null));
+        return JsonResultImpl.getInstance(res);
+    }
+
 }
