@@ -9,12 +9,13 @@ import com.xiaotao.saltedfishcloud.event.file.FileStoreEvent;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
@@ -42,57 +43,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-/**
- * 文件系统匹配结果
- */
-class FileSystemMatchResult {
-    /**
-     * 匹配到的文件系统
-     */
-    DiskFileSystem fileSystem;
-
-    /**
-     * 在对应的文件系统上解析后的对应路径（原始请求路径）
-     */
-    String resolvedPath;
-
-    /**
-     * 匹配到的挂载点，若没匹配到则为null
-     */
-    MountPoint mountPoint;
-
-    public FileSystemMatchResult(DiskFileSystem fileSystem,MountPoint mountPoint, String resolvedPath) {
-        this.fileSystem = fileSystem;
-        this.mountPoint = mountPoint;
-        this.resolvedPath = resolvedPath;
-    }
-
-    @Override
-    public String toString() {
-        return "FileSystemMatchResult{" +
-                "fileSystem=" + fileSystem +
-                ", resolvedPath='" + resolvedPath + '\'' +
-                '}';
-    }
-
-    /**
-     * 判断请求的路径是否为匹配的挂载点本身
-     */
-    public boolean isMountPath(String path) {
-        if (mountPoint == null) {
-            return false;
-        }
-        return StringUtils.isPathEqual(path, mountPoint.getPath());
-    }
-
-    /**
-     * 判断是否为一个启用了代理文件存储记录的挂载点
-     */
-    public boolean isProxyStoreRecordMountPoint() {
-        return mountPoint != null && Boolean.TRUE.equals(mountPoint.getIsProxyStoreRecord());
-    }
-}
 
 /**
  * 特殊的文件系统，文件系统指派器，根据请求的路径指派相对应的文件系统类型来执行相关请求，为实现第三方文件系统挂载点功能提供支持。
@@ -328,14 +278,14 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+    public void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
         doCopyInternal(param, callback, 0);
     }
 
     /**
      * 核心复制方法，支持进度回调（可为null）
      */
-    private void doCopyInternal(SimpleFileTransferParam param, CopyProgressCallback callback, int depth) throws IOException {
+    private void doCopyInternal(SimpleFileTransferParam param, FileTransferCallback callback, int depth) throws IOException {
         if (depth > 32) {
             throw new JsonException(FileSystemError.DIR_TOO_DEPTH, "目录深度超过32");
         }
@@ -600,8 +550,8 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
-    public List<FileInfo> search(long uid, String key) {
-        return mainFileSystem.search(uid, key);
+    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
+        return mainFileSystem.search(uid, key, page);
     }
 
     @Override

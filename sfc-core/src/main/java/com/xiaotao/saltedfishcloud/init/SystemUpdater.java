@@ -51,7 +51,6 @@ public class SystemUpdater {
         try (Connection connection = dataSource.getConnection()) {
             ScriptUtils.executeSqlScript(connection, new ClassPathResource(sqlFileClassPath));
         }
-
     }
 
     @RollbackAction("2.7.0")

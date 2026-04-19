@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.sync;
 
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.service.config.ConfigServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -18,12 +18,12 @@ class SyncServiceTest {
     @Resource
     private ConfigServiceImpl configService;
     @Resource
-    private UserDao userDao;
+    private UserRepo userRepo;
 
     @Test
     void syncLocal() throws Exception {
         configService.setStoreType(StoreMode.RAW);
 //        syncService.syncLocal(User.getPublicUser());
-        defaultFileRecordSyncService.doSync(userDao.getUserByUser("xiaotao").getId(), false);
+        defaultFileRecordSyncService.doSync(userRepo.getUserByUser("xiaotao").getId(), false);
     }
 }

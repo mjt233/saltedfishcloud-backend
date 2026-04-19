@@ -1,10 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
@@ -148,7 +149,7 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+    public void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
         if (param.getSourceUid() == null || param.getTargetUid() == null) {
             throw new IllegalArgumentException("sourceUid 和 targetUid 不能为空");
         }
@@ -209,7 +210,7 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public List<FileInfo> search(long uid, String key) {
+    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
         throw new UnsupportedOperationException();
     }
 

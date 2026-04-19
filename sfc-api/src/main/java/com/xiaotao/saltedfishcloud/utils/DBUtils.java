@@ -11,8 +11,10 @@ import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import reactor.util.function.Tuple2;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Method;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -203,5 +205,70 @@ public class DBUtils {
                 }
             }
         });
+    }
+
+    /**
+     * 判断数据表是否存在，兼容MySQL、SQLite、PostgreSQL
+     * @param dataSource 数据源
+     * @param tableName  表名（不区分大小写）
+     * @return 是否存在
+     */
+    public static boolean tableExists(DataSource dataSource, String tableName) {
+        try (Connection conn = dataSource.getConnection()) {
+            DatabaseMetaData meta = conn.getMetaData();
+            try (ResultSet rs = meta.getTables(conn.getCatalog(), conn.getSchema(), null, new String[]{"TABLE"})) {
+                while (rs.next()) {
+                    if (rs.getString("TABLE_NAME").equalsIgnoreCase(tableName)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } catch (SQLException e) {
+            throw new RuntimeException("检查数据表是否存在时出错: " + tableName, e);
+        }
+    }
+
+    /**
+     * 判断数据表中是否存在某个字段，兼容MySQL、SQLite、PostgreSQL
+     * @param dataSource 数据源
+     * @param tableName  表名（不区分大小写）
+     * @param columnName 字段名（不区分大小写）
+     * @return 是否存在
+     */
+    public static boolean columnExists(javax.sql.DataSource dataSource, String tableName, String columnName) {
+        try (Connection conn = dataSource.getConnection()) {
+            DatabaseMetaData meta = conn.getMetaData();
+            try (ResultSet rs = meta.getColumns(conn.getCatalog(), conn.getSchema(), tableName, columnName)) {
+                while (rs.next()) {
+                    if (rs.getString("TABLE_NAME").equalsIgnoreCase(tableName)
+                            && rs.getString("COLUMN_NAME").equalsIgnoreCase(columnName)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } catch (SQLException e) {
+            throw new RuntimeException("检查字段是否存在时出错: " + tableName + "." + columnName, e);
+        }
+    }
+
+    /**
+     * 使用数据库方言对应的引用符包装标识符，避免key/value等保留关键字导致SQL执行失败。
+     */
+    @NotNull
+    public static String quoteIdentifier(Connection connection, String identifier) throws SQLException {
+        String quote = connection.getMetaData().getIdentifierQuoteString();
+        if (quote == null || quote.isBlank()) {
+            String dbType = connection.getMetaData().getDatabaseProductName().toLowerCase();
+            if (dbType.contains("mysql") || dbType.contains("mariadb")) {
+                quote = "`";
+            } else if (dbType.contains("sqlite") || dbType.contains("postgre")) {
+                quote = "\"";
+            } else {
+                return identifier;
+            }
+        }
+        return quote + identifier.replace(quote, quote + quote) + quote;
     }
 }

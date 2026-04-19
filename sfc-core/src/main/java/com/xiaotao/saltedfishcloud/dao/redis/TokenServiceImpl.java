@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.dao.redis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
@@ -19,11 +19,11 @@ import java.time.Duration;
 public class TokenServiceImpl implements TokenService {
     private final RedisTemplate<String, String> redisTemplate;
     private final RedisDao redisDao;
-    private final UserDao userDao;
+    private final UserRepo userRepo;
 
     @Override
     public String generateUserToken(Long uid) {
-        final User user = userDao.getUserById(uid);
+        final User user = userRepo.getUserById(uid);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
         return generateUserToken(UserVO.from(user, true));
     }

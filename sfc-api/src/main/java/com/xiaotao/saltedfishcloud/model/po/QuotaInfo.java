@@ -7,12 +7,8 @@ import lombok.Data;
  */
 @Data
 public class QuotaInfo {
-    private long used;
-    private long quota;
-
-    public long getQuota() {
-        return quota*1024*1024*1024;
-    }
+    private Long used;
+    private Long quota;
 
     /**
      * 容量是否溢出

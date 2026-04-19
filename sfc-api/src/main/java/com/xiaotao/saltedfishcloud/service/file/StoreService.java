@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
@@ -112,7 +112,7 @@ public interface StoreService {
      * @param param 复制参数
      * @param callback 复制执行过程回调
      */
-    default void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException {
+    default void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
         throw new UnsupportedOperationException("不支持copy操作");
     }
 

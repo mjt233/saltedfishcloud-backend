@@ -53,7 +53,7 @@ public class User extends UserInfo implements UserDetails {
             }
 
             @Override
-            public void setQuota(Integer quota) {
+            public void setQuota(Long quota) {
                 throw new UnsupportedOperationException("不支持设置公共用户属性");
             }
 
@@ -122,7 +122,7 @@ public class User extends UserInfo implements UserDetails {
 
     @JsonIgnore
     public boolean isPublicUser() {
-        return id == 0;
+        return this.getId() == 0;
     }
 
     @Override

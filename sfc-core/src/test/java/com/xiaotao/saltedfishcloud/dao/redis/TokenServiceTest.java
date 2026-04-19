@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.redis;
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.junit.jupiter.api.Test;
@@ -17,13 +17,13 @@ class TokenServiceTest {
     @Resource
     private TokenServiceImpl tokenDao;
     @Resource
-    private UserDao userDao;
+    private UserRepo userRepo;
     @Resource
     private UserService userService;
 
     @Test
     public void test() {
-        User user = userDao.getUserByUser("admin");
+        User user = userRepo.getUserByUser("admin");
         String token = user.toToken();
         tokenDao.setToken(user.getId(), token);
         assertTrue(tokenDao.isTokenValid(user.getId(), token));

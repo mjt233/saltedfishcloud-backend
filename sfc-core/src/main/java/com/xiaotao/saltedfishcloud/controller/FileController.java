@@ -1,26 +1,23 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
 import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskRecord;
-import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
+import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.*;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
-import com.xiaotao.saltedfishcloud.model.progress.StandardOutputCopyProgressCallback;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
@@ -35,6 +32,9 @@ import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -42,12 +42,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import java.io.IOException;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -229,13 +225,10 @@ public class FileController {
     @GetMapping("fileList/byName/{name}")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<PageInfo<FileInfo>> search(@PathVariable("name") String key,
+    public JsonResult<CommonPageInfo<FileInfo>> search(@PathVariable("name") String key,
                              @PathVariable @UID long uid,
                              @RequestParam(value = "page", defaultValue = "1") Integer page) {
-        PageHelper.startPage(page, 10);
-        List<FileInfo> res = fileSystemManager.getMainFileSystem().search(uid, key);
-        PageInfo<FileInfo> pageInfo = new PageInfo<>(res);
-        return JsonResultImpl.getInstance(pageInfo);
+        return JsonResultImpl.getInstance(fileSystemManager.getMainFileSystem().search(uid, key, page));
     }
 
     /**
@@ -272,8 +265,9 @@ public class FileController {
     @ApiOperation("网盘文件复制（支持跨用户网盘）")
     @PostMapping("copy")
     public JsonResult<Object> copy(@RequestBody @Validated SimpleFileTransferParam param) throws IOException {
-        CopyProgressCallback callback = null; // new StandardOutputCopyProgressCallback();
-        fileSystemManager.getMainFileSystem().copy(param, callback);
+        UIDValidator.validateWithException(param.getSourceUid(), false);
+        UIDValidator.validateWithException(param.getTargetUid(), true);
+        fileSystemManager.getMainFileSystem().copy(param, null);
         return JsonResult.emptySuccess();
     }
 
@@ -283,6 +277,8 @@ public class FileController {
     @ApiOperation("异步执行网盘文件复制（支持跨用户网盘）")
     @PostMapping("asyncCopy")
     public JsonResult<AsyncTaskRecord> asyncCopy(@RequestBody @Validated SimpleFileTransferParam param) throws IOException {
+        UIDValidator.validateWithException(param.getSourceUid(), false);
+        UIDValidator.validateWithException(param.getTargetUid(), true);
         AsyncTaskRecord record = asyncTaskManager.createTask(AsyncTaskCreateParam.builder()
                 .name("复制文件")
                 .params(MapperHolder.toJson(param))

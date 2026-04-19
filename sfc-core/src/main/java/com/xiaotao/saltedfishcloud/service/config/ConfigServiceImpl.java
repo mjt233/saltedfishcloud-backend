@@ -5,7 +5,8 @@ import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
 import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
-import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
+import com.xiaotao.saltedfishcloud.model.po.Config;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
@@ -40,7 +41,7 @@ import java.util.stream.Collectors;
 public class ConfigServiceImpl implements ConfigService, InitializingBean {
     private static final String LOG_PREFIX = "[配置服务]";
     @Resource
-    private ConfigDao configDao;
+    private ConfigRepo configDao;
     @Resource
     @Lazy
     private StoreTypeSwitch storeTypeSwitch;
@@ -99,11 +100,10 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     }
 
     @Override
-    public Map<String, String> listConfig(String operator, String keyPattern) {
-        return Optional.ofNullable(configDao.listConfig(operator, keyPattern))
-                .orElseGet(ArrayList::new)
+    public Map<String, String> listConfig(Collection<String> keys) {
+        return configDao.findByItemKeyIn(keys)
                 .stream()
-                .collect(Collectors.toMap(Pair::getKey, Pair::getValue, (oldVal, newVal) -> newVal));
+                .collect(Collectors.toMap(Config::getItemKey, Config::getItemValue, (oldVal, newVal) -> newVal));
     }
 
     /**
@@ -112,8 +112,8 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     @Override
     public Map<String, String> getAllConfig() {
         Map<String, String> dbConfig = configDao.getAllConfig().stream().collect(Collectors.toMap(
-                Pair::getKey,
-                Pair::getValue
+                Config::getItemKey,
+                Config::getItemValue
         ));
 
         Map<String, String> res = new ConcurrentHashMap<>();
@@ -260,7 +260,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
             };
 
             addAfterSetListener(configName, configConsumer);
-            configConsumer.accept(getConfig(configName));
+            configConsumer.accept(getConfig(configName, property.defaultValue()));
         }
     }
 
@@ -280,6 +280,9 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
         } else if (ConfigInputType.FORM.equals(meta.getConfigProperty().inputType())) {
             return rawVal -> {
                 try {
+                    if (rawVal == null) {
+                        return null;
+                    }
                     return (R) MapperHolder.parseJson(rawVal, targetType);
                 } catch (IOException e) {
                     throw new IllegalArgumentException(e);

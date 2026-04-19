@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
 import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.xiaotao.saltedfishcloud.dao.jpa.projection.FileInfoSearchResult;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,21 @@ import java.util.List;
 import java.util.Set;
 
 public interface FileInfoRepo extends BaseRepo<FileInfo> {
+    @Query("""
+        SELECT
+            f as fileInfo,
+            f2.name as parent
+        FROM FileInfo f
+        LEFT JOIN FileInfo f2 ON f.node = f2.md5
+        WHERE f.uid = :uid
+        AND f.name
+        LIKE CONCAT('%', :key, '%')
+    """)
+    Page<FileInfoSearchResult> search(@Param("uid") Long uid, @Param("key") String key, Pageable pageable);
+
+    @Query("SELECT SUM(f.size) FROM FileInfo f WHERE f.uid = :uid AND f.size > 0 AND (f.isMount = false OR f.isMount IS NULL)")
+    Long getFileUsage(@Param("uid") Long uid);
+
     @Query("SELECT f FROM FileInfo f WHERE f.uid = :uid AND f.node = :node AND f.name = :name")
     FileInfo findFileInfo(@Param("uid") Long uid, @Param("name") String name, @Param("node") String node);
 
@@ -48,4 +64,22 @@ public interface FileInfoRepo extends BaseRepo<FileInfo> {
     @Modifying
     @Transactional
     int deleteByUidAndNode(@Param("uid") Long uid, @Param("nodes") Collection<String> nodes);
+
+    @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileInfo f WHERE f.size <> -1 AND f.uid <> 0 AND (f.isMount IS NULL OR f.isMount = false)")
+    Long getUserTotalSize();
+
+    @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileInfo f WHERE f.size <> -1 AND f.uid = 0 AND (f.isMount IS NULL OR f.isMount = false)")
+    Long getPublicTotalSize();
+
+    @Query("SELECT COUNT(f) FROM FileInfo f WHERE f.uid = 0 AND f.size = -1 AND (f.isMount IS NULL OR f.isMount = false)")
+    Long getPublicDirCount();
+
+    @Query("SELECT COUNT(f) FROM FileInfo f WHERE f.uid <> 0 AND f.size = -1 AND (f.isMount IS NULL OR f.isMount = false)")
+    Long getUserDirCount();
+
+    @Query("SELECT COUNT(f) FROM FileInfo f WHERE f.uid = 0 AND f.size <> -1 AND (f.isMount IS NULL OR f.isMount = false)")
+    Long getPublicFileCount();
+
+    @Query("SELECT COUNT(f) FROM FileInfo f WHERE f.uid <> 0 AND f.size <> -1 AND (f.isMount IS NULL OR f.isMount = false)")
+    Long getUserFileCount();
 }

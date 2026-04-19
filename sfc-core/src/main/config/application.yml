@@ -8,10 +8,6 @@ server:
   tomcat:
     remoteip:
       remote-ip-header: X-Real-IP
-mybatis:
-  configuration:
-    map-underscore-to-camel-case: true
-  mapper-locations: classpath:mapper/*.xml
 
 spring:
   jpa:
@@ -51,8 +47,6 @@ spring:
   web:
     resources:
       add-mappings: false
-  mvc:
-    throw-exception-if-no-handler-found: true
 logging:
   file:
     name: ./log/output.log
@@ -62,7 +56,11 @@ logging:
     com.sfc: info
     com.xiaotao: info
     com.saltedfishcloud: info
-    com.xiaotao.saltedfishcloud.dao.mybatis: warn
 #    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
+
+management:
+  health:
+    mail:
+      enabled: false
 app:
   version: ^project.version^

@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.model.progress;
 
 /**
- * 文件复制进度回调接口
+ * 文件传输进度回调接口
  */
-public interface CopyProgressCallback {
+public interface FileTransferCallback {
 
     /**
      * 当开始复制一个文件时调用

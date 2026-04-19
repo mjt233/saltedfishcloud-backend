@@ -2,11 +2,12 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
@@ -106,7 +107,7 @@ public interface DiskFileSystem {
      * @param callback 进度回调接口，可为 null 表示不监听进度
      * @throws IOException IO异常
      */
-    void copy(SimpleFileTransferParam param, CopyProgressCallback callback) throws IOException;
+    void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException;
 
     /**
      * 移动网盘中的文件或目录到指定目录下
@@ -157,7 +158,7 @@ public interface DiskFileSystem {
      */
     List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId);
 
-    List<FileInfo> search(long uid, String key);
+    CommonPageInfo<FileInfo> search(long uid, String key, Integer page);
 
     /**
      * 通过移动本地文件的方式存储文件

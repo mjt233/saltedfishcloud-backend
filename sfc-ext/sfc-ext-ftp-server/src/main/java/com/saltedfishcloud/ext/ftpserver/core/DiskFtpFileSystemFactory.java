@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.ftpserver.core;
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import org.apache.ftpserver.ftplet.FileSystemFactory;
@@ -14,7 +14,7 @@ import java.io.IOException;
 
 public class DiskFtpFileSystemFactory implements FileSystemFactory {
     @Autowired
-    private UserDao userDao;
+    private UserRepo userRepo;
 
     @Autowired
     private DiskFileSystemManager fileSystemFactory;
@@ -25,7 +25,7 @@ public class DiskFtpFileSystemFactory implements FileSystemFactory {
             if (user.getName().equals(com.xiaotao.saltedfishcloud.model.po.User.SYS_NAME_PUBLIC)) {
                 return new DiskFtpFileSystemView(DiskFtpUser.getAnonymousUser(), fileSystemFactory);
             }
-            com.xiaotao.saltedfishcloud.model.po.User dbUser = userDao.getUserByUser(user.getName());
+            com.xiaotao.saltedfishcloud.model.po.User dbUser = userRepo.getUserByUser(user.getName());
             if (dbUser == null) {
                 throw new UserNoExistException("用户" + user + "不存在");
             }

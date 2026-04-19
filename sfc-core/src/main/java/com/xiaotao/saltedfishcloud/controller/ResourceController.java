@@ -179,11 +179,15 @@ public class ResourceController {
     )
             throws IOException {
         Resource resource = fileService.getMainFileSystem().getResourceByMd5(md5);
+        if (resource == null) {
+            throw new JsonException(FileSystemError.FILE_NOT_FOUND, md5);
+        }
+
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/fileContentByMD5/" + md5, request);
         String name;
         if (path.length() > 1) {
             name = path.substring(path.lastIndexOf('/') + 1);
-            if (name.length() == 0) name = resource.getFilename();
+            if (name.isEmpty()) name = resource.getFilename();
         } else {
             name = resource.getFilename();
         }

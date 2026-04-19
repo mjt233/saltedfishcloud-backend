@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
+import com.xiaotao.saltedfishcloud.model.dto.CollectionRecordDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
@@ -45,16 +46,16 @@ public class CollectController {
      * 获取文件收集记录
      */
     @GetMapping("/record/{cid}")
-    public JsonResult<CommonPageInfo<CollectionRecord>> getRecords(@PathVariable("cid") Long cid,
-                                                                                   @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
-                                                                                   @RequestParam(value = "size", defaultValue = "10") @Min(5) @Valid Integer size) {
+    public JsonResult<CommonPageInfo<CollectionRecordDTO>> getRecords(@PathVariable("cid") Long cid,
+                                                                      @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
+                                                                      @RequestParam(value = "size", defaultValue = "10") @Min(5) @Valid Integer size) {
         CollectionInfo info = collectionService.getCollection(cid);
         User u = SecureUtils.getSpringSecurityUser();
         assert u != null;
         if (!info.getUid().equals(u.getId())) {
             throw new JsonException(CommonError.FORMAT_ERROR);
         }
-        return PageUtils.getInstanceWithPage(collectionService.getSubmits(cid, page - 1, size));
+        return JsonResultImpl.getInstance(collectionService.getSubmits(cid, page - 1, size));
     }
 
     /**

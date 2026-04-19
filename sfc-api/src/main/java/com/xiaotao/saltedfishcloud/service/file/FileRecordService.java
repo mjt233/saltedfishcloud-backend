@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.service.node.FileTree;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
@@ -27,6 +27,13 @@ public interface FileRecordService {
      * @return      用户文件树
      */
     FileTree getFullTree(long uid);
+
+    /**
+     * 获取用户在主文件系统中的存储用量
+     * @param uid   用户id
+     * @return  文件大小（Byte）
+     */
+    Long getUsage(long uid);
 
     /**
      * 按文件路径获取文件信息
@@ -144,7 +151,7 @@ public interface FileRecordService {
     /**
      * 操作数据库复制网盘文件或目录到指定目录下
      */
-    void copy(SimpleFileTransferParam param,@Nullable CopyProgressCallback callback);
+    void copy(SimpleFileTransferParam param,@Nullable FileTransferCallback callback);
 
     /**
      * 在同一个目录中批量新增文件信息。如果path不存在会自动创建。如果已存在同名文件，会根据isOverwrite策略判断是否覆盖。

@@ -1,27 +1,13 @@
-package com.xiaotao.saltedfishcloud.model.po;
+package com.xiaotao.saltedfishcloud.model.dto;
 
-import com.xiaotao.saltedfishcloud.annotations.id.SnowFlakeIdGenerator;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.*;
 import java.util.Date;
 
-@Entity
 @Data
 @NoArgsConstructor
-@Table(
-        name = "collection_rec",
-        indexes = {
-                @Index(name = "cid_index", columnList = "cid")
-        }
-)
-@EntityListeners(AuditingEntityListener.class)
-public class CollectionRecord {
-    @Id
-    @SnowFlakeIdGenerator
+public class CollectionRecordDTO {
     private Long id;
 
     /**
@@ -54,15 +40,25 @@ public class CollectionRecord {
      */
     private String ip;
 
-    public CollectionRecord(Long cid, Long uid, String filename, Long size, String md5, String ip) {
+    /**
+     * 提交人用户名
+     */
+    private String username;
+
+    /**
+     * 文件上传日期
+     */
+    private Date createdAt;
+
+    public CollectionRecordDTO(Long id, Long cid, Long uid, String filename, Long size, String md5, String ip, String username, Date createdAt) {
+        this.id = id;
         this.cid = cid;
         this.uid = uid;
         this.filename = filename;
         this.size = size;
         this.md5 = md5;
         this.ip = ip;
+        this.username = username;
+        this.createdAt = createdAt;
     }
-
-    @CreatedDate
-    private Date createdAt;
 }
