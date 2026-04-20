@@ -5,16 +5,22 @@ import com.saltedfishcloud.ext.ve.model.ProcessWrap;
 import com.saltedfishcloud.ext.ve.model.StreamInfo;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.xiaotao.saltedfishcloud.common.ResponseResource;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -41,6 +47,17 @@ public class VideoSubtitleService {
             Math.max(1, Runtime.getRuntime().availableProcessors() - 1)
     );
     private final static Set<String> SUBTITLE_BIT_ENCODERS = Set.of("hdmv_pgs_subtitle", "dvb_subtitle", "dvd_subtitle");
+
+    private AttachStorage attachStorage;
+
+    @Autowired
+    public void setAttachStorageManager(AttachStorageManager attachStorageManager) {
+        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
+                        .name("视频元数据")
+                        .id("ve")
+                .build());
+        attachStorage = attachStorageManager.getStorage("ve");
+    }
 
     @Validated
     public Resource getSubtitleResource(ResourceRequest videoResourceRequest, @NotBlank String streamIndex) throws UnsupportedProtocolException, IOException {
@@ -81,11 +98,6 @@ public class VideoSubtitleService {
         }
 
         String cacheFileName;
-        // 获取临时存储服务并确保字幕缓存目录存在
-        TempStoreService tempStoreService = storeServiceFactory.getTempStoreService();
-        if (!tempStoreService.exist("ve/subtitle")) {
-            tempStoreService.mkdirs("ve/subtitle");
-        }
 
         // 生成缓存文件名（基于文件特征或资源特征）
         if (resource.isFile()) {
@@ -105,11 +117,15 @@ public class VideoSubtitleService {
         }
 
         // 快速检查是否有缓存
-        String cachePath = "ve/subtitle/" + cacheFileName;
-        if (tempStoreService.exist(cachePath)) {
-            return ResponseResource.create(tempStoreService.getResource(cachePath))
-                    .setResponseFilename(FileUtils.parseName(videoResourceRequest.getName())[0] + "." + format)
-                    .setContentType(contentType);
+        String cachePath = "subtitle/" + cacheFileName;
+        if (attachStorage.exist(cachePath)) {
+            Resource cacheResource = attachStorage.getFile(cachePath).orElse(null);
+            if (cacheResource != null) {
+                return ResponseResource.create(cacheResource)
+                        .setResponseFilename(FileUtils.parseName(videoResourceRequest.getName())[0] + "." + format)
+                        .setContentType(contentType);
+            }
+            log.warn("字幕缓存路径存在，但无法获取缓存数据 {}", cachePath);
         }
 
         // 无缓存，加锁后重新检查，若依然无缓存则执行字幕提取
@@ -120,19 +136,17 @@ public class VideoSubtitleService {
                 }
                 try {
                     Resource output;
-                    if (!tempStoreService.exist(cachePath)) {
+                    if (!attachStorage.exist(cachePath)) {
                         Path tmpFilePath = PathUtils.getTempPath().resolve(cacheFileName);
                         String tmpFile = tmpFilePath.toString();
                         try {
                             this.generateSubtitleFile(resource, tmpFile, streamIndex, ffmpegFormat, encoder);
-                            try (InputStream inputStream = Files.newInputStream(tmpFilePath)) {
-                                tempStoreService.store(FileInfo.getLocal(tmpFile), cachePath, Files.size(tmpFilePath), inputStream);
-                            }
+                            attachStorage.saveFile(cachePath, new PathResource(tmpFilePath));
                         } finally {
                             Files.deleteIfExists(tmpFilePath);
                         }
                     }
-                    output = tempStoreService.getResource(cachePath);
+                    output = attachStorage.getFile(cachePath).orElseThrow(() -> new JsonException(500, "字幕缓存文件丢失 " + cachePath));
                     return ResponseResource.create(output)
                             .setResponseFilename(FileUtils.parseName(videoResourceRequest.getName())[0] + "." + format)
                             .setContentType(contentType);

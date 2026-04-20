@@ -9,9 +9,8 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileInfoService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
-import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
-import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.utils.MigrateUtils;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -74,16 +73,16 @@ public class SystemUpdater {
         storageProvider.listFiles(oldUserProfilePath)
                 .stream()
                 .filter(FileInfo::isDir)
-                .forEach(f -> {
-                    String uid = f.getName();
+                .forEach(uidDir -> {
+                    String uid = uidDir.getName();
                     try {
-                        storageProvider.listFiles(oldUserProfilePath + "/" + f.getName())
+                        storageProvider.listFiles(oldUserProfilePath + "/" + uidDir.getName())
                                 .stream()
                                 .filter(avatarFile -> avatarFile.getName().startsWith("avatar."))
                                 .findAny()
                                 .ifPresent(avatarFile -> {
                                     try {
-                                        Resource avatarResource = storageProvider.getResource(oldUserProfilePath + "/" + f.getName() + "/" + avatarFile.getName());
+                                        Resource avatarResource = storageProvider.getResource(oldUserProfilePath + "/" + uidDir.getName() + "/" + avatarFile.getName());
                                         if (avatarResource != null) {
                                             userCustomStoreService.saveAvatar(Long.parseLong(uid), avatarResource);
                                             log.info("迁移用户 {} 头像成功", uid);
@@ -100,25 +99,8 @@ public class SystemUpdater {
         // 删除旧目录
         storageProvider.delete(oldUserProfilePath);
 
-
         // 迁移缩略图缓存
-        String oldThumbnailPath = StringUtils.appendPath(sysProperties.getStore().getRoot(), "temp/thumbnail");
-        String newThumbnailPath = StringUtils.appendPath(sysProperties.getStore().getRoot(), "attach/thumbnail");
-        log.info("开始迁移缩略图缓存数据 {} => {}", oldThumbnailPath, newThumbnailPath);
-        if (storageProvider.exist(newThumbnailPath)) {
-            if(storageProvider.listFiles(newThumbnailPath).isEmpty()) {
-                storageProvider.delete(newThumbnailPath);
-                storageProvider.move(oldThumbnailPath, newThumbnailPath, null);
-            } else {
-                CopyAndMoveHandler.createByStoreHandler(storageProvider, CopyAndMoveProperty.builder()
-                                .isMoveWithRecursion(true)
-                                .isCopyWithRecursion(true)
-                        .build())
-                        .move(oldThumbnailPath, newThumbnailPath, true);
-            }
-        } else {
-            storageProvider.move(oldThumbnailPath, newThumbnailPath, null);
-        }
+        MigrateUtils.moveDirectory("temp/thumbnail", "attach/thumbnail");
     }
 
 
