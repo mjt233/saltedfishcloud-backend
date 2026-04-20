@@ -140,21 +140,6 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         return uid + ":" + dest;
     }
 
-    @Override
-    public void saveAvatar(long uid, Resource resource) throws IOException {
-        customStoreService.saveAvatar(uid, resource);
-    }
-
-
-    @Override
-    public Resource getAvatar(long uid) throws IOException {
-        final Resource avatar = customStoreService.getAvatar(uid);
-        if (avatar == null) {
-            return customStoreService.getDefaultAvatar();
-        } else {
-            return avatar;
-        }
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)

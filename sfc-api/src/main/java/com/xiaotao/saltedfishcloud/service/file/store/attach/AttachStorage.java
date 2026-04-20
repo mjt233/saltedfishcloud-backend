@@ -54,7 +54,7 @@ public interface AttachStorage {
      * @param path 目录路径
      * @return 目录下的文件列表。如果目录不存在会返回null
      */
-    List<FileInfo> listFiles(String path) throws IOException;
+    Optional<List<FileInfo>> listFiles(String path) throws IOException;
 
     /**
      * 检测路径是否存在

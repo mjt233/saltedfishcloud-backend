@@ -31,19 +31,6 @@ public interface DiskFileSystem {
     int SAVE_NEW_FILE = 1;
     int SAVE_NOT_CHANGE = 2;
 
-    /**
-     * 获取用户头像资源
-     * @param uid   用户ID
-     * @return      用户未设置头像时，为null
-     */
-    Resource getAvatar(long uid) throws IOException;
-
-    /**
-     * 保存用户头像
-     * @param uid   用户ID
-     * @param resource 头像资源
-     */
-    void saveAvatar(long uid, Resource resource) throws IOException;
 
     /**
      * 利用MD5通过文件系统中现有的资源直接存储到网盘

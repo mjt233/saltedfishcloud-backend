@@ -1,11 +1,17 @@
 package com.xiaotao.saltedfishcloud.service.file.store.attach;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 附属存储域数据定义
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class AttachStorageDomainDefinition {
 
     /**

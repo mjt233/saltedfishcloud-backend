@@ -149,14 +149,14 @@ public class DefaultAttachStorage implements AttachStorage {
      * {@inheritDoc}
      */
     @Override
-    public List<FileInfo> listFiles(String path) throws IOException {
+    public Optional<List<FileInfo>> listFiles(String path) throws IOException {
         DirectRawStoreHandler storageProvider = getStorageProvider();
         String targetPath = resolveStoragePath(path);
         FileInfo fileInfo = storageProvider.getFileInfo(targetPath);
         if (fileInfo == null || !fileInfo.isDir()) {
-            return null;
+            return Optional.empty();
         }
-        return new ArrayList<>(storageProvider.listFiles(targetPath));
+        return Optional.of(new ArrayList<>(storageProvider.listFiles(targetPath)));
     }
 
     /**

@@ -156,17 +156,6 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
-    public Resource getAvatar(long uid) throws IOException {
-        return mainFileSystem.getAvatar(uid);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void saveAvatar(long uid, Resource resource) throws IOException {
-        mainFileSystem.saveAvatar(uid, resource);
-    }
-
-    @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);

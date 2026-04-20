@@ -40,18 +40,15 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 原始存储服务的抽象模板类，同时实现了{@link StoreService}和{@link CustomStoreService}。
+ * 原始存储服务的抽象模板类。
  * 基于设定的路径和直接原始存储操作器提供文件存储能力。
  */
 @Slf4j
-public abstract class AbstractRawStoreService implements StoreService, CustomStoreService {
+public abstract class AbstractRawStoreService implements StoreService {
     private final static String LOG_TITLE = "Raw-Store";
     @Getter
     @Setter
     private int maxDepth = 64;
-
-
-    private final static Resource DEFAULT_AVATAR = new ClassPathResource("/static/defaultAvatar.png");
 
     protected final DirectRawStoreHandler handler;
     protected final CopyAndMoveHandler copyAndMoveHandler;
@@ -230,39 +227,6 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
             handler.delete(StringUtils.appendPath(root, file));
         }
         return files.size();
-    }
-
-    @Override
-    public Resource getAvatar(long uid) throws IOException {
-        final String r = getUserProfileRoot(uid);
-        for (FileInfo info : handler.listFiles(r)) {
-            if (info.getName().startsWith("avatar.")) {
-                return handler.getResource(StringUtils.appendPath(r, info.getName()));
-            }
-        }
-        return null;
-    }
-
-
-    @Override
-    public void saveAvatar(long uid, Resource resource) throws IOException {
-        FileValidator.validateAvatar(resource);
-        final String userProfileRoot = getUserProfileRoot(uid);
-        for (FileInfo fileInfo : handler.listFiles(userProfileRoot)) {
-            if (fileInfo.getName().startsWith("avatar.")) {
-                handler.delete(StringUtils.appendPath(userProfileRoot, fileInfo.getName()));
-            }
-        }
-        try(final InputStream is = resource.getInputStream()) {
-            final String path = StringUtils.appendPath(userProfileRoot, "avatar." + FileUtils.getSuffix(resource.getFilename()));
-            handler.store(FileInfo.getFromResource(resource, uid, FileInfo.TYPE_FILE), path, resource.contentLength() ,is);
-        }
-
-    }
-
-    @Override
-    public Resource getDefaultAvatar() throws IOException {
-        return DEFAULT_AVATAR;
     }
 
     /**
