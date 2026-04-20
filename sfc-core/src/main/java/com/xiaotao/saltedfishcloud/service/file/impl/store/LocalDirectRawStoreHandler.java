@@ -157,7 +157,8 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
 
     @Override
     public boolean move(String src, String dest, FileTransferItem item) throws IOException {
-        return new File(src).renameTo(new File(dest));
+        Files.move(Paths.get(src), Paths.get(dest));
+        return true;
     }
 
     @Override

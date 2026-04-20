@@ -6,11 +6,12 @@ import com.xiaotao.saltedfishcloud.annotations.update.Updater;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.FileInfoService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
+import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
-import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -63,6 +64,7 @@ public class SystemUpdater {
 
     @UpdateAction("3.1.0")
     public void update3_1_0() throws IOException {
+        // 迁移头像数据
         // 升级到 3.1.0 由于头像存储采用了统一的 AttachStorage附属存储机制 和 单独的 UserCustomStore接口，需要将数据从旧的存储区中迁移到新的存储区
         DirectRawStoreHandler storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
         SysProperties sysProperties = SpringContextUtils.getContext().getBean(SysProperties.class);
@@ -97,6 +99,26 @@ public class SystemUpdater {
 
         // 删除旧目录
         storageProvider.delete(oldUserProfilePath);
+
+
+        // 迁移缩略图缓存
+        String oldThumbnailPath = StringUtils.appendPath(sysProperties.getStore().getRoot(), "temp/thumbnail");
+        String newThumbnailPath = StringUtils.appendPath(sysProperties.getStore().getRoot(), "attach/thumbnail");
+        log.info("开始迁移缩略图缓存数据 {} => {}", oldThumbnailPath, newThumbnailPath);
+        if (storageProvider.exist(newThumbnailPath)) {
+            if(storageProvider.listFiles(newThumbnailPath).isEmpty()) {
+                storageProvider.delete(newThumbnailPath);
+                storageProvider.move(oldThumbnailPath, newThumbnailPath, null);
+            } else {
+                CopyAndMoveHandler.createByStoreHandler(storageProvider, CopyAndMoveProperty.builder()
+                                .isMoveWithRecursion(true)
+                                .isCopyWithRecursion(true)
+                        .build())
+                        .move(oldThumbnailPath, newThumbnailPath, true);
+            }
+        } else {
+            storageProvider.move(oldThumbnailPath, newThumbnailPath, null);
+        }
     }
 
 
