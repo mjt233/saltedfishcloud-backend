@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
-import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -13,6 +12,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -30,11 +30,12 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -47,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Controller
 @RequestMapping(UserController.PREFIX)
 @ResponseBody
@@ -57,7 +59,7 @@ public class UserController {
 
     private final UserService userService;
     private final DiskFileSystemManager fileSystemFactory;
-    private final UserRepo userRepo;
+    private final UserCustomStoreService userCustomStoreService;
     private final TokenServiceImpl tokenDao;
     private final SysCommonConfig sysCommonConfig;
 
@@ -256,10 +258,7 @@ public class UserController {
      */
     @PostMapping("avatar")
     public JsonResult<?> uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
-        fileSystemFactory.getMainFileSystem().saveAvatar(
-                SecureUtils.getSpringSecurityUser().getId(),
-                new MultipartFileResource(file)
-        );
+        userCustomStoreService.saveAvatar(SecureUtils.getSpringSecurityUser().getId(), new MultipartFileResource(file));
         return JsonResult.emptySuccess();
     }
 
@@ -276,30 +275,31 @@ public class UserController {
                 getAvatar(HttpServletResponse response,
                           @RequestParam(required = false) Long uid,
                           @PathVariable(required = false) String username) throws IOException {
-        try {
-            User currentUser = SecureUtils.getSpringSecurityUser();
-            if (currentUser == null && username == null && uid == null) {
-                response.sendRedirect("/api/static/defaultAvatar.png");
-                return null;
-            }
-            Long finalUid = 0L;
-
-            if (uid != null) {
-                finalUid = uid;
-            } else if (username != null) {
-                User user = userService.getUserByUser(username);
-                if (user != null) {
-                    finalUid = user.getId();
-                }
-            } else {
-                finalUid = currentUser.getId();
-            }
-            return ResourceUtils.wrapResource(fileSystemFactory.getMainFileSystem().getAvatar(finalUid));
-        } catch (Exception e) {
-            e.printStackTrace();
+        User currentUser = SecureUtils.getSpringSecurityUser();
+        if (currentUser == null && username == null && uid == null) {
+            response.sendRedirect("/api/static/defaultAvatar.png");
+            return null;
         }
-        response.sendRedirect("/api/static/defaultAvatar.png");
-        return null;
+        Long finalUid = 0L;
+
+        if (uid != null) {
+            finalUid = uid;
+        } else if (username != null) {
+            User user = userService.getUserByUser(username);
+            if (user != null) {
+                finalUid = user.getId();
+            }
+        } else {
+            finalUid = currentUser.getId();
+        }
+        Resource avatar = userCustomStoreService.getAvatar(finalUid);
+        if (avatar == null) {
+            response.setStatus(HttpStatus.NOT_FOUND.value());
+//            return null;
+            response.sendRedirect("/api/static/defaultAvatar.png");
+            return null;
+        }
+        return ResourceUtils.wrapResource(avatar);
     }
 
     /**

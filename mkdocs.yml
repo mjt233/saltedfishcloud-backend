@@ -52,6 +52,7 @@ nav:
           - 集群兼容: develop/framework/cluster.md
           - 异步任务: develop/framework/async-task.md
           - 定时任务: develop/framework/schedule.md
+          - 版本更新数据迁移钩子: develop/framework/version-update-hook.md
       - 插件开发指南:
           - 创建插件: develop/plugin/create-plugin.md
           - Spring Boot集成: develop/plugin/springboot-integration.md

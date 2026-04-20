@@ -8,6 +8,9 @@ import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
@@ -23,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -45,10 +49,12 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
      */
     private final Map<String, ThumbnailHandler> handlerCache = new ConcurrentHashMap<>();
 
-    private final StoreServiceFactory storeServiceFactory;
     private final FileResourceMd5Resolver md5Resolver;
     private final RedissonClient redisson;
     private final SysCommonConfig sysCommonConfig;
+
+    private AttachStorage thumbnailStorage;
+
 
     @Autowired(required = false)
     @Lazy
@@ -60,6 +66,15 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     private final Map<String, Long> sourceFileMaxSizeCache = new ConcurrentHashMap<>();
 
+    @Autowired
+    public void setAttachStorageManager(AttachStorageManager attachStorageManager) {
+        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
+                .id("thumbnail")
+                .name("缩略图缓存")
+                .build());
+        thumbnailStorage = attachStorageManager.getStorage("thumbnail");
+    }
+
     /**
      * 获取主存储服务中的缩略图文件缓存路径
      *
@@ -67,21 +82,22 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
      */
     public String getThumbnailTempPath(String id) {
         if (id.length() == 32) {
-            return "thumbnail/md5/" + StringUtils.getUniquePath(id);
+            return "md5/" + StringUtils.getUniquePath(id);
         } else if (id.length() > 4) {
-            return "thumbnail/other/" + StringUtils.getUniquePath(id);
+            return "other/" + StringUtils.getUniquePath(id);
         } else {
-            return "thumbnail/id/" + id;
+            return "id/" + id;
         }
 
     }
 
     /**
      * 生成缩略图
+     *
      * @param resource 待生成缩略图的源资源
-     * @param ext   源文件类型（拓展名）
-     * @param id    缩略图唯一id
-     * @return      缩略图资源，生成失败则为null
+     * @param ext      源文件类型（拓展名）
+     * @param id       缩略图唯一id
+     * @return 缩略图资源，生成失败则为null
      */
     protected Resource doGenerate(Resource resource, String ext, String id) throws IOException {
         ThumbnailHandler handler = handlerCache.get(ext.toLowerCase());
@@ -89,7 +105,6 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
             return null;
         }
 
-        final TempStoreService tempHandler = storeServiceFactory.getService().getTempFileHandler();
         if (resource == null || resource.contentLength() == 0 || checkSourceFileMaxSizeLimit(resource.contentLength(), handler)) {
             return null;
         }
@@ -113,13 +128,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
         String thumbnailPath = getThumbnailTempPath(id);
         if (!Boolean.TRUE.equals(sysCommonConfig.getDisableThumbnailCache())) {
             log.debug("{}保存缩略图缓存 {}", LOG_TITLE, thumbnailPath);
-            FileInfo tempFile = new FileInfo();
-            tempFile.setName(PathUtils.getLastNode(thumbnailPath));
-            tempFile.setSize((long)baos.size());
-            tempFile.setPath(thumbnailPath);
-            try(InputStream is = new ByteArrayInputStream(baos.toByteArray())) {
-                tempHandler.store(tempFile, thumbnailPath, baos.size(), is);
-            }
+            thumbnailStorage.saveFile(thumbnailPath, new ByteArrayResource(baos.toByteArray()));
         }
 
         return new InputStreamResource(() -> new ByteArrayInputStream(baos.toByteArray()));
@@ -127,16 +136,16 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     /**
      * 尝试获取已经生成过的缩略图资源
-     * @param fileIdentify       源文件唯一标识
-     * @return          缩略图资源，若不存在则为null
+     *
+     * @param fileIdentify 源文件唯一标识
+     * @return 缩略图资源，若不存在则为null
      */
     protected Resource getFromCache(String fileIdentify) throws IOException {
         if (Boolean.TRUE.equals(sysCommonConfig.getDisableThumbnailCache())) {
             return null;
         }
         final String thumbnailPath = getThumbnailTempPath(fileIdentify);
-        final TempStoreService tempHandler = storeServiceFactory.getService().getTempFileHandler();
-        final Resource resource = tempHandler.getResource(thumbnailPath);
+        final Resource resource = thumbnailStorage.getFile(thumbnailPath).orElse(null);
         if (resource != null) {
             log.debug("{}已有缩略图：{}", LOG_TITLE, fileIdentify);
             return resource;
@@ -214,9 +223,10 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     /**
      * 检查文件大小是否超出了该缩略图可生成缩略图的源文件大小的限制
-     * @param sourceFileSize    源文件大小
-     * @param thumbnailHandler  缩略图生成器
-     * @return  超出限制返回true，否则返回false
+     *
+     * @param sourceFileSize   源文件大小
+     * @param thumbnailHandler 缩略图生成器
+     * @return 超出限制返回true，否则返回false
      */
     private boolean checkSourceFileMaxSizeLimit(long sourceFileSize, ThumbnailHandler thumbnailHandler) {
         long maxSize = Optional.ofNullable(sourceFileMaxSizeCache.get(thumbnailHandler.getName())).orElse(DEFAULT_SOURCE_FILE_MAX_SIZE_LIMIT);

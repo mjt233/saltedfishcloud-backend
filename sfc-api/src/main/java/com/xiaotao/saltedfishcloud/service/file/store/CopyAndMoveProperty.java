@@ -17,7 +17,7 @@ public class CopyAndMoveProperty {
     private boolean isMoveWithRecursion = true;
 
     /**
-     * 移动目录时是否递归遍历目录来执行复制操作（暂未实现）
+     * 复制目录时是否递归遍历目录来执行复制操作（暂未实现）
      */
     @Builder.Default
     private boolean isCopyWithRecursion = true;

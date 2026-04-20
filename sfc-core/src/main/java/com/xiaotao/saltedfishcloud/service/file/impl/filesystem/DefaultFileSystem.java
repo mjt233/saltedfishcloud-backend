@@ -11,7 +11,6 @@ import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
@@ -71,7 +70,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     private FileRecordService fileRecordService;
 
     @Autowired
-    private CustomStoreService customStoreService;
+    private UserCustomStoreService userCustomStoreService;
 
     @Autowired
     private FileResourceMd5Resolver md5Resolver;
@@ -140,21 +139,6 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         return uid + ":" + dest;
     }
 
-    @Override
-    public void saveAvatar(long uid, Resource resource) throws IOException {
-        customStoreService.saveAvatar(uid, resource);
-    }
-
-
-    @Override
-    public Resource getAvatar(long uid) throws IOException {
-        final Resource avatar = customStoreService.getAvatar(uid);
-        if (avatar == null) {
-            return customStoreService.getDefaultAvatar();
-        } else {
-            return avatar;
-        }
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)

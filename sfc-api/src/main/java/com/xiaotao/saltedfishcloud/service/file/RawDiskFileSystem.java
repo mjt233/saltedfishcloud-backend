@@ -118,16 +118,6 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
 
 
     @Override
-    public Resource getAvatar(long uid) throws IOException {
-        throw new UnsupportedOperationException("不支持的操作");
-    }
-
-    @Override
-    public void saveAvatar(long uid, Resource resource) throws IOException {
-        throw new UnsupportedOperationException("不支持的操作");
-    }
-
-    @Override
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
         return false;
     }

@@ -3,15 +3,22 @@ package com.xiaotao.saltedfishcloud.init;
 import com.xiaotao.saltedfishcloud.annotations.update.RollbackAction;
 import com.xiaotao.saltedfishcloud.annotations.update.UpdateAction;
 import com.xiaotao.saltedfishcloud.annotations.update.Updater;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileInfoService;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
+import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.utils.MigrateUtils;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
+import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
@@ -21,6 +28,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Date;
@@ -52,6 +60,49 @@ public class SystemUpdater {
             ScriptUtils.executeSqlScript(connection, new ClassPathResource(sqlFileClassPath));
         }
     }
+
+    @UpdateAction("3.1.0")
+    public void update3_1_0() throws IOException {
+        // 迁移头像数据
+        // 升级到 3.1.0 由于头像存储采用了统一的 AttachStorage附属存储机制 和 单独的 UserCustomStore接口，需要将数据从旧的存储区中迁移到新的存储区
+        DirectRawStoreHandler storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
+        SysProperties sysProperties = SpringContextUtils.getContext().getBean(SysProperties.class);
+        UserCustomStoreService userCustomStoreService = SpringContextUtils.getContext().getBean(UserCustomStoreService.class);
+
+        String oldUserProfilePath = StringUtils.appendPath(sysProperties.getStore().getRoot(), "user_profile");
+        storageProvider.listFiles(oldUserProfilePath)
+                .stream()
+                .filter(FileInfo::isDir)
+                .forEach(uidDir -> {
+                    String uid = uidDir.getName();
+                    try {
+                        storageProvider.listFiles(oldUserProfilePath + "/" + uidDir.getName())
+                                .stream()
+                                .filter(avatarFile -> avatarFile.getName().startsWith("avatar."))
+                                .findAny()
+                                .ifPresent(avatarFile -> {
+                                    try {
+                                        Resource avatarResource = storageProvider.getResource(oldUserProfilePath + "/" + uidDir.getName() + "/" + avatarFile.getName());
+                                        if (avatarResource != null) {
+                                            userCustomStoreService.saveAvatar(Long.parseLong(uid), avatarResource);
+                                            log.info("迁移用户 {} 头像成功", uid);
+                                        }
+                                    } catch (IOException e) {
+                                        log.error("迁移用户 {} 头像失败", uid, e);
+                                    }
+                                });
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        // 删除旧目录
+        storageProvider.delete(oldUserProfilePath);
+
+        // 迁移缩略图缓存
+        MigrateUtils.moveDirectory("temp/thumbnail", "attach/thumbnail");
+    }
+
 
     @RollbackAction("2.7.0")
     public void rollback2_7_0() throws SQLException {
