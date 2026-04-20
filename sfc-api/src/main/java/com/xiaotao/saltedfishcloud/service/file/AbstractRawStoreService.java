@@ -388,4 +388,9 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         String parentPath = StringUtils.appendPath(getUserFileRoot(uid), path);
         this.handler.updateTime(parentPath, names, attribute);
     }
+
+    @Override
+    public DirectRawStoreHandler getStorageProvider() {
+        return this.handler;
+    }
 }

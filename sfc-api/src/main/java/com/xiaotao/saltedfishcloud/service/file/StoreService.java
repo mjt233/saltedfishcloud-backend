@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
+import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
@@ -199,4 +200,9 @@ public interface StoreService {
      * @param attribute 时间信息
      */
     void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException;
+
+    /**
+     * 获取该存储服务的存储能力提供者
+     */
+    DirectRawStoreHandler getStorageProvider();
 }
