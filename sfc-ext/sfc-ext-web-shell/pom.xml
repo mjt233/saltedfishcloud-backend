@@ -49,10 +49,6 @@
                     <artifactId>annotations</artifactId>
                     <groupId>org.jetbrains</groupId>
                 </exclusion>
-                <exclusion>
-                    <groupId>org.jetbrains.pty4j</groupId>
-                    <artifactId>purejavacomm</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
     </dependencies>
