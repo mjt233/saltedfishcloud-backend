@@ -172,7 +172,7 @@ public class DatabaseUpdater implements ApplicationRunner {
 
         // 组装插件名称用于查询记录的插件上个版本
         List<String> pluginVersionConfigKeys = pluginList.stream()
-                .map(e -> "'" + this.getPluginUpdateScopeKey(e.getName()) + "'")
+                .map(e -> this.getPluginUpdateScopeKey(e.getName()))
                 .toList();
 
         if (pluginVersionConfigKeys.isEmpty()) {
