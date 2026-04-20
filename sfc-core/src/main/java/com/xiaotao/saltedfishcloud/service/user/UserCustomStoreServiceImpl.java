@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.service.file.CustomStoreService;
+import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
@@ -20,7 +20,7 @@ import java.util.Set;
  */
 @Service
 @Slf4j
-public class UserCustomStoreServiceImpl implements CustomStoreService {
+public class UserCustomStoreServiceImpl implements UserCustomStoreService {
     private final static String LOG_PREFIX = "[UserCustomStore]";
     private final static Set<String> ACCEPT_TYPE = Set.of("jpg", "jpeg", "png", "gif");
     private final AttachStorage avatarStorage;

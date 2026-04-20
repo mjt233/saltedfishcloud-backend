@@ -11,7 +11,6 @@ import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
@@ -71,7 +70,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     private FileRecordService fileRecordService;
 
     @Autowired
-    private CustomStoreService customStoreService;
+    private UserCustomStoreService userCustomStoreService;
 
     @Autowired
     private FileResourceMd5Resolver md5Resolver;

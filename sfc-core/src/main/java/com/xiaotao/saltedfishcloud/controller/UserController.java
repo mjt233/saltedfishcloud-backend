@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
-import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -13,7 +12,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
-import com.xiaotao.saltedfishcloud.service.file.CustomStoreService;
+import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -37,7 +36,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -61,7 +59,7 @@ public class UserController {
 
     private final UserService userService;
     private final DiskFileSystemManager fileSystemFactory;
-    private final CustomStoreService customStoreService;
+    private final UserCustomStoreService userCustomStoreService;
     private final TokenServiceImpl tokenDao;
     private final SysCommonConfig sysCommonConfig;
 
@@ -260,7 +258,7 @@ public class UserController {
      */
     @PostMapping("avatar")
     public JsonResult<?> uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
-        customStoreService.saveAvatar(SecureUtils.getSpringSecurityUser().getId(), new MultipartFileResource(file));
+        userCustomStoreService.saveAvatar(SecureUtils.getSpringSecurityUser().getId(), new MultipartFileResource(file));
         return JsonResult.emptySuccess();
     }
 
@@ -294,7 +292,7 @@ public class UserController {
         } else {
             finalUid = currentUser.getId();
         }
-        Resource avatar = customStoreService.getAvatar(finalUid);
+        Resource avatar = userCustomStoreService.getAvatar(finalUid);
         if (avatar == null) {
             response.setStatus(HttpStatus.NOT_FOUND.value());
 //            return null;

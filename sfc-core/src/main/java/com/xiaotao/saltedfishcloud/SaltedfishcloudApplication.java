@@ -70,9 +70,7 @@ public class SaltedfishcloudApplication {
 
         try {
             // 启动
-            ConfigurableApplicationContext context = getLaunchFactory().get().run(args);
-            // 记录上下文
-            SpringContextUtils.setContext(context);
+            getLaunchFactory().get().run(args);
         } catch (Exception ignore) {}
     }
 
@@ -82,6 +80,7 @@ public class SaltedfishcloudApplication {
 
             DefaultPluginManager pluginManager = new DefaultPluginManager(originLoader);
             SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
+            sa.addInitializers(SpringContextUtils::setContext);
 
             // 配置SpringBoot，注册插件管理器
             sa.addInitializers(c -> log.info("[Boot]程序运行目录: {}", Paths.get("").toAbsolutePath()));
