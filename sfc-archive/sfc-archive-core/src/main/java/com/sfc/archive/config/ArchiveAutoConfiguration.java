@@ -6,11 +6,18 @@ import com.sfc.archive.composer.impl.zip.ZipArchiveCompressorProvider;
 import com.sfc.archive.extractor.impl.zip.ZipArchiveExtractorProvider;
 import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.archive.service.DiskFileSystemArchiveServiceImpl;
+import com.sfc.archive.task.ArchiveExtractAsyncTaskFactory;
 import com.sfc.archive.task.CompressAsyncTaskFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration
+@Import({
+        DiskFileSystemArchiveServiceImpl.class,
+        CompressAsyncTaskFactory.class,
+        ArchiveExtractAsyncTaskFactory.class
+})
 public class ArchiveAutoConfiguration {
     @Bean
     public ArchiveManager archiveManager() {
@@ -22,15 +29,5 @@ public class ArchiveAutoConfiguration {
         archiveManager.registerExtractor(new ZipArchiveExtractorProvider());
 
         return archiveManager;
-    }
-
-    @Bean
-    public DiskFileSystemArchiveService diskFileSystemArchiveService() {
-        return new DiskFileSystemArchiveServiceImpl();
-    }
-
-    @Bean
-    public CompressAsyncTaskFactory compressAsyncTaskFactory() {
-        return new CompressAsyncTaskFactory();
     }
 }
