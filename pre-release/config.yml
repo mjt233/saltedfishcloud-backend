@@ -23,15 +23,6 @@ logging:
     com.xiaotao: info
     com.saltedfishcloud: info
 sys:
-  common:
-    # 注册邀请码
-    reg-code: 114514
-  sync:
-    # 自动同步间隔，单位分钟，-1表示关闭自动同步(该功能不稳定,不推荐使用同步和存储切换功能,建议一开始就确定好存储模式后不要再在管理员后台改动了)
-    interval: -1
-
-    # 咸鱼云启动时立即同步，默认关闭
-    sync-on-launch: false
   store:
     # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
     archive-encoding: gbk
@@ -61,18 +52,3 @@ sys:
       url: hdfs://localhost:9000
       root: /xyy2
       user: xiaotao
-  ftp:
-    # FTP控制端口
-    control-port: 21
-
-    # FTP监听地址
-    listen-addr: 0.0.0.0
-
-    # 是否开启FTP
-    ftp-enable: true
-
-    # FTP被动模式传输重定向地址
-    passive-addr: localhost
-
-    # FTP被动模式传输端口范围
-    passive-port: 20000-30000
