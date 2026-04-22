@@ -23,9 +23,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -39,6 +42,9 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Slf4j
 public class ArchiveExtractAsyncTask implements AsyncTask {
+
+    /** 保存到网盘时，每批处理的最大文件数量，避免待保存列表过大引发内存压力 */
+    private static final int SAVE_BATCH_SIZE = 500;
 
     /** 序列化的原始任务参数字符串 */
     private final String originParams;
@@ -184,6 +190,24 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
     }
 
     /**
+     * 立即处理并清空待保存文件列表，避免内存中堆积过多待保存项。
+     *
+     * @param pendingSaveFiles 待保存文件列表
+     * @param saveCallback     保存回调
+     * @throws IOException 任务中断时抛出
+     */
+    private void flushPendingSaveFiles(List<FileInfo> pendingSaveFiles, FileTransferCallback saveCallback) throws IOException {
+        if (pendingSaveFiles.isEmpty()) {
+            return;
+        }
+        if (interrupted.get() || saveCallback.shouldInterrupt()) {
+            throw new InterruptedIOException("任务已中断，停止保存文件");
+        }
+        diskFileSystem.batchSaveFiles(new ArrayList<>(pendingSaveFiles), saveCallback);
+        pendingSaveFiles.clear();
+    }
+
+    /**
      * 将本地临时解压目录中的所有文件保存到目标网盘目录，并通过 FileTransferCallback 输出实时日志。
      *
      * @param tempBasePath 本地临时解压目录
@@ -193,6 +217,46 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
         final int tempLen = tempBasePath.toString().length();
         final long uid = param.getUid();
         final String dest = param.getPath();
+        final List<FileInfo> pendingSaveFiles = new ArrayList<>();
+        final FileTransferCallback saveCallback = new FileTransferCallback() {
+            @Override
+            public CopyProgressRecord getProgressRecord() {
+                return fileTransferCallback.getProgressRecord();
+            }
+
+            @Override
+            public void onFileStart(FileTransferItem item) {
+                fileTransferCallback.onFileStart(item);
+            }
+
+            @Override
+            public void onFileComplete(FileTransferItem item) {
+                fileTransferCallback.onFileComplete(item);
+                if (item.getTotal() != null && item.getTotal() > 0) {
+                    progressRecord.setLoaded(progressRecord.getLoaded() + item.getTotal());
+                }
+            }
+
+            @Override
+            public void onAdditionalEvent(com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent event) {
+                fileTransferCallback.onAdditionalEvent(event);
+            }
+
+            @Override
+            public void onDirStart(String dirPath) {
+                fileTransferCallback.onDirStart(dirPath);
+            }
+
+            @Override
+            public void onDirComplete(String dirPath) {
+                fileTransferCallback.onDirComplete(dirPath);
+            }
+
+            @Override
+            public boolean shouldInterrupt() {
+                return fileTransferCallback.shouldInterrupt();
+            }
+        };
 
         Files.walkFileTree(tempBasePath, new SimpleFileVisitor<>() {
             @Override
@@ -217,19 +281,14 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
                 }
                 String diskDir = StringUtils.appendPath(dest,
                         file.getParent().toString().substring(tempLen).replaceAll("\\\\+", "/"));
-                FileInfo fileInfo = FileInfo.getLocal(file.toString());
-                FileTransferItem item = FileTransferItem.builder()
-                        .from(file.toString())
-                        .to(StringUtils.appendPath(diskDir, fileInfo.getName()))
-                        .total(file.toFile().length())
-                        .loaded(0L)
-                        .fileInfo(fileInfo)
-                        .build();
-                fileTransferCallback.onFileStart(item);
-                diskFileSystem.moveToSaveFile(uid, file, diskDir, fileInfo);
-                item.setLoaded(item.getTotal());
-                fileTransferCallback.onFileComplete(item);
-                progressRecord.setLoaded(progressRecord.getLoaded() + fileInfo.getSize());
+                FileInfo fileInfo = FileInfo.getLocal(file.toString(), false);
+                fileInfo.setUid(uid);
+                fileInfo.setPath(diskDir);
+                pendingSaveFiles.add(fileInfo);
+
+                if (pendingSaveFiles.size() >= SAVE_BATCH_SIZE) {
+                    flushPendingSaveFiles(pendingSaveFiles, saveCallback);
+                }
                 return FileVisitResult.CONTINUE;
             }
 
@@ -239,6 +298,8 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
                 return FileVisitResult.CONTINUE;
             }
         });
+
+        flushPendingSaveFiles(pendingSaveFiles, saveCallback);
     }
 
     @Override

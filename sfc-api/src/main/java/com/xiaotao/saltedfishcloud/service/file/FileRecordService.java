@@ -163,6 +163,19 @@ public interface FileRecordService {
     void batchSaveFileInSameDirectory(long uid, String path, boolean isOverwrite, List<FileInfo> fileInfos);
 
     /**
+     * 在同一个目录中批量新增/覆盖文件信息，默认启用覆盖策略。
+     * <p>
+     * 该方法用于 uid 与 path 相同场景的高频批量落库，等价于
+     * {@link #batchSaveFileInSameDirectory(long, String, boolean, List)} 且 isOverwrite=true。
+     * </p>
+     *
+     * @param uid 文件所属用户ID
+     * @param path 文件所在目录路径
+     * @param fileInfos 要批量保存的文件
+     */
+    void batchSaveFileInSameDirectory(long uid, String path, List<FileInfo> fileInfos);
+
+    /**
      * 操作数据库移动网盘文件或目录到指定目录下
      *
      * @param uid       用户ID

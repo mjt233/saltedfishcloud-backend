@@ -290,6 +290,18 @@ public class FileRecordServiceImpl implements FileRecordService {
         this.batchSaveFileInSameNode(uid, nodeId, isOverwrite, fileInfos);
     }
 
+    /**
+     * 在相同 uid 与 path 条件下批量保存文件记录，默认开启覆盖策略。
+     *
+     * @param uid 文件所属用户id
+     * @param path 文件所在目录路径
+     * @param fileInfos 待保存文件信息
+     */
+    @Override
+    public void batchSaveFileInSameDirectory(long uid, String path, List<FileInfo> fileInfos) {
+        this.batchSaveFileInSameDirectory(uid, path, true, fileInfos);
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
