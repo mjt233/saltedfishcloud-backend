@@ -13,7 +13,7 @@
 
 ## 代码规范
 
-- 文档化：所有新增方法必须添加 JavaDoc 文档注释
+- 文档化：所有新增方法和字段必须添加 JavaDoc 文档注释
 - 分页查询：controller 和 service 层涉及分页查询数据的，统一使用`CommonPageInfo`(com.xiaotao.saltedfishcloud.model.CommonPageInfo)封装。
 - JPA Repository层分页查询必须使用`Pageable`参数，返回值为`Page`(org.springframework.data.domain.Page)。
 - 异常处理：优先抛出业务自定义异常（JsonException），由全局异常处理器拦截。
