@@ -31,12 +31,12 @@ public class CommonsZipArchiveEngineProvider extends AbstractArchiveEngineProvid
 
     @Override
     public Collection<String> getSupportedCompressExtensions() {
-        return Collections.singleton("zip");
+        return Collections.singleton(".zip");
     }
 
     @Override
     public Collection<String> getSupportedDecompressExtensions() {
-        return Collections.singleton("zip");
+        return Collections.singleton(".zip");
     }
 
     @Override

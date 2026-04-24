@@ -38,7 +38,7 @@ public class RarArchiveEngineProvider extends AbstractArchiveEngineProvider {
 
     @Override
     public Collection<String> getSupportedDecompressExtensions() {
-        return Collections.singleton("rar");
+        return Collections.singleton(".rar");
     }
 
     @Override

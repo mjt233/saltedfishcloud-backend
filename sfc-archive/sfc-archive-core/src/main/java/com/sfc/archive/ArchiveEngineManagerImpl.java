@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
@@ -44,19 +46,15 @@ public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
     }
 
     @Override
-    public ArchiveEngineProvider getDecompressorEngineByFilename(String fileName) {
+    public List<ArchiveEngineProvider> getDecompressorEngineByFilename(String fileName) {
         String extension = getExtension(fileName);
         if (extension == null) {
-            return null;
+            return Collections.emptyList();
         }
-        for (ArchiveEngineProvider provider : engineProviderMap.values()) {
-            for (String supportExt : provider.getSupportedDecompressExtensions()) {
-                if (extension.equalsIgnoreCase(supportExt)) {
-                    return provider;
-                }
-            }
-        }
-        return null;
+        return engineProviderMap.values().stream()
+                .filter(provider -> provider.getSupportedDecompressExtensions().stream()
+                        .anyMatch(supportExt -> isExtensionMatch(extension, supportExt)))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -78,7 +76,7 @@ public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
     }
 
     /**
-     * 获取文件扩展名（不含点）。
+     * 获取文件扩展名（包含点）。
      *
      * @param fileName 文件名
      * @return 扩展名；无扩展名返回 null
@@ -91,6 +89,39 @@ public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
         if (idx < 0 || idx == fileName.length() - 1) {
             return null;
         }
-        return fileName.substring(idx + 1);
+        return fileName.substring(idx);
+    }
+
+    /**
+     * 比较两个扩展名是否等价，兼容带点与不带点写法。
+     *
+     * @param sourceExtension 需要匹配的扩展名
+     * @param targetExtension 候选扩展名
+     * @return true 表示匹配成功
+     */
+    private boolean isExtensionMatch(String sourceExtension, String targetExtension) {
+        String normalizedSource = normalizeExtension(sourceExtension);
+        String normalizedTarget = normalizeExtension(targetExtension);
+        if (normalizedSource == null || normalizedTarget == null) {
+            return false;
+        }
+        return normalizedSource.equalsIgnoreCase(normalizedTarget);
+    }
+
+    /**
+     * 规范化扩展名，确保以点开头。
+     *
+     * @param extension 原始扩展名
+     * @return 规范化后的扩展名，无法处理时返回 null
+     */
+    private String normalizeExtension(String extension) {
+        if (extension == null) {
+            return null;
+        }
+        String value = extension.trim();
+        if (value.isEmpty()) {
+            return null;
+        }
+        return value.charAt(0) == '.' ? value : "." + value;
     }
 }

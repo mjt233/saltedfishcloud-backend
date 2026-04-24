@@ -40,14 +40,14 @@ public interface ArchiveEngineProvider {
     boolean supportDecrypt();
 
     /**
-     * 获取支持压缩的扩展名列表（不带点）。
+     * 获取支持压缩的扩展名列表（带点，例如 .zip）。
      *
      * @return 扩展名列表
      */
     Collection<String> getSupportedCompressExtensions();
 
     /**
-     * 获取支持解压的扩展名列表（不带点）。
+     * 获取支持解压的扩展名列表（带点，例如 .zip）。
      *
      * @return 扩展名列表
      */

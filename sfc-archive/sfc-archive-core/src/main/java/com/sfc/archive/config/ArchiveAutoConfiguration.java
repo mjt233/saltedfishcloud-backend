@@ -1,20 +1,16 @@
 package com.sfc.archive.config;
 
-import com.sfc.archive.ArchiveEngineManager;
-import com.sfc.archive.ArchiveEngineManagerImpl;
-import com.sfc.archive.ArchiveManager;
-import com.sfc.archive.ArchiveManagerImpl;
-import com.sfc.archive.ArchiveEngineProvider;
+import com.sfc.archive.*;
 import com.sfc.archive.composer.impl.zip.ZipArchiveCompressorProvider;
 import com.sfc.archive.engine.commons.CommonsZipArchiveEngineProvider;
 import com.sfc.archive.engine.rar.RarArchiveEngineProvider;
 import com.sfc.archive.engine.sevenz.SevenZArchiveEngineProvider;
 import com.sfc.archive.engine.zip4j.Zip4jArchiveEngineProvider;
 import com.sfc.archive.extractor.impl.zip.ZipArchiveExtractorProvider;
-import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.archive.service.DiskFileSystemArchiveServiceImpl;
 import com.sfc.archive.task.ArchiveExtractAsyncTaskFactory;
 import com.sfc.archive.task.CompressAsyncTaskFactory;
+import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,6 +40,16 @@ public class ArchiveAutoConfiguration {
         ArchiveEngineManagerImpl engineManager = new ArchiveEngineManagerImpl();
         engineProviders.orderedStream().forEach(engineManager::registerEngineProvider);
         return engineManager;
+    }
+
+    /**
+     * 注册归档引擎动态特性。
+     * @param archiveEngineManager 归档引擎管理器
+     * @return 特性提供者
+     */
+    @Bean
+    public FeatureProvider archiveEngineFeatureProvider(ArchiveEngineManager archiveEngineManager) {
+        return new ArchiveEngineFeatureProvider(archiveEngineManager);
     }
 
     /**

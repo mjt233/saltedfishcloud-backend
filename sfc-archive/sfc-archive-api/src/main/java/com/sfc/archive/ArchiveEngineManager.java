@@ -5,6 +5,7 @@ import org.springframework.core.io.Resource;
 
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * 压缩引擎管理器，负责引擎提供者的注册、查找和压缩/解压器的创建。
@@ -38,9 +39,9 @@ public interface ArchiveEngineManager {
     /**
      * 根据文件名匹配可解压该文件的引擎。
      * @param fileName 文件名
-     * @return 命中的引擎，未命中返回 null
+     * @return 命中的引擎列表，未命中返回空列表
      */
-    ArchiveEngineProvider getDecompressorEngineByFilename(String fileName);
+    List<ArchiveEngineProvider> getDecompressorEngineByFilename(String fileName);
 
     /**
      * 根据引擎 ID 创建压缩器。
