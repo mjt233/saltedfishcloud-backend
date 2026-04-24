@@ -49,6 +49,7 @@ nav:
       - 项目构建: develop/build.md
       - 系统功能架构:
           - 文件操作: develop/framework/file-operations.md
+          - 压缩引擎扩展: develop/framework/archive-engine-extension.md
           - 集群兼容: develop/framework/cluster.md
           - 异步任务: develop/framework/async-task.md
           - 定时任务: develop/framework/schedule.md
