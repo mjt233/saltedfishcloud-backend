@@ -17,6 +17,7 @@
 - 分页查询：controller 和 service 层涉及分页查询数据的，统一使用`CommonPageInfo`(com.xiaotao.saltedfishcloud.model.CommonPageInfo)封装。
 - JPA Repository层分页查询必须使用`Pageable`参数，返回值为`Page`(org.springframework.data.domain.Page)。
 - 异常处理：优先抛出业务自定义异常（JsonException），由全局异常处理器拦截。
+- 实体类需要getter或setter时，尽可能使用 Lombok 注解（如 @Data、@Getter、@Setter）来简化代码。
 
 ## 权限与安全
 
