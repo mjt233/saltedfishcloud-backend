@@ -1,5 +1,7 @@
 package com.sfc.archive.config;
 
+import com.sfc.archive.ArchiveEngineManager;
+import com.sfc.archive.ArchiveEngineManagerImpl;
 import com.sfc.archive.ArchiveManager;
 import com.sfc.archive.ArchiveManagerImpl;
 import com.sfc.archive.ArchiveEngineProvider;
@@ -26,7 +28,7 @@ import org.springframework.context.annotation.Import;
 })
 public class ArchiveAutoConfiguration {
     @Bean
-    public ArchiveManager archiveManager(ObjectProvider<ArchiveEngineProvider> engineProviders) {
+    public ArchiveManager archiveManager() {
         ArchiveManagerImpl archiveManager = new ArchiveManagerImpl();
         // 注册压缩器
         archiveManager.registerCompressor(new ZipArchiveCompressorProvider());
@@ -34,10 +36,14 @@ public class ArchiveAutoConfiguration {
         // 注册解压器
         archiveManager.registerExtractor(new ZipArchiveExtractorProvider());
 
-        // 注册新引擎
-        engineProviders.orderedStream().forEach(archiveManager::registerEngineProvider);
-
         return archiveManager;
+    }
+
+    @Bean
+    public ArchiveEngineManager archiveEngineManager(ObjectProvider<ArchiveEngineProvider> engineProviders) {
+        ArchiveEngineManagerImpl engineManager = new ArchiveEngineManagerImpl();
+        engineProviders.orderedStream().forEach(engineManager::registerEngineProvider);
+        return engineManager;
     }
 
     /**
