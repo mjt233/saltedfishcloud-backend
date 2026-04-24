@@ -47,6 +47,7 @@ nav:
   - 开发手册:
       - 简介: develop/index.md
       - 项目构建: develop/build.md
+      - Git 提交规范: develop/framework/git-commit-convention.md
       - 系统功能架构:
           - 文件操作: develop/framework/file-operations.md
           - 压缩引擎扩展: develop/framework/archive-engine-extension.md

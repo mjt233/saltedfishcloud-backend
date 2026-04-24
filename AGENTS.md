@@ -60,3 +60,6 @@
 - 是否已经通过 build_project 验证？
 - JavaDoc 是否已补全？
 
+### Git 提交规范
+
+当用户要求你将文件提交到Git时，请参考[Git 提交规范](docs/develop/framework/git-commit-convention.md)
