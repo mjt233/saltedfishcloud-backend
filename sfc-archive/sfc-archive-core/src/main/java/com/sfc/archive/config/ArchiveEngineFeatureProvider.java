@@ -2,6 +2,7 @@ package com.sfc.archive.config;
 
 import com.sfc.archive.ArchiveEngineManager;
 import com.sfc.archive.ArchiveEngineProvider;
+import com.sfc.archive.model.ArchiveEngineFeatureDetail;
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
@@ -9,9 +10,7 @@ import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -40,7 +39,7 @@ public class ArchiveEngineFeatureProvider implements FeatureProvider {
      */
     @Override
     public void registerFeature(HelloService helloService) {
-        helloService.setFeature(FeatureName.ARCHIVE_ENGINE_LIST, (Supplier<Object>) this::buildArchiveEngineFeatureDetail);
+        helloService.setFeature(FeatureName.ARCHIVE_ENGINE_LIST, this::buildArchiveEngineFeatureDetail);
     }
 
     /**
@@ -48,7 +47,7 @@ public class ArchiveEngineFeatureProvider implements FeatureProvider {
      *
      * @return 引擎信息列表
      */
-    private List<Map<String, Object>> buildArchiveEngineFeatureDetail() {
+    private List<ArchiveEngineFeatureDetail> buildArchiveEngineFeatureDetail() {
         return archiveEngineManager.getEngineProviders().stream()
                 .sorted(Comparator.comparing(ArchiveEngineProvider::getId))
                 .map(this::toEngineDetail)
@@ -61,13 +60,26 @@ public class ArchiveEngineFeatureProvider implements FeatureProvider {
      * @param provider 引擎提供者
      * @return 引擎特性详情
      */
-    private Map<String, Object> toEngineDetail(ArchiveEngineProvider provider) {
-        Map<String, Object> detail = new LinkedHashMap<>();
-        detail.put("engineId", provider.getId());
-        detail.put("engineName", provider.getName());
-        detail.put("compressExtensions", provider.getSupportedCompressExtensions());
-        detail.put("decompressExtensions", provider.getSupportedDecompressExtensions());
-        return detail;
+    private ArchiveEngineFeatureDetail toEngineDetail(ArchiveEngineProvider provider) {
+        return new ArchiveEngineFeatureDetail(
+                provider.getId(),
+                provider.getName(),
+                toExtensionList(provider.getSupportedCompressExtensions()),
+                toExtensionList(provider.getSupportedDecompressExtensions())
+        );
+    }
+
+    /**
+     * 将扩展名集合转换为可安全序列化的列表。
+     *
+     * @param extensions 原始扩展名集合
+     * @return 扩展名列表
+     */
+    private List<String> toExtensionList(Collection<String> extensions) {
+        if (extensions == null || extensions.isEmpty()) {
+            return List.of();
+        }
+        return new ArrayList<>(extensions);
     }
 }
 
