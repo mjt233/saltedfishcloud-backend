@@ -52,8 +52,9 @@ feat(archive): introduce engine-based archive api and zip4j/junrar support
 ## 分支管理
 
 - 日常开发在 `develop` 分支进行
-- 发版时从 `develop` 合并至 `deploy` 分支
 - 大的重构或实验性功能可单独拉出特性分支，完成后合回 `develop`
+- 对已开发的功能进行部署测试时，将`develop`分支合并到`deploy`分支，触发Github CI/CD流程进行自动部署
+- 发版时从 `develop` 合并至 `master` 分支，并打上版本标签
 
 ## 注意事项
 
