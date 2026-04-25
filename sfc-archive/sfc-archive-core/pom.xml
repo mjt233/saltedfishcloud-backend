@@ -40,7 +40,7 @@
         <dependency>
             <groupId>com.github.junrar</groupId>
             <artifactId>junrar</artifactId>
-            <version>7.5.5</version>
+            <version>7.5.10</version>
         </dependency>
     </dependencies>
 
