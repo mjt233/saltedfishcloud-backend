@@ -1,7 +1,7 @@
 package com.sfc.archive.engine.zip4j;
 
 import com.sfc.archive.engine.AbstractArchiveEngineCompressor;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.model.CompressionLevel;
 import net.lingala.zip4j.io.outputstream.ZipOutputStream;
@@ -29,7 +29,7 @@ public class Zip4jArchiveEngineCompressor extends AbstractArchiveEngineCompresso
      * @param property     压缩属性
      * @throws IOException 初始化输出流失败
      */
-    public Zip4jArchiveEngineCompressor(OutputStream outputStream, ArchiveProperty property) throws IOException {
+    public Zip4jArchiveEngineCompressor(OutputStream outputStream, ArchiveEngineProperty property) throws IOException {
         super(property);
         char[] password = property.getEncryptionParam() == null || property.getEncryptionParam().getPassword() == null
                 ? null

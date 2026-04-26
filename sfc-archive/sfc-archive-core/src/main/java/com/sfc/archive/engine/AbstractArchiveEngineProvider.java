@@ -1,7 +1,7 @@
 package com.sfc.archive.engine;
 
 import com.sfc.archive.ArchiveEngineProvider;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.CompressionLevel;
 
 import java.util.Collection;
@@ -17,9 +17,9 @@ public abstract class AbstractArchiveEngineProvider implements ArchiveEngineProv
      * @param property 原始属性
      * @return 可用属性
      */
-    protected ArchiveProperty normalizeProperty(ArchiveProperty property) {
+    protected ArchiveEngineProperty normalizeProperty(ArchiveEngineProperty property) {
         if (property == null) {
-            return ArchiveProperty.builder().build();
+            return ArchiveEngineProperty.builder().build();
         }
         if (property.getCompressionLevel() == null) {
             property.setCompressionLevel(CompressionLevel.NORMAL);

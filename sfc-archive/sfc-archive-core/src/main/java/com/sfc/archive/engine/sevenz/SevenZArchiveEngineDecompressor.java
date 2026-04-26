@@ -2,7 +2,7 @@ package com.sfc.archive.engine.sevenz;
 
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.utils.EngineResourceUtils;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
@@ -28,7 +28,7 @@ public class SevenZArchiveEngineDecompressor implements ArchiveEngineDecompresso
     /**
      * 解压属性。
      */
-    private final ArchiveProperty property;
+    private final ArchiveEngineProperty property;
 
     /**
      * 创建 7z 解压器。
@@ -37,7 +37,7 @@ public class SevenZArchiveEngineDecompressor implements ArchiveEngineDecompresso
      * @param property 解压属性
      * @throws IOException 初始化失败
      */
-    public SevenZArchiveEngineDecompressor(Resource resource, ArchiveProperty property) throws IOException {
+    public SevenZArchiveEngineDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException {
         this.localFileResource = EngineResourceUtils.toLocalFile(resource, ".7z");
         this.property = property;
     }

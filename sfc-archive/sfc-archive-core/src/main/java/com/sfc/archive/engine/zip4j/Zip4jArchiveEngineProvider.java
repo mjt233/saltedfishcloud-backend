@@ -3,7 +3,7 @@ package com.sfc.archive.engine.zip4j;
 import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -46,12 +46,12 @@ public class Zip4jArchiveEngineProvider extends AbstractArchiveEngineProvider {
     }
 
     @Override
-    public ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveProperty property) throws IOException {
+    public ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveEngineProperty property) throws IOException {
         return new Zip4jArchiveEngineCompressor(outputStream, normalizeProperty(property));
     }
 
     @Override
-    public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveProperty property) throws IOException {
+    public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException {
         return new Zip4jArchiveEngineDecompressor(resource, normalizeProperty(property));
     }
 }

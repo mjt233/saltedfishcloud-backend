@@ -3,7 +3,7 @@ package com.sfc.archive.engine.rar;
 import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.springframework.core.io.Resource;
 
@@ -42,12 +42,12 @@ public class RarArchiveEngineProvider extends AbstractArchiveEngineProvider {
     }
 
     @Override
-    public ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveProperty property) {
+    public ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveEngineProperty property) {
         throw new JsonException("junrar 暂不支持压缩");
     }
 
     @Override
-    public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveProperty property) throws IOException {
+    public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException {
         return new RarArchiveEngineDecompressor(resource, normalizeProperty(property));
     }
 }

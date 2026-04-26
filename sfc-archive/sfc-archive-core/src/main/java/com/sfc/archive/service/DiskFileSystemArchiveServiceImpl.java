@@ -1,35 +1,26 @@
 package com.sfc.archive.service;
 
 import com.sfc.archive.*;
-import com.sfc.archive.extractor.ArchiveExtractor;
 import com.sfc.archive.model.*;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
-import com.xiaotao.saltedfishcloud.enums.ArchiveError;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.archivers.ArchiveException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipException;
 
 /**
  * 默认的网盘文件系统压缩、解压缩服务实现类
@@ -42,9 +33,6 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
 
     @Autowired
     private SysProperties sysProperties;
-
-    @Autowired
-    private ArchiveManager archiveManager;
 
     @Autowired
     private ArchiveEngineManager archiveEngineManager;
@@ -60,7 +48,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
                 .orElseThrow(() -> new UnsupportedOperationException("找不到支持zip的ArchiveEngine"));
 
         DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
-        try(ArchiveEngineCompressor compressor = engine.createCompressor(outputStream, ArchiveProperty.builder()
+        try(ArchiveEngineCompressor compressor = engine.createCompressor(outputStream, ArchiveEngineProperty.builder()
                 .compressionLevel(compressionLevel)
                 .encoding(sysProperties.getStore().getArchiveEncoding())
                 .build())) {

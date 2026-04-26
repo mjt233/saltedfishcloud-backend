@@ -2,7 +2,7 @@ package com.sfc.archive.engine.zip4j;
 
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.utils.EngineResourceUtils;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import net.lingala.zip4j.ZipFile;
@@ -37,7 +37,7 @@ public class Zip4jArchiveEngineDecompressor implements ArchiveEngineDecompressor
      * @param property 属性
      * @throws IOException 初始化失败
      */
-    public Zip4jArchiveEngineDecompressor(Resource resource, ArchiveProperty property) throws IOException {
+    public Zip4jArchiveEngineDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException {
         this.localFileResource = EngineResourceUtils.toLocalFile(resource, ".zip");
         String password = property.getEncryptionParam() == null ? null : property.getEncryptionParam().getPassword();
         this.zipFile = password == null

@@ -3,7 +3,7 @@ package com.sfc.archive.engine.commons;
 import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.springframework.core.io.Resource;
 
@@ -37,8 +37,8 @@ public class CommonsZipArchiveEngineProvider extends AbstractArchiveEngineProvid
     }
 
     @Override
-    public ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveProperty property) throws IOException {
-        ArchiveProperty normalized = normalizeProperty(property);
+    public ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveEngineProperty property) throws IOException {
+        ArchiveEngineProperty normalized = normalizeProperty(property);
         if (normalized.getEncryptionParam() != null) {
             throw new JsonException("commons-zip 不支持加密压缩，请切换 zip4j 引擎");
         }
@@ -46,8 +46,8 @@ public class CommonsZipArchiveEngineProvider extends AbstractArchiveEngineProvid
     }
 
     @Override
-    public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveProperty property) throws IOException {
-        ArchiveProperty normalized = normalizeProperty(property);
+    public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException {
+        ArchiveEngineProperty normalized = normalizeProperty(property);
         return new CommonsZipArchiveEngineDecompressor(resource, normalized);
     }
 }

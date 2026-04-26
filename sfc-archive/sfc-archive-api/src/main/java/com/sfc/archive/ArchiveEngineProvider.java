@@ -1,6 +1,6 @@
 package com.sfc.archive;
 
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -61,7 +61,7 @@ public interface ArchiveEngineProvider {
      * @return 压缩任务执行器
      * @throws IOException 创建失败
      */
-    ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveProperty property) throws IOException;
+    ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveEngineProperty property) throws IOException;
 
     /**
      * 创建解压任务执行器。
@@ -71,6 +71,6 @@ public interface ArchiveEngineProvider {
      * @return 解压任务执行器
      * @throws IOException 创建失败
      */
-    ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveProperty property) throws IOException;
+    ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException;
 }
 

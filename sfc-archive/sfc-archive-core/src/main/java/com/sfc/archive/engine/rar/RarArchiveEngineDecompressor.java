@@ -5,7 +5,7 @@ import com.github.junrar.exception.RarException;
 import com.github.junrar.rarfile.FileHeader;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.utils.EngineResourceUtils;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -39,7 +39,7 @@ public class RarArchiveEngineDecompressor implements ArchiveEngineDecompressor {
      * @param property 解压属性
      * @throws IOException 初始化失败
      */
-    public RarArchiveEngineDecompressor(Resource resource, ArchiveProperty property) throws IOException {
+    public RarArchiveEngineDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException {
         this.localFileResource = EngineResourceUtils.toLocalFile(resource, ".rar");
         String password = property.getEncryptionParam() == null ? null : property.getEncryptionParam().getPassword();
         try {

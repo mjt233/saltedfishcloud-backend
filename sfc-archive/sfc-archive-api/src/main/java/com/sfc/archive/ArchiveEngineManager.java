@@ -1,6 +1,6 @@
 package com.sfc.archive;
 
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import org.springframework.core.io.Resource;
 
 import java.io.OutputStream;
@@ -50,7 +50,7 @@ public interface ArchiveEngineManager {
      * @param property     压缩属性
      * @return 压缩任务执行器
      */
-    ArchiveEngineCompressor createEngineCompressor(String providerId, OutputStream outputStream, ArchiveProperty property);
+    ArchiveEngineCompressor createEngineCompressor(String providerId, OutputStream outputStream, ArchiveEngineProperty property);
 
     /**
      * 根据引擎 ID 创建解压器。
@@ -59,5 +59,5 @@ public interface ArchiveEngineManager {
      * @param property   解压属性
      * @return 解压任务执行器
      */
-    ArchiveEngineDecompressor createEngineDecompressor(String providerId, Resource resource, ArchiveProperty property);
+    ArchiveEngineDecompressor createEngineDecompressor(String providerId, Resource resource, ArchiveEngineProperty property);
 }

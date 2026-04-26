@@ -1,11 +1,10 @@
 package com.sfc.archive.engine.commons;
 
 import com.sfc.archive.engine.AbstractArchiveEngineCompressor;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
-import org.apache.commons.compress.archivers.zip.ZipMethod;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,7 +26,7 @@ public class CommonsZipStreamArchiveEngineCompressor extends AbstractArchiveEngi
      * @param targetOutput 目标输出流
      * @param property     压缩属性
      */
-    public CommonsZipStreamArchiveEngineCompressor(OutputStream targetOutput, ArchiveProperty property) {
+    public CommonsZipStreamArchiveEngineCompressor(OutputStream targetOutput, ArchiveEngineProperty property) {
         super(property);
         this.zipOutputStream = new ZipArchiveOutputStream(targetOutput);
         this.zipOutputStream.setEncoding(property.getEncoding());

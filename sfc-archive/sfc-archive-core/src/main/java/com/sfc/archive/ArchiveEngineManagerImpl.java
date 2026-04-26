@@ -1,6 +1,6 @@
 package com.sfc.archive;
 
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -58,7 +58,7 @@ public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
     }
 
     @Override
-    public ArchiveEngineCompressor createEngineCompressor(String providerId, OutputStream outputStream, ArchiveProperty property) {
+    public ArchiveEngineCompressor createEngineCompressor(String providerId, OutputStream outputStream, ArchiveEngineProperty property) {
         try {
             return getEngineProvider(providerId).createCompressor(outputStream, property);
         } catch (IOException e) {
@@ -67,7 +67,7 @@ public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
     }
 
     @Override
-    public ArchiveEngineDecompressor createEngineDecompressor(String providerId, Resource resource, ArchiveProperty property) {
+    public ArchiveEngineDecompressor createEngineDecompressor(String providerId, Resource resource, ArchiveEngineProperty property) {
         try {
             return getEngineProvider(providerId).createDecompressor(resource, property);
         } catch (IOException e) {

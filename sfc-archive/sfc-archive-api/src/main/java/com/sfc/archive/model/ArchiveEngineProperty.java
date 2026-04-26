@@ -6,13 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 压缩/解压属性。
+ * 传递给压缩/解压引擎的解压缩参数属性。
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ArchiveProperty {
+public class ArchiveEngineProperty {
     /**
      * 压缩级别，默认 NORMAL。
      */

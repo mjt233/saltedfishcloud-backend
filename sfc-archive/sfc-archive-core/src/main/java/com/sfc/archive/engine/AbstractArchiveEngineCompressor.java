@@ -1,7 +1,7 @@
 package com.sfc.archive.engine;
 
 import com.sfc.archive.ArchiveEngineCompressor;
-import com.sfc.archive.model.ArchiveProperty;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.model.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
@@ -28,14 +28,14 @@ public abstract class AbstractArchiveEngineCompressor implements ArchiveEngineCo
      * 压缩属性，包含压缩级别、加密参数和回调。
      */
     @Getter
-    private final ArchiveProperty property;
+    private final ArchiveEngineProperty property;
 
     /**
      * 创建抽象压缩器。
      *
      * @param property     压缩属性
      */
-    protected AbstractArchiveEngineCompressor(ArchiveProperty property) {
+    protected AbstractArchiveEngineCompressor(ArchiveEngineProperty property) {
         this.property = property;
     }
 
