@@ -2,6 +2,7 @@ package com.sfc.archive.config;
 
 import com.sfc.archive.*;
 import com.sfc.archive.composer.impl.zip.ZipArchiveCompressorProvider;
+import com.sfc.archive.controller.ArchiveController;
 import com.sfc.archive.engine.commons.CommonsZipArchiveEngineProvider;
 import com.sfc.archive.engine.rar.RarArchiveEngineProvider;
 import com.sfc.archive.engine.sevenz.SevenZArchiveEngineProvider;
@@ -18,9 +19,17 @@ import org.springframework.context.annotation.Import;
 
 @Configuration
 @Import({
+        // 接口服务
         DiskFileSystemArchiveServiceImpl.class,
         CompressAsyncTaskFactory.class,
-        ArchiveExtractAsyncTaskFactory.class
+        ArchiveExtractAsyncTaskFactory.class,
+        ArchiveController.class,
+
+        // 压缩引擎提供者
+        CommonsZipArchiveEngineProvider.class,
+        Zip4jArchiveEngineProvider.class,
+        SevenZArchiveEngineProvider.class,
+        RarArchiveEngineProvider.class
 })
 public class ArchiveAutoConfiguration {
     @Bean
@@ -50,41 +59,5 @@ public class ArchiveAutoConfiguration {
     @Bean
     public FeatureProvider archiveEngineFeatureProvider(ArchiveEngineManager archiveEngineManager) {
         return new ArchiveEngineFeatureProvider(archiveEngineManager);
-    }
-
-    /**
-     * commons-zip 引擎。
-     * @return 引擎提供者
-     */
-    @Bean
-    public ArchiveEngineProvider commonsZipArchiveEngineProvider() {
-        return new CommonsZipArchiveEngineProvider();
-    }
-
-    /**
-     * zip4j 引擎。
-     * @return 引擎提供者
-     */
-    @Bean
-    public ArchiveEngineProvider zip4jArchiveEngineProvider() {
-        return new Zip4jArchiveEngineProvider();
-    }
-
-    /**
-     * 7z 解压引擎。
-     * @return 引擎提供者
-     */
-    @Bean
-    public ArchiveEngineProvider sevenZArchiveEngineProvider() {
-        return new SevenZArchiveEngineProvider();
-    }
-
-    /**
-     * rar 解压引擎。
-     * @return 引擎提供者
-     */
-    @Bean
-    public ArchiveEngineProvider rarArchiveEngineProvider() {
-        return new RarArchiveEngineProvider();
     }
 }

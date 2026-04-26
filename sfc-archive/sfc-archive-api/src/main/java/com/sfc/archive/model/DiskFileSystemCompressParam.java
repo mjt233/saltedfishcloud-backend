@@ -42,9 +42,14 @@ public class DiskFileSystemCompressParam {
     private String targetFilePath;
 
     /**
-     * 压缩参数
+     * 使用的压缩引擎id
      */
-    private ArchiveParam archiveParam;
+    private String engineProviderId;
+
+    /**
+     * 压缩引擎参数
+     */
+    private ArchiveEngineProperty engineProperty;
 
     /**
      * 若通过异步任务方式执行，是否阻塞等待任务完成

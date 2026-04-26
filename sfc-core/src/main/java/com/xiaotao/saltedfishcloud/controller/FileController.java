@@ -71,16 +71,6 @@ public class FileController {
      */
 
     /**
-     * 异步方式创建压缩任务
-     * @param param     压缩参数
-     * @return          任务id
-     */
-    @PostMapping("asyncCompress")
-    public JsonResult<Long> asyncCompress(@RequestBody DiskFileSystemCompressParam param) throws IOException {
-        return JsonResultImpl.getInstance(archiveService.asyncCompress(param));
-    }
-
-    /**
      * 创建文件夹
      */
     @PutMapping("dir/**")

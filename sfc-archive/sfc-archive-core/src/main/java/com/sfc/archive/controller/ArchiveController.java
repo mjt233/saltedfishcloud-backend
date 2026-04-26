@@ -1,6 +1,8 @@
 package com.sfc.archive.controller;
 
 import com.sfc.archive.model.AsyncArchiveExtractParam;
+import com.sfc.archive.model.DiskFileSystemCompressParam;
+import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
@@ -35,6 +37,18 @@ import java.util.Optional;
 public class ArchiveController {
 
     private final AsyncTaskManager asyncTaskManager;
+    private final DiskFileSystemArchiveService archiveService;
+
+
+    /**
+     * 异步方式创建压缩任务
+     * @param param     压缩参数
+     * @return          任务id
+     */
+    @PostMapping("asyncCompress")
+    public JsonResult<Long> asyncCompress(@RequestBody DiskFileSystemCompressParam param) throws IOException {
+        return JsonResultImpl.getInstance(archiveService.asyncCompress(param));
+    }
 
     /**
      * 创建文件在线解压异步任务。

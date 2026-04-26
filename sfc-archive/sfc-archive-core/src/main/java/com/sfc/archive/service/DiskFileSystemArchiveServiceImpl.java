@@ -9,6 +9,7 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.*;
@@ -41,6 +42,14 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
     private AsyncTaskManager asyncTaskManager;
 
 
+    /**
+     * 将多个文件通过zip压缩，并将压缩结果输出到outputStream
+     * @param uid   待压缩的文件的用户id
+     * @param path  待压缩的文件的所在网盘目录路径
+     * @param names path下待压缩的文件名列表
+     * @param compressionLevel  压缩等级
+     * @param outputStream  压缩结果输出流
+     */
     public void doCompressZipAndWriteOut(long uid, String path, Collection<String> names, CompressionLevel compressionLevel, OutputStream outputStream) throws IOException {
         ArchiveEngineProvider engine = archiveEngineManager.getDecompressProviderByFilename("tmp.zip")
                 .stream()
@@ -87,12 +96,12 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
     @Override
     public long asyncCompress(DiskFileSystemCompressParam param) throws IOException {
         AsyncTaskRecord record = new AsyncTaskRecord();
-        record.setName(AsyncTaskType.ARCHIVE_COMPRESS + "-" + param.getArchiveParam().getType());
+        record.setName(AsyncTaskType.ARCHIVE_COMPRESS + "-" + param.getEngineProviderId());
         record.setTaskType(AsyncTaskType.ARCHIVE_COMPRESS);
         record.setCpuOverhead(10);
         record.setParams(MapperHolder.toJson(param));
         User curUser = SecureUtils.getSpringSecurityUser();
-        record.setUid(Optional.ofNullable(curUser).map(e -> e.getId()).orElse(param.getSourceUid()));
+        record.setUid(Optional.ofNullable(curUser).map(BaseModel::getId).orElse(param.getSourceUid()));
 
         asyncTaskManager.submitAsyncTask(record);
 

@@ -1,18 +1,20 @@
 package com.sfc.archive.task;
 
-import com.sfc.archive.ArchiveHandleEventListener;
-import com.sfc.archive.ArchiveManager;
-import com.sfc.archive.DiskFileSystemArchiveHelper;
-import com.sfc.archive.comporessor.ArchiveCompressor;
-import com.sfc.archive.model.ArchiveFile;
+import com.sfc.archive.ArchiveEngineCompressor;
+import com.sfc.archive.ArchiveEngineManager;
+import com.sfc.archive.ArchiveEngineProvider;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
+import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
+import com.xiaotao.saltedfishcloud.utils.MeteredOutputStream;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamCopyResult;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,9 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,9 +49,9 @@ public class CompressAsyncTask implements AsyncTask {
     private DiskFileSystem fileSystem;
 
     @Setter
-    private ArchiveManager archiveManager;
+    private ArchiveEngineManager archiveEngineManager;
 
-    private ArchiveCompressor compressor;
+    private ArchiveEngineCompressor compressor;
 
     private CustomLogger taskLog;
 
@@ -71,47 +73,6 @@ public class CompressAsyncTask implements AsyncTask {
     private final ProgressRecord progressRecord = new ProgressRecord();
 
     /**
-     * 输出任务基础信息到日志
-     * @param consumeTime   初始化耗时
-     */
-    private void logBasicInfo(long consumeTime) {
-
-        taskLog.info(String.format("读取完成，耗时: %.2f s", consumeTime/1000.0));
-        taskLog.info(String.format("总文件数: %d 文件大小: %s (%d)",
-                compressor.getFileCount(),
-                StringUtils.getFormatSize(compressor.getTotal()),
-                compressor.getTotal())
-        );
-    }
-
-    private void initEventHandler() {
-        compressor.addEventListener(new ArchiveHandleEventListener() {
-            @Override
-            public void onDirCreate(ArchiveFile archiveFile) {
-                taskLog.info("创建目录: " + archiveFile.getName());
-            }
-
-            @Override
-            public void onFinish(long consumeTime) {
-                taskLog.info("压缩任务完成，总耗时: " + consumeTime / 1000.0 + " s");
-                log.debug("压缩任务完成，总耗时:{} s", consumeTime / 1000.0);
-            }
-
-            @Override
-            public void onFileBeginHandle(ArchiveFile archiveFile) {
-                log.debug("压缩文件:{}", archiveFile.getName());
-                taskLog.info("开始压缩文件: " + archiveFile.getName() + "...");
-            }
-
-            @Override
-            public void onFileFinishHandle(ArchiveFile archiveFile, long consumeTime) {
-                progressRecord.setLoaded(compressor.getLoaded());
-                taskLog.info("文件压缩完成: " + archiveFile.getName() + " - 耗时 " + consumeTime + " ms");
-            }
-        });
-    }
-
-    /**
      * 保存本地的压缩结果到网盘
      * @param localPath 本地压缩结果
      */
@@ -126,6 +87,17 @@ public class CompressAsyncTask implements AsyncTask {
         fileSystem.moveToSaveFile(compressParam.getSourceUid(), localPath, pb.range(-1), fileInfo);
     }
 
+    private FileInfo getTargetFileInfo() {
+        FileInfo fileInfo = new FileInfo();
+        long currentTimeMillis = System.currentTimeMillis();
+        fileInfo.setCtime(currentTimeMillis);
+        fileInfo.setMtime(currentTimeMillis);
+        fileInfo.setName(PathUtils.getLastNode(compressParam.getTargetFilePath()));
+        fileInfo.setPath(PathUtils.getParentPath(compressParam.getTargetFilePath()));
+        fileInfo.setUid(compressParam.getTargetUid());
+        return fileInfo;
+    }
+
     @Override
     public void execute(OutputStream logOutputStream) {
         if (this.compressor != null || this.inRunning) {
@@ -134,34 +106,44 @@ public class CompressAsyncTask implements AsyncTask {
         this.inRunning = true;
         this.taskLog = new CustomLogger(logOutputStream);
 
-        Path localPath = this.getTempFilePath();
         taskLog.info("任务参数: " + originParams);
-        taskLog.info("创建本地临时文件: " + localPath);
 
-        taskLog.info("正在读取待压缩文件列表...");
-        long begin = System.currentTimeMillis();
-        try (OutputStream outputStream = Files.newOutputStream(localPath);
-             ArchiveCompressor compressor = archiveManager.getCompressor(compressParam.getArchiveParam(), outputStream);
-        ) {
-            this.compressor = compressor;
-            executeThread.set(Thread.currentThread());
-            DiskFileSystemArchiveHelper.compress(compressParam, compressor, fileSystem);
+        String engineProviderId = Objects.requireNonNull(compressParam.getEngineProviderId(), "engine provider id 不能为空");
+        ArchiveEngineProvider engineProvider = archiveEngineManager.getEngineProvider(engineProviderId);
 
-            // 输出初始化信息
-            logBasicInfo(System.currentTimeMillis() - begin);
-            progressRecord.setLoaded(this.compressor.getLoaded());
-            progressRecord.setTotal(this.compressor.getTotal());
-
-            // 绑定事件处理
-            initEventHandler();
-
-            // 开始压缩
-            this.compressor.start();
-            this.compressor.close();
-            // 保存压缩结果到网盘
-            saveToFileSystem(localPath);
-            taskLog.info("保存成功");
-        }  catch (Throwable e) {
+        try {
+            FileInfo targetFileInfo = getTargetFileInfo();
+            fileSystem.saveFileByStream(targetFileInfo, PathUtils.getParentPath(compressParam.getTargetFilePath()), os -> {
+                MeteredOutputStream meteredOutputStream = new MeteredOutputStream(os);
+                try (ArchiveEngineCompressor compressor = engineProvider.createCompressor(meteredOutputStream, compressParam.getEngineProperty())) {
+                    this.compressor = compressor;
+                    executeThread.set(Thread.currentThread());
+                    for (FileInfo fileInfo : fileSystem.getUserFileList(compressParam.getSourceUid(), compressParam.getSourcePath(), compressParam.getSourceNames())) {
+                        if (fileInfo.isFile()) {
+                            compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(fileInfo, "/", fileSystem.getResource(compressParam.getSourceUid(), compressParam.getSourcePath(), fileInfo.getName())));
+                        } else {
+                            compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(fileInfo, "/", null));
+                            DiskFileSystemUtils.walk(fileSystem, compressParam.getSourceUid(), StringUtils.appendPath(compressParam.getSourcePath(), fileInfo.getName()), (curPath, subFiles) -> {
+                                String basePath = StringUtils.removePrefix(compressParam.getSourcePath(), curPath);
+                                if (basePath.isEmpty()) {
+                                    basePath = "/";
+                                }
+                                for (FileInfo subFile : subFiles) {
+                                    if (subFile.isFile()) {
+                                        compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, fileSystem.getResource(compressParam.getSourceUid(), curPath, subFile.getName())));
+                                    } else {
+                                        compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, null));
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    StreamCopyResult result = new StreamCopyResult(meteredOutputStream.getBytesWritten(), meteredOutputStream.getMd5());
+                    result.applyTo(targetFileInfo);
+                    return result;
+                }
+            });
+        } catch (Throwable e) {
             log.error("任务异常",e);
             taskLog.error("任务异常：", e);
             if (e instanceof RuntimeException) {
@@ -171,12 +153,6 @@ public class CompressAsyncTask implements AsyncTask {
             }
         } finally {
             executeThread.set(null);
-            taskLog.info("删除本地临时文件: " + localPath);
-            try {
-                Files.deleteIfExists(localPath);
-            } catch (IOException e) {
-                taskLog.error("本地文件删除失败： " + localPath, e);
-            }
             taskLog.info("任务已退出");
             inRunning = false;
         }

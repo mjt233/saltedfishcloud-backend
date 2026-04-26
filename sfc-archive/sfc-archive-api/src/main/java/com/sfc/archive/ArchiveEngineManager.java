@@ -24,7 +24,7 @@ public interface ArchiveEngineManager {
     void removeEngineProvider(String providerId);
 
     /**
-     * 根据引擎 ID 获取提供者。
+     * 根据引擎 ID 获取提供者。id不存在将抛出异常
      * @param providerId 引擎 ID
      * @return 引擎提供者
      */
