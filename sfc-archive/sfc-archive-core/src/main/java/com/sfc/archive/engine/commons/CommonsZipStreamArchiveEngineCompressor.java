@@ -1,27 +1,25 @@
 package com.sfc.archive.engine.commons;
 
-import com.sfc.archive.ArchiveEngineCompressor;
+import com.sfc.archive.engine.AbstractArchiveEngineCompressor;
 import com.sfc.archive.model.ArchiveProperty;
 import com.sfc.archive.model.ArchiveResource;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.compress.archivers.zip.ZipMethod;
-import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.attribute.FileTime;
+import java.util.zip.ZipEntry;
 
 /**
  * 基于 ZipArchiveOutputStream 的流式压缩器。
  */
-public class CommonsZipStreamArchiveEngineCompressor implements ArchiveEngineCompressor {
+public class CommonsZipStreamArchiveEngineCompressor extends AbstractArchiveEngineCompressor {
     /**
      * ZIP 输出流。
      */
-    private final ZipArchiveOutputStream outputStream;
+    private final ZipArchiveOutputStream zipOutputStream;
 
     /**
      * 创建流式压缩器。
@@ -30,24 +28,24 @@ public class CommonsZipStreamArchiveEngineCompressor implements ArchiveEngineCom
      * @param property     压缩属性
      */
     public CommonsZipStreamArchiveEngineCompressor(OutputStream targetOutput, ArchiveProperty property) {
-        this.outputStream = new ZipArchiveOutputStream(targetOutput);
-        this.outputStream.setEncoding(property.getEncoding());
+        super(property);
+        this.zipOutputStream = new ZipArchiveOutputStream(targetOutput);
+        this.zipOutputStream.setEncoding(property.getEncoding());
     }
 
+    /**
+     * 为当前资源创建 ZIP entry 并返回可写输出流。
+     *
+     * @param resource       资源信息
+     * @return 文件资源返回 ZIP 输出流，目录返回 null
+     * @throws IOException 创建 entry 失败
+     */
     @Override
-    public void addArchiveResource(ArchiveResource resource) throws IOException {
-        if (resource == null) {
-            throw new JsonException("archive resource 不能为空");
-        }
-        if (Boolean.FALSE.equals(resource.getIsDirectory()) && resource.getResource() == null) {
-            throw new JsonException("文件资源 resource 不能为空");
-        }
-
-        String normalizedPath = normalizePath(resource.getArchivePath(), Boolean.TRUE.equals(resource.getIsDirectory()));
-        ZipArchiveEntry entry = new ZipArchiveEntry(normalizedPath);
+    protected OutputStream openEntryOutputStream(ArchiveResource resource) throws IOException {
+        ZipArchiveEntry entry = new ZipArchiveEntry(resource.getArchivePath());
 
         if (Boolean.TRUE.equals(resource.getIsDirectory())) {
-            entry.setMethod(ZipMethod.STORED.getCode());
+            entry.setMethod(ZipEntry.STORED);
             entry.setSize(0);
             entry.setCompressedSize(0);
             entry.setCrc(0);
@@ -62,37 +60,27 @@ public class CommonsZipStreamArchiveEngineCompressor implements ArchiveEngineCom
             entry.setCreationTime(FileTime.fromMillis(resource.getCreated().getTime()));
         }
 
-        outputStream.putArchiveEntry(entry);
-        if (Boolean.FALSE.equals(resource.getIsDirectory())) {
-            try (InputStream inputStream = resource.getResource().getInputStream()) {
-                StreamUtils.copy(inputStream, outputStream);
-            }
+        zipOutputStream.putArchiveEntry(entry);
+        if (Boolean.TRUE.equals(resource.getIsDirectory())) {
+            return null;
         }
-        outputStream.closeArchiveEntry();
+        return zipOutputStream;
+    }
+
+    /**
+     * 关闭当前 ZIP entry。
+     *
+     * @throws IOException 关闭失败
+     */
+    @Override
+    protected void doCloseCurrentEntry() throws IOException {
+        zipOutputStream.closeArchiveEntry();
     }
 
     @Override
     public void close() throws IOException {
-        outputStream.finish();
-        outputStream.close();
-    }
-
-    /**
-     * 归一化路径并处理目录结尾。
-     *
-     * @param archivePath 资源路径
-     * @param directory   是否目录
-     * @return ZIP entry 路径
-     */
-    private String normalizePath(String archivePath, boolean directory) {
-        if (archivePath == null || archivePath.isEmpty()) {
-            throw new JsonException("archivePath 不能为空");
-        }
-        String normalized = archivePath.startsWith("/") ? archivePath.substring(1) : archivePath;
-        if (directory && !normalized.endsWith("/")) {
-            normalized = normalized + "/";
-        }
-        return normalized;
+        zipOutputStream.finish();
+        zipOutputStream.close();
     }
 }
 

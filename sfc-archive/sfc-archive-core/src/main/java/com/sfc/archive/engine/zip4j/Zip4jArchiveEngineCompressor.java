@@ -1,34 +1,26 @@
 package com.sfc.archive.engine.zip4j;
 
-import com.sfc.archive.ArchiveEngineCompressor;
+import com.sfc.archive.engine.AbstractArchiveEngineCompressor;
 import com.sfc.archive.model.ArchiveProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.model.CompressionLevel;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import net.lingala.zip4j.io.outputstream.ZipOutputStream;
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.AesKeyStrength;
 import net.lingala.zip4j.model.enums.CompressionMethod;
 import net.lingala.zip4j.model.enums.EncryptionMethod;
-import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
  * zip4j 压缩执行器。
  */
-public class Zip4jArchiveEngineCompressor implements ArchiveEngineCompressor {
+public class Zip4jArchiveEngineCompressor extends AbstractArchiveEngineCompressor {
     /**
      * zip4j 输出流。
      */
-    private final ZipOutputStream outputStream;
-
-    /**
-     * 压缩属性。
-     */
-    private final ArchiveProperty property;
+    private final ZipOutputStream zipOutputStream;
 
     /**
      * 创建 zip4j 压缩器。
@@ -38,78 +30,54 @@ public class Zip4jArchiveEngineCompressor implements ArchiveEngineCompressor {
      * @throws IOException 初始化输出流失败
      */
     public Zip4jArchiveEngineCompressor(OutputStream outputStream, ArchiveProperty property) throws IOException {
-        this.property = property;
+        super(property);
         char[] password = property.getEncryptionParam() == null || property.getEncryptionParam().getPassword() == null
                 ? null
                 : property.getEncryptionParam().getPassword().toCharArray();
-        this.outputStream = password == null ? new ZipOutputStream(outputStream) : new ZipOutputStream(outputStream, password);
+        this.zipOutputStream = password == null ? new ZipOutputStream(outputStream) : new ZipOutputStream(outputStream, password);
     }
 
+    /**
+     * 为当前资源创建 zip4j entry 并返回可写输出流。
+     *
+     * @param resource       资源信息
+     * @return 文件资源返回 zip4j 输出流，目录返回 null
+     * @throws IOException 创建 entry 失败
+     */
     @Override
-    public void addArchiveResource(ArchiveResource resource) throws IOException {
-        if (resource == null) {
-            throw new JsonException("archive resource 不能为空");
-        }
-        if (Boolean.FALSE.equals(resource.getIsDirectory()) && resource.getResource() == null) {
-            throw new JsonException("文件资源 resource 不能为空");
-        }
-
-        String path = normalizePath(resource.getArchivePath(), Boolean.TRUE.equals(resource.getIsDirectory()));
-        boolean encrypted = property.getEncryptionParam() != null && property.getEncryptionParam().getPassword() != null;
+    protected OutputStream openEntryOutputStream(ArchiveResource resource) throws IOException {
+        boolean encrypted = getProperty().getEncryptionParam() != null && getProperty().getEncryptionParam().getPassword() != null;
 
         ZipParameters parameters = new ZipParameters();
-        parameters.setFileNameInZip(path);
+        parameters.setFileNameInZip(resource.getArchivePath());
         parameters.setCompressionMethod(Boolean.TRUE.equals(resource.getIsDirectory()) ? CompressionMethod.STORE : CompressionMethod.DEFLATE);
-        parameters.setCompressionLevel(mapCompressionLevel(property.getCompressionLevel()));
+        parameters.setCompressionLevel(mapCompressionLevel(getProperty().getCompressionLevel()));
         parameters.setEncryptFiles(encrypted);
         if (encrypted) {
             parameters.setEncryptionMethod(EncryptionMethod.AES);
             parameters.setAesKeyStrength(AesKeyStrength.KEY_STRENGTH_256);
         }
 
-        if (property.getCallback() != null) {
-            property.getCallback().onFileStart(path);
+        zipOutputStream.putNextEntry(parameters);
+        if (Boolean.TRUE.equals(resource.getIsDirectory())) {
+            return null;
         }
+        return zipOutputStream;
+    }
 
-        outputStream.putNextEntry(parameters);
-        if (Boolean.FALSE.equals(resource.getIsDirectory())) {
-            long loaded;
-            try (InputStream in = resource.getResource().getInputStream()) {
-                loaded = StreamUtils.copy(in, outputStream);
-            }
-            if (property.getCallback() != null) {
-                long total = resource.getSize() == null ? loaded : resource.getSize();
-                property.getCallback().onProgress(path, loaded, total);
-            }
-        }
-        outputStream.closeEntry();
-
-        if (property.getCallback() != null) {
-            property.getCallback().onFileComplete(path);
-        }
+    /**
+     * 关闭当前 zip4j entry。
+     *
+     * @throws IOException 关闭失败
+     */
+    @Override
+    protected void doCloseCurrentEntry() throws IOException {
+        zipOutputStream.closeEntry();
     }
 
     @Override
     public void close() throws IOException {
-        outputStream.close();
-    }
-
-    /**
-     * 归一化路径。
-     *
-     * @param archivePath 原始路径
-     * @param directory   是否目录
-     * @return 归一化后的路径
-     */
-    private String normalizePath(String archivePath, boolean directory) {
-        if (archivePath == null || archivePath.isEmpty()) {
-            throw new JsonException("archivePath 不能为空");
-        }
-        String normalized = archivePath.startsWith("/") ? archivePath.substring(1) : archivePath;
-        if (directory && !normalized.endsWith("/")) {
-            normalized = normalized + "/";
-        }
-        return normalized;
+        zipOutputStream.close();
     }
 
     /**
