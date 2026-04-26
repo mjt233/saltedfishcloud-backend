@@ -1,7 +1,7 @@
 package com.sfc.archive.engine.sevenz;
 
 import com.sfc.archive.ArchiveEngineDecompressor;
-import com.sfc.archive.engine.support.EngineResourceUtils;
+import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -9,8 +9,6 @@ import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.springframework.core.io.Resource;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;

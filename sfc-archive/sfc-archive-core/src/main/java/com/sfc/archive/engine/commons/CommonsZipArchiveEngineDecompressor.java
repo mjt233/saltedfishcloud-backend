@@ -1,7 +1,7 @@
 package com.sfc.archive.engine.commons;
 
 import com.sfc.archive.ArchiveEngineDecompressor;
-import com.sfc.archive.engine.support.EngineResourceUtils;
+import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.xiaotao.saltedfishcloud.exception.JsonException;

@@ -27,7 +27,12 @@ public class ArchiveResource {
     private Long size;
 
     /**
-     * 资源在压缩包内的完整路径。
+     * 资源在压缩包内的完整路径。规范如下：<br>
+     * <ul>
+     *     <li>不使用'/'开头</li>
+     *     <li>使用'/'作为分隔符</li>
+     *     <li>长度 > 1 且 使用'/'作为末尾字符表示目录</li>
+     * </ul>
      */
     private String archivePath;
 

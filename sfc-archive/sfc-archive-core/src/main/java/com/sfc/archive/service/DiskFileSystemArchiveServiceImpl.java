@@ -1,11 +1,9 @@
 package com.sfc.archive.service;
 
-import com.sfc.archive.ArchiveManager;
-import com.sfc.archive.DiskFileSystemArchiveHelper;
-import com.sfc.archive.comporessor.ArchiveCompressor;
+import com.sfc.archive.*;
 import com.sfc.archive.extractor.ArchiveExtractor;
-import com.sfc.archive.model.ArchiveParam;
-import com.sfc.archive.model.DiskFileSystemCompressParam;
+import com.sfc.archive.model.*;
+import com.sfc.archive.utils.EngineResourceUtils;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.enums.ArchiveError;
 import com.sfc.task.AsyncTaskManager;
@@ -49,24 +47,53 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
     private ArchiveManager archiveManager;
 
     @Autowired
+    private ArchiveEngineManager archiveEngineManager;
+
+    @Autowired
     private AsyncTaskManager asyncTaskManager;
+
+
+    public void doCompressZipAndWriteOut(long uid, String path, Collection<String> names, CompressionLevel compressionLevel, OutputStream outputStream) throws IOException {
+        ArchiveEngineProvider engine = archiveEngineManager.getDecompressProviderByFilename("tmp.zip")
+                .stream()
+                .findAny()
+                .orElseThrow(() -> new UnsupportedOperationException("找不到支持zip的ArchiveEngine"));
+
+        DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
+        try(ArchiveEngineCompressor compressor = engine.createCompressor(outputStream, ArchiveProperty.builder()
+                .compressionLevel(compressionLevel)
+                .encoding(sysProperties.getStore().getArchiveEncoding())
+                .build())) {
+            for (FileInfo fileInfo : fileSystem.getUserFileList(uid, path, names)) {
+                if (fileInfo.isFile()) {
+                    compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(fileInfo, "/", fileSystem.getResource(uid, path, fileInfo.getName())));
+                } else {
+                    // 创建文件夹本身
+                    compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(fileInfo, "/", null));
+                    DiskFileSystemUtils.walk(fileSystem, uid, StringUtils.appendPath(path, fileInfo.getName()), (curPath, subFiles) -> {
+                        String basePath = StringUtils.removePrefix(path, curPath);
+                        if (basePath.isEmpty()) {
+                            basePath = "/";
+                        }
+
+                        // 向文件夹内压缩文件
+                        for (FileInfo subFile : subFiles) {
+                            if (subFile.isFile()) {
+                                compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, fileSystem.getResource(uid, curPath, subFile.getName())));
+                            } else {
+                                compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, null));
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+
 
     @Override
     public void compressAndWriteOut(long uid, String path, Collection<String> names, OutputStream outputStream) throws IOException {
-        DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
-        DiskFileSystemCompressParam param = DiskFileSystemCompressParam.builder()
-                .archiveParam(ArchiveParam.builder()
-                        .encoding(sysProperties.getStore().getArchiveEncoding())
-                        .type("zip")
-                        .build())
-                .sourceNames(names)
-                .sourceUid(uid)
-                .sourcePath(path)
-                .build();
-
-        try(ArchiveCompressor compressor = DiskFileSystemArchiveHelper.compressAndWriteOut(fileSystem, archiveManager, param, outputStream)) {
-            compressor.start();
-        }
+        doCompressZipAndWriteOut(uid, path, names, CompressionLevel.STORE, outputStream);
     }
 
 
@@ -76,7 +103,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
         DiskFileSystemArchiveHelper.testIsFileWritable(fileSystem, uid, dest);
         Path temp = Paths.get(PathUtils.getTempDirectory() + "/temp_zip" + System.currentTimeMillis());
         try(OutputStream output = Files.newOutputStream(temp)) {
-            compressAndWriteOut(uid, path, names, output);
+            doCompressZipAndWriteOut(uid, path, names, CompressionLevel.NORMAL, output);
 
             final FileInfo fileInfo = FileInfo.getLocal(temp.toString());
 

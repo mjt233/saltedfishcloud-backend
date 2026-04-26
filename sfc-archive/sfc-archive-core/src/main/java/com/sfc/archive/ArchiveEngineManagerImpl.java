@@ -46,7 +46,7 @@ public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
     }
 
     @Override
-    public List<ArchiveEngineProvider> getDecompressorEngineByFilename(String fileName) {
+    public List<ArchiveEngineProvider> getDecompressProviderByFilename(String fileName) {
         String extension = getExtension(fileName);
         if (extension == null) {
             return Collections.emptyList();

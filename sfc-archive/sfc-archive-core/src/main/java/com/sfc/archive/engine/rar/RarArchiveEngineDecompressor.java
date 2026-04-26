@@ -4,7 +4,7 @@ import com.github.junrar.Archive;
 import com.github.junrar.exception.RarException;
 import com.github.junrar.rarfile.FileHeader;
 import com.sfc.archive.ArchiveEngineDecompressor;
-import com.sfc.archive.engine.support.EngineResourceUtils;
+import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.xiaotao.saltedfishcloud.exception.JsonException;

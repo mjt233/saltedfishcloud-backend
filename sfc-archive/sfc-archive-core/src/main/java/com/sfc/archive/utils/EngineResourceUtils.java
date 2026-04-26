@@ -1,7 +1,8 @@
-package com.sfc.archive.engine.support;
+package com.sfc.archive.utils;
 
 import com.sfc.archive.model.ArchiveFile;
 import com.sfc.archive.model.ArchiveResource;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -14,12 +15,50 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.Optional;
 
 /**
  * 新引擎模型与底层资源之间的转换工具。
  */
 public final class EngineResourceUtils {
     private EngineResourceUtils() {
+    }
+
+    /**
+     * 将一个网盘标准文件信息转为待压缩资源
+     * @param fileInfo  网盘文件信息
+     * @param basePath  该文件在压缩包内的所在目录路径
+     * @param resource  文件数据资源，文件夹时可为 null
+     */
+    public static ArchiveResource toArchiveResource(FileInfo fileInfo, String basePath, Resource resource) {
+        // 1. 先计算基础路径
+        String archivePath = StringUtils.appendPath(basePath, fileInfo.getName());
+
+        // 2. 补齐目录后缀
+        if (fileInfo.isDir()) {
+            archivePath += "/";
+        }
+
+        // 3. 处理冗余的前导斜杠
+        if (archivePath.startsWith("/") && archivePath.length() > 1) {
+            archivePath = archivePath.substring(1);
+        }
+
+        long now = System.currentTimeMillis();
+        Long createdMillis = Optional.ofNullable(fileInfo.getCtime())
+                .orElse(Optional.ofNullable(fileInfo.getCreateAt()).map(Date::getTime).orElse(now));
+        Long lastModifiedMillis = Optional.ofNullable(fileInfo.getMtime())
+                .orElse(Optional.ofNullable(fileInfo.getUpdateAt()).map(Date::getTime).orElse(now));
+
+        return ArchiveResource.builder()
+                .name(fileInfo.getName())
+                .size(fileInfo.getSize())
+                .archivePath(archivePath)
+                .created(new Date(createdMillis))
+                .lastModified(new Date(lastModifiedMillis))
+                .resource(resource)
+                .isDirectory(fileInfo.isDir())
+                .build();
     }
 
     /**

@@ -41,7 +41,7 @@ public interface ArchiveEngineManager {
      * @param fileName 文件名
      * @return 命中的引擎列表，未命中返回空列表
      */
-    List<ArchiveEngineProvider> getDecompressorEngineByFilename(String fileName);
+    List<ArchiveEngineProvider> getDecompressProviderByFilename(String fileName);
 
     /**
      * 根据引擎 ID 创建压缩器。
