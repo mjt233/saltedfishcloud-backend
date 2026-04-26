@@ -27,11 +27,6 @@ public class SevenZArchiveEngineProvider extends AbstractArchiveEngineProvider {
     }
 
     @Override
-    public Collection<String> getSupportedCompressExtensions() {
-        return Collections.emptyList();
-    }
-
-    @Override
     public Collection<String> getSupportedDecompressExtensions() {
         return Collections.singleton(".7z");
     }

@@ -70,14 +70,7 @@ public class SevenZArchiveEngineDecompressor implements ArchiveEngineDecompresso
             SevenZArchiveEntry entry;
             while ((entry = sevenZFile.getNextEntry()) != null) {
                 if (!entry.isDirectory() && normalized.equals(entry.getName())) {
-                    long size = Math.max(entry.getSize(), 0L);
-                    ByteArrayOutputStream out = new ByteArrayOutputStream((int) Math.min(size, 1024 * 1024));
-                    byte[] buffer = new byte[8192];
-                    int read;
-                    while ((read = sevenZFile.read(buffer)) > 0) {
-                        out.write(buffer, 0, read);
-                    }
-                    return new ByteArrayInputStream(out.toByteArray());
+                    return sevenZFile.getInputStream(entry);
                 }
             }
         }
@@ -97,10 +90,13 @@ public class SevenZArchiveEngineDecompressor implements ArchiveEngineDecompresso
      */
     private SevenZFile openSevenZFile() throws IOException {
         String password = property.getEncryptionParam() == null ? null : property.getEncryptionParam().getPassword();
-        if (password == null) {
-            return new SevenZFile(localFileResource.getFile());
+        SevenZFile.Builder builder = SevenZFile.builder()
+                .setFile(localFileResource.getFile());
+
+        if (password != null) {
+            builder.setPassword(password);
         }
-        return new SevenZFile(localFileResource.getFile(), password.toCharArray());
+        return builder.get();
     }
 
     /**

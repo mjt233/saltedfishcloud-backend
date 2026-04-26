@@ -54,7 +54,7 @@ public class RarArchiveEngineDecompressor implements ArchiveEngineDecompressor {
         List<FileHeader> headers = archive.getFileHeaders();
         List<ArchiveResource> resources = new ArrayList<>(headers.size());
         for (FileHeader header : headers) {
-            String fileName = normalizePath(header.getFileNameString());
+            String fileName = normalizePath(header.getFileName());
             resources.add(ArchiveResource.builder()
                     .name(extractName(fileName))
                     .size(header.isDirectory() ? 0L : header.getFullUnpackSize())
@@ -70,7 +70,7 @@ public class RarArchiveEngineDecompressor implements ArchiveEngineDecompressor {
     public InputStream getInputStream(String archivePath) throws IOException {
         String normalized = stripPrefixSlash(archivePath);
         for (FileHeader header : archive.getFileHeaders()) {
-            String fileName = normalizePath(header.getFileNameString());
+            String fileName = normalizePath(header.getFileName());
             if (!header.isDirectory() && normalized.equals(fileName)) {
                 return archive.getInputStream(header);
             }
