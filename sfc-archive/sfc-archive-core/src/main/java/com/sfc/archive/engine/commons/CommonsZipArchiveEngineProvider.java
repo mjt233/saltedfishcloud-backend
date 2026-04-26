@@ -3,9 +3,6 @@ package com.sfc.archive.engine.commons;
 import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
-import com.sfc.archive.engine.support.LegacyArchiveEngineDecompressorAdapter;
-import com.sfc.archive.extractor.impl.zip.ZipArchiveExtractor;
-import com.sfc.archive.model.ArchiveParam;
 import com.sfc.archive.model.ArchiveProperty;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.springframework.core.io.Resource;
@@ -49,14 +46,9 @@ public class CommonsZipArchiveEngineProvider extends AbstractArchiveEngineProvid
     }
 
     @Override
-    public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveProperty property) {
+    public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveProperty property) throws IOException {
         ArchiveProperty normalized = normalizeProperty(property);
-        ArchiveParam archiveParam = ArchiveParam.builder()
-                .type("zip")
-                .encoding(normalized.getEncoding())
-                .password(normalized.getEncryptionParam() == null ? null : normalized.getEncryptionParam().getPassword())
-                .build();
-        return new LegacyArchiveEngineDecompressorAdapter(new ZipArchiveExtractor(archiveParam, resource));
+        return new CommonsZipArchiveEngineDecompressor(resource, normalized);
     }
 }
 

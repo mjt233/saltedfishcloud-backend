@@ -8,6 +8,7 @@ import com.sfc.archive.engine.support.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -56,7 +57,7 @@ public class RarArchiveEngineDecompressor implements ArchiveEngineDecompressor {
         for (FileHeader header : headers) {
             String fileName = normalizePath(header.getFileName());
             resources.add(ArchiveResource.builder()
-                    .name(extractName(fileName))
+                    .name(PathUtils.getLastNode(fileName))
                     .size(header.isDirectory() ? 0L : header.getFullUnpackSize())
                     .archivePath(EngineResourceUtils.normalizeArchivePath(fileName))
                     .isDirectory(header.isDirectory())
@@ -107,22 +108,6 @@ public class RarArchiveEngineDecompressor implements ArchiveEngineDecompressor {
         return path == null ? null : path.replace('\\', '/');
     }
 
-    /**
-     * 从路径提取文件名。
-     *
-     * @param path 路径
-     * @return 文件名
-     */
-    private String extractName(String path) {
-        if (path == null || path.isEmpty()) {
-            return path;
-        }
-        int slashIndex = path.lastIndexOf('/');
-        if (slashIndex < 0 || slashIndex == path.length() - 1) {
-            return path;
-        }
-        return path.substring(slashIndex + 1);
-    }
 }
 
 
