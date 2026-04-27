@@ -1,6 +1,6 @@
 package com.sfc.archive.engine.zip4j;
 
-import com.sfc.archive.ArchiveEngineDecompressor;
+import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * zip4j 解压执行器。
  */
-public class Zip4jArchiveEngineDecompressor implements ArchiveEngineDecompressor {
+public class Zip4jArchiveEngineDecompressor extends AbstractArchiveEngineDecompressor {
     /**
      * 本地文件引用。
      */
@@ -64,11 +64,12 @@ public class Zip4jArchiveEngineDecompressor implements ArchiveEngineDecompressor
 
     @Override
     public InputStream getInputStream(String archivePath) throws IOException {
-        FileHeader fileHeader = zipFile.getFileHeader(stripPrefixSlash(archivePath));
+        FileHeader fileHeader = zipFile.getFileHeader(normalizeArchivePath(archivePath));
         if (fileHeader == null || fileHeader.isDirectory()) {
             throw new JsonException("压缩包内资源不存在: " + archivePath);
         }
-        return zipFile.getInputStream(fileHeader);
+        String normalizedArchivePath = EngineResourceUtils.normalizeArchivePath(fileHeader.getFileName());
+        return wrapInputStreamWithCallback(normalizedArchivePath, fileHeader.getUncompressedSize(), zipFile.getInputStream(fileHeader));
     }
 
     @Override
@@ -76,18 +77,6 @@ public class Zip4jArchiveEngineDecompressor implements ArchiveEngineDecompressor
         localFileResource.cleanup();
     }
 
-    /**
-     * 去掉路径前导斜杠。
-     *
-     * @param path 压缩包路径
-     * @return 去掉前导斜杠后的路径
-     */
-    private String stripPrefixSlash(String path) {
-        if (path == null || path.isEmpty()) {
-            throw new JsonException("archivePath 不能为空");
-        }
-        return path.startsWith("/") ? path.substring(1) : path;
-    }
 
     /**
      * 从路径提取文件名。

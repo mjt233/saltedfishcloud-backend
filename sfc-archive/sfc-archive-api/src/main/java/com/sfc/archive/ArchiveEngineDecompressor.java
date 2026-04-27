@@ -1,6 +1,7 @@
 package com.sfc.archive;
 
 import com.sfc.archive.model.ArchiveResource;
+import com.sfc.archive.model.FileTransferCallback;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +27,16 @@ public interface ArchiveEngineDecompressor extends AutoCloseable {
      * @throws IOException 读取失败
      */
     InputStream getInputStream(String archivePath) throws IOException;
+
+    /**
+     * 设置文件传输回调。
+     * <p>
+     * 默认为空操作，实现类可覆盖以支持进度通知。
+     * </p>
+     *
+     * @param callback 回调实现，传入 {@code null} 表示清除回调
+     */
+    void setCallback(FileTransferCallback callback);
 
     /**
      * 关闭解压任务并释放资源。

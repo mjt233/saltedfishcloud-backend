@@ -25,11 +25,6 @@ public class ArchiveEngineProperty {
     private EncryptionParam encryptionParam;
 
     /**
-     * 文件传输回调，可为空。
-     */
-    private FileTransferCallback callback;
-
-    /**
      * 压缩包内文件名编码，默认 UTF-8。
      */
     @Builder.Default

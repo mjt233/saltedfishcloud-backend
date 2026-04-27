@@ -3,7 +3,7 @@ package com.sfc.archive.engine.rar;
 import com.github.junrar.Archive;
 import com.github.junrar.exception.RarException;
 import com.github.junrar.rarfile.FileHeader;
-import com.sfc.archive.ArchiveEngineDecompressor;
+import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * RAR 解压执行器。
  */
-public class RarArchiveEngineDecompressor implements ArchiveEngineDecompressor {
+public class RarArchiveEngineDecompressor extends AbstractArchiveEngineDecompressor {
     /**
      * 本地文件引用。
      */
@@ -69,11 +69,12 @@ public class RarArchiveEngineDecompressor implements ArchiveEngineDecompressor {
 
     @Override
     public InputStream getInputStream(String archivePath) throws IOException {
-        String normalized = stripPrefixSlash(archivePath);
+        String normalized = normalizeArchivePath(archivePath);
         for (FileHeader header : archive.getFileHeaders()) {
             String fileName = normalizePath(header.getFileName());
             if (!header.isDirectory() && normalized.equals(fileName)) {
-                return archive.getInputStream(header);
+                String callbackPath = EngineResourceUtils.normalizeArchivePath(fileName);
+                return wrapInputStreamWithCallback(callbackPath, header.getFullUnpackSize(), archive.getInputStream(header));
             }
         }
         throw new JsonException("压缩包内资源不存在: " + archivePath);
@@ -85,18 +86,6 @@ public class RarArchiveEngineDecompressor implements ArchiveEngineDecompressor {
         localFileResource.cleanup();
     }
 
-    /**
-     * 去掉路径前导斜杠。
-     *
-     * @param path 压缩包路径
-     * @return 去掉前导斜杠后的路径
-     */
-    private String stripPrefixSlash(String path) {
-        if (path == null || path.isEmpty()) {
-            throw new JsonException("archivePath 不能为空");
-        }
-        return path.startsWith("/") ? path.substring(1) : path;
-    }
 
     /**
      * 统一 RAR 条目路径分隔符。

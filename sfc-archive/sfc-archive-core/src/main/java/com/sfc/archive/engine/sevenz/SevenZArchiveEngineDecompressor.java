@@ -1,6 +1,6 @@
 package com.sfc.archive.engine.sevenz;
 
-import com.sfc.archive.ArchiveEngineDecompressor;
+import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
@@ -9,6 +9,7 @@ import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.springframework.core.io.Resource;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import java.util.List;
 /**
  * 7z 解压执行器。
  */
-public class SevenZArchiveEngineDecompressor implements ArchiveEngineDecompressor {
+public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecompressor {
     /**
      * 本地文件资源。
      */
@@ -63,13 +64,33 @@ public class SevenZArchiveEngineDecompressor implements ArchiveEngineDecompresso
 
     @Override
     public InputStream getInputStream(String archivePath) throws IOException {
-        String normalized = stripPrefixSlash(archivePath);
-        try (SevenZFile sevenZFile = openSevenZFile()) {
+        String normalized = normalizeArchivePath(archivePath);
+        SevenZFile sevenZFile = openSevenZFile();
+        boolean matched = false;
+        try {
             SevenZArchiveEntry entry;
             while ((entry = sevenZFile.getNextEntry()) != null) {
                 if (!entry.isDirectory() && normalized.equals(entry.getName())) {
-                    return sevenZFile.getInputStream(entry);
+                    InputStream entryInputStream = sevenZFile.getInputStream(entry);
+
+                    // 原始的 senven7File 对象是需要close释放资源的，单个文件流close后需要确保senven7File也要一起close
+                    InputStream sourceInputStream = new FilterInputStream(entryInputStream) {
+                        @Override
+                        public void close() throws IOException {
+                            try {
+                                super.close();
+                            } finally {
+                                sevenZFile.close();
+                            }
+                        }
+                    };
+                    matched = true;
+                    return wrapInputStreamWithCallback(EngineResourceUtils.normalizeArchivePath(entry.getName()), entry.getSize(), sourceInputStream);
                 }
+            }
+        } finally {
+            if (!matched) {
+                sevenZFile.close();
             }
         }
         throw new JsonException("压缩包内资源不存在: " + archivePath);
@@ -108,17 +129,5 @@ public class SevenZArchiveEngineDecompressor implements ArchiveEngineDecompresso
         return idx < 0 ? path : path.substring(idx + 1);
     }
 
-    /**
-     * 去除前导斜杠。
-     *
-     * @param path 输入路径
-     * @return 去除前导斜杠后的路径
-     */
-    private String stripPrefixSlash(String path) {
-        if (path == null) {
-            throw new JsonException("archivePath 不能为空");
-        }
-        return path.startsWith("/") ? path.substring(1) : path;
-    }
 }
 

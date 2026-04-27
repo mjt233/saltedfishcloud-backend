@@ -1,6 +1,6 @@
 package com.sfc.archive.engine.commons;
 
-import com.sfc.archive.ArchiveEngineDecompressor;
+import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * 基于 Apache Commons Compress 的 ZIP 解压执行器。
  */
-public class CommonsZipArchiveEngineDecompressor implements ArchiveEngineDecompressor {
+public class CommonsZipArchiveEngineDecompressor extends AbstractArchiveEngineDecompressor {
     /**
      * 本地文件资源引用。
      */
@@ -76,12 +76,13 @@ public class CommonsZipArchiveEngineDecompressor implements ArchiveEngineDecompr
 
     @Override
     public InputStream getInputStream(String archivePath) throws IOException {
-        String normalizedPath = normalizeEntryName(stripPrefixSlash(archivePath));
+        String normalizedPath = normalizeEntryName(normalizeArchivePath(archivePath));
         ZipArchiveEntry entry = zipFile.getEntry(normalizedPath);
         if (entry == null || entry.isDirectory()) {
             throw new JsonException("压缩包内资源不存在: " + archivePath);
         }
-        return zipFile.getInputStream(entry);
+        String callbackPath = EngineResourceUtils.normalizeArchivePath(entry.getName());
+        return wrapInputStreamWithCallback(callbackPath, entry.getSize(), zipFile.getInputStream(entry));
     }
 
     @Override
@@ -93,18 +94,6 @@ public class CommonsZipArchiveEngineDecompressor implements ArchiveEngineDecompr
         }
     }
 
-    /**
-     * 去掉路径前导斜杠。
-     *
-     * @param path 压缩包路径
-     * @return 去掉前导斜杠后的路径
-     */
-    private String stripPrefixSlash(String path) {
-        if (path == null || path.isEmpty()) {
-            throw new JsonException("archivePath 不能为空");
-        }
-        return path.startsWith("/") ? path.substring(1) : path;
-    }
 
     /**
      * 统一 ZIP 条目路径分隔符。
