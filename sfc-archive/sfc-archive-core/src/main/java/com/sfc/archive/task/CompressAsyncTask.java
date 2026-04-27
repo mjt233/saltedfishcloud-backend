@@ -18,6 +18,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,6 +30,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 压缩任务
@@ -59,7 +61,23 @@ public class CompressAsyncTask implements AsyncTask {
 
     private boolean inRunning = false;
 
+    /**
+     * 是否已收到中断请求。
+     */
+    private final AtomicBoolean interrupted = new AtomicBoolean(false);
+
     private final AtomicReference<Thread> executeThread = new AtomicReference<>();
+
+    /**
+     * 在关键流程处检查中断请求，确保任务能够尽快停止。
+     *
+     * @throws InterruptedIOException 已收到中断请求时抛出
+     */
+    private void checkInterrupted() throws InterruptedIOException {
+        if (interrupted.get() || Thread.currentThread().isInterrupted()) {
+            throw new InterruptedIOException("压缩任务已中断");
+        }
+    }
 
     public CompressAsyncTask(DiskFileSystemCompressParam compressParam, String originParams) {
         this.compressParam = compressParam;
@@ -112,13 +130,17 @@ public class CompressAsyncTask implements AsyncTask {
         String path = compressParam.getSourcePath();
         Collection<String> names = compressParam.getSourceNames();
         try(ArchiveEngineCompressor compressor = engine.createCompressor(outputStream, compressParam.getEngineProperty())) {
+            this.compressor = compressor;
             for (FileInfo fileInfo : fileSystem.getUserFileList(uid, path, names)) {
+                checkInterrupted();
                 if (fileInfo.isFile()) {
                     compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(fileInfo, "/", fileSystem.getResource(uid, path, fileInfo.getName())));
                 } else {
                     addDirectoryResources(compressor, uid, path, fileInfo);
                 }
             }
+        } finally {
+            this.compressor = null;
         }
     }
 
@@ -137,11 +159,13 @@ public class CompressAsyncTask implements AsyncTask {
      * @throws IOException 遍历或写入失败
      */
     private void addDirectoryResources(ArchiveEngineCompressor compressor, Long uid, String sourceBasePath, FileInfo rootDirectory) throws IOException {
+        checkInterrupted();
         String rootDirectoryPath = StringUtils.appendPath(sourceBasePath, rootDirectory.getName());
         Map<String, ArchiveResource> candidateDirectoryResources = new LinkedHashMap<>();
         candidateDirectoryResources.put(rootDirectoryPath, EngineResourceUtils.toArchiveResource(rootDirectory, "/", null));
 
         DiskFileSystemUtils.walk(fileSystem, uid, rootDirectoryPath, (curPath, subFiles) -> {
+            checkInterrupted();
             if (!subFiles.isEmpty()) {
                 candidateDirectoryResources.remove(curPath);
             }
@@ -162,6 +186,7 @@ public class CompressAsyncTask implements AsyncTask {
         });
 
         for (Map.Entry<String, ArchiveResource> entry : candidateDirectoryResources.entrySet()) {
+            checkInterrupted();
             compressor.addArchiveResource(entry.getValue());
         }
     }
@@ -172,6 +197,7 @@ public class CompressAsyncTask implements AsyncTask {
             throw new IllegalArgumentException("重复执行");
         }
         this.inRunning = true;
+        interrupted.set(false);
         this.taskLog = new CustomLogger(logOutputStream);
 
         taskLog.info("任务参数: " + originParams);
@@ -204,7 +230,18 @@ public class CompressAsyncTask implements AsyncTask {
 
     @Override
     public void interrupt() {
-        taskLog.warn("收到任务中断命令");
+        interrupted.set(true);
+        if (taskLog != null) {
+            taskLog.warn("收到任务中断命令");
+        }
+        ArchiveEngineCompressor compressor = this.compressor;
+        if (compressor != null) {
+            try {
+                compressor.close();
+            } catch (IOException e) {
+                log.warn("中断时关闭压缩器失败", e);
+            }
+        }
         Thread thread = executeThread.get();
         if (thread != null) {
             thread.interrupt();
