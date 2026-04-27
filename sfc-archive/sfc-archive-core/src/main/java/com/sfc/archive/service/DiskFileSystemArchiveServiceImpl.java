@@ -1,18 +1,26 @@
 package com.sfc.archive.service;
 
-import com.sfc.archive.*;
-import com.sfc.archive.model.*;
+import com.sfc.archive.ArchiveEngineCompressor;
+import com.sfc.archive.ArchiveEngineManager;
+import com.sfc.archive.ArchiveEngineProvider;
+import com.sfc.archive.model.ArchiveEngineProperty;
+import com.sfc.archive.model.ArchiveResource;
+import com.sfc.archive.model.CompressionLevel;
+import com.sfc.archive.model.DiskFileSystemCompressParam;
 import com.sfc.archive.utils.EngineResourceUtils;
-import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.utils.*;
+import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +28,8 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -65,25 +75,54 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
                 if (fileInfo.isFile()) {
                     compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(fileInfo, "/", fileSystem.getResource(uid, path, fileInfo.getName())));
                 } else {
-                    // 创建文件夹本身
-                    compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(fileInfo, "/", null));
-                    DiskFileSystemUtils.walk(fileSystem, uid, StringUtils.appendPath(path, fileInfo.getName()), (curPath, subFiles) -> {
-                        String basePath = StringUtils.removePrefix(path, curPath);
-                        if (basePath.isEmpty()) {
-                            basePath = "/";
-                        }
-
-                        // 向文件夹内压缩文件
-                        for (FileInfo subFile : subFiles) {
-                            if (subFile.isFile()) {
-                                compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, fileSystem.getResource(uid, curPath, subFile.getName())));
-                            } else {
-                                compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, null));
-                            }
-                        }
-                    });
+                    addDirectoryResources(fileSystem, compressor, uid, path, fileInfo);
                 }
             }
+        }
+    }
+
+    /**
+     * 遍历目录并在遍历完成后仅写入空目录项。
+     * <p>
+     * 目录在遍历过程中先全部记录到候选集合中；若某目录在遍历时发现存在直接子项，
+     * 则加入非空目录集合。遍历结束后，仅将不在非空目录集合中的目录写入压缩包，
+     * 从而保留空目录，同时避免为非空目录重复创建显式目录项。
+     * </p>
+     *
+     * @param fileSystem     文件系统
+     * @param compressor     压缩器
+     * @param uid            用户 ID
+     * @param sourceBasePath 源目录路径
+     * @param rootDirectory  起始目录
+     * @throws IOException 遍历或写入失败
+     */
+    private void addDirectoryResources(DiskFileSystem fileSystem, ArchiveEngineCompressor compressor, long uid, String sourceBasePath, FileInfo rootDirectory) throws IOException {
+        String rootDirectoryPath = StringUtils.appendPath(sourceBasePath, rootDirectory.getName());
+        Map<String, ArchiveResource> candidateDirectoryResources = new LinkedHashMap<>();
+        candidateDirectoryResources.put(rootDirectoryPath, EngineResourceUtils.toArchiveResource(rootDirectory, "/", null));
+
+        DiskFileSystemUtils.walk(fileSystem, uid, rootDirectoryPath, (curPath, subFiles) -> {
+            if (!subFiles.isEmpty()) {
+                candidateDirectoryResources.remove(curPath);
+            }
+
+            String basePath = StringUtils.removePrefix(sourceBasePath, curPath);
+            if (basePath.isEmpty()) {
+                basePath = "/";
+            }
+
+            for (FileInfo subFile : subFiles) {
+                if (subFile.isFile()) {
+                    compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, fileSystem.getResource(uid, curPath, subFile.getName())));
+                } else {
+                    String subDirectoryPath = StringUtils.appendPath(curPath, subFile.getName());
+                    candidateDirectoryResources.put(subDirectoryPath, EngineResourceUtils.toArchiveResource(subFile, basePath, null));
+                }
+            }
+        });
+
+        for (Map.Entry<String, ArchiveResource> entry : candidateDirectoryResources.entrySet()) {
+            compressor.addArchiveResource(entry.getValue());
         }
     }
 
