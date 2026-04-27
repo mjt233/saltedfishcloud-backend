@@ -3,7 +3,7 @@ package com.sfc.archive.config;
 import com.sfc.archive.*;
 import com.sfc.archive.composer.impl.zip.ZipArchiveCompressorProvider;
 import com.sfc.archive.controller.ArchiveController;
-import com.sfc.archive.engine.commons.CommonsZipArchiveEngineProvider;
+import com.sfc.archive.engine.commons.ApacheCommonsCompressEngineProvider;
 import com.sfc.archive.engine.rar.RarArchiveEngineProvider;
 import com.sfc.archive.engine.zip4j.Zip4jArchiveEngineProvider;
 import com.sfc.archive.extractor.impl.zip.ZipArchiveExtractorProvider;
@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Import;
         ArchiveController.class,
 
         // 压缩引擎提供者
-        CommonsZipArchiveEngineProvider.class,
+        ApacheCommonsCompressEngineProvider.class,
         Zip4jArchiveEngineProvider.class,
         RarArchiveEngineProvider.class
 })

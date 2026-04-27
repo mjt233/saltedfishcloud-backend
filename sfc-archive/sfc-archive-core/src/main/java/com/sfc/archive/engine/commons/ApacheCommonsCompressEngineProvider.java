@@ -12,9 +12,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * 基于 Apache Commons Compress 的 ZIP 引擎实现。
+ * 基于 Apache Commons Compress 的 解压缩引擎实现。
  */
-public class CommonsZipArchiveEngineProvider extends AbstractArchiveEngineProvider {
+public class ApacheCommonsCompressEngineProvider extends AbstractArchiveEngineProvider {
     @Override
     public String getId() {
         return "apache-commons-compress";
