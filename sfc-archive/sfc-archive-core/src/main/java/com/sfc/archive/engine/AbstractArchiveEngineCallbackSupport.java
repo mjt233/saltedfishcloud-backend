@@ -1,6 +1,7 @@
 package com.sfc.archive.engine;
 
 import com.sfc.archive.model.FileTransferCallback;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.function.Consumer;
@@ -15,18 +16,10 @@ import java.util.function.Consumer;
 public abstract class AbstractArchiveEngineCallbackSupport {
 
     /**
-     * 文件传输回调，可为空。
+     * 文件传输回调，可为null。
      */
+    @Setter
     private FileTransferCallback callback;
-
-    /**
-     * 设置文件传输回调。
-     *
-     * @param callback 回调实现，传入 {@code null} 表示清除回调
-     */
-    public void setCallback(FileTransferCallback callback) {
-        this.callback = callback;
-    }
 
     /**
      * 安全地调用文件开始处理回调。
