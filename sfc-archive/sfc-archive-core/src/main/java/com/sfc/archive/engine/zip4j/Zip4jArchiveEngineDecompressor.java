@@ -1,6 +1,7 @@
 package com.sfc.archive.engine.zip4j;
 
 import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
+import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
@@ -50,16 +51,39 @@ public class Zip4jArchiveEngineDecompressor extends AbstractArchiveEngineDecompr
         List<FileHeader> headers = zipFile.getFileHeaders();
         List<ArchiveResource> resources = new ArrayList<>(headers.size());
         for (FileHeader header : headers) {
-            String fileName = header.getFileName();
-            resources.add(ArchiveResource.builder()
-                    .name(extractName(fileName))
-                    .size(header.isDirectory() ? 0L : header.getUncompressedSize())
-                    .archivePath(EngineResourceUtils.normalizeArchivePath(fileName))
-                    .isDirectory(header.isDirectory())
-                    .lastModified(header.getLastModifiedTime() > 0 ? new Date(header.getLastModifiedTimeEpoch()) : null)
-                    .build());
+            resources.add(toArchiveResource(header));
         }
         return resources.iterator();
+    }
+
+    /**
+     * 顺序遍历 ZIP 条目并逐个回调。
+     *
+     * @param func 解压回调
+     * @throws IOException 解压失败
+     */
+    @Override
+    public void decompressAll(IOExceptionBiFunction<InputStream, ArchiveResource, Boolean> func) throws IOException {
+        requireDecompressFunction(func);
+        for (FileHeader header : zipFile.getFileHeaders()) {
+            ArchiveResource archiveResource = toArchiveResource(header);
+            if (header.isDirectory()) {
+                if (!continueDecompress(func, null, archiveResource)) {
+                    return;
+                }
+                continue;
+            }
+
+            try (InputStream inputStream = wrapInputStreamWithCallback(
+                    archiveResource.getArchivePath(),
+                    header.getUncompressedSize(),
+                    zipFile.getInputStream(header)
+            )) {
+                if (!continueDecompress(func, inputStream, archiveResource)) {
+                    return;
+                }
+            }
+        }
     }
 
     @Override
@@ -75,6 +99,24 @@ public class Zip4jArchiveEngineDecompressor extends AbstractArchiveEngineDecompr
     @Override
     public void close() throws IOException {
         localFileResource.cleanup();
+    }
+
+
+    /**
+     * 将 ZIP 条目转换为归档资源对象。
+     *
+     * @param header ZIP 条目
+     * @return 归档资源
+     */
+    private ArchiveResource toArchiveResource(FileHeader header) {
+        String fileName = header.getFileName();
+        return ArchiveResource.builder()
+                .name(extractName(fileName))
+                .size(header.isDirectory() ? 0L : header.getUncompressedSize())
+                .archivePath(EngineResourceUtils.normalizeArchivePath(fileName))
+                .isDirectory(header.isDirectory())
+                .lastModified(header.getLastModifiedTime() > 0 ? new Date(header.getLastModifiedTimeEpoch()) : null)
+                .build();
     }
 
 

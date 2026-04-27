@@ -1,6 +1,7 @@
 package com.sfc.archive.engine.sevenz;
 
 import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
+import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
@@ -49,17 +50,43 @@ public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecomp
         try (SevenZFile sevenZFile = openSevenZFile()) {
             SevenZArchiveEntry entry;
             while ((entry = sevenZFile.getNextEntry()) != null) {
-                resources.add(ArchiveResource.builder()
-                        .name(extractName(entry.getName()))
-                        .archivePath(EngineResourceUtils.normalizeArchivePath(entry.getName()))
-                        .isDirectory(entry.isDirectory())
-                        .size(entry.isDirectory() ? 0L : entry.getSize())
-                        .lastModified(entry.getLastModifiedDate() == null ? null : new Date(entry.getLastModifiedDate().getTime()))
-                        .created(entry.getCreationDate() == null ? null : new Date(entry.getCreationDate().getTime()))
-                        .build());
+                resources.add(toArchiveResource(entry));
             }
         }
         return resources.iterator();
+    }
+
+    /**
+     * 顺序遍历 7z 条目并逐个回调。
+     *
+     * @param func 解压回调
+     * @throws IOException 解压失败
+     */
+    @Override
+    public void decompressAll(IOExceptionBiFunction<InputStream, ArchiveResource, Boolean> func) throws IOException {
+        requireDecompressFunction(func);
+        try (SevenZFile sevenZFile = openSevenZFile()) {
+            SevenZArchiveEntry entry;
+            while ((entry = sevenZFile.getNextEntry()) != null) {
+                ArchiveResource archiveResource = toArchiveResource(entry);
+                if (entry.isDirectory()) {
+                    if (!continueDecompress(func, null, archiveResource)) {
+                        return;
+                    }
+                    continue;
+                }
+
+                try (InputStream inputStream = wrapInputStreamWithCallback(
+                        archiveResource.getArchivePath(),
+                        entry.getSize(),
+                        sevenZFile.getInputStream(entry)
+                )) {
+                    if (!continueDecompress(func, inputStream, archiveResource)) {
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -99,6 +126,23 @@ public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecomp
     @Override
     public void close() {
         localFileResource.cleanup();
+    }
+
+    /**
+     * 将 7z 条目转换为归档资源对象。
+     *
+     * @param entry 7z 条目
+     * @return 归档资源
+     */
+    private ArchiveResource toArchiveResource(SevenZArchiveEntry entry) {
+        return ArchiveResource.builder()
+                .name(extractName(entry.getName()))
+                .archivePath(EngineResourceUtils.normalizeArchivePath(entry.getName()))
+                .isDirectory(entry.isDirectory())
+                .size(entry.isDirectory() ? 0L : entry.getSize())
+                .lastModified(entry.getLastModifiedDate() == null ? null : new Date(entry.getLastModifiedDate().getTime()))
+                .created(entry.getCreationDate() == null ? null : new Date(entry.getCreationDate().getTime()))
+                .build();
     }
 
     /**

@@ -4,6 +4,7 @@ import com.github.junrar.Archive;
 import com.github.junrar.exception.RarException;
 import com.github.junrar.rarfile.FileHeader;
 import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
+import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
@@ -55,16 +56,39 @@ public class RarArchiveEngineDecompressor extends AbstractArchiveEngineDecompres
         List<FileHeader> headers = archive.getFileHeaders();
         List<ArchiveResource> resources = new ArrayList<>(headers.size());
         for (FileHeader header : headers) {
-            String fileName = normalizePath(header.getFileName());
-            resources.add(ArchiveResource.builder()
-                    .name(PathUtils.getLastNode(fileName))
-                    .size(header.isDirectory() ? 0L : header.getFullUnpackSize())
-                    .archivePath(EngineResourceUtils.normalizeArchivePath(fileName))
-                    .isDirectory(header.isDirectory())
-                    .lastModified(header.getMTime() == null ? null : new Date(header.getMTime().getTime()))
-                    .build());
+            resources.add(toArchiveResource(header));
         }
         return resources.iterator();
+    }
+
+    /**
+     * 顺序遍历 RAR 条目并逐个回调。
+     *
+     * @param func 解压回调
+     * @throws IOException 解压失败
+     */
+    @Override
+    public void decompressAll(IOExceptionBiFunction<InputStream, ArchiveResource, Boolean> func) throws IOException {
+        requireDecompressFunction(func);
+        for (FileHeader header : archive.getFileHeaders()) {
+            ArchiveResource archiveResource = toArchiveResource(header);
+            if (header.isDirectory()) {
+                if (!continueDecompress(func, null, archiveResource)) {
+                    return;
+                }
+                continue;
+            }
+
+            try (InputStream inputStream = wrapInputStreamWithCallback(
+                    archiveResource.getArchivePath(),
+                    header.getFullUnpackSize(),
+                    archive.getInputStream(header)
+            )) {
+                if (!continueDecompress(func, inputStream, archiveResource)) {
+                    return;
+                }
+            }
+        }
     }
 
     @Override
@@ -84,6 +108,24 @@ public class RarArchiveEngineDecompressor extends AbstractArchiveEngineDecompres
     public void close() throws IOException {
         archive.close();
         localFileResource.cleanup();
+    }
+
+
+    /**
+     * 将 RAR 条目转换为归档资源对象。
+     *
+     * @param header RAR 条目
+     * @return 归档资源
+     */
+    private ArchiveResource toArchiveResource(FileHeader header) {
+        String fileName = normalizePath(header.getFileName());
+        return ArchiveResource.builder()
+                .name(PathUtils.getLastNode(fileName))
+                .size(header.isDirectory() ? 0L : header.getFullUnpackSize())
+                .archivePath(EngineResourceUtils.normalizeArchivePath(fileName))
+                .isDirectory(header.isDirectory())
+                .lastModified(header.getMTime() == null ? null : new Date(header.getMTime().getTime()))
+                .build();
     }
 
 
