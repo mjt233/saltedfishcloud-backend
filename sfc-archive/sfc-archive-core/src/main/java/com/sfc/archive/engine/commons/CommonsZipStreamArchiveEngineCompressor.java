@@ -34,6 +34,7 @@ public class CommonsZipStreamArchiveEngineCompressor extends AbstractArchiveEngi
         super(property);
         this.zipOutputStream = new ZipArchiveOutputStream(targetOutput);
         configureEncoding(property);
+        zipOutputStream.setLevel(CommonsCompressionLevelUtils.mapDeflaterLevel(property.getCompressionLevel()));
     }
 
     /**

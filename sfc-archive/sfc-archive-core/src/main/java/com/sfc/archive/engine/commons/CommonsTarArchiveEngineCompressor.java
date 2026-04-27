@@ -8,6 +8,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
 import java.io.IOException;
@@ -39,17 +40,23 @@ public class CommonsTarArchiveEngineCompressor extends AbstractArchiveEngineComp
     /**
      * 创建 tar.gz 压缩器。
      *
+     * <p>根据 {@link ArchiveEngineProperty#getCompressionLevel()} 调整 GZIP Deflate 压缩级别。</p>
+     *
      * @param targetOutput 目标输出流
      * @param property     压缩属性
      * @return 压缩器实例
      * @throws IOException 初始化失败
      */
     public static CommonsTarArchiveEngineCompressor gzip(OutputStream targetOutput, ArchiveEngineProperty property) throws IOException {
-        return new CommonsTarArchiveEngineCompressor(new GzipCompressorOutputStream(targetOutput), property);
+        GzipParameters params = new GzipParameters();
+        params.setCompressionLevel(CommonsCompressionLevelUtils.mapDeflaterLevel(property.getCompressionLevel()));
+        return new CommonsTarArchiveEngineCompressor(new GzipCompressorOutputStream(targetOutput, params), property);
     }
 
     /**
      * 创建 tar.xz 压缩器。
+     *
+     * <p>根据 {@link ArchiveEngineProperty#getCompressionLevel()} 调整 XZ/LZMA2 preset（0‑9）。</p>
      *
      * @param targetOutput 目标输出流
      * @param property     压缩属性
@@ -57,11 +64,16 @@ public class CommonsTarArchiveEngineCompressor extends AbstractArchiveEngineComp
      * @throws IOException 初始化失败
      */
     public static CommonsTarArchiveEngineCompressor xz(OutputStream targetOutput, ArchiveEngineProperty property) throws IOException {
-        return new CommonsTarArchiveEngineCompressor(new XZCompressorOutputStream(targetOutput), property);
+        return new CommonsTarArchiveEngineCompressor(
+                new XZCompressorOutputStream(targetOutput, CommonsCompressionLevelUtils.mapXzPreset(property.getCompressionLevel())),
+                property);
     }
 
     /**
      * 创建 tar.bz2 压缩器。
+     *
+     * <p>根据 {@link ArchiveEngineProperty#getCompressionLevel()} 调整 BZip2 blockSize（1‑9）。
+     * BZip2 不支持"仅存储"模式，{@link com.sfc.archive.model.CompressionLevel#STORE} 将映射为最小 block。</p>
      *
      * @param targetOutput 目标输出流
      * @param property     压缩属性
@@ -69,7 +81,9 @@ public class CommonsTarArchiveEngineCompressor extends AbstractArchiveEngineComp
      * @throws IOException 初始化失败
      */
     public static CommonsTarArchiveEngineCompressor bzip2(OutputStream targetOutput, ArchiveEngineProperty property) throws IOException {
-        return new CommonsTarArchiveEngineCompressor(new BZip2CompressorOutputStream(targetOutput), property);
+        return new CommonsTarArchiveEngineCompressor(
+                new BZip2CompressorOutputStream(targetOutput, CommonsCompressionLevelUtils.mapBzip2BlockSize(property.getCompressionLevel())),
+                property);
     }
 
     /**

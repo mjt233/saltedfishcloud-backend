@@ -3,15 +3,18 @@ package com.sfc.archive.engine.commons;
 import com.sfc.archive.engine.AbstractArchiveEngineCompressor;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.sfc.archive.model.CompressionLevel;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
+import org.apache.commons.compress.archivers.sevenz.SevenZMethod;
+import org.apache.commons.compress.archivers.sevenz.SevenZMethodConfiguration;
 import org.apache.commons.compress.archivers.sevenz.SevenZOutputFile;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 
 /**
  * 基于 Apache Commons Compress 的 7z 压缩执行器。
@@ -40,6 +43,13 @@ public class CommonsSevenZArchiveEngineCompressor extends AbstractArchiveEngineC
     /**
      * 创建 7z 压缩器。
      *
+     * <p>压缩方法选择策略：
+     * <ul>
+     *   <li>{@link CompressionLevel#STORE}：使用 {@link SevenZMethod#COPY}（仅存储，不压缩）</li>
+     *   <li>其他级别：使用 LZMA2，通过 preset（1‑9）控制压缩强度</li>
+     * </ul>
+     * </p>
+     *
      * @param targetOutputStream 目标输出流
      * @param property           压缩属性
      * @throws IOException 初始化失败
@@ -51,6 +61,7 @@ public class CommonsSevenZArchiveEngineCompressor extends AbstractArchiveEngineC
         boolean success = false;
         try {
             this.sevenZOutputFile = new SevenZOutputFile(tempSevenZPath.toFile());
+            sevenZOutputFile.setContentMethods(Collections.singleton(buildSevenZMethodConfiguration(property.getCompressionLevel())));
             this.sevenZEntryOutputStream = new OutputStream() {
                 @Override
                 public void write(int b) throws IOException {
@@ -68,6 +79,24 @@ public class CommonsSevenZArchiveEngineCompressor extends AbstractArchiveEngineC
                 Files.deleteIfExists(tempSevenZPath);
             }
         }
+    }
+
+    /**
+     * 根据压缩级别构建 7z 内容方法配置。
+     *
+     * <p>{@link CompressionLevel#STORE} 使用 {@link SevenZMethod#COPY} 以实现真正的"仅存储"，
+     * 其余级别使用 LZMA2 并传入对应 preset（0‑9）控制压缩强度与速度的平衡。</p>
+     *
+     * @param level 通用压缩级别
+     * @return 7z 方法配置
+     */
+    private static SevenZMethodConfiguration buildSevenZMethodConfiguration(CompressionLevel level) {
+        if (level == CompressionLevel.STORE) {
+            // COPY 方法：仅存储，不进行任何压缩
+            return new SevenZMethodConfiguration(SevenZMethod.COPY);
+        }
+        // LZMA2 方法：传入 preset 整数（0-9），Apache Commons Compress 内部会映射为 LZMA2Options
+        return new SevenZMethodConfiguration(SevenZMethod.LZMA2, CommonsCompressionLevelUtils.mapXzPreset(level));
     }
 
     /**
