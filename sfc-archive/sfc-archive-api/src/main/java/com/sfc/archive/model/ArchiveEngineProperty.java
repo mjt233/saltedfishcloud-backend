@@ -14,7 +14,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ArchiveEngineProperty {
     /**
-     * 压缩级别，默认 NORMAL。
+     * 压缩级别，默认 NORMAL。<br>
+     * <strong>注意：不同的压缩器实现不一定会严格按照该参数执行，而是映射到接近的等级，或忽略该参数</strong>
      */
     @Builder.Default
     private CompressionLevel compressionLevel = CompressionLevel.NORMAL;
