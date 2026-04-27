@@ -4,13 +4,12 @@ import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineProperty;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
 /**
  * 基于 Apache Commons Compress 的 ZIP 引擎实现。
@@ -18,37 +17,45 @@ import java.util.Collections;
 public class CommonsZipArchiveEngineProvider extends AbstractArchiveEngineProvider {
     @Override
     public String getId() {
-        return "commons-zip";
+        return "apache-commons-compress";
     }
 
     @Override
     public String getName() {
-        return "Apache Commons ZIP Engine";
+        return "Apache Commons Compress";
     }
 
     @Override
     public Collection<String> getSupportedCompressExtensions() {
-        return Collections.singleton(".zip");
+        return Arrays.asList(".zip");
     }
 
     @Override
     public Collection<String> getSupportedDecompressExtensions() {
-        return Collections.singleton(".zip");
+        return Arrays.asList(".zip", ".7z");
     }
 
     @Override
     public ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveEngineProperty property) throws IOException {
         ArchiveEngineProperty normalized = normalizeProperty(property);
-        if (normalized.getEncryptionParam() != null) {
-            throw new JsonException("commons-zip 不支持加密压缩，请切换 zip4j 引擎");
-        }
+
+        // 目前只实现了对zip的支持，就不做分支判断了
+        matchDecompressorExtension(property, null);
         return new CommonsZipStreamArchiveEngineCompressor(outputStream, normalized);
     }
 
     @Override
     public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException {
         ArchiveEngineProperty normalized = normalizeProperty(property);
-        return new CommonsZipArchiveEngineDecompressor(resource, normalized);
+        String extension = matchCompressorExtension(property, resource.getFilename());
+        if (".7z".equals(extension)) {
+            return new SevenZArchiveEngineDecompressor(resource, normalized);
+        }
+        if (".zip".equals(extension)) {
+            return new CommonsZipArchiveEngineDecompressor(resource, normalized);
+        }
+        // 不支持的格式 matchCompressorExtension 已抛出了异常，一般不会走到这里，除非在 getSupportedCompressExtensions 声明了支持格式，但未在该方法中实现。
+        throw new UnsupportedOperationException();
     }
 }
 

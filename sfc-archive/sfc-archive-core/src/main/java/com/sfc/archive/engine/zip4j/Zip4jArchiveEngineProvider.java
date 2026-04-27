@@ -22,7 +22,7 @@ public class Zip4jArchiveEngineProvider extends AbstractArchiveEngineProvider {
 
     @Override
     public String getName() {
-        return "Zip4j Engine";
+        return "Zip4j";
     }
 
     @Override

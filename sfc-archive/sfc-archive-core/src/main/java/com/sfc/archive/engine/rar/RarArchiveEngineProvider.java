@@ -28,7 +28,7 @@ public class RarArchiveEngineProvider extends AbstractArchiveEngineProvider {
 
     @Override
     public String getName() {
-        return "Junrar Engine";
+        return "Junrar";
     }
 
     @Override

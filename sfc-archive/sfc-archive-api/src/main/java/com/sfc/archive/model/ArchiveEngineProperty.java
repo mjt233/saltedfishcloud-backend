@@ -29,6 +29,12 @@ public class ArchiveEngineProperty {
      */
     @Builder.Default
     private String encoding = "UTF-8";
+
+    /**
+     * 当前引擎处理的压缩格式扩展名（带点，例如 .zip、.7z），默认 .zip。
+     */
+    @Builder.Default
+    private String extension = ".zip";
 }
 
 

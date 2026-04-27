@@ -5,7 +5,6 @@ import com.sfc.archive.composer.impl.zip.ZipArchiveCompressorProvider;
 import com.sfc.archive.controller.ArchiveController;
 import com.sfc.archive.engine.commons.CommonsZipArchiveEngineProvider;
 import com.sfc.archive.engine.rar.RarArchiveEngineProvider;
-import com.sfc.archive.engine.sevenz.SevenZArchiveEngineProvider;
 import com.sfc.archive.engine.zip4j.Zip4jArchiveEngineProvider;
 import com.sfc.archive.extractor.impl.zip.ZipArchiveExtractorProvider;
 import com.sfc.archive.service.DiskFileSystemArchiveServiceImpl;
@@ -28,7 +27,6 @@ import org.springframework.context.annotation.Import;
         // 压缩引擎提供者
         CommonsZipArchiveEngineProvider.class,
         Zip4jArchiveEngineProvider.class,
-        SevenZArchiveEngineProvider.class,
         RarArchiveEngineProvider.class
 })
 public class ArchiveAutoConfiguration {

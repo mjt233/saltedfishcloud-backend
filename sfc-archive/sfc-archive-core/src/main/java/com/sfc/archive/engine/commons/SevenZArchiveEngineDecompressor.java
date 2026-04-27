@@ -1,10 +1,10 @@
-package com.sfc.archive.engine.sevenz;
+package com.sfc.archive.engine.commons;
 
 import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
 import com.sfc.archive.function.IOExceptionBiFunction;
-import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
+import com.sfc.archive.utils.EngineResourceUtils;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
