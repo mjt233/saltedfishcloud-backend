@@ -79,16 +79,22 @@ public final class EngineResourceUtils {
     }
 
     /**
-     * 归一化压缩包路径，统一以 '/' 开头。
+     * 归一化压缩包路径，遵循 {@link ArchiveResource#getArchivePath()} 语义。
+     *
+     * <p>约束：不使用前导 {@code /}，统一使用 {@code /} 作为分隔符。</p>
      *
      * @param archivePath 原始路径
      * @return 归一化路径
      */
     public static String normalizeArchivePath(String archivePath) {
         if (archivePath == null || archivePath.isEmpty()) {
-            return "/";
+            return archivePath;
         }
-        return archivePath.startsWith("/") ? archivePath : "/" + archivePath;
+        String normalized = archivePath.replace('\\', '/');
+        while (normalized.startsWith("/") && normalized.length() > 1) {
+            normalized = normalized.substring(1);
+        }
+        return "/".equals(normalized) ? "" : normalized;
     }
 
     /**
