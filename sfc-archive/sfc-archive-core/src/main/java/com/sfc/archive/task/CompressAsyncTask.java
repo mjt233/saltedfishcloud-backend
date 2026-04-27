@@ -5,6 +5,7 @@ import com.sfc.archive.ArchiveEngineManager;
 import com.sfc.archive.ArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
+import com.sfc.archive.model.FileTransferCallback;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
@@ -23,12 +24,11 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -93,6 +93,54 @@ public class CompressAsyncTask implements AsyncTask {
     private final ProgressRecord progressRecord = new ProgressRecord();
 
     /**
+     * 构建压缩进度回调，用于将引擎回调聚合到任务级别进度记录。
+     *
+     * @return 压缩回调
+     */
+    private FileTransferCallback buildProgressCallback() {
+        Map<String, Long> archivePathLoadedMap = new HashMap<>();
+        return new FileTransferCallback() {
+            @Override
+            public void onFileStart(String archivePath) {
+                archivePathLoadedMap.put(archivePath, 0L);
+            }
+
+            @Override
+            public void onProgress(String archivePath, long loaded, long total) {
+                Long previousLoaded = archivePathLoadedMap.put(archivePath, loaded);
+                if (previousLoaded == null) {
+                    previousLoaded = 0L;
+                }
+                long delta = loaded - previousLoaded;
+                if (delta > 0) {
+                    progressRecord.appendLoaded(delta);
+                }
+            }
+
+            @Override
+            public void onFileComplete(String archivePath) {
+                archivePathLoadedMap.remove(archivePath);
+            }
+        };
+    }
+
+    /**
+     * 累加压缩目标总量。
+     *
+     * @param fileSize 文件大小；小于 0 表示未知
+     */
+    private void appendProgressTotal(Long fileSize) {
+        if (progressRecord.getTotal() < 0) {
+            return;
+        }
+        if (fileSize == null || fileSize < 0) {
+            progressRecord.setTotal(-1L);
+            return;
+        }
+        progressRecord.setTotal(progressRecord.getTotal() + fileSize);
+    }
+
+    /**
      * 保存本地的压缩结果到网盘
      * @param localPath 本地压缩结果
      */
@@ -131,9 +179,11 @@ public class CompressAsyncTask implements AsyncTask {
         Collection<String> names = compressParam.getSourceNames();
         try(ArchiveEngineCompressor compressor = engine.createCompressor(outputStream, compressParam.getEngineProperty())) {
             this.compressor = compressor;
+            compressor.setCallback(buildProgressCallback());
             for (FileInfo fileInfo : fileSystem.getUserFileList(uid, path, names)) {
                 checkInterrupted();
                 if (fileInfo.isFile()) {
+                    appendProgressTotal(fileInfo.getSize());
                     compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(fileInfo, "/", fileSystem.getResource(uid, path, fileInfo.getName())));
                 } else {
                     addDirectoryResources(compressor, uid, path, fileInfo);
@@ -177,6 +227,7 @@ public class CompressAsyncTask implements AsyncTask {
 
             for (FileInfo subFile : subFiles) {
                 if (subFile.isFile()) {
+                    appendProgressTotal(subFile.getSize());
                     compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, fileSystem.getResource(uid, curPath, subFile.getName())));
                 } else {
                     String subDirectoryPath = StringUtils.appendPath(curPath, subFile.getName());
@@ -198,6 +249,8 @@ public class CompressAsyncTask implements AsyncTask {
         }
         this.inRunning = true;
         interrupted.set(false);
+        progressRecord.setLoaded(0L);
+        progressRecord.setTotal(0L);
         this.taskLog = new CustomLogger(logOutputStream);
 
         taskLog.info("任务参数: " + originParams);
