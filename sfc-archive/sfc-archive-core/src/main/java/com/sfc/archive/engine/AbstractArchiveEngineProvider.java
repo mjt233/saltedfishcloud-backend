@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Optional;
 
 /**
@@ -88,7 +89,12 @@ public abstract class AbstractArchiveEngineProvider implements ArchiveEngineProv
                 .map(String::toLowerCase)
                 .orElse(null);
         if (availableFilename != null) {
-            return candidateExtensions.stream().filter(availableFilename::endsWith).findAny().orElse(null);
+            // 优先使用文件名长的格式匹配，防止 .tar.gz 匹配到 .gz 的格式（.tar.gz应作为一个独立的格式）
+            return candidateExtensions.stream()
+                    .sorted(Comparator.comparingInt(String::length).reversed())
+                    .filter(availableFilename::endsWith)
+                    .findFirst()
+                    .orElse(null);
         }
 
         return null;

@@ -3,6 +3,7 @@ package com.sfc.archive.engine;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.model.ArchiveResource;
+import com.sfc.archive.utils.EngineResourceUtils;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -173,8 +174,7 @@ public abstract class AbstractArchiveEngineDecompressor extends AbstractArchiveE
      * @return 标准化路径
      */
     protected final String normalizeArchivePath(String archivePath) {
-        String value = requireArchivePath(archivePath);
-        return value.startsWith("/") ? value.substring(1) : value;
+        return EngineResourceUtils.normalizeArchivePath(requireArchivePath(archivePath));
     }
 
     /**

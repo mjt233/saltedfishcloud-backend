@@ -110,8 +110,16 @@ public final class EngineResourceUtils {
             return new LocalFileResource(resource.getFile(), null);
         }
         Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), StringUtils.getRandomString(10) + suffix));
-        ResourceUtils.saveToFile(resource, tempPath);
-        return new LocalFileResource(tempPath.toFile(), tempPath);
+        boolean isSuccess = false;
+        try {
+            ResourceUtils.saveToFile(resource, tempPath);
+            isSuccess = true;
+            return new LocalFileResource(tempPath.toFile(), tempPath);
+        } finally {
+            if (!isSuccess) {
+                Files.deleteIfExists(tempPath);
+            }
+        }
     }
 
     /**
