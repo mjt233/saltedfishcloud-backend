@@ -3,6 +3,8 @@ package com.sfc.archive.engine;
 import com.sfc.archive.ArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.CompressionLevel;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -25,7 +27,7 @@ public abstract class AbstractArchiveEngineProvider implements ArchiveEngineProv
             property.setCompressionLevel(CompressionLevel.NORMAL);
         }
         if (property.getEncoding() == null || property.getEncoding().isEmpty()) {
-            property.setEncoding("UTF-8");
+            property.setEncoding(SpringContextUtils.getContext().getBean(SysProperties.class).getStore().getArchiveEncoding());
         }
         return property;
     }
