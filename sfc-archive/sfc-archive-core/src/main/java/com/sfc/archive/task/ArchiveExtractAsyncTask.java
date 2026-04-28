@@ -1,9 +1,8 @@
 package com.sfc.archive.task;
 
-import com.sfc.archive.ArchiveHandleEventListener;
-import com.sfc.archive.ArchiveManager;
-import com.sfc.archive.extractor.ArchiveExtractor;
-import com.sfc.archive.model.ArchiveFile;
+import com.sfc.archive.ArchiveEngineDecompressor;
+import com.sfc.archive.ArchiveEngineManager;
+import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.model.AsyncArchiveExtractParam;
 
 import com.sfc.task.AsyncTask;
@@ -23,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.file.*;
@@ -35,9 +35,9 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * 文件在线解压异步任务。
  * <p>
- * 通过 {@link ResourceService} 获取待解压的文件资源，使用 {@link ArchiveManager} 创建对应格式的
- * 解压器，将文件解压到本地临时目录后再通过 {@link DiskFileSystem} 保存到目标网盘目录。
- * 解压过程支持 {@link FileTransferCallback} 回调，实时将进度信息输出到任务日志。
+ * 通过 {@link ResourceService} 获取待解压的文件资源，使用 {@link ArchiveEngineManager} 创建解压器，
+ * 将文件解压到本地临时目录后再通过 {@link DiskFileSystem} 保存到目标网盘目录。
+ * 解压过程会输出“当前文件”日志并更新总进度。
  * </p>
  */
 @Slf4j
@@ -56,7 +56,7 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
     private ResourceService resourceService;
 
     @Setter
-    private ArchiveManager archiveManager;
+    private ArchiveEngineManager archiveEngineManager;
 
     @Setter
     private DiskFileSystem diskFileSystem;
@@ -135,58 +135,108 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
     }
 
     /**
-     * 构建 ArchiveHandleEventListener，将解压器内部事件桥接到 {@link FileTransferCallback}
-     * 并更新任务进度记录。
+     * 构建引擎解压回调：输出当前文件日志并维护总进度。
      *
-     * @param callback 目标 FileTransferCallback
-     * @return 绑定了回调的事件监听器
+     * @return 引擎文件传输回调
      */
-    private ArchiveHandleEventListener buildEventListener(FileTransferCallback callback) {
-        return new ArchiveHandleEventListener() {
+    private com.sfc.archive.model.FileTransferCallback buildEngineTransferCallback() {
+        return new com.sfc.archive.model.FileTransferCallback() {
+            private long lastLoaded;
 
             @Override
-            public void onFileBeginHandle(ArchiveFile archiveFile) {
-                String targetPath = StringUtils.appendPath(param.getPath(), archiveFile.getPath());
-                FileTransferItem item = FileTransferItem.builder()
-                        .from(archiveFile.getPath())
-                        .to(targetPath)
-                        .total(archiveFile.getSize())
-                        .loaded(0L)
-                        .build();
-                callback.onFileStart(item);
+            public void onFileStart(String archivePath) {
+                lastLoaded = 0L;
+                taskLog.info("[解压] 当前文件: " + archivePath);
             }
 
             @Override
-            public void onFileFinishHandle(ArchiveFile archiveFile, long consumeTime) {
-                String targetPath = StringUtils.appendPath(param.getPath(), archiveFile.getPath());
-                FileTransferItem item = FileTransferItem.builder()
-                        .from(archiveFile.getPath())
-                        .to(targetPath)
-                        .total(archiveFile.getSize())
-                        .loaded(archiveFile.getSize())
-                        .build();
-                progressRecord.setLoaded(progressRecord.getLoaded() + archiveFile.getSize());
-                callback.onFileComplete(item);
-            }
-
-            @Override
-            public void onDirCreate(ArchiveFile archiveFile) {
-                String dirPath = StringUtils.appendPath(param.getPath(), archiveFile.getPath());
-                callback.onDirStart(dirPath);
-                callback.onDirComplete(dirPath);
-            }
-
-            @Override
-            public void onFinish(long consumeTime) {
-                taskLog.info(String.format("解压完成，总耗时: %.2f s", consumeTime / 1000.0));
-            }
-
-            @Override
-            public void onError(ArchiveFile archiveFile, Throwable throwable) {
-                String name = archiveFile != null ? archiveFile.getPath() : "未知文件";
-                taskLog.error("解压出错，文件: " + name, throwable);
+            public void onProgress(String archivePath, long loaded, long total) {
+                if (loaded <= lastLoaded) {
+                    return;
+                }
+                long delta = loaded - lastLoaded;
+                long currentLoaded = progressRecord.getLoaded();
+                progressRecord.setLoaded(Math.max(0L, currentLoaded) + delta);
+                lastLoaded = loaded;
             }
         };
+    }
+
+    /**
+     * 预统计压缩包中文件总字节数，用于初始化总进度。
+     *
+     * @param decompressor 解压器
+     * @throws IOException 读取资源列表失败
+     */
+    private void initTotalProgress(ArchiveEngineDecompressor decompressor) throws IOException {
+        long total = 0L;
+        for (var iterator = decompressor.getArchiveResources(); iterator.hasNext(); ) {
+            ArchiveResource archiveResource = iterator.next();
+            if (Boolean.TRUE.equals(archiveResource.getIsDirectory())) {
+                continue;
+            }
+            Long size = archiveResource.getSize();
+            if (size == null || size < 0) {
+                progressRecord.setTotal(-1L);
+                return;
+            }
+            total += size;
+        }
+        progressRecord.setTotal(total);
+    }
+
+    /**
+     * 将压缩包内资源路径映射到临时目录，并校验不允许越界路径。
+     *
+     * @param tempBasePath 临时目录基路径
+     * @param archivePath  压缩包内路径
+     * @return 对应的本地路径
+     */
+    private Path resolveArchiveResourcePath(Path tempBasePath, String archivePath) {
+        Path targetPath = tempBasePath.resolve(archivePath).normalize();
+        if (!targetPath.startsWith(tempBasePath)) {
+            throw new IllegalArgumentException("非法压缩包路径: " + archivePath);
+        }
+        return targetPath;
+    }
+
+    /**
+     * 将压缩包内容解压到本地临时目录。
+     *
+     * @param decompressor 解压器
+     * @param tempBasePath 临时目录基路径
+     * @throws IOException 解压失败
+     */
+    private void decompressToTempDirectory(ArchiveEngineDecompressor decompressor, Path tempBasePath) throws IOException {
+        decompressor.decompressAll((inputStream, archiveResource) -> {
+            if (interrupted.get()) {
+                return false;
+            }
+
+            Path targetPath = resolveArchiveResourcePath(tempBasePath, archiveResource.getArchivePath());
+            if (Boolean.TRUE.equals(archiveResource.getIsDirectory())) {
+                if (!Files.exists(targetPath)) {
+                    Files.createDirectories(targetPath);
+                    return true;
+                }
+                if (!Files.isDirectory(targetPath)) {
+                    throw new IOException("路径冲突，无法创建目录: " + targetPath);
+                }
+            }
+
+            Path parentPath = targetPath.getParent();
+            if (parentPath != null) {
+                Files.createDirectories(parentPath);
+            }
+
+            if (inputStream == null) {
+                throw new IOException("文件资源输入流为空: " + archiveResource.getArchivePath());
+            }
+            try (InputStream resourceInputStream = inputStream) {
+                Files.copy(resourceInputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
+            return true;
+        });
     }
 
     /**
@@ -330,48 +380,29 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
             taskLog.info("源文件资源获取成功: " + resource.getFilename());
 
             // 2. 获取解压器
-            try (ArchiveExtractor extractor = archiveManager.getExtractor(param.getArchiveParam(), resource)) {
-                // 3. 注册事件监听器，桥接 FileTransferCallback
-                extractor.addEventListener(buildEventListener(fileTransferCallback));
-
-                // 监听临时文件拉取事件（非本地存储时会先下载到本地）
-                extractor.onResourceBeginFetch(tempPath ->
-                        taskLog.info("源文件不在本地，正在下载到临时文件: " + tempPath));
-                extractor.onResourceFinishFetch(tempPath ->
-                        taskLog.info("临时文件下载完成: " + tempPath));
-
-                // 4. 解压到临时目录
+            try (ArchiveEngineDecompressor decompressor = archiveEngineManager.createEngineDecompressor(
+                    param.getEngineProviderId(), resource, param.getArchiveEngineProperty())) {
+                // 3. 解压到临时目录
                 Files.createDirectories(tempBasePath);
                 taskLog.info("创建临时目录: " + tempBasePath);
                 taskLog.info("开始解压文件...");
 
-                // 统计总共的解压后文件大小
-                for (ArchiveFile archiveFile : extractor.listFiles()) {
-                    if(!archiveFile.isDirectory()) {
-                        if (archiveFile.getSize() >= 0) {
-                            if (progressRecord.getTotal() <= 0) {
-                                progressRecord.setTotal(archiveFile.getSize());
-                            } else {
-                                progressRecord.setTotal(progressRecord.getTotal() + archiveFile.getSize());
-                            }
-                        } else {
-                            // 大小位置，跳过处理
-                            progressRecord.setTotal(-1L);
-                            break;
-                        }
-                    }
-                }
-                // 先将文件提取到本地文件系统的临时目录
-                extractor.extractAll(tempBasePath);
-                // 重置进度为0，后续将文件从本地文件系统转移到用户网盘
+                // 初始化总进度并绑定过程回调
                 progressRecord.setLoaded(0L);
+                initTotalProgress(decompressor);
+                decompressor.setCallback(buildEngineTransferCallback());
 
-                // 5. 将临时目录中的文件保存到目标网盘目录
+                // 先将文件提取到本地文件系统的临时目录
+                decompressToTempDirectory(decompressor, tempBasePath);
+
+                // 4. 将临时目录中的文件保存到目标网盘目录
                 if (interrupted.get()) {
                     taskLog.warn("任务已被中断，跳过保存步骤");
                     return;
                 }
                 taskLog.info("解压完成，正在将文件保存到网盘目录: " + param.getPath());
+                // 重置进度，进入保存阶段重新计量
+                progressRecord.setLoaded(0L);
                 saveToDisk(tempBasePath);
                 taskLog.info("所有文件已成功保存到网盘");
             }

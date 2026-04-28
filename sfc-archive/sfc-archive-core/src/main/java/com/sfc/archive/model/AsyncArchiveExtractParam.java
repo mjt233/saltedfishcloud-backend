@@ -21,9 +21,14 @@ public class AsyncArchiveExtractParam {
     private ResourceRequest source;
 
     /**
-     * 详细解压参数（格式、编码、密码等）
+     * 详细解压参数（编码、密码、扩展名等）
      */
-    private ArchiveParam archiveParam;
+    private ArchiveEngineProperty archiveEngineProperty;
+
+    /**
+     * 解压引擎 ID
+     */
+    private String engineProviderId;
 
     /**
      * 解压到的目标用户 ID

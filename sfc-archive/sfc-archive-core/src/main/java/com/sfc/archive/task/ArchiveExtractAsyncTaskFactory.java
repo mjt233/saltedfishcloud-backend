@@ -1,6 +1,6 @@
 package com.sfc.archive.task;
 
-import com.sfc.archive.ArchiveManager;
+import com.sfc.archive.ArchiveEngineManager;
 import com.sfc.archive.model.AsyncArchiveExtractParam;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
@@ -11,7 +11,6 @@ import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -29,7 +28,7 @@ import java.io.IOException;
 public class ArchiveExtractAsyncTaskFactory implements AsyncTaskFactory {
 
     @Autowired
-    private ArchiveManager archiveManager;
+    private ArchiveEngineManager archiveEngineManager;
 
     @Autowired
     private ResourceService resourceService;
@@ -49,7 +48,7 @@ public class ArchiveExtractAsyncTaskFactory implements AsyncTaskFactory {
         try {
             AsyncArchiveExtractParam extractParam = MapperHolder.parseJson(params, AsyncArchiveExtractParam.class);
             ArchiveExtractAsyncTask task = new ArchiveExtractAsyncTask(params, extractParam);
-            task.setArchiveManager(archiveManager);
+            task.setArchiveEngineManager(archiveEngineManager);
             task.setResourceService(resourceService);
             task.setDiskFileSystem(diskFileSystemManager.getMainFileSystem());
             log.debug("创建文件解压异步任务成功, 任务ID: {}", asyncTaskRecord.getId());
