@@ -102,6 +102,7 @@ public class CompressAsyncTask implements AsyncTask {
         return new FileTransferCallback() {
             @Override
             public void onFileStart(String archivePath) {
+                taskLog.info("正在压缩" + archivePath);
                 archivePathLoadedMap.put(archivePath, 0L);
             }
 
@@ -138,21 +139,6 @@ public class CompressAsyncTask implements AsyncTask {
             return;
         }
         progressRecord.setTotal(progressRecord.getTotal() + fileSize);
-    }
-
-    /**
-     * 保存本地的压缩结果到网盘
-     * @param localPath 本地压缩结果
-     */
-    private void saveToFileSystem(Path localPath) throws IOException {
-        taskLog.info("压缩完成，正在保存到网盘..");
-        final FileInfo fileInfo = FileInfo.getLocal(localPath.toString());
-        PathBuilder pb = new PathBuilder();
-        pb.setForcePrefix(true);
-        pb.append(compressParam.getTargetFilePath());
-
-        fileInfo.setName(pb.range(1, -1).replace("/", ""));
-        fileSystem.moveToSaveFile(compressParam.getSourceUid(), localPath, pb.range(-1), fileInfo);
     }
 
     private FileInfo getTargetFileInfo() {
@@ -226,6 +212,7 @@ public class CompressAsyncTask implements AsyncTask {
             }
 
             for (FileInfo subFile : subFiles) {
+                checkInterrupted();
                 if (subFile.isFile()) {
                     appendProgressTotal(subFile.getSize());
                     compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, fileSystem.getResource(uid, curPath, subFile.getName())));
