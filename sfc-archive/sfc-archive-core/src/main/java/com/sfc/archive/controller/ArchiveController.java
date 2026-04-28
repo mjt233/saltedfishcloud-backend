@@ -1,15 +1,21 @@
 package com.sfc.archive.controller;
 
+import com.sfc.archive.ArchiveEngineDecompressor;
+import com.sfc.archive.ArchiveEngineManager;
+import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.model.AsyncArchiveExtractParam;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
+import com.sfc.archive.model.ListArchiveResourcesRequest;
 import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
+import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
@@ -17,6 +23,8 @@ import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,6 +32,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -38,6 +50,8 @@ public class ArchiveController {
 
     private final AsyncTaskManager asyncTaskManager;
     private final DiskFileSystemArchiveService archiveService;
+    private final ArchiveEngineManager archiveEngineManager;
+    private final ResourceService resourceService;
 
 
     /**
@@ -86,6 +100,47 @@ public class ArchiveController {
         // 提交任务
         asyncTaskManager.submitAsyncTask(record);
         return JsonResultImpl.getInstance(record.getId());
+    }
+
+    /**
+     * 读取压缩包内所有文件列表。
+     * <p>
+     * 通过 {@link ListArchiveResourcesRequest} 指定解压缩引擎ID、待查看的压缩包资源和解压缩参数，
+     * 返回压缩包内的所有资源列表。
+     * </p>
+     *
+     * @param request 包含引擎ID、资源请求和引擎属性的请求对象
+     * @return 压缩包内的所有资源列表
+     * @throws IOException 读取压缩包或获取资源列表时발生 IO 异常
+     */
+    @PostMapping("listResources")
+    @ApiOperation("读取压缩包内所有文件列表")
+    public JsonResult<List<ArchiveResource>> listResources(@RequestBody ListArchiveResourcesRequest request) throws IOException, UnsupportedProtocolException {
+        // 获取并验证解压缩引擎
+        archiveEngineManager.getEngineProvider(request.getEngineProviderId());
+
+        // 获取资源请求和引擎属性
+        ResourceRequest resourceRequest = request.getResourceRequest();
+        var engineProperty = request.getEngineProperty();
+
+        // 创建Resource对象（根据协议创建对应的Resource）
+        Resource resource = resourceService.getResource(resourceRequest);
+
+        // 创建解压器
+        try (ArchiveEngineDecompressor decompressor = archiveEngineManager.createEngineDecompressor(
+                request.getEngineProviderId(),
+                resource,
+                engineProperty)) {
+
+            // 获取资源列表
+            Iterator<ArchiveResource> iterator = decompressor.getArchiveResources();
+            List<ArchiveResource> resourceList = new ArrayList<>();
+            while (iterator.hasNext()) {
+                resourceList.add(iterator.next());
+            }
+
+            return JsonResultImpl.getInstance(resourceList);
+        }
     }
 }
 
