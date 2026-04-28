@@ -30,6 +30,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -37,7 +38,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * 通过 {@link ResourceService} 获取待解压的文件资源，使用 {@link ArchiveEngineManager} 创建解压器，
  * 将文件解压到本地临时目录后再通过 {@link DiskFileSystem} 保存到目标网盘目录。
- * 解压过程会输出“当前文件”日志并更新总进度。
  * </p>
  */
 @Slf4j
@@ -76,8 +76,14 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
     /** 执行任务的线程引用，用于中断支持 */
     private final AtomicReference<Thread> executeThread = new AtomicReference<>();
 
-    /** 解压进度记录 */
+    /** 任务总体进度记录 */
     private final ProgressRecord progressRecord = new ProgressRecord();
+
+    /** 保存阶段当前正在写入的文件项，用于实时读取单文件 loaded */
+    private volatile FileTransferItem currentSaveItem;
+
+    /** 保存阶段已完成保存的文件累计大小。会在一个文件保存完成后更新。 */
+    private final AtomicLong completedSaveLoaded = new AtomicLong();
 
     /**
      * 构造解压异步任务
@@ -106,7 +112,7 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
 
             @Override
             public void onFileStart(FileTransferItem item) {
-                taskLog.info("[解压] 提取文件: " + item.getTo());
+                taskLog.info("[解压] 保存文件: " + item.getTo());
             }
 
             @Override
@@ -146,7 +152,7 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
             @Override
             public void onFileStart(String archivePath) {
                 lastLoaded = 0L;
-                taskLog.info("[解压] 当前文件: " + archivePath);
+                taskLog.info("[解压] 提取文件: " + archivePath);
             }
 
             @Override
@@ -277,14 +283,14 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
             @Override
             public void onFileStart(FileTransferItem item) {
                 fileTransferCallback.onFileStart(item);
+                currentSaveItem = item;
             }
 
             @Override
             public void onFileComplete(FileTransferItem item) {
                 fileTransferCallback.onFileComplete(item);
-                if (item.getTotal() != null && item.getTotal() > 0) {
-                    progressRecord.setLoaded(progressRecord.getLoaded() + item.getTotal());
-                }
+                completedSaveLoaded.addAndGet(item.getLoaded());
+                currentSaveItem = null;
             }
 
             @Override
@@ -401,9 +407,11 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
                     return;
                 }
                 taskLog.info("解压完成，正在将文件保存到网盘目录: " + param.getPath());
+
                 // 重置进度，进入保存阶段重新计量
                 progressRecord.setLoaded(0L);
                 saveToDisk(tempBasePath);
+                progressRecord.setLoaded(completedSaveLoaded.get());
                 taskLog.info("所有文件已成功保存到网盘");
             }
         } catch (Throwable e) {
@@ -425,6 +433,7 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
                 }
             }
             taskLog.info("任务已退出");
+            currentSaveItem = null;
             running.set(false);
             executeThread.set(null);
         }
@@ -458,6 +467,16 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
 
     @Override
     public ProgressRecord getProgress() {
+        long completed = completedSaveLoaded.get();
+        FileTransferItem item = currentSaveItem;
+        if (item != null) {
+            progressRecord.setLoaded(completed + item.getLoaded());
+        }
+        // 为简化处理安全线程的代码，这里直接使用兜底机制 防止前面的多线程快照读导致loaded超过total
+        // 允许极小概率出现的进度回退现象
+        if (progressRecord.getTotal() >= 0 && progressRecord.getLoaded() > progressRecord.getTotal()) {
+            progressRecord.setLoaded(progressRecord.getTotal());
+        }
         return progressRecord;
     }
 }

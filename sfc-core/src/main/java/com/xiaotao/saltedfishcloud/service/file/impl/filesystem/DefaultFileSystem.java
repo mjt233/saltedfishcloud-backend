@@ -392,7 +392,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
                     callback.onFileStart(item);
                 }
                 LockUtils.execute(getStoreLockKey(key.uid(), key.path(), fileInfo.getName()),
-                        () -> doStoreBySource(storeService, fileInfo, key.path()));
+                        () -> doStoreBySource(storeService, fileInfo, key.path(), item));
                 item.setLoaded(item.getTotal());
                 if (callback != null) {
                     callback.onFileComplete(item);
@@ -403,12 +403,24 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     /**
-     * 执行数据写入到存储服务
+     * 执行数据写入到存储服务，并将写入中的实时进度更新到传输项。
+     *
+     * @param storeService 存储服务
+     * @param fileInfo     待保存文件信息
+     * @param savePath     目标目录路径
+     * @param item         文件传输项，方法内会持续更新其 loaded 字段
+     * @throws IOException 写入异常
      */
-    private void doStoreBySource(StoreService storeService, FileInfo fileInfo, String savePath) throws IOException {
+    private void doStoreBySource(StoreService storeService, FileInfo fileInfo, String savePath, FileTransferItem item) throws IOException {
         storeService.storeByStream(fileInfo, savePath, os -> {
             try (InputStream is = fileInfo.getStreamSource().getInputStream()) {
-                return DiskFileSystemUtils.saveFileStream(fileInfo, is, os);
+                return StreamUtils.copyStreamAndComputeMd5(is, os, fileInfo.getMd5(), (buf, len) -> {
+                    Long currentLoaded = item.getLoaded();
+                    if (currentLoaded == null || currentLoaded < 0) {
+                        currentLoaded = 0L;
+                    }
+                    item.setLoaded(currentLoaded + len);
+                }).applyTo(fileInfo);
             }
         });
     }
