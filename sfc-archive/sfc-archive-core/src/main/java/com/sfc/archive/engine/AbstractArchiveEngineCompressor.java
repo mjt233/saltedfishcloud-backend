@@ -3,14 +3,13 @@ package com.sfc.archive.engine;
 import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
-import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import lombok.Getter;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 压缩引擎实现的抽象基类。
@@ -59,9 +58,8 @@ public abstract class AbstractArchiveEngineCompressor extends AbstractArchiveEng
 
             if (entryOutputStream != null) {
                 try (InputStream in = resource.getResource().getInputStream()) {
-                    AtomicLong loaded = new AtomicLong();
-                    long total = StreamUtils.copyStream(in, entryOutputStream, (buf, len) -> invokeOnProgress(normalizedPath, loaded.addAndGet(len), resource.getSize()));
-                    invokeOnProgress(normalizedPath, loaded.get(), total);
+                    long total = copyResourceDataWithProgress(in, entryOutputStream, normalizedPath, resource.getSize());
+                    invokeOnProgress(normalizedPath, total, total);
                 }
             }
         } finally {
@@ -70,6 +68,47 @@ public abstract class AbstractArchiveEngineCompressor extends AbstractArchiveEng
             }
         }
         invokeOnFileComplete(normalizedPath);
+    }
+
+    /**
+     * 复制资源内容并分发进度事件。
+     *
+     * @param inputStream   资源输入流
+     * @param outputStream  entry 输出流
+     * @param archivePath   归档路径
+     * @param expectedTotal 资源预估总大小，可为 {@code null}
+     * @return 实际复制字节数
+     * @throws IOException 读写失败
+     */
+    private long copyResourceDataWithProgress(InputStream inputStream,
+                                              OutputStream outputStream,
+                                              String archivePath,
+                                              Long expectedTotal) throws IOException {
+        byte[] buffer = new byte[64 * 1024];
+        long loaded = 0;
+        int len;
+        while (true) {
+            checkCompressionInterrupted();
+            len = inputStream.read(buffer, 0, buffer.length);
+            if (len < 0) {
+                break;
+            }
+            outputStream.write(buffer, 0, len);
+            loaded += len;
+            invokeOnProgress(archivePath, loaded, expectedTotal);
+        }
+        return loaded;
+    }
+
+    /**
+     * 检查当前压缩线程是否已被中断。
+     *
+     * @throws InterruptedIOException 线程已中断
+     */
+    private void checkCompressionInterrupted() throws InterruptedIOException {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedIOException("压缩任务已中断");
+        }
     }
 
     /**

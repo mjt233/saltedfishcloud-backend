@@ -274,14 +274,6 @@ public class CompressAsyncTask implements AsyncTask {
         if (taskLog != null) {
             taskLog.warn("收到任务中断命令");
         }
-        ArchiveEngineCompressor compressor = this.compressor;
-        if (compressor != null) {
-            try {
-                compressor.close();
-            } catch (IOException e) {
-                log.warn("中断时关闭压缩器失败", e);
-            }
-        }
         Thread thread = executeThread.get();
         if (thread != null) {
             thread.interrupt();
