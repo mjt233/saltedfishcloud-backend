@@ -2,6 +2,8 @@ package com.sfc.archive.controller;
 
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.ArchiveEngineManager;
+import com.sfc.archive.ArchiveEngineProvider;
+import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.model.AsyncArchiveExtractParam;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
@@ -10,6 +12,8 @@ import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
+import com.xiaotao.saltedfishcloud.enums.ArchiveError;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
@@ -23,8 +27,9 @@ import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,7 +37,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -116,15 +120,24 @@ public class ArchiveController {
     @PostMapping("listResources")
     @ApiOperation("读取压缩包内所有文件列表")
     public JsonResult<List<ArchiveResource>> listResources(@RequestBody ListArchiveResourcesRequest request) throws IOException, UnsupportedProtocolException {
+
+        // 允许返回的压缩包资源列表最大条目数，超过后直接拒绝，防止内存占用过高。
+        int maxArchiveResourceCount = 20000;
+
         // 获取并验证解压缩引擎
-        archiveEngineManager.getEngineProvider(request.getEngineProviderId());
+        ArchiveEngineProvider provider = archiveEngineManager.getEngineProvider(request.getEngineProviderId());
 
         // 获取资源请求和引擎属性
         ResourceRequest resourceRequest = request.getResourceRequest();
-        var engineProperty = request.getEngineProperty();
+        ArchiveEngineProperty engineProperty = request.getEngineProperty();
 
         // 创建Resource对象（根据协议创建对应的Resource）
         Resource resource = resourceService.getResource(resourceRequest);
+
+        // 非本地资源且引擎声明读取列表需本地文件时，拒绝执行，避免高 IO 开销。
+        if (!isLocalFileResource(resource) && provider.requiresLocalResourceForList(resource, engineProperty)) {
+            throw new JsonException(ArchiveError.ARCHIVE_LIST_RESOURCE_NOT_SUPPORTED);
+        }
 
         // 创建解压器
         try (ArchiveEngineDecompressor decompressor = archiveEngineManager.createEngineDecompressor(
@@ -136,11 +149,25 @@ public class ArchiveController {
             Iterator<ArchiveResource> iterator = decompressor.getArchiveResources();
             List<ArchiveResource> resourceList = new ArrayList<>();
             while (iterator.hasNext()) {
+                if (resourceList.size() >= maxArchiveResourceCount) {
+                    throw new JsonException(ArchiveError.ARCHIVE_LIST_RESOURCE_TOO_MANY,
+                            "max=" + maxArchiveResourceCount);
+                }
                 resourceList.add(iterator.next());
             }
 
             return JsonResultImpl.getInstance(resourceList);
         }
+    }
+
+    /**
+     * 判断资源是否位于本地文件系统。
+     *
+     * @param resource 待检查资源
+     * @return 本地文件资源返回 true
+     */
+    private boolean isLocalFileResource(Resource resource) {
+        return resource instanceof PathResource || resource.isFile();
     }
 }
 

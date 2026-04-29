@@ -83,6 +83,27 @@ public class ApacheCommonsCompressEngineProvider extends AbstractArchiveEnginePr
     }
 
     /**
+     * 判断读取压缩包资源列表时是否需要本地资源。
+     * <p>
+     * 对于单流格式（.gz/.xz/.bz2），可直接基于流式输入构造资源列表；
+     * 其余格式在当前实现中需要本地文件或落盘后随机访问。
+     * </p>
+     *
+     * @param resource 待解压资源
+     * @param property 解压属性
+     * @return true 表示要求本地资源
+     */
+    @Override
+    public boolean requiresLocalResourceForList(Resource resource, ArchiveEngineProperty property) {
+        ArchiveEngineProperty normalized = normalizeProperty(property);
+        String extension = matchExtension(normalized, resource.getFilename(), getSupportedDecompressExtensions());
+        if (extension == null) {
+            return true;
+        }
+        return !".gz".equals(extension) && !".xz".equals(extension) && !".bz2".equals(extension);
+    }
+
+    /**
      * 校验压缩时的加密能力。
      *
      * @param extension 压缩扩展名
