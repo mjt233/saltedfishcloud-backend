@@ -5,19 +5,17 @@ import com.github.junrar.exception.RarException;
 import com.github.junrar.rarfile.FileHeader;
 import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
 import com.sfc.archive.function.IOExceptionBiFunction;
-import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
+import com.sfc.archive.utils.EngineResourceUtils;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * RAR 解压执行器。
@@ -53,12 +51,18 @@ public class RarArchiveEngineDecompressor extends AbstractArchiveEngineDecompres
 
     @Override
     public Iterator<ArchiveResource> getArchiveResources() {
-        List<FileHeader> headers = archive.getFileHeaders();
-        List<ArchiveResource> resources = new ArrayList<>(headers.size());
-        for (FileHeader header : headers) {
-            resources.add(toArchiveResource(header));
-        }
-        return resources.iterator();
+        Iterator<FileHeader> headerIterator = archive.getFileHeaders().iterator();
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return headerIterator.hasNext();
+            }
+
+            @Override
+            public ArchiveResource next() {
+                return toArchiveResource(headerIterator.next());
+            }
+        };
     }
 
     /**

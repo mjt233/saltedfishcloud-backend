@@ -13,8 +13,8 @@ import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * 单流压缩格式（.gz/.xz/.bz2）解压执行器。
@@ -55,7 +55,26 @@ public class CommonsCompressorStreamArchiveEngineDecompressor extends AbstractAr
 
     @Override
     public Iterator<ArchiveResource> getArchiveResources() {
-        return Collections.singletonList(archiveResource).iterator();
+        return new Iterator<>() {
+            /**
+             * 标记唯一条目是否已返回。
+             */
+            private boolean consumed;
+
+            @Override
+            public boolean hasNext() {
+                return !consumed;
+            }
+
+            @Override
+            public ArchiveResource next() {
+                if (consumed) {
+                    throw new NoSuchElementException("没有更多压缩包资源");
+                }
+                consumed = true;
+                return archiveResource;
+            }
+        };
     }
 
     @Override

@@ -2,9 +2,9 @@ package com.sfc.archive.engine.commons;
 
 import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
 import com.sfc.archive.function.IOExceptionBiFunction;
-import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
+import com.sfc.archive.utils.EngineResourceUtils;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -14,11 +14,9 @@ import org.springframework.core.io.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * 基于 Apache Commons Compress 的 ZIP 解压执行器。
@@ -60,12 +58,17 @@ public class CommonsZipArchiveEngineDecompressor extends AbstractArchiveEngineDe
     @Override
     public Iterator<ArchiveResource> getArchiveResources() {
         Enumeration<ZipArchiveEntry> entries = zipFile.getEntries();
-        List<ArchiveResource> resources = new ArrayList<>();
-        while (entries.hasMoreElements()) {
-            ZipArchiveEntry entry = entries.nextElement();
-            resources.add(toArchiveResource(entry));
-        }
-        return resources.iterator();
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return entries.hasMoreElements();
+            }
+
+            @Override
+            public ArchiveResource next() {
+                return toArchiveResource(entries.nextElement());
+            }
+        };
     }
 
     /**

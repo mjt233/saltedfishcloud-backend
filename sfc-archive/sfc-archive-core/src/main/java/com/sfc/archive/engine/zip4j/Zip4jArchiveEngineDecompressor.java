@@ -12,10 +12,8 @@ import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * zip4j 解压执行器。
@@ -48,12 +46,18 @@ public class Zip4jArchiveEngineDecompressor extends AbstractArchiveEngineDecompr
 
     @Override
     public Iterator<ArchiveResource> getArchiveResources() throws IOException {
-        List<FileHeader> headers = zipFile.getFileHeaders();
-        List<ArchiveResource> resources = new ArrayList<>(headers.size());
-        for (FileHeader header : headers) {
-            resources.add(toArchiveResource(header));
-        }
-        return resources.iterator();
+        Iterator<FileHeader> headerIterator = zipFile.getFileHeaders().iterator();
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return headerIterator.hasNext();
+            }
+
+            @Override
+            public ArchiveResource next() {
+                return toArchiveResource(headerIterator.next());
+            }
+        };
     }
 
     /**

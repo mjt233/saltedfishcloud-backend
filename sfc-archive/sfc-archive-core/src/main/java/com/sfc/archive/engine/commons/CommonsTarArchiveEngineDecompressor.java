@@ -19,11 +19,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,9 +44,9 @@ public class CommonsTarArchiveEngineDecompressor extends AbstractArchiveEngineDe
     private final Path tempTarPath;
 
     /**
-     * 路径到条目的索引。
+     * 路径到条目的惰性索引，仅在 {@link #getInputStream(String)} 首次调用时构建。
      */
-    private final Map<String, TarArchiveEntry> entryMap = new LinkedHashMap<>();
+    private volatile Map<String, TarArchiveEntry> entryMap = null;
 
     /**
      * 创建 TAR 解压器。
@@ -65,20 +63,46 @@ public class CommonsTarArchiveEngineDecompressor extends AbstractArchiveEngineDe
         this.localFileResource = holder.localFileResource;
         this.tempTarPath = holder.tempTarPath;
         this.tarFile = holder.tarFile;
-        this.tarFile.getEntries().forEach(entry -> entryMap.put(normalizeEntryName(entry.getName()), entry));
+    }
+
+    /**
+     * 惰性获取路径到条目的索引，首次调用时才构建。
+     *
+     * @return 路径到条目的映射
+     */
+    private Map<String, TarArchiveEntry> getEntryMap() {
+        if (entryMap == null) {
+            synchronized (this) {
+                if (entryMap == null) {
+                    Map<String, TarArchiveEntry> map = new LinkedHashMap<>();
+                    tarFile.getEntries().forEach(entry -> map.put(normalizeEntryName(entry.getName()), entry));
+                    entryMap = map;
+                }
+            }
+        }
+        return entryMap;
     }
 
     @Override
     public Iterator<ArchiveResource> getArchiveResources() {
-        List<ArchiveResource> resources = new ArrayList<>(entryMap.size());
-        entryMap.values().forEach(entry -> resources.add(toArchiveResource(entry)));
-        return resources.iterator();
+        Iterator<TarArchiveEntry> iterator = tarFile.getEntries().iterator();
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public ArchiveResource next() {
+                return toArchiveResource(iterator.next());
+            }
+        };
     }
 
     @Override
     public void decompressAll(IOExceptionBiFunction<InputStream, ArchiveResource, Boolean> func) throws IOException {
         requireDecompressFunction(func);
-        for (TarArchiveEntry entry : entryMap.values()) {
+        for (TarArchiveEntry entry : tarFile.getEntries()) {
             ArchiveResource archiveResource = toArchiveResource(entry);
             if (entry.isDirectory()) {
                 if (!continueDecompress(func, null, archiveResource)) {
@@ -101,7 +125,7 @@ public class CommonsTarArchiveEngineDecompressor extends AbstractArchiveEngineDe
     @Override
     public InputStream getInputStream(String archivePath) throws IOException {
         String normalizedPath = normalizeEntryName(normalizeArchivePath(archivePath));
-        TarArchiveEntry entry = entryMap.get(normalizedPath);
+        TarArchiveEntry entry = getEntryMap().get(normalizedPath);
         if (entry == null || entry.isDirectory()) {
             throw new JsonException("压缩包内资源不存在: " + archivePath);
         }

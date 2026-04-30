@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * 7z 解压执行器。
@@ -33,6 +34,11 @@ public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecomp
     private final ArchiveEngineProperty property;
 
     /**
+     * 当前活跃的资源迭代器。
+     */
+    private final List<SevenZArchiveResourceIterator> activeResourceIterators = new ArrayList<>();
+
+    /**
      * 创建 7z 解压器。
      *
      * @param resource 待解压资源
@@ -46,14 +52,11 @@ public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecomp
 
     @Override
     public Iterator<ArchiveResource> getArchiveResources() throws IOException {
-        List<ArchiveResource> resources = new ArrayList<>();
-        try (SevenZFile sevenZFile = openSevenZFile()) {
-            SevenZArchiveEntry entry;
-            while ((entry = sevenZFile.getNextEntry()) != null) {
-                resources.add(toArchiveResource(entry));
-            }
+        SevenZArchiveResourceIterator iterator = new SevenZArchiveResourceIterator(openSevenZFile());
+        synchronized (activeResourceIterators) {
+            activeResourceIterators.add(iterator);
         }
-        return resources.iterator();
+        return iterator;
     }
 
     /**
@@ -125,7 +128,16 @@ public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecomp
 
     @Override
     public void close() {
-        localFileResource.cleanup();
+        try {
+            synchronized (activeResourceIterators) {
+                for (SevenZArchiveResourceIterator iterator : activeResourceIterators) {
+                    iterator.close();
+                }
+                activeResourceIterators.clear();
+            }
+        } finally {
+            localFileResource.cleanup();
+        }
     }
 
     /**
@@ -160,6 +172,98 @@ public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecomp
             builder.setPassword(password);
         }
         return builder.get();
+    }
+
+    /**
+     * 将 SevenZFile 的顺序读取能力封装为惰性迭代器。
+     */
+    private class SevenZArchiveResourceIterator implements Iterator<ArchiveResource> {
+        /**
+         * SevenZFile 实例。
+         */
+        private final SevenZFile sevenZFile;
+
+        /**
+         * 预读取的下一个条目。
+         */
+        private SevenZArchiveEntry nextEntry;
+
+        /**
+         * 是否已完成预读取。
+         */
+        private boolean prefetched;
+
+        /**
+         * 是否已关闭底层资源。
+         */
+        private boolean closed;
+
+        /**
+         * 创建 7z 条目迭代器。
+         *
+         * @param sevenZFile SevenZFile 实例
+         */
+        private SevenZArchiveResourceIterator(SevenZFile sevenZFile) {
+            this.sevenZFile = sevenZFile;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (closed) {
+                return false;
+            }
+            if (!prefetched) {
+                nextEntry = readNextEntry();
+                prefetched = true;
+                if (nextEntry == null) {
+                    close();
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public ArchiveResource next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException("没有更多 7z 条目");
+            }
+            ArchiveResource archiveResource = toArchiveResource(nextEntry);
+            prefetched = false;
+            nextEntry = null;
+            return archiveResource;
+        }
+
+        /**
+         * 读取下一个 7z 条目。
+         *
+         * @return 下一个条目，读取结束时返回 {@code null}
+         */
+        private SevenZArchiveEntry readNextEntry() {
+            try {
+                return sevenZFile.getNextEntry();
+            } catch (IOException e) {
+                close();
+                throw new IllegalStateException("读取 7z 条目失败", e);
+            }
+        }
+
+        /**
+         * 关闭底层 SevenZFile 资源。
+         */
+        private void close() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            try {
+                sevenZFile.close();
+            } catch (IOException ignore) {
+            }
+            synchronized (activeResourceIterators) {
+                activeResourceIterators.remove(this);
+            }
+        }
     }
 
     /**
