@@ -3,6 +3,7 @@ package com.sfc.archive.config;
 import com.sfc.archive.ArchiveEngineManager;
 import com.sfc.archive.ArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineFeatureDetail;
+import com.sfc.archive.model.EncryptionCapability;
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
@@ -64,22 +65,10 @@ public class ArchiveEngineFeatureProvider implements FeatureProvider {
         return new ArchiveEngineFeatureDetail(
                 provider.getId(),
                 provider.getName(),
-                toExtensionList(provider.getSupportedCompressExtensions()),
-                toExtensionList(provider.getSupportedDecompressExtensions())
+                provider.getSupportedCompressExtensions(),
+                provider.getSupportedDecompressExtensions(),
+                provider.getSupportedEncryptionCapabilities()
         );
-    }
-
-    /**
-     * 将扩展名集合转换为可安全序列化的列表。
-     *
-     * @param extensions 原始扩展名集合
-     * @return 扩展名列表
-     */
-    private List<String> toExtensionList(Collection<String> extensions) {
-        if (extensions == null || extensions.isEmpty()) {
-            return List.of();
-        }
-        return new ArrayList<>(extensions);
     }
 }
 

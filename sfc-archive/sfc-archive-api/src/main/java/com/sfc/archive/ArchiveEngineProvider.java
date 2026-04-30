@@ -1,6 +1,7 @@
 package com.sfc.archive;
 
 import com.sfc.archive.model.ArchiveEngineProperty;
+import com.sfc.archive.model.EncryptionCapability;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -25,19 +26,6 @@ public interface ArchiveEngineProvider {
      */
     String getName();
 
-    /**
-     * 是否支持加密压缩。
-     *
-     * @return true 表示支持
-     */
-    boolean supportEncrypt();
-
-    /**
-     * 是否支持加密解压。
-     *
-     * @return true 表示支持
-     */
-    boolean supportDecrypt();
 
     /**
      * 获取支持压缩的扩展名列表（带点，全小写，例如 .zip）。
@@ -52,6 +40,17 @@ public interface ArchiveEngineProvider {
      * @return 扩展名列表
      */
     Collection<String> getSupportedDecompressExtensions();
+
+    /**
+     * 获取该引擎在所有支持的格式中，对压缩和解压操作支持加密的能力集合。
+     * <p>
+     * 返回项仅表达“扩展名 + 操作类型”是否支持加密，不包含具体算法信息。
+     * 对于不支持加密的操作+格式组合，不应返回对应条目。
+     * </p>
+     *
+     * @return 加密能力集合，若不支持任何加密则返回空集合
+     */
+    Collection<EncryptionCapability> getSupportedEncryptionCapabilities();
 
     /**
      * 创建压缩任务执行器。

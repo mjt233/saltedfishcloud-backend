@@ -4,6 +4,7 @@ import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineProperty;
+import com.sfc.archive.model.EncryptionCapability;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.springframework.core.io.Resource;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * 基于 Apache Commons Compress 的 解压缩引擎实现。
@@ -25,6 +27,21 @@ public class ApacheCommonsCompressEngineProvider extends AbstractArchiveEnginePr
     @Override
     public String getName() {
         return "Apache Commons Compress";
+    }
+
+    /**
+     * 获取 Apache Commons Compress 的加密能力声明。
+     *
+     * @return 支持的加密能力集合
+     */
+    @Override
+    public Collection<EncryptionCapability> getSupportedEncryptionCapabilities() {
+        return Collections.singletonList(
+                EncryptionCapability.builder()
+                        .extension(".7z")
+                        .operation(EncryptionCapability.EncryptionOperation.DECOMPRESS)
+                        .build()
+        );
     }
 
     @Override

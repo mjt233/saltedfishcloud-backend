@@ -100,15 +100,6 @@ public abstract class AbstractArchiveEngineProvider implements ArchiveEngineProv
         return null;
     }
 
-    @Override
-    public boolean supportEncrypt() {
-        return false;
-    }
-
-    @Override
-    public boolean supportDecrypt() {
-        return false;
-    }
 
     @Override
     public Collection<String> getSupportedCompressExtensions() {

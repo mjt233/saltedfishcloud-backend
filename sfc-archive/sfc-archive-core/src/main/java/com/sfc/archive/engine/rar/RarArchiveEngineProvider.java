@@ -4,6 +4,7 @@ import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineProperty;
+import com.sfc.archive.model.EncryptionCapability;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import org.springframework.core.io.Resource;
 
@@ -17,11 +18,6 @@ import java.util.Collections;
  */
 public class RarArchiveEngineProvider extends AbstractArchiveEngineProvider {
     @Override
-    public boolean supportDecrypt() {
-        return true;
-    }
-
-    @Override
     public String getId() {
         return "junrar";
     }
@@ -31,9 +27,19 @@ public class RarArchiveEngineProvider extends AbstractArchiveEngineProvider {
         return "Junrar";
     }
 
+    /**
+     * 获取 Junrar 对 .rar 的加密能力声明。
+     *
+     * @return 支持的加密能力集合
+     */
     @Override
-    public Collection<String> getSupportedCompressExtensions() {
-        return Collections.emptyList();
+    public Collection<EncryptionCapability> getSupportedEncryptionCapabilities() {
+        return Collections.singletonList(
+                EncryptionCapability.builder()
+                        .extension(".rar")
+                        .operation(EncryptionCapability.EncryptionOperation.DECOMPRESS)
+                        .build()
+        );
     }
 
     @Override

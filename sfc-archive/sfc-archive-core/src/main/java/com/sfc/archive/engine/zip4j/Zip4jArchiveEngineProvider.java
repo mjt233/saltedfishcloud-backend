@@ -4,10 +4,12 @@ import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineProperty;
+import com.sfc.archive.model.EncryptionCapability;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -25,14 +27,23 @@ public class Zip4jArchiveEngineProvider extends AbstractArchiveEngineProvider {
         return "Zip4j";
     }
 
+    /**
+     * 获取 Zip4j 对 .zip 的加密能力声明。
+     *
+     * @return 支持的加密能力集合
+     */
     @Override
-    public boolean supportEncrypt() {
-        return true;
-    }
-
-    @Override
-    public boolean supportDecrypt() {
-        return true;
+    public Collection<EncryptionCapability> getSupportedEncryptionCapabilities() {
+        return Arrays.asList(
+                EncryptionCapability.builder()
+                        .extension(".zip")
+                        .operation(EncryptionCapability.EncryptionOperation.COMPRESS)
+                        .build(),
+                EncryptionCapability.builder()
+                        .extension(".zip")
+                        .operation(EncryptionCapability.EncryptionOperation.DECOMPRESS)
+                        .build()
+        );
     }
 
     @Override
