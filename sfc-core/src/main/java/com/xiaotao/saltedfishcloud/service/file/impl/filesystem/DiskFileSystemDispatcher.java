@@ -155,9 +155,25 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         }
     }
 
+    /**
+     * 校验目标完整路径是否与挂载点路径冲突。
+     *
+     * @param uid 用户id
+     * @param path 目标目录路径
+     * @param name 文件名
+     */
+    private void validateNotMountPointPath(long uid, String path, String name) {
+        String fullPath = StringUtils.appendPath(path, name);
+        FileSystemMatchResult fileSystemMatchResult = matchFileSystem(uid, fullPath);
+        if (fileSystemMatchResult.isMountPath(fullPath)) {
+            throw new JsonException(FileSystemError.MOUNT_POINT_EXIST);
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
+        validateNotMountPointPath(uid, path, name);
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         boolean isSuccess = matchResult.fileSystem.quickSave(uid, matchResult.resolvedPath, name, md5);
         if (matchResult.isProxyStoreRecordMountPoint() && isSuccess) {
@@ -546,6 +562,9 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
+        if (fileInfo != null && fileInfo.getName() != null) {
+            validateNotMountPointPath(uid, path, fileInfo.getName());
+        }
         FileSystemMatchResult matchResult = matchFileSystem(uid, path);
         matchResult.fileSystem.moveToSaveFile(uid, nativeFilePath, matchResult.resolvedPath, fileInfo);
         if (matchResult.isProxyStoreRecordMountPoint()) {
@@ -555,11 +574,79 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         this.publishFileStoreEvent(matchResult.fileSystem, uid, matchResult.resolvedPath, fileInfo.getName(), StringUtils.appendPath(path, fileInfo.getName()), null);
     }
 
+    /**
+     * 批量保存文件，并按照匹配到的文件系统与路径进行分组转发。
+     *
+     * @param fileInfos 待保存文件列表
+     * @param callback 传输回调，可为null
+     * @throws IOException 文件操作异常
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchSaveFiles(List<FileInfo> fileInfos, @Nullable FileTransferCallback callback) throws IOException {
+        if (CollectionUtils.isEmpty(fileInfos)) {
+            return;
+        }
+        class BatchGroup {
+            private final Long uid;
+            private final String originPath;
+            private final List<FileInfo> sourceFiles = new ArrayList<>();
+
+            private BatchGroup(Long uid, String originPath) {
+                this.uid = uid;
+                this.originPath = originPath;
+            }
+        }
+
+        // 先按 uid + path 分组，避免对同目录重复匹配文件系统。
+        LinkedHashMap<String, BatchGroup> grouped = new LinkedHashMap<>();
+        for (FileInfo fileInfo : fileInfos) {
+            if (fileInfo == null
+                    || fileInfo.getUid() == null
+                    || fileInfo.getPath() == null
+                    || fileInfo.getName() == null
+                    || fileInfo.getStreamSource() == null) {
+                throw new IllegalArgumentException("batchSaveFiles param invalid: uid/path/name/streamSource must not be null");
+            }
+            validateNotMountPointPath(fileInfo.getUid(), fileInfo.getPath(), fileInfo.getName());
+            String key = fileInfo.getUid() + ":" + fileInfo.getPath();
+            BatchGroup group = grouped.computeIfAbsent(key,
+                    e -> new BatchGroup(fileInfo.getUid(), fileInfo.getPath()));
+            group.sourceFiles.add(fileInfo);
+        }
+
+        // 对分组后的文件进行批量保存操作
+        for (BatchGroup group : grouped.values()) {
+            FileSystemMatchResult matchResult = matchFileSystem(group.uid, group.originPath);
+            List<FileInfo> delegateFiles = new ArrayList<>(group.sourceFiles.size());
+            for (FileInfo sourceFile : group.sourceFiles) {
+                FileInfo delegateFile = new FileInfo();
+                BeanUtils.copyProperties(sourceFile, delegateFile);
+                delegateFile.setPath(matchResult.resolvedPath);
+                delegateFiles.add(delegateFile);
+            }
+
+            matchResult.fileSystem.batchSaveFiles(delegateFiles, callback);
+            if (matchResult.isProxyStoreRecordMountPoint()) {
+                fileRecordService.batchSaveFileInSameDirectory(group.uid, group.originPath, delegateFiles);
+            }
+            for (FileInfo fileInfo : delegateFiles) {
+                this.publishFileStoreEvent(matchResult.fileSystem,
+                        fileInfo.getUid(),
+                        matchResult.resolvedPath,
+                        fileInfo.getName(),
+                        StringUtils.appendPath(group.originPath, fileInfo.getName()),
+                        fileInfo);
+            }
+        }
+    }
+
     @Override
     public void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
         if(!FileNameValidator.valid(file.getName())) {
             throw new IllegalArgumentException("非法文件名，不可包含/\\<>?|:换行符，回车符或文件名为..");
         }
+        validateNotMountPointPath(file.getUid(), savePath, file.getName());
         FileSystemMatchResult matchResult = matchFileSystem(file.getUid(), savePath);
         matchResult.fileSystem.saveFileByStream(file, matchResult.resolvedPath, streamConsumer);
         if (matchResult.isProxyStoreRecordMountPoint()) {

@@ -196,10 +196,15 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
             fileInfo.setType(FileInfo.TYPE_FILE);
         }
 
-        fileInfo.setMtime(info.getLastWriteTime().toDate().getTime());
+        if (info.getCreationTime() != null) {
+            fileInfo.setCtime(info.getCreationTime().toDate().getTime());
+            fileInfo.setCreateAt(info.getCreationTime().toDate());
+        }
+        if (info.getLastWriteTime() != null) {
+            fileInfo.setMtime(info.getLastWriteTime().toDate().getTime());
+            fileInfo.setUpdateAt(info.getLastWriteTime().toDate());
+        }
         fileInfo.setName(info.getFileName());
-        fileInfo.setCreateAt(info.getCreationTime().toDate());
-        fileInfo.setUpdateAt(info.getLastWriteTime().toDate());
         return fileInfo;
     }
 

@@ -131,6 +131,48 @@ public class PathUtils {
     }
 
     /**
+     * 移除相同的路径前缀。路径需要满足以"/"开头，且 参数 input 必须与 prefix 表示的路径相同或为子路径，否则会抛出异常<br>
+     * 例如：<br>
+     * <code>removePrefix("/a/b", "/a/b/c/d")</code> 返回 <code>/c/d</code><br>
+     * <code>removePrefix("/a/b", "/a/b")</code> 返回 <code>/</code><br>
+     * <code>removePrefix("/a/b", "/a/bc/d")</code> 抛出异常 <br>
+     * @param prefix    路径前缀
+     * @param input     输入路径
+     * @return  移除后的路径
+     */
+    public static String removePrefix(String prefix, String input) {
+        // 1. 检查输入路径和前缀是否以 "/" 开头
+        if (prefix == null || input == null || !prefix.startsWith("/") || !input.startsWith("/")) {
+            throw new IllegalArgumentException("路径必须以 '/' 开头");
+        }
+
+        // 2. 确保 prefix 是 input 的前缀
+        if (!input.startsWith(prefix)) {
+            throw new IllegalArgumentException("输入路径不是前缀的子路径");
+        }
+
+        // 3. 如果 prefix 和 input 相同，返回 "/"
+        if (input.equals(prefix)) {
+            return "/";
+        }
+
+        // 4. 移除前缀部分
+        String remainingPath = input.substring(prefix.length());
+
+        // 5. 如果剩余路径为空，返回 "/"
+        if (remainingPath.isEmpty()) {
+            return "/";
+        }
+
+        // 6. 确保返回的路径以 "/" 开头
+        if (!remainingPath.startsWith("/")) {
+            remainingPath = "/" + remainingPath;
+        }
+
+        return remainingPath;
+    }
+
+    /**
      * 获取路径中最后一个节点的名称
      * @param path  路径
      * @return      节点名称

@@ -25,6 +25,11 @@ public interface FeatureName {
     String EXTRACT_ARCHIVE_TYPE = "extractArchiveType";
 
     /**
+     * 当前可用的压缩引擎信息
+     */
+    String ARCHIVE_ENGINE_LIST = "archiveEngineList";
+
+    /**
      * 主背景图配置
      */
     String BG_MAIN = "bgMain";

@@ -10,13 +10,13 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <modules>
-        <module>sfc-core</module>
-        <module>sfc-api</module>
-        <module>sfc-ext</module>
-        <module>sfc-task</module>
-        <module>sfc-download</module>
-        <module>sfc-rpc</module>
         <module>sfc-archive</module>
+        <module>sfc-api</module>
+        <module>sfc-task</module>
+        <module>sfc-rpc</module>
+        <module>sfc-download</module>
+        <module>sfc-ext</module>
+        <module>sfc-core</module>
     </modules>
     <groupId>com.xiaotao</groupId>
     <artifactId>saltedfishcloud</artifactId>

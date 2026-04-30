@@ -47,8 +47,11 @@ nav:
   - 开发手册:
       - 简介: develop/index.md
       - 项目构建: develop/build.md
+      - Git 提交规范: develop/framework/git-commit-convention.md
       - 系统功能架构:
           - 文件操作: develop/framework/file-operations.md
+          - 配置与特性服务: develop/framework/config-hello-service.md
+          - 压缩引擎扩展: develop/framework/archive-engine-extension.md
           - 集群兼容: develop/framework/cluster.md
           - 异步任务: develop/framework/async-task.md
           - 定时任务: develop/framework/schedule.md

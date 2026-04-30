@@ -71,16 +71,6 @@ public class FileController {
      */
 
     /**
-     * 异步方式创建压缩任务
-     * @param param     压缩参数
-     * @return          任务id
-     */
-    @PostMapping("asyncCompress")
-    public JsonResult<Long> asyncCompress(@RequestBody DiskFileSystemCompressParam param) throws IOException {
-        return JsonResultImpl.getInstance(archiveService.asyncCompress(param));
-    }
-
-    /**
      * 创建文件夹
      */
     @PutMapping("dir/**")
@@ -117,29 +107,6 @@ public class FileController {
         fileInfo.setMtime(mtime);
         long i = fileSystemManager.getMainFileSystem().saveFile(fileInfo, requestPath);
         return JsonResultImpl.getInstance(i);
-    }
-
-    @PostMapping("extractArchive/**")
-    public JsonResult<Object> extractArchive(@PathVariable @UID long uid,
-                                     @RequestParam("name") String name,
-                                     @RequestParam("dest") String dest,
-                                     HttpServletRequest request) throws IOException {
-        String path = URLUtils.getRequestFilePath(PREFIX + uid + "/extractArchive", request);
-
-        archiveService.extractArchive(uid, path, name, dest);
-        return JsonResult.emptySuccess();
-    }
-
-    /**
-     * 从网盘创建压缩文件
-     * @param uid   用户ID
-     * @param files 文件传输信息
-     */
-    @PostMapping("compress")
-    public JsonResult<Object> compress(@PathVariable @UID long uid,
-                               @RequestBody FileTransferInfo files) throws IOException {
-        archiveService.compress(uid, files.getSource(), files.getFilenames(), files.getDest());
-        return JsonResult.emptySuccess();
     }
 
     /**

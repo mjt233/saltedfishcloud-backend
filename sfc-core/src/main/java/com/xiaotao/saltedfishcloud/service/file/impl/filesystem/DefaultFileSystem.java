@@ -33,6 +33,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
@@ -41,6 +42,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -342,6 +344,85 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         } finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * 按 uid 和 path 分组批量保存文件，减少重复目录查询与单条入库操作。
+     *
+     * @param fileInfos 待保存文件
+     * @param callback 文件传输回调，可为 null
+     * @throws IOException 文件操作异常
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchSaveFiles(List<FileInfo> fileInfos, @Nullable FileTransferCallback callback) throws IOException {
+        if (fileInfos == null || fileInfos.isEmpty()) {
+            return;
+        }
+        record SaveKey(Long uid, String path) {}
+
+        LinkedHashMap<SaveKey, List<FileInfo>> groupedFiles = new LinkedHashMap<>();
+        for (FileInfo fileInfo : fileInfos) {
+            if (fileInfo == null
+                    || fileInfo.getUid() == null
+                    || fileInfo.getPath() == null
+                    || fileInfo.getName() == null
+                    || fileInfo.getStreamSource() == null) {
+                throw new IllegalArgumentException("batchSaveFiles param invalid: uid/path/name/streamSource must not be null");
+            }
+            groupedFiles.computeIfAbsent(new SaveKey(fileInfo.getUid(), fileInfo.getPath()), e -> new ArrayList<>()).add(fileInfo);
+        }
+
+        StoreService storeService = storeServiceFactory.getService();
+        for (Map.Entry<SaveKey, List<FileInfo>> entry : groupedFiles.entrySet()) {
+            SaveKey key = entry.getKey();
+            List<FileInfo> group = entry.getValue();
+            for (FileInfo fileInfo : group) {
+                if (callback != null && callback.shouldInterrupt()) {
+                    return;
+                }
+                FileTransferItem item = FileTransferItem.builder()
+                        .from(fileInfo.getName())
+                        .to(StringUtils.appendPath(key.path(), fileInfo.getName()))
+                        .total(fileInfo.getSize())
+                        .loaded(0L)
+                        .fileInfo(fileInfo)
+                        .build();
+                if (callback != null) {
+                    callback.onFileStart(item);
+                }
+                LockUtils.execute(getStoreLockKey(key.uid(), key.path(), fileInfo.getName()),
+                        () -> doStoreBySource(storeService, fileInfo, key.path(), item));
+                item.setLoaded(item.getTotal());
+                if (callback != null) {
+                    callback.onFileComplete(item);
+                }
+            }
+            fileRecordService.batchSaveFileInSameDirectory(key.uid(), key.path(), group);
+        }
+    }
+
+    /**
+     * 执行数据写入到存储服务，并将写入中的实时进度更新到传输项。
+     *
+     * @param storeService 存储服务
+     * @param fileInfo     待保存文件信息
+     * @param savePath     目标目录路径
+     * @param item         文件传输项，方法内会持续更新其 loaded 字段
+     * @throws IOException 写入异常
+     */
+    private void doStoreBySource(StoreService storeService, FileInfo fileInfo, String savePath, FileTransferItem item) throws IOException {
+        storeService.storeByStream(fileInfo, savePath, os -> {
+            try (InputStream is = fileInfo.getStreamSource().getInputStream()) {
+                return StreamUtils.copyStreamAndComputeMd5(is, os, fileInfo.getMd5(), (buf, len) -> {
+                    Long currentLoaded = item.getLoaded();
+                    if (currentLoaded == null || currentLoaded < 0) {
+                        currentLoaded = 0L;
+                    }
+                    item.setLoaded(currentLoaded + len);
+                }).applyTo(fileInfo);
+            }
+        });
     }
 
     @Override

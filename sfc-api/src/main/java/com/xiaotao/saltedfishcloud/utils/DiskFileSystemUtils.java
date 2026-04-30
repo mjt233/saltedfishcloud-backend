@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.function.IOExceptionBiConsumer;
 import com.xiaotao.saltedfishcloud.model.DiskFileAttributes;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -14,8 +15,6 @@ import java.io.OutputStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.xiaotao.saltedfishcloud.constant.ByteSize._1KiB;
@@ -67,7 +66,7 @@ public class DiskFileSystemUtils {
      * @param path          起始路径
      * @param consumer      消费函数，第一个参数为当前路径，第二个参数为当前路径下的文件项目
      */
-    public static void walk(DiskFileSystem fileSystem, Long uid, String path, BiConsumer<String, List<FileInfo>> consumer) throws IOException {
+    public static void walk(DiskFileSystem fileSystem, Long uid, String path, IOExceptionBiConsumer<String, List<FileInfo>> consumer) throws IOException {
         Deque<String> pathQueue = new ArrayDeque<>();
         pathQueue.add(path);
         do {
@@ -80,7 +79,7 @@ public class DiskFileSystemUtils {
             fileList.addAll(userFileList[0]);
             fileList.addAll(userFileList[1]);
             if (!userFileList[0].isEmpty()) {
-                pathQueue.addAll(userFileList[0].stream().map(e -> StringUtils.appendPath(curPath, e.getName())).collect(Collectors.toList()));
+                pathQueue.addAll(userFileList[0].stream().map(e -> StringUtils.appendPath(curPath, e.getName())).toList());
             }
             consumer.accept(curPath, fileList);
         } while (!pathQueue.isEmpty());

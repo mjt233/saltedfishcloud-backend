@@ -8,7 +8,9 @@ import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 
@@ -163,6 +165,54 @@ public interface DiskFileSystem {
         try (InputStream is = Files.newInputStream(nativeFilePath)) {
             saveFileByStream(fileInfo, path, os -> DiskFileSystemUtils.saveFileStream(fileInfo, is, os));
             Files.deleteIfExists(nativeFilePath);
+        }
+    }
+
+    /**
+     * 批量保存文件到网盘系统。
+     * <p>
+     * 每个 {@link FileInfo} 必须提供 uid、path、name、streamSource 字段。默认实现会逐个文件调用
+     * {@link #saveFileByStream(FileInfo, String, OutputStreamConsumer)} 完成保存；具体实现可覆盖该方法以实现更高性能的批量存储与批量入库。
+     * </p>
+     *
+     * @param fileInfos 待保存的文件列表
+     * @param callback  文件传输回调，可为 null
+     * @throws IOException 文件操作异常
+     */
+    default void batchSaveFiles(List<FileInfo> fileInfos, @Nullable FileTransferCallback callback) throws IOException {
+        if (fileInfos == null || fileInfos.isEmpty()) {
+            return;
+        }
+        for (FileInfo fileInfo : fileInfos) {
+            if (callback != null && callback.shouldInterrupt()) {
+                return;
+            }
+            if (fileInfo == null
+                    || fileInfo.getUid() == null
+                    || fileInfo.getPath() == null
+                    || fileInfo.getName() == null
+                    || fileInfo.getStreamSource() == null) {
+                throw new IllegalArgumentException("批量保存参数非法，uid/path/name/streamSource 不能为空");
+            }
+            if (callback != null) {
+                callback.onFileStart(FileTransferItem.builder()
+                        .from(fileInfo.getName())
+                        .to(StringUtils.appendPath(fileInfo.getPath(), fileInfo.getName()))
+                        .total(fileInfo.getSize())
+                        .loaded(0L)
+                        .fileInfo(fileInfo)
+                        .build());
+            }
+            saveFile(fileInfo, fileInfo.getPath());
+            if (callback != null) {
+                callback.onFileComplete(FileTransferItem.builder()
+                        .from(fileInfo.getName())
+                        .to(StringUtils.appendPath(fileInfo.getPath(), fileInfo.getName()))
+                        .total(fileInfo.getSize())
+                        .loaded(fileInfo.getSize())
+                        .fileInfo(fileInfo)
+                        .build());
+            }
         }
     }
 
