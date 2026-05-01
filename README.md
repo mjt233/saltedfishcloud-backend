@@ -107,7 +107,7 @@ $ java -jar sfc-core.jar --spring.config.import=file:config.yml
 | ftp-server     | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源                      |
 | ftp-store      | 提供基于FTP文件传输的存储读写支持（挂载存储）                         |
 | hadoop-store   | 提供hdfs文件系统读写支持（主存储、挂载存储）                         |
-| mp3-thumbnail  | 为mp3文件提供缩率图显示支持                                  |
+| music          | 为音频类型的文件提供缩率图显示支持，后续会继续基于该插件拓展音乐功能               |
 | network-tools  | 服务器网络工具，用于在管理后台查看网络接口信息，并给用户提供WOL支持              |
 | only-office    | 适配ONLYOFFICE，实现office文档在线预览和编辑                   |
 | oss-store      | 提供基于Amazon S3协议的OSS对象存储系统读写支持（挂载存储）              |
