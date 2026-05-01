@@ -13,11 +13,7 @@ import org.springframework.core.io.Resource;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * 7z 解压执行器。
@@ -143,6 +139,11 @@ public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecomp
     /**
      * 将 7z 条目转换为归档资源对象。
      *
+     * <p>注意：在 Apache Commons Compress 1.28+ 中，若条目不包含某项时间戳，
+     * 直接调用 {@code getLastModifiedDate()} / {@code getCreationDate()} 会抛出
+     * {@link UnsupportedOperationException}。使用 try-catch 安全读取，避免因
+     * 7z 文件不含该时间戳字段而导致整个列表请求失败。</p>
+     *
      * @param entry 7z 条目
      * @return 归档资源
      */
@@ -152,8 +153,18 @@ public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecomp
                 .archivePath(EngineResourceUtils.normalizeArchivePath(entry.getName()))
                 .isDirectory(entry.isDirectory())
                 .size(entry.isDirectory() ? 0L : entry.getSize())
-                .lastModified(entry.getLastModifiedDate() == null ? null : new Date(entry.getLastModifiedDate().getTime()))
-                .created(entry.getCreationDate() == null ? null : new Date(entry.getCreationDate().getTime()))
+                .lastModified(Optional
+                        .of(entry)
+                        .filter(SevenZArchiveEntry::getHasLastModifiedDate)
+                        .map(SevenZArchiveEntry::getLastModifiedDate)
+                        .orElse(null)
+                )
+                .created(Optional
+                        .of(entry)
+                        .filter(SevenZArchiveEntry::getHasCreationDate)
+                        .map(SevenZArchiveEntry::getCreationDate)
+                        .orElse(null)
+                )
                 .build();
     }
 
