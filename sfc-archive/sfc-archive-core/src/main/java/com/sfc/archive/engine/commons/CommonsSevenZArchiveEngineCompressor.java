@@ -9,6 +9,8 @@ import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZMethod;
 import org.apache.commons.compress.archivers.sevenz.SevenZMethodConfiguration;
 import org.apache.commons.compress.archivers.sevenz.SevenZOutputFile;
+import org.jetbrains.annotations.NotNull;
+import org.tukaani.xz.LZMA2Options;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,7 +48,7 @@ public class CommonsSevenZArchiveEngineCompressor extends AbstractArchiveEngineC
      * <p>压缩方法选择策略：
      * <ul>
      *   <li>{@link CompressionLevel#STORE}：使用 {@link SevenZMethod#COPY}（仅存储，不压缩）</li>
-     *   <li>其他级别：使用 LZMA2，通过 preset（1‑9）控制压缩强度</li>
+     *   <li>其他级别：使用 LZMA2，并显式构造 {@link LZMA2Options} 传递 preset（1‑9）</li>
      * </ul>
      * </p>
      *
@@ -69,7 +71,7 @@ public class CommonsSevenZArchiveEngineCompressor extends AbstractArchiveEngineC
                 }
 
                 @Override
-                public void write(byte[] b, int off, int len) throws IOException {
+                public void write(@NotNull byte[] b, int off, int len) throws IOException {
                     sevenZOutputFile.write(b, off, len);
                 }
             };
@@ -85,18 +87,35 @@ public class CommonsSevenZArchiveEngineCompressor extends AbstractArchiveEngineC
      * 根据压缩级别构建 7z 内容方法配置。
      *
      * <p>{@link CompressionLevel#STORE} 使用 {@link SevenZMethod#COPY} 以实现真正的"仅存储"，
-     * 其余级别使用 LZMA2 并传入对应 preset（0‑9）控制压缩强度与速度的平衡。</p>
+     * 其余级别使用 LZMA2，并显式创建 {@link LZMA2Options} 以避免将 preset 整数误解释为字典大小。</p>
      *
      * @param level 通用压缩级别
      * @return 7z 方法配置
+     * @throws IOException 构造 LZMA2 参数失败
      */
-    private static SevenZMethodConfiguration buildSevenZMethodConfiguration(CompressionLevel level) {
+    private static SevenZMethodConfiguration buildSevenZMethodConfiguration(CompressionLevel level) throws IOException {
         if (level == CompressionLevel.STORE) {
             // COPY 方法：仅存储，不进行任何压缩
             return new SevenZMethodConfiguration(SevenZMethod.COPY);
         }
-        // LZMA2 方法：传入 preset 整数（0-9），Apache Commons Compress 内部会映射为 LZMA2Options
-        return new SevenZMethodConfiguration(SevenZMethod.LZMA2, CommonsCompressionLevelUtils.mapXzPreset(level));
+        return new SevenZMethodConfiguration(SevenZMethod.LZMA2, buildLzma2Options(level));
+    }
+
+    /**
+     * 根据统一压缩级别构建 7z 所需的 LZMA2 参数。
+     *
+     * <p>注意：这里必须传入 {@link LZMA2Options} 对象，而不能直接传入 preset 数字。
+     * 对于 {@link SevenZMethod#LZMA2}，数字选项会被 Apache Commons Compress 解释为字典大小（字节数），
+     * 从而导致类似“6 B”这类非法字典大小异常。</p>
+     *
+     * @param level 通用压缩级别
+     * @return LZMA2 参数对象
+     * @throws IOException 设置 preset 失败
+     */
+    private static LZMA2Options buildLzma2Options(CompressionLevel level) throws IOException {
+        LZMA2Options options = new LZMA2Options();
+        options.setPreset(CommonsCompressionLevelUtils.mapXzPreset(level));
+        return options;
     }
 
     /**

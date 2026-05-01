@@ -39,10 +39,14 @@ final class CommonsCompressionLevelUtils {
     }
 
     /**
-     * 将通用压缩级别映射为 XZ/LZMA2 preset（适用于 .xz 及 .tar.xz）。
+     * 将通用压缩级别映射为 XZ preset（适用于 {@code .xz} 与 {@code .tar.xz} 输出流构造）。
      *
      * <p>取值范围：{@code 0}（最快速、最低压缩率）到 {@code 9}（最高压缩率），默认值为 {@code 6}。
      * XZ 格式不支持真正的"仅存储"模式，{@link CompressionLevel#STORE} 将映射为 preset {@code 0}（最低压缩开销）。</p>
+     *
+     * <p>注意：该返回值仅适用于需要 preset 整数的 XZ API，不能直接作为 7z
+     * {@code SevenZMethodConfiguration(LZMA2, options)} 的 options 参数传入，
+     * 否则会被解释为字典大小而不是 preset。</p>
      *
      * @param level 通用压缩级别，传 {@code null} 时使用默认值 6
      * @return XZ preset
