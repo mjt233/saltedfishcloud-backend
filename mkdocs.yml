@@ -28,22 +28,23 @@ nav:
       - 衍生项目: quick-start/other.md
     - 插件:
         - 插件系统说明: extension/index.md
-        - FTP服务 ftp-server: extension/ftp-server.md
-        - OSS对象存储 oss-store: extension/oss-store.md
-        - Minio对象存储 minio-store: extension/minio-store.md
-        - mp3缩略图 mp3-thumbnail: extension/mp3-thumbnail.md
-        - OnlyOffice在线文档 only-office: extension/onlyoffice.md
-        - WebRTC应用 webrtc: extension/webrtc.md
-        - WebDAV文件共享 webdav: extension/webdav.md
-        - Hadoop存储 hadoop-store: extension/hadoop-store.md
-        - Samba文件共享 samba-store: extension/samba-store.md
-        - SFTP存储 sftp-store: extension/sftp-store.md
-        - FTP存储 ftp-store: extension/ftp-store.md
-        - 视频功能增强 video-enhance: extension/video-enhance.md
-        - 快捷分享 quick-share: extension/quick-share.md
-        - WebShell web-shell: extension/web-shell.md
-        - 网络工具 network-tools: extension/network-tools.md
-        - 静态资源站点 static-publish: extension/static-publish.md
+        - 插件列表:
+          - FTP服务 ftp-server: extension/ftp-server.md
+          - OSS对象存储 oss-store: extension/oss-store.md
+          - Minio对象存储 minio-store: extension/minio-store.md
+          - 音乐插件 music: extension/music.md
+          - OnlyOffice在线文档 only-office: extension/onlyoffice.md
+          - WebRTC应用 webrtc: extension/webrtc.md
+          - WebDAV文件共享 webdav: extension/webdav.md
+          - Hadoop存储 hadoop-store: extension/hadoop-store.md
+          - Samba文件共享 samba-store: extension/samba-store.md
+          - SFTP存储 sftp-store: extension/sftp-store.md
+          - FTP存储 ftp-store: extension/ftp-store.md
+          - 视频功能增强 video-enhance: extension/video-enhance.md
+          - 快捷分享 quick-share: extension/quick-share.md
+          - WebShell web-shell: extension/web-shell.md
+          - 网络工具 network-tools: extension/network-tools.md
+          - 静态资源站点 static-publish: extension/static-publish.md
   - 开发手册:
       - 简介: develop/index.md
       - 项目构建: develop/build.md
@@ -60,6 +61,7 @@ nav:
           - 创建插件: develop/plugin/create-plugin.md
           - Spring Boot集成: develop/plugin/springboot-integration.md
           - 插件配置参数: develop/plugin/config-properties.md
+          - 插件前端开发: develop/plugin/create-front-end.md
   - OAuth开放平台:
       - 概述: oauth/index.md
       - 开放接口列表:

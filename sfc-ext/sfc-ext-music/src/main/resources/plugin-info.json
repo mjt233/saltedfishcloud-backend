@@ -1,6 +1,6 @@
 {
-  "name": "mp3-thumbnail",
-  "alias": "mp3缩略图封面",
+  "name": "music",
+  "alias": "音乐插件",
   "loadType": "merge",
   "type": "jar",
   "icon": "mdi-image",

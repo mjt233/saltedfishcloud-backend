@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.ext.mp3thumbnail.handler;
+package com.sfc.ext.music.handler;
 
 import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
@@ -21,8 +21,8 @@ import java.util.List;
  */
 @Slf4j
 public class Mp3CoverThumbnailHandler implements ThumbnailHandler {
-    private final static String LOG_TITLE = "[AudioCoverThumbnailHandler]";
-    private final static List<String> SUPPORT_LIST = Collections.unmodifiableList(new ArrayList<String>(){{
+    private final static String LOG_TITLE = "[Mp3CoverThumbnailHandler]";
+    private final static List<String> SUPPORT_LIST = Collections.unmodifiableList(new ArrayList<>() {{
         add("mp3");
     }});
 
@@ -52,7 +52,7 @@ public class Mp3CoverThumbnailHandler implements ThumbnailHandler {
                 ImageUtils.generateThumbnail(stream, 1200, outputStream);
             }
         } catch (UnsupportedTagException | InvalidDataException e) {
-            e.printStackTrace();
+            log.error("无法提取mp3信息");
             return false;
         } finally {
             // 清理临时文件
