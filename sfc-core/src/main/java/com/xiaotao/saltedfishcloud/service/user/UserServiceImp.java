@@ -263,7 +263,7 @@ public class UserServiceImp implements UserService {
         if (type > 1 || type < 0) throw new IllegalArgumentException("不合法的用户类型");
         User user = userRepo.getUserById(uid);
         if (user == null) throw new UserNoExistException(404, "用户不存在");
-        if (type == User.TYPE_COMMON && "admin".equals(user.getUsername())) {
+        if (type == User.TYPE_COMMON && "admin".equals(user.getUser())) {
             throw new IllegalArgumentException("不允许撤销admin用户的管理员权限");
         }
         userRepo.grant(uid, type);

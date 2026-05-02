@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -79,14 +79,13 @@ public class SecureUtils {
     }
 
     /**
-     * 获取SpringSecurity中通过认证的User对象，若无，则返回null
-     * @return User对象
+     * 获取SpringSecurity中通过认证的UserPrincipal对象，若无，则返回null
      */
-    public static User getSpringSecurityUser() {
-        return (User) Optional.ofNullable(SecurityContextHolder.getContext())
+    public static UserPrincipal getSpringSecurityUser() {
+        return (UserPrincipal) Optional.ofNullable(SecurityContextHolder.getContext())
                 .map(SecurityContext::getAuthentication)
                 .map(Authentication::getPrincipal)
-                .filter(e -> e instanceof User)
+                .filter(e -> e instanceof UserPrincipal)
                 .orElse(null);
     }
 
@@ -95,7 +94,7 @@ public class SecureUtils {
      */
     public static boolean currentIsAdmin() {
         return Optional.ofNullable(getSpringSecurityUser())
-                .map(User::isAdmin)
+                .map(UserPrincipal::isAdmin)
                 .orElse(false);
     }
 
@@ -105,7 +104,7 @@ public class SecureUtils {
      */
     public static Long getCurrentUid() {
         return Optional.ofNullable(getSpringSecurityUser())
-                .map(User::getId)
+                .map(UserPrincipal::getId)
                 .orElse(null);
     }
     
@@ -115,7 +114,7 @@ public class SecureUtils {
      * 将指定的用户对象作为当前操作用户绑定到当前线程上下文
      * @param user  用户
      */
-    public static void bindUser(User user) {
+    public static void bindUser(UserPrincipal user) {
         SecurityContextHolder.setContext(new SecurityContextImpl(
                 new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities())
         ));

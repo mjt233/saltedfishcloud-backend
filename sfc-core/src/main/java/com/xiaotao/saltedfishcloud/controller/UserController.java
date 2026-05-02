@@ -12,6 +12,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
@@ -177,8 +178,8 @@ public class UserController {
      * 获取用户基本信息，并刷新token有效期
      */
     @GetMapping
-    public JsonResult<User> getUserInfo(HttpServletRequest request) throws UserNoExistException {
-        User user = SecureUtils.getSpringSecurityUser();
+    public JsonResult<UserPrincipal> getUserInfo(HttpServletRequest request) throws UserNoExistException {
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
             throw new JsonException(401, "未登录");
         }
@@ -275,7 +276,7 @@ public class UserController {
                 getAvatar(HttpServletResponse response,
                           @RequestParam(required = false) Long uid,
                           @PathVariable(required = false) String username) throws IOException {
-        User currentUser = SecureUtils.getSpringSecurityUser();
+        UserPrincipal currentUser = SecureUtils.getSpringSecurityUser();
         if (currentUser == null && username == null && uid == null) {
             response.sendRedirect("/api/static/defaultAvatar.png");
             return null;
@@ -326,7 +327,7 @@ public class UserController {
                                      @RequestParam("new") @Length(min = 6) String newPasswd,
                                      @PathVariable("uid") @UID long uid,
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (force) {
             if (user == null || user.getType() != User.TYPE_ADMIN) {
                 throw new AccessDeniedException("非管理员不允许使用force参数");

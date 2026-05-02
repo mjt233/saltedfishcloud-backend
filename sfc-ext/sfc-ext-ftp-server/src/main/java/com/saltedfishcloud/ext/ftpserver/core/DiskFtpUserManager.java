@@ -39,7 +39,7 @@ public class DiskFtpUserManager implements UserManager {
     public String[] getAllUserNames() throws FtpException {
         String[] users = userRepo.getUserList()
                 .stream()
-                .map(com.xiaotao.saltedfishcloud.model.po.User::getUsername)
+                .map(com.xiaotao.saltedfishcloud.model.po.User::getUser)
                 .toArray(String[]::new);
         return users;
     }
@@ -71,7 +71,7 @@ public class DiskFtpUserManager implements UserManager {
             UsernamePasswordAuthentication auth = (UsernamePasswordAuthentication) authentication;
             com.xiaotao.saltedfishcloud.model.po.User user = userRepo.getUserByUser(auth.getUsername());
             if (user == null) return null;
-            if (user.getPassword().equals(SecureUtils.getPassswd(auth.getPassword()))) {
+            if (user.getPwd().equals(SecureUtils.getPassswd(auth.getPassword()))) {
                 return getUserByName(auth.getUsername());
             }
         }

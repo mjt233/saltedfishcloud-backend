@@ -24,7 +24,7 @@ class TokenServiceTest {
     @Test
     public void test() {
         User user = userRepo.getUserByUser("admin");
-        String token = user.toToken();
+        String token = tokenDao.generateUserToken(user);
         tokenDao.setToken(user.getId(), token);
         assertTrue(tokenDao.isTokenValid(user.getId(), token));
         userService.modifyPasswd(user.getId(), "admin233", "admin666");

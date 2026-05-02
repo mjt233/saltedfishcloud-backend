@@ -13,7 +13,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
@@ -50,7 +50,7 @@ public class CollectController {
                                                                       @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
                                                                       @RequestParam(value = "size", defaultValue = "10") @Min(5) @Valid Integer size) {
         CollectionInfo info = collectionService.getCollection(cid);
-        User u = SecureUtils.getSpringSecurityUser();
+        UserPrincipal u = SecureUtils.getSpringSecurityUser();
         assert u != null;
         if (!info.getUid().equals(u.getId())) {
             throw new JsonException(CommonError.FORMAT_ERROR);
@@ -63,7 +63,7 @@ public class CollectController {
      */
     @DeleteMapping("{cid}")
     public JsonResult<Object> delete(@PathVariable("cid") Long cid) {
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         assert user != null;
         collectionService.deleteCollection(user.getId(), cid);
         return JsonResult.emptySuccess();
@@ -75,7 +75,7 @@ public class CollectController {
     @PutMapping("{cid}/state/{state}")
     public JsonResult<CollectionInfo> setState(@PathVariable("cid") Long cid,
                                @PathVariable("state") CollectionInfo.State state) {
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         assert user != null;
         return JsonResultImpl.getInstance(collectionService.setState(user.getId(), cid, state));
     }
@@ -85,7 +85,7 @@ public class CollectController {
      */
     @PostMapping
     public JsonResult<CollectionInfoId> createCollection(@Valid @RequestBody CollectionDTO data) {
-        User u = SecureUtils.getSpringSecurityUser();
+        UserPrincipal u = SecureUtils.getSpringSecurityUser();
         assert u != null;
         if (data.getNickname() == null) data.setNickname(u.getUsername());
         return JsonResultImpl.getInstance(collectionService.createCollection(u.getId(), data));
@@ -106,7 +106,7 @@ public class CollectController {
                                        @MergeFile @RequestPart("file") MultipartFile file,
                                        @RequestPart("submitInfo") @Valid SubmitFile submitFile,
                                        HttpServletRequest request) throws IOException {
-        User u = SecureUtils.getSpringSecurityUser();
+        UserPrincipal u = SecureUtils.getSpringSecurityUser();
         long providerUid = u == null ? 0 : u.getId();
         if (submitFile.getFileParam().getSize() == null) {
             submitFile.getFileParam().setSize(file.getSize());
@@ -136,7 +136,7 @@ public class CollectController {
         if (i == null) {
             throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
         }
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user == null && !i.getAllowAnonymous()) {
             throw new JsonException(CollectionError.COLLECTION_REQUIRE_LOGIN);
         } else if (user == null || !user.getId().equals(i.getUid())) {
@@ -147,7 +147,7 @@ public class CollectController {
 
     @GetMapping
     public List<CollectionInfo> getCollection() {
-        User u = SecureUtils.getSpringSecurityUser();
+        UserPrincipal u = SecureUtils.getSpringSecurityUser();
         assert u != null;
         return colDao.findByUidEquals(u.getId(), SORT_BY_EXPIRED_AT_DESC);
     }

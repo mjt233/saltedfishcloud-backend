@@ -16,7 +16,7 @@ public class OpenUserVo {
     public static OpenUserVo of(User user) {
         OpenUserVo vo = new OpenUserVo();
         vo.setId(user.getId());
-        vo.setUsername(user.getUsername());
+        vo.setUsername(user.getUser());
         vo.setEmail(user.getEmail());
         return vo;
     }

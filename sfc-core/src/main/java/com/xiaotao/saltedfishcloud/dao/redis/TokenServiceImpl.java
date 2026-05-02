@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
@@ -25,12 +26,25 @@ public class TokenServiceImpl implements TokenService {
     public String generateUserToken(Long uid) {
         final User user = userRepo.getUserById(uid);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
-        return generateUserToken(UserVO.from(user, true));
+        return generateUserToken(UserPrincipal.from(user));
     }
 
     @Override
     public String generateUserToken(User user) {
-        return generateUserToken(UserVO.from(user, true));
+        return generateUserToken(UserPrincipal.from(user));
+    }
+
+    @Override
+    public String generateUserToken(UserPrincipal user) {
+        final String token;
+        try {
+            token = JwtUtils.generateToken(MapperHolder.mapper.writeValueAsString(user), 30 * 24 * 60 * 60);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
+        setToken(user.getId(), token);
+        return token;
     }
 
     @Override

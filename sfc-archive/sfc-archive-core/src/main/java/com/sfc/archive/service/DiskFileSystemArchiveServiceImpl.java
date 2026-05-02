@@ -12,7 +12,7 @@ import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
@@ -139,8 +139,8 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
         record.setTaskType(AsyncTaskType.ARCHIVE_COMPRESS);
         record.setCpuOverhead(10);
         record.setParams(MapperHolder.toJson(param));
-        User curUser = SecureUtils.getSpringSecurityUser();
-        record.setUid(Optional.ofNullable(curUser).map(BaseModel::getId).orElse(param.getSourceUid()));
+        UserPrincipal curUser = SecureUtils.getSpringSecurityUser();
+        record.setUid(Optional.ofNullable(curUser).map(UserPrincipal::getId).orElse(param.getSourceUid()));
 
         asyncTaskManager.submitAsyncTask(record);
 

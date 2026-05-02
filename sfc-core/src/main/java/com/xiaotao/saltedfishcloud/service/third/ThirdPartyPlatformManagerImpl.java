@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -166,13 +167,14 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                         "该账号已绑定用户" + existPlatformUser.getUid() + "，但用户不存在，请联系管理员"
                 );
                 platformUser.setUid(assocUser.getId());
-                String token = tokenService.generateUserToken(assocUser);
-                assocUser.setToken(token);
+                String token = tokenService.generateUserToken(UserPrincipal.from(assocUser));
+                UserVO userVO = UserVO.from(assocUser);
+                userVO.setToken(token);
                 result = ThirdPartyPlatformCallbackResult.builder()
                         .isNewUser(false)
                         .newToken(token)
                         .platformUser(platformUser)
-                        .user(UserVO.from(assocUser))
+                        .user(userVO)
                         .actionId(actionId)
                         .build();
                 logRecordManager.saveRecordAsync(LogRecord.builder()
@@ -198,9 +200,9 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         } else {
             platformUser.setIsActive(false);
             // 判断当前是否已有用户登录，如果有则记录当前登录用户（仅设置对象信息，确认关联操作需要前端另外调用 bindUser以供用户确认）
-            User curUser = SecureUtils.getSpringSecurityUser();
+            UserPrincipal curUser = SecureUtils.getSpringSecurityUser();
             if (curUser != null) {
-                assocUser = curUser;
+                assocUser = userService.getUserById(curUser.getId());
                 platformUser.setUid(assocUser.getId());
             } else if (StringUtils.hasText(platformUser.getEmail())) {
                 // 如果系统存在相同邮箱，默认匹配让用户确认
@@ -337,14 +339,15 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         String newUserName = this.generateNewUserName(platformUser);
         userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), User.TYPE_COMMON);
         User newUser = userService.getUserByUser(newUserName);
-        newUser.setToken(tokenService.generateUserToken(newUser));
+        UserVO createResultVO = UserVO.from(newUser, false);
+        createResultVO.setToken(tokenService.generateUserToken(UserPrincipal.from(newUser)));
 
         platformUser.setUid(newUser.getId());
         platformUser.setIsActive(true);
         platformUserRepo.save(platformUser);
 
         clearActionId(actionId);
-        return UserVO.from(newUser, false);
+        return createResultVO;
     }
 
     private ThirdPartyPlatformCallbackResult getCallbackResult(String actionId) {
