@@ -27,6 +27,11 @@
 - 支持通过 FTP / WebDAV / HTTP文件列表页面 对外提供文件访问服务
 - 支持目录静态发布、OnlyOffice 集成、WebShell、网络工具、WebRTC(实验功能) 等扩展能力
 
+### 账号与认证能力
+
+- 支持 OAuth 开放平台能力，可为第三方应用提供授权接入
+- 支持通过第三方平台登录，当前支持 `Github` 与 `Google`
+
 ### 工程与运维能力
 
 - 基于 Spring Boot + JPA + Redis + MySQL
@@ -117,8 +122,10 @@ docker compose up -d --build
 - 用户与部署文档: `docs/quick-start/`
 - 插件文档: `docs/extension/`
 - 开发手册: `docs/develop/`
-- OAuth 开放平台文档: `docs/oauth/`
+- OAuth 开放平台文档（第三方应用授权）: `docs/oauth/`
 - Postman 接口集合: `咸鱼云PostmanAPI文档.json`
+
+如需接入第三方登录（`Github` / `Google`），可结合后台配置与 OAuth 文档进行配置和联调。
 
 ## 参与贡献
 
