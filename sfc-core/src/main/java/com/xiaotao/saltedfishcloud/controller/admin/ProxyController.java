@@ -2,11 +2,11 @@ package com.xiaotao.saltedfishcloud.controller.admin;
 
 
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import jakarta.annotation.security.RolesAllowed;
@@ -44,7 +44,7 @@ public class ProxyController {
         CommonPageInfo<ProxyInfo> res = proxyInfoService.findByUidWithOwnerPermissions(uid, pageableRequest);
 
         // 非管理员获取公共代理列表时，移除所有非公开的代理
-        if (Objects.equals(User.PUBLIC_USER_ID, uid) && !UIDValidator.validate(uid, true)) {
+        if (Objects.equals(UserConstants.PUBLIC_USER_ID, uid) && !UIDValidator.validate(uid, true)) {
             res.setContent(res.getContent().stream().filter(proxy -> !Boolean.TRUE.equals(proxy.getIsProtect())).toList());
         }
         return JsonResultImpl.getInstance(res);

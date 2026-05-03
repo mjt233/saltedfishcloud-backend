@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.Getter;
@@ -37,7 +38,7 @@ public class UserInfo extends BaseModel {
     /**
      * 用户权限类型
      */
-    protected Integer type = User.TYPE_COMMON;
+    protected Integer type = UserConstants.TYPE_COMMON;
 
     /**
      * 上次登录日期

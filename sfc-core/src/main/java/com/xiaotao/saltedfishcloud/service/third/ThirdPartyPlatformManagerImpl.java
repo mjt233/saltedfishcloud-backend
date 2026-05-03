@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.third;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyPlatformUserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
@@ -337,7 +338,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         ThirdPartyPlatformCallbackResult callbackResult = getCallbackResult(actionId);
         ThirdPartyPlatformUser platformUser = callbackResult.getPlatformUser();
         String newUserName = this.generateNewUserName(platformUser);
-        userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), User.TYPE_COMMON);
+        userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), UserConstants.TYPE_COMMON);
         User newUser = userService.getUserByUser(newUserName);
         UserVO createResultVO = UserVO.from(newUser, false);
         createResultVO.setToken(tokenService.generateUserToken(UserPrincipal.from(newUser)));

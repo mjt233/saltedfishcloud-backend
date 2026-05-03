@@ -2,6 +2,7 @@ package com.saltedfishcloud.ext.ftpserver.core;
 
 import com.saltedfishcloud.ext.ftpserver.utils.FtpDiskType;
 import com.saltedfishcloud.ext.ftpserver.utils.FtpPathInfo;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -161,12 +162,12 @@ public class DiskFtpFile implements FtpFile {
 
     @Override
     public String getOwnerName() {
-        return pathInfo.isFtpRoot() ? User.SYS_NAME_PUBLIC : user.getName();
+        return pathInfo.isFtpRoot() ? UserConstants.SYS_NAME_PUBLIC : user.getName();
     }
 
     @Override
     public String getGroupName() {
-        return pathInfo.isFtpRoot() ? User.SYS_GROUP_NAME_PUBLIC : user.getName();
+        return pathInfo.isFtpRoot() ? UserConstants.SYS_GROUP_NAME_PUBLIC : user.getName();
     }
 
     @Override

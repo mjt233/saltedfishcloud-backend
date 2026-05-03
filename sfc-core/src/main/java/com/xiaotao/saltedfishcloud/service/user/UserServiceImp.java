@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -263,7 +264,7 @@ public class UserServiceImp implements UserService {
         if (type > 1 || type < 0) throw new IllegalArgumentException("不合法的用户类型");
         User user = userRepo.getUserById(uid);
         if (user == null) throw new UserNoExistException(404, "用户不存在");
-        if (type == User.TYPE_COMMON && "admin".equals(user.getUser())) {
+        if (type == UserConstants.TYPE_COMMON && "admin".equals(user.getUser())) {
             throw new IllegalArgumentException("不允许撤销admin用户的管理员权限");
         }
         userRepo.grant(uid, type);
@@ -317,7 +318,7 @@ public class UserServiceImp implements UserService {
             if (!code.equals(recordCode)) {
                 throw new JsonException(AccountError.EMAIL_CODE_ERROR);
             }
-            int ret = addUser(user, passwd, email, User.TYPE_COMMON);
+            int ret = addUser(user, passwd, email, UserConstants.TYPE_COMMON);
             redisTemplate.delete(key);
             return ret;
         } else {
@@ -326,7 +327,7 @@ public class UserServiceImp implements UserService {
             if (!code.equals(sysCommonConfig.getRegCode())) {
                 throw new JsonException(AccountError.REG_CODE_ERROR);
             }
-            return addUser(user, passwd, null, User.TYPE_COMMON);
+            return addUser(user, passwd, null, UserConstants.TYPE_COMMON);
         }
     }
 
@@ -356,7 +357,7 @@ public class UserServiceImp implements UserService {
     @Override
     public int addUser(String user, String passwd, String email, Integer type) {
         String  upperName = user.toUpperCase();
-        if (User.SYS_NAME_PUBLIC.equals(upperName) || User.SYS_NAME_ADMIN.equals(upperName)) {
+        if (UserConstants.SYS_NAME_PUBLIC.equals(upperName) || UserConstants.SYS_NAME_ADMIN.equals(upperName)) {
             throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
         }
         if(userRepo.findByUser(user) != null) {

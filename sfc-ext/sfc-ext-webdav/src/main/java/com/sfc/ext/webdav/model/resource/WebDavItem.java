@@ -1,7 +1,7 @@
 package com.sfc.ext.webdav.model.resource;
 
 import com.sfc.ext.webdav.enums.ResourceArea;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -69,7 +69,7 @@ public class WebDavItem {
         file.setModifiedDate(now);
         file.setCreateDate(now);
         file.setError(true);
-        if (uid == null || uid == User.PUBLIC_USER_ID) {
+        if (uid == null || uid == UserConstants.PUBLIC_USER_ID) {
             file.setResourceArea(ResourceArea.PUBLIC);
         } else {
             file.setResourceArea(ResourceArea.PRIVATE);
@@ -104,7 +104,7 @@ public class WebDavItem {
                         .orElse(new Date())
         );
         item.setPath(StringUtils.appendPath(basePath, fileInfo.getName()));
-        item.setResourceArea(fileInfo.getUid() == User.PUBLIC_USER_ID ? ResourceArea.PUBLIC : ResourceArea.PRIVATE);
+        item.setResourceArea(fileInfo.getUid() == UserConstants.PUBLIC_USER_ID ? ResourceArea.PUBLIC : ResourceArea.PRIVATE);
         if (item instanceof WebDavFile f) {
             f.setContentLength(fileInfo.getSize());
             f.setContentType(FileUtils.getContentType(fileInfo.getName()));

@@ -2,11 +2,11 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
-import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
@@ -135,7 +135,7 @@ public abstract class AbstractRawStoreService implements StoreService {
     }
 
     public final String getUserFileRoot(long uid) {
-        if (uid == User.PUBLIC_USER_ID) {
+        if (uid == UserConstants.PUBLIC_USER_ID) {
             return getPublicRoot();
         } else {
             return StringUtils.appendPath(getStoreRoot(), "user_file", uid + "");
@@ -237,7 +237,7 @@ public abstract class AbstractRawStoreService implements StoreService {
      * @return 资源完整存储路径
      */
     private String getPath(long uid, String...path) {
-        String root = (uid == User.PUBLIC_USER_ID ?
+        String root = (uid == UserConstants.PUBLIC_USER_ID ?
                 getPublicRoot() :
                 StringUtils.appendPath(getUserFileRoot(uid))
         );

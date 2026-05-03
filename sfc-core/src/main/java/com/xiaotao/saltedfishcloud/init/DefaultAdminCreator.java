@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import jakarta.annotation.Resource;
@@ -28,8 +29,8 @@ public class DefaultAdminCreator  implements ApplicationRunner {
         if (cnt == 0 || (admin = userRepo.getUserByUser("admin")) == null ) {
             userService.initAdminUser("admin", "admin666");
             log.warn("创建初始管理员用户：admin 密码：admin666，建议及时修改密码");
-        } else if (admin.getType() != User.TYPE_ADMIN) {
-            userRepo.grant(admin.getId(), User.TYPE_ADMIN);
+        } else if (admin.getType() != UserConstants.TYPE_ADMIN) {
+            userRepo.grant(admin.getId(), UserConstants.TYPE_ADMIN);
             log.warn("已修复admin权限");
         }
     }

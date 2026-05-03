@@ -19,24 +19,6 @@ import java.io.Serial;
 @Valid
 public class User extends UserInfo {
 
-    /** @deprecated Use {@link UserConstants#SYS_NAME_PUBLIC} */
-    @Deprecated
-    public static final String SYS_NAME_PUBLIC = UserConstants.SYS_NAME_PUBLIC;
-    /** @deprecated Use {@link UserConstants#SYS_NAME_ADMIN} */
-    @Deprecated
-    public static final String SYS_NAME_ADMIN = UserConstants.SYS_NAME_ADMIN;
-    /** @deprecated Use {@link UserConstants#SYS_GROUP_NAME_PUBLIC} */
-    @Deprecated
-    public static final String SYS_GROUP_NAME_PUBLIC = UserConstants.SYS_GROUP_NAME_PUBLIC;
-    /** @deprecated Use {@link UserConstants#PUBLIC_USER_ID} */
-    @Deprecated
-    public static final long PUBLIC_USER_ID = UserConstants.PUBLIC_USER_ID;
-    /** @deprecated Use {@link UserConstants#TYPE_ADMIN} */
-    @Deprecated
-    public static final int TYPE_ADMIN = UserConstants.TYPE_ADMIN;
-    /** @deprecated Use {@link UserConstants#TYPE_COMMON} */
-    @Deprecated
-    public static final int TYPE_COMMON = UserConstants.TYPE_COMMON;
 
     @Serial
     private static final long serialVersionUID = -2530285292010387981L;

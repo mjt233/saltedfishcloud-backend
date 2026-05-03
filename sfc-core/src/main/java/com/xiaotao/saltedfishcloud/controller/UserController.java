@@ -244,7 +244,8 @@ public class UserController {
 
 
         // 管理员直接添加，不受任何约束
-        if (SecureUtils.getSpringSecurityUser() != null && SecureUtils.getSpringSecurityUser().getType() == UserConstants.TYPE_ADMIN) {
+        UserPrincipal principal = SecureUtils.getSpringSecurityUser();
+        if (principal != null && principal.isAdmin()) {
             userService.addUser(user, rawPassword, email, type == UserConstants.TYPE_ADMIN ? UserConstants.TYPE_ADMIN : UserConstants.TYPE_COMMON);
         } else {
             userService.addUser(user, rawPassword, email, regCode, validEmail);
