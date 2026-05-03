@@ -1,156 +1,148 @@
-# 基于SpringBoot实现的咸鱼云网盘-后端
+# 咸鱼云网盘后端
 
-![](https://img.shields.io/badge/SpringBoot-3.3.4-green.svg)
-![](https://img.shields.io/badge/Java-17-green.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.8-green.svg)
+![Java](https://img.shields.io/badge/Java-17-green.svg)
+![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)
 
----
+咸鱼云网盘是一个基于 Spring Boot 的网盘后端系统，支持公共资源与私人存储双域管理，提供文件管理、分享协作、在线预览、外部存储挂载与插件化扩展能力。
 
-更多内容请参考项目[在线文档](https://mjt233.github.io/saltedfishcloud-backend/) (逐步完善中)
+- 在线文档: [https://mjt233.github.io/saltedfishcloud-backend/](https://mjt233.github.io/saltedfishcloud-backend/)
+- 前端项目（独立仓库）: [Gitee](https://gitee.com/xiaotao233/saltedfishcloud-frontend) | [Github](https://github.com/mjt233/saltedfishcloud-frontend)
 
-## 提示
+## 核心能力
 
-该项目仅为后端，不带前端，前端项目请移步[Gitee](https://gitee.com/xiaotao233/saltedfishcloud-frontend)
-或 [GitHub](https://github.com/mjt233/saltedfishcloud-backend)
+### 文件与网盘能力
 
-## 项目介绍
+- 公共网盘与私人网盘双域管理
+- 文件搜索、文件收集、文件/目录分享
+- 在线解压缩（支持密码）与压缩包内容预览
+- 文本/Markdown 在线编辑与预览（支持粘贴图片）
+- 视频播放、转码基础能力
+- 默认基于文件哈希组织，支持秒传场景
 
-### 简介
+### 存储与扩展能力
 
-咸鱼云网盘目前是一个用于共享文件和实现私人网盘基本功能的系统，同时具有公共网盘与私人网盘，公共资源站与私有存储云两不误。
+- 插件化架构，支持按需装载扩展功能
+- 支持外部存储挂载（S3/OSS、MinIO、SFTP、FTP、Samba、WebDAV、HDFS）
+- 支持通过 FTP / WebDAV / HTTP文件列表页面 对外提供文件访问服务
+- 支持目录静态发布、OnlyOffice 集成、WebShell、网络工具、WebRTC(实验功能) 等扩展能力
 
-### 功能介绍
+### 工程与运维能力
 
-#### 基础功能
+- 基于 Spring Boot + JPA + Redis + MySQL
+- 兼容版本升级与数据库自动迁移
+- 统一配置体系，支持后台动态管理大量配置项
+- 支持 Maven 构建与 Docker 部署
 
-- 公共网盘与私人网盘两个存储域
-- 文件搜索
-- 文件收集
-- 文件/目录分享
-- 外部存储挂载
-- 在线解压缩
-- 默认按文件哈希散列统一组织文件，支持文件秒传
-- 自定义配置桌面组件
-- 文本文件在线编辑，markdown编辑实时预览
-- 视频在线播放
+## 项目结构
 
-#### 其他技术特性
+项目采用多模块结构，核心模块如下：
 
-- 具有插件系统
-- 兼容低版本到高版本的升级，自动更新数据库
-- 构建与部署简单，具有统一的属性参数配置系统，大部分参数都能在运行期间通过管理员界面进行动态配置。
-- 支持docker部署（文档待补充）
-
-#### 拓展功能（插件支持）
-
-- 发布目录为静态页面站点
-- WebShell
-- 支持存储集群
-- 外部存储目录挂载 - OSS对象存储, MinIO, HDFS, SFTP, FTP协议的外部存储读写支持
-- 自定义视频转码、字幕提取
-- 作为FTP、WebDAV服务端提供网盘文件访问
-- 通过ONLYOFFICE支持office文档在线编辑和预览
-
-## 杂杂念
-
-该项目是我大二时从无Java基础一边学习一边开发一边重构和维护的项目，难免会有明显bug或明显的设计缺陷。
-
-欢迎各路大佬提出批评、建议和issue。也欢迎感兴趣的大佬贡献代码。
+- `sfc-core`: 主程序入口与核心业务实现
+- `sfc-api`: 公共 API 与基础模型
+- `sfc-archive`: 压缩包处理能力
+- `sfc-download`: 下载能力模块
+- `sfc-task`: 异步任务相关能力
+- `sfc-rpc`: RPC 相关能力
+- `sfc-ext`: 官方扩展插件集合
 
 ## 快速开始
 
-### 0. 打包与编译
+### 1) 环境要求
 
-全模块打包直接使用package命令即可
+- JDK 17
+- Maven 3.8+
+- MySQL
+- Redis
 
-```shell
-$ mvn package
+### 2) 构建打包
+
+```bash
+mvn package
 ```
 
-如果单独是对某个拓展模块打包，需要先install sfc-api模块。（若全模块打包失败也可先install sfc-api模块）
-
-```shell
-$ cd sfc-api; mvn install;
-$ cd ../sfc-ext/sfc-ext-demo; mvn package
-```
-
-输出目录：
+产物默认输出到 `release/`：
 
 - 主程序: `release/sfc-core.jar`
-- 拓展插件：`release/ext-available/*.jar`
+- 可用插件: `release/ext-available/*.jar`
 
-### 1. 运行程序
+### 3) 启动服务
 
-启动前需要在配置文件`config.yml`确认MySQL数据库与Redis连接配置，确认或修改无误后
+先根据实际环境修改配置文件（可参考 `conf/config.yml`），重点确认 MySQL 和 Redis 连接信息。
 
-基础启动命令：
-
-```shell
-$ java -jar sfc-core.jar --spring.config.import=file:config.yml
+```bash
+java -jar release/sfc-core.jar --spring.config.import=file:conf/config.yml
 ```
 
-### 2 关于数据表
+系统默认由 JPA 自动创建/更新表结构。
 
-- JPA自动完成数据表的创建和更新，无需手动操作
+### 4) Docker 部署（可选）
 
-### 3. 可选插件
+仓库已提供 `Dockerfile` 与 `docker-compose.yml`，可按需调整配置后使用：
 
-位于sfc-ext模块下，打包后各模块jar包在`release/ext-available`下，若要启用，将其复制到运行目录下的`ext`目录即可
-
-> 注意：以下插件均为实验性功能，部分网络存储挂载功能尚不稳定。
-
-**目前有以下插件：**
-
-| 插件名            | 简介                                               |
-|----------------|--------------------------------------------------|
-| apk-parser     | 创建apk文件图标缩略图                                     |
-| demo           | 没啥用，就是个demo，添加/ext/img和/ext/hello两个测试路由          |
-| ftp-server     | 内嵌FTP服务器，支持通过FTP方式访问网盘系统的资源                      |
-| ftp-store      | 提供基于FTP文件传输的存储读写支持（挂载存储）                         |
-| hadoop-store   | 提供hdfs文件系统读写支持（主存储、挂载存储）                         |
-| music          | 为音频类型的文件提供缩率图显示支持，后续会继续基于该插件拓展音乐功能               |
-| network-tools  | 服务器网络工具，用于在管理后台查看网络接口信息，并给用户提供WOL支持              |
-| only-office    | 适配ONLYOFFICE，实现office文档在线预览和编辑                   |
-| oss-store      | 提供基于Amazon S3协议的OSS对象存储系统读写支持（挂载存储）              |
-| quick-share    | 文件极速传，快捷匿名发送和下载文件                                |
-| minio-store    | **\[将并入oss-store\]** 提供minio对象存储系统读写支持（主存储、挂载存储） |
-| sftp-store     | 提供基于SFTP文件传输的存储读写支持（挂载存储）                        |
-| static-publish | 将网盘的目录发布为独立的静态资源HTTP站点                           |
-| video-enhance  | 基于ffmpeg的视频增强服务，支持播放选择字幕、视频转码、视频封面图标展示功能         |
-| web-shell      | 通过管理员后台直接通过web界面进行服务器shell交互                     |
-| webdav         | 提供WebDAV协议访问服务                                   |
-| webdav-store   | 提供外部WebDAV挂载点支持                                  |
-
-### 4. 插件的加载
-
-#### jar包模式
-
-如果有已经打包好的插件（jar包），那么直接把插件放到`运行目录/ext`后，启动主程序即可
-
-#### 开发模式
-
-在maven的`develop`配置文件环境下，对`application-develop.yml`的`plugin.extra-resource`数组补充`sfc-ext/插件项目`，如：
-
-```yaml
-plugin:
-  extra-resource:
-    - sfc-ext/sfc-ext-demo
-    - sfc-ext/sfc-ext-ftp-server
+```bash
+docker compose up -d --build
 ```
 
-tips：
+## 插件生态
 
-1. 插件项目需要使用`sfc-ext`作为父级，并确保本地仓库安装了`sfc-api`
-2. 插件项目初创或修改了`pom.xml`后，需要执行`mvn clean compile`。
-3. 启动主程序之前，若修改了插件项目的代码，需要手动构建后再启动主程序，否则加载插件时不会加载到修改后的代码
-4. 不要把插件项目添加到主项目的maven依赖中
-5. 在IntelliJ IDEA中，插件的代码编译修改后，支持热重载class（其他IDE未测试）
+插件编译后会输出到 `release/ext-available/`，将需要启用的插件复制到运行目录的 `ext/` 即可加载。
 
-## 部分前端界面展示
+当前仓库内主要插件包括：
 
-- 支持自定义配置的首页
-  ![](./docs/img/main.png)
-  ![](./docs/img/desktop-config.png)
-- 目录浏览支持README.md渲染和在线编辑
-  ![](./docs/img/main2.png)
-- 管理员后台-简单的插件系统
-  ![](./docs/img/plugin.png)
+| 插件                       | 说明                      |
+|--------------------------|-------------------------|
+| `sfc-ext-apk-parser`     | APK 图标缩略图提取             |
+| `sfc-ext-ftp-server`     | FTP 服务端访问网盘             |
+| `sfc-ext-webdav`         | WebDAV 服务端访问网盘          |
+| `sfc-ext-oss-store`      | S3/OSS 协议对象存储支持         |
+| `sfc-ext-minio-store`    | MinIO 存储支持（逐步并入 OSS 方案） |
+| `sfc-ext-sftp-store`     | SFTP 存储挂载               |
+| `sfc-ext-ftp-store`      | FTP 存储挂载                |
+| `sfc-ext-samba-store`    | Samba 存储挂载              |
+| `sfc-ext-webdav-store`   | 外部 WebDAV 存储挂载          |
+| `sfc-ext-video-enhance`  | 视频转码、封面与字幕能力增强          |
+| `sfc-ext-only-office`    | OnlyOffice 在线文档与协作能力    |
+| `sfc-ext-static-publish` | 目录静态站点发布                |
+| `sfc-ext-web-shell`      | 管理后台 WebShell           |
+| `sfc-ext-network-tools`  | 网络工具与 WOL 支持            |
+| `sfc-ext-quick-share`    | 文件极速分享能力                |
+| `sfc-ext-webrtc`         | WebRTC 相关扩展             |
+| `sfc-ext-music`          | 音频能力扩展                  |
+
+> 说明：外部存储相关插件仍在持续迭代中，建议在生产环境充分测试后启用。
+
+## 文档与接口
+
+- 用户与部署文档: `docs/quick-start/`
+- 插件文档: `docs/extension/`
+- 开发手册: `docs/develop/`
+- OAuth 开放平台文档: `docs/oauth/`
+- Postman 接口集合: `咸鱼云PostmanAPI文档.json`
+
+## 参与贡献
+
+欢迎通过 Issue / Pull Request 参与改进。
+
+- 提交前建议先执行基础构建与必要验证
+- 新功能建议补充文档与配置说明
+- 涉及插件开发可参考 `docs/develop/plugin/`
+
+## 界面示例
+
+- 目录浏览与`README.md`自动预览
+
+![filelist.png](docs/img/filelist.png)
+
+- 移动端兼容
+
+![mobile.png](docs/img/mobile.png)
+
+- 首页组件自定义
+
+![main.png](docs/img/main.png)
+![desktop-config.png](docs/img/desktop-config.png)
+
+- 管理后台插件系统
+
+![](./docs/img/plugin.png)
