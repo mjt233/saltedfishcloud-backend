@@ -273,12 +273,14 @@ public class UserController {
     })
     @AllowAnonymous
     public ResponseEntity<Resource>
-                getAvatar(HttpServletResponse response,
+                getAvatar(HttpServletRequest request,
+                          HttpServletResponse response,
                           @RequestParam(required = false) Long uid,
                           @PathVariable(required = false) String username) throws IOException {
+        String defaultAvatarUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + "/api/static/defaultAvatar.png";
         UserPrincipal currentUser = SecureUtils.getSpringSecurityUser();
         if (currentUser == null && username == null && uid == null) {
-            response.sendRedirect("/api/static/defaultAvatar.png");
+            response.sendRedirect(defaultAvatarUrl);
             return null;
         }
         Long finalUid = 0L;
@@ -296,8 +298,7 @@ public class UserController {
         Resource avatar = userCustomStoreService.getAvatar(finalUid);
         if (avatar == null) {
             response.setStatus(HttpStatus.NOT_FOUND.value());
-//            return null;
-            response.sendRedirect("/api/static/defaultAvatar.png");
+            response.sendRedirect(defaultAvatarUrl);
             return null;
         }
         return ResourceUtils.wrapResource(avatar);
