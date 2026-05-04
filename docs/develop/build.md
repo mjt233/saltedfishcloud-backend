@@ -2,7 +2,12 @@
 
 该文档将指导您如何通过源代码和maven项目工程来编译、运行和打包构建咸鱼云网盘项目
 
-## 0. 拉取代码
+## 0. 环境准备
+
+- JDK 25
+- maven 3.9+
+
+## 1. 拉取代码
 
 这一步比较简单，会使用Git的应该都会这一步
 ```shell
@@ -11,7 +16,7 @@ git clone https://github.com/mjt233/saltedfishcloud-backend
 git clone https://gitee.com/xiaotao233/saltedfishcloud-backend
 ```
 
-## 1. 切换分支
+## 2. 切换分支
 
 一般情况下，master分支是相对稳定的发布分支。而develop分支可能可以体验到master分支没有的新功能、bug修复、以及可能更多的bug。
 
@@ -24,7 +29,7 @@ git checkout develop
 ```
 
 
-## 2. 前端项目打包集成
+## 3. 前端项目打包集成(可选)
 
 如果你需要将前端项目集成到SpringBoot后端资源中，可按照以下步骤进行配置。
 
@@ -35,7 +40,7 @@ git checkout develop
 
 > 如果你不需要集成前端项目，请注释掉pom.xml的`sfc.front-end-path`属性
 
-## 3. 安装模块到本地maven仓库
+## 4. 安装模块到本地maven仓库
 
 如果你需要单独对某一模块进行`compile`或`package`操作，就需要先将saltedfishcloud项目安装到本地仓库，执行maven的`install`即可。
 
@@ -44,7 +49,7 @@ git checkout develop
 ```shell
 mvn install
 ```
-## 4. 打包发布
+## 5. 打包并创建release资源
 
 在saltedfishcloud模块执行`package`操作，将清空`release`目录，然后会将`pre-release`目录下的文件、`README.md`文件复制到`release`中，随后则是各个子模块的`package`动作。
 

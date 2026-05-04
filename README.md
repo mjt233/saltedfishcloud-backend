@@ -1,7 +1,7 @@
 # 咸鱼云网盘后端
 
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.8-green.svg)
-![Java](https://img.shields.io/badge/Java-17-green.svg)
+![Java](https://img.shields.io/badge/Java-25-green.svg)
 ![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)
 
 咸鱼云网盘是一个基于 Spring Boot 的网盘后端系统，支持公共资源与私人存储双域管理，提供文件管理、分享协作、在线预览、外部存储挂载与插件化扩展能力。
