@@ -21,7 +21,7 @@ RUN set -eux; \
 		'    </mirrors>' \
 		'</settings>' \
 		> /tmp/maven-settings.xml; \
-	mvn -s /tmp/maven-settings.xml install package
+	mvn -s /tmp/maven-settings.xml install package && cp /saltedfish/release/ext-available/* /saltedfish/release/ext/
 
 # 运行环境
 FROM amazoncorretto:25-al2023
@@ -32,4 +32,5 @@ COPY --from=build /saltedfish/release/ .
 COPY ./conf/config.yml .
 EXPOSE 8087
 VOLUME [ "/saltedfish/store" ]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 CMD curl -f http://localhost:8087/api/hello/feature || exit 1
 CMD java -jar sfc-core.jar --spring.config.import=file:config.yml

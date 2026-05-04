@@ -42,7 +42,7 @@ https://repo.maven.apache.org/maven2
 ### 4.1 使用默认 Maven 中央仓库构建
 
 ```shell
-docker build -t saltedfishcloud:jdk25 .
+docker build -t saltedfishcloud:latest .
 ```
 
 ### 4.2 使用自定义 Maven 镜像构建
