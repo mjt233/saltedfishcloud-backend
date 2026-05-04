@@ -11,6 +11,7 @@
 
     <properties>
         <java.version>25</java.version>
+        <lombok.version>1.18.40</lombok.version>
         <api.version>3.1.0</api.version>
         <rpc.version>1.0.0</rpc.version>
         <task.version>1.0.0</task.version>
@@ -66,7 +67,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.20</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -104,8 +105,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <proc>full</proc>
+                    <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
                     <parameters>true</parameters>
                 </configuration>
