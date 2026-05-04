@@ -89,6 +89,8 @@ java -jar release/sfc-core.jar --spring.config.import=file:conf/config.yml
 docker compose up -d --build
 ```
 
+> 构建期间默认从maven官方中央仓库拉取依赖，如果想通过更换镜像地址加速构建，请参考 [Docker Compose 部署](docs/develop/docker/docker-compose.md) 或 [Dockerfile 构建](docs/develop/docker/dockerfile.md)
+
 ## 插件生态
 
 插件编译后会输出到 `release/ext-available/`，将需要启用的插件复制到运行目录的 `ext/` 即可加载。

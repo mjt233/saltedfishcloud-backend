@@ -27,48 +27,51 @@ nav:
       - 关于前端: quick-start/front-end.md
       - 衍生项目: quick-start/other.md
     - 插件:
-        - 插件系统说明: extension/index.md
-        - 插件列表:
-          - FTP服务 ftp-server: extension/ftp-server.md
-          - OSS对象存储 oss-store: extension/oss-store.md
-          - Minio对象存储 minio-store: extension/minio-store.md
-          - 音乐插件 music: extension/music.md
-          - OnlyOffice在线文档 only-office: extension/onlyoffice.md
-          - WebRTC应用 webrtc: extension/webrtc.md
-          - WebDAV文件共享 webdav: extension/webdav.md
-          - Hadoop存储 hadoop-store: extension/hadoop-store.md
-          - Samba文件共享 samba-store: extension/samba-store.md
-          - SFTP存储 sftp-store: extension/sftp-store.md
-          - FTP存储 ftp-store: extension/ftp-store.md
-          - 视频功能增强 video-enhance: extension/video-enhance.md
-          - 快捷分享 quick-share: extension/quick-share.md
-          - WebShell web-shell: extension/web-shell.md
-          - 网络工具 network-tools: extension/network-tools.md
-          - 静态资源站点 static-publish: extension/static-publish.md
+      - 插件系统说明: extension/index.md
+      - 插件列表:
+        - FTP服务 ftp-server: extension/ftp-server.md
+        - OSS对象存储 oss-store: extension/oss-store.md
+        - Minio对象存储 minio-store: extension/minio-store.md
+        - 音乐插件 music: extension/music.md
+        - OnlyOffice在线文档 only-office: extension/onlyoffice.md
+        - WebRTC应用 webrtc: extension/webrtc.md
+        - WebDAV文件共享 webdav: extension/webdav.md
+        - Hadoop存储 hadoop-store: extension/hadoop-store.md
+        - Samba文件共享 samba-store: extension/samba-store.md
+        - SFTP存储 sftp-store: extension/sftp-store.md
+        - FTP存储 ftp-store: extension/ftp-store.md
+        - 视频功能增强 video-enhance: extension/video-enhance.md
+        - 快捷分享 quick-share: extension/quick-share.md
+        - WebShell web-shell: extension/web-shell.md
+        - 网络工具 network-tools: extension/network-tools.md
+        - 静态资源站点 static-publish: extension/static-publish.md
   - 开发手册:
-      - 简介: develop/index.md
-      - 项目构建: develop/build.md
-      - Docker 构建: develop/docker-build.md
-      - Git 提交规范: develop/framework/git-commit-convention.md
-      - 系统功能架构:
-          - 文件操作: develop/framework/file-operations.md
-          - 配置与特性服务: develop/framework/config-hello-service.md
-          - 压缩引擎扩展: develop/framework/archive-engine-extension.md
-          - 集群兼容: develop/framework/cluster.md
-          - 异步任务: develop/framework/async-task.md
-          - 定时任务: develop/framework/schedule.md
-          - 版本更新数据迁移钩子: develop/framework/version-update-hook.md
-      - 插件开发指南:
-          - 创建插件: develop/plugin/create-plugin.md
-          - Spring Boot集成: develop/plugin/springboot-integration.md
-          - 插件配置参数: develop/plugin/config-properties.md
-          - 插件前端开发: develop/plugin/create-front-end.md
+    - 简介: develop/index.md
+    - 项目构建: develop/build.md
+    - Docker 与容器化:
+      - 概述: develop/docker/index.md
+      - Dockerfile 构建: develop/docker/dockerfile.md
+      - Docker Compose 部署: develop/docker/docker-compose.md
+    - Git 提交规范: develop/framework/git-commit-convention.md
+    - 系统功能架构:
+      - 文件操作: develop/framework/file-operations.md
+      - 配置与特性服务: develop/framework/config-hello-service.md
+      - 压缩引擎扩展: develop/framework/archive-engine-extension.md
+      - 集群兼容: develop/framework/cluster.md
+      - 异步任务: develop/framework/async-task.md
+      - 定时任务: develop/framework/schedule.md
+      - 版本更新数据迁移钩子: develop/framework/version-update-hook.md
+    - 插件开发指南:
+      - 创建插件: develop/plugin/create-plugin.md
+      - Spring Boot集成: develop/plugin/springboot-integration.md
+      - 插件配置参数: develop/plugin/config-properties.md
+      - 插件前端开发: develop/plugin/create-front-end.md
   - OAuth开放平台:
-      - 概述: oauth/index.md
-      - 开放接口列表:
-        - 概述与统一规范: oauth/api/index.md
-        - 授权与认证:
-          - 获取Access Token: oauth/api/auth/get-access-token.md
-          - 获取ApiTicket: oauth/api/auth/get-api-ticket.md
-        - 用户相关接口:
-            - 获取用户基本信息: oauth/api/user/profile.md
+    - 概述: oauth/index.md
+    - 开放接口列表:
+      - 概述与统一规范: oauth/api/index.md
+      - 授权与认证:
+        - 获取Access Token: oauth/api/auth/get-access-token.md
+        - 获取ApiTicket: oauth/api/auth/get-api-ticket.md
+      - 用户相关接口:
+        - 获取用户基本信息: oauth/api/user/profile.md
