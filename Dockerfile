@@ -21,7 +21,7 @@ RUN set -eux; \
 		'    </mirrors>' \
 		'</settings>' \
 		> /tmp/maven-settings.xml; \
-	mvn -s /tmp/maven-settings.xml install package && cp /saltedfish/release/ext-available/* /saltedfish/release/ext/
+	mvn -s /tmp/maven-settings.xml package -T $(nproc) && cp /saltedfish/release/ext-available/* /saltedfish/release/ext/
 
 # 运行环境
 FROM amazoncorretto:25-al2023

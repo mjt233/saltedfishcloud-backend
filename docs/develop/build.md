@@ -35,12 +35,13 @@ git checkout develop
 
 如果你需要将前端项目集成到SpringBoot后端资源中，可按照以下步骤进行配置。
 
-1. 配置咸鱼云后端根项目(saltedfishcloud)的pom.xml中的`sfc.front-end-path`参数为前端项目的本地路径
+1. 配置环境变量`SFC_FRONT_END_PATH`为前端项目的本地路径
 2. 在前端项目中使用`npm run build`对前端项目进行编译打包（如已执行过打包可忽略该步，前端代码发生修改后需要重新编译）
 
 完成上面的配置后，后面对模块saltedfishcloud或sfc-core执行maven的`compile`或`package`操作，即可将前端集成到sfc-core模块的`resource/webapp`中
 
-> 如果你不需要集成前端项目，请注释掉pom.xml的`sfc.front-end-path`属性
+> 如果你不需要集成前端项目，请不要设置环境变量`SFC_FRONT_END_PATH`  
+> Windows PowerShell 示例：`$env:SFC_FRONT_END_PATH='C:\Users\xiaotao\code\saltedfishcloud-frontend'`
 
 ## 4. 安装模块到本地maven仓库
 
@@ -58,8 +59,12 @@ mvn install
 sfc-core模块会将打包后的主程序jar包也复制到主模块的`release`下。其他拓展ext模块则会把自身的jar包复制到主模块的`release/ext-available`下
 
 参考命令：
-```shell
-mvn package
-```
 
-> 如果你想打包时直接指定前端项目路径而不修改pom.xml，可在编译或打包的maven命令后面添加"-Dsfc.front-end-path=本地前端项目路径"
+- bash
+    ```shell
+    mvn clean package -Pproduct -T $(nproc)
+    ```
+- powershell
+    ```shell
+    mvn clean package -Pproduct -T $env:NUMBER_OF_PROCESSORS
+    ```
