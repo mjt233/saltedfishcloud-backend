@@ -1,30 +1,44 @@
 name: tag-release
 
+# 仅在推送版本标签时触发发布流程（例如 v3.1.0）
 on:
   push:
     tags:
       - "v*"
 
+# 创建 Release 并上传附件需要写入仓库内容权限
 permissions:
   contents: write
 
 jobs:
   build-and-release:
+    # 在 Linux runner 上完成构建、打包与发布
     runs-on: ubuntu-latest
 
     steps:
+      # 拉取后端仓库完整历史，供 tag 与 master 归属校验使用
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 安装 Java 25 并启用 Maven 依赖缓存
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "25"
+          java-version: '25'
           cache: maven
 
+      # 安装 Node.js 24，并按前端 lock 文件启用 npm 缓存
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: saltedfishcloud-frontend/package-lock.json
+
+      # 校验 tag 对应提交是否在 master 上，并生成 Release 元数据
       - name: Validate tag commit and prepare release metadata
         id: meta
         shell: bash
@@ -49,9 +63,30 @@ jobs:
           echo "commit_sha=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
           printf '%s\n' "${BODY}" > release-notes.md
 
-      - name: Build with Maven
-        run: mvn -B install package
+      # 拉取同标签版本的前端仓库代码
+      - name: Checkout frontend repository at same tag
+        uses: actions/checkout@v4
+        with:
+          repository: mjt233/saltedfishcloud-frontend
+          ref: ${{ steps.meta.outputs.tag }}
+          path: saltedfishcloud-frontend
 
+      # 在前端目录安装依赖并构建 dist
+      - name: Build frontend
+        shell: bash
+        working-directory: saltedfishcloud-frontend
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+
+      # 指定前端构建目录给后端打包流程，并使用 CPU 核数并行构建
+      - name: Build with Maven
+        env:
+          SFC_FRONT_END_PATH: ${{ github.workspace }}/saltedfishcloud-frontend
+        run: mvn -B install package -T "$(nproc)"
+
+      # 生成两个发布压缩包：主程序包（排除 ext-available）与扩展包
       - name: Create release archives
         shell: bash
         run: |
@@ -76,8 +111,9 @@ jobs:
             zip -r "../../ext-available.${TAG}.zip" .
           )
 
+      # 创建 GitHub Release，并上传两个 zip 附件
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: ${{ steps.meta.outputs.tag }}
