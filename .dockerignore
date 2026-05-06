@@ -1,0 +1,32 @@
+# 版本控制与 IDE 文件
+.git/
+.idea/
+.vscode/
+.proxyai/
+.claude/
+*.iml
+*.ipr
+*.iws
+
+# 本地构建产物
+**/target/
+**/build/
+release/
+
+# 运行期数据与日志
+store/
+tomcat-tmp/
+temp/
+log/
+*.log
+
+# 当前 Dockerfile 不需要的根目录文件
+docs/
+ext/
+script/
+mkdocs.yml
+docker-compose.yml
+咸鱼云PostmanAPI文档.json
+
+# 当前 Dockerfile 仅复制 conf/config.yml
+conf/env.list

@@ -189,7 +189,7 @@ public class OAuthController {
             Objects.requireNonNull(param.getAccount(), "用户名不能为空");
             Objects.requireNonNull(param.getPassword(), "密码不能为空");
             User specifyUser = Optional.ofNullable(userService.getUserByAccount(param.getAccount())).orElseThrow(UserNoExistException::new);
-            if (!passwordEncoder.encode(param.getPassword()).equals(specifyUser.getPassword())) {
+            if (!passwordEncoder.encode(param.getPassword()).equals(specifyUser.getPwd())) {
                 throw new JsonException("用户名或密码错误");
             }
             user = thirdPartyPlatformManager.bindUser(param.getActionId(), specifyUser);

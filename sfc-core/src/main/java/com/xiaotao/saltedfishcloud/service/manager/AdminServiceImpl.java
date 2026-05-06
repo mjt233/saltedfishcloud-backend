@@ -12,7 +12,7 @@ import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
 import com.xiaotao.saltedfishcloud.model.TimestampRecord;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultModel;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
@@ -148,7 +148,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
 
     private <T> ResponseEntity<String> request(String url, HttpMethod method) {
         HttpHeaders headers = new HttpHeaders();
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user != null) {
             headers.put(JwtUtils.AUTHORIZATION, Collections.singletonList(user.getToken()));
         }

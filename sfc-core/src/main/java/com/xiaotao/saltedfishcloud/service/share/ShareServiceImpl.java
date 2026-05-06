@@ -209,7 +209,7 @@ public class ShareServiceImpl implements ShareService {
         if (po.isExpired()) throw new JsonException(ShareError.SHARE_EXPIRED);
 
         User user = userRepo.getUserById(po.getUid());
-        if (user != null) po.setUsername(user.getUsername());
+        if (user != null) po.setUsername(user.getUser());
         return po;
     }
 

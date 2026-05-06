@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -12,6 +13,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
@@ -33,7 +35,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
@@ -58,7 +59,6 @@ public class UserController {
     public static final String PREFIX = "/api/user";
 
     private final UserService userService;
-    private final DiskFileSystemManager fileSystemFactory;
     private final UserCustomStoreService userCustomStoreService;
     private final TokenServiceImpl tokenDao;
     private final SysCommonConfig sysCommonConfig;
@@ -177,8 +177,8 @@ public class UserController {
      * 获取用户基本信息，并刷新token有效期
      */
     @GetMapping
-    public JsonResult<User> getUserInfo(HttpServletRequest request) throws UserNoExistException {
-        User user = SecureUtils.getSpringSecurityUser();
+    public JsonResult<UserPrincipal> getUserInfo(HttpServletRequest request) throws UserNoExistException {
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
             throw new JsonException(401, "未登录");
         }
@@ -244,8 +244,9 @@ public class UserController {
 
 
         // 管理员直接添加，不受任何约束
-        if (SecureUtils.getSpringSecurityUser() != null && SecureUtils.getSpringSecurityUser().getType() == User.TYPE_ADMIN) {
-            userService.addUser(user, rawPassword, email, type == User.TYPE_ADMIN ? User.TYPE_ADMIN : User.TYPE_COMMON);
+        UserPrincipal principal = SecureUtils.getSpringSecurityUser();
+        if (principal != null && principal.isAdmin()) {
+            userService.addUser(user, rawPassword, email, type == UserConstants.TYPE_ADMIN ? UserConstants.TYPE_ADMIN : UserConstants.TYPE_COMMON);
         } else {
             userService.addUser(user, rawPassword, email, regCode, validEmail);
         }
@@ -275,10 +276,12 @@ public class UserController {
                 getAvatar(HttpServletResponse response,
                           @RequestParam(required = false) Long uid,
                           @PathVariable(required = false) String username) throws IOException {
-        User currentUser = SecureUtils.getSpringSecurityUser();
+        UserPrincipal currentUser = SecureUtils.getSpringSecurityUser();
+        Resource avatar;
         if (currentUser == null && username == null && uid == null) {
-            response.sendRedirect("/api/static/defaultAvatar.png");
-            return null;
+            avatar = userCustomStoreService.getDefaultAvatar();
+            response.setHeader("is-default-avatar", "1");
+            return ResourceUtils.wrapResource(avatar);
         }
         Long finalUid = 0L;
 
@@ -292,12 +295,10 @@ public class UserController {
         } else {
             finalUid = currentUser.getId();
         }
-        Resource avatar = userCustomStoreService.getAvatar(finalUid);
+        avatar = userCustomStoreService.getAvatar(finalUid);
         if (avatar == null) {
-            response.setStatus(HttpStatus.NOT_FOUND.value());
-//            return null;
-            response.sendRedirect("/api/static/defaultAvatar.png");
-            return null;
+            avatar = userCustomStoreService.getDefaultAvatar();
+            response.setHeader("is-default-avatar", "1");
         }
         return ResourceUtils.wrapResource(avatar);
     }
@@ -326,9 +327,9 @@ public class UserController {
                                      @RequestParam("new") @Length(min = 6) String newPasswd,
                                      @PathVariable("uid") @UID long uid,
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (force) {
-            if (user == null || user.getType() != User.TYPE_ADMIN) {
+            if (user == null || !user.isAdmin()) {
                 throw new AccessDeniedException("非管理员不允许使用force参数");
             } else {
                 userService.resetPasswd(uid, newPasswd);

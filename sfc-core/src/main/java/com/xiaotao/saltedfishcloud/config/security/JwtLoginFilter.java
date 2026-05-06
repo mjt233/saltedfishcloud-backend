@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.config.security;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -51,7 +51,7 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException {
         response.setContentType("application/json;charset=utf-8");
-        User user = (User)authResult.getPrincipal();
+        UserPrincipal user = (UserPrincipal) authResult.getPrincipal();
         String token = tokenDao.generateUserToken(user);
         if ("1".equals(request.getParameter("getCookie"))) {
             Cookie cookie = new Cookie("token", token);
@@ -64,7 +64,7 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
         logRecordManager.saveRecordAsync(LogRecord.builder()
                         .level(LogLevel.INFO)
                         .type(LOGIN_LOG_TYPE)
-                        .msgAbstract("用户[" + user.getUser() + "]登录成功 ip[" + request.getRemoteAddr() + "]")
+                        .msgAbstract("用户[" + user.getUsername() + "]登录成功 ip[" + request.getRemoteAddr() + "]")
                         .msgDetail(MapperHolder.toJsonNoEx(user))
                 .build());
     }

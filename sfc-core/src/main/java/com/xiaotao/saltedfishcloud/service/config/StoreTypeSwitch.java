@@ -65,7 +65,7 @@ public class StoreTypeSwitch {
 
         for (User user : users) {
             long uid = user.getId();
-            log.debug("[Store Switch]处理用户：{}", user.getUsername());
+            log.debug("[Store Switch]处理用户：{}", user.getUser());
             LinkedHashMap<String, List<FileInfo>> allFile = fileService.getMainFileSystem().collectFiles(user.getId(), false);
 
             //  文件迁移

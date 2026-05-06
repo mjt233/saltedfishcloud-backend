@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.controller.open;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.OpenUserVo;
 import io.swagger.annotations.ApiOperation;
 import jakarta.annotation.security.RolesAllowed;
@@ -23,10 +23,10 @@ public class OpenApiUserController {
     @ApiOperation("获取授权的用户信息")
     @GetMapping("/profile/v1")
     @PreAuthorize("hasAuthority('SCOPE_profile')")
-    public JsonResult<OpenUserVo> getUserProfile(@AuthenticationPrincipal User user, HttpServletRequest request) {
+    public JsonResult<OpenUserVo> getUserProfile(@AuthenticationPrincipal UserPrincipal user, HttpServletRequest request) {
         OpenUserVo vo = OpenUserVo.of(user);
         vo.setAvatar(UriComponentsBuilder.fromHttpUrl(request.getRequestURL().toString())
-                        .replacePath("/api/user/avatar/" + user.getUser())
+                        .replacePath("/api/user/avatar/" + user.getUsername())
                         .replaceQueryParam("uid", user.getId())
                         .build()
                         .toString());

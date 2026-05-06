@@ -4,7 +4,7 @@ import com.sfc.ext.webdav.enums.Constants;
 import com.sfc.ext.webdav.enums.ResourceArea;
 import com.sfc.ext.webdav.model.resource.*;
 import com.sfc.ext.webdav.service.WebDavAuthService;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import io.milton.http.Auth;
@@ -38,29 +38,29 @@ public class SfcSecurityManager implements SecurityManager {
      * 获取已认证的用户对象
      * 按优先级从多个位置查找：Auth.tag -> request attribute -> session
      */
-    private User getAuthenticatedUser(Auth auth) {
+    private UserPrincipal getAuthenticatedUser(Auth auth) {
         HttpServletRequest servletRequest = MiltonServlet.request();
 
         // 1. 首先从Auth.tag获取（Milton标准的认证结果存储位置）
-        User authUser = (User) Optional.ofNullable(auth)
+        UserPrincipal authUser = (UserPrincipal) Optional.ofNullable(auth)
                 .map(Auth::getTag)
-                .filter(tag -> tag instanceof User).orElse(null);
+                .filter(tag -> tag instanceof UserPrincipal).orElse(null);
 
         if (authUser != null) {
             return authUser;
         }
 
         // 2. 从request attribute获取
-        authUser = (User) Optional.ofNullable(servletRequest.getAttribute("userObj"))
-                .filter(obj -> obj instanceof User).orElse(null);
+        authUser = (UserPrincipal) Optional.ofNullable(servletRequest.getAttribute("userObj"))
+                .filter(obj -> obj instanceof UserPrincipal).orElse(null);
         if (authUser != null) {
             return authUser;
         }
 
         // 3. 从session中获取
-        return (User)Optional.ofNullable(servletRequest.getSession())
+        return (UserPrincipal)Optional.ofNullable(servletRequest.getSession())
                 .map(session -> session.getAttribute("userObj"))
-                .filter(obj -> obj instanceof User).orElse(null);
+                .filter(obj -> obj instanceof UserPrincipal).orElse(null);
     }
 
     /**
@@ -100,7 +100,7 @@ public class SfcSecurityManager implements SecurityManager {
         }
 
         // 未认证，拒绝任何请求
-        User authUser = getAuthenticatedUser(auth);
+        UserPrincipal authUser = getAuthenticatedUser(auth);
         if (authUser == null) {
             return false;
         }

@@ -18,7 +18,7 @@ import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -98,8 +98,8 @@ public class ArchiveController {
         record.setParams(MapperHolder.toJson(param));
 
         // 关联当前登录用户
-        User curUser = SecureUtils.getSpringSecurityUser();
-        record.setUid(Optional.ofNullable(curUser).map(User::getId).orElse(param.getUid()));
+        UserPrincipal curUser = SecureUtils.getSpringSecurityUser();
+        record.setUid(Optional.ofNullable(curUser).map(UserPrincipal::getId).orElse(param.getUid()));
 
         // 提交任务
         asyncTaskManager.submitAsyncTask(record);

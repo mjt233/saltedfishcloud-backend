@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.vo;
 
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import lombok.Data;
 
 @Data
@@ -13,7 +13,7 @@ public class OpenUserVo {
 
     private String avatar;
 
-    public static OpenUserVo of(User user) {
+    public static OpenUserVo of(UserPrincipal user) {
         OpenUserVo vo = new OpenUserVo();
         vo.setId(user.getId());
         vo.setUsername(user.getUsername());

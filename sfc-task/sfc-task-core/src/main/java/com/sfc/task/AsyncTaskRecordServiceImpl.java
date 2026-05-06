@@ -3,8 +3,8 @@ package com.sfc.task;
 import com.sfc.task.model.AsyncTaskQueryParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ public class AsyncTaskRecordServiceImpl implements AsyncTaskRecordService {
 
     @Override
     public CommonPageInfo<AsyncTaskRecord> listRecord(AsyncTaskQueryParam param) {
-        UIDValidator.validate(Optional.ofNullable(param.getUid()).orElse(User.PUBLIC_USER_ID), true);
+        UIDValidator.validate(Optional.ofNullable(param.getUid()).orElse(UserConstants.PUBLIC_USER_ID), true);
 
         return CommonPageInfo.of(asyncTaskRecordRepo.findAll(JpaLambdaQueryWrapper.get(AsyncTaskRecord.class)
                                 .eq(AsyncTaskRecord::getUid, param.getUid())

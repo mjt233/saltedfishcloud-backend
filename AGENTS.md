@@ -46,6 +46,10 @@
 
 ## 工作流与验证机制
 
+### 行为约束
+
+- 禁止直接修复与用户要求无关的顺手发现的bug。发现与本次任务无关的bug应反馈给用户。
+
 ### 编译验证
 
 - 使用MCP的build_project对代码进行编译验证，避免使用命令行执行mvn
@@ -63,4 +67,5 @@
 
 ### Git 提交规范
 
-当用户要求你将文件提交到Git时，请参考[Git 提交规范](docs/develop/framework/git-commit-convention.md)
+- 当用户要求你将文件提交到Git时，请参考[Git 提交规范](docs/develop/framework/git-commit-convention.md)
+- 除非用户明确要求后续执行的修改都自动提交git，否则禁止在执行完任务后立即提交git。请等待用户的明确指示后再执行git提交。

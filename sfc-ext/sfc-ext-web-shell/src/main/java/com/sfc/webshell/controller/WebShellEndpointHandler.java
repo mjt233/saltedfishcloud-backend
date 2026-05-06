@@ -7,7 +7,7 @@ import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecuteRPCService;
 import com.sfc.webshell.service.ShellExecuteService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
@@ -59,7 +59,7 @@ public class WebShellEndpointHandler {
     }
 
     private void auth(Session wsSession, Long sessionId) throws IOException {
-        User user = (User) ((UsernamePasswordAuthenticationToken) wsSession.getUserPrincipal()).getPrincipal();
+        UserPrincipal user = (UserPrincipal) ((UsernamePasswordAuthenticationToken) wsSession.getUserPrincipal()).getPrincipal();
         ShellSessionRecord sessionRecord = getRpcManager()
                 .getRPCClient(ShellExecuteRPCService.class)
                 .getSessionById(sessionId);

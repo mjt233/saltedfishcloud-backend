@@ -15,8 +15,8 @@ public class UserVO {
     private String token;
 
     /**
-     * @see com.xiaotao.saltedfishcloud.model.po.User#TYPE_ADMIN
-     * @see com.xiaotao.saltedfishcloud.model.po.User#TYPE_COMMON
+     * @see com.xiaotao.saltedfishcloud.constant.UserConstants#TYPE_ADMIN
+     * @see com.xiaotao.saltedfishcloud.constant.UserConstants#TYPE_COMMON
      */
     private Integer type;
 

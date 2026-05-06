@@ -12,11 +12,11 @@ import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecuteRecordService;
 import com.sfc.webshell.service.ShellExecuteService;
 import com.sfc.webshell.utils.ProcessUtils;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.CommonResult;
 import com.xiaotao.saltedfishcloud.model.RequestParam;
-import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
@@ -291,7 +291,7 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
         }
         session.setRunning(true);
         session.setUpdateAt(now);
-        session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId()).orElse(User.PUBLIC_USER_ID));
+        session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId()).orElse(UserConstants.PUBLIC_USER_ID));
 
         // 根据参数创建进程
         long begin = System.currentTimeMillis();

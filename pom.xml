@@ -27,9 +27,9 @@
     <description>咸鱼云网盘</description>
 
     <properties>
-        <!--  前端项目路径，配置后在package时自动打包到webapp/static -->
-<!--        <sfc.front-end-path>C:\Users\xiaotao\code\saltedfishcloud-frontend</sfc.front-end-path>-->
-        <java.version>17</java.version>
+        <!--  前端项目路径通过环境变量 SFC_FRONT_END_PATH 提供，配置后在 package 时自动打包到 webapp -->
+        <java.version>25</java.version>
+        <lombok.version>1.18.42</lombok.version>
         <!--   系统核心api模块版本     -->
         <api.version>3.1.0</api.version>
         <task.version>1.0.0</task.version>
@@ -109,7 +109,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.20</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -234,10 +234,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>3.13.0</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <proc>full</proc>
+                    <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
                     <parameters>true</parameters>
                 </configuration>
@@ -249,6 +249,29 @@
                 <configuration>
                     <generateBackupPoms>false</generateBackupPoms>
                 </configuration>
+            </plugin>
+
+            <!-- 清理上次打包的资源 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>clean-release-content</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo message="清理打包产出目录 Cleaning release directory..." />
+                                <delete dir="${project.basedir}/../release"/>
+                                <mkdir dir="${project.basedir}/../release"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

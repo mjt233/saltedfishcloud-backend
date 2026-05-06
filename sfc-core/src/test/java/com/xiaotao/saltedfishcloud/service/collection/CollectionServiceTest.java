@@ -66,7 +66,7 @@ class CollectionServiceTest {
 
         String node = fileRecordService.getNodeIdByPath(u.getId(), savePath).orElseThrow();
         // 创建收集任务
-        CollectionDTO colI = new CollectionDTO("测试收集样例", node, calender.getTime(), u.getUsername());
+        CollectionDTO colI = new CollectionDTO("测试收集样例", node, calender.getTime(), u.getUser());
         colI.setPattern("\\.(doc|docx)$");
         CollectionInfoId cid = cs.createCollection(u.getId(), colI);
 

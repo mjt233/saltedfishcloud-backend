@@ -1,8 +1,9 @@
 package com.xiaotao.saltedfishcloud.validator;
 
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
@@ -21,7 +22,7 @@ public class UIDValidator implements ConstraintValidator<UID, Object> {
      * @return 通过true 否则false
      */
     public static boolean validate(long uid, boolean publicOnlyAdmin) {
-        User springSecurityUser = SecureUtils.getSpringSecurityUser();
+        UserPrincipal springSecurityUser = SecureUtils.getSpringSecurityUser();
         return validate(springSecurityUser, uid, publicOnlyAdmin);
     }
 
@@ -45,15 +46,15 @@ public class UIDValidator implements ConstraintValidator<UID, Object> {
      * @param publicOnlyAdmin 公共资源是否只允许管理员通过验证
      * @return 通过true 否则false
      */
-    public static boolean validate(User user, long uid, boolean publicOnlyAdmin) {
-        if (!publicOnlyAdmin && uid == 0) return true;
+    public static boolean validate(UserPrincipal user, long uid, boolean publicOnlyAdmin) {
+        if (!publicOnlyAdmin && uid == UserConstants.PUBLIC_USER_ID) return true;
         if (user == null) {
             return false;
         }
 
-        boolean isAdmin = user.getType() == User.TYPE_ADMIN;
+        boolean isAdmin = user.isAdmin();
         if ( (user.getId() != uid && !isAdmin) ||
-                (publicOnlyAdmin && uid == 0 && !isAdmin) ) {
+                (publicOnlyAdmin && uid == UserConstants.PUBLIC_USER_ID && !isAdmin) ) {
             return false;
         }
         return true;

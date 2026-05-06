@@ -15,7 +15,8 @@
       "mcp__IDEA__search_file",
       "mcp__ide__getDiagnostics",
       "mcp__IDEA__search_regex",
-      "mcp__IDEA__find_files_by_name_keyword"
+      "mcp__IDEA__find_files_by_name_keyword",
+      "mcp__IDEA__search_in_files_by_regex"
     ]
   }
 }

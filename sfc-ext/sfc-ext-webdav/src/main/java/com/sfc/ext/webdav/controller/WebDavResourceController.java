@@ -2,6 +2,7 @@ package com.sfc.ext.webdav.controller;
 
 import com.sfc.ext.webdav.enums.ResourceArea;
 import com.sfc.ext.webdav.model.resource.*;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
@@ -60,7 +61,7 @@ public class WebDavResourceController {
                 .createDate(date)
                 .modifiedDate(date)
                 .resourceArea(PUBLIC)
-                .uid(User.PUBLIC_USER_ID)
+                .uid(UserConstants.PUBLIC_USER_ID)
                 .isVirtualRoot(true)
                 .path("/")
                 .build());
@@ -116,7 +117,7 @@ public class WebDavResourceController {
         try {
             Long uid;
             if (isPublic) {
-                uid = User.PUBLIC_USER_ID;
+                uid = UserConstants.PUBLIC_USER_ID;
             } else {
                 User user = getCurUser(f.getUid());
                 if (user == null) {
@@ -159,7 +160,7 @@ public class WebDavResourceController {
 
     @MakeCollection
     public WebDavItem mkdir(WebDavDir parent, String newName) throws IOException {
-        long uid = parent.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
+        long uid = parent.getResourceArea() == PUBLIC ? UserConstants.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         fileSystem.mkdir(uid, parent.getPath(), newName);
         
@@ -176,7 +177,7 @@ public class WebDavResourceController {
 
     @PutChild
     public WebDavItem upload(WebDavDir parent, String name, InputStream in, Long contentLength) throws IOException {
-        long uid = parent.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
+        long uid = parent.getResourceArea() == PUBLIC ? UserConstants.PUBLIC_USER_ID : getCurUser(parent.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         FileInfo fileInfo = new FileInfo();
         fileInfo.setName(name);
@@ -213,7 +214,7 @@ public class WebDavResourceController {
     }
 
     public WebDavItem doRename(WebDavItem source, WebDavItem newParent, String newName) throws IOException {
-        long uid = source.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
+        long uid = source.getResourceArea() == PUBLIC ? UserConstants.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String parentPath = PathUtils.getParentPath(source.getPath());
         fileSystem.rename(uid, parentPath, source.getName(), newName);
@@ -225,7 +226,7 @@ public class WebDavResourceController {
      * 移动文件或目录
      */
     public WebDavItem doMove(WebDavItem source, WebDavItem newParent, String newName) throws IOException {
-        long uid = source.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
+        long uid = source.getResourceArea() == PUBLIC ? UserConstants.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String sourcePath = PathUtils.getParentPath(source.getPath());
         String targetPath = newParent.getPath();
@@ -271,7 +272,7 @@ public class WebDavResourceController {
         if (item.isVirtualRoot()) {
             throw new BadRequestException("Can not handle virtual directory");
         }
-        long uid = item.getResourceArea() == PUBLIC ? User.PUBLIC_USER_ID : getCurUser(item.getUid()).getId();
+        long uid = item.getResourceArea() == PUBLIC ? UserConstants.PUBLIC_USER_ID : getCurUser(item.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String parentPath = PathUtils.getParentPath(item.getPath());
         fileSystem.deleteFile(uid, parentPath, Collections.singletonList(item.getName()));

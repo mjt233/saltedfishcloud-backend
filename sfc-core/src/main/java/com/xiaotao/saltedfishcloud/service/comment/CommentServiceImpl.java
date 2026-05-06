@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.dao.jpa.CommentRepo;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.CommentVo;
 import com.xiaotao.saltedfishcloud.service.BaseJpaService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
@@ -27,7 +27,7 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
 
     @Override
     public void sendComment(Comment comment) {
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (!isAllowAnonymousComment() && (user == null || user.isPublicUser())) {
             throw new IllegalArgumentException("不允许匿名留言");
         }

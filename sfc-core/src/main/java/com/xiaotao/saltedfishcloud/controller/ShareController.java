@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
@@ -37,7 +37,7 @@ public class ShareController {
 
     @DeleteMapping("{sid}")
     public JsonResult<Object> deleteShare(@PathVariable("sid") Long sid) {
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
 
         assert user != null;
         shareService.deleteShare(sid, user.getId());
@@ -113,7 +113,7 @@ public class ShareController {
     @PostMapping
     public JsonResult<ShareInfo> createShare(@RequestBody @Valid ShareDTO shareDTO, Principal principal) {
         System.out.println(principal);
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         assert user != null;
         ShareInfo share = shareService.createShare(user.getId(), shareDTO);
         return JsonResultImpl.getInstance(share);
@@ -134,7 +134,7 @@ public class ShareController {
         // 缺少uid路径参数时使用当前登录的用户ID
         if (uid == null) {
             emptyUid = true;
-            User user = SecureUtils.getSpringSecurityUser();
+            UserPrincipal user = SecureUtils.getSpringSecurityUser();
             if (user == null) {
                 throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
             }

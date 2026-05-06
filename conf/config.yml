@@ -7,7 +7,7 @@ spring:
     database: mysql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:127.0.0.1}/${DB_NAME:xyy}?useSSL=false&serverTimezone=UTC
+    url: "jdbc:mysql://${DB_HOST:127.0.0.1}/${DB_NAME:xyy}?${JDBC_PARAMETER:-useSSL=false&serverTimezone=UTC}"
     username: ${DB_USER:root}
     password: ${DB_PASSWORD:test}
   data:
@@ -29,7 +29,7 @@ sys:
     sync-on-launch: false
   store:
     # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
-    archive-encoding: gbk
+    archive-encoding: ${ARCHIVE_ENCODING}
 
     # 存储服务类型，可选hdfs（需要hdfs拓展）或local
     type: ${STORE_TYPE:local}
@@ -39,23 +39,3 @@ sys:
 
     # 公共网盘根目录路径
     public-root: ${PUBLIC_ROOT:public}
-
-    # 存储模式，可选 raw - 原始存储 或 unique - 唯一存储
-    # 注意:仅首次启动有效, 后续需要切换请在管理员后台切换, 但需要注意的是切换功能不是特别稳定, 容易导致数据丢失, 所以最好一开始就确定好存储模式不要再动了
-    # (切换功能已经修过好几次严重bug了, 虽然目前没发现有bug, 但不确保真的没bug)
-    mode: unique
-  ftp:
-    # FTP控制端口
-    control-port: 21
-
-    # FTP监听地址
-    listen-addr: 0.0.0.0
-
-    # 是否开启FTP
-    ftp-enable: true
-
-    # FTP被动模式传输重定向地址
-    passive-addr: localhost
-
-    # FTP被动模式传输端口范围
-    passive-port: 20000-30000

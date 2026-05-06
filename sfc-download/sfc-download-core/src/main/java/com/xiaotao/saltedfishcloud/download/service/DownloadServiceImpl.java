@@ -5,13 +5,13 @@ import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.download.DownloadService;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -134,13 +134,13 @@ public class DownloadServiceImpl implements DownloadService {
 
     @Override
     public List<ProxyInfo> listAvailableProxy() {
-        List<ProxyInfo> res = new ArrayList<>(proxyInfoService.findByUid(User.PUBLIC_USER_ID));
+        List<ProxyInfo> res = new ArrayList<>(proxyInfoService.findByUid(UserConstants.PUBLIC_USER_ID));
         Long currentUid = SecureUtils.getCurrentUid();
         if (currentUid != null) {
             res.addAll(proxyInfoService.findByUid(currentUid));
         }
-        if (!UIDValidator.validate(User.PUBLIC_USER_ID, true)) {
-            return res.stream().filter(proxy -> proxy.getUid().equals(User.PUBLIC_USER_ID) && !Boolean.TRUE.equals(proxy.getIsProtect())).toList();
+        if (!UIDValidator.validate(UserConstants.PUBLIC_USER_ID, true)) {
+            return res.stream().filter(proxy -> proxy.getUid().equals(UserConstants.PUBLIC_USER_ID) && !Boolean.TRUE.equals(proxy.getIsProtect())).toList();
         }
         return res;
     }

@@ -28,7 +28,7 @@ public class VEProperty {
     /**
      * ffmpeg
      */
-    @ConfigProperty(value = "ffmpegPath", title = "ffmpeg目录", describe = "ffmpeg可执行程序的所在目录")
+    @ConfigProperty(value = "ffmpegPath", title = "ffmpeg目录", describe = "ffmpeg可执行程序的所在目录", isRow = true)
     private String ffmpegPath;
 
 
