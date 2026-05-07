@@ -4,11 +4,16 @@ import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.nio.charset.Charset;
+import java.util.Objects;
+
+@Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "sys")
 @Data
@@ -50,7 +55,9 @@ public class SysProperties implements InitializingBean {
         public void setArchiveEncoding(String encoding) {
             if (null == encoding || encoding.trim().isEmpty()) {
                 this.archiveEncoding = OSInfo.getOSDefaultEncoding();
+                log.info("未设置环境变量 ${ARCHIVE_ENCODING}, sys.store.archiveEncoding 取默认值 {}", this.archiveEncoding);
             } else {
+                Charset.forName(encoding);
                 this.archiveEncoding = encoding;
             }
         }

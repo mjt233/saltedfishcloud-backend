@@ -59,7 +59,7 @@ plugin:
 sys:
   store:
     # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
-    archive-encoding: gbk
+    archive-encoding: ${ARCHIVE_ENCODING:}
 
     # 存储服务类型，可选local、minio（需要拓展）、hdfs（需要拓展）
     type: local
@@ -67,17 +67,21 @@ sys:
     # 各类资源根目录存储路径
     root: store
 
-    # 公共网盘根目录路径
+    # 单独的公共网盘根目录路径
+    # 仅在 管理员后台-系统-基础配置-存储模式 设置为 UNIQUE(默认) 时有效。（注：切换存储模式会触发全网盘数据重新组织，中途出错可能会导致数据丢失和损坏，请谨慎切换并做好数据备份）
     public-root: public
 
     # minio存储配置
+    # 安装了 sfc-ext-minio-store 插件后，sys.store.type设置为minio后生效
     minio:
-      access-key: xyy
-      secret-key: xyy123456
-      bucket: xyy
+      access-key: ${MINIO_ACCESS_KEY:xyy}
+      secret-key: ${MINIO_SECRET_KEY:xyy123456}
+      bucket: ${MINIO_BUCKET:xyy}
 
     # hdfs存储配置
+    # 安装了 sfc-ext-hadoop-store 插件后，sys.store.type设置为hdfs后生效
+    # 注意：该插件未在jdk25中进行测试，使用时请确保hadoop版本和jdk版本兼容，且hadoop环境配置正确，否则可能会导致程序无法启动或运行时异常
     hdfs:
-      url: hdfs://localhost:9000
-      root: /xyy2
-      user: xiaotao
+      url: ${HDFS_URL:hdfs://localhost:9000}
+      root: ${HDFS_ROOT:/xyy2}
+      user: ${HDFS_USER:xiaotao}
