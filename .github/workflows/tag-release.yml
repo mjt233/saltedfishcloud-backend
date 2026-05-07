@@ -30,14 +30,6 @@ jobs:
           java-version: '25'
           cache: maven
 
-      # 安装 Node.js 24，并按前端 lock 文件启用 npm 缓存
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: saltedfishcloud-frontend/package-lock.json
-
       # 校验 tag 对应提交是否在 master 上，并生成 Release 元数据
       - name: Validate tag commit and prepare release metadata
         id: meta
@@ -70,6 +62,14 @@ jobs:
           repository: mjt233/saltedfishcloud-frontend
           ref: ${{ steps.meta.outputs.tag }}
           path: saltedfishcloud-frontend
+
+      # 安装 Node.js 24，并按前端 lock 文件启用 npm 缓存
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: saltedfishcloud-frontend/package-lock.json
 
       # 在前端目录安装依赖并构建 dist
       - name: Build frontend
