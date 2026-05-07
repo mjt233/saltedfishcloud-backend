@@ -2,7 +2,7 @@ package com.saltedfishcloud.ext.ftpserver.ftplet;
 
 import com.saltedfishcloud.ext.ftpserver.core.DiskFtpUser;
 import com.saltedfishcloud.ext.ftpserver.utils.FtpPathInfo;
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -32,7 +32,7 @@ public class FtpUploadAndLogHandler extends DefaultFtplet {
     private DiskFileSystemManager fileService;
 
     @Autowired
-    private UserDao userDao;
+    private UserRepo userRepo;
 
     @Autowired
     private LogRecordManager logRecordManager;
@@ -77,7 +77,7 @@ public class FtpUploadAndLogHandler extends DefaultFtplet {
             if (user instanceof DiskFtpUser) {
                 uid = ((DiskFtpUser) user).getId();
             } else {
-                uid = userDao.getUserByUser(user.getName()).getId();
+                uid = userRepo.getUserByUser(user.getName()).getId();
             }
         }
         session.setAttribute("pathInfo", pathInfo);

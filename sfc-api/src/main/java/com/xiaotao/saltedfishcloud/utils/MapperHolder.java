@@ -2,14 +2,12 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import org.springframework.security.core.parameters.P;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +25,7 @@ public class MapperHolder {
         initMapperConfigure(mapper);
         initMapperConfigure(snakeMapper);
         initMapperConfigure(withTypeMapper);
-        snakeMapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        snakeMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
         withTypeMapper.activateDefaultTyping(withTypeMapper.getPolymorphicTypeValidator(), ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
     }

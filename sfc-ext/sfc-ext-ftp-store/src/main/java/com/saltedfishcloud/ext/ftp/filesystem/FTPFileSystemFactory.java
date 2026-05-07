@@ -9,7 +9,6 @@ import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
 import lombok.Setter;
-import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.util.Map;

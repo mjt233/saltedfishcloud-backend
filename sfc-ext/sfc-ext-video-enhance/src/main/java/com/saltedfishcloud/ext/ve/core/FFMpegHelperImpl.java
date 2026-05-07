@@ -2,7 +2,9 @@ package com.saltedfishcloud.ext.ve.core;
 
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.model.*;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -13,10 +15,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.saltedfishcloud.ext.ve.constant.VEConstants.*;
+import static com.saltedfishcloud.ext.ve.constant.VEConstants.EncoderType.*;
 
 @Slf4j
 public class FFMpegHelperImpl implements FFMpegHelper {
@@ -81,11 +85,11 @@ public class FFMpegHelperImpl implements FFMpegHelper {
             String output = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
             int i = process.waitFor();
             if (i != 0) {
-                throw new RuntimeException("ffmpeg调用出错："+ String.join(" ", args) + "\n" + output);
+                throw new RuntimeException("FFmpeg调用出错："+ String.join(" ", args) + "\n" + output);
             }
             return output;
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("FFmpeg 提取字幕执行中断. file: {}, streamNo: {}, type: {}", localFile, streamNo, type, e);
             return null;
         }
     }
@@ -147,7 +151,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
         // 获取编码器支持
         Map<String, List<Encoder>> encodeTypeGroup = parseEncoderInfo(outputArr).stream().collect(Collectors.groupingBy(Encoder::getType));
         ffMpegInfo.setAudioEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.AUDIO, Collections.emptyList()));
-        ffMpegInfo.setVideoEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.VIDEO, Collections.emptyList()));
+        ffMpegInfo.setVideoEncoders(encodeTypeGroup.getOrDefault(VIDEO, Collections.emptyList()));
         ffMpegInfo.setSubtitleEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.SUBTITLE, Collections.emptyList()));
         ffMpegInfo.setOtherEncoders(encodeTypeGroup.getOrDefault(VEConstants.EncoderType.OTHER, Collections.emptyList()));
 
@@ -174,7 +178,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
             String[] split = line.trim().split("\\s+", 3);
             char type = split[0].charAt(0);
             if (type == 'V') {
-                encoder.setType(VEConstants.EncoderType.VIDEO);
+                encoder.setType(VIDEO);
             } else if (type == 'A') {
                 encoder.setType(VEConstants.EncoderType.AUDIO);
             } else if (type == 'S') {
@@ -190,33 +194,101 @@ public class FFMpegHelperImpl implements FFMpegHelper {
         return res;
     }
 
+    /**
+     * 获取转码规则中原始输入文件的流索引对应的流信息
+     */
+    private StreamInfo getSourceStreamInfo(EncodeConvertRule rule, VideoInfo videoInfo) {
+        try {
+            String streamIndex = Optional.ofNullable(rule.getIndex()).filter(StringUtils::hasText).orElseThrow(() -> new IllegalArgumentException("rule stream index is empty or null"));
+            return videoInfo.getStreams().get(Integer.parseInt(streamIndex));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("rule stream index format error: " + e.getMessage());
+        } catch (IndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("rule stream index out of bounds, max index is: " + (videoInfo.getStreams().size() - 1));
+        }
+    }
+
+    /**
+     * 获取目标格式支持的流类型
+     * @param format    目标格式（muxer或文件拓展名）
+     * @return  {@link EncoderType}的Set集合
+     */
+    public Set<String> getFormatSupportStreamType(String format) {
+        if ("mkv".equalsIgnoreCase(format) || "matroska".equalsIgnoreCase(format)) {
+            return Set.of(
+                    VIDEO, AUDIO ,SUBTITLE, DATA, ATTACHMENT
+            );
+        } else if (SubtitleType.ASS.equals(format) ||
+                SubtitleType.SRT.equals(format) ||
+                SubtitleType.WEBVTT.equals(format) ||
+                SubtitleType.SSA.equals(format) ||
+                SubtitleType.SUP.equals(format)) {
+            return Set.of(SUBTITLE);
+        } else {
+            return Set.of(VIDEO, AUDIO);
+        }
+    }
+
+
+    @Override
+    public ProcessWrap executeFFMpeg(String input, String output, List<String> inputArgs, List<String> outputArgs) throws IOException {
+        List<String> finalArgs = new ArrayList<>();
+        finalArgs.add(property.getFFMpegExecPath());
+        finalArgs.add("-hide_banner");
+        finalArgs.add("-y");
+        if (inputArgs != null) {
+            finalArgs.addAll(inputArgs);
+        }
+        finalArgs.add("-i");
+        finalArgs.add(input);
+        if (outputArgs != null) {
+            finalArgs.addAll(outputArgs);
+        }
+        finalArgs.add(output);
+        return executeCmd(finalArgs);
+    }
+
     @Override
     public ProcessWrap executeConvert(String input, String output, EncodeConvertParam param) throws IOException {
         List<EncodeConvertRule> rules = param.getRules();
         List<String> args = new ArrayList<>();
+
+        VideoInfo inputVideoInfo = getVideoInfo(input);
         args.add(property.getFFMpegExecPath());
         args.add("-hide_banner");
         args.add("-y");
         args.add("-i");
         args.add(input);
+        StringBuilder extraMessageBuilder = new StringBuilder();
 
-        int outputVideoIndex = 0;
-        int outputAudioIndex = 0;
-        int outputSubtitleIndex = 0;
+
+        // 获取目标格式支持的流类型
+        Set<String> formatSupportCodecType = getFormatSupportStreamType(
+                Optional.ofNullable(param.getFormat())
+                        .filter(StringUtils::hasText)
+                        .orElseGet(() -> FileUtils.getSuffix(output))
+        );
+
+        // 记录各类型的流在输出的目标文件中的流索引
+        // key - EncodeConvertRule#getType
+        // ffmpeg中对于输入文件，流是不区分类型从0开始的，而对于输出文件，则是根据不同的流类型单独各自从0开始
+        Map<String, AtomicInteger> outputStreamIndexMap = new HashMap<>();
         for (EncodeConvertRule rule : rules) {
-            int outputStreamIndex;
+            StreamInfo streamInfo = getSourceStreamInfo(rule, inputVideoInfo);
+            // 判断目标格式是否支持对应的流类型，不支持的跳过。如：mp4不支持subtitle类型的流（字幕）
+            if (!formatSupportCodecType.contains(streamInfo.getCodecType())) {
+                extraMessageBuilder.append("target format is not support stream type, ignore process: ").append(streamInfo.getCodecType()).append("\n");
+                continue;
+            }
+
             // 指定要处理的输入流
             args.add("-map");
             args.add("0:" + rule.getIndex());
 
-            outputStreamIndex = switch (rule.getType()) {
-                case EncoderType.AUDIO -> outputAudioIndex++;
-                case EncoderType.VIDEO -> outputVideoIndex++;
-                case EncoderType.SUBTITLE -> outputSubtitleIndex++;
-                default -> throw new IllegalArgumentException("未知的流类型：" + rule.getType());
-            };
-
             // 指定流的编码处理方式
+            int outputStreamIndex = outputStreamIndexMap
+                    .computeIfAbsent(rule.getType(), k -> new AtomicInteger(-1))
+                    .addAndGet(1);
             String outputStreamTag = rule.getTypeFlag() + ":" + outputStreamIndex;
             args.add("-c:" + outputStreamTag);
             if (EncodeMethod.COPY.equals(rule.getMethod())) {
@@ -227,12 +299,29 @@ public class FFMpegHelperImpl implements FFMpegHelper {
                 throw new IllegalArgumentException("未知的转换方式：" + rule.getMethod() + " 只支持copy或convert");
             }
 
+            // 视频编码质量、速度与优化参数
+            if (VIDEO.equals(rule.getType())) {
+                Optional.ofNullable(rule.getCrf()).filter(StringUtils::hasText).ifPresent(crf -> {
+                    args.add("-crf");
+                    args.add(crf);
+                });
+
+                Optional.ofNullable(rule.getTune()).filter(StringUtils::hasText).ifPresent(tune -> {
+                    args.add("-tune");
+                    args.add(tune);
+                });
+
+                Optional.ofNullable(rule.getPreset()).filter(StringUtils::hasText).ifPresent(preset -> {
+                    args.add("-preset");
+                    args.add(preset);
+                });
+            }
+
             // 指定码率
             if (rule.getBitRate() != null) {
                 args.add("-b:" + outputStreamTag);
                 args.add(rule.getBitRate());
             }
-            outputVideoIndex++;
         }
 
         // 封装格式指定
@@ -241,6 +330,8 @@ public class FFMpegHelperImpl implements FFMpegHelper {
             args.add(param.getFormat());
         }
         args.add(output);
-        return executeCmd(args);
+        ProcessWrap wrap = executeCmd(args);
+        wrap.setExtraMessage(extraMessageBuilder.toString());
+        return wrap;
     }
 }

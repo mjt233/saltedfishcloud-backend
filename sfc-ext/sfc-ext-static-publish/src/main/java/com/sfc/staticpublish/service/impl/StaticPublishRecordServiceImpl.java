@@ -60,7 +60,7 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
         checkOperatePermission();
 
         User user = userService.getUserById(entity.getUid());
-        entity.setUsername(user.getUsername());
+        entity.setUsername(user.getUser());
 
         if (entity.isByHost()) {
             StaticPublishRecord existRecord = repository.getBySiteName(entity.getSiteName());

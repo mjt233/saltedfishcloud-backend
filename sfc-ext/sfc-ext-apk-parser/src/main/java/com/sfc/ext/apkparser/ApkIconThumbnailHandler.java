@@ -34,4 +34,9 @@ public class ApkIconThumbnailHandler implements ThumbnailHandler {
     public List<String> getSupportType() {
         return SUPPORT_TYPE;
     }
+
+    @Override
+    public String getName() {
+        return "APK文件";
+    }
 }

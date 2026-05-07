@@ -9,19 +9,17 @@ import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
+@RequiredArgsConstructor
 public class SambaDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<SambaProperty, RawDiskFileSystem> {
-    @Autowired
-    private ThumbnailService thumbnailService;
-    private final Map<SambaProperty, SambaDiskFileSystem> CACHE = new ConcurrentHashMap<>();
+    private final ThumbnailService thumbnailService;
     private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
             .isPublic(true)
             .protocol("samba")

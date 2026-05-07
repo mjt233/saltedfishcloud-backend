@@ -1,23 +1,28 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.store;
 
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.util.StreamUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 本地文件系统的直接原始操作类
@@ -109,18 +114,18 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
 
     @Override
     public long store(FileInfo fileInfo, String path, long size, InputStream inputStream) throws IOException {
-        int cnt;
+        long cnt;
         final Path savePath = Paths.get(path);
         FileUtils.createParentDirectory(savePath);
-        try(final OutputStream os = Files.newOutputStream(savePath)) {
-            cnt = StreamUtils.copy(inputStream, os);
+        try (final OutputStream os = Files.newOutputStream(savePath)) {
+            cnt = StreamUtils.copyStream(inputStream, os);
             inputStream.close();
             os.close();
             if (fileInfo.getMtime() != null) {
                 Files.setLastModifiedTime(savePath, FileTime.fromMillis(fileInfo.getMtime()));
             }
         } catch (AccessDeniedException e) {
-            throw new IOException("权限不足",e);
+            throw new IOException("权限不足", e);
         }
         return cnt;
     }
@@ -132,18 +137,60 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
-        Files.copy(Paths.get(src), Paths.get(dest), StandardCopyOption.REPLACE_EXISTING);
+    public boolean copy(String src, String dest,@Nullable FileTransferItem item) throws IOException {
+        Path srcPath = Paths.get(src);
+        Path destPath = Paths.get(dest);
+        FileTransferItem transferItem = item == null ? new FileTransferItem() : item;
+        transferItem.setLoaded(0L);
+        if (!Files.isDirectory(srcPath)) {
+            transferItem.setTotal(Files.size(srcPath));
+            try(InputStream is = Files.newInputStream(srcPath); OutputStream os = Files.newOutputStream(destPath)) {
+                StreamUtils.copyStream(is, os, (buf, len) -> transferItem.setLoaded(transferItem.getLoaded() + len));
+            }
+            // 数据写入完成后，复制源路径文件的修改日期
+            Files.setLastModifiedTime(destPath, Files.getLastModifiedTime(srcPath));
+        } else {
+            Files.copy(srcPath, destPath, StandardCopyOption.REPLACE_EXISTING);
+        }
         return true;
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
-        return new File(src).renameTo(new File(dest));
+    public boolean move(String src, String dest, FileTransferItem item) throws IOException {
+        Files.move(Paths.get(src), Paths.get(dest));
+        return true;
     }
 
     @Override
     public boolean exist(String path) {
         return Files.exists(Paths.get(path));
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        if (names == null || attribute == null) {
+            return;
+        }
+
+        // 1. 预转换时间格式（避免在循环中重复计算）
+        FileTime mTime = Optional.ofNullable(attribute.getModifyTime()).map(d -> FileTime.fromMillis(d.getTime())).orElse(null);
+        FileTime aTime = Optional.ofNullable(attribute.getLastAccessTime()).map(d -> FileTime.fromMillis(d.getTime())).orElse(null);
+        FileTime cTime = Optional.ofNullable(attribute.getCreateTime()).map(d -> FileTime.fromMillis(d.getTime())).orElse(null);
+
+        // 2. 使用 Stream 处理
+        names.stream()
+                // 转换为 Path 对象
+                .map(name -> Paths.get(path, name))
+                // 过滤掉不存在的文件，增强健壮性
+                .filter(Files::exists)
+                .forEach(filePath -> {
+                    try {
+                        Files.getFileAttributeView(filePath, BasicFileAttributeView.class)
+                                .setTimes(mTime, aTime, cTime);
+                    } catch (IOException e) {
+                        // 在 Lambda 中处理受检异常
+                        log.warn("无法更新文件属性: {} -> {}", filePath, e.getMessage());
+                    }
+                });
     }
 }

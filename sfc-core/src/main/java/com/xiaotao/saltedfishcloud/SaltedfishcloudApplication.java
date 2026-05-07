@@ -5,18 +5,18 @@ import com.sfc.rpc.annotation.EnableRpc;
 import com.sfc.task.annocation.EnableAsyncTask;
 import com.xiaotao.saltedfishcloud.ext.DefaultPluginManager;
 import com.xiaotao.saltedfishcloud.init.PluginInitializer;
-import com.xiaotao.saltedfishcloud.init.VersionCheckInitializer;
+import com.xiaotao.saltedfishcloud.init.DataMigrateAndCheckInitializer;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import emergency.EmergencyApplication;
 import lombok.extern.slf4j.Slf4j;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
@@ -28,7 +28,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Indexed;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import javax.annotation.Nonnull;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.function.Supplier;
@@ -40,7 +39,6 @@ import java.util.function.Supplier;
         }
 )
 @EnableTransactionManagement
-@MapperScan("com.xiaotao.saltedfishcloud.dao.mybatis")
 @EnableScheduling
 @EnableCaching
 @EnableJpaAuditing
@@ -72,9 +70,7 @@ public class SaltedfishcloudApplication {
 
         try {
             // 启动
-            ConfigurableApplicationContext context = getLaunchFactory().get().run(args);
-            // 记录上下文
-            SpringContextUtils.setContext(context);
+            getLaunchFactory().get().run(args);
         } catch (Exception ignore) {}
     }
 
@@ -84,11 +80,12 @@ public class SaltedfishcloudApplication {
 
             DefaultPluginManager pluginManager = new DefaultPluginManager(originLoader);
             SpringApplication sa = new SpringApplication(SaltedfishcloudApplication.class);
+            sa.addInitializers(SpringContextUtils::setContext);
 
             // 配置SpringBoot，注册插件管理器
             sa.addInitializers(c -> log.info("[Boot]程序运行目录: {}", Paths.get("").toAbsolutePath()));
             sa.addInitializers(new PluginInitializer(pluginManager));
-            sa.addInitializers(new VersionCheckInitializer());
+            sa.addInitializers(new DataMigrateAndCheckInitializer());
 
             sa.addListeners((ApplicationListener<ApplicationReadyEvent>) applicationEvent -> {
                 // 打印启动信息
@@ -107,6 +104,7 @@ public class SaltedfishcloudApplication {
                 EmergencyApplication.errorDate = new Date();
                 new Thread(SpringContextUtils::startEmergencyMode).start();
             });
+            sa.setApplicationStartup(new BufferingApplicationStartup(20480));
             return sa;
         };
     }

@@ -1,0 +1,9 @@
+[
+  {
+    "name": "rtc-config",
+    "title": "基础配置",
+    "describe": "",
+    "defaultValue": "{}",
+    "typeRef": "com.sfc.ext.webrtc.model.RTCProperty"
+  }
+]

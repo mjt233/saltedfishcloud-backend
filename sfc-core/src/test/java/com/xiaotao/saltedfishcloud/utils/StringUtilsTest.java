@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.utils;
 
 import org.junit.jupiter.api.Test;
 
-import java.net.MalformedURLException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

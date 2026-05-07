@@ -7,8 +7,7 @@ import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.sfc.archive.service.DiskFileSystemArchiveService;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.utils.*;
@@ -28,8 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WrapServiceImpl implements WrapService {
     private final RedisTemplate<String, Object> redisTemplate;
-    private final NodeService nodeService;
-    private final DiskFileSystemManager fileSystemProvider;
+    private final FileRecordService fileRecordService;
     private final DiskFileSystemArchiveService archiveService;
 
     @Autowired
@@ -89,7 +87,8 @@ public class WrapServiceImpl implements WrapService {
             }
 
             // 3. 获取分享的目录所在的用户网盘路径
-            String shareRootPath = nodeService.getPathByNode(shareInfo.getUid(), shareInfo.getNid());
+            String shareRootPath = fileRecordService.getPathByNodeId(shareInfo.getUid(), shareInfo.getNid())
+                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
 
             uid = shareInfo.getUid();
             files.setSource(StringUtils.appendPath(shareRootPath, param.getPath()));

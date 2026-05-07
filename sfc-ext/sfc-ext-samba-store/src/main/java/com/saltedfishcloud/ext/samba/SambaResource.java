@@ -4,15 +4,16 @@ import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.io.AbstractResource;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-@RequiredArgsConstructor
+@Slf4j
 public class SambaResource extends AbstractResource {
     private final SambaDirectRawStoreHandler handler;
     private final String path;
@@ -20,6 +21,14 @@ public class SambaResource extends AbstractResource {
     private String filename;
     private Long lastModified;
     private String smbPath;
+
+    public SambaResource(SambaDirectRawStoreHandler handler, String path, String filename, Long lastModified, String smbPath) {
+        this.handler = handler;
+        this.path = path;
+        this.filename = filename;
+        this.lastModified = lastModified;
+        this.smbPath = smbPath;
+    }
 
     private void initFileInfo() {
         if (filename == null || lastModified == null || smbPath == null) {
@@ -46,6 +55,7 @@ public class SambaResource extends AbstractResource {
     }
 
     @Override
+    @NotNull
     public String getDescription() {
         initFileInfo();
         return smbPath;
@@ -53,95 +63,64 @@ public class SambaResource extends AbstractResource {
 
 
     @Override
+    @NotNull
     public InputStream getInputStream() throws IOException {
         Session session = handler.getSession();
-        DiskShare diskShare = (DiskShare) session.connectShare(handler.getSambaProperty().getShareName());
-        File file = handler.openFileRead(diskShare, path);
-        InputStream originInputStream = file.getInputStream();
-
-        return new InputStream() {
-            private boolean closed = false;
-            @Override
-            public int read(@NotNull byte[] b) throws IOException {
-                return originInputStream.read(b);
+        DiskShare diskShare = null;
+        File file = null;
+        InputStream originInputStream = null;
+        boolean success = false;
+        try {
+            diskShare = (DiskShare) session.connectShare(handler.getSambaProperty().getShareName());
+            file = handler.openFileRead(diskShare, path);
+            originInputStream = file.getInputStream();
+            success = true;
+        } finally {
+            if (!success) {
+                closeQuietly(originInputStream);
+                closeQuietly(file);
+                closeQuietly(diskShare);
+                handler.returnSession(session);
             }
+        }
 
-            @Override
-            public int read(@NotNull byte[] b, int off, int len) throws IOException {
-                return originInputStream.read(b, off, len);
-            }
+        File openedFile = file;
+        DiskShare openedShare = diskShare;
+        InputStream openedInputStream = originInputStream;
 
-            @Override
-            public byte[] readAllBytes() throws IOException {
-                return originInputStream.readAllBytes();
-            }
-
-            @Override
-            public byte[] readNBytes(int len) throws IOException {
-                return originInputStream.readNBytes(len);
-            }
-
-            @Override
-            public int readNBytes(byte[] b, int off, int len) throws IOException {
-                return originInputStream.readNBytes(b, off, len);
-            }
-
-            @Override
-            public long skip(long n) throws IOException {
-                return originInputStream.skip(n);
-            }
-
-            @Override
-            public void skipNBytes(long n) throws IOException {
-                originInputStream.skipNBytes(n);
-            }
-
-            @Override
-            public int available() throws IOException {
-                return originInputStream.available();
-            }
-
+        AtomicBoolean closed = new AtomicBoolean();
+        return new FilterInputStream(openedInputStream) {
             @Override
             public void close() throws IOException {
-                if (closed) {
+                if (!closed.compareAndSet(false, true)) {
                     return;
                 }
-                closed = true;
+                super.close();
                 try {
-                    originInputStream.close();
+                    openedInputStream.close();
                 } finally {
                     try {
-                        diskShare.close();
+                        closeQuietly(openedFile);
                     } finally {
-                        handler.returnSession(session);
+                        try {
+                            closeQuietly(openedShare);
+                        } finally {
+                            handler.returnSession(session);
+                        }
                     }
                 }
             }
-
-            @Override
-            public synchronized void mark(int readlimit) {
-                originInputStream.mark(readlimit);
-            }
-
-            @Override
-            public synchronized void reset() throws IOException {
-                originInputStream.reset();
-            }
-
-            @Override
-            public boolean markSupported() {
-                return originInputStream.markSupported();
-            }
-
-            @Override
-            public long transferTo(OutputStream out) throws IOException {
-                return originInputStream.transferTo(out);
-            }
-
-            @Override
-            public int read() throws IOException {
-                return originInputStream.read();
-            }
         };
+    }
+
+    private void closeQuietly(AutoCloseable closeable) {
+        if (closeable == null) {
+            return;
+        }
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            log.error("关闭资源失败 {}", closeable, e);
+        }
     }
 }

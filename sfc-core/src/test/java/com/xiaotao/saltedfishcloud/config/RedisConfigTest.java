@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.NodeDao;
 import com.xiaotao.saltedfishcloud.service.RedisTestService;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -17,8 +16,6 @@ class RedisConfigTest {
     private RedisTestService redisTestService;
     @Resource
     private CacheManager cacheManager;
-    @Resource
-    private NodeDao nodeDao;
 
     public void testNodeHandle() {
 

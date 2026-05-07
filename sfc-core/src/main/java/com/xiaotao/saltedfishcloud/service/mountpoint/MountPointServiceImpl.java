@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
-import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.MountPointRepo;
@@ -9,10 +9,12 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
 import com.xiaotao.saltedfishcloud.model.param.MountPointSyncFileRecordParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
-import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.*;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
@@ -22,6 +24,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.InputStreamSource;
+import org.springframework.data.util.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -44,10 +47,8 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
     private MountPointRepo mountPointRepo;
 
     @Autowired
+    @org.springframework.context.annotation.Lazy
     private DiskFileSystemManager fileSystemManager;
-
-    @Autowired
-    private NodeService nodeService;
 
     @Autowired
     private FileRecordService fileRecordService;
@@ -75,19 +76,15 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
 
     @Override
     public List<MountPoint> listByPath(long uid, String path) {
-        NodeInfo node = nodeService.getNodeByPath(uid, path);
-        if (node == null) {
-            return Collections.emptyList();
-        }
-        List<Long> mountIdList = nodeService.getChildNodes(uid, node.getId())
-                .stream()
-                .map(NodeInfo::getMountId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        if (mountIdList.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return mountPointRepo.findByIds(mountIdList);
+        return fileRecordService.getNodeByPath(uid, path)
+                .map(node -> fileRecordService.listChildDirs(uid, node.getMd5(), -1)
+                        .stream()
+                        .map(FileInfo::getMountId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList())
+                )
+                .map(mountPointRepo::findByIds)
+                .orElseGet(Collections::emptyList);
     }
 
     @Override
@@ -117,6 +114,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         }
         mountPointList.forEach(m -> UIDValidator.validateWithException(m.getUid(), true));
         mountPointList.forEach(this::clearFileRecord);
+        mountPointList.forEach(this::clearFileSystemFactoryCache);
         clearCache(uid);
         mountPointRepo.batchDeleteById(ids);
     }
@@ -125,18 +123,27 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
     @Transactional(rollbackFor = Exception.class)
     public void remove(@Validated @UID long uid, long id) {
         MountPoint mountPoint = mountPointRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("不存在该id"));
-
+        clearFileSystemFactoryCache(mountPoint);
         clearFileRecord(mountPoint);
         clearCache(uid);
-        String path = nodeService.getPathByNode((int) uid, mountPoint.getNid());
+        String path = fileRecordService.getPathByNodeId(uid, mountPoint.getNid()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
         mountPointRepo.deleteById(id);
         try {
-            fileRecordService.deleteRecords((int) uid, path, Collections.singletonList(mountPoint.getName()));
-            nodeService.deleteNodes((int) uid, Collections.singletonList(mountPoint.getNid()));
+            fileRecordService.deleteRecords(uid, path, Collections.singletonList(mountPoint.getName()));
         } catch (NoSuchFileException e) {
             throw new JsonException(e.getMessage());
         }
+    }
 
+    /**
+     * 清理挂载点文件系统的缓存
+     */
+    private void clearFileSystemFactoryCache(MountPoint mountPoint) {
+        try {
+            fileSystemManager.getFileSystemFactory(mountPoint.getProtocol()).clearCache(MapperHolder.parseJsonToMap(mountPoint.getParams()));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -164,29 +171,38 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         }
 
         // 获取挂载点所在目标路径，并检查下面是否存在路径冲突
-        String nodePath = nodeService.getPathByNode(uid, mountPoint.getNid());
+        Lazy<Optional<String>> newNodePath = Lazy.of(() -> fileRecordService.getPathByNodeId(uid, mountPoint.getNid()));
         if(fileRecordService.getFileInfo(uid, mountPoint.getNid(), mountPoint.getName()) != null) {
-            throw new IllegalArgumentException("路径 " + nodePath + " 下已存在同名文件或目录");
+            throw new IllegalArgumentException("路径 " + newNodePath.get().orElseGet(mountPoint::getNid) + " 下已存在同名文件或目录");
         }
 
         // 所属路径发生变化，先执行目录移动的逻辑
         if (!Objects.equals(mountPoint.getNid(), dbObj.getNid())) {
-            String originNodePath = nodeService.getPathByNode(uid, dbObj.getNid());
-            fileRecordService.move(uid, originNodePath, nodePath, dbObj.getName(), true);
+            String originNodePath = fileRecordService.getPathByNodeId(uid, dbObj.getNid())
+                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "原节点丢失"));
+            fileRecordService.move(uid, originNodePath, newNodePath.get().orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "移动失败，节点丢失")), dbObj.getName(), true);
         }
+        // 清理该挂载点的缓存
+        clearFileSystemFactoryCache(dbObj);
 
 
         // 文件发生变化，执行重命名逻辑
         String originName = dbObj.getName();
         if (!Objects.equals(originName, mountPoint.getName())) {
-            String path = nodeService.getPathByNode(uid, mountPoint.getNid());
             try {
-                fileRecordService.rename(uid, path, originName, mountPoint.getName());
+                fileRecordService.rename(uid, newNodePath.get().orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "重命名失败，节点丢失")), originName, mountPoint.getName());
             } catch (NoSuchFileException e) {
                 throw new JsonException(e.getMessage());
             }
         }
         mountPointRepo.save(mountPoint);
+
+        // 挂载点的存储记录代理配置发生变化时，清空掉原有存储记录信息
+        if(Boolean.TRUE.equals(dbObj.getIsProxyStoreRecord()) != Boolean.TRUE.equals(mountPoint.getIsProxyStoreRecord())) {
+            String mountPath = fileRecordService.getPathByNodeId(mountPoint.getUid(), mountPoint.getNid())
+                    .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND, mountPoint.getNid() + " " + mountPoint.getPath()));
+            fileRecordService.deleteRecords(mountPoint.getUid(), mountPath, List.of(mountPoint.getName()));
+        }
     }
 
 
@@ -195,7 +211,10 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
      * @param mountPoint    待创建的挂载点
      */
     private void createMountPoint(MountPoint mountPoint) throws IOException, FileSystemParameterException {
-        String path = StringUtils.appendPath(nodeService.getPathByNode(mountPoint.getUid(), mountPoint.getNid()), mountPoint.getName());
+        String path = StringUtils.appendPath(
+                fileRecordService.getPathByNodeId(mountPoint.getUid(), mountPoint.getNid()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "目标节点丢失")),
+                mountPoint.getName()
+        );
         if (!StringUtils.hasText(mountPoint.getNid())) {
             mountPoint.setNid(mountPoint.getUid().toString());
         }
@@ -226,7 +245,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         // 主表保存
         mountPointRepo.save(mountPoint);
         // 文件表保存
-        String newNodeId = nodeService.addMountPointNode(mountPoint);
+        String newNodeId = SecureUtils.getUUID();
         long now = System.currentTimeMillis();
         FileInfo fileInfo = new FileInfo(mountPoint.getName(), -1, FileInfo.TYPE_DIR, "", now, null);
         fileInfo.setUid(mountPoint.getUid());
@@ -247,7 +266,11 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         }
         // key末尾加个/，防止出现部分前缀误匹配导致的挂载点误匹配，如：/挂载点1 与 /挂载点11，两者前缀相同，访问/挂载点11时容易出现误匹配到/挂载点1
         Map<String, MountPoint> mountPointMap = mountPointList.stream().collect(Collectors.toMap(
-                e -> StringUtils.appendPath(nodeService.getPathByNode(e.getUid(), e.getNid()), e.getName()) + "/",
+                e -> StringUtils.appendPath(
+                        fileRecordService.getPathByNodeId(e.getUid(), e.getNid())
+                                .orElseThrow(() -> new JsonException(404, "节点信息丢失")),
+                        e.getName()
+                ) + "/",
                 Function.identity(),
                 (oldVal, newVal) -> {
                     log.warn("{}存在挂载路径冲突：{} 与 {}", LOG_PREFIX, oldVal.getNid(), newVal.getNid());
@@ -269,7 +292,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
      */
     private String getMountPointNodeId(MountPoint mountPoint) {
         String nodePath = getMountPointPath(mountPoint);
-        String nodeId = nodeService.getNodeIdByPathNoEx(mountPoint.getUid(), nodePath);
+        String nodeId = fileRecordService.getNodeIdByPath(mountPoint.getUid(), nodePath).orElse(null);
         if (nodeId == null) {
             log.warn("{}用户{}的挂载点目录 {} 丢失节点记录", LOG_PREFIX, mountPoint.getUid(), nodePath);
         }
@@ -285,7 +308,8 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
             return mountPoint.getPath();
         }
         return StringUtils.appendPath(
-                nodeService.getPathByNode(mountPoint.getUid(), mountPoint.getNid()),
+                fileRecordService.getPathByNodeId(mountPoint.getUid(), mountPoint.getNid())
+                        .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "挂载点丢失")),
                 mountPoint.getName()
         );
     }
@@ -300,9 +324,10 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         if (nodeId == null) {
             return;
         }
-        List<FileInfo> existRecord = fileRecordService.findByUidAndNodeId(mountPoint.getUid(), nodeId, Collections.singletonList(mountPoint.getName()));
+        // 找出挂载点下的所有子文件和目录，全部删除
+        List<FileInfo> existRecord = fileRecordService.findByUidAndNodeId(mountPoint.getUid(), nodeId, null);
         for (FileInfo fileInfo : existRecord) {
-            fileRecordService.deleteFileInfo(fileInfo.getId());
+            fileRecordService.deleteFileInfo(fileInfo);
         }
     }
 

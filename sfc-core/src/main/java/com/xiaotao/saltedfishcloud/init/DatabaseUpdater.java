@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.init;
 import com.xiaotao.saltedfishcloud.common.update.VersionUpdateHandler;
 import com.xiaotao.saltedfishcloud.common.update.VersionUpdateManager;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.dao.mybatis.ConfigDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @Order(2)
 @Slf4j
 public class DatabaseUpdater implements ApplicationRunner {
-    private final ConfigDao configDao;
+    private final ConfigRepo configDao;
     private final DataSource dataSource;
     private final Version lastVersion;
     private final ResourceLoader resourceLoader;
@@ -83,7 +83,7 @@ public class DatabaseUpdater implements ApplicationRunner {
     }
 
     public DatabaseUpdater(DataSource dataSource,
-                           ConfigDao configDao,
+                           ConfigRepo configDao,
                            ResourceLoader resourceLoader,
                            SysProperties sysProperties,
                            VersionUpdateManager updateManager
@@ -171,15 +171,14 @@ public class DatabaseUpdater implements ApplicationRunner {
         List<PluginInfo> pluginList = pluginManager.listAllPlugin().stream().filter(e -> !"sys".equals(e.getName())).collect(Collectors.toList());
 
         // 组装插件名称用于查询记录的插件上个版本
-        String pluginNames = pluginList.stream()
-                .map(e -> "'" + this.getPluginUpdateScopeKey(e.getName()) + "'")
-                .collect(Collectors.joining(","));
+        List<String> pluginVersionConfigKeys = pluginList.stream()
+                .map(e -> this.getPluginUpdateScopeKey(e.getName()))
+                .toList();
 
-        if (!StringUtils.hasText(pluginNames)) {
+        if (pluginVersionConfigKeys.isEmpty()) {
             return;
         }
-        pluginNames = "(" + pluginNames + ")";
-        Map<String, String> pluginLastVersionMap = configService.listConfig("IN", pluginNames);
+        Map<String, String> pluginLastVersionMap = configService.listConfig(pluginVersionConfigKeys);
 
         for (PluginInfo pluginInfo : pluginList) {
             // 筛选出具有上次运行版本记录的插件

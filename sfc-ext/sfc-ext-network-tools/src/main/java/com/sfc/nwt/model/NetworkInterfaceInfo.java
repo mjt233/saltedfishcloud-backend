@@ -9,7 +9,6 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Data

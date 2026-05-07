@@ -23,6 +23,7 @@ public class StreamInfo {
 
     /**
      * 流编码类型
+     * @see com.saltedfishcloud.ext.ve.constant.VEConstants.EncoderType
      */
     private String codecType;
 

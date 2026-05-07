@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.RequestParam;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
@@ -189,7 +189,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
 
         // 构造Header，并添加当前用户token
         HttpHeaders headers = new HttpHeaders();
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user != null) {
             headers.put(JwtUtils.AUTHORIZATION, Collections.singletonList(user.getToken()));
         }

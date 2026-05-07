@@ -5,8 +5,6 @@ import com.sfc.task.AsyncTaskReceiver;
 import com.sfc.task.DefaultAsyncTaskExecutor;
 import com.sfc.task.receiver.DefaultTaskReceiver;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
-import com.xiaotao.saltedfishcloud.common.update.VersionUpdateManager;
-import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +39,7 @@ public class AsyncTaskAutoConfiguration implements InitializingBean {
     @Bean
     @ConditionalOnMissingBean(RedisTemplate.class)
     public RedisTemplate<String, Object> redisTemplate() {
-        RedisTemplate template = new RedisTemplate<>();
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer(MapperHolder.mapper));
         template.setConnectionFactory(redisConnectionFactory);

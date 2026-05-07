@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.store;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
+import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStoreService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
@@ -29,6 +30,8 @@ import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PUBLIC;
 public class LocalStoreService extends AbstractRawStoreService implements ApplicationRunner {
     @Autowired
     private SysProperties sysProperties;
+    @Autowired
+    private SysCommonConfig sysCommonConfig;
 
     private String storeRoot;
     private String publicRoot;
@@ -72,7 +75,7 @@ public class LocalStoreService extends AbstractRawStoreService implements Applic
     public List<FileSystemStatus> getStatus() {
         File storeRoot = new File(sysProperties.getStore().getRoot());
         File publicRoot;
-        if (sysProperties.getStore().getMode() == StoreMode.UNIQUE) {
+        if (sysCommonConfig.getStoreMode() == StoreMode.UNIQUE) {
             publicRoot = new File(getStoreRoot());
         } else {
             publicRoot = new File(sysProperties.getStore().getPublicRoot());
@@ -108,6 +111,6 @@ public class LocalStoreService extends AbstractRawStoreService implements Applic
             }
             handler.delete(savePath);
         }
-        handler.move(nativePath.toString(), savePath);
+        handler.move(nativePath.toString(), savePath, null);
     }
 }

@@ -5,8 +5,10 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
+import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,8 +17,9 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+@RequiredArgsConstructor
 public class OSSDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<OSSProperty, DiskFileSystem> {
-
+    private final ThumbnailService thumbnailService;
     private final Map<String, Function<OSSProperty, DirectRawStoreHandler>> factoryMap = new ConcurrentHashMap<>();
 
     /**
@@ -53,6 +56,8 @@ public class OSSDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<O
     public DiskFileSystem generateDiskFileSystem(OSSProperty property) throws IOException {
         Function<OSSProperty, DirectRawStoreHandler> storeFactory = Objects.requireNonNull(factoryMap.get(property.getType()), "未注册类型为" + property.getType() + "的OSS存储");
         DirectRawStoreHandler rawStoreHandler = storeFactory.apply(property);
-        return new RawDiskFileSystem(rawStoreHandler, "/");
+        RawDiskFileSystem fileSystem = new RawDiskFileSystem(rawStoreHandler, "/");
+        fileSystem.setThumbnailService(thumbnailService);
+        return fileSystem;
     }
 }

@@ -5,10 +5,10 @@
     <parent>
         <artifactId>sfc-ext</artifactId>
         <groupId>com.xiaotao</groupId>
-        <version>3.0.0</version>
+        <version>3.1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
 
     <artifactId>sfc-ext-web-shell</artifactId>
 
@@ -16,6 +16,14 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>jetbrains-intellij-dependencies</id>
+            <name>JetBrains IntelliJ Dependencies</name>
+            <url>https://cache-redirector.jetbrains.com/intellij-dependencies</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>
@@ -27,7 +35,7 @@
         <dependency>
             <groupId>org.jetbrains.pty4j</groupId>
             <artifactId>pty4j</artifactId>
-            <version>0.12.10</version>
+            <version>0.13.12</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.java.dev.jna</groupId>

@@ -1,11 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.share;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.resource.AbstractResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
@@ -27,7 +28,7 @@ public class ShareResourceHandler extends AbstractResourceProtocolHandler<Resour
     @Autowired
     private ShareService shareService;
     @Autowired
-    private NodeService nodeService;
+    private FileRecordService fileRecordService;
 
     @Override
     public ResourceRequest validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
@@ -54,7 +55,8 @@ public class ShareResourceHandler extends AbstractResourceProtocolHandler<Resour
         Object vid = param.getParams().get("vid");
         ShareInfo share = shareService.getShare(Long.parseLong(param.getTargetId()), vid.toString());
 
-        String basePath = nodeService.getPathByNode(share.getUid(), share.getParentId());
+        String basePath = fileRecordService.getPathByNodeId(share.getUid(), share.getParentId())
+                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
         if (share.getType() == ShareType.FILE) {
             return SecureUtils.getMd5(
                     share.getUid() + ":" + StringUtils.appendPath(basePath, param.getName())

@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.model.DesktopComponent;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.DesktopComponentConfig;
@@ -9,6 +10,8 @@ import com.xiaotao.saltedfishcloud.service.desktop.DesktopComponentService;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/desktop")
@@ -23,7 +26,7 @@ public class DesktopController {
      * 列出所有可配置的组件
      */
     @GetMapping("listAllComponent")
-    public JsonResult listAllComponent() {
+    public JsonResult<List<DesktopComponent>> listAllComponent() {
         return JsonResultImpl.getInstance(desktopComponentService.listAllComponents());
     }
 
@@ -31,7 +34,7 @@ public class DesktopController {
      * 删除一个组件配置
      */
     @PostMapping("deleteConfig")
-    public JsonResult deleteConfig(@RequestParam("id") Long id) {
+    public JsonResult<Object> deleteConfig(@RequestParam("id") Long id) {
         desktopComponentConfigService.remove(id);
         return JsonResult.emptySuccess();
     }
@@ -42,7 +45,7 @@ public class DesktopController {
      */
     @GetMapping("listComponentConfig")
     @AllowAnonymous
-    public JsonResult listComponentConfig(@UID @RequestParam("uid") Long uid) {
+    public JsonResult<List<DesktopComponentConfig>> listComponentConfig(@UID @RequestParam("uid") Long uid) {
         return JsonResultImpl.getInstance(desktopComponentConfigService.listByUid(uid));
     }
 
@@ -51,7 +54,7 @@ public class DesktopController {
      * @param config    配置信息
      */
     @PostMapping("saveComponentConfig")
-    public JsonResult saveComponentConfig(@RequestBody DesktopComponentConfig config) {
+    public JsonResult<Object> saveComponentConfig(@RequestBody DesktopComponentConfig config) {
         desktopComponentConfigService.save(config);
         return JsonResult.emptySuccess();
     }

@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.resource.AbstractWritableResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -15,15 +15,12 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * 主文件系统的资源协议操作器，提供从主文件系统中获取文件及其缩略图。
@@ -79,10 +76,10 @@ public class MainResourceHandler extends AbstractWritableResourceProtocolHandler
     @Override
     public ResourceRequest validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
         long resourceUid = Long.parseLong(resourceRequest.getTargetId());
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (isWrite && user == null) {
             Long createUid = Objects.requireNonNull(TypeUtils.toLong(resourceRequest.getParams().get(ResourceRequest.CREATE_UID)), "缺失权限上下文会话或创建人id");
-            user = Objects.requireNonNull(userService.getUserById(createUid), "无效的创建人id");
+            user = UserPrincipal.from(Objects.requireNonNull(userService.getUserById(createUid), "无效的创建人id"));
         }
         if(!UIDValidator.validate(user, resourceUid, isWrite)) {
             throw new IllegalArgumentException("访问拒绝");

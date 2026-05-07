@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.dto;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -83,4 +84,17 @@ public class ResourceRequest {
      */
     @Builder.Default
     private Boolean isThumbnail = false;
+
+
+    /**
+     * 读取所有请求参数，设置到params中
+     * @param request           http请求对象
+     */
+    public void mergeParams(HttpServletRequest request) {
+        Map<String, Object> paramsMap = new HashMap<>();
+        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
+            paramsMap.put(entry.getKey(), entry.getValue()[0]);
+        }
+        this.setParams(paramsMap);
+    }
 }

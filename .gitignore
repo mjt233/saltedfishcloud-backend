@@ -18,6 +18,7 @@ target/
 *.iws
 *.iml
 *.ipr
+.proxyai/checkpoints/*
 
 ### NetBeans ###
 /nbproject/private/
@@ -40,6 +41,7 @@ sfc-web/src/main/resources/application.yml
 /release
 /release/*
 /ext
+/temp
 
 log/**
 .log

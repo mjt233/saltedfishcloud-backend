@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.helper;
 
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
 public class Md5PasswordEncoder implements PasswordEncoder {
     @Override

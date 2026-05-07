@@ -1,21 +1,31 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
-import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
-import com.xiaotao.saltedfishcloud.dao.mybatis.FileDao;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
+import com.xiaotao.saltedfishcloud.dao.jpa.projection.FileInfoSearchResult;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
-import com.xiaotao.saltedfishcloud.model.po.NodeInfo;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
+import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEventLevel;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
+import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
+import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.redisson.api.RLock;
@@ -23,12 +33,16 @@ import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -40,27 +54,25 @@ import java.util.stream.Collectors;
 import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PRIVATE;
 import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PUBLIC;
 
+/**
+ * 默认的文件系统实现，采用 文件元数据节点记录服务 + 文件内容存储服务 结合的结构
+ */
 @Slf4j
 @Component
 public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, InitializingBean {
+    private final static String LOG_PREFIX = "[默认文件系统]";
 
     @Autowired
     private StoreServiceFactory storeServiceFactory;
 
     @Autowired
-    private FileDao fileDao;
-
-    @Autowired
-    private FileAnalyseDao fileAnalyseDao;
+    private FileInfoRepo fileInfoRepo;
 
     @Autowired
     private FileRecordService fileRecordService;
 
     @Autowired
-    private NodeService nodeService;
-
-    @Autowired
-    private CustomStoreService customStoreService;
+    private UserCustomStoreService userCustomStoreService;
 
     @Autowired
     private FileResourceMd5Resolver md5Resolver;
@@ -80,11 +92,31 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         diskFileSystemManager.setMainFileSystem(this);
     }
 
+    @Override
+    public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        StoreService storeService = storeServiceFactory.getService();
+        FileInfo fileInfo = fileRecordService.getByPath(uid, path).orElse(null);
+        if (fileInfo == null || fileInfo.isFile()) {
+            log.warn("{} 找不到路径{}:{}对应的节点，无法修改文件日期信息", LOG_PREFIX, uid, path);
+            return;
+        }
+        List<FileInfo> fileInfoList = fileRecordService.findByUidAndNodeId(uid, fileInfo.getNode(), names);
+        fileInfoList.forEach(f -> {
+            if (attribute.apply(f)) {
+                fileRecordService.save(f);
+            }
+        });
+        if (!storeService.isUnique()) {
+            storeService.updateTime(uid, path, names, attribute);
+        }
+    }
+
     /**
      * 获取写文件时用到分布式锁key
-     * @param uid   用户id
-     * @param path  文件所在路径
-     * @param name  文件名
+     *
+     * @param uid  用户id
+     * @param path 文件所在路径
+     * @param name 文件名
      */
     private static String getStoreLockKey(long uid, String path, String name) {
         return uid + ":" + StringUtils.appendPath(path, name);
@@ -101,52 +133,43 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     /**
      * 获取写文件时用到分布式锁key
-     * @param uid   用户id
-     * @param dest  文件所在路径
+     *
+     * @param uid  用户id
+     * @param dest 文件所在路径
      */
     public static String getStoreLockKey(long uid, String dest) {
         return uid + ":" + dest;
     }
 
-    @Override
-    public void saveAvatar(long uid, Resource resource) throws IOException {
-        customStoreService.saveAvatar(uid, resource);
-    }
-
 
     @Override
-    public Resource getAvatar(long uid) throws IOException {
-        final Resource avatar = customStoreService.getAvatar(uid);
-        if (avatar == null) {
-            return customStoreService.getDefaultAvatar();
-        } else {
-            return avatar;
-        }
-    }
-
-    @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
         List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
         if (files.isEmpty()) {
             return false;
         }
-        FileInfo existMd5File = files.get(0);
-        String filePath = nodeService.getPathByNode(existMd5File.getUid(), existMd5File.getNode());
+        FileInfo existMd5File = ObjectUtils.clone(files.get(0), FileInfo::new);
+        String filePath = fileRecordService.getPathByNodeId(existMd5File.getUid(), existMd5File.getNode())
+                .orElse(null);
+        if (filePath == null) {
+            return false;
+        }
         Resource resource = getResource(existMd5File.getUid(), filePath, existMd5File.getName());
         if (resource == null) {
             return false;
         }
         try {
             StoreService storeService = storeServiceFactory.getService();
-            if (storeService.isUnique()) {
-                fileRecordService.copy(existMd5File.getUid(), filePath, path, uid, existMd5File.getName(), name, true);
-            } else {
-                fileRecordService.copy(existMd5File.getUid(), filePath, path, uid, existMd5File.getName(), name, true);
-                existMd5File.setName(name);
-                FileInfo newFile = FileInfo.createFrom(existMd5File, false);
-                newFile.setUid(uid);
-                newFile.setStreamSource(resource);
+            FileInfo newFile = FileInfo.createFrom(existMd5File, false);
+            newFile.setId(null);
+            newFile.setUid(uid);
+            newFile.setStreamSource(resource);
+            newFile.setName(name);
+            if (!storeService.isUnique()) {
                 saveFile(newFile, path);
+            } else {
+                fileRecordService.saveRecord(newFile, path);
             }
         } catch (IOException e) {
             log.trace("错误：{}", e.getMessage());
@@ -191,23 +214,37 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException {
-        RLock lock = redisson.getLock(getStoreLockKey(uid, target, targetName));
-        try {
-            lock.lock();
-            fileRecordService.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
-            final StoreService service = storeServiceFactory.getService();
-            if (!service.isUnique()) {
-                service.copy(uid, source, target, targetUid, sourceName, targetName, overwrite);
+    public void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
+        FileTransferItem transferItem = FileTransferItem.builder()
+                .from(param.getSourcePath())
+                .to(param.getTargetPath())
+                .build();
+        if (callback != null) {
+            callback.onAdditionalEvent(UpdateFileRecordStartEvent.of());
+        }
+        fileRecordService.copy(param, callback);
+        if (callback != null) {
+            callback.onAdditionalEvent(UpdateFileRecordCompleteEvent.of(transferItem));
+        }
+        StoreService storeService = storeServiceFactory.getService();
+        if (!storeService.isUnique()) {
+            if (callback != null) {
+                callback.onAdditionalEvent(new CopyProgressEvent() {
+                    {
+                        setMessage("哈希存储模式下，物理存储无需操作，已跳过");
+                        setName("Store Skip");
+                    }
+                    @Override
+                    public CopyProgressEventLevel getLevel() {
+                        return CopyProgressEventLevel.INFO;
+                    }
+                });
             }
-        } finally {
-            lock.unlock();
+            storeService.copy(param, callback);
         }
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
         RLock lock = redisson.getLock(getStoreLockKey(uid, target, name));
         try {
@@ -229,35 +266,35 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     public List<FileInfo>[] getUserFileList(long uid, String path) throws IOException {
-        String nodeId = nodeService.getNodeIdByPath(uid, path);
-        return getUserFileListByNodeId(uid, nodeId);
+        return fileRecordService.getNodeIdByPath(uid, path)
+                .map(nodeId -> getUserFileListByNodeId(uid, nodeId))
+                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
     }
 
     @Override
-    public List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException {
-        String nodeId = nodeService.getNodeIdByPath(uid, path);
-        return fileRecordService.findByUidAndNodeId(uid, nodeId, nameList);
+    public List<FileInfo> getUserFileList(long uid, String path, @Nullable Collection<String> nameList) throws IOException {
+
+        return fileRecordService.getNodeIdByPath(uid, path)
+                .map(nodeId -> fileRecordService.findByUidAndNodeId(uid, nodeId, nameList))
+                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, path));
     }
 
     @Override
     public LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse) {
         LinkedHashMap<String, List<FileInfo>> res = new LinkedHashMap<>();
-        List<NodeInfo> nodes = new LinkedList<>();
+        List<FileInfo> dirs = new LinkedList<>();
 
         // 根目录使用用户id作为id
         String strId = "" + uid;
-        nodes.add(NodeInfo.builder()
-                .uid(uid)
-                .id(strId)
-                .build()
-        );
-        nodes.addAll(nodeService.getChildNodes(uid, strId));
+        dirs.add(FileInfo.getRoot(uid));
+        dirs.addAll(fileRecordService.listChildDirs(uid, strId, -1));
 
         //  获取目录结构
-        if (reverse) Collections.reverse(nodes);
-        for (NodeInfo node : nodes) {
-            String dir = nodeService.getPathByNode(uid, node.getId());
-            res.put(dir, fileRecordService.findByUidAndNodeId(uid, node.getId()));
+        if (reverse) Collections.reverse(dirs);
+        for (FileInfo dirInfo : dirs) {
+            String dir = fileRecordService.getPathByNodeId(uid, dirInfo.getMd5())
+                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "数据移除，节点信息" + dirInfo.getMd5() + "丢失"));
+            res.put(dir, fileRecordService.findByUidAndNodeId(uid, dirInfo.getMd5()));
         }
         return res;
     }
@@ -280,9 +317,19 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     }
 
     @Override
-    public List<FileInfo> search(long uid, String key) {
-        key = "%" + key.replaceAll("%", "\\%").replaceAll("/s+", "%") + "%";
-        return fileDao.search(uid, key);
+    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
+        // todo 重构搜索功能，支持异步任务/遍历式搜索，更丰富的参数控制
+        key = key.replace("%", "").replaceAll("\\s+", "%");
+        Page<FileInfoSearchResult> searchResult = fileInfoRepo.search(uid, key, PageRequest.of(page, 10));
+        CommonPageInfo<FileInfo> pageInfo = new CommonPageInfo<>();
+        pageInfo.setTotalPage(searchResult.getTotalPages());
+        pageInfo.setTotalCount(searchResult.getTotalElements());
+        pageInfo.setContent(searchResult.getContent().stream().map(r -> {
+            FileInfo fileInfo = r.getFileInfo();
+            fileInfo.setParent(r.getParent());
+            return fileInfo;
+        }).toList());
+        return pageInfo;
     }
 
     @Override
@@ -299,6 +346,85 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         }
     }
 
+    /**
+     * 按 uid 和 path 分组批量保存文件，减少重复目录查询与单条入库操作。
+     *
+     * @param fileInfos 待保存文件
+     * @param callback 文件传输回调，可为 null
+     * @throws IOException 文件操作异常
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchSaveFiles(List<FileInfo> fileInfos, @Nullable FileTransferCallback callback) throws IOException {
+        if (fileInfos == null || fileInfos.isEmpty()) {
+            return;
+        }
+        record SaveKey(Long uid, String path) {}
+
+        LinkedHashMap<SaveKey, List<FileInfo>> groupedFiles = new LinkedHashMap<>();
+        for (FileInfo fileInfo : fileInfos) {
+            if (fileInfo == null
+                    || fileInfo.getUid() == null
+                    || fileInfo.getPath() == null
+                    || fileInfo.getName() == null
+                    || fileInfo.getStreamSource() == null) {
+                throw new IllegalArgumentException("batchSaveFiles param invalid: uid/path/name/streamSource must not be null");
+            }
+            groupedFiles.computeIfAbsent(new SaveKey(fileInfo.getUid(), fileInfo.getPath()), e -> new ArrayList<>()).add(fileInfo);
+        }
+
+        StoreService storeService = storeServiceFactory.getService();
+        for (Map.Entry<SaveKey, List<FileInfo>> entry : groupedFiles.entrySet()) {
+            SaveKey key = entry.getKey();
+            List<FileInfo> group = entry.getValue();
+            for (FileInfo fileInfo : group) {
+                if (callback != null && callback.shouldInterrupt()) {
+                    return;
+                }
+                FileTransferItem item = FileTransferItem.builder()
+                        .from(fileInfo.getName())
+                        .to(StringUtils.appendPath(key.path(), fileInfo.getName()))
+                        .total(fileInfo.getSize())
+                        .loaded(0L)
+                        .fileInfo(fileInfo)
+                        .build();
+                if (callback != null) {
+                    callback.onFileStart(item);
+                }
+                LockUtils.execute(getStoreLockKey(key.uid(), key.path(), fileInfo.getName()),
+                        () -> doStoreBySource(storeService, fileInfo, key.path(), item));
+                item.setLoaded(item.getTotal());
+                if (callback != null) {
+                    callback.onFileComplete(item);
+                }
+            }
+            fileRecordService.batchSaveFileInSameDirectory(key.uid(), key.path(), group);
+        }
+    }
+
+    /**
+     * 执行数据写入到存储服务，并将写入中的实时进度更新到传输项。
+     *
+     * @param storeService 存储服务
+     * @param fileInfo     待保存文件信息
+     * @param savePath     目标目录路径
+     * @param item         文件传输项，方法内会持续更新其 loaded 字段
+     * @throws IOException 写入异常
+     */
+    private void doStoreBySource(StoreService storeService, FileInfo fileInfo, String savePath, FileTransferItem item) throws IOException {
+        storeService.storeByStream(fileInfo, savePath, os -> {
+            try (InputStream is = fileInfo.getStreamSource().getInputStream()) {
+                return StreamUtils.copyStreamAndComputeMd5(is, os, fileInfo.getMd5(), (buf, len) -> {
+                    Long currentLoaded = item.getLoaded();
+                    if (currentLoaded == null || currentLoaded < 0) {
+                        currentLoaded = 0L;
+                    }
+                    item.setLoaded(currentLoaded + len);
+                }).applyTo(fileInfo);
+            }
+        });
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long saveFile(FileInfo file, String savePath) throws IOException {
@@ -312,7 +438,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         // 判断目录是否存在，若不存在则尝试创建
         Long uid = file.getUid();
         StoreService storeService = storeServiceFactory.getService();
-        String nid = Optional.ofNullable(nodeService.getNodeIdByPathNoEx(uid, savePath)).orElseGet(() -> {
+        String nid = fileRecordService.getNodeIdByPath(uid, savePath).orElseGet(() -> {
             try {
                 return mkdirs(file.getUid(), savePath);
             } catch (IOException e) {
@@ -347,10 +473,10 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Transactional(rollbackFor = Exception.class)
     public void mkdir(long uid, String path, String name) throws IOException {
         final StoreService storeService = storeServiceFactory.getService();
-        if ( !storeService.isUnique() && !storeService.mkdir(uid, path, name) ) {
+        if (!storeService.isUnique() && !storeService.mkdir(uid, path, name)) {
             throw new IOException("在" + path + "创建文件夹失败");
         }
-        fileRecordService.mkdir(uid, name, path);
+        fileRecordService.mkdirs(uid, StringUtils.appendPath(path, name), false);
     }
 
     @Override
@@ -370,11 +496,19 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
             // 唯一存储下确认文件无引用后再执行通过md5删除
             if (storeService.isUnique()) {
-                for (FileInfo fileInfo : fileInfos) {
-
-                    // todo 使用批量查询和求集合差级操作进行引用判断提高性能
-                    if (fileInfo.getMd5() != null && !md5Resolver.hasRef(fileInfo.getMd5())) {
-                        storeService.delete(fileInfo.getMd5());
+                Map<String, List<FileInfo>> md5FileGroup = fileInfos.stream().filter(FileInfo::isFile)
+                        .collect(Collectors.groupingBy(FileInfo::getMd5));
+                Set<String> inRefMd5Set = CollectionUtils.partition(md5FileGroup.keySet(), 500)
+                        .stream()
+                        .flatMap(md5List -> md5Resolver.checkHasRef(md5List).stream())
+                        .collect(Collectors.toSet());
+                List<String> toDeleteMd5 = md5FileGroup.keySet()
+                        .stream()
+                        .filter(s -> !inRefMd5Set.contains(s))
+                        .toList();
+                if (!toDeleteMd5.isEmpty()) {
+                    for (String md5 : toDeleteMd5) {
+                        storeService.delete(md5);
                     }
                 }
             } else {
@@ -413,9 +547,42 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         helloService.appendFeatureDetail(FeatureName.EXTRACT_ARCHIVE_TYPE, "zip");
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        return obj == this;
+    /**
+     * 文件数量和用户使用量大小的统计会查询数据库，文件数量较多时会严重影响性能，因此使用懒加载，只有在用到的时候再去统计
+     * todo 考虑使用缓存，完善用户配额统计和限制功能
+     */
+    @RequiredArgsConstructor
+    private static class LazyFileSystemStatus extends FileSystemStatus {
+        @JsonIgnore
+        private transient final FileInfoRepo fileInfoRepo;
+
+        private boolean isPrivate() {
+            return AREA_PRIVATE.equals(this.getArea());
+        }
+
+        @Override
+        public Long getFileCount() {
+            if (super.getFileCount() == null) {
+                this.setFileCount(isPrivate() ? fileInfoRepo.getUserFileCount() : fileInfoRepo.getPublicFileCount());
+            }
+            return super.getFileCount();
+        }
+
+        @Override
+        public Long getDirCount() {
+            if (super.getDirCount() == null) {
+                this.setDirCount(isPrivate() ? fileInfoRepo.getUserDirCount() : fileInfoRepo.getPublicDirCount());
+            }
+            return super.getDirCount();
+        }
+
+        @Override
+        public Long getSysUsed() {
+            if (super.getSysUsed() == null) {
+                this.setSysUsed(isPrivate() ? fileInfoRepo.getUserTotalSize() : fileInfoRepo.getPublicTotalSize());
+            }
+            return super.getSysUsed();
+        }
     }
 
     @Override
@@ -432,16 +599,14 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         areaMap.putIfAbsent(AREA_PUBLIC, FileSystemStatus.builder().area(AREA_PUBLIC).build());
 
         FileSystemStatus publicStatus = areaMap.get(AREA_PUBLIC);
-        publicStatus.setFileCount(fileAnalyseDao.getPublicFileCount());
-        publicStatus.setDirCount(fileAnalyseDao.getPublicDirCount());
-        publicStatus.setSysUsed(fileAnalyseDao.getPublicTotalSize());
+        LazyFileSystemStatus lazyPublicStatus = new LazyFileSystemStatus(fileInfoRepo);
+        BeanUtils.copyProperties(publicStatus, lazyPublicStatus);
 
 
         FileSystemStatus privateStatus = areaMap.get(FileSystemStatus.AREA_PRIVATE);
-        privateStatus.setFileCount(fileAnalyseDao.getUserFileCount());
-        privateStatus.setDirCount(fileAnalyseDao.getUserDirCount());
-        privateStatus.setSysUsed(fileAnalyseDao.getUserTotalSize());
+        LazyFileSystemStatus lazyPrivateStatus = new LazyFileSystemStatus(fileInfoRepo);
+        BeanUtils.copyProperties(privateStatus, lazyPrivateStatus);
 
-        return Arrays.asList(publicStatus, privateStatus);
+        return Arrays.asList(lazyPublicStatus, lazyPrivateStatus);
     }
 }

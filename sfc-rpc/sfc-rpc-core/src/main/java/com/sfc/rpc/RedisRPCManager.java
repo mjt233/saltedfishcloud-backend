@@ -309,8 +309,7 @@ public class RedisRPCManager implements RPCManager {
 
     private void initRedisTemplate() {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
-        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
-        serializer.setObjectMapper(MapperHolder.mapper);
+        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(MapperHolder.mapper, Object.class);
 
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(serializer);

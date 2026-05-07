@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
-import com.xiaotao.saltedfishcloud.dao.mybatis.FileAnalyseDao;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
@@ -13,7 +12,7 @@ import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
 import com.xiaotao.saltedfishcloud.model.TimestampRecord;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultModel;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
@@ -43,8 +42,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Service
 public class AdminServiceImpl implements AdminService, InitializingBean {
-    @Resource
-    private FileAnalyseDao fileAnalyseDao;
     @Resource
     private SysProperties sysProperties;
     @Resource
@@ -151,7 +148,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
 
     private <T> ResponseEntity<String> request(String url, HttpMethod method) {
         HttpHeaders headers = new HttpHeaders();
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user != null) {
             headers.put(JwtUtils.AUTHORIZATION, Collections.singletonList(user.getToken()));
         }

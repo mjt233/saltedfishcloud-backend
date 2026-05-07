@@ -5,7 +5,7 @@
     <parent>
         <artifactId>saltedfishcloud</artifactId>
         <groupId>com.xiaotao</groupId>
-        <version>3.0.0</version>
+        <version>3.1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,10 +17,10 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-archive-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.xiaotao</groupId>-->
+<!--            <artifactId>sfc-archive-api</artifactId>-->
+<!--            <version>${project.version}</version>-->
+<!--        </dependency>-->
     </dependencies>
 </project>

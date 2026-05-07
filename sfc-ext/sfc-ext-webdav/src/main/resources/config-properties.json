@@ -1,0 +1,24 @@
+[
+  {
+    "name": "webdav",
+    "title": "服务配置",
+    "typeRef": "com.sfc.ext.webdav.model.property.WebDavProperty"
+  },
+  {
+    "name": "webdav-config-help",
+    "title": "TLS 配置手册",
+    "nodes": [
+      {
+        "nodes": [
+          {
+            "name": "webdav-config-help",
+            "title": "TLS 配置手册",
+            "inputType": "template",
+            "template": "web-dav-config-help",
+            "defaultValue": ""
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -5,7 +5,6 @@ import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import emergency.EmergencyApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -42,7 +41,7 @@ public class EmergencyController {
     }
 
     @GetMapping("/api/admin/sys/restart")
-    public JsonResult restart() {
+    public JsonResult<Object> restart() {
         Thread thread = new Thread(() -> {
             try {
                 Thread.sleep(500);

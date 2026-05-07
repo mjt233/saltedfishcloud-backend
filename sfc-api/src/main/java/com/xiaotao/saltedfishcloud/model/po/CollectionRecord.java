@@ -34,13 +34,25 @@ public class CollectionRecord {
      */
     private Long uid;
 
+    /**
+     * 提交的文件名
+     */
     private String filename;
-    private Long size;
-    private String md5;
-    private String ip;
 
-    @Column(insertable = false, updatable = false)
-    private String username;
+    /**
+     * 文件大小
+     */
+    private Long size;
+
+    /**
+     * 提交的文件md5哈希值
+     */
+    private String md5;
+
+    /**
+     * 提交人ip地址
+     */
+    private String ip;
 
     public CollectionRecord(Long cid, Long uid, String filename, Long size, String md5, String ip) {
         this.cid = cid;

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * 问好服务默认实现类
@@ -64,29 +65,54 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
 
     @Override
     public Object getDetail(String name) {
-        return store.get(name);
+        Object val = store.get(name);
+        if (val instanceof Supplier<?> s) {
+            return s.get();
+        }
+        return val;
+    }
+
+    @Override
+    public void setFeature(String name, Supplier<Object> detail) {
+        store.put(name, detail);
     }
 
     @Override
     public Map<String, Object> getAllFeatureDetail() {
-        return store;
+        Map<String, Object> view = new HashMap<>(store);
+        // 遍历view，当value是Supplier的，则调用get()方法获取值
+        for (Map.Entry<String, Object> entry : view.entrySet()) {
+            if (entry.getValue() instanceof Supplier<?> s) {
+                entry.setValue(s.get());
+            }
+        }
+        return view;
     }
 
     @Override
     public <T, R> void bindConfigAsFeature(SFunc<T, R> configKey, String mapKey) {
-        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(configKey);
-        this.bindConfigAsFeature(meta.getConfigName(), mapKey, meta.getField().getType());
+        this.bindConfigAsFeature(configKey, mapKey, null);
     }
 
     @Override
-    public void bindConfigAsFeature(String configKey, String mapKey, Class<?> type) {
+    public <T, R> void bindConfigAsFeature(SFunc<T, R> configKey, String mapKey, R defaultValue) {
+        PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(configKey);
+        this.bindConfigAsFeature(meta.getConfigName(), mapKey, (Class<R>)meta.getField().getType(), defaultValue);
+    }
+
+    @Override
+    public <T> void bindConfigAsFeature(String configKey, String mapKey, Class<T> type, T defaultValue) {
         Consumer<String> valueHandler = configValue -> {
+            if (configValue == null) {
+                if (defaultValue == null) {
+                    removeFeature(mapKey);
+                } else {
+                    setFeature(mapKey, defaultValue);
+                }
+                return;
+            }
             Object value;
             try {
-                if (configValue == null) {
-                    removeFeature(configKey);
-                    return;
-                }
                 if (Boolean.class.isAssignableFrom(type)) {
                     value = TypeUtils.toBoolean(configValue);
                 } else if (Number.class.isAssignableFrom(type)) {
@@ -111,6 +137,11 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
 
         // 添加监听
         configService.addAfterSetListener(configKey, valueHandler);
+    }
+
+    @Override
+    public void bindConfigAsFeature(String configKey, String mapKey, Class<?> type) {
+        this.bindConfigAsFeature(configKey, mapKey, type, null);
     }
 
     protected void refresh() {

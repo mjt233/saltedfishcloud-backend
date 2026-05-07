@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.dao.redis;
 
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 
@@ -17,6 +18,13 @@ public interface TokenService {
     }
 
     /**
+     * 使一个用户的token失效
+     * @param uid 用户id
+     * @param token 该用户的token
+     */
+    void invalidToken(Long uid, String token);
+
+    /**
      * 创建一个用户token
      *
      * @param uid 用户ID
@@ -31,6 +39,14 @@ public interface TokenService {
      * @return 有效的新token
      */
     String generateUserToken(User user);
+
+    /**
+     * 创建一个用户token
+     *
+     * @param user 用户安全主体
+     * @return 有效的新token
+     */
+    String generateUserToken(UserPrincipal user);
 
     /**
      * 创建一个用户token

@@ -4,18 +4,12 @@ server:
     encoding:
       charset: utf-8
       enabled: true
-      force: true
+      force: false
   tomcat:
     remoteip:
       remote-ip-header: X-Real-IP
-mybatis:
-  configuration:
-    map-underscore-to-camel-case: true
-  mapper-locations: classpath:mapper/*.xml
 
 spring:
-  main:
-    allow-circular-references: true
   jpa:
     database: mysql
     open-in-view: false
@@ -33,6 +27,8 @@ spring:
     url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
     username: root
     password: test
+    hikari:
+      transaction-isolation: TRANSACTION_READ_COMMITTED
   data:
     redis:
       host: 127.0.0.1
@@ -51,8 +47,6 @@ spring:
   web:
     resources:
       add-mappings: false
-  mvc:
-    throw-exception-if-no-handler-found: true
 logging:
   file:
     name: ./log/output.log
@@ -62,7 +56,11 @@ logging:
     com.sfc: info
     com.xiaotao: info
     com.saltedfishcloud: info
-    com.xiaotao.saltedfishcloud.dao.mybatis: warn
 #    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
+
+management:
+  health:
+    mail:
+      enabled: false
 app:
   version: ^project.version^

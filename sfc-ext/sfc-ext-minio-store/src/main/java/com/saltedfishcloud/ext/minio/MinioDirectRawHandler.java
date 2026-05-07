@@ -1,7 +1,9 @@
 package com.saltedfishcloud.ext.minio;
 
 import com.saltedfishcloud.ext.minio.utils.MinioUtils;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
@@ -24,6 +26,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 /**
  * 基于Minio的存储直接操作器
@@ -52,11 +55,9 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
                     .prefix(MinioUtils.toDirectoryName(path))
                     .maxKeys(2)
                     .build());
-            int cnt=0;
-            for (Result<Item> ignored : results) {
-                cnt++;
-            }
-            return cnt == 1;
+            return StreamSupport.stream(results.spliterator(), false)
+                .limit(2)
+                .count() <= 1;
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -257,12 +258,12 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
     @Override
     public boolean rename(String path, String newName) throws IOException {
         String dest = StringUtils.appendPath(PathUtils.getParentPath(path), newName);
-        move(MinioUtils.toMinioObjectName(path), MinioUtils.toMinioObjectName(dest));
+        move(MinioUtils.toMinioObjectName(path), MinioUtils.toMinioObjectName(dest), null);
         return true;
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         log.debug("{}<-执行复制：{} -> {}", LOG_PREFIX, src, dest);
         try {
             Iterable<Result<Item>> lists = client.listObjects(ListObjectsArgs.builder().bucket(properties.getBucket())
@@ -273,8 +274,8 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
             boolean isDir = false;
             for (Result<Item> list : lists) {
                 isDir = true;
-                Item item = list.get();
-                String originName = item.objectName();
+                Item itemObj = list.get();
+                String originName = itemObj.objectName();
                 String newName = StringUtils.appendPath(dest, originName.substring(src.length()));
 
                 log.debug("{}->复制子项：{} -> {}", LOG_PREFIX, originName, newName);
@@ -301,7 +302,7 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
+    public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         log.debug("{}<-文件移动：{} -> {}", LOG_PREFIX, src, dest);
         String actualSrc = src, actualDest = dest;
 
@@ -313,7 +314,7 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
             mkdir(actualDest);
         }
 
-        copy(actualSrc, actualDest);
+        copy(actualSrc, actualDest, item);
         delete(actualSrc);
         return true;
     }
@@ -321,5 +322,10 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
     @Override
     public boolean mkdirs(String path) throws IOException {
         return mkdir(path);
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+
     }
 }

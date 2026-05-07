@@ -1,6 +1,5 @@
 package com.xiaotao.saltedfishcloud.download.controller;
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.ProxyDao;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
@@ -26,7 +25,6 @@ import java.util.List;
 @Validated
 public class DownloadController {
     private final DownloadService downloadService;
-    private final ProxyDao proxyDao;
 
     @GetMapping("proxy")
     public JsonResult<List<ProxyInfo>> getProxy() {
@@ -34,18 +32,18 @@ public class DownloadController {
     }
 
     @DeleteMapping
-    public JsonResult interrupt(@RequestParam String taskId) throws IOException {
+    public JsonResult<Object> interrupt(@RequestParam String taskId) throws IOException {
         downloadService.interrupt(taskId);
         return JsonResult.emptySuccess();
     }
 
     @PostMapping
-    public JsonResult createTask(@RequestBody @Validated DownloadTaskParams info) throws IOException {
+    public JsonResult<String> createTask(@RequestBody @Validated DownloadTaskParams info) throws IOException {
         return JsonResultImpl.getInstance(downloadService.createTask(info, SecureUtils.getSpringSecurityUser().getId()));
     }
 
     @GetMapping
-    public JsonResult getAllTask(
+    public JsonResult<Page<DownloadTaskInfo>> getAllTask(
             @UID @RequestParam @Validated long uid,
             @RequestParam(defaultValue = "1") @Validated @Min(1) int page,
             @RequestParam(defaultValue = "10") @Validated @Min(5) @Max(400) int size,

@@ -92,7 +92,14 @@ public class PropertyUtils {
      * @param fieldName 字段名
      */
     public static String getConfigName(ConfigPropertyEntity entity, ConfigProperty property, String fieldName) {
-        return getConfigName(entity, null, property, fieldName);
+        ConfigPropertiesGroup group = null;
+        for (ConfigPropertiesGroup g : entity.groups()) {
+            if(g.id().equals(property.group())) {
+                group = g;
+                break;
+            }
+        }
+        return getConfigName(entity, group, property, fieldName);
     }
 
     /**

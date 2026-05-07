@@ -2,10 +2,12 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
+import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -37,12 +39,18 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
     private StoreServiceFactory storeServiceFactory;
 
     @Autowired
-    private SysProperties sysProperties;
+    private SysCommonConfig sysCommonConfig;
 
 
     @Autowired
     private DiskFileSystemDispatcher dispatcher;
 
+    @Autowired(required = false)
+    public void setFactories(List<DiskFileSystemFactory> factories) {
+        if (factories != null) {
+            factories.forEach(this::registerFileSystem);
+        }
+    }
 
     @Override
     public List<DiskFileSystemFactory> listAllFileSystem() {
@@ -93,7 +101,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
 
     @Override
     public List<DiskFileSystemFactory> listPublicFileSystem() {
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user != null && user.isAdmin()) {
             return new ArrayList<>(factoryMap.values());
         } else {
@@ -110,7 +118,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
                         .name("fileSystemFeature")
                         .title("文件系统功能")
                         .nodes(Arrays.asList(
-                                new ConfigNode("存储模式", sysProperties.getStore().getMode().toString()),
+                                new ConfigNode("存储模式", sysCommonConfig.getStoreMode()),
                                 new ConfigNode("系统临时目录", PathUtils.getTempDirectory()),
                                 new ConfigNode("临时目录可用空间", tempSize),
                                 new ConfigNode("主存储服务", storeServiceFactory.toString()),

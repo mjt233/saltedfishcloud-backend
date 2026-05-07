@@ -2,22 +2,19 @@ package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.common.RedirectableUrlHttpMessageConverter;
 import com.xiaotao.saltedfishcloud.interceptor.ProtectBlocker;
-import com.xiaotao.saltedfishcloud.servlet.FileUploadServlet;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.net.URL;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -60,8 +57,7 @@ public class SpringConfig implements WebMvcConfigurer {
         String handlerPath = "/**";
         String resourcePath = "classpath:/static/";
 
-        URL defaultIndex = this.getClass().getClassLoader().getResource("webapp/index.html");
-        if (defaultIndex != null) {
+        if (this.isExistFrontEnd()) {
             log.info("已集成前端项目");
             registry.addResourceHandler("/assets/**")
                     .addResourceLocations("classpath:/webapp/assets/")
@@ -77,5 +73,24 @@ public class SpringConfig implements WebMvcConfigurer {
                 .addResourceLocations(resourcePath)
                 .setUseLastModified(true)
                 .setCacheControl(CacheControl.maxAge(24, TimeUnit.HOURS));
+    }
+
+    /**
+     * 检查项目资源中是否集成了前端
+     */
+    private boolean isExistFrontEnd() {
+        return this.getClass().getClassLoader().getResource("webapp/index.html") != null;
+    }
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+
+        // 添加/oauth视图路由，直接指向/oauth/index.html
+        if (isExistFrontEnd()) {
+            registry.addViewController("/oauth")
+                    .setViewName("forward:/oauth/index.html");
+            registry.addViewController("/oauth/")
+                    .setViewName("forward:/oauth/index.html");
+        }
     }
 }

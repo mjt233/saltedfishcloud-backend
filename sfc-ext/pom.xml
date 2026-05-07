@@ -5,13 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.xiaotao</groupId>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
     <artifactId>sfc-ext</artifactId>
     <packaging>pom</packaging>
 
     <properties>
-        <java.version>17</java.version>
-        <api.version>3.0.0</api.version>
+        <java.version>25</java.version>
+        <lombok.version>1.18.42</lombok.version>
+        <api.version>3.1.0</api.version>
         <rpc.version>1.0.0</rpc.version>
         <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
@@ -23,7 +24,7 @@
     <modules>
 <!--        <module>sfc-ext-hadoop-store</module>-->
 <!--        <module>sfc-ext-demo</module>-->
-        <module>sfc-ext-mp3-thumbnail</module>
+        <module>sfc-ext-music</module>
         <module>sfc-ext-minio-store</module>
         <module>sfc-ext-samba-store</module>
         <module>sfc-ext-sftp-store</module>
@@ -38,6 +39,9 @@
         <module>sfc-ext-oss-store</module>
         <module>sfc-ext-only-office</module>
         <module>sfc-ext-apk-parser</module>
+        <module>sfc-ext-webrtc</module>
+        <module>sfc-ext-webdav</module>
+        <module>sfc-ext-webdav-store</module>
     </modules>
 
 
@@ -63,7 +67,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.20</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -95,6 +99,18 @@
             </resource>
         </resources>
         <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <proc>full</proc>
+                    <release>${java.version}</release>
+                    <encoding>UTF-8</encoding>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>

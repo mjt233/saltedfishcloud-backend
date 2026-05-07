@@ -1,0 +1,11 @@
+{
+  "name": "music",
+  "alias": "音乐插件",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-image",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^"
+}

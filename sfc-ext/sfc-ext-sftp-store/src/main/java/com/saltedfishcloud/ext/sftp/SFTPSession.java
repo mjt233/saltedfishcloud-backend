@@ -7,7 +7,6 @@ import net.schmizz.sshj.sftp.SFTPClient;
 import net.schmizz.sshj.sftp.SFTPEngine;
 import org.apache.commons.pool2.ObjectPool;
 
-import java.io.Closeable;
 import java.io.IOException;
 
 /**
@@ -15,7 +14,7 @@ import java.io.IOException;
  */
 @Getter
 @Slf4j
-public class SFTPSession extends SFTPClient implements Closeable {
+public class SFTPSession extends SFTPClient {
     private final static String LOG_PREFIX = "[SFTPSession]";
     private final SSHClient sshClient;
     private final ObjectPool<SFTPSession> pool;

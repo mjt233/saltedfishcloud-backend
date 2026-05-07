@@ -1,0 +1,148 @@
+package com.sfc.archive.engine.rar;
+
+import com.github.junrar.Archive;
+import com.github.junrar.exception.RarException;
+import com.github.junrar.rarfile.FileHeader;
+import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
+import com.sfc.archive.function.IOExceptionBiFunction;
+import com.sfc.archive.model.ArchiveEngineProperty;
+import com.sfc.archive.model.ArchiveResource;
+import com.sfc.archive.utils.EngineResourceUtils;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import org.springframework.core.io.Resource;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Date;
+import java.util.Iterator;
+
+/**
+ * RAR 解压执行器。
+ */
+public class RarArchiveEngineDecompressor extends AbstractArchiveEngineDecompressor {
+    /**
+     * 本地文件引用。
+     */
+    private final EngineResourceUtils.LocalFileResource localFileResource;
+
+    /**
+     * rar 归档对象。
+     */
+    private final Archive archive;
+
+    /**
+     * 创建 RAR 解压器。
+     *
+     * @param resource 待解压资源
+     * @param property 解压属性
+     * @throws IOException 初始化失败
+     */
+    public RarArchiveEngineDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException {
+        this.localFileResource = EngineResourceUtils.toLocalFile(resource, ".rar");
+        String password = property.getEncryptionParam() == null ? null : property.getEncryptionParam().getPassword();
+        try {
+            this.archive = password == null ? new Archive(localFileResource.getFile()) : new Archive(localFileResource.getFile(), password);
+        } catch (RarException e) {
+            localFileResource.cleanup();
+            throw new IOException("RAR 读取失败", e);
+        }
+    }
+
+    @Override
+    public Iterator<ArchiveResource> getArchiveResources() {
+        Iterator<FileHeader> headerIterator = archive.getFileHeaders().iterator();
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return headerIterator.hasNext();
+            }
+
+            @Override
+            public ArchiveResource next() {
+                return toArchiveResource(headerIterator.next());
+            }
+        };
+    }
+
+    /**
+     * 顺序遍历 RAR 条目并逐个回调。
+     *
+     * @param func 解压回调
+     * @throws IOException 解压失败
+     */
+    @Override
+    public void decompressAll(IOExceptionBiFunction<InputStream, ArchiveResource, Boolean> func) throws IOException {
+        requireDecompressFunction(func);
+        for (FileHeader header : archive.getFileHeaders()) {
+            ArchiveResource archiveResource = toArchiveResource(header);
+            if (header.isDirectory()) {
+                if (!continueDecompress(func, null, archiveResource)) {
+                    return;
+                }
+                continue;
+            }
+
+            try (InputStream inputStream = wrapInputStreamWithCallback(
+                    archiveResource.getArchivePath(),
+                    header.getFullUnpackSize(),
+                    archive.getInputStream(header)
+            )) {
+                if (!continueDecompress(func, inputStream, archiveResource)) {
+                    return;
+                }
+            }
+        }
+    }
+
+    @Override
+    public InputStream getInputStream(String archivePath) throws IOException {
+        String normalized = normalizeArchivePath(archivePath);
+        for (FileHeader header : archive.getFileHeaders()) {
+            String fileName = normalizePath(header.getFileName());
+            if (!header.isDirectory() && normalized.equals(fileName)) {
+                String callbackPath = EngineResourceUtils.normalizeArchivePath(fileName);
+                return wrapInputStreamWithCallback(callbackPath, header.getFullUnpackSize(), archive.getInputStream(header));
+            }
+        }
+        throw new JsonException("压缩包内资源不存在: " + archivePath);
+    }
+
+    @Override
+    public void close() throws IOException {
+        archive.close();
+        localFileResource.cleanup();
+    }
+
+
+    /**
+     * 将 RAR 条目转换为归档资源对象。
+     *
+     * @param header RAR 条目
+     * @return 归档资源
+     */
+    private ArchiveResource toArchiveResource(FileHeader header) {
+        String fileName = normalizePath(header.getFileName());
+        return ArchiveResource.builder()
+                .name(PathUtils.getLastNode(fileName))
+                .size(header.isDirectory() ? 0L : header.getFullUnpackSize())
+                .archivePath(EngineResourceUtils.normalizeArchivePath(fileName))
+                .isDirectory(header.isDirectory())
+                .lastModified(header.getMTime() == null ? null : new Date(header.getMTime().getTime()))
+                .build();
+    }
+
+
+    /**
+     * 统一 RAR 条目路径分隔符。
+     *
+     * @param path 原始路径
+     * @return 标准化路径
+     */
+    private String normalizePath(String path) {
+        return path == null ? null : path.replace('\\', '/');
+    }
+
+}
+
+

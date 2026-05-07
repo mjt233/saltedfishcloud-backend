@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 class S3DirectRawHandlerTest {
     private static OSSProperty ossProperty = null;

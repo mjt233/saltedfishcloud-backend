@@ -22,16 +22,6 @@ public interface DiskFileSystemArchiveService {
     void compressAndWriteOut(long uid, String path, Collection<String> names, OutputStream outputStream)
             throws IOException;
 
-    /**
-     * 创建一个压缩文件
-     * @param uid   用户ID
-     * @param path  输入的文件所在的网盘目录
-     * @param names 要被压缩的文件名集合
-     * @param dest  输出文件网盘路径
-     * @param type  压缩类型
-     * @return 任务id
-     */
-    void compress(long uid, String path, Collection<String> names, String dest) throws IOException;
 
     /**
      * 通过异步任务进行压缩文件操作
@@ -40,13 +30,4 @@ public interface DiskFileSystemArchiveService {
      */
     long asyncCompress(DiskFileSystemCompressParam param) throws IOException;
 
-    /**
-     * 解压一个压缩包到指定目录下
-     * @param uid   用户ID
-     * @param path  压缩包所在路径
-     * @param name  压缩包名称
-     * @param dest  解压目的地
-     * @return 任务id
-     */
-    void extractArchive(long uid, String path, String name, String dest) throws IOException;
 }

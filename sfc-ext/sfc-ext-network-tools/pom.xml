@@ -5,23 +5,16 @@
     <parent>
         <artifactId>sfc-ext</artifactId>
         <groupId>com.xiaotao</groupId>
-        <version>3.0.0</version>
+        <version>3.1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sfc-ext-network-tools</artifactId>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
 
     <properties>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>jpcap</groupId>
-            <artifactId>jpcap</artifactId>
-            <version>0.1.18-001</version>
-        </dependency>
-    </dependencies>
 </project>

@@ -2,12 +2,16 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -19,6 +23,7 @@ import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -32,20 +37,18 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
- * 原始存储服务的抽象模板类，同时实现了{@link StoreService}和{@link CustomStoreService}。
+ * 原始存储服务的抽象模板类。
  * 基于设定的路径和直接原始存储操作器提供文件存储能力。
  */
 @Slf4j
-public abstract class AbstractRawStoreService implements StoreService, CustomStoreService {
+public abstract class AbstractRawStoreService implements StoreService {
     private final static String LOG_TITLE = "Raw-Store";
     @Getter
     @Setter
     private int maxDepth = 64;
-
-
-    private final static Resource DEFAULT_AVATAR = new ClassPathResource("/static/defaultAvatar.png");
 
     protected final DirectRawStoreHandler handler;
     protected final CopyAndMoveHandler copyAndMoveHandler;
@@ -93,18 +96,23 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         }
 
         @Override
-        public boolean copyFile(String src, String dest) throws IOException {
-            return handler.copy(src, dest);
+        public boolean copyFile(String src, String dest, @Nullable FileTransferItem item) throws IOException {
+            return handler.copy(src, dest, item);
         }
 
         @Override
-        public boolean moveFile(String src, String dest) throws IOException {
-            return handler.move(src, dest);
+        public boolean moveFile(String src, String dest, @Nullable FileTransferItem item) throws IOException {
+            return handler.move(src, dest, item);
         }
 
         @Override
         protected boolean mkdir(String path) throws IOException {
             return handler.mkdirs(path);
+        }
+
+        @Override
+        protected boolean rmdir(String path) throws IOException {
+            return handler.delete(path);
         }
     }
 
@@ -127,7 +135,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     public final String getUserFileRoot(long uid) {
-        if (uid == User.PUBLIC_USER_ID) {
+        if (uid == UserConstants.PUBLIC_USER_ID) {
             return getPublicRoot();
         } else {
             return StringUtils.appendPath(getStoreRoot(), "user_file", uid + "");
@@ -190,7 +198,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
             streamConsumer.accept(os).applyTo(file);
             os.close();
             isSuccess = true;
-            handler.move(tmpPath, rawPath);
+            handler.move(tmpPath, rawPath, null);
         } finally {
             if (!isSuccess) {
                 handler.delete(tmpPath);
@@ -221,39 +229,6 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
         return files.size();
     }
 
-    @Override
-    public Resource getAvatar(long uid) throws IOException {
-        final String r = getUserProfileRoot(uid);
-        for (FileInfo info : handler.listFiles(r)) {
-            if (info.getName().startsWith("avatar.")) {
-                return handler.getResource(StringUtils.appendPath(r, info.getName()));
-            }
-        }
-        return null;
-    }
-
-
-    @Override
-    public void saveAvatar(long uid, Resource resource) throws IOException {
-        FileValidator.validateAvatar(resource);
-        final String userProfileRoot = getUserProfileRoot(uid);
-        for (FileInfo fileInfo : handler.listFiles(userProfileRoot)) {
-            if (fileInfo.getName().startsWith("avatar.")) {
-                handler.delete(StringUtils.appendPath(userProfileRoot, fileInfo.getName()));
-            }
-        }
-        try(final InputStream is = resource.getInputStream()) {
-            final String path = StringUtils.appendPath(userProfileRoot, "avatar." + FileUtils.getSuffix(resource.getFilename()));
-            handler.store(FileInfo.getFromResource(resource, uid, FileInfo.TYPE_FILE), path, resource.contentLength() ,is);
-        }
-
-    }
-
-    @Override
-    public Resource getDefaultAvatar() throws IOException {
-        return DEFAULT_AVATAR;
-    }
-
     /**
      * 获取指定UID用户的资源路径，将以用户的存储根为节点，往后拼接路径。
      * 安全保证：不会越出用户的存储根节点外
@@ -262,7 +237,7 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
      * @return 资源完整存储路径
      */
     private String getPath(long uid, String...path) {
-        String root = (uid == User.PUBLIC_USER_ID ?
+        String root = (uid == UserConstants.PUBLIC_USER_ID ?
                 getPublicRoot() :
                 StringUtils.appendPath(getUserFileRoot(uid))
         );
@@ -318,11 +293,21 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     }
 
     @Override
-    public void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
-        final String src = StringUtils.appendPath(getUserFileRoot(uid), source, sourceName);
-        final String dst = StringUtils.appendPath(getUserFileRoot(targetId), target, targetName);
-        copyAndMoveHandler.copy(src, dst, overwrite);
-
+    public void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
+        List<String> sourceFileNames = Optional.ofNullable(param.getFiles())
+                .filter(files -> !files.isEmpty())
+                .orElseGet(() -> {
+                    try {
+                        return lists(param.getSourceUid(), param.getSourcePath()).stream().map(FileInfo::getName).toList();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+        for (String sourceFileName : sourceFileNames) {
+            final String src = StringUtils.appendPath(getUserFileRoot(param.getSourceUid()), param.getSourcePath(), sourceFileName);
+            final String dst = StringUtils.appendPath(getUserFileRoot(param.getTargetUid()), param.getTargetPath(), sourceFileName);
+            copyAndMoveHandler.copy(src, dst, param.getIsOverwrite(), callback);
+        }
     }
 
     @Override
@@ -360,5 +345,16 @@ public abstract class AbstractRawStoreService implements StoreService, CustomSto
     @Override
     public List<FileSystemStatus> getStatus() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        String parentPath = StringUtils.appendPath(getUserFileRoot(uid), path);
+        this.handler.updateTime(parentPath, names, attribute);
+    }
+
+    @Override
+    public DirectRawStoreHandler getStorageProvider() {
+        return this.handler;
     }
 }

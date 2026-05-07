@@ -1,5 +1,6 @@
 package com.sfc.ext.oss.store;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
@@ -8,21 +9,28 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.sfc.ext.oss.OSSProperty;
 import com.sfc.ext.oss.util.OSSPathUtils;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
+import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.cglib.proxy.Enhancer;
-import org.springframework.cglib.proxy.MethodInterceptor;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.util.Lazy;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -41,7 +49,12 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
 
     public S3DirectRawHandler(OSSProperty ossProperty) {
         this.property = ossProperty;
+        ClientConfiguration clientConfig = new ClientConfiguration();
+        clientConfig.setMaxConnections(ossProperty.getMaxConnections() != null ? ossProperty.getMaxConnections() : 50);
+        clientConfig.setConnectionTimeout(5000);
+        clientConfig.setRequestTimeout(10000);
         this.s3Client = AmazonS3ClientBuilder.standard()
+                .withClientConfiguration(clientConfig)
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(ossProperty.getAccessKey(), ossProperty.getSecretKey())))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
                         ossProperty.getServiceEndPoint(),
@@ -64,7 +77,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
 
     @Override
     public boolean isEmptyDirectory(String path) throws IOException {
-        return listFiles(path).size() == 0;
+        return listFiles(path).isEmpty();
     }
 
     @Override
@@ -129,7 +142,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
 
     @Override
     public FileInfo getFileInfo(String path) throws IOException {
-        S3Object object;
+        ObjectMetadata objectMetadata;
         String ossPath = OSSPathUtils.toOSSObjectName(path);
         if ("".equals(ossPath)) {
             return FileInfo.builder()
@@ -140,13 +153,13 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
                     .build();
         }
         try {
-            object = s3Client.getObject(property.getBucket(), ossPath);
+            objectMetadata = s3Client.getObjectMetadata(property.getBucket(), ossPath);
         } catch (AmazonS3Exception e) {
             // 文件无法获取到时，可能是目录，在末尾加上/再试一次
             if (e.getStatusCode() == 404) {
                 try {
                     ossPath += "/";
-                    object = s3Client.getObject(property.getBucket(), ossPath);
+                    objectMetadata = s3Client.getObjectMetadata(property.getBucket(), ossPath);
                 } catch (AmazonS3Exception e2) {
                     if (e2.getStatusCode() == 404) {
                         return null;
@@ -159,10 +172,9 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
             }
         }
 
-        ObjectMetadata objectMetadata = object.getObjectMetadata();
         boolean isDir = OSSPathUtils.isDir(ossPath);
+        final String objectKey = ossPath;
         FileInfo fileInfo = new FileInfo();
-        String objectKey = object.getKey();
         fileInfo.setName(StringUtils.getURLLastName(objectKey));
         fileInfo.setSize(isDir ? -1L : objectMetadata.getContentLength());
         fileInfo.setType(isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
@@ -174,14 +186,6 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
             fileInfo.setStreamSource(() -> getObjectUrlSupplier(objectKey).get().openStream());
         }
         return fileInfo;
-    }
-
-    /**
-     * 获取存储对象的下载URL
-     * @param objKey    存储对象Key
-     */
-    private URL getObjectUrl(String objKey) {
-        return getObjectUrlSupplier(objKey).get();
     }
 
     /**
@@ -280,7 +284,7 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(fileInfo.getSize());
         metadata.setLastModified(new Date(fileInfo.getMtime()));
-        PutObjectResult res = s3Client.putObject(property.getBucket(), ossPath, inputStream, metadata);
+        s3Client.putObject(property.getBucket(), ossPath, inputStream, metadata);
         return fileInfo.getSize();
     }
 
@@ -288,51 +292,55 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
     public OutputStream newOutputStream(String path) throws IOException {
         Path tmpPath = PathUtils.getTempPath().resolve("oss_upload_tmp_" + IdUtil.getId());
         log.debug("{}为{}创建outputStream, 本地临时文件: {}", LOG_PREFIX, path, tmpPath);
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(FileOutputStream.class);
-        enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -> {
-            if (method.getName().equals("close")) {
-                log.debug("{}{}outputStream开始关闭", LOG_PREFIX, path);
-                Object invokeRes = method.invoke(obj, args);
-                log.debug("{}{}outputStream关闭完成，开始保存到OSS", LOG_PREFIX, path);
+        return StreamUtils.createCloseActionOutputStream(Files.newOutputStream(tmpPath), () -> {
+            try {
+                log.debug("{}{}outputStream关闭，开始保存到OSS", LOG_PREFIX, path);
                 FileInfo tmpFile = FileInfo.getLocal(tmpPath.toString(), false);
+                tmpFile.setStreamSource(() -> Files.newInputStream(tmpPath));
+                tmpFile.setName(PathUtils.getLastNode(path));
                 try (InputStream is = Files.newInputStream(tmpPath)) {
-                    store(tmpFile, tmpPath.toString(), tmpFile.getSize(), is);
+                    store(tmpFile, path, tmpFile.getSize(), is);
                 }
                 log.debug("{}{}通过outputStream保存OSS完成", LOG_PREFIX, path);
+            } finally {
                 log.debug("{}{}删除本地outputStream临时文件", LOG_PREFIX, tmpPath);
                 Files.deleteIfExists(tmpPath);
-                return invokeRes;
-            } else {
-                return method.invoke(obj, args);
             }
         });
-        return (OutputStream) enhancer.create(new Class[]{File.class}, new Object[]{tmpPath.toFile()});
     }
 
     @Override
     public boolean rename(String path, String newName) throws IOException {
-        move(path, PathUtils.getParentPath(path) + "/" + newName);
+        String parentPath = PathUtils.getParentPath(path);
+        String newPath = (parentPath.equals("/") ? "" : parentPath) + "/" + newName;
+        CopyAndMoveHandler.createByStoreHandler(this, CopyAndMoveProperty.builder().isMoveWithRecursion(true).build())
+                        .copy(path, newPath, true);
+        delete(path);
         return true;
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         FileInfo srcFile = getFileInfo(src);
         if (srcFile == null) {
             return false;
         }
         String ossSrcPath = srcFile.isFile() ? OSSPathUtils.toOSSObjectName(src) : OSSPathUtils.toDirectoryName(src);
         String ossDestPath = srcFile.isFile() ? OSSPathUtils.toOSSObjectName(dest) : OSSPathUtils.toDirectoryName(dest);
-        CopyObjectResult res = s3Client.copyObject(property.getBucket(), ossSrcPath, property.getBucket(), ossDestPath);
+        s3Client.copyObject(property.getBucket(), ossSrcPath, property.getBucket(), ossDestPath);
         return true;
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
-        copy(src, dest);
+    public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
+        copy(src, dest, item);
         delete(src);
         return true;
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+
     }
 
     @Override

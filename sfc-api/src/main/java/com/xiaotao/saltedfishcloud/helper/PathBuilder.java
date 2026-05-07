@@ -5,15 +5,14 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
 
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.*;
 
 /**
  * 用于构建URL
  */
 @Data
 public class PathBuilder {
-    private LinkedList<String> path;
+    private List<String> path;
     private boolean forcePrefix = false;
 
     @Setter(AccessLevel.NONE)
@@ -21,7 +20,7 @@ public class PathBuilder {
 
 
     public PathBuilder() {
-        path = new LinkedList<>();
+        path = new ArrayList<>();
     }
 
     /**
@@ -33,6 +32,10 @@ public class PathBuilder {
         this.path.clear();
         append(path);
         return this;
+    }
+
+    public String getPathLast() {
+        return path.get(path.size() - 1);
     }
 
     /**
@@ -83,19 +86,11 @@ public class PathBuilder {
             first = false;
         }
 
-        if (sb.length() == 0) {
+        if (sb.isEmpty()) {
             return "/";
         } else {
             return sb.toString();
         }
-    }
-
-    /**
-     * 获取路径位置集合
-     * @return 目录路径集合
-     */
-    public LinkedList<String> getPath() {
-        return path;
     }
 
     /**
@@ -113,12 +108,12 @@ public class PathBuilder {
                 case "":
                     continue;
                 case "..":
-                    if (this.path.size() != 0) {
-                        this.path.removeLast();
+                    if (!this.path.isEmpty()) {
+                        this.path.remove(this.path.size() - 1);
                     }
                     break;
                 default:
-                    this.path.addLast(node);
+                    this.path.add(node);
             }
         }
         return this;
@@ -135,19 +130,6 @@ public class PathBuilder {
         PathBuilder pb = new PathBuilder();
         pb.setForcePrefix(prefix);
         return pb.append(path).toString();
-    }
-
-    /**
-     * 对路径进行格式化 去除重复或末尾的的/或\
-     * @param path 输入路径
-     * @return 标准化后的路径
-     */
-    public static String formatPath(String path) {
-        if (OSInfo.isWindows()) {
-            return formatPath(path, false);
-        } else {
-            return formatPath(path, true);
-        }
     }
 
     /**

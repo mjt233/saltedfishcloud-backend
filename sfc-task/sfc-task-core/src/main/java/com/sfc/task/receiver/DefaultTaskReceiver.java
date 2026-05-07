@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -65,11 +66,12 @@ public class DefaultTaskReceiver implements AsyncTaskReceiver {
      * 需要保证并发安全，避免多个接收器获取同一个任务
      */
     protected AsyncTaskRecord fetchAndAcceptOne() {
-        AsyncTaskRecord task = asyncTaskRecordRepo.findOne(JpaLambdaQueryWrapper.get(AsyncTaskRecord.class)
+        AsyncTaskRecord task = asyncTaskRecordRepo.findAll(JpaLambdaQueryWrapper.get(AsyncTaskRecord.class)
                         .eq(AsyncTaskRecord::getStatus, AsyncTaskConstants.Status.WAITING)
                         .orderByAsc(AsyncTaskRecord::getCreateAt)
-                        .build())
-                .orElse(null);
+                        .build(), PageRequest.of(0, 1)
+                )
+                .stream().findAny().orElse(null);
         if (task == null) {
             return null;
         }
@@ -92,8 +94,8 @@ public class DefaultTaskReceiver implements AsyncTaskReceiver {
     @Override
     public List<AsyncTaskRecord> listQueue() {
         return asyncTaskRecordRepo.findAll(JpaLambdaQueryWrapper.get(AsyncTaskRecord.class)
-                        .eq(AsyncTaskRecord::getStatus, AsyncTaskConstants.Status.WAITING)
-                        .orderByAsc(AsyncTaskRecord::getCreateAt)
+                .eq(AsyncTaskRecord::getStatus, AsyncTaskConstants.Status.WAITING)
+                .orderByAsc(AsyncTaskRecord::getCreateAt)
                 .build());
     }
 }

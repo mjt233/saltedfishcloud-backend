@@ -1,46 +1,50 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.BindUserParam;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.xiaotao.saltedfishcloud.model.po.*;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppKeyVo;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformUserService;
+import com.xiaotao.saltedfishcloud.service.third.*;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.util.UriBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Validated
+
 @Controller
 @RequestMapping("/api/oauth")
 @Slf4j
@@ -64,6 +68,21 @@ public class OAuthController {
     @Autowired
     private ThirdPartyPlatformUserService thirdPartyPlatformUserService;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private ThirdPartyAppService thirdPartyAppService;
+
+    @Autowired
+    private ThirdPartyAppKeyService thirdPartyAppKeyService;
+
+    @Autowired
+    private ThirdPartyAppAuthorizationService thirdPartyAppAuthorizationService;
+
+    @Autowired
+    private ThirdPartyAppTokenService thirdPartyAppTokenService;
+
 
     @ApiOperation("使用第三方登录创建新账号")
     @AllowAnonymous
@@ -72,8 +91,8 @@ public class OAuthController {
     public JsonResult<ThirdPartyPlatformCallbackResult> createUser(@RequestParam("actionId") String actionId) {
         UserVO user = thirdPartyPlatformManager.createUser(actionId);
         return JsonResultImpl.getInstance(ThirdPartyPlatformCallbackResult.builder()
-                        .newToken(tokenService.generateUserToken(user))
-                        .user(user)
+                .newToken(tokenService.generateUserToken(user))
+                .user(user)
                 .build());
     }
 
@@ -82,6 +101,13 @@ public class OAuthController {
     @AllowAnonymous
     public ModelAndView callback(@PathVariable("platformType") String platformType, HttpServletRequest request) {
         try {
+            String key = "oauth::cb::" + platformType + "::" + Optional.ofNullable(request.getQueryString()).map(SecureUtils::getMd5).orElse("");
+            Boolean isSuccess = redisTemplate.opsForValue().setIfAbsent(key, true, Duration.ofSeconds(20));
+            if (!Boolean.TRUE.equals(isSuccess)) {
+                return new ModelAndView("thirdPlatformCallback")
+                        .addObject("error", "不能重复访问");
+            }
+
             ThirdPartyPlatformCallbackResult callbackResult = thirdPartyPlatformManager.doCallback(platformType, request);
             return new ModelAndView("thirdPlatformCallback")
                     .addObject("result", MapperHolder.toJson(callbackResult))
@@ -163,7 +189,7 @@ public class OAuthController {
             Objects.requireNonNull(param.getAccount(), "用户名不能为空");
             Objects.requireNonNull(param.getPassword(), "密码不能为空");
             User specifyUser = Optional.ofNullable(userService.getUserByAccount(param.getAccount())).orElseThrow(UserNoExistException::new);
-            if(!passwordEncoder.encode(param.getPassword()).equals(specifyUser.getPassword())) {
+            if (!passwordEncoder.encode(param.getPassword()).equals(specifyUser.getPwd())) {
                 throw new JsonException("用户名或密码错误");
             }
             user = thirdPartyPlatformManager.bindUser(param.getActionId(), specifyUser);
@@ -179,5 +205,110 @@ public class OAuthController {
     @ResponseBody
     public JsonResult<List<ThirdPartyPlatformUser>> listAssocPlatformUser(@RequestParam("uid") @UID Long uid) {
         return JsonResultImpl.getInstance(thirdPartyPlatformUserService.findByUid(uid));
+    }
+
+    @ApiOperation("保存/新增一个第三方OAuth应用")
+    @PostMapping("saveThirdPartyApp")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<ThirdPartyApp> saveThirdPartyApp(@RequestBody @Validated ThirdPartyApp app) {
+        if (app.getId() == null && app.getUid() == null) {
+            app.setUid(SecureUtils.getCurrentUid());
+        }
+        thirdPartyAppService.save(app);
+        return JsonResultImpl.getInstance(app);
+    }
+
+    @ApiOperation("列出系统中的第三方OAuth应用")
+    @GetMapping("listThirdPartyApp")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<CommonPageInfo<ThirdPartyApp>> listThirdPartyApp(PageableRequest pageableRequest) {
+        return JsonResultImpl.getInstance(thirdPartyAppService.listApps(pageableRequest));
+    }
+
+
+    @ApiOperation("删除系统中的第三方OAuth应用")
+    @PostMapping("deleteThirdPartyApp")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<Object> deleteThirdPartyApp(@RequestBody List<Long> idList) {
+        thirdPartyAppService.batchDelete(idList);
+        return JsonResult.emptySuccess();
+    }
+
+    @ApiOperation("新生成一个第三方OAuth应用密钥")
+    @GetMapping("generateNewOauthAppKey")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<ThirdPartyAppKeyVo> generateNewOauthAppKey(@RequestParam Long appId, @RequestParam(required = false) String name) {
+        return JsonResultImpl.getInstance(thirdPartyAppKeyService.generateNewKey(appId, name));
+    }
+
+    @ApiOperation("列出第三方OAuth应用的密钥")
+    @GetMapping("listOAuthAppKey")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<List<ThirdPartyAppKeyVo>> listOAuthAppKey(@RequestParam Long appId) {
+        return JsonResultImpl.getInstance(thirdPartyAppKeyService.listKeyByAppId(appId));
+    }
+
+    @ApiOperation("删除第三方OAuth应用密钥")
+    @PostMapping("deleteOAuthAppKey")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<Object> deleteOAuthAppKey(@RequestBody List<Long> idList) {
+        thirdPartyAppKeyService.batchDelete(idList);
+        return JsonResult.emptySuccess();
+    }
+
+    @ApiOperation("修改第三方OAuth应用密钥信息")
+    @PostMapping("changeOAuthAppKey")
+    @RolesAllowed(SysRole.ADMIN)
+    @ResponseBody
+    public JsonResult<Object> changeOAuthAppKey(@RequestBody ThirdPartyAppKeyVo keyVo) {
+        thirdPartyAppKeyService.changeKeyInfo(keyVo);
+        return JsonResult.emptySuccess();
+    }
+
+    @ApiOperation("获取当前用户在第三方OAuth应用的授权信息")
+    @GetMapping("getUserAuthorization")
+    @ResponseBody
+    public JsonResult<ThirdPartyAppUserAuthorizationVo> getUserAuthorization(@RequestParam("appId") Long appId) {
+        return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.getUserAppAuthorization(appId, SecureUtils.getCurrentUid()));
+    }
+
+    @ApiOperation("当前用户确认授权第三方应用")
+    @GetMapping("authorize")
+    @ResponseBody
+    public JsonResult<Map<String, String>> authorize(@RequestParam("appId") Long appId,
+                                        @RequestParam("scope") String scope) {
+        String authorizeCode = thirdPartyAppTokenService.authorize(appId, SecureUtils.getCurrentUid(), scope);
+        ThirdPartyApp app = thirdPartyAppService.checkAndGetById(appId);
+        String redirectUrl = UriComponentsBuilder.fromHttpUrl(app.getCallbackUrl())
+                .queryParam("code", authorizeCode)
+                .encode(StandardCharsets.UTF_8)
+                .toUriString();
+
+        Map<String, String> data = new HashMap<>();
+        data.put("code", authorizeCode);
+        data.put("redirectUrl", redirectUrl);
+        return JsonResultImpl.getInstance(data);
+    }
+
+    @ApiOperation("撤销第三方OAuth应用授权")
+    @PostMapping("revoke")
+    @ResponseBody
+    public JsonResult<Object> revoke(@UID @RequestParam("uid") Long uid,
+                                     @RequestParam("appId") Long appId) {
+        thirdPartyAppTokenService.revoke(appId, uid);
+        return JsonResult.emptySuccess();
+    }
+
+    @ApiOperation("列出用户所有已关联的第三方OAuth应用授权")
+    @GetMapping("listUserAuthentication")
+    @ResponseBody
+    public JsonResult<List<ThirdPartyAppAuthorization>> listUserAuthentication(@RequestParam("uid") @UID Long uid) {
+        return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.findByUid(uid));
     }
 }

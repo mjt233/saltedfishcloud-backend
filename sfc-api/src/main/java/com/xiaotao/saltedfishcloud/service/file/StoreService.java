@@ -4,7 +4,11 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
+import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
@@ -18,7 +22,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 网盘文件存储服务，负责用户网盘文件物理数据的存取
+ * 网盘文件存储服务，负责用户网盘文件物理数据的存取。通常作为文件系统接口 {@link DiskFileSystem} 的内部实际数据存储实现
  */
 public interface StoreService {
     /**
@@ -106,15 +110,10 @@ public interface StoreService {
 
     /**
      * 在网盘中复制文件，若目录名相同则合并目录
-     * @param uid     用户ID
-     * @param source  所在网盘路径
-     * @param targetId 目的地网盘的用户ID
-     * @param target  目的地网盘路径
-     * @param sourceName    源文件名
-     * @param targetName    目标文件名
-     * @param overwrite 是否覆盖，若非true，则跳过该文件
+     * @param param 复制参数
+     * @param callback 复制执行过程回调
      */
-    default void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws IOException {
+    default void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
         throw new UnsupportedOperationException("不支持copy操作");
     }
 
@@ -191,4 +190,19 @@ public interface StoreService {
     default long delete(long uid, String path, Collection<String> files) throws IOException {
         throw new UnsupportedOperationException("不支持delete操作");
     }
+
+
+    /**
+     * 更新文件的时间信息。注意并非所有文件系统都支持此操作，调用可能不生效。
+     * @param uid   用户id
+     * @param path  文件所在的父目录
+     * @param names 文件名列表
+     * @param attribute 时间信息
+     */
+    void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException;
+
+    /**
+     * 获取该存储服务的存储能力提供者
+     */
+    DirectRawStoreHandler getStorageProvider();
 }

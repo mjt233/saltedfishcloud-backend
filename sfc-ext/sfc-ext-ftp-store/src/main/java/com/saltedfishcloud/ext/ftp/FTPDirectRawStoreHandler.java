@@ -1,6 +1,8 @@
 package com.saltedfishcloud.ext.ftp;
 
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
@@ -14,6 +16,7 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -21,7 +24,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +36,7 @@ import java.util.stream.Collectors;
 public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeable {
     private final static String LOG_PREFIX = "[FTP Client]";
     private final ObjectPool<FTPSession> pool;
+    private final static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     public FTPDirectRawStoreHandler(FTPProperty property) {
         pool = PoolUtils.createObjectPool(new BasePooledObjectFactory<>() {
@@ -176,14 +184,6 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
         }
     }
 
-    private FileInfo createDirFileInfo(String name) {
-        FileInfo fileInfo = new FileInfo();
-        fileInfo.setName(name);
-        fileInfo.setSize(-1L);
-        fileInfo.setType(FileInfo.TYPE_DIR);
-        return fileInfo;
-    }
-
     @Override
     public boolean delete(String path) throws IOException {
         try (FTPSession session = getSession()) {
@@ -222,21 +222,30 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         try (OutputStream os = newOutputStream(dest)) {
             Resource resource = getResource(src);
             if (resource == null) {
                 throw new IOException("文件不存在：" + src);
             }
             try (InputStream is = resource.getInputStream()) {
-                StreamUtils.copy(is, os);
+                if (item != null) {
+                    long total = resource.contentLength();
+                    item.setTotal(total);
+                    item.setLoaded(0L);
+                    com.xiaotao.saltedfishcloud.utils.StreamUtils.copyStream(is, os, (buf, len) -> {
+                        item.setLoaded(item.getLoaded() + len);
+                    });
+                } else {
+                    com.xiaotao.saltedfishcloud.utils.StreamUtils.copyStream(is, os);
+                }
             }
         }
         return true;
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
+    public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         try (FTPSession session = getSession()) {
             return session.rename(src, dest);
         }
@@ -247,5 +256,19 @@ public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeabl
         return getFileInfo(path) != null;
     }
 
-
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        if (attribute.getModifyTime() == null) {
+            return;
+        }
+        String dateStr = attribute.getModifyTime().toInstant().atZone(ZoneId.systemDefault()).format(TIME_FORMATTER);
+        try (FTPSession session = getSession()) {
+            if(!session.hasFeature("MFMT")) {
+                return;
+            }
+            for (String name : names) {
+                session.setModificationTime(StringUtils.appendPath(path, name), dateStr);
+            }
+        }
+    }
 }

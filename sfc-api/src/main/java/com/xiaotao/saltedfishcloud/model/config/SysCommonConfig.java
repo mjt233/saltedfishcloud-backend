@@ -48,6 +48,14 @@ public class SysCommonConfig {
     private Boolean enableRegCode;
 
     @ConfigProperty(
+            title = "新用户默认配额（GiB）",
+            defaultValue = "10",
+            describe = "新注册的用户默认分配的存储空间额度（注意：空间额度限制功能未开发）",
+            group = "register"
+    )
+    private Long defaultQuota;
+
+    @ConfigProperty(
             value = "mode",
             title = "存储模式",
             defaultValue = "UNIQUE",
@@ -85,7 +93,7 @@ public class SysCommonConfig {
 
     @ConfigProperty(
             title = "网盘文件上传接口",
-            defaultValue = "false",
+            defaultValue = "true",
             describe = "启用新的通用资源上传接口/api/file/upload（文件流实时写入到存储，更高的IO效率，更适合大文件上传）",
             group = "common",
             inputType = "switch"
@@ -94,11 +102,13 @@ public class SysCommonConfig {
 
     @ConfigProperty(
             title = "缩略图源文件最大大小",
-            defaultValue = "128",
-            describe = "尝试提取一个文件的缩略图时，文件大小超过该值时会忽略提取缩略图。该项单位为：MiB",
-            group = "thumbnail"
+            defaultValue = "[]",
+            describe = "尝试提取一个文件的缩略图时，文件大小超过该值时会忽略提取缩略图。该项单位为：MiB。如果未配置则视为默认值32 MiB",
+            group = "thumbnail",
+            inputType = "template",
+            template = "sysThumbnailResourceSizeConfig"
     )
-    private Double maxThumbnailResourceSize;
+    private String maxThumbnailResourceSizeConfig;
 
     @ConfigProperty(
             title = "停用缩略图缓存",
@@ -111,7 +121,7 @@ public class SysCommonConfig {
 
     @ConfigProperty(
             title = "发信服务器配置",
-            defaultValue = "1.0.0.0-SNAPSHOT",
+            defaultValue = "{}",
             describe = "系统发送邮件时连接的发信服务器配置",
             inputType = "form",
             group = "common",

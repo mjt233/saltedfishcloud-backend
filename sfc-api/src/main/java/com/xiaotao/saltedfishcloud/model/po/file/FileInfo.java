@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.PathResource;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -39,7 +41,7 @@ public class FileInfo extends AuditModel {
     public final static int TYPE_FILE = 2;
 
     /**
-     * 文件所在目录节点
+     * 文件所在目录节点，即父节点的 {@link FileInfo#getNode()}
      */
     @Column(length = 32)
     private String node;
@@ -63,6 +65,7 @@ public class FileInfo extends AuditModel {
     /**
      * 文件md5，若记录为目录则表示目录的节点id
      */
+    @Column(length = 32)
     private String md5;
 
 
@@ -91,11 +94,10 @@ public class FileInfo extends AuditModel {
     private Boolean isMount;
 
     /**
-     * 上级目录节点的名称
+     * 上级目录节点的名称(前端用)
      */
     @Transient
     private String parent;
-
 
     @JsonIgnore
     @Transient
@@ -122,7 +124,7 @@ public class FileInfo extends AuditModel {
      * @return 后缀名
      */
     public String getSuffix() {
-        return FileUtils.getSuffix(name);
+        return Optional.ofNullable(name).map(FileUtils::getSuffix).orElse(null);
     }
 
     /**
@@ -143,6 +145,20 @@ public class FileInfo extends AuditModel {
         fileInfo.setType(type);
         fileInfo.setStreamSource(resource);
         return fileInfo;
+    }
+
+    /**
+     * 获取用户表示根目录的虚拟文件信息
+     */
+    public static FileInfo getRoot(Long uid) {
+        FileInfo root = new FileInfo()
+                .setSize(-1L)
+                .setMd5(uid + "")
+                .setType(TYPE_DIR)
+                .setIsMount(false);
+        root.setUid(uid);
+        root.setId(uid);
+        return root;
     }
 
     /**

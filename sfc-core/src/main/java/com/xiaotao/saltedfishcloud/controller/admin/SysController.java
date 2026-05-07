@@ -1,23 +1,24 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
-import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
 import com.xiaotao.saltedfishcloud.model.TimestampRecord;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.manager.AdminService;
-import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import io.swagger.annotations.ApiOperation;
+import jakarta.annotation.Resource;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.annotation.Resource;
-import jakarta.annotation.security.RolesAllowed;
 import java.util.Collection;
+import java.util.List;
 
 @RestController
 @RequestMapping(SysController.prefix)
@@ -26,9 +27,9 @@ import java.util.Collection;
 public class SysController {
     public static final String prefix = "/api/admin/sys/";
     @Resource
-    private SysProperties sysProperties;
-    @Resource
     private AdminService adminService;
+    @Resource
+    private ThumbnailService thumbnailService;
 
     @GetMapping("restart")
     @ApiOperation("重启咸鱼云系统")
@@ -57,4 +58,9 @@ public class SysController {
         return JsonResultImpl.getInstance(adminService.listSystemInfo(nodeId));
     }
 
+    @ApiOperation("获取系统支持的缩略图生成器名称")
+    @GetMapping("getThumbnailHandlerNames")
+    public JsonResult<List<String>> getThumbnailHandlerNames() {
+        return JsonResultImpl.getInstance(thumbnailService.getRegisteredHandler().stream().map(ThumbnailHandler::getName).distinct().toList());
+    }
 }

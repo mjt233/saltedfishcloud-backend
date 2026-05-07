@@ -1,11 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
  * @param <T>   参数实体类型
  * @param <D>   文件系统类型
  */
+@Slf4j
 public abstract class AbstractRawDiskFileSystemFactory<T, D extends DiskFileSystem> implements DiskFileSystemFactory {
     private final Map<T, D> CACHE = new ConcurrentHashMap<>();
 
@@ -47,14 +50,32 @@ public abstract class AbstractRawDiskFileSystemFactory<T, D extends DiskFileSyst
             try {
                 if (!paramSet.contains(entry.getKey())) {
                     D diskFileSystem = entry.getValue();
-                    if (diskFileSystem instanceof Closeable) {
-                        ((Closeable) diskFileSystem).close();
+                    if (diskFileSystem instanceof Closeable closeable) {
+                        closeable.close();
                     }
                     CACHE.remove(entry.getKey());
                 }
             } catch (IOException err) {
-                err.printStackTrace();
+                log.error("清理文件系统缓存失败", err);
             }
+        }
+    }
+
+    @Override
+    public void clearCache(Map<String, Object> params) {
+        T property = this.parseProperty(params);
+        D diskFileSystem = CACHE.get(property);
+        if (diskFileSystem == null) {
+            log.warn("文件系统缓存不存在: {}", params);
+            return;
+        }
+        try {
+            if (diskFileSystem instanceof Closeable closeable) {
+                closeable.close();
+            }
+            CACHE.remove(property);
+        } catch (IOException e) {
+            log.error("清理文件系统缓存失败", e);
         }
     }
 

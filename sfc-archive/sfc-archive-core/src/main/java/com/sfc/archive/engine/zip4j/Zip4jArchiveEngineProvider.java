@@ -1,0 +1,71 @@
+package com.sfc.archive.engine.zip4j;
+
+import com.sfc.archive.ArchiveEngineCompressor;
+import com.sfc.archive.ArchiveEngineDecompressor;
+import com.sfc.archive.engine.AbstractArchiveEngineProvider;
+import com.sfc.archive.model.ArchiveEngineProperty;
+import com.sfc.archive.model.EncryptionCapability;
+import org.springframework.core.io.Resource;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
+/**
+ * 基于 zip4j 的 ZIP 引擎，支持加密压缩与解压。
+ */
+public class Zip4jArchiveEngineProvider extends AbstractArchiveEngineProvider {
+    @Override
+    public String getId() {
+        return "zip4j";
+    }
+
+    @Override
+    public String getName() {
+        return "Zip4j";
+    }
+
+    /**
+     * 获取 Zip4j 对 .zip 的加密能力声明。
+     *
+     * @return 支持的加密能力集合
+     */
+    @Override
+    public Collection<EncryptionCapability> getSupportedEncryptionCapabilities() {
+        return Arrays.asList(
+                EncryptionCapability.builder()
+                        .extension(".zip")
+                        .operation(EncryptionCapability.EncryptionOperation.COMPRESS)
+                        .build(),
+                EncryptionCapability.builder()
+                        .extension(".zip")
+                        .operation(EncryptionCapability.EncryptionOperation.DECOMPRESS)
+                        .build()
+        );
+    }
+
+    @Override
+    public Collection<String> getSupportedCompressExtensions() {
+        return Collections.singleton(".zip");
+    }
+
+    @Override
+    public Collection<String> getSupportedDecompressExtensions() {
+        return Collections.singleton(".zip");
+    }
+
+    @Override
+    public ArchiveEngineCompressor createCompressor(OutputStream outputStream, ArchiveEngineProperty property) throws IOException {
+        return new Zip4jArchiveEngineCompressor(outputStream, normalizeProperty(property));
+    }
+
+    @Override
+    public ArchiveEngineDecompressor createDecompressor(Resource resource, ArchiveEngineProperty property) throws IOException {
+        return new Zip4jArchiveEngineDecompressor(resource, normalizeProperty(property));
+    }
+}
+
+
+

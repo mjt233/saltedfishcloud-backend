@@ -10,11 +10,11 @@ import jakarta.validation.constraints.NotEmpty;
 @Data
 public class FileItemTransferParam {
 
-    @ApiModelProperty("源位置")
+    @ApiModelProperty("源文件/文件夹完整位置路径")
     @NotEmpty
     private String source;
 
-    @ApiModelProperty("目标位置")
+    @ApiModelProperty("目标文件/文件夹完整位置路径")
     @NotEmpty
     private String target;
 }

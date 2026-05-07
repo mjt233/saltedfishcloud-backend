@@ -4,10 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.dao.EncodeConvertTaskRepo;
-import com.saltedfishcloud.ext.ve.model.EncodeConvertRule;
-import com.saltedfishcloud.ext.ve.model.EncodeConvertTaskParam;
-import com.saltedfishcloud.ext.ve.model.VEProperty;
-import com.saltedfishcloud.ext.ve.model.VideoInfo;
+import com.saltedfishcloud.ext.ve.model.*;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTaskLog;
 import com.saltedfishcloud.ext.ve.utils.VideoResourceUtils;
@@ -153,24 +150,6 @@ public class VideoService {
     }
 
     /**
-     * 提取资源拓展方法，支持通过sourceProtocol和sourceId获取资源的依赖资源
-     */
-    public Resource getResource(ResourceRequest param) throws IOException {
-        ResourceRequest realResourceRequest = getSourceResourceRequest(param);
-
-        // 若指定了文件来源协议，则从来源协议处理器中获取资源（如：从文件分享中获取，或是其他拓展的协议）
-        if (realResourceRequest != param) {
-            try {
-                return resourceService.getResource(realResourceRequest);
-            } catch (UnsupportedProtocolException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            return diskFileSystemManager.getMainFileSystem().getResource(Long.parseLong(param.getTargetId()), param.getPath(), param.getName());
-        }
-    }
-
-    /**
      * 获取字幕信息列表
      * @param resource  视频文件资源
      */
@@ -197,6 +176,28 @@ public class VideoService {
     }
 
     /**
+     * 单独提取视频文件中的某个流
+     * @param resource  视频源
+     * @param output 输出路径
+     * @param streamIndex 流索引
+     * @param format    提取格式
+     * @param encoder   流的编码
+     * @param encoderType 流的类型，见{@link EncoderType}
+     */
+    public ProcessWrap extractStream(Resource resource, String output, String streamIndex, String format, String encoder, String encoderType) throws IOException {
+        String localPath = VideoResourceUtils.toLocalPath(resource);
+        return ffMpegHelper.executeConvert(localPath, output, EncodeConvertParam.builder()
+                .format(format)
+                .rules(List.of(EncodeConvertRule.builder()
+                        .method("convert")
+                        .encoder(encoder)
+                        .index(streamIndex)
+                        .type(encoderType)
+                        .build()))
+                .build());
+    }
+
+    /**
      * 创建视频编码转换任务
      * @param param  任务参数
      * @return      任务ID
@@ -204,7 +205,7 @@ public class VideoService {
     public String createEncodeConvertTask(EncodeConvertTaskParam param) throws IOException {
         Long uid = SecureUtils.getSpringSecurityUser().getId();
         EncodeConvertTask taskPo = createTaskPo(param);
-        boolean isHandleVideo = param.getRules().stream().anyMatch(e -> ConvertTaskType.VIDEO.equals(e.getType()) && EncodeMethod.CONVERT.equals(e.getMethod()));
+        boolean isHandleVideo = param.getEncodeConvertParam().getRules().stream().anyMatch(e -> ConvertTaskType.VIDEO.equals(e.getType()) && EncodeMethod.CONVERT.equals(e.getMethod()));
         AsyncTaskRecord record = AsyncTaskRecord.builder()
                 .name("视频编码转换")
                 .taskType(VEConstants.TASK_TYPE)
@@ -236,11 +237,11 @@ public class VideoService {
                 .build();
     }
 
-    private EncodeConvertTask createTaskPo(EncodeConvertTaskParam param) throws JsonProcessingException {
+    private EncodeConvertTask createTaskPo(EncodeConvertTaskParam taskParam) throws JsonProcessingException {
         EncodeConvertTask task = new EncodeConvertTask();
-        task.setParams(MapperHolder.toJson(param));
+        task.setParams(MapperHolder.toJson(taskParam));
 
-        Map<String, List<EncodeConvertRule>> typeMap = param.getRules().stream().collect(Collectors.groupingBy(EncodeConvertRule::getType));
+        Map<String, List<EncodeConvertRule>> typeMap = taskParam.getEncodeConvertParam().getRules().stream().collect(Collectors.groupingBy(EncodeConvertRule::getType));
         boolean videoConvert = typeMap.getOrDefault(EncoderType.VIDEO, Collections.emptyList()).stream().anyMatch(e -> EncodeMethod.CONVERT.equals(e.getMethod()));
         boolean audioConvert = typeMap.getOrDefault(EncoderType.AUDIO, Collections.emptyList()).stream().anyMatch(e -> EncodeMethod.CONVERT.equals(e.getMethod()));
         if (videoConvert) {

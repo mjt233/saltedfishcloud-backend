@@ -63,7 +63,7 @@ public abstract class AbstractArchiveExtractor implements ArchiveExtractor {
      * @return          转换或保存后的本地文件系统File文件对象
      */
     protected File resourceToFile(Resource resource) throws IOException {
-        if (resource instanceof PathResource) {
+        if (resource.isFile() || resource instanceof PathResource) {
             return resource.getFile();
         } else {
             return this.fetchResource(resource);

@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.springframework.core.io.Resource;
@@ -83,18 +85,29 @@ public class DefaultTempStoreService implements TempStoreService {
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, FileTransferItem item) throws IOException {
         return handler.copy(
                 StringUtils.appendPath(tempRootDir, src),
-                StringUtils.appendPath(tempRootDir, dest)
+                StringUtils.appendPath(tempRootDir, dest),
+                item
         );
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
+    public boolean move(String src, String dest, FileTransferItem item) throws IOException {
         return handler.move(
                 StringUtils.appendPath(tempRootDir, src),
-                StringUtils.appendPath(tempRootDir, dest)
+                StringUtils.appendPath(tempRootDir, dest),
+                item
+        );
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        handler.updateTime(
+                StringUtils.appendPath(tempRootDir, path),
+                names,
+                attribute
         );
     }
 }

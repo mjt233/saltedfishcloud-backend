@@ -5,17 +5,18 @@ import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.download.DownloadService;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskInfo;
 import com.xiaotao.saltedfishcloud.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.download.repo.DownloadTaskRepo;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 离线下载服务实现类
@@ -58,7 +60,7 @@ public class DownloadServiceImpl implements DownloadService {
 
     @Override
     public void interrupt(String id) throws IOException {
-        final DownloadTaskInfo info = downloadDao.getOne(id);
+        final DownloadTaskInfo info = downloadDao.getReferenceById(id);
         AsyncTaskRecord asyncTaskRecord = info.getAsyncTaskRecord();
         if (asyncTaskRecord == null) {
             throw new IllegalArgumentException("没有关联异步任务id");
@@ -85,10 +87,12 @@ public class DownloadServiceImpl implements DownloadService {
             AsyncTaskRecord asyncTaskRecord = e.getAsyncTaskRecord();
             if (asyncTaskRecord != null && AsyncTaskConstants.Status.RUNNING.equals(asyncTaskRecord.getStatus())) {
                 try {
-                    ProgressRecord progress = asyncTaskManager.getProgress(asyncTaskRecord.getId());
-                    e.setLoaded(progress.getLoaded());
-                    e.setSize(progress.getTotal());
-                    e.setSpeed(progress.getSpeed());
+                    Optional.ofNullable(asyncTaskManager.getProgress(asyncTaskRecord.getId()))
+                    .ifPresent(progress -> {
+                        e.setLoaded(progress.getLoaded());
+                        e.setSize(progress.getTotal());
+                        e.setSpeed(progress.getSpeed());
+                    });
                 } catch (IOException ex) {
                     log.error("{}获取离线下载任务进度失败", LOG_TITLE, ex);
                 }
@@ -107,29 +111,36 @@ public class DownloadServiceImpl implements DownloadService {
                 .taskType(AsyncTaskType.OFFLINE_DOWNLOAD)
                 .cpuOverhead(20)
                 .build();
-        asyncTaskRecord.setId(IdUtil.getId());
         asyncTaskRecord.setUid(creator);
 
+        // 先保存 DownloadTask 表
         downloadTask.setUrl(params.url);
         downloadTask.setProxy(params.proxy);
         downloadTask.setUid(params.uid);
         downloadTask.setCreatedBy(creator);
         downloadTask.setSavePath(params.savePath);
-        downloadTask.setAsyncTaskRecord(asyncTaskRecord);
         downloadDao.save(downloadTask);
 
+        // 拿到 DownloadTask 的id后，再提交 AsyncTaskRecord
         params.downloadId = downloadTask.getId();
         asyncTaskRecord.setParams(MapperHolder.toJson(params));
         asyncTaskManager.submitAsyncTask(asyncTaskRecord);
+
+        // 在 DownloadTask 中反向记录 AsyncTaskRecord的id
+        downloadTask.setTaskId(asyncTaskRecord.getId());
+        downloadDao.save(downloadTask);
         return params.downloadId;
     }
 
     @Override
     public List<ProxyInfo> listAvailableProxy() {
-        List<ProxyInfo> res = new ArrayList<>(proxyInfoService.findByUid(User.PUBLIC_USER_ID));
+        List<ProxyInfo> res = new ArrayList<>(proxyInfoService.findByUid(UserConstants.PUBLIC_USER_ID));
         Long currentUid = SecureUtils.getCurrentUid();
         if (currentUid != null) {
             res.addAll(proxyInfoService.findByUid(currentUid));
+        }
+        if (!UIDValidator.validate(UserConstants.PUBLIC_USER_ID, true)) {
+            return res.stream().filter(proxy -> proxy.getUid().equals(UserConstants.PUBLIC_USER_ID) && !Boolean.TRUE.equals(proxy.getIsProtect())).toList();
         }
         return res;
     }

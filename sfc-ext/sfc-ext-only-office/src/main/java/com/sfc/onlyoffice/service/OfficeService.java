@@ -99,11 +99,11 @@ public class OfficeService {
                 (requestOriginUrl.getProtocol() + "://" + requestOriginUrl.getHost() + ":" + requestOriginUrl.getPort());
 
         // 构造头像URL和用户信息
-        com.xiaotao.saltedfishcloud.model.po.User curUser = SecureUtils.getSpringSecurityUser();
+        com.xiaotao.saltedfishcloud.model.po.UserPrincipal curUser = SecureUtils.getSpringSecurityUser();
         if (curUser != null) {
             String avatarUrl = Optional
                     .of(curUser)
-                    .map(u -> urlPrefix + "/api/user/avatar/" + u.getUser() + "?uid=" + u.getId())
+                    .map(u -> urlPrefix + "/api/user/avatar/" + u.getUsername() + "?uid=" + u.getId())
                     .orElse("");
             config.getEditorConfig().setUser(new User(curUser.getId().toString(), curUser.getUsername(), curUser.isAdmin() ? "admin" : "user", avatarUrl));
         }

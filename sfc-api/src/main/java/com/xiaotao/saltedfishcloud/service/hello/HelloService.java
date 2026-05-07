@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.hello;
 import com.xiaotao.saltedfishcloud.utils.SFunc;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * 问好服务，让客户端了解服务器的基本概况以调整自身的相关参数和功能特性
@@ -16,11 +17,16 @@ public interface HelloService {
     void appendFeatureDetail(String name, Object detail);
 
     /**
-     * 设置一个特性详情。若已存在特性，详情信息对象将会被完全覆盖
+     * 设置一个静态特性详情。若已存在特性，详情信息对象将会被完全覆盖
      * @param name      特性名称
      * @param detail    特性详情描述对象
      */
     void setFeature(String name, Object detail);
+
+    /**
+     * 设置一个动态特性详情。若已存在特性，详情信息对象将会被完全覆盖。
+     */
+    void setFeature(String name, Supplier<Object> detail);
 
     /**
      * 获取指定特性的详情引用对象。
@@ -40,10 +46,27 @@ public interface HelloService {
 
     /**
      * 将一个配置项的值绑定到feature中。feature中的值将保持和配置项的值同步。
+     * 当配置项的值为null时，将使用默认值。
+     * @param configKey     配置项key
+     * @param mapKey        绑定映射的特性key
+     * @param type          数据类型
+     * @param defaultValue  默认值
+     */
+    <T> void bindConfigAsFeature(String configKey, String mapKey, Class<T> type, T defaultValue);
+
+    /**
+     * 将一个配置项的值绑定到feature中。feature中的值将保持和配置项的值同步。
      * @param configKey     配置项key
      * @param mapKey        绑定映射的特性key
      */
     <T,R> void bindConfigAsFeature(SFunc<T,R> configKey, String mapKey);
+
+    /**
+     * 将一个配置项的值绑定到feature中。feature中的值将保持和配置项的值同步。
+     * @param configKey     配置项key
+     * @param mapKey        绑定映射的特性key
+     */
+    <T,R> void bindConfigAsFeature(SFunc<T,R> configKey, String mapKey, R defaultValue);
 
     /**
      * 获取所有特性详情

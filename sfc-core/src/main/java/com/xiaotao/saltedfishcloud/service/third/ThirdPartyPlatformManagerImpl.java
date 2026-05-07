@@ -3,12 +3,18 @@ package com.xiaotao.saltedfishcloud.service.third;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyPlatformUserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
@@ -17,20 +23,31 @@ import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamSource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.util.Lazy;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.client.ResponseExtractor;
+import org.springframework.web.client.RestTemplate;
 
-import jakarta.servlet.http.HttpServletRequest;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Component
@@ -57,9 +74,26 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
     private LogRecordManager logRecordManager;
 
     @Autowired
+    private StoreServiceFactory storeServiceFactory;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private DiskFileSystemManager diskFileSystemManager;
+
+    @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
     private final Map<String, ThirdPartyPlatformHandler> handlerMap = new ConcurrentHashMap<>();
+
+    @Autowired(required = false)
+    public void setThirdPartyPlatformHandler(List<ThirdPartyPlatformHandler> handlers) {
+        if (handlers == null || handlers.isEmpty()) {
+            return;
+        }
+        handlers.forEach(this::registerPlatformHandler);
+    }
 
     @Override
     public void registerPlatformHandler(ThirdPartyPlatformHandler handler) {
@@ -67,7 +101,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
             throw new IllegalArgumentException("类型为" + handler.getType() + "的第三方平台已注册");
         }
         handlerMap.put(handler.getType(), handler);
-
+        log.info("{}注册第三方平台账号登录: {}", LOG_PREFIX, handler.getType());
     }
 
     @Override
@@ -105,7 +139,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         ThirdPartyPlatformUser platformUser;
         try {
             platformUser = handler.callback(platform, param);
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("{}平台{}回调出错", LOG_PREFIX, platformType, e);
             throw new RuntimeException("系统内部错误，请联系管理员检查系统日志");
         }
@@ -113,6 +147,10 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         if (platformUser == null) {
             throw new IllegalArgumentException("认证失败，无法获取平台用户信息");
         }
+
+        // 缓存第三方平台头像
+        cacheAvatar(platformUser);
+
         ThirdPartyPlatformCallbackResult result;
 
         // 判断是否已关联了系统账号
@@ -130,13 +168,14 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                         "该账号已绑定用户" + existPlatformUser.getUid() + "，但用户不存在，请联系管理员"
                 );
                 platformUser.setUid(assocUser.getId());
-                String token = tokenService.generateUserToken(assocUser);
-                assocUser.setToken(token);
+                String token = tokenService.generateUserToken(UserPrincipal.from(assocUser));
+                UserVO userVO = UserVO.from(assocUser);
+                userVO.setToken(token);
                 result = ThirdPartyPlatformCallbackResult.builder()
                         .isNewUser(false)
                         .newToken(token)
                         .platformUser(platformUser)
-                        .user(UserVO.from(assocUser))
+                        .user(userVO)
                         .actionId(actionId)
                         .build();
                 logRecordManager.saveRecordAsync(LogRecord.builder()
@@ -162,9 +201,9 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         } else {
             platformUser.setIsActive(false);
             // 判断当前是否已有用户登录，如果有则记录当前登录用户（仅设置对象信息，确认关联操作需要前端另外调用 bindUser以供用户确认）
-            User curUser = SecureUtils.getSpringSecurityUser();
+            UserPrincipal curUser = SecureUtils.getSpringSecurityUser();
             if (curUser != null) {
-                assocUser = curUser;
+                assocUser = userService.getUserById(curUser.getId());
                 platformUser.setUid(assocUser.getId());
             } else if (StringUtils.hasText(platformUser.getEmail())) {
                 // 如果系统存在相同邮箱，默认匹配让用户确认
@@ -208,6 +247,40 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
             return platformUser.getUserName();
         } else {
             return platformUser.getPlatformType() + "_" + Optional.ofNullable(platformUser.getThirdPartyUserId()).orElseGet(() -> String.valueOf(IdUtil.getId()));
+        }
+    }
+
+    /**
+     * 缓存用户头像，将头像数据缓存到网盘的存储系统并转为base64
+     */
+    private void cacheAvatar(ThirdPartyPlatformUser user) {
+        if(!StringUtils.hasText(user.getAvatarUrl()) || user.getAvatarUrl().startsWith("data:")) {
+            return;
+        }
+
+        try {
+            TempStoreService storeService = storeServiceFactory.getTempStoreService();
+            String cacheFileName = SecureUtils.getMd5(user.getAvatarUrl());
+            String cacheFilePath = "thirdPlatformAvatar/" + cacheFileName;
+            InputStreamSource inputStreamSource;
+            if (!storeService.exist(cacheFilePath)) {
+                // 未缓存头像，从原始URL读取数据后存入
+                restTemplate.execute(user.getAvatarUrl(), HttpMethod.GET, null, response -> {
+                    FileInfo fileInfo = new FileInfo();
+                    fileInfo.setName(cacheFileName);
+                    fileInfo.setPath(cacheFilePath);
+                    try (InputStream is = response.getBody()) {
+                        storeService.store(fileInfo, cacheFilePath, -1, is);
+                    }
+                    return null;
+                });
+            }
+            inputStreamSource = storeService.getResource(cacheFilePath);
+            try (InputStream is = inputStreamSource.getInputStream()) {
+                user.setAvatarUrl("data:image/jpeg;base64," + Base64.getEncoder().encodeToString(StreamUtils.copyToByteArray(is)));
+            }
+        } catch (Exception e) {
+            log.error("{} 缓存第三方平台头像失败", LOG_PREFIX, e);
         }
     }
 
@@ -265,16 +338,17 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         ThirdPartyPlatformCallbackResult callbackResult = getCallbackResult(actionId);
         ThirdPartyPlatformUser platformUser = callbackResult.getPlatformUser();
         String newUserName = this.generateNewUserName(platformUser);
-        userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), User.TYPE_COMMON);
+        userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), UserConstants.TYPE_COMMON);
         User newUser = userService.getUserByUser(newUserName);
-        newUser.setToken(tokenService.generateUserToken(newUser));
+        UserVO createResultVO = UserVO.from(newUser, false);
+        createResultVO.setToken(tokenService.generateUserToken(UserPrincipal.from(newUser)));
 
         platformUser.setUid(newUser.getId());
         platformUser.setIsActive(true);
         platformUserRepo.save(platformUser);
 
         clearActionId(actionId);
-        return UserVO.from(newUser, false);
+        return createResultVO;
     }
 
     private ThirdPartyPlatformCallbackResult getCallbackResult(String actionId) {

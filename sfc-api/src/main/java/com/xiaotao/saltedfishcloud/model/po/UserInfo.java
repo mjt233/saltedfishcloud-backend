@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.template.BaseModel;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.Getter;
 import lombok.Setter;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -23,21 +23,22 @@ import java.util.Date;
 @Getter
 @Setter
 public class UserInfo extends BaseModel {
+    /**
+     * 用户名
+     */
     @Username
     protected String user;
 
+    /**
+     * 密码的加盐哈希
+     */
     @JsonIgnore
     protected String pwd;
 
     /**
      * 用户权限类型
      */
-    protected Integer type = User.TYPE_COMMON;
-
-    /**
-     * 用户id，后续将改为Long类型
-     */
-    protected Long id;
+    protected Integer type = UserConstants.TYPE_COMMON;
 
     /**
      * 上次登录日期
@@ -45,9 +46,9 @@ public class UserInfo extends BaseModel {
     protected Integer lastLogin;
 
     /**
-     * 空间配额（暂时没用上）
+     * 空间配额（单位：GiB，暂时没用上）
      */
-    protected Integer quota;
+    protected Long quota;
 
     /**
      * 绑定邮箱

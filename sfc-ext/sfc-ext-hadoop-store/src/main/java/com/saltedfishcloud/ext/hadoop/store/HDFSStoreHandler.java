@@ -2,13 +2,16 @@ package com.saltedfishcloud.ext.hadoop.store;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -16,6 +19,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandler, Closeable {
     private final FileSystem fs;
@@ -79,19 +83,37 @@ public class HDFSStoreHandler extends HDFSReader implements DirectRawStoreHandle
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         final Resource resource = getResource(src);
-        try(
+        try (
                 final InputStream is = resource.getInputStream();
                 final FSDataOutputStream os = fs.create(new Path(dest))
         ) {
-            StreamUtils.copy(is, os);
+            if (item != null) {
+                long total = resource.contentLength();
+                item.setTotal(total);
+                item.setLoaded(0L);
+                com.xiaotao.saltedfishcloud.utils.StreamUtils.copyStream(is, os, (buf, len) -> {
+                    item.setLoaded(item.getLoaded() + len);
+                });
+            } else {
+                StreamUtils.copy(is, os);
+            }
         }
         return true;
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
+    public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         return fs.rename(new Path(src), new Path(dest));
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        fs.setTimes(
+                new Path(path),
+                attribute.getModifyTime() == null ? -1 : attribute.getModifyTime().getTime(),
+                attribute.getCreateTime() == null ? -1 : attribute.getCreateTime().getTime()
+        );
     }
 }

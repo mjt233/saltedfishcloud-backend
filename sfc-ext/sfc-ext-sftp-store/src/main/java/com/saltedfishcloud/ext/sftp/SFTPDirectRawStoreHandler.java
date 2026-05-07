@@ -1,7 +1,9 @@
 package com.saltedfishcloud.ext.sftp;
 
 import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
@@ -15,6 +17,7 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -262,10 +265,17 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
     }
 
     @Override
-    public boolean copy(String src, String dest) throws IOException {
+    public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         Resource srcResource = getResource(src);
-        try(OutputStream os = newOutputStream(dest)) {
-            try(InputStream is = srcResource.getInputStream()) {
+        try (OutputStream os = newOutputStream(dest);InputStream is = srcResource.getInputStream()) {
+            if (item != null) {
+                long total = srcResource.contentLength();
+                item.setTotal(total);
+                item.setLoaded(0L);
+                com.xiaotao.saltedfishcloud.utils.StreamUtils.copyStream(is, os, (buf, len) -> {
+                    item.setLoaded(item.getLoaded() + len);
+                });
+            } else {
                 StreamUtils.copy(is, os);
             }
         }
@@ -273,7 +283,7 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
     }
 
     @Override
-    public boolean move(String src, String dest) throws IOException {
+    public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         try (SFTPClient sftpClient = getSFTPClient()) {
             sftpClient.rename(src, dest);
         }
@@ -306,5 +316,50 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
             log.error("SFTP连接池清空异常：", e);
         }
         pool.close();
+    }
+
+    @Override
+    public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        try (SFTPClient client = getSFTPClient()) {
+            for (String name : names) {
+                String fullPath = StringUtils.appendPath(path, name);
+                
+                // 获取当前文件属性
+                FileAttributes currentAttr = client.statExistence(fullPath);
+                if (currentAttr == null) {
+                    log.warn("{}文件不存在，跳过时间更新: {}", LOG_PREFIX, fullPath);
+                    continue;
+                }
+                
+                // 构建新的文件属性
+                FileAttributes.Builder attrBuilder = new FileAttributes.Builder();
+                
+                // 设置访问时间和修改时间
+                long atime = currentAttr.getAtime();
+                long mtime = currentAttr.getMtime();
+                
+                // 如果提供了修改时间，则使用提供的值
+                if (attribute.getModifyTime() != null) {
+                    mtime = attribute.getModifyTime().getTime() / 1000;
+                }
+                
+                // 如果提供了访问时间，则使用提供的值
+                if (attribute.getLastAccessTime() != null) {
+                    atime = attribute.getLastAccessTime().getTime() / 1000;
+                }
+                
+                // 如果提供了创建时间，也设置修改时间（SFTP通常不单独支持创建时间）
+                if (attribute.getCreateTime() != null && attribute.getModifyTime() == null) {
+                    mtime = attribute.getCreateTime().getTime() / 1000;
+                }
+                
+                // 构建并设置属性
+                FileAttributes newAttr = attrBuilder
+                        .withAtimeMtime(atime, mtime)
+                        .build();
+                
+                client.setattr(fullPath, newAttr);
+            }
+        }
     }
 }

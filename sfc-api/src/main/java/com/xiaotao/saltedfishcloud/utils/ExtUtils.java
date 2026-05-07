@@ -1,7 +1,5 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.ext.PluginDependenceConflictException;
-import com.xiaotao.saltedfishcloud.ext.PluginInfoException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
@@ -17,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class ExtUtils {

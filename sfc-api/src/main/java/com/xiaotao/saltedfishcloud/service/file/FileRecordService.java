@@ -1,13 +1,18 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
+import com.xiaotao.saltedfishcloud.service.node.FileTree;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 为网盘系统提供不依赖存储服务的情况下提供文件系统文件信息的读取和搜索能力（仅文件信息，不包含文件内容）<br>
@@ -15,6 +20,93 @@ import java.util.List;
  *
  */
 public interface FileRecordService {
+
+    /**
+     * 获取用户文件树
+     * @param uid   用户ID
+     * @return      用户文件树
+     */
+    FileTree getFullTree(long uid);
+
+    /**
+     * 获取用户在主文件系统中的存储用量
+     * @param uid   用户id
+     * @return  文件大小（Byte）
+     */
+    Long getUsage(long uid);
+
+    /**
+     * 按文件路径获取文件信息
+     * @param uid   用户ID
+     * @param path  文件所在路径
+     * @return      文件信息
+     */
+    Optional<FileInfo> getByPath(long uid, String path);
+
+
+    /**
+     * 使用广度优先遍历，列出指定目录下的所有类型为目录的文件信息
+     * @param uid   用户id
+     * @param node  要查询的目录所在节点
+     * @param depth 遍历深度，0表示只获取一级目录，负数表示无限遍历
+     * @return      不包括自己的指定遍历深度的所有子目录信息（不包括文件）
+     */
+    List<FileInfo> listChildDirs(long uid, String node, int depth);
+
+
+    /**
+     * 获取访问指定路径下途径的所有文件节点
+     * @param uid   用户id
+     * @param path  要查找的路径
+     * @return      访问该路径时途径的所有 FileInfo 信息，首元素为起始节点，末元素为目标最终节点。对于 FileInfo#getNode() 为用户id的，表示该节点在根目录下。对于根目录，返回的队列长度为1。
+     */
+    Deque<FileInfo> getVisitPathInfo(long uid, String path);
+
+
+    /**
+     * 获取指定父节点下的指定名称的文件
+     * @param uid       用户ID
+     * @param parentId  父节点ID
+     * @param name      文件名称
+     * @return          文件信息，没有则返回null
+     */
+    FileInfo getByParentId(long uid, String parentId, String name);
+
+
+    /**
+     * 获取路径对应的节点<br>
+     * @param uid   用户ID
+     * @param path  请求的路径
+     * @return  节点
+     */
+    Optional<String> getNodeIdByPath(long uid, String path);
+
+
+    /**
+     * 根据路径获取对应的节点对象
+     * @param uid   用户id
+     * @param path  路径
+     */
+    Optional<FileInfo> getNodeByPath(long uid, String path);
+
+
+    /**
+     * 通过目录节点ID 获取节点所在的完整路径位置。对于目录，FileInfo#getMd5即为目录节点id。
+     * @param uid       用户ID
+     * @param nodeId    目录节点ID(FileInfo的getMd5)
+     * @return          完整路径
+     */
+    Optional<String> getPathByNodeId(long uid, String nodeId);
+
+
+    /**
+     * 根据节点id取出节点的所有父节点
+     * @param uid       用户id
+     * @param nodeId    查找的节点id
+     * @return          所有父节点
+     */
+    Optional<Deque<FileInfo>> listAllParentByNodeId(long uid, String nodeId);
+
 
     /**
      * 判断给定的资源路径是否存在
@@ -49,19 +141,39 @@ public interface FileRecordService {
      */
     List<FileInfo> getFileInfoByMd5(String md5, int limit);
 
+    /**
+     * 根据目录节点id获取用户的目录信息
+     * @param uid   用户id
+     * @param md5   目录节点id（FileInfo#getMd5）
+     */
+    Optional<FileInfo> getDirByMd5(Long uid, String md5);
 
     /**
      * 操作数据库复制网盘文件或目录到指定目录下
-     *
-     * @param uid        用户ID
-     * @param source     要复制的文件或目录所在目录
-     * @param target     复制到的目标目录
-     * @param targetId   复制到的目标目录所属用户ID
-     * @param sourceName 要复制的文件或目录名
-     * @param overwrite  是否覆盖已存在的文件
      */
-    @Transactional(rollbackFor = Exception.class)
-    void copy(long uid, String source, String target, long targetId, String sourceName, String targetName, boolean overwrite) throws NoSuchFileException;
+    void copy(SimpleFileTransferParam param,@Nullable FileTransferCallback callback);
+
+    /**
+     * 在同一个目录中批量新增文件信息。如果path不存在会自动创建。如果已存在同名文件，会根据isOverwrite策略判断是否覆盖。
+     * @param uid   文件所属的用户id
+     * @param path  文件所在目录路径
+     * @param isOverwrite 是否覆盖同名文件。当已存在的文件与源文件不是同为文件 或 不是同为文件夹时，会抛出异常。
+     * @param fileInfos 要批量新增的文件
+     */
+    void batchSaveFileInSameDirectory(long uid, String path, boolean isOverwrite, List<FileInfo> fileInfos);
+
+    /**
+     * 在同一个目录中批量新增/覆盖文件信息，默认启用覆盖策略。
+     * <p>
+     * 该方法用于 uid 与 path 相同场景的高频批量落库，等价于
+     * {@link #batchSaveFileInSameDirectory(long, String, boolean, List)} 且 isOverwrite=true。
+     * </p>
+     *
+     * @param uid 文件所属用户ID
+     * @param path 文件所在目录路径
+     * @param fileInfos 要批量保存的文件
+     */
+    void batchSaveFileInSameDirectory(long uid, String path, List<FileInfo> fileInfos);
 
     /**
      * 操作数据库移动网盘文件或目录到指定目录下
@@ -73,7 +185,6 @@ public interface FileRecordService {
      * @param overwrite 是否覆盖原文件信息
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
-    @Transactional(rollbackFor = Exception.class)
     void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException;
 
 
@@ -115,7 +226,6 @@ public interface FileRecordService {
      * @param name 文件名列表
      * @return 删除的文件列表
      */
-    @Transactional(rollbackFor = Exception.class)
     List<FileInfo> deleteRecords(long uid, String path, Collection<String> name) throws NoSuchFileException;
 
     /**
@@ -127,7 +237,6 @@ public interface FileRecordService {
      * @throws DuplicateKeyException 当目标目录已存在时抛出
      * @throws NoSuchFileException   当父级目录不存在时抛出
      */
-    @Transactional(rollbackFor = Exception.class)
     String mkdir(long uid, String name, String path) throws NoSuchFileException;
 
 
@@ -142,7 +251,7 @@ public interface FileRecordService {
     String mkdirs(long uid, String path, boolean isMount);
 
     /**
-     * 从数据库中获取指定文件夹信息。如果该记录不存在则会创建一个。
+     * 从数据库中获取指定文件夹节点id信息。如果该记录不存在则会创建一个。注意：如果存在数据库事务，该方法会在一个独立的新事务中执行。
      * @param uid   用户id
      * @param path  文件夹完整路径
      * @param isMount   需要创建记录时，是否标记为挂载目录

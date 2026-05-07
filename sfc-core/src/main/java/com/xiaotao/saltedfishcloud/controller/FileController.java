@@ -1,15 +1,18 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
 import com.sfc.archive.model.DiskFileSystemCompressParam;
 import com.sfc.archive.service.DiskFileSystemArchiveService;
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.sfc.task.AsyncTaskManager;
+import com.sfc.task.model.AsyncTaskCreateParam;
+import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
+import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
@@ -20,13 +23,18 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -34,12 +42,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import java.io.IOException;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -57,6 +61,7 @@ public class FileController {
     private final DiskFileSystemManager fileSystemManager;
     private final DiskFileSystemArchiveService archiveService;
     private final WrapService wrapService;
+    private final AsyncTaskManager asyncTaskManager;
 
 
     /*
@@ -64,16 +69,6 @@ public class FileController {
         =                Create               =
         =======================================
      */
-
-    /**
-     * 异步方式创建压缩任务
-     * @param param     压缩参数
-     * @return          任务id
-     */
-    @PostMapping("asyncCompress")
-    public JsonResult<Long> asyncCompress(@RequestBody DiskFileSystemCompressParam param) throws IOException {
-        return JsonResultImpl.getInstance(archiveService.asyncCompress(param));
-    }
 
     /**
      * 创建文件夹
@@ -112,29 +107,6 @@ public class FileController {
         fileInfo.setMtime(mtime);
         long i = fileSystemManager.getMainFileSystem().saveFile(fileInfo, requestPath);
         return JsonResultImpl.getInstance(i);
-    }
-
-    @PostMapping("extractArchive/**")
-    public JsonResult<Object> extractArchive(@PathVariable @UID long uid,
-                                     @RequestParam("name") String name,
-                                     @RequestParam("dest") String dest,
-                                     HttpServletRequest request) throws IOException {
-        String path = URLUtils.getRequestFilePath(PREFIX + uid + "/extractArchive", request);
-
-        archiveService.extractArchive(uid, path, name, dest);
-        return JsonResult.emptySuccess();
-    }
-
-    /**
-     * 从网盘创建压缩文件
-     * @param uid   用户ID
-     * @param files 文件传输信息
-     */
-    @PostMapping("compress")
-    public JsonResult<Object> compress(@PathVariable @UID long uid,
-                               @RequestBody FileTransferInfo files) throws IOException {
-        archiveService.compress(uid, files.getSource(), files.getFilenames(), files.getDest());
-        return JsonResult.emptySuccess();
     }
 
     /**
@@ -220,13 +192,10 @@ public class FileController {
     @GetMapping("fileList/byName/{name}")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<PageInfo<FileInfo>> search(@PathVariable("name") String key,
+    public JsonResult<CommonPageInfo<FileInfo>> search(@PathVariable("name") String key,
                              @PathVariable @UID long uid,
                              @RequestParam(value = "page", defaultValue = "1") Integer page) {
-        PageHelper.startPage(page, 10);
-        List<FileInfo> res = fileSystemManager.getMainFileSystem().search(uid, key);
-        PageInfo<FileInfo> pageInfo = new PageInfo<>(res);
-        return JsonResultImpl.getInstance(pageInfo);
+        return JsonResultImpl.getInstance(fileSystemManager.getMainFileSystem().search(uid, key, page));
     }
 
     /**
@@ -259,23 +228,33 @@ public class FileController {
 
     /**
      * 支持跨用户网盘的文件复制
-     * @param uid       源文件所在用户id
-     * @param info      复制参数
      */
     @ApiOperation("网盘文件复制（支持跨用户网盘）")
     @PostMapping("copy")
-    public JsonResult<Object> copy( @PathVariable("uid") @UID(true) long uid,
-                            @RequestBody @Validated FileTransferParam info) throws IOException {
-        long sourceUid = uid;
-        long targetUid = info.getTargetUid();
-        for (FileItemTransferParam item : info.getFiles()) {
-            String source = PathUtils.getParentPath(item.getSource());
-            String sourceName = PathUtils.getLastNode(item.getSource());
-            String target = PathUtils.getParentPath(item.getTarget());
-            String targetName = PathUtils.getLastNode(item.getTarget());
-            fileSystemManager.getMainFileSystem().copy(sourceUid, source, target, targetUid, sourceName, targetName, true);
-        }
+    public JsonResult<Object> copy(@RequestBody @Validated SimpleFileTransferParam param) throws IOException {
+        UIDValidator.validateWithException(param.getSourceUid(), false);
+        UIDValidator.validateWithException(param.getTargetUid(), true);
+        fileSystemManager.getMainFileSystem().copy(param, null);
         return JsonResult.emptySuccess();
+    }
+
+    /**
+     * 支持跨用户网盘的文件复制
+     */
+    @ApiOperation("异步执行网盘文件复制（支持跨用户网盘）")
+    @PostMapping("asyncCopy")
+    public JsonResult<AsyncTaskRecord> asyncCopy(@RequestBody @Validated SimpleFileTransferParam param) throws IOException {
+        UIDValidator.validateWithException(param.getSourceUid(), false);
+        UIDValidator.validateWithException(param.getTargetUid(), true);
+        AsyncTaskRecord record = asyncTaskManager.createTask(AsyncTaskCreateParam.builder()
+                .name("复制文件")
+                .params(MapperHolder.toJson(param))
+                .isTemp(true)
+                .immediate(true)
+                .cpuOverhead(10)
+                .taskType(AsyncTaskType.FILE_COPY)
+                .build());
+        return JsonResultImpl.getInstance(record);
     }
 
     /**
@@ -293,24 +272,6 @@ public class FileController {
             String sourceName = PathUtils.getLastNode(item.getSource());
             String target = PathUtils.getParentPath(item.getTarget());
             fileSystemManager.getMainFileSystem().move(sourceUid, source, target, sourceName,true);
-        }
-        return JsonResult.emptySuccess();
-    }
-
-    /**
-     * 复制文件或目录
-     * 复制文件或目录到指定目录下
-     */
-    @PostMapping("fromPath/**")
-    @Deprecated
-    public JsonResult<Object> copy( @PathVariable("uid") @UID(true) long uid,
-                            @RequestBody @Validated FileCopyOrMoveInfo info,
-                            HttpServletRequest request) throws IOException {
-        String requestPath = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
-        String source = URLDecoder.decode(requestPath, StandardCharsets.UTF_8);
-        String target = URLDecoder.decode(info.getTarget(), StandardCharsets.UTF_8);
-        for (NamePair file : info.getFiles()) {
-            fileSystemManager.getMainFileSystem().copy(uid, source, target, uid, file.getSource(), file.getTarget(), info.isOverwrite());
         }
         return JsonResult.emptySuccess();
     }

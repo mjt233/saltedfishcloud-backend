@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
 import com.sfc.webshell.model.po.ShellExecuteRecord;
 import com.sfc.webshell.repo.ShellExecuteRecordRepo;
 import com.sfc.webshell.service.ShellExecuteRecordService;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ public class ShellExecuteRecordServiceImpl
         record.setUid(
                 Optional.ofNullable(SecureUtils.getSpringSecurityUser())
                         .map(e -> e.getId())
-                        .orElse(User.PUBLIC_USER_ID)
+                        .orElse(UserConstants.PUBLIC_USER_ID)
         );
         record.setHost(clusterService.getSelf().getHost());
         record.setCmd(cmd);

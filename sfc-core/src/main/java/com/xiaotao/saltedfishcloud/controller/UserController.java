@@ -1,23 +1,38 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.constant.ByteSize;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
+import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.ApiOperation;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -27,21 +42,14 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.mail.MessagingException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
+@Slf4j
 @Controller
 @RequestMapping(UserController.PREFIX)
 @ResponseBody
@@ -51,10 +59,9 @@ public class UserController {
     public static final String PREFIX = "/api/user";
 
     private final UserService userService;
-    private final DiskFileSystemManager fileSystemFactory;
-    private final UserDao userDao;
+    private final UserCustomStoreService userCustomStoreService;
     private final TokenServiceImpl tokenDao;
-    private final SysRuntimeConfig runtimeConfig;
+    private final SysCommonConfig sysCommonConfig;
 
     @ApiOperation("验证用户重置密码时输入的验证码是否正确")
     @PostMapping("/validResetPasswordEmailCode")
@@ -161,8 +168,8 @@ public class UserController {
     @AllowAnonymous
     public JsonResult<?> getRegType() {
         return JsonResultImpl.getInstance(new HashMap<String, Boolean>(){{
-            put("email", runtimeConfig.isEnableEmailReg());
-            put("regcode", runtimeConfig.isEnableRegCode());
+            put("email", sysCommonConfig.getEnableEmailReg());
+            put("regcode", sysCommonConfig.getEnableRegCode());
         }});
     }
 
@@ -170,13 +177,40 @@ public class UserController {
      * 获取用户基本信息，并刷新token有效期
      */
     @GetMapping
-    public JsonResult<User> getUserInfo(HttpServletRequest request) throws UserNoExistException {
-        User user = SecureUtils.getSpringSecurityUser();
+    public JsonResult<UserPrincipal> getUserInfo(HttpServletRequest request) throws UserNoExistException {
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
             throw new JsonException(401, "未登录");
         }
-        tokenDao.setToken(user.getId(), request.getHeader(JwtUtils.AUTHORIZATION));
+        Optional.ofNullable(request.getHeader(JwtUtils.AUTHORIZATION))
+                .or(() -> Arrays.stream(request.getCookies())
+                        .filter(c -> "token".equals(c.getName()))
+                        .map(Cookie::getValue)
+                        .findAny())
+                .ifPresent(token -> tokenDao.setToken(user.getId(), token));
         return JsonResultImpl.getInstance(user);
+    }
+
+    /**
+     * 登出
+     */
+    @PostMapping("logout")
+    @ResponseBody
+    public JsonResult<Object> logout(HttpServletRequest request, HttpServletResponse response) {
+        // 获取原token
+        String token = SecureUtils.getToken(request);
+
+        // 清理cookie
+        Cookie cookie = new Cookie("token", "");
+        cookie.setMaxAge(0);
+        cookie.setPath("/");
+        response.addCookie(cookie);
+
+        // 令token失效
+        if (token != null) {
+            tokenDao.invalidToken(SecureUtils.getCurrentUid(), token);
+        }
+        return JsonResult.emptySuccess();
     }
 
 
@@ -210,8 +244,9 @@ public class UserController {
 
 
         // 管理员直接添加，不受任何约束
-        if (SecureUtils.getSpringSecurityUser() != null && SecureUtils.getSpringSecurityUser().getType() == User.TYPE_ADMIN) {
-            userService.addUser(user, rawPassword, email, type == User.TYPE_ADMIN ? User.TYPE_ADMIN : User.TYPE_COMMON);
+        UserPrincipal principal = SecureUtils.getSpringSecurityUser();
+        if (principal != null && principal.isAdmin()) {
+            userService.addUser(user, rawPassword, email, type == UserConstants.TYPE_ADMIN ? UserConstants.TYPE_ADMIN : UserConstants.TYPE_COMMON);
         } else {
             userService.addUser(user, rawPassword, email, regCode, validEmail);
         }
@@ -224,10 +259,7 @@ public class UserController {
      */
     @PostMapping("avatar")
     public JsonResult<?> uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
-        fileSystemFactory.getMainFileSystem().saveAvatar(
-                SecureUtils.getSpringSecurityUser().getId(),
-                new MultipartFileResource(file)
-        );
+        userCustomStoreService.saveAvatar(SecureUtils.getSpringSecurityUser().getId(), new MultipartFileResource(file));
         return JsonResult.emptySuccess();
     }
 
@@ -244,30 +276,31 @@ public class UserController {
                 getAvatar(HttpServletResponse response,
                           @RequestParam(required = false) Long uid,
                           @PathVariable(required = false) String username) throws IOException {
-        try {
-            User currentUser = SecureUtils.getSpringSecurityUser();
-            if (currentUser == null && username == null && uid == null) {
-                response.sendRedirect("/api/static/defaultAvatar.png");
-                return null;
-            }
-            Long finalUid = 0L;
-
-            if (uid != null) {
-                finalUid = uid;
-            } else if (username != null) {
-                User user = userService.getUserByUser(username);
-                if (user != null) {
-                    finalUid = user.getId();
-                }
-            } else {
-                finalUid = currentUser.getId();
-            }
-            return ResourceUtils.wrapResource(fileSystemFactory.getMainFileSystem().getAvatar(finalUid));
-        } catch (Exception e) {
-            e.printStackTrace();
+        UserPrincipal currentUser = SecureUtils.getSpringSecurityUser();
+        Resource avatar;
+        if (currentUser == null && username == null && uid == null) {
+            avatar = userCustomStoreService.getDefaultAvatar();
+            response.setHeader("is-default-avatar", "1");
+            return ResourceUtils.wrapResource(avatar);
         }
-        response.sendRedirect("/api/static/defaultAvatar.png");
-        return null;
+        Long finalUid = 0L;
+
+        if (uid != null) {
+            finalUid = uid;
+        } else if (username != null) {
+            User user = userService.getUserByUser(username);
+            if (user != null) {
+                finalUid = user.getId();
+            }
+        } else {
+            finalUid = currentUser.getId();
+        }
+        avatar = userCustomStoreService.getAvatar(finalUid);
+        if (avatar == null) {
+            avatar = userCustomStoreService.getDefaultAvatar();
+            response.setHeader("is-default-avatar", "1");
+        }
+        return ResourceUtils.wrapResource(avatar);
     }
 
     /**
@@ -275,8 +308,12 @@ public class UserController {
      */
     @GetMapping("quota")
     public JsonResult<QuotaInfo> getQuotaUsed() {
-        QuotaInfo used = userDao.getUserQuotaUsed(SecureUtils.getSpringSecurityUser().getId());
-        return JsonResultImpl.getInstance(used);
+        Long uid = SecureUtils.getCurrentUid();
+        User user = userService.getUserById(uid);
+        QuotaInfo quotaInfo = new QuotaInfo();
+        quotaInfo.setUsed(Optional.ofNullable(SpringContextUtils.getContext().getBean(FileRecordService.class).getUsage(user.getId())).orElse(0L));
+        quotaInfo.setQuota(Optional.ofNullable(user.getQuota()).orElse(0L) * ByteSize._1GiB);
+        return JsonResultImpl.getInstance(quotaInfo);
     }
 
     /**
@@ -290,17 +327,15 @@ public class UserController {
                                      @RequestParam("new") @Length(min = 6) String newPasswd,
                                      @PathVariable("uid") @UID long uid,
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
-        User user = SecureUtils.getSpringSecurityUser();
+        UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (force) {
-            if (user == null || user.getType() != User.TYPE_ADMIN) {
+            if (user == null || !user.isAdmin()) {
                 throw new AccessDeniedException("非管理员不允许使用force参数");
             } else {
-                userDao.modifyPassword(uid, SecureUtils.getPassswd(newPasswd));
-                tokenDao.cleanUserToken(uid);
+                userService.resetPasswd(uid, newPasswd);
                 return JsonResultImpl.getInstance(200, null, "force reset");
             }
         } else {
-            tokenDao.cleanUserToken(uid);
             int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
             return JsonResultImpl.getInstance(200, i, "ok");
         }
@@ -333,6 +368,22 @@ public class UserController {
     public JsonResult<CommonPageInfo<User>> getUserList(@RequestParam(value = "page", defaultValue = "1") int page,
                                   @RequestParam(value = "size", defaultValue = "10") @Max(500) @Min(5) @Valid int size) {
         CommonPageInfo<User> res = userService.listUsers(new PageableRequest().setPage(page).setSize(size));
+        res.getContent().forEach(e -> e.setPwd(null));
+        return JsonResultImpl.getInstance(res);
+    }
+
+    /**
+     * 按用户名或邮箱模糊搜索用户（分页），仅管理员可用
+     * @param keyword   搜索关键词，模糊匹配用户名或邮箱
+     * @param page      页数（从1开始）
+     * @param size      每页大小
+     */
+    @GetMapping("search")
+    @RolesAllowed({"ADMIN"})
+    public JsonResult<CommonPageInfo<User>> searchUsers(@RequestParam("keyword") String keyword,
+                                                        @RequestParam(value = "page", defaultValue = "1") int page,
+                                                        @RequestParam(value = "size", defaultValue = "10") @Max(500) @Min(5) @Valid int size) {
+        CommonPageInfo<User> res = userService.searchUsers(keyword, new PageableRequest().setPage(page).setSize(size));
         res.getContent().forEach(e -> e.setPwd(null));
         return JsonResultImpl.getInstance(res);
     }

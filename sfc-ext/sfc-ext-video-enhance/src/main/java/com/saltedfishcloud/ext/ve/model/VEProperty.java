@@ -28,7 +28,7 @@ public class VEProperty {
     /**
      * ffmpeg
      */
-    @ConfigProperty(value = "ffmpegPath", title = "ffmpeg目录", describe = "ffmpeg可执行程序的所在目录")
+    @ConfigProperty(value = "ffmpegPath", title = "ffmpeg目录", describe = "ffmpeg可执行程序的所在目录", isRow = true)
     private String ffmpegPath;
 
 
@@ -42,13 +42,13 @@ public class VEProperty {
     private boolean enableThumbnail;
 
     @ConfigProperty(
-            value = "enableThumbnailOnMount",
-            describe = "为挂载目录中的视频创建缩略图",
+            value = "enableThumbnailOnRemote",
+            describe = "为远程存储的视频创建缩略图(慎用)",
             group = "feature",
             defaultValue = "false",
             inputType = "switch"
     )
-    private boolean enableThumbnailOnMount;
+    private boolean enableThumbnailOnRemote;
 
     /**
      * 获取ffmpeg目录下的程序可执行路径

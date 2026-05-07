@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 
 public class ValidPathValidator implements ConstraintValidator<ValidPath, Object> {
     private final static Pattern pattern = Pattern.compile(RejectRegex.PATH);
-    public boolean valid(CharSequence input) {
+    public static boolean valid(CharSequence input) {
         return !pattern.matcher(input).find();
     }
     @Override

@@ -1,15 +1,17 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
-import com.xiaotao.saltedfishcloud.dao.mybatis.UserDao;
+import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
+import com.xiaotao.saltedfishcloud.model.dto.CollectionRecordDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.node.NodeService;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,16 +33,16 @@ class CollectionServiceTest {
     @Autowired
     private CollectionService cs;
     @Autowired
-    private UserDao userDao;
-    @Autowired
-    private NodeService nodeService;
+    private UserRepo userRepo;
     @Autowired
     private DiskFileSystemManager diskFileSystem;
+    @Autowired
+    private FileRecordService fileRecordService;
 
     @Test
     void testGet() {
         CollectionDTO nodeInfo = new CollectionDTO("t", StringUtils.getRandomString(32), new Date(), "adminTest");
-        User admin = userDao.getUserByUser("admin");
+        User admin = userRepo.getUserByUser("admin");
         try {
             cs.createCollection(admin.getId(), nodeInfo);
             fail();
@@ -54,7 +56,7 @@ class CollectionServiceTest {
 
     @Test
     void collectFile() throws IOException {
-        User u = userDao.getUserByUser("admin");
+        User u = userRepo.getUserByUser("admin");
         String title = "测试收集样例";
         String savePath = "/我的收集" + "/" + title;
 
@@ -62,9 +64,9 @@ class CollectionServiceTest {
         Calendar calender = Calendar.getInstance();
         calender.add(Calendar.DATE, 7);
 
-        String node = nodeService.getNodeIdByPath(u.getId(), savePath);
+        String node = fileRecordService.getNodeIdByPath(u.getId(), savePath).orElseThrow();
         // 创建收集任务
-        CollectionDTO colI = new CollectionDTO("测试收集样例", node, calender.getTime(), u.getUsername());
+        CollectionDTO colI = new CollectionDTO("测试收集样例", node, calender.getTime(), u.getUser());
         colI.setPattern("\\.(doc|docx)$");
         CollectionInfoId cid = cs.createCollection(u.getId(), colI);
 
@@ -102,9 +104,9 @@ class CollectionServiceTest {
     @Test
     void getSubmits() {
         int page = 0, size = 2;
-        Page<CollectionRecord> submits = cs.getSubmits(5L, page, size);
-        while (submits.getNumberOfElements() > 0) {
-            for (CollectionRecord record : submits.getContent()) {
+        CommonPageInfo<CollectionRecordDTO> submits = cs.getSubmits(5L, page, size);
+        while (submits.getTotalCount() > 0) {
+            for (CollectionRecordDTO record : submits.getContent()) {
                 System.out.println(record);
             }
             submits = cs.getSubmits(5L, ++page, size);

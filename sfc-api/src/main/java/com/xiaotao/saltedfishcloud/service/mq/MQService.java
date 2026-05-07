@@ -6,7 +6,6 @@ import com.xiaotao.saltedfishcloud.model.vo.MQMessageRecord;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.function.Consumer;
 
 /**

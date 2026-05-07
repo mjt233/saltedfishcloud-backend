@@ -5,7 +5,6 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import io.minio.*;
 import io.minio.errors.*;
-import io.minio.messages.ErrorResponse;
 import io.minio.messages.Item;
 
 import java.io.ByteArrayInputStream;
@@ -13,7 +12,6 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.temporal.ChronoField;
-import java.util.Optional;
 
 public class MinioUtils {
 

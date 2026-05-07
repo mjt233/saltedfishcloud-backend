@@ -1,24 +1,60 @@
-version: '3.5'
 services:
   web-backend:
-    build: .
-    command: java -jar sfc-core.jar --spring.config.import=file:config.yml
+    image: saltedfishcloud:${APP_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-https://repo.maven.apache.org/maven2}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      REDIS_HOST: redis
+      JDBC_PARAMETER: useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    expose:
+      - 8087
     ports:
-      - target: 8087
+      - name: xyy-backend-port
+        target: 8087
         published: 8087
     networks:
-      - counter-net
+      - xyy-backend-net
     volumes:
       - type: volume
-        source: counter-vol
-        target: /code
+        source: xyy-store-vol
+        target: /saltedfish/store
   redis:
     image: "redis:alpine"
     networks:
-      counter-net:
+      - xyy-backend-net
+    expose:
+      - 6379
+  mysql:
+    image: "mysql:8.0"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      timeout: 5s
+      retries: 10
+      interval: 10s
+    networks:
+      - xyy-backend-net
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_DATABASE: xyy
+    volumes:
+      - type: volume
+        source: xyy-mysql-data
+        target: /var/lib/mysql
+    expose:
+      - 3306
 
 networks:
-  counter-net:
+  xyy-backend-net:
 
 volumes:
-  counter-vol:
+  xyy-store-vol:
+  xyy-mysql-data:

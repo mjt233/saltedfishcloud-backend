@@ -2,9 +2,15 @@ package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
+import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
+import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
+import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 
@@ -27,19 +33,6 @@ public interface DiskFileSystem {
     int SAVE_NEW_FILE = 1;
     int SAVE_NOT_CHANGE = 2;
 
-    /**
-     * 获取用户头像资源
-     * @param uid   用户ID
-     * @return      用户未设置头像时，为null
-     */
-    Resource getAvatar(long uid) throws IOException;
-
-    /**
-     * 保存用户头像
-     * @param uid   用户ID
-     * @param resource 头像资源
-     */
-    void saveAvatar(long uid, Resource resource) throws IOException;
 
     /**
      * 利用MD5通过文件系统中现有的资源直接存储到网盘
@@ -98,23 +91,12 @@ public interface DiskFileSystem {
     }
 
     /**
-     * 复制指定用户的文件或目录到指定用户的某个目录下
-     * @param uid
-     *      原资源的用户ID
-     * @param source
-     *      要操作的文件所在的网盘目录
-     * @param target
-     *      复制到的目的地目录
-     * @param targetUid
-     *      目标用户ID
-     * @param sourceName
-     *      源文件或目录名
-     * @param targetName
-     *      目标文件或目录名，
-     * @param overwrite
-     *      是否覆盖
+     * 使用 SimpleFileTransferParam 参数批量复制文件，支持进度回调和中断
+     * @param param 文件传输参数
+     * @param callback 进度回调接口，可为 null 表示不监听进度
+     * @throws IOException IO异常
      */
-    void copy(long uid, String source, String target, long targetUid, String sourceName, String targetName, Boolean overwrite) throws IOException;
+    void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException;
 
     /**
      * 移动网盘中的文件或目录到指定目录下
@@ -165,7 +147,7 @@ public interface DiskFileSystem {
      */
     List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId);
 
-    List<FileInfo> search(long uid, String key);
+    CommonPageInfo<FileInfo> search(long uid, String key, Integer page);
 
     /**
      * 通过移动本地文件的方式存储文件
@@ -187,9 +169,57 @@ public interface DiskFileSystem {
     }
 
     /**
+     * 批量保存文件到网盘系统。
+     * <p>
+     * 每个 {@link FileInfo} 必须提供 uid、path、name、streamSource 字段。默认实现会逐个文件调用
+     * {@link #saveFileByStream(FileInfo, String, OutputStreamConsumer)} 完成保存；具体实现可覆盖该方法以实现更高性能的批量存储与批量入库。
+     * </p>
+     *
+     * @param fileInfos 待保存的文件列表
+     * @param callback  文件传输回调，可为 null
+     * @throws IOException 文件操作异常
+     */
+    default void batchSaveFiles(List<FileInfo> fileInfos, @Nullable FileTransferCallback callback) throws IOException {
+        if (fileInfos == null || fileInfos.isEmpty()) {
+            return;
+        }
+        for (FileInfo fileInfo : fileInfos) {
+            if (callback != null && callback.shouldInterrupt()) {
+                return;
+            }
+            if (fileInfo == null
+                    || fileInfo.getUid() == null
+                    || fileInfo.getPath() == null
+                    || fileInfo.getName() == null
+                    || fileInfo.getStreamSource() == null) {
+                throw new IllegalArgumentException("批量保存参数非法，uid/path/name/streamSource 不能为空");
+            }
+            if (callback != null) {
+                callback.onFileStart(FileTransferItem.builder()
+                        .from(fileInfo.getName())
+                        .to(StringUtils.appendPath(fileInfo.getPath(), fileInfo.getName()))
+                        .total(fileInfo.getSize())
+                        .loaded(0L)
+                        .fileInfo(fileInfo)
+                        .build());
+            }
+            saveFile(fileInfo, fileInfo.getPath());
+            if (callback != null) {
+                callback.onFileComplete(FileTransferItem.builder()
+                        .from(fileInfo.getName())
+                        .to(StringUtils.appendPath(fileInfo.getPath(), fileInfo.getName()))
+                        .total(fileInfo.getSize())
+                        .loaded(fileInfo.getSize())
+                        .fileInfo(fileInfo)
+                        .build());
+            }
+        }
+    }
+
+    /**
      * 保存上传的文件到网盘系统中
      * @param file        接收到的文件对象，通过 {@link FileInfo#getStreamSource()} 获取文件内容
-     * @param savePath    保存的文件路径
+     * @param savePath    保存的文件所在目录的路径
      * @return 新文件 - 1，旧文件覆盖 - 0，文件无变更 - 2
      * 常量见{@link DiskFileSystem#SAVE_COVER}、
      * {@link DiskFileSystem#SAVE_NEW_FILE}、
@@ -237,6 +267,15 @@ public interface DiskFileSystem {
      * @param newName 新文件名
      */
     void rename(long uid, String path, String name, String newName) throws IOException;
+
+    /**
+     * 更新文件的时间信息。注意并非所有文件系统都支持此操作，调用可能不生效。
+     * @param uid   用户id
+     * @param path  文件所在的父目录
+     * @param names 文件名列表
+     * @param attribute 时间信息
+     */
+    void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException;
 
     /**
      * 获取文件系统状态
