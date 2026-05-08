@@ -20,8 +20,8 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.xiaotao.saltedfishcloud.cache.DistributedLock;
 import com.xiaotao.saltedfishcloud.cache.LockFactory;
+import java.util.concurrent.locks.Lock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -161,7 +161,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
         if (existResource != null) {
             return existResource;
         }
-        DistributedLock lock = lockFactory.getLock(fileIdentify);
+        Lock lock = lockFactory.getLock(fileIdentify);
         try {
             lock.lock();
 

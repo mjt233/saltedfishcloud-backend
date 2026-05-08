@@ -1,7 +1,9 @@
 package com.xiaotao.saltedfishcloud.cache;
 
+import java.util.concurrent.locks.Lock;
+
 /**
- * 分布式锁工厂，根据 key 创建 {@link DistributedLock} 实例。
+ * 分布式锁工厂，根据 key 创建 {@link Lock} 实例。
  */
 public interface LockFactory {
 
@@ -11,5 +13,5 @@ public interface LockFactory {
      * @param lockKey 锁的标识 key
      * @return 分布式锁实例
      */
-    DistributedLock getLock(String lockKey);
+    Lock getLock(String lockKey);
 }

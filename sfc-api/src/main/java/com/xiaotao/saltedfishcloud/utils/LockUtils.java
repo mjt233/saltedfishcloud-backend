@@ -3,10 +3,10 @@ package com.xiaotao.saltedfishcloud.utils;
 import com.xiaotao.saltedfishcloud.function.IOExceptionRunnable;
 import com.xiaotao.saltedfishcloud.function.IOExceptionSupplier;
 import lombok.experimental.UtilityClass;
-import com.xiaotao.saltedfishcloud.cache.DistributedLock;
 import com.xiaotao.saltedfishcloud.cache.LockFactory;
 
 import java.io.IOException;
+import java.util.concurrent.locks.Lock;
 
 @UtilityClass
 public class LockUtils {
@@ -19,7 +19,7 @@ public class LockUtils {
 
     public static <T> T execute(String lockKey, IOExceptionSupplier<T> task) {
         LockFactory lockFactory = SpringContextUtils.getContext().getBean(LockFactory.class);
-        DistributedLock lock = lockFactory.getLock(lockKey);
+        Lock lock = lockFactory.getLock(lockKey);
         try {
             lock.lock();
             return task.get();

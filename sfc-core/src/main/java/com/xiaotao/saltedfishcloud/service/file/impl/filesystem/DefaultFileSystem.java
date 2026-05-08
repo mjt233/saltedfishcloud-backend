@@ -28,8 +28,8 @@ import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
-import com.xiaotao.saltedfishcloud.cache.DistributedLock;
 import com.xiaotao.saltedfishcloud.cache.LockFactory;
+import java.util.concurrent.locks.Lock;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -246,7 +246,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
-        DistributedLock lock = lockFactory.getLock(getStoreLockKey(uid, target, name));
+        Lock lock = lockFactory.getLock(getStoreLockKey(uid, target, name));
         try {
             lock.lock();
             target = URLDecoder.decode(target, StandardCharsets.UTF_8);
@@ -335,7 +335,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
-        DistributedLock lock = lockFactory.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
+        Lock lock = lockFactory.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
         try {
             lock.lock();
             fileInfo.setUid(uid);
@@ -482,9 +482,9 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long deleteFile(long uid, String path, List<String> name) throws IOException {
-        ArrayList<DistributedLock> locks = new ArrayList<>();
+        ArrayList<Lock> locks = new ArrayList<>();
         for (String s : name) {
-            DistributedLock lock = lockFactory.getLock(getStoreLockKey(uid, path, s));
+            Lock lock = lockFactory.getLock(getStoreLockKey(uid, path, s));
             lock.lock();
             locks.add(lock);
         }
@@ -516,7 +516,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
             }
             return res;
         } finally {
-            for (DistributedLock lock : locks) {
+            for (Lock lock : locks) {
                 lock.unlock();
             }
         }
@@ -525,8 +525,8 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rename(long uid, String path, String name, String newName) throws IOException {
-        DistributedLock lock1 = lockFactory.getLock(getStoreLockKey(uid, path, name));
-        DistributedLock lock2 = lockFactory.getLock(getStoreLockKey(uid, path, newName));
+        Lock lock1 = lockFactory.getLock(getStoreLockKey(uid, path, name));
+        Lock lock2 = lockFactory.getLock(getStoreLockKey(uid, path, newName));
         lock1.lock();
         lock2.lock();
         try {
