@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * {@link CacheService} 的 Redis 实现。
+ * <p>底层委托 {@link RedisTemplate} 执行实际的 Redis 操作，屏蔽 Redis API 细节。</p>
+ */
 @Component
 @RequiredArgsConstructor
 public class RedisCacheServiceImpl implements CacheService {

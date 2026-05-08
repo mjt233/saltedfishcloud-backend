@@ -5,6 +5,10 @@ import org.redisson.api.RLock;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * {@link DistributedLock} 的 Redisson 实现。
+ * <p>包装 Redisson 的 {@link RLock}，提供可重入的分布式锁能力。</p>
+ */
 @RequiredArgsConstructor
 public class RedisDistributedLock implements DistributedLock {
     private final RLock rLock;
