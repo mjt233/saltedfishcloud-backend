@@ -3,8 +3,8 @@ package com.xiaotao.saltedfishcloud.utils;
 import com.xiaotao.saltedfishcloud.function.IOExceptionRunnable;
 import com.xiaotao.saltedfishcloud.function.IOExceptionSupplier;
 import lombok.experimental.UtilityClass;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
+import com.xiaotao.saltedfishcloud.cache.DistributedLock;
+import com.xiaotao.saltedfishcloud.cache.LockFactory;
 
 import java.io.IOException;
 
@@ -18,8 +18,8 @@ public class LockUtils {
     }
 
     public static <T> T execute(String lockKey, IOExceptionSupplier<T> task) {
-        RedissonClient redisson = SpringContextUtils.getContext().getBean(RedissonClient.class);
-        RLock lock = redisson.getLock(lockKey);
+        LockFactory lockFactory = SpringContextUtils.getContext().getBean(LockFactory.class);
+        DistributedLock lock = lockFactory.getLock(lockKey);
         try {
             lock.lock();
             return task.get();
