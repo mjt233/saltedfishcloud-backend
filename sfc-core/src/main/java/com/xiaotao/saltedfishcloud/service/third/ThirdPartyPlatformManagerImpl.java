@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.third;
 
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyPlatformUserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
@@ -30,7 +32,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.util.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
@@ -44,9 +45,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -56,7 +57,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
     private final static String LOG_TYPE = "第三方登录";
     private final static String LOG_PREFIX = "[第三方登录]";
 
-    private final static String ACTION_RECORD_KEY = "third_action::";
+    private final static String ACTION_RECORD_KEY = CacheKeyPrefixes.THIRD_ACTION;
 
     @Autowired
     private ThirdPartyAuthPlatformRepo platformRepo;
@@ -83,7 +84,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
     private DiskFileSystemManager diskFileSystemManager;
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private CacheService cacheService;
 
     private final Map<String, ThirdPartyPlatformHandler> handlerMap = new ConcurrentHashMap<>();
 
@@ -353,16 +354,16 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
 
     private ThirdPartyPlatformCallbackResult getCallbackResult(String actionId) {
         return Objects.requireNonNull(
-                (ThirdPartyPlatformCallbackResult) redisTemplate.opsForValue().get(ACTION_RECORD_KEY + actionId),
+                cacheService.get(ACTION_RECORD_KEY + actionId),
                 "操作已过期或记录id不存在，请重试"
         );
     }
 
     private void setCallbackResult(String actionId, ThirdPartyPlatformCallbackResult result) {
-        redisTemplate.opsForValue().set(ACTION_RECORD_KEY + actionId, result, Duration.ofMinutes(10));
+        cacheService.set(ACTION_RECORD_KEY + actionId, result, 10, TimeUnit.MINUTES);
     }
 
     private void clearActionId(String actionId) {
-        redisTemplate.delete(ACTION_RECORD_KEY + actionId);
+        cacheService.delete(ACTION_RECORD_KEY + actionId);
     }
 }

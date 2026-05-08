@@ -1,16 +1,15 @@
 package com.xiaotao.saltedfishcloud.helper;
 
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.service.mail.MailValidateType;
 
 public class RedisKeyGenerator {
-    public final static String PREFIX = "xyy:";
-
     /**
      * 生成打包下载的RedisKey
      * @param wid   打包码
      */
     public static String getWrapKey(String wid) {
-        return PREFIX + "wrap:" +wid;
+        return CacheKeyPrefixes.WRAP + wid;
     }
 
     /**
@@ -18,7 +17,7 @@ public class RedisKeyGenerator {
      * @param email 邮箱
      */
     public static String getRegCodeKey(String email) {
-        return PREFIX + "regMail:" + email;
+        return CacheKeyPrefixes.REG_MAIL + email;
     }
 
     /**
@@ -29,6 +28,6 @@ public class RedisKeyGenerator {
      * @return          Redis key，Redis值为验证码
      */
     public static String getUserEmailValidKey(long uid, String email, MailValidateType type) {
-        return PREFIX + "mailValidate:" + uid + ":" + type + ":" + email;
+        return CacheKeyPrefixes.MAIL_VALIDATE + uid + ":" + type + ":" + email;
     }
 }

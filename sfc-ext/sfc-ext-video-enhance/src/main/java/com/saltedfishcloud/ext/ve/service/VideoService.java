@@ -26,13 +26,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.redis.core.RedisTemplate;
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.saltedfishcloud.ext.ve.constant.VEConstants.*;
@@ -57,7 +58,7 @@ public class VideoService {
     private AsyncTaskManager asyncTaskManager;
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private CacheService cacheService;
 
     /**
      * 检查配置是否正确
@@ -81,7 +82,7 @@ public class VideoService {
      * @param time      观看进度
      */
     public void recordWatchProgress(@UID(value = true) Long uid, String identify, double time) {
-        redisTemplate.opsForValue().set("watch_progress::" + uid + "::" + identify, time, Duration.ofDays(7));
+        cacheService.set(CacheKeyPrefixes.WATCH_PROGRESS + uid + "::" + identify, time, 7, TimeUnit.DAYS);
     }
 
     /**
@@ -91,7 +92,7 @@ public class VideoService {
      * @return          观看进度，返回null就是没有记录
      */
     public Double getWatchProgress(@UID(value = true) Long uid, String identify) {
-        return (Double) redisTemplate.opsForValue().get("watch_progress::" + uid + "::" + identify);
+        return cacheService.get(CacheKeyPrefixes.WATCH_PROGRESS + uid + "::" + identify);
     }
 
     /**

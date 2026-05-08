@@ -1,17 +1,18 @@
 package com.sfc.task.prog;
 
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
@@ -21,16 +22,16 @@ public class ProgressDetectorImpl implements ProgressDetector {
     private final static String LOG_TITLE = "[Progress Detector]";
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private CacheService cacheService;
 
 
     private String getRecordKey(String id) {
-        return "xyy::progress::" + id;
+        return CacheKeyPrefixes.TASK_PROGRESS + id;
     }
 
     @Override
     public ProgressRecord getRecord(String id) {
-        final Object o = redisTemplate.opsForValue().get(getRecordKey(id));
+        final Object o = cacheService.get(getRecordKey(id));
         if (o == null) {
             return null;
         } else {
@@ -47,7 +48,7 @@ public class ProgressDetectorImpl implements ProgressDetector {
     @Override
     public boolean removeObserve(String id) {
         log.debug("{}移除进度速度检测任务：{}", LOG_TITLE, id);
-        boolean res = Boolean.TRUE.equals(redisTemplate.delete(id));
+        boolean res = cacheService.delete(getRecordKey(id));
         entityMap.remove(id);
         return res;
     }
@@ -83,7 +84,7 @@ public class ProgressDetectorImpl implements ProgressDetector {
                     );
                 }
             }
-            redisTemplate.opsForValue().set(getRecordKey(id), provider.getProgressRecord(), Duration.ofSeconds(10));
+            cacheService.set(getRecordKey(id), provider.getProgressRecord(), 10, TimeUnit.SECONDS);
         }
     }
 }

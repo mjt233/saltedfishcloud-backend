@@ -16,17 +16,18 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.data.redis.core.RedisTemplate;
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -42,13 +43,13 @@ public class QuickShareService {
     private StoreServiceFactory storeServiceFactory;
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private CacheService cacheService;
 
     @Autowired
     private QuickShareProperty property;
 
     private String getRedisKey(String code) {
-        return "quick_share::" + code;
+        return CacheKeyPrefixes.QUICK_SHARE + code;
     }
 
     /**
@@ -59,8 +60,8 @@ public class QuickShareService {
      */
     private String saveCode(String code, Long id) {
         String actualCode = code.toLowerCase();
-        Duration duration = Duration.ofMinutes(property.getEffectiveDuration());
-        while (!Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(this.getRedisKey(actualCode), id, duration))) {
+        long effectiveDuration = property.getEffectiveDuration();
+        while (!cacheService.setIfAbsent(this.getRedisKey(actualCode), id, effectiveDuration, TimeUnit.MINUTES)) {
             actualCode = StringUtils.getRandomString(5, false);
         }
         return actualCode;
@@ -112,7 +113,7 @@ public class QuickShareService {
      * @return      如果提取码不存在或失效，则为null，
      */
     private Long getIdByCode(String code) {
-        Object id = redisTemplate.opsForValue().get(getRedisKey(code));
+        Object id = cacheService.get(getRedisKey(code));
         if (id == null) {
             return null;
         } else {

@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.service;
 
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
-import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.RequestParam;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
@@ -17,7 +18,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.util.Lazy;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -33,8 +33,8 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,13 +43,10 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
     private final long selfId = IdUtil.getId();
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private CacheService cacheService;
 
     @Autowired
     private MQService mqService;
-
-    @Autowired
-    private RedisDao redisDao;
 
     @Autowired
     private Environment environment;
@@ -57,7 +54,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final static String KEY_PREFIX = "cluster::";
+    private final static String KEY_PREFIX = CacheKeyPrefixes.CLUSTER;
 
     private String getKey() {
         return KEY_PREFIX + selfId;
@@ -100,9 +97,9 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
         if (now <= nextFetchTime) {
             return;
         }
-        Set<String> keys = redisDao.scanKeys(KEY_PREFIX + "*");
+        Set<String> keys = cacheService.scanKeys(KEY_PREFIX + "*");
 
-        cacheNodeList = keys.stream().map(key -> redisTemplate.opsForValue().get(key)).filter(Objects::nonNull)
+        cacheNodeList = keys.stream().map(key -> cacheService.get(key)).filter(Objects::nonNull)
                 .map(obj -> {
                     try {
                         return MapperHolder.parseAsJson(obj, ClusterNodeInfo.class);
@@ -123,7 +120,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
     @Override
     public ClusterNodeInfo getNodeById(Long id) {
         try {
-            Object obj = redisTemplate.opsForValue().get(KEY_PREFIX + id);
+            Object obj = cacheService.get(KEY_PREFIX + id);
             if (obj == null) {
                 return null;
             }
@@ -168,8 +165,8 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
     @Override
     public void registerSelf() {
         ClusterNodeInfo self = getSelf();
-        Boolean success = redisTemplate.opsForValue().setIfAbsent(getKey(), self);
-        redisTemplate.expire(getKey(), Duration.ofSeconds(10));
+        boolean success = cacheService.setIfAbsent(getKey(), self, 10, TimeUnit.SECONDS);
+        cacheService.expire(getKey(), 10, TimeUnit.SECONDS);
         if (Boolean.TRUE.equals(success)) {
             MQTopic<ClusterNodeInfo> clusterNodeOnline = MQTopicConstants.CLUSTER_NODE_ONLINE;
             mqService.sendBroadcast(clusterNodeOnline, self);

@@ -1,25 +1,25 @@
 package com.sfc.task.schedule;
 
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskExecutor;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.xiaotao.saltedfishcloud.annotations.ClusterScheduleJob;
-import com.xiaotao.saltedfishcloud.dao.redis.RedisDao;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class AsyncTaskScheduleChecker implements InitializingBean {
-    private final static String HOLD_KEY_PREFIX = "async_task_hold_";
+    private final static String HOLD_KEY_PREFIX = CacheKeyPrefixes.TASK_HOLD;
 
     @Autowired
     private AsyncTaskExecutor executor;
@@ -37,13 +37,10 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
     private AsyncTaskRecordRepo asyncTaskRecordRepo;
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private CacheService cacheService;
 
     @Autowired
     private AsyncTaskManager asyncTaskManager;
-
-    @Autowired
-    private RedisDao redisDao;
 
     private final Long nodeId = IdUtil.getId();
 
@@ -59,7 +56,7 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
         });
 
         // 任务退出时移除保持标记
-        executor.addTaskExitListener(record -> redisTemplate.delete(getHoldKey(record.getId())));
+        executor.addTaskExitListener(record -> cacheService.delete(getHoldKey(record.getId())));
     }
 
     /**
@@ -72,16 +69,16 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
         for (Long taskId : executor.getRunningTask()) {
             try {
                 String key = getHoldKey(taskId);
-                if(!Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
+                if(!cacheService.hasKey(key)) {
                     setHold(taskId);
                 } else {
-                    Object holdNodeId = redisTemplate.opsForValue().get(key);
+                    Object holdNodeId = cacheService.get(key);
                     // 找不到记录保持的节点id记录 或 保持的节点id与当前不符时，放弃任务
                     if (holdNodeId == null || !Objects.equals(TypeUtils.toLong(holdNodeId), nodeId)) {
                         executor.giveUp(taskId);
                         offlineIds.add(taskId);
                     } else {
-                        redisTemplate.expire(key, Duration.ofMinutes(2));
+                        cacheService.expire(key, 2, TimeUnit.MINUTES);
                     }
                 }
             } catch (Throwable e) {
@@ -112,7 +109,7 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
         for (AsyncTaskRecord asyncTaskRecord : asyncTaskRecords) {
             Long recordId = asyncTaskRecord.getId();
             String key = getHoldKey(recordId);
-            if (!Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
+            if (!cacheService.hasKey(key)) {
                 if (!Boolean.TRUE.equals(asyncTaskRecord.getIsTemp())) {
                     taskId.add(recordId);
                 }
@@ -152,7 +149,7 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
 
             // 获取存在运行标记的任务id，有运行标记的任务暂时不重新发布
             Set<Long> runningKeyIdSet = Optional
-                    .ofNullable(redisDao.scanKeys(HOLD_KEY_PREFIX))
+                    .ofNullable(cacheService.scanKeys(HOLD_KEY_PREFIX + "*"))
                     .orElseGet(Collections::emptySet)
                     .stream()
                     .map(e -> e.substring(HOLD_KEY_PREFIX.length()))
@@ -185,8 +182,7 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
     }
 
     private boolean setHold(long taskId) {
-        Boolean success = redisTemplate.opsForValue().setIfAbsent(getHoldKey(taskId), nodeId, Duration.ofMinutes(2));
-        return success != null ? success : false;
+        return cacheService.setIfAbsent(getHoldKey(taskId), nodeId, 2, TimeUnit.MINUTES);
     }
 
     private String getHoldKey(long taskId) {
