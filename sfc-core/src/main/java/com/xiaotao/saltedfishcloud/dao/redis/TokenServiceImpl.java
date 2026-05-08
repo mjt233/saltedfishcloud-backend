@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.dao.redis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.model.po.User;
@@ -10,16 +12,15 @@ import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
-    private final RedisTemplate<String, String> redisTemplate;
-    private final RedisDao redisDao;
+    private final CacheService cacheService;
     private final UserRepo userRepo;
 
     @Override
@@ -62,22 +63,22 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public void setToken(Long uid, String token) {
-        redisTemplate.opsForValue().set(TokenService.getTokenKey(uid, token), "1", Duration.ofDays(2));
+        cacheService.set(TokenService.getTokenKey(uid, token), "1", 2, TimeUnit.DAYS);
     }
 
     @Override
     public void invalidToken(Long uid, String token) {
-        redisTemplate.delete(TokenService.getTokenKey(uid, token));
+        cacheService.delete(TokenService.getTokenKey(uid, token));
     }
 
     @Override
     public void cleanUserToken(Long uid) {
-        redisTemplate.delete(redisDao.scanKeys("xyy::token::" + uid + "::*"));
+        cacheService.delete(cacheService.scanKeys(CacheKeyPrefixes.TOKEN + uid + "::*"));
     }
 
     @Override
     public boolean isTokenValid(Long uid, String token) {
-        return redisTemplate.opsForValue().get(TokenService.getTokenKey(uid, token)) != null;
+        return cacheService.get(TokenService.getTokenKey(uid, token)) != null;
     }
 
 }

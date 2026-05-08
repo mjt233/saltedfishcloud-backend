@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.constant.UserConstants;
@@ -31,7 +32,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,11 +39,11 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.UnsupportedEncodingException;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -52,7 +52,7 @@ import java.util.Optional;
 public class UserServiceImp implements UserService {
     private final TokenServiceImpl tokenDao;
     private final UserRepo userRepo;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final CacheService cacheService;
     private final SysCommonConfig sysCommonConfig;
 
 
@@ -125,10 +125,10 @@ public class UserServiceImp implements UserService {
     public String sendBindEmail(Long uid, String email) throws MessagingException, UnsupportedEncodingException {
         if (userRepo.getByEmail(email) != null) throw new JsonException(AccountError.EMAIL_EXIST);
         String code = StringUtils.getRandomString(6, false);
-        redisTemplate.opsForValue().set(
+        cacheService.set(
                 RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL),
                 code,
-                Duration.ofMinutes(15)
+                15, TimeUnit.MINUTES
         );
         mailSender.send(mailMessageGenerator.getBindNewMailCodeMessage(email, code));
         return code;
@@ -141,10 +141,10 @@ public class UserServiceImp implements UserService {
         if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(AccountError.EMAIL_NOT_SET);
 
         String code = StringUtils.getRandomString(6, false);
-        redisTemplate.opsForValue().set(
+        cacheService.set(
                 RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD),
                 code,
-                Duration.ofMinutes(15)
+                15, TimeUnit.MINUTES
         );
         mailSender.send(mailMessageGenerator.getFindPasswordCodeMessage(user.getEmail(), code));
         return code;
@@ -156,7 +156,7 @@ public class UserServiceImp implements UserService {
         if (user == null) {
             return false;
         }
-        String realCode = (String) redisTemplate.opsForValue().get(RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD));
+        String realCode = cacheService.get(RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD));
         return code.equalsIgnoreCase(realCode);
     }
 
@@ -165,11 +165,11 @@ public class UserServiceImp implements UserService {
         final User user = getUserByAccount(account);
         if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
         String key = RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD);
-        String record = (String) redisTemplate.opsForValue().get(key);
+        String record = cacheService.get(key);
         if (code == null || !code.equalsIgnoreCase(record)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
 
         userRepo.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
-        redisTemplate.delete(key);
+        cacheService.delete(key);
         tokenDao.cleanUserToken(user.getId());
     }
 
@@ -182,10 +182,10 @@ public class UserServiceImp implements UserService {
 
         String code = StringUtils.getRandomString(6, false);
         mailSender.send(mailMessageGenerator.getVerifyMailCodeMessage(user.getEmail(), code));
-        redisTemplate.opsForValue().set(
+        cacheService.set(
                 RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL),
                 code,
-                Duration.ofMinutes(15)
+                15, TimeUnit.MINUTES
         );
         return code;
     }
@@ -196,7 +196,7 @@ public class UserServiceImp implements UserService {
         if (user == null) throw new JsonException(AccountError.USER_NOT_EXIST);
         if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(AccountError.EMAIL_NOT_SET);
 
-        final Object record = redisTemplate.opsForValue().get(RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL));
+        final Object record = cacheService.get(RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL));
         if (!code.equals(record)) {
             throw new JsonException(AccountError.EMAIL_CODE_ERROR);
         }
@@ -219,21 +219,21 @@ public class UserServiceImp implements UserService {
         // 验证原邮箱
         if (user.getEmail() != null && user.getEmail().length() != 0) {
             originKey = RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL);
-            originRecord = (String) redisTemplate.opsForValue().get(originKey);
+            originRecord = cacheService.get(originKey);
             if (originCode == null || !originCode.equals(originRecord)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
         }
 
         // 验证新邮箱
         newKey = RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL);
-        newRecord = (String) redisTemplate.opsForValue().get(newKey);
+        newRecord = cacheService.get(newKey);
         if (newCode == null || !newCode.equals(newRecord)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
 
 
 
 
         userRepo.updateEmail(uid, email);
-        if (originKey != null) redisTemplate.delete(originKey);
-        redisTemplate.delete(newKey);
+        if (originKey != null) cacheService.delete(originKey);
+        cacheService.delete(newKey);
     }
 
 
@@ -248,7 +248,7 @@ public class UserServiceImp implements UserService {
 
 
         String code = StringUtils.getRandomString(5, false);
-        redisTemplate.opsForValue().set(RedisKeyGenerator.getRegCodeKey(email), code, Duration.ofMinutes(15));
+        cacheService.set(RedisKeyGenerator.getRegCodeKey(email), code, 15, TimeUnit.MINUTES);
         try {
             mailSender.send(mailMessageGenerator.getRegCodeMessage(email, code));
         } catch (MessagingException | UnsupportedEncodingException e) {
@@ -314,12 +314,12 @@ public class UserServiceImp implements UserService {
 
             String key = RedisKeyGenerator.getRegCodeKey(email);
             // 通过邮箱验证码注册
-            String recordCode = (String)redisTemplate.opsForValue().get(key);
+            String recordCode = cacheService.get(key);
             if (!code.equals(recordCode)) {
                 throw new JsonException(AccountError.EMAIL_CODE_ERROR);
             }
             int ret = addUser(user, passwd, email, UserConstants.TYPE_COMMON);
-            redisTemplate.delete(key);
+            cacheService.delete(key);
             return ret;
         } else {
 
@@ -346,7 +346,7 @@ public class UserServiceImp implements UserService {
             userInfo.setType(type);
             userInfo.setQuota(sysCommonConfig.getDefaultQuota());
             userRepo.save(userInfo);
-            redisTemplate.delete(RedisKeyGenerator.getRegCodeKey(email));
+            cacheService.delete(RedisKeyGenerator.getRegCodeKey(email));
             addRegLog(userRepo.getUserById(userInfo.getId()));
             return 1;
         } catch (DuplicateKeyException e) {
