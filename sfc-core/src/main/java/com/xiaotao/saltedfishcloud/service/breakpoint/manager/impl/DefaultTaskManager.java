@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl;
 
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.service.breakpoint.PartParser;
 import com.xiaotao.saltedfishcloud.service.breakpoint.entity.TaskMetadata;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
@@ -12,14 +14,13 @@ import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -29,17 +30,17 @@ import java.util.stream.Collectors;
 public class DefaultTaskManager implements TaskManager {
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private CacheService cacheService;
 
     @Autowired
     private StoreServiceFactory storeServiceFactory;
 
     private String getMetaRedisKey(String id) {
-        return "xyy::breakpoint::" + id;
+        return CacheKeyPrefixes.BREAKPOINT_META + id;
     }
 
     private String getFinishPartKey(String id) {
-        return "xyy::breakpoint::finish::" + id;
+        return CacheKeyPrefixes.BREAKPOINT_FINISH + id;
     }
 
     /**
@@ -54,7 +55,7 @@ public class DefaultTaskManager implements TaskManager {
         info.setTaskId(id);
         String taskDir = TaskStorePath.getRoot(id);
         storeServiceFactory.getTempStoreService().mkdirs(taskDir);
-        redisTemplate.opsForValue().set(getMetaRedisKey(id), info, Duration.ofDays(7));
+        cacheService.set(getMetaRedisKey(id), info, 7, TimeUnit.DAYS);
         return id;
     }
 
@@ -67,7 +68,7 @@ public class DefaultTaskManager implements TaskManager {
     @Override
     public TaskMetadata queryTask(String id) throws IOException {
 
-        return (TaskMetadata) redisTemplate.opsForValue().get(getMetaRedisKey(id));
+        return cacheService.get(getMetaRedisKey(id));
     }
 
     /**
@@ -82,8 +83,8 @@ public class DefaultTaskManager implements TaskManager {
         }
         String taskPath = TaskStorePath.getRoot(id);
         storeServiceFactory.getTempStoreService().delete(taskPath);
-        redisTemplate.delete(getMetaRedisKey(id));
-        redisTemplate.delete(getFinishPartKey(id));
+        cacheService.delete(getMetaRedisKey(id));
+        cacheService.delete(getFinishPartKey(id));
     }
 
     /**
@@ -107,7 +108,7 @@ public class DefaultTaskManager implements TaskManager {
             try(final OutputStream out = storeServiceFactory.getTempStoreService().newOutputStream(partFile)) {
                 long l = StreamUtils.copyRange(stream, out, 0, size - 1);
                 log.debug("写入断点续传文件块，文件名：{} 编号：{}  大小：{}",taskInfo.getFileName() ,i, l);
-                redisTemplate.opsForSet().add(redisKey, i);
+                cacheService.sAdd(redisKey, i);
             }
         }
         stream.close();
@@ -115,11 +116,11 @@ public class DefaultTaskManager implements TaskManager {
 
     @Override
     public List<Integer> getFinishPart(String id) throws IOException {
-        Set<Object> finish = redisTemplate.opsForSet().members(getFinishPartKey(id));
+        Set<Integer> finish = cacheService.sMembers(getFinishPartKey(id));
         if (finish == null) {
             return Collections.emptyList();
         }
-        return finish.stream().map(e -> (Integer)e).sorted(Comparator.comparingInt(o -> o)).collect(Collectors.toList());
+        return finish.stream().sorted(Comparator.comparingInt(o -> o)).collect(Collectors.toList());
     }
 
     @Override
