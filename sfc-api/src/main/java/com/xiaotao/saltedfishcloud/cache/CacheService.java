@@ -12,7 +12,6 @@ public interface CacheService {
     void set(String key, Object value, long ttl, TimeUnit unit);
     boolean setIfAbsent(String key, Object value, long ttl, TimeUnit unit);
     Object getAndSet(String key, Object value);
-    Object getAndSet(String key, Object value, long ttl, TimeUnit unit);
     boolean delete(String key);
     long delete(Collection<String> keys);
 
