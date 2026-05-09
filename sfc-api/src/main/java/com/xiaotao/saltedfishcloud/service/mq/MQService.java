@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 
 /**
  * 消息队列服务
- * todo 使用注解方式订阅广播/队列消息
  */
 public interface MQService {
 

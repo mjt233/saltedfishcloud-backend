@@ -23,6 +23,10 @@ public class SysProperties implements InitializingBean {
     @Value("${app.version}")
     private Version version;
     private Store store;
+    /**
+     * 系统服务相关配置。
+     */
+    private Service service = new Service();
 
 
     @Data
@@ -61,6 +65,14 @@ public class SysProperties implements InitializingBean {
                 this.archiveEncoding = encoding;
             }
         }
+    }
+
+    @Data
+    public static class Service {
+        /**
+         * 消息队列服务提供者，可选 redis 或 local。
+         */
+        private String mqProvider = "redis";
     }
 
 

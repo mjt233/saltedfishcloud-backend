@@ -12,9 +12,9 @@ import com.xiaotao.saltedfishcloud.utils.ClassUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.MapRecord;
@@ -25,7 +25,6 @@ import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
-import org.springframework.stereotype.Service;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
@@ -37,18 +36,15 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-@Service
 @Slf4j
+@RequiredArgsConstructor
 public class RedisMQService implements MQService {
-    private final static String LOG_PREFIX = "[消息队列]";
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private static final String LOG_PREFIX = "[消息队列]";
+    private final RedisTemplate<String, Object> redisTemplate;
 
-    @Autowired
-    private RedisMessageListenerContainer redisMessageListenerContainer;
+    private final RedisMessageListenerContainer redisMessageListenerContainer;
 
-    @Autowired
-    private StreamMessageListenerContainer<String, MapRecord<String, String, String>> stringStreamMessageListenerContainer;
+    private final StreamMessageListenerContainer<String, MapRecord<String, String, String>> stringStreamMessageListenerContainer;
 
     private final Map<Long, MessageListener> listenerMap = new ConcurrentHashMap<>();
 
