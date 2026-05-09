@@ -5,10 +5,13 @@ import com.xiaotao.saltedfishcloud.enums.MQOffsetStrategy;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Sinks;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -108,6 +111,50 @@ class LocalMQServiceTest {
             Thread.sleep(300L);
             assertEquals(4, consumeNum.get());
             assertArrayEquals(new String[]{"value1", "value2", "value3", "value4", "value5"}, historyValue.toArray(new String[0]));
+        }
+    }
+
+    /**
+     * 验证同一 topic 同一消费组在存在多个订阅回调时，消息只会被其中一个回调消费一次。
+     */
+    @Test
+    @DisplayName("测试同一topic同一消费组多回调竞争消费")
+    void pushWithSameGroupMultiCallbackCompetition() throws Exception {
+        try(LocalMQService mqService = new LocalMQService()) {
+            int messageCount = 20;
+            CountDownLatch latch = new CountDownLatch(messageCount);
+            AtomicInteger totalConsumeNum = new AtomicInteger(0);
+            Map<String, AtomicInteger> consumeCountByMessage = new ConcurrentHashMap<>();
+
+            // 在同一个topic和消费组 注册2个消费者
+            mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "competition-group", record -> {
+                String value = record.body().getValue();
+                consumeCountByMessage.computeIfAbsent(value, key -> new AtomicInteger(0)).incrementAndGet();
+                totalConsumeNum.incrementAndGet();
+                latch.countDown();
+            });
+
+            mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "competition-group", record -> {
+                String value = record.body().getValue();
+                consumeCountByMessage.computeIfAbsent(value, key -> new AtomicInteger(0)).incrementAndGet();
+                totalConsumeNum.incrementAndGet();
+                latch.countDown();
+            });
+
+            // 发送20条消息
+            for (int i = 1; i <= messageCount; i++) {
+                mqService.push(MQTopicConstants.CONFIG_CHANGE, NameValueType.<String>builder()
+                        .name("key")
+                        .value("competition-value-" + i)
+                        .build());
+            }
+
+            assertTrue(latch.await(2, TimeUnit.SECONDS));
+            Thread.sleep(200L);
+
+            assertEquals(messageCount, totalConsumeNum.get());
+            assertEquals(messageCount, consumeCountByMessage.size());
+            consumeCountByMessage.values().forEach(consumeTimes -> assertEquals(1, consumeTimes.get()));
         }
     }
 }

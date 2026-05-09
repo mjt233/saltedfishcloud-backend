@@ -18,7 +18,8 @@
       "mcp__IDEA__find_files_by_name_keyword",
       "mcp__IDEA__search_in_files_by_regex",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(mvn test *)"
     ]
   }
 }

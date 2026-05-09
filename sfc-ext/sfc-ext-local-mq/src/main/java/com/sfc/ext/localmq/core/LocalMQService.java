@@ -282,9 +282,12 @@ public class LocalMQService implements MQService, AutoCloseable {
             }
             QueueState queueState = queueStates.computeIfAbsent(topic, this::newQueueState);
             synchronized (queueState.getMonitor()) {
-                ensureQueueGroupNotSubscribed(topic, group);
-                int startOffset = resolveStartOffset(queueState, offsetStrategy, offsetPoint);
-                queueState.getGroupOffsets().put(group, startOffset);
+                Integer groupOffset = queueState.getGroupOffsets().get(group);
+                if (groupOffset == null) {
+                    int startOffset = resolveStartOffset(queueState, offsetStrategy, offsetPoint);
+                    queueState.getGroupOffsets().put(group, startOffset);
+                }
+                queueState.getGroupSubscriptionCounts().merge(group, 1, Integer::sum);
                 long subscriberId = subscriberIdGenerator.getAndIncrement();
                 subscription = new QueueSubscription(subscriberId, topic, group, queueState, consumer);
                 queueSubscriptions.put(subscriberId, subscription);
@@ -417,6 +420,7 @@ public class LocalMQService implements MQService, AutoCloseable {
         synchronized (queueState.getMonitor()) {
             queueState.getMessages().clear();
             queueState.getGroupOffsets().clear();
+            queueState.getGroupSubscriptionCounts().clear();
             queueState.getMonitor().notifyAll();
         }
     }
@@ -443,20 +447,6 @@ public class LocalMQService implements MQService, AutoCloseable {
     }
 
     /**
-     * 确保同一主题消费组不存在活动中的本地订阅。
-     *
-     * @param topic 队列主题
-     * @param group 消费组
-     */
-    private void ensureQueueGroupNotSubscribed(String topic, String group) {
-        for (QueueSubscription subscription : queueSubscriptions.values()) {
-            if (subscription.isActive() && topic.equals(subscription.getTopic()) && group.equals(subscription.getGroup())) {
-                throw new IllegalStateException("队列主题 " + topic + " 的消费组 " + group + " 已存在活动订阅");
-            }
-        }
-    }
-
-    /**
      * 停止本地队列订阅并唤醒等待中的消费者。
      *
      * @param subscription 队列订阅
@@ -464,9 +454,16 @@ public class LocalMQService implements MQService, AutoCloseable {
     private void stopQueueSubscription(QueueSubscription subscription) {
         subscription.stop();
         synchronized (subscription.getQueueState().getMonitor()) {
-            subscription.getQueueState().getGroupOffsets().remove(subscription.getGroup());
-            trimConsumedQueueMessages(subscription.getQueueState());
-            subscription.getQueueState().getMonitor().notifyAll();
+            QueueState queueState = subscription.getQueueState();
+            Integer subscriptionCount = queueState.getGroupSubscriptionCounts().get(subscription.getGroup());
+            if (subscriptionCount == null || subscriptionCount <= 1) {
+                queueState.getGroupSubscriptionCounts().remove(subscription.getGroup());
+                queueState.getGroupOffsets().remove(subscription.getGroup());
+            } else {
+                queueState.getGroupSubscriptionCounts().put(subscription.getGroup(), subscriptionCount - 1);
+            }
+            trimConsumedQueueMessages(queueState);
+            queueState.getMonitor().notifyAll();
         }
     }
 
@@ -689,6 +686,11 @@ public class LocalMQService implements MQService, AutoCloseable {
          * 消费组偏移量。
          */
         private final ConcurrentHashMap<String, Integer> groupOffsets = new ConcurrentHashMap<>();
+
+        /**
+         * 消费组订阅数量。
+         */
+        private final ConcurrentHashMap<String, Integer> groupSubscriptionCounts = new ConcurrentHashMap<>();
 
         /**
          * 队列监视器。
