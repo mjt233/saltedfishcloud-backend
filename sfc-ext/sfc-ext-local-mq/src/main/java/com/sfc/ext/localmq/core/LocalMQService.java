@@ -46,37 +46,16 @@ public class LocalMQService implements MQService, AutoCloseable {
      */
     private final LocalMQQueueCoordinator queueCoordinator = new LocalMQQueueCoordinator(subscriberIdGenerator, shutdown);
 
-    /**
-     * 发送广播消息。
-     *
-     * @param topic 主题
-     * @param msg 消息内容
-     */
     @Override
     public void sendBroadcast(String topic, Object msg) {
         broadcastRegistry.sendBroadcast(topic, msg);
     }
 
-    /**
-     * 发送类型化广播消息。
-     *
-     * @param topic 主题
-     * @param msg 消息内容
-     * @param <T> 消息类型
-     */
     @Override
     public <T> void sendBroadcast(MQTopic<T> topic, T msg) {
         sendBroadcast(topic.getTopic(), msg);
     }
 
-    /**
-     * 订阅类型化广播消息。
-     *
-     * @param topic 主题
-     * @param consumer 消费函数
-     * @param <T> 消息类型
-     * @return 订阅者 ID
-     */
     @Override
     @SuppressWarnings("unchecked")
     public <T> long subscribeBroadcast(MQTopic<T> topic, Consumer<MQMessageRecord<T>> consumer) {
@@ -86,13 +65,6 @@ public class LocalMQService implements MQService, AutoCloseable {
         ));
     }
 
-    /**
-     * 订阅广播消息。
-     *
-     * @param topic 主题
-     * @param consumer 消费函数
-     * @return 订阅者 ID
-     */
     @Override
     public long subscribeBroadcast(String topic, Consumer<MQMessage> consumer) {
         synchronized (lifecycleMonitor) {
@@ -103,11 +75,6 @@ public class LocalMQService implements MQService, AutoCloseable {
         }
     }
 
-    /**
-     * 取消广播或队列订阅。
-     *
-     * @param id 订阅者 ID
-     */
     @Override
     public void unsubscribe(Long id) {
         if (queueCoordinator.unsubscribeMessageQueue(id)) {
@@ -116,101 +83,42 @@ public class LocalMQService implements MQService, AutoCloseable {
         broadcastRegistry.unsubscribe(id);
     }
 
-    /**
-     * 创建消息队列。
-     *
-     * @param topic 队列主题
-     */
     @Override
     public void createQueue(String topic) {
         queueCoordinator.createQueue(topic);
     }
 
-    /**
-     * 创建类型化消息队列。
-     *
-     * @param topic 队列主题
-     * @param <T> 消息类型
-     */
     @Override
     public <T> void createQueue(MQTopic<T> topic) {
         createQueue(topic.getTopic());
     }
 
-    /**
-     * 销毁消息队列。
-     *
-     * @param topic 队列主题
-     */
     @Override
     public void destroyQueue(String topic) {
         queueCoordinator.destroyQueue(topic);
     }
 
-    /**
-     * 销毁类型化消息队列。
-     *
-     * @param topic 队列主题
-     */
     @Override
     public void destroyQueue(MQTopic<?> topic) {
         destroyQueue(topic.getTopic());
     }
 
-    /**
-     * 订阅消息队列。
-     *
-     * @param topic 队列主题
-     * @param group 消费组
-     * @param consumer 消费函数
-     * @return 订阅者 ID
-     */
     @Override
     public long subscribeMessageQueue(String topic, String group, Consumer<MQMessage> consumer) {
         return subscribeMessageQueue(topic, group, MQOffsetStrategy.AT_TAIL, null, consumer);
     }
 
-    /**
-     * 订阅类型化消息队列。
-     *
-     * @param topic 队列主题
-     * @param group 消费组
-     * @param consumer 消费函数
-     * @param <T> 消息类型
-     * @return 订阅者 ID
-     */
     @Override
     public <T> long subscribeMessageQueue(MQTopic<T> topic, String group, Consumer<MQMessageRecord<T>> consumer) {
         return subscribeMessageQueue(topic, group, MQOffsetStrategy.AT_TAIL, null, consumer);
     }
 
-    /**
-     * 按偏移策略订阅消息队列。
-     *
-     * @param topic 队列主题
-     * @param group 消费组
-     * @param offsetStrategy 偏移策略
-     * @param offsetPoint 偏移点
-     * @param consumer 消费函数
-     * @return 订阅者 ID
-     */
     @Override
     public long subscribeMessageQueue(String topic, String group, MQOffsetStrategy offsetStrategy, @Nullable String offsetPoint,
                                       Consumer<MQMessage> consumer) {
         return queueCoordinator.subscribeMessageQueue(topic, group, offsetStrategy, offsetPoint, consumer);
     }
 
-    /**
-     * 按偏移策略订阅类型化消息队列。
-     *
-     * @param topic 队列主题
-     * @param group 消费组
-     * @param offsetStrategy 偏移策略
-     * @param offsetPoint 偏移点
-     * @param consumer 消费函数
-     * @param <T> 消息类型
-     * @return 订阅者 ID
-     */
     @Override
     @SuppressWarnings("unchecked")
     public <T> long subscribeMessageQueue(MQTopic<T> topic, String group, MQOffsetStrategy offsetStrategy, @Nullable String offsetPoint,
@@ -221,36 +129,16 @@ public class LocalMQService implements MQService, AutoCloseable {
         ));
     }
 
-    /**
-     * 取消消息队列订阅。
-     *
-     * @param id 订阅者 ID
-     */
     @Override
     public void unsubscribeMessageQueue(Long id) {
         queueCoordinator.unsubscribeMessageQueue(id);
     }
 
-    /**
-     * 向消息队列推送消息。
-     *
-     * @param topic 队列主题
-     * @param message 消息内容
-     * @throws IOException IO 异常
-     */
     @Override
     public void push(String topic, Object message) throws IOException {
         queueCoordinator.push(topic, message);
     }
 
-    /**
-     * 向类型化消息队列推送消息。
-     *
-     * @param topic 队列主题
-     * @param message 消息内容
-     * @param <T> 消息类型
-     * @throws IOException IO 异常
-     */
     @Override
     public <T> void push(MQTopic<T> topic, T message) throws IOException {
         push(topic.getTopic(), message);
@@ -269,11 +157,6 @@ public class LocalMQService implements MQService, AutoCloseable {
         queueCoordinator.shutdown();
     }
 
-    /**
-     * 关闭当前服务。
-     *
-     * @throws Exception 关闭过程中的异常
-     */
     @Override
     public void close() throws Exception {
         shutdown();
