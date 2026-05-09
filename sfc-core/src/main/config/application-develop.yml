@@ -51,6 +51,7 @@ plugin:
     - sfc-ext/sfc-ext-webrtc
     - sfc-ext/sfc-ext-webdav
     - sfc-ext/sfc-ext-webdav-store
+    - sfc-ext/sfc-ext-local-mq
 
   # 开发模式下可设置为false 关闭插件前端资源的自动加载
   use-auto-load-resource: false
@@ -59,7 +60,7 @@ plugin:
 sys:
   service:
     # MQ provider，默认 redis；可选 redis / local，local 仅支持单 JVM 进程内消息语义
-    mq-provider: redis
+    mq-provider: local
   store:
     # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
     archive-encoding: ${ARCHIVE_ENCODING:}
