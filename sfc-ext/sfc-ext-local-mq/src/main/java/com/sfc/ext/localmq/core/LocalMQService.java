@@ -570,7 +570,6 @@ public class LocalMQService implements MQService, AutoCloseable {
                 if (offset < queueState.getMessages().size()) {
                     LocalQueueMessageRecord messageRecord = queueState.getMessages().get(offset);
                     queueState.getGroupOffsets().put(subscription.getGroup(), offset + 1);
-                    trimConsumedQueueMessages(queueState);
                     return messageRecord;
                 }
                 try {
