@@ -1,0 +1,12 @@
+{
+  "name": "local-mq",
+  "alias": "本地消息队列",
+  "describe": "为系统提供单 JVM 内存实现的 MQService",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-message-processing",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^"
+}

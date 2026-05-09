@@ -19,6 +19,7 @@ target/
 *.iml
 *.ipr
 .proxyai/checkpoints/*
+.worktrees/
 
 ### NetBeans ###
 /nbproject/private/
