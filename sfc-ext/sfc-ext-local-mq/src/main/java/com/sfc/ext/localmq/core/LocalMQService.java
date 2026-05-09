@@ -30,7 +30,7 @@ import java.util.function.Consumer;
  * 该实现支持广播与队列两种语义，但不提供跨进程、跨节点能力。
  */
 @Slf4j
-public class LocalMQService implements MQService {
+public class LocalMQService implements MQService, AutoCloseable {
     /**
      * 日志前缀。
      */
@@ -257,15 +257,6 @@ public class LocalMQService implements MQService {
         return subscribeMessageQueue(topic, group, MQOffsetStrategy.AT_TAIL, null, consumer);
     }
 
-    /**
-     * 订阅类型化消息队列。
-     *
-     * @param topic 队列主题
-     * @param group 消费组
-     * @param consumer 消费函数
-     * @param <T> 消息类型
-     * @return 订阅者 ID
-     */
     @Override
     @SuppressWarnings("unchecked")
     public <T> long subscribeMessageQueue(MQTopic<T> topic, String group, Consumer<MQMessageRecord<T>> consumer) {
@@ -410,6 +401,11 @@ public class LocalMQService implements MQService {
             queueConsumerExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+        this.shutdown();
     }
 
     /**
