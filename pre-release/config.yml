@@ -18,6 +18,10 @@ spring:
 #    password:
 
 sys:
+  service:
+    # MQ provider，默认 redis
+    # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
+    mq-provider: redis
   store:
     # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
     archive-encoding: ${ARCHIVE_ENCODING:}

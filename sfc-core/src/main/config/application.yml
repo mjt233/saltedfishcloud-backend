@@ -64,8 +64,3 @@ management:
       enabled: false
 app:
   version: ^project.version^
-
-sys:
-  service:
-    # MQ provider，默认 redis；可选 redis / local，local 仅支持单 JVM 进程内消息语义
-    mq-provider: redis
