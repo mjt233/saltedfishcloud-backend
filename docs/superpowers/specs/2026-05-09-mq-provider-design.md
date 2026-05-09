@@ -2,7 +2,7 @@
 
 ## 背景
 
-当前系统通过 `MQService` 对外提供消息广播与消息队列能力，默认实现为 `RedisMQService`。现需要在不改动现有业务调用方式的前提下，新增一个**无任何外部服务依赖**的 `MQService` 实现，并允许通过 `application.yml` 中的 `sys.service.mqProvider` 决定系统使用 `RedisMQService` 还是新的本地实现。
+当前系统通过 `MQService` 对外提供消息广播与消息队列能力，默认实现为 `RedisMQService`。现需要在不改动现有业务调用方式的前提下，新增一个**无任何外部服务依赖**的 `MQService` 实现，并允许通过 `application.yml` 中的 `sys.service.mq-provider` 决定系统使用 `RedisMQService` 还是新的本地实现。
 
 本设计只覆盖 `MQService` provider 切换与本地实现，不扩展到缓存、RPC、集群发现等其他 Redis 依赖。
 
@@ -26,7 +26,7 @@
 ```yml
 sys:
   service:
-    mqProvider: redis
+    mq-provider: redis
 ```
 
 配置语义：
@@ -41,8 +41,8 @@ sys:
 
 新增 `MQAutoConfiguration`，统一负责 `MQService` Bean 装配：
 
-- 当 `sys.service.mqProvider=redis` 或未配置时，注册 `RedisMQService`
-- 当 `sys.service.mqProvider=local` 时，注册 `LocalMQService`
+- 当 `sys.service.mq-provider=redis` 或未配置时，注册 `RedisMQService`
+- 当 `sys.service.mq-provider=local` 时，注册 `LocalMQService`
 
 约束：
 
@@ -154,8 +154,8 @@ sys:
 
 实现后至少验证以下场景：
 
-1. `mqProvider=local` 时成功装配唯一的 `MQService` Bean。
-2. `mqProvider=redis` 时保持现有行为不变。
+1. `mq-provider=local` 时成功装配唯一的 `MQService` Bean。
+2. `mq-provider=redis` 时保持现有行为不变。
 3. 本地广播支持多个订阅者同时接收消息。
 4. 本地队列支持按 group 独立消费。
 5. `AT_HEAD`、`AT_TAIL`、`AT_CUSTOM` 三种策略行为正确。
