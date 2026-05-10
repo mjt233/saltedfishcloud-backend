@@ -1,5 +1,6 @@
 package com.sfc.ext.localmq.core;
 
+import com.sfc.ext.localmq.config.LocalMQProperties;
 import com.xiaotao.saltedfishcloud.enums.MQOffsetStrategy;
 import com.xiaotao.saltedfishcloud.model.MQMessage;
 import com.xiaotao.saltedfishcloud.model.vo.MQMessageRecord;
@@ -44,7 +45,22 @@ public class LocalMQService implements MQService, AutoCloseable {
     /**
      * 本地队列协调器。
      */
-    private final LocalMQQueueCoordinator queueCoordinator = new LocalMQQueueCoordinator(subscriberIdGenerator, shutdown);
+    private final LocalMQQueueCoordinator queueCoordinator;
+
+    /**
+     * 创建本地消息队列服务。
+     *
+     */
+    public LocalMQService(LocalMQProperties properties) {
+        this.queueCoordinator = new LocalMQQueueCoordinator(subscriberIdGenerator, shutdown, properties);
+    }
+
+    /**
+     * 创建本地消息队列服务。
+     */
+    public LocalMQService() {
+        this.queueCoordinator = new LocalMQQueueCoordinator(subscriberIdGenerator, shutdown, new LocalMQProperties());
+    }
 
     @Override
     public void sendBroadcast(String topic, Object msg) {

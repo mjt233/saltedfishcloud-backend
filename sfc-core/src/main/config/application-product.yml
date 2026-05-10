@@ -11,6 +11,11 @@ sys:
     # MQ provider，默认 redis
     # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
     mq-provider: redis
+    local-mq:
+      # 本地消息队列的历史消息记录最长长度，默认为 4096。过大的值可能会导致OOM
+      max-queue-size: 4096
+      # 淘汰目标比例，消息数超出 max-queue-size 时淘汰至 max-queue-size * evict-target-ratio，默认 0.85
+      evict-target-ratio: 0.85
   store:
     # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
     archive-encoding: gbk
