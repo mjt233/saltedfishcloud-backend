@@ -7,6 +7,7 @@ import com.xiaotao.saltedfishcloud.model.NameValueType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -230,5 +231,139 @@ class LocalMQServiceTest {
             assertEquals(messageCount, consumeCountByMessage.size());
             consumeCountByMessage.values().forEach(consumeTimes -> assertEquals(1, consumeTimes.get()));
         }
+    }
+
+    /**
+     * 验证订阅后若队列始终未产生消息，取消最后一个订阅会自动销毁该 topic。
+     */
+    @Test
+    @DisplayName("测试无消息时取消订阅自动销毁topic")
+    void unsubscribeLastConsumerAutoDestroyIdleTopicWithoutMessage() throws Exception {
+        try (LocalMQService mqService = new LocalMQService()) {
+            String topic = MQTopicConstants.CONFIG_CHANGE.getTopic();
+            long subscribeId = mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "auto-destroy-no-message-group", record -> {
+            });
+
+            mqService.unsubscribeMessageQueue(subscribeId);
+
+            Map<String, LocalMQQueueState> queueStates = getQueueStates(mqService);
+            assertFalse(queueStates.containsKey(topic), "队列从未产生消息时，取消最后一个订阅应自动销毁 topic");
+        }
+    }
+
+    /**
+     * 验证队列产生过消息后，取消最后一个订阅不应自动销毁该 topic。
+     */
+    @Test
+    @DisplayName("测试产生过消息后取消订阅不自动销毁topic")
+    void unsubscribeLastConsumerAutoDestroyTopicAfterConsumedMessage() throws Exception {
+        try (LocalMQService mqService = new LocalMQService()) {
+            String topic = MQTopicConstants.CONFIG_CHANGE.getTopic();
+            CountDownLatch latch = new CountDownLatch(1);
+
+            long subscribeId = mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "auto-destroy-has-message-group", record -> {
+                latch.countDown();
+            });
+
+            mqService.push(MQTopicConstants.CONFIG_CHANGE, NameValueType.<String>builder()
+                    .name("key")
+                    .value("auto-destroy-value")
+                    .build());
+
+            assertTrue(latch.await(2, TimeUnit.SECONDS), "订阅者应成功消费消息");
+            mqService.unsubscribeMessageQueue(subscribeId);
+
+            Map<String, LocalMQQueueState> queueStates = getQueueStates(mqService);
+            assertTrue(queueStates.containsKey(topic), "只要队列产生过消息，取消订阅后不应自动销毁 topic");
+        }
+    }
+
+    @Test
+    @DisplayName("测试订阅topic后，没有产生任何消息时，取消订阅后没有其他任何订阅，会自动销毁该topic")
+    void testAutoDestroy() throws Exception {
+        try (LocalMQService mqService = new LocalMQService()) {
+            String topic = MQTopicConstants.CONFIG_CHANGE.getTopic();
+            Map<String, LocalMQQueueState> queueStates = getQueueStates(mqService);
+            long subscribeId = mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "auto-destroy-test-group", record -> {
+            });
+            assertTrue(queueStates.containsKey(topic), "队列从未产生消息时，但存在订阅，topic应该存在");
+
+            // 取消唯一的订阅
+            mqService.unsubscribeMessageQueue(subscribeId);
+            assertFalse(queueStates.containsKey(topic), "队列从未产生消息时，取消最后一个订阅应自动销毁 topic");
+
+
+            // 注册2个订阅，但销毁一个，由于还有订阅存在，topic也应该存在
+            long id1 = mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "g2", record -> {
+            });
+
+            long id2 = mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "g2", record -> {
+            });
+            mqService.unsubscribe(id1);
+            assertTrue(queueStates.containsKey(topic), "存在订阅时，topic 不应该被销毁");
+        }
+
+    }
+
+    /**
+     * 验证无订阅时先 push 消息后，g1 从末尾订阅不会消费历史消息；取消 g1 后，g2 从头可消费全部消息。
+     */
+    @Test
+    @DisplayName("测试不同的消费组消费消息后，只要push时没有触发消息淘汰机制，就不应影响另外的消费组能够消费的消息")
+    void subscribeFromTailThenUnsubscribeAndConsumeAllFromHead() throws Exception {
+        try (LocalMQService mqService = new LocalMQService()) {
+            // 1. 无任何订阅时 push 消息
+            mqService.push(MQTopicConstants.CONFIG_CHANGE, NameValueType.<String>builder()
+                    .name("key")
+                    .value("value1")
+                    .build());
+
+            // 2. g1 从消息末尾开始消费，历史消息不应触发回调
+            AtomicInteger g1ConsumeCount = new AtomicInteger(0);
+            CountDownLatch g1Latch = new CountDownLatch(3);
+            long g1SubscribeId = mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "g1", record -> {
+                g1ConsumeCount.incrementAndGet();
+                g1Latch.countDown();
+            });
+            Thread.sleep(200L);
+            assertEquals(0, g1ConsumeCount.get(), "g1 从尾部订阅时不应消费历史消息");
+
+            // 3. push 3 次消息
+            mqService.push(MQTopicConstants.CONFIG_CHANGE, NameValueType.<String>builder().name("key").value("value2").build());
+            mqService.push(MQTopicConstants.CONFIG_CHANGE, NameValueType.<String>builder().name("key").value("value3").build());
+            mqService.push(MQTopicConstants.CONFIG_CHANGE, NameValueType.<String>builder().name("key").value("value4").build());
+            assertTrue(g1Latch.await(2, TimeUnit.SECONDS), "g1 应消费到新增的 3 条消息");
+
+            // 4. 取消 g1 订阅
+            mqService.unsubscribeMessageQueue(g1SubscribeId);
+
+            // 5. g2 从消息头部开始消费，验证可消费总计 4 条消息
+            List<String> g2Consumed = new CopyOnWriteArrayList<>();
+            CountDownLatch g2Latch = new CountDownLatch(4);
+            mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "g2", MQOffsetStrategy.AT_HEAD, null, record -> {
+                g2Consumed.add(record.body().getValue());
+                g2Latch.countDown();
+            });
+
+            assertTrue(g2Latch.await(2, TimeUnit.SECONDS), "g2 应消费到 4 条消息");
+            assertArrayEquals(new String[]{"value1", "value2", "value3", "value4"}, g2Consumed.toArray(new String[0]));
+        }
+    }
+
+    /**
+     * 读取本地队列状态映射。
+     *
+     * @param mqService 本地消息队列服务
+     * @return 队列状态映射
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, LocalMQQueueState> getQueueStates(LocalMQService mqService) throws Exception {
+        Field queueCoordinatorField = LocalMQService.class.getDeclaredField("queueCoordinator");
+        queueCoordinatorField.setAccessible(true);
+        Object queueCoordinator = queueCoordinatorField.get(mqService);
+
+        Field queueStatesField = LocalMQQueueCoordinator.class.getDeclaredField("queueStates");
+        queueStatesField.setAccessible(true);
+        return (Map<String, LocalMQQueueState>) queueStatesField.get(queueCoordinator);
     }
 }

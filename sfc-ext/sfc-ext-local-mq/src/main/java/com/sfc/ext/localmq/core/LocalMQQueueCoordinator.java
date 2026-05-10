@@ -273,18 +273,39 @@ final class LocalMQQueueCoordinator {
      */
     private void stopQueueSubscription(LocalMQQueueSubscription subscription) {
         subscription.stop();
-        synchronized (subscription.getQueueState().getMonitor()) {
-            LocalMQQueueState queueState = subscription.getQueueState();
-            Integer subscriptionCount = queueState.getGroupSubscriptionCounts().get(subscription.getGroup());
-            if (subscriptionCount == null || subscriptionCount <= 1) {
-                queueState.getGroupSubscriptionCounts().remove(subscription.getGroup());
-                queueState.getGroupOffsets().remove(subscription.getGroup());
-            } else {
-                queueState.getGroupSubscriptionCounts().put(subscription.getGroup(), subscriptionCount - 1);
+        LocalMQQueueState queueState = subscription.getQueueState();
+        synchronized (queueLifecycleMonitor) {
+            synchronized (queueState.getMonitor()) {
+                Integer subscriptionCount = queueState.getGroupSubscriptionCounts().get(subscription.getGroup());
+                if (subscriptionCount == null || subscriptionCount <= 1) {
+                    queueState.getGroupSubscriptionCounts().remove(subscription.getGroup());
+                    queueState.getGroupOffsets().remove(subscription.getGroup());
+                } else {
+                    queueState.getGroupSubscriptionCounts().put(subscription.getGroup(), subscriptionCount - 1);
+                }
+                trimConsumedQueueMessages(queueState);
+                tryDestroyIdleQueue(subscription.getTopic(), queueState);
+                queueState.getMonitor().notifyAll();
             }
-            trimConsumedQueueMessages(queueState);
-            queueState.getMonitor().notifyAll();
         }
+    }
+
+    /**
+     * 尝试销毁空闲队列主题。
+     * <p>
+     * 调用方必须先持有 {@link #queueLifecycleMonitor} 与 {@link LocalMQQueueState#getMonitor()} 的监视器。
+     *
+     * @param topic 队列主题
+     * @param queueState 队列状态
+     */
+    private void tryDestroyIdleQueue(String topic, LocalMQQueueState queueState) {
+        if (!queueState.getMessages().isEmpty()) {
+            return;
+        }
+        if (!queueState.getGroupSubscriptionCounts().isEmpty()) {
+            return;
+        }
+        queueStates.remove(topic, queueState);
     }
 
     /**
@@ -296,7 +317,7 @@ final class LocalMQQueueCoordinator {
      */
     private void trimConsumedQueueMessages(LocalMQQueueState queueState) {
         if (queueState.getGroupOffsets().isEmpty()) {
-            queueState.getMessages().clear();
+            // 无活动消费组时保留历史消息，避免“只要 push 过消息”后又被自动销毁。
             return;
         }
         int minOffset = queueState.getGroupOffsets().values().stream()
