@@ -19,6 +19,8 @@ spring:
 
 sys:
   service:
+    # 缓存provider，默认 redis，可选 local（程序内缓存）
+    cache-provider: redis
     # MQ provider，默认 redis
     # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
     mq-provider: redis

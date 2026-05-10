@@ -39,6 +39,7 @@
 
 - 分页封装示例：`sfc-api/src/main/java/com/xiaotao/saltedfishcloud/utils/PageUtils.java`、`sfc-task/sfc-task-core/src/main/java/com/sfc/task/controller/AsyncTaskController.java`。
 - UID 注解示例（Controller 参数）：`sfc-core/src/main/java/com/xiaotao/saltedfishcloud/controller/ResourceController.java` 的多处方法使用 `@UID` 注解来保证 uid 校验。
+- 涉及SpringBoot应用参数配置的修改，如果是在`sys.`节点下，需要同步修改`application-develop.yml`、`application-product.yml`和`pre-release/config.yml`中的对应项，不需要修改`application.yml`，`application.yml`下不需要有`sys.`节点。
 
 ## 权限与安全
 

@@ -6,7 +6,6 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.script.RedisScript;
-import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -19,7 +18,6 @@ import java.util.concurrent.TimeUnit;
  * {@link CacheService} 的 Redis 实现。
  * <p>底层委托 {@link RedisTemplate} 执行实际的 Redis 操作，屏蔽 Redis API 细节。</p>
  */
-@Component
 @RequiredArgsConstructor
 public class RedisCacheServiceImpl implements CacheService {
     private final RedisTemplate<String, Object> redisTemplate;
