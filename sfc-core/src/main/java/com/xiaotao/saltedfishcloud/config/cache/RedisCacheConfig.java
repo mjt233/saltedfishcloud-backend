@@ -1,12 +1,10 @@
-package com.xiaotao.saltedfishcloud.config;
+package com.xiaotao.saltedfishcloud.config.cache;
 
 import com.xiaotao.saltedfishcloud.cache.CacheService;
-import com.xiaotao.saltedfishcloud.cache.LocalCacheServiceImpl;
 import com.xiaotao.saltedfishcloud.cache.RedisCacheServiceImpl;
 import com.xiaotao.saltedfishcloud.constant.CacheNames;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -18,13 +16,14 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import java.time.Duration;
 import java.util.Objects;
 
+/**
+ * Redis 缓存配置类。
+ * 当 sys.service.cache-provider=redis（或未配置）时启用。
+ */
 @Configuration
-public class CacheConfig {
+@ConditionalOnProperty(prefix = "sys.service", name = "cache-provider", havingValue = "redis", matchIfMissing = true)
+public class RedisCacheConfig {
 
-    /**
-     * 本地缓存服务固定缓存名。
-     */
-    private static final String LOCAL_CACHE_SERVICE = "cache-service-local";
     /**
      * 当 sys.service.cache-provider=redis（或未配置）时，启用Redis缓存。
      *
@@ -32,8 +31,7 @@ public class CacheConfig {
      * @return Redis缓存管理器
      */
     @Bean
-    @ConditionalOnProperty(prefix = "sys.service", name = "cache-provider", havingValue = "redis", matchIfMissing = true)
-    public CacheManager redisCacheManager(RedisTemplate<String, Object> redisTemplate) {
+    public CacheManager cacheManager(RedisTemplate<String, Object> redisTemplate) {
         RedisCacheConfiguration redisCacheConfiguration = getRedisCacheConfig(redisTemplate);
         RedisConnectionFactory connectionFactory = Objects.requireNonNull(redisTemplate.getConnectionFactory());
         return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(connectionFactory)
@@ -45,44 +43,14 @@ public class CacheConfig {
     }
 
     /**
-     * 当 sys.service.cache-provider=local 时，启用进程内缓存。
-     *
-     * @return 本地内存缓存管理器
-     */
-    @Bean
-    @ConditionalOnProperty(prefix = "sys.service", name = "cache-provider", havingValue = "local")
-    public CacheManager localCacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager(
-                CacheNames.PATH,
-                CacheNames.DEFAULT,
-                CacheNames.PROXY_TEST_RESULT,
-                LOCAL_CACHE_SERVICE
-        );
-        cacheManager.setCacheSpecification("maximumSize=20000,expireAfterWrite=30m");
-        return cacheManager;
-    }
-
-    /**
      * 当 sys.service.cache-provider=redis（或未配置）时，注入Redis实现的缓存服务。
      *
      * @param redisTemplate RedisTemplate Bean
      * @return Redis缓存服务实现
      */
     @Bean
-    @ConditionalOnProperty(prefix = "sys.service", name = "cache-provider", havingValue = "redis", matchIfMissing = true)
-    public CacheService redisCacheService(RedisTemplate<String, Object> redisTemplate) {
+    public CacheService cacheService(RedisTemplate<String, Object> redisTemplate) {
         return new RedisCacheServiceImpl(redisTemplate);
-    }
-
-    /**
-     * 当 sys.service.cache-provider=local 时，注入本地实现的缓存服务。
-     *
-     * @return 本地缓存服务实现
-     */
-    @Bean
-    @ConditionalOnProperty(prefix = "sys.service", name = "cache-provider", havingValue = "local")
-    public CacheService localCacheService(CacheManager cacheManager) {
-        return new LocalCacheServiceImpl(cacheManager);
     }
 
     /**
