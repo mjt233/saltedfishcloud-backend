@@ -1,5 +1,6 @@
 package com.sfc.ext.localmq.core;
 
+import com.sfc.ext.localmq.config.LocalMQProperties;
 import com.xiaotao.saltedfishcloud.enums.MQOffsetStrategy;
 import com.xiaotao.saltedfishcloud.model.MQMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -72,6 +73,11 @@ final class LocalMQQueueCoordinator {
     });
 
     /**
+     * 队列最大消息数，0 或负数表示不限制。
+     */
+    private final LocalMQProperties properties;
+
+    /**
      * 队列生命周期监视器。
      */
     private final Object queueLifecycleMonitor = new Object();
@@ -81,10 +87,12 @@ final class LocalMQQueueCoordinator {
      *
      * @param subscriberIdGenerator 订阅者 ID 生成器
      * @param serviceShutdown 服务关闭状态
+     * @param properties 消息队列属性配置
      */
-    LocalMQQueueCoordinator(AtomicLong subscriberIdGenerator, AtomicBoolean serviceShutdown) {
+    LocalMQQueueCoordinator(AtomicLong subscriberIdGenerator, AtomicBoolean serviceShutdown, LocalMQProperties properties) {
         this.subscriberIdGenerator = subscriberIdGenerator;
         this.serviceShutdown = serviceShutdown;
+        this.properties = properties;
     }
 
     /**
@@ -189,6 +197,7 @@ final class LocalMQQueueCoordinator {
                         topic,
                         message
                 ));
+                evictExcessMessages(queueState);
                 queueState.getMonitor().notifyAll();
             }
         }
@@ -254,7 +263,7 @@ final class LocalMQQueueCoordinator {
      * @return 队列状态
      */
     private LocalMQQueueState newQueueState(String topic) {
-        return new LocalMQQueueState(topic);
+        return new LocalMQQueueState(topic, properties.getMaxQueueSize());
     }
 
     /**
@@ -299,6 +308,27 @@ final class LocalMQQueueCoordinator {
         }
         queueState.getMessages().subList(0, minOffset).clear();
         queueState.getGroupOffsets().replaceAll((group, offset) -> offset - minOffset);
+    }
+
+    /**
+     * 淘汰超出最大长度的队列消息，并调整消费组偏移量。
+     * <p>
+     * 调用方必须先持有 {@link LocalMQQueueState#getMonitor()} 的监视器。
+     *
+     * @param queueState 队列状态
+     */
+    private void evictExcessMessages(LocalMQQueueState queueState) {
+        int maxSize = queueState.getMaxSize();
+        if (maxSize <= 0) {
+            return;
+        }
+        List<LocalMQQueueMessageRecord> messages = queueState.getMessages();
+        int excess = messages.size() - maxSize;
+        if (excess <= 0) {
+            return;
+        }
+        messages.subList(0, excess).clear();
+        queueState.getGroupOffsets().replaceAll((group, offset) -> Math.max(0, offset - excess));
     }
 
     /**

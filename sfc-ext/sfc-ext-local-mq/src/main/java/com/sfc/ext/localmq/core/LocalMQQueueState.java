@@ -17,6 +17,11 @@ final class LocalMQQueueState {
     private final String topic;
 
     /**
+     * 队列最大消息数，0 或负数表示不限制。
+     */
+    private final int maxSize;
+
+    /**
      * 队列消息列表。
      */
     private final List<LocalMQQueueMessageRecord> messages = new ArrayList<>();
@@ -39,9 +44,11 @@ final class LocalMQQueueState {
     /**
      * 创建本地队列状态。
      *
-     * @param topic 队列主题
+     * @param topic   队列主题
+     * @param maxSize 队列最大消息数，0 或负数表示不限制
      */
-    LocalMQQueueState(String topic) {
+    LocalMQQueueState(String topic, int maxSize) {
         this.topic = topic;
+        this.maxSize = maxSize;
     }
 }

@@ -1,5 +1,6 @@
 package com.sfc.ext.localmq.core;
 
+import com.sfc.ext.localmq.config.LocalMQProperties;
 import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.enums.MQOffsetStrategy;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 class LocalMQServiceTest {
+
 
     @Test
     @DisplayName("测试广播发送与广播订阅")
@@ -111,6 +113,76 @@ class LocalMQServiceTest {
             Thread.sleep(300L);
             assertEquals(4, consumeNum.get());
             assertArrayEquals(new String[]{"value1", "value2", "value3", "value4", "value5"}, historyValue.toArray(new String[0]));
+        }
+    }
+
+    @Test
+    @DisplayName("测试超出队列最大长度时淘汰头部消息")
+    void pushExceedsMaxQueueSize() throws Exception {
+        LocalMQProperties properties = new LocalMQProperties();
+        properties.setMaxQueueSize(5);
+        try (LocalMQService mqService = new LocalMQService(properties)) {
+            // 先 push 10 条消息，超出 maxSize=5
+            for (int i = 1; i <= 10; i++) {
+                mqService.push(MQTopicConstants.CONFIG_CHANGE, NameValueType.<String>builder()
+                        .name("key")
+                        .value("msg-" + i)
+                        .build());
+            }
+
+            // 从头消费，应该只能拿到后 5 条
+            List<String> consumed = new CopyOnWriteArrayList<>();
+            mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "g1", MQOffsetStrategy.AT_HEAD, null, record -> {
+                consumed.add(record.body().getValue());
+            });
+
+            Thread.sleep(300L);
+            assertEquals(5, consumed.size());
+            assertArrayEquals(new String[]{"msg-6", "msg-7", "msg-8", "msg-9", "msg-10"}, consumed.toArray(new String[0]));
+        }
+    }
+
+    @Test
+    @DisplayName("测试淘汰后已有消费组偏移量正确调整并继续消费")
+    void pushExceedsMaxQueueSizeWithConsumerOffsetAdjustment() throws Exception {
+        LocalMQProperties properties = new LocalMQProperties();
+        properties.setMaxQueueSize(5);
+        try (LocalMQService mqService = new LocalMQService(properties)) {
+            // 先订阅消费组 g1，从头消费
+            List<String> g1Consumed = new CopyOnWriteArrayList<>();
+            mqService.createQueue(MQTopicConstants.CONFIG_CHANGE);
+            mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "g1", MQOffsetStrategy.AT_HEAD, null, record -> {
+                g1Consumed.add(record.body().getValue());
+            });
+
+            // push 10 条消息，超出 maxSize=5
+            for (int i = 1; i <= 10; i++) {
+                mqService.push(MQTopicConstants.CONFIG_CHANGE, NameValueType.<String>builder()
+                        .name("key")
+                        .value("msg-" + i)
+                        .build());
+            }
+
+            // 等待消费者处理完
+            Thread.sleep(500L);
+
+            // 消费到的消息数量 >= maxSize（消费者可能在队列消息被淘汰前抢到部分中间消息）
+            assertTrue(g1Consumed.size() >= 5,
+                    "消费数量应 >= 5, 实际: " + g1Consumed.size());
+
+            // 最后 5 条消息（msg-6 ~ msg-10）一定不会被淘汰，一定被消费到
+            for (int i = 6; i <= 10; i++) {
+                assertTrue(g1Consumed.contains("msg-" + i), "应包含 msg-" + i + ", 实际: " + g1Consumed);
+            }
+
+            // 验证队列大小不超过 maxSize: 新消费组从头消费只能拿到 <= maxSize 条
+            List<String> g2Consumed = new CopyOnWriteArrayList<>();
+            mqService.subscribeMessageQueue(MQTopicConstants.CONFIG_CHANGE, "g2", MQOffsetStrategy.AT_HEAD, null, record -> {
+                g2Consumed.add(record.body().getValue());
+            });
+            Thread.sleep(300L);
+            assertTrue(g2Consumed.size() <= 5,
+                    "队列大小应 <= 5, 实际: " + g2Consumed.size());
         }
     }
 
