@@ -310,23 +310,21 @@ final class LocalMQQueueCoordinator {
         queueState.getGroupOffsets().replaceAll((group, offset) -> offset - minOffset);
     }
 
-    /**
-     * 淘汰超出最大长度的队列消息，并调整消费组偏移量。
-     * <p>
-     * 调用方必须先持有 {@link LocalMQQueueState#getMonitor()} 的监视器。
-     *
-     * @param queueState 队列状态
-     */
     private void evictExcessMessages(LocalMQQueueState queueState) {
         int maxSize = queueState.getMaxSize();
         if (maxSize <= 0) {
             return;
         }
         List<LocalMQQueueMessageRecord> messages = queueState.getMessages();
-        int excess = messages.size() - maxSize;
-        if (excess <= 0) {
+        int size = messages.size();
+        if (size <= maxSize) {
             return;
         }
+        int targetSize = (int) (maxSize * properties.getEvictTargetRatio());
+        if (targetSize < 1) {
+            targetSize = maxSize;
+        }
+        int excess = size - targetSize;
         messages.subList(0, excess).clear();
         queueState.getGroupOffsets().replaceAll((group, offset) -> Math.max(0, offset - excess));
     }
