@@ -1,10 +1,9 @@
 package com.sfc.task.test;
 
 import com.sfc.task.AsyncTaskExecutor;
-import com.sfc.rpc.RPCManager;
+import com.sfc.rpc.RedisRPCManager;
 import com.sfc.rpc.RPCRequest;
 import com.sfc.rpc.RPCResponse;
-import com.sfc.rpc.RedisRPCManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @ActiveProfiles("test")
 public class RPCTest {
-    private RPCManager rpcManager;
+    private RedisRPCManager rpcManager;
 
     @Autowired
     private RedisConnectionFactory factory;
@@ -62,7 +61,7 @@ public class RPCTest {
     public void testHandleOnce() throws IOException, BrokenBarrierException, InterruptedException {
         AtomicInteger aCount = new AtomicInteger();
         AtomicInteger bCount = new AtomicInteger();
-        RPCManager rpcManager2 = new RedisRPCManager(factory, null);
+        RedisRPCManager rpcManager2 = new RedisRPCManager(factory, null);
         this.rpcManager.registerRpcHandler("testFunc", request -> {
             boolean isHandled = Integer.parseInt(request.getParam()) % 2 == 0;
             try {

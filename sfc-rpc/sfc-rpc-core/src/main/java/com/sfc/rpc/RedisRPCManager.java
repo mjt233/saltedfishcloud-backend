@@ -30,12 +30,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 基于Redis发布/订阅模型和brpop命令的简易集群RPC管理器
+ * 基于Redis发布/订阅模型和brpop命令的简易集群RPC注册中心和调用器共同实现。
+ * 既提供RPC服务/客户端/handler的注册与获取能力（{@link RPCRegistry}），
+ * 也提供RPC调用能力（{@link RPCInvoker}）。
  * todo 支持身份鉴权
  */
 @Slf4j
 @Component
-public class RedisRPCManager implements RPCManager {
+public class RedisRPCManager implements RPCRegistry, RPCInvoker {
     private final static String ASYNC_TASK_RPC = "ASYNC_TASK_RPC";
     private final static Duration DEFAULT_TIMEOUT = Duration.ofMinutes(2);
 

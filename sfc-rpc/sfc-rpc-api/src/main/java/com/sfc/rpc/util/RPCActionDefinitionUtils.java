@@ -1,6 +1,6 @@
 package com.sfc.rpc.util;
 
-import com.sfc.rpc.RPCManager;
+import com.sfc.rpc.RPCInvoker;
 import com.sfc.rpc.RPCRequest;
 import com.sfc.rpc.RPCResponse;
 import com.sfc.rpc.annotation.RPCAction;
@@ -60,11 +60,11 @@ public class RPCActionDefinitionUtils {
     /**
      * 根据类创建RPC客户端
      * @param clazz         带有RPC信息定义的类
-     * @param rpcManager    RPC管理器
+     * @param rpcInvoker    RPC调用器
      * @return              该类的RPC客户端实现
      */
     @SuppressWarnings("unchecked")
-    public static <T> T createRPCClient(Class<T> clazz, RPCManager rpcManager) {
+    public static <T> T createRPCClient(Class<T> clazz, RPCInvoker rpcInvoker) {
         Map<String, RPCActionDefinition> actionDefinitionMap = getRPCActionDefinition(clazz);
         // 注册客户端
         Enhancer enhancer = new Enhancer();
@@ -85,13 +85,13 @@ public class RPCActionDefinitionUtils {
 
             if (definition.getStrategy() == RPCResponseStrategy.ONLY_ACCEPT_ONE) {
                 try {
-                    return rpcManager.call(request, method.getReturnType()).getResult();
+                    return rpcInvoker.call(request, method.getReturnType()).getResult();
                 } catch (RPCIgnoreException e) {
                     throw new RPCIgnoreException(request, rpcAction.ignoreMessage());
                 }
 
             } else if (definition.getStrategy() == RPCResponseStrategy.SUMMARY_ALL) {
-                List<? extends RPCResponse<?>> rawResult = rpcManager.callAll(request, method.getReturnType());
+                List<? extends RPCResponse<?>> rawResult = rpcInvoker.callAll(request, method.getReturnType());
                 Stream<?> stream = rawResult
                         .stream()
                         .map(e -> {

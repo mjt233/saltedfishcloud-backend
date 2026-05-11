@@ -1,6 +1,5 @@
 package com.sfc.task.config;
 
-import com.sfc.rpc.RPCManager;
 import com.sfc.rpc.RedisRPCManager;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +16,8 @@ public class TaskTestConfiguration {
     private ClusterService clusterService;
 
     @Bean
-    @ConditionalOnMissingBean(RPCManager.class)
-    public RPCManager rpcManager() {
+    @ConditionalOnMissingBean(RedisRPCManager.class)
+    public RedisRPCManager redisRPCManager() {
         return new RedisRPCManager(redisConnectionFactory, clusterService);
     }
 }
