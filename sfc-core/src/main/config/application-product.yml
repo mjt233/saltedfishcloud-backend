@@ -13,6 +13,8 @@ sys:
     # MQ provider，默认 redis
     # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
     mq-provider: redis
+    # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
+    rpc-provider: redis
     local-cache:
       # 本地缓存默认过期时间（毫秒），默认 15 分钟
       default-expire-ms: 900000

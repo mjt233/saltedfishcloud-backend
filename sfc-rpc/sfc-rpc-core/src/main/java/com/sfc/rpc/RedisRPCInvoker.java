@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
@@ -35,6 +36,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(prefix = "sys.service", name = "rpc-provider", havingValue = "redis", matchIfMissing = true)
 public class RedisRPCInvoker implements RPCInvoker {
     /**
      * RPC广播主题名称。
