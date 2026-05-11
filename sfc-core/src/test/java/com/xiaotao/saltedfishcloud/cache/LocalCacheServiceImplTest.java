@@ -477,17 +477,20 @@ public class LocalCacheServiceImplTest {
     @DisplayName("测试最大缓存数量限制会淘汰最旧写入")
     public void testEvictOldestWhenExceedMaxCacheSize() {
         LocalCacheProperty property = new LocalCacheProperty();
-        property.setMaxCacheSize(2);
+        property.setMaxCacheSize(3);
         property.setDefaultExpireMs(TimeUnit.MINUTES.toMillis(30));
         LocalCacheServiceImpl limitedCacheService = new LocalCacheServiceImpl(property);
 
         limitedCacheService.set("k1", "v1");
         limitedCacheService.set("k2", "v2");
-        limitedCacheService.set("k3", "v3");
+        limitedCacheService.set("k1", "v3"); // 更新 k1 的值后，最旧的 key 应该变成k2
+        limitedCacheService.set("k4", "v4");
+        limitedCacheService.set("k5", "v4");
 
-        assertFalse(limitedCacheService.hasKey("k1"), "超过上限后应淘汰最旧写入的 k1");
-        assertTrue(limitedCacheService.hasKey("k2"), "k2 应保留");
-        assertTrue(limitedCacheService.hasKey("k3"), "k3 应保留");
+        assertTrue(limitedCacheService.hasKey("k1"), "k1 应保留");
+        assertFalse(limitedCacheService.hasKey("k2"), "k2 应淘汰");
+        assertTrue(limitedCacheService.hasKey("k4"), "k4 应保留");
+        assertTrue(limitedCacheService.hasKey("k5"), "k5 应保留");
     }
 
 }
