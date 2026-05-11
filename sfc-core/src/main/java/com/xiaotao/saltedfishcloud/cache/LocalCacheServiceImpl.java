@@ -1,9 +1,13 @@
 package com.xiaotao.saltedfishcloud.cache;
 
+import com.xiaotao.saltedfishcloud.config.cache.LocalCacheProperty;
+
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -24,6 +28,37 @@ public class LocalCacheServiceImpl implements CacheService {
      */
     private final Map<String, LocalCacheValue> localStore = new ConcurrentHashMap<>();
 
+    /**
+     * 默认缓存过期时间（毫秒）。
+     */
+    private final long defaultExpireMs;
+
+    /**
+     * 本地缓存最大数量。0 或负数表示不限制。
+     */
+    private final int maxCacheSize;
+
+    /**
+     * 写入顺序队列，用于按最旧写入顺序淘汰。
+     */
+    private final Deque<CacheEntryRef> writeOrder = new ConcurrentLinkedDeque<>();
+
+    /**
+     * 条目版本序列号。
+     */
+    private final AtomicLong sequence = new AtomicLong();
+
+    /**
+     * 构造本地缓存服务。
+     *
+     * @param localCacheProperty 本地缓存配置
+     */
+    public LocalCacheServiceImpl(LocalCacheProperty localCacheProperty) {
+        Objects.requireNonNull(localCacheProperty, "localCacheProperty must not be null");
+        this.defaultExpireMs = localCacheProperty.getDefaultExpireMs();
+        this.maxCacheSize = localCacheProperty.getMaxCacheSize();
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public <T> T get(String key) {
@@ -33,12 +68,12 @@ public class LocalCacheServiceImpl implements CacheService {
 
     @Override
     public void set(String key, Object value) {
-        localStore.put(key, new LocalCacheValue(value, NEVER_EXPIRE_AT));
+        putValue(key, value, defaultExpireAt());
     }
 
     @Override
     public void set(String key, Object value, long ttl, TimeUnit unit) {
-        localStore.put(key, new LocalCacheValue(value, calculateExpireAt(ttl, unit)));
+        putValue(key, value, calculateExpireAt(ttl, unit));
     }
 
     @Override
@@ -89,7 +124,7 @@ public class LocalCacheServiceImpl implements CacheService {
                     changedCount.increment();
                 }
             }
-            localStore.put(key, new LocalCacheValue(set, inheritExpireAt(oldValue)));
+            putValue(key, set, inheritExpireAt(oldValue));
             return changedCount.get();
         }
     }
@@ -116,7 +151,7 @@ public class LocalCacheServiceImpl implements CacheService {
                     changedCount.increment();
                 }
             }
-            localStore.put(key, oldValue);
+            putValue(key, oldValue.value(), oldValue.expireAt());
             return changedCount.get();
         }
     }
@@ -154,7 +189,7 @@ public class LocalCacheServiceImpl implements CacheService {
             if (oldValue == null) {
                 return false;
             }
-            localStore.put(key, new LocalCacheValue(oldValue.value(), calculateExpireAt(ttl, unit)));
+            putValue(key, oldValue.value(), calculateExpireAt(ttl, unit));
             return true;
         }
     }
@@ -188,7 +223,7 @@ public class LocalCacheServiceImpl implements CacheService {
             if (next < min) {
                 return null;
             }
-            localStore.put(key, new LocalCacheValue(next, inheritExpireAt(oldValue)));
+            putValue(key, next, inheritExpireAt(oldValue));
             return next;
         }
     }
@@ -218,6 +253,52 @@ public class LocalCacheServiceImpl implements CacheService {
             return null;
         }
         return value;
+    }
+
+    /**
+     * 写入缓存并根据容量限制执行淘汰。
+     *
+     * @param key 缓存key
+     * @param value 缓存值
+     * @param expireAt 过期时间戳
+     */
+    private void putValue(String key, Object value, long expireAt) {
+        long version = sequence.incrementAndGet();
+        localStore.put(key, new LocalCacheValue(value, expireAt, version));
+        writeOrder.offerLast(new CacheEntryRef(key, version));
+        evictOverflow();
+    }
+
+    /**
+     * 获取默认过期时间戳。
+     *
+     * @return 默认过期时间戳，配置为 0 或负数时表示永不过期
+     */
+    private long defaultExpireAt() {
+        if (defaultExpireMs <= 0) {
+            return NEVER_EXPIRE_AT;
+        }
+        return calculateExpireAt(defaultExpireMs, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * 当缓存数量超过上限时，按写入顺序淘汰旧缓存。
+     */
+    private void evictOverflow() {
+        if (maxCacheSize <= 0) {
+            return;
+        }
+        int needEvict = localStore.size() - maxCacheSize;
+        while (needEvict > 0) {
+            CacheEntryRef oldest = writeOrder.pollFirst();
+            if (oldest == null) {
+                return;
+            }
+            LocalCacheValue current = localStore.get(oldest.key());
+            if (current != null && current.version() == oldest.version() && localStore.remove(oldest.key(), current)) {
+                needEvict--;
+            }
+        }
     }
 
     /**
@@ -311,8 +392,18 @@ public class LocalCacheServiceImpl implements CacheService {
      *
      * @param value 缓存值
      * @param expireAt 过期时间戳（毫秒）
+     * @param version 缓存写入版本号
      */
-    private record LocalCacheValue(Object value, long expireAt) {
+    private record LocalCacheValue(Object value, long expireAt, long version) {
+    }
+
+    /**
+     * 缓存条目引用。
+     *
+     * @param key 缓存key
+     * @param version 写入版本号
+     */
+    private record CacheEntryRef(String key, long version) {
     }
 
     /**

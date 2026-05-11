@@ -1,15 +1,9 @@
 package com.xiaotao.saltedfishcloud.cache;
 
+import com.xiaotao.saltedfishcloud.config.cache.LocalCacheProperty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
-import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -42,7 +36,8 @@ public class LocalCacheServiceImplTest {
      */
     @BeforeEach
     public void setUp() {
-        cacheService = new LocalCacheServiceImpl();
+        LocalCacheProperty property = new LocalCacheProperty();
+        cacheService = new LocalCacheServiceImpl(property);
     }
 
     // ======================== 基础 get/set 操作测试 ========================
@@ -186,7 +181,8 @@ public class LocalCacheServiceImplTest {
 
         // 2. 测试永不过期的 key
         cacheService.set(key, "value");
-        assertEquals(-1, cacheService.getExpire(key), "永不过期的 key 返回 -1");
+        long defaultTtl = cacheService.getExpire(key);
+        assertTrue(defaultTtl > 0 && defaultTtl <= 900, "默认过期时间应在 0-900 秒之间");
 
         // 3. 测试带 TTL 的 key
         String ttlKey = "test:ttl:expire:key";
@@ -200,7 +196,8 @@ public class LocalCacheServiceImplTest {
     public void testExpireMethod() throws InterruptedException {
         String key = "test:expire:update:key";
         cacheService.set(key, "value");
-        assertEquals(-1, cacheService.getExpire(key), "初始状态应该永不过期");
+        long defaultTtl = cacheService.getExpire(key);
+        assertTrue(defaultTtl > 0 && defaultTtl <= 900, "初始状态应使用默认过期时间");
 
         // 设置 1 秒过期
         boolean result = cacheService.expire(key, 1, TimeUnit.SECONDS);
@@ -474,6 +471,23 @@ public class LocalCacheServiceImplTest {
         // 超出范围
         List<Integer> range3 = cacheService.range(key, 10, 20);
         assertTrue(range3.isEmpty());
+    }
+
+    @Test
+    @DisplayName("测试最大缓存数量限制会淘汰最旧写入")
+    public void testEvictOldestWhenExceedMaxCacheSize() {
+        LocalCacheProperty property = new LocalCacheProperty();
+        property.setMaxCacheSize(2);
+        property.setDefaultExpireMs(TimeUnit.MINUTES.toMillis(30));
+        LocalCacheServiceImpl limitedCacheService = new LocalCacheServiceImpl(property);
+
+        limitedCacheService.set("k1", "v1");
+        limitedCacheService.set("k2", "v2");
+        limitedCacheService.set("k3", "v3");
+
+        assertFalse(limitedCacheService.hasKey("k1"), "超过上限后应淘汰最旧写入的 k1");
+        assertTrue(limitedCacheService.hasKey("k2"), "k2 应保留");
+        assertTrue(limitedCacheService.hasKey("k3"), "k3 应保留");
     }
 
 }

@@ -2,8 +2,8 @@ package com.xiaotao.saltedfishcloud.config.cache;
 
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.cache.LocalCacheServiceImpl;
-import com.xiaotao.saltedfishcloud.constant.CacheNames;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @ConditionalOnProperty(prefix = "sys.service", name = "cache-provider", havingValue = "local")
+@EnableConfigurationProperties(LocalCacheProperty.class)
 public class LocalCacheConfig {
 
     /**
@@ -24,12 +25,7 @@ public class LocalCacheConfig {
      */
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager(
-                CacheNames.PATH,
-                CacheNames.DEFAULT,
-                CacheNames.PROXY_TEST_RESULT,
-                "cache-service-local"
-        );
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
         cacheManager.setCacheSpecification("maximumSize=20000,expireAfterWrite=30m");
         return cacheManager;
     }
@@ -37,10 +33,11 @@ public class LocalCacheConfig {
     /**
      * 当 sys.service.cache-provider=local 时，注入本地实现的缓存服务。
      *
+     * @param localCacheProperty 本地缓存配置属性
      * @return 本地缓存服务实现
      */
     @Bean
-    public CacheService cacheService() {
-        return new LocalCacheServiceImpl();
+    public CacheService cacheService(LocalCacheProperty localCacheProperty) {
+        return new LocalCacheServiceImpl(localCacheProperty);
     }
 }
