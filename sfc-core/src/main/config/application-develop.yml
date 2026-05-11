@@ -59,9 +59,16 @@ plugin:
 
 sys:
   service:
+    # 缓存provider，默认 redis，可选 local（程序内缓存）
+    cache-provider: local
     # MQ provider，默认 redis
     # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
     mq-provider: local
+    local-cache:
+      # 本地缓存默认过期时间（毫秒），默认 15 分钟
+      default-expire-ms: 900000
+      # 本地缓存最大数量，超过后按最旧写入顺序淘汰
+      max-cache-size: 4096
     local-mq:
       # 本地消息队列的历史消息记录最长长度，默认为 4096。过大的值可能会导致OOM
       max-queue-size: 4096
