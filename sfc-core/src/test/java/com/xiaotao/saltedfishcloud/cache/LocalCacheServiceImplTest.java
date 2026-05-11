@@ -42,8 +42,7 @@ public class LocalCacheServiceImplTest {
      */
     @BeforeEach
     public void setUp() {
-        CacheManager cacheManager = new ConcurrentMapCacheManager("cache-service-local");
-        cacheService = new LocalCacheServiceImpl(cacheManager);
+        cacheService = new LocalCacheServiceImpl();
     }
 
     // ======================== 基础 get/set 操作测试 ========================

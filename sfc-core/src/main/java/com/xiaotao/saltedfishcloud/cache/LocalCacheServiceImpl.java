@@ -1,14 +1,7 @@
 package com.xiaotao.saltedfishcloud.cache;
 
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -16,14 +9,10 @@ import java.util.stream.Collectors;
 
 /**
  * {@link CacheService} 的本地内存实现。
- * <p>底层依赖 Spring 的 Caffeine CacheManager，额外补充了接口要求的 TTL、集合与扫描语义。</p>
+ * <p>通过进程内 ConcurrentHashMap 保存数据，并在读取时进行惰性过期清理，
+ * 确保 key 级 TTL 不受 CacheManager 的全局过期策略约束。</p>
  */
 public class LocalCacheServiceImpl implements CacheService {
-
-    /**
-     * 本地缓存固定名称。
-     */
-    private static final String LOCAL_CACHE_NAME = "cache-service-local";
 
     /**
      * 永不过期时间戳。
@@ -31,26 +20,9 @@ public class LocalCacheServiceImpl implements CacheService {
     private static final long NEVER_EXPIRE_AT = Long.MAX_VALUE;
 
     /**
-     * 实际本地缓存。
+     * 实际本地缓存存储。
      */
-    private final Cache cache;
-
-    /**
-     * 已知key集合，用于支持scan语义。
-     */
-    private final Set<String> knownKeys = ConcurrentHashMap.newKeySet();
-
-    /**
-     * 通过缓存管理器创建本地缓存服务。
-     *
-     * @param cacheManager 缓存管理器
-     */
-    public LocalCacheServiceImpl(CacheManager cacheManager) {
-        this.cache = cacheManager.getCache(LOCAL_CACHE_NAME);
-        if (this.cache == null) {
-            throw new IllegalStateException("Cache '" + LOCAL_CACHE_NAME + "' is not configured");
-        }
-    }
+    private final Map<String, LocalCacheValue> localStore = new ConcurrentHashMap<>();
 
     @Override
     @SuppressWarnings("unchecked")
@@ -61,14 +33,12 @@ public class LocalCacheServiceImpl implements CacheService {
 
     @Override
     public void set(String key, Object value) {
-        cache.put(key, new LocalCacheValue(value, NEVER_EXPIRE_AT));
-        knownKeys.add(key);
+        localStore.put(key, new LocalCacheValue(value, NEVER_EXPIRE_AT));
     }
 
     @Override
     public void set(String key, Object value, long ttl, TimeUnit unit) {
-        cache.put(key, new LocalCacheValue(value, calculateExpireAt(ttl, unit)));
-        knownKeys.add(key);
+        localStore.put(key, new LocalCacheValue(value, calculateExpireAt(ttl, unit)));
     }
 
     @Override
@@ -94,10 +64,7 @@ public class LocalCacheServiceImpl implements CacheService {
 
     @Override
     public boolean delete(String key) {
-        LocalCacheValue existed = getLocalValue(key);
-        cache.evict(key);
-        knownKeys.remove(key);
-        return existed != null;
+        return localStore.remove(key) != null;
     }
 
     @Override
@@ -122,8 +89,7 @@ public class LocalCacheServiceImpl implements CacheService {
                     changedCount.increment();
                 }
             }
-            cache.put(key, new LocalCacheValue(set, inheritExpireAt(oldValue)));
-            knownKeys.add(key);
+            localStore.put(key, new LocalCacheValue(set, inheritExpireAt(oldValue)));
             return changedCount.get();
         }
     }
@@ -150,7 +116,7 @@ public class LocalCacheServiceImpl implements CacheService {
                     changedCount.increment();
                 }
             }
-            cache.put(key, oldValue);
+            localStore.put(key, oldValue);
             return changedCount.get();
         }
     }
@@ -188,7 +154,7 @@ public class LocalCacheServiceImpl implements CacheService {
             if (oldValue == null) {
                 return false;
             }
-            cache.put(key, new LocalCacheValue(oldValue.value(), calculateExpireAt(ttl, unit)));
+            localStore.put(key, new LocalCacheValue(oldValue.value(), calculateExpireAt(ttl, unit)));
             return true;
         }
     }
@@ -222,7 +188,7 @@ public class LocalCacheServiceImpl implements CacheService {
             if (next < min) {
                 return null;
             }
-            cache.put(key, new LocalCacheValue(next, inheritExpireAt(oldValue)));
+            localStore.put(key, new LocalCacheValue(next, inheritExpireAt(oldValue)));
             return next;
         }
     }
@@ -230,7 +196,7 @@ public class LocalCacheServiceImpl implements CacheService {
     @Override
     public Set<String> scanKeys(String pattern) {
         Pattern keyPattern = Pattern.compile(toRegexPattern(pattern));
-        return knownKeys.stream()
+        return localStore.keySet().stream()
                 .filter(this::hasKey)
                 .filter(key -> keyPattern.matcher(key).matches())
                 .collect(Collectors.toSet());
@@ -243,13 +209,12 @@ public class LocalCacheServiceImpl implements CacheService {
      * @return 本地缓存值
      */
     private LocalCacheValue getLocalValue(String key) {
-        Cache.ValueWrapper wrapper = cache.get(key);
-        if (wrapper == null || !(wrapper.get() instanceof LocalCacheValue value)) {
+        LocalCacheValue value = localStore.get(key);
+        if (value == null) {
             return null;
         }
         if (value.expireAt() != NEVER_EXPIRE_AT && value.expireAt() <= System.currentTimeMillis()) {
-            cache.evict(key);
-            knownKeys.remove(key);
+            localStore.remove(key, value);
             return null;
         }
         return value;
@@ -350,9 +315,6 @@ public class LocalCacheServiceImpl implements CacheService {
     private record LocalCacheValue(Object value, long expireAt) {
     }
 
-    /**
-     * Caffeine 过期策略。
-     */
     /**
      * 原子计数临时对象。
      */

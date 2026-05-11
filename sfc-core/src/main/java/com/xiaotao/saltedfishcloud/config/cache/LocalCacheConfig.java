@@ -37,11 +37,10 @@ public class LocalCacheConfig {
     /**
      * 当 sys.service.cache-provider=local 时，注入本地实现的缓存服务。
      *
-     * @param cacheManager CacheManager Bean
      * @return 本地缓存服务实现
      */
     @Bean
-    public CacheService cacheService(CacheManager cacheManager) {
-        return new LocalCacheServiceImpl(cacheManager);
+    public CacheService cacheService() {
+        return new LocalCacheServiceImpl();
     }
 }
