@@ -31,7 +31,7 @@
         <java.version>25</java.version>
         <lombok.version>1.18.42</lombok.version>
         <!--   系统核心api模块版本     -->
-        <api.version>3.1.0</api.version>
+        <api.version>3.1.1</api.version>
         <task.version>1.0.0</task.version>
         <rpc.version>1.0.0</rpc.version>
         <oshi.version>6.4.0</oshi.version>
