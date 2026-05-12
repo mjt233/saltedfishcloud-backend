@@ -22,7 +22,7 @@
     <artifactId>saltedfishcloud</artifactId>
 
     <!--  主版本号   -->
-    <version>3.1.0</version>
+    <version>3.1.1</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 

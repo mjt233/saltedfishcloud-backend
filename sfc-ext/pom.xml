@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.xiaotao</groupId>
-    <version>3.1.0</version>
+    <version>3.1.1</version>
     <artifactId>sfc-ext</artifactId>
     <packaging>pom</packaging>
 
