@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -44,7 +44,7 @@ public class WebDavResourceController {
 
     @Root
     public WebDavRoot getRoot() {
-        User curUser = getCurUser();
+        UserPrincipal curUser = getCurUser();
         if (curUser == null) {
             return new UnAuthoriseWebDavRoot();
         }
@@ -74,7 +74,7 @@ public class WebDavResourceController {
                 .isVirtualRoot(true)
                 .uid(
                         Optional.ofNullable(root).map(WebDavRoot::getUid)
-                                .or(() -> Optional.ofNullable(getCurUser()).map(User::getId))
+                                .or(() -> Optional.ofNullable(getCurUser()).map(UserPrincipal::getId))
                                 .orElse(null)
                 )
                 .path("/")
@@ -98,7 +98,7 @@ public class WebDavResourceController {
     @ChildOf
     public WebDavItem findChild(WebDavDir parent, String name) {
         // 访问资源必须要求要有用户认证信息
-        User user = getCurUser(parent.getUid());
+        UserPrincipal user = getCurUser(parent.getUid());
         if (user == null) {
             return UnAuthoriseWebDavItem.get(parent, name);
         }
@@ -119,7 +119,7 @@ public class WebDavResourceController {
             if (isPublic) {
                 uid = UserConstants.PUBLIC_USER_ID;
             } else {
-                User user = getCurUser(f.getUid());
+                UserPrincipal user = getCurUser(f.getUid());
                 if (user == null) {
                     return Collections.singletonList(UnAuthoriseWebDavItem.get(f, ""));
                 } else {
@@ -320,7 +320,7 @@ public class WebDavResourceController {
     }
 
 
-    private User getCurUser() {
+    private UserPrincipal getCurUser() {
         return getCurUser(null);
     }
 
@@ -328,42 +328,46 @@ public class WebDavResourceController {
      * 获取当前登录的用户信息
      * @param uid   请求的资源的uid，如果无法根据请求获取用户对象时会根据该id查询用户信息
      */
-    private User getCurUser(@Nullable Long uid) {
+    private UserPrincipal getCurUser(@Nullable Long uid) {
         HttpServletRequest servletRequest = MiltonServlet.request();
 
         // 1. 首先从request attribute获取
         Object userObj = servletRequest.getAttribute("userObj");
-        if (userObj instanceof User) {
-            return (User) userObj;
+        if (userObj instanceof UserPrincipal) {
+            return (UserPrincipal) userObj;
         }
 
         // 2. 从session获取（认证成功后会同步到session）
         userObj = Optional.ofNullable(servletRequest.getSession(false))
                 .map(session -> session.getAttribute("userObj"))
-                .filter(obj -> obj instanceof User)
+                .filter(obj -> obj instanceof UserPrincipal)
                 .orElse(null);
         if (userObj != null) {
             servletRequest.setAttribute("userObj", userObj);
-            return (User) userObj;
+            return (UserPrincipal) userObj;
         }
 
         // 3. 从Authorization获取
-        User user = (User) Optional.of(HttpManager.request())
+        UserPrincipal user = (UserPrincipal) Optional.of(HttpManager.request())
                 .map(Request::getAuthorization)
                 .map(authorization -> {
                     Object tag = authorization.getTag();
                     if (tag == null) {
-                        tag = userServiceLazy.get().getUserByAccount(authorization.getUser());
+                        tag = Optional.ofNullable(userServiceLazy.get().getUserByAccount(authorization.getUser()))
+                                .map(UserPrincipal::from)
+                                .orElse(null);
                         servletRequest.setAttribute("userObj", tag);
                     }
                     return tag;
                 })
-                .filter(t -> t instanceof User)
+                .filter(t -> t instanceof UserPrincipal)
                 .orElse(null);
 
         // 4. 如果仍然没有且提供了uid，根据uid查询
         if (user == null && uid != null) {
-            user = userServiceLazy.get().getUserById(uid);
+            user = Optional.ofNullable(userServiceLazy.get().getUserById(uid))
+                    .map(UserPrincipal::from)
+                    .orElse(null);
             servletRequest.setAttribute("userObj", user);
         }
         if (user == null) {
