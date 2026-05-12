@@ -59,8 +59,10 @@
 
 - JDK 17
 - Maven 3.8+
-- MySQL
-- Redis
+- MySQL(默认，可选SQLite)
+- Redis(默认，可选单机内存缓存)
+
+通过调整配置，可实现仅依靠Java就能将网盘运行起来，配置方法请参考文档 [参数配置](./docs/quick-start/config.md)
 
 ### 2) 构建打包
 

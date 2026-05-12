@@ -18,15 +18,38 @@ server:
 java -jar sfc-core.jar --spring.config.import=file:config.yml --server.port=8087
 ```
 
-## 持久化参数
+### 以不依赖Redis和MySQL的方式运行
 
-系统为了支持运行时调整参数，sys节点下的绝大部分参数都是仅限启动时生效，系统一旦完成首次启动初始化后，这些参数都将被数据库所存储，若需要调整则需要到管理员后台界面进行设置
+参考以下配置节点改为，停用redis，启用sqlite，启用本地缓存和消息队列:
 
-以下配置节点不会被持久化：
-- sys.sync-on-launch
-- sys.store.*
+!!! info "注意"
 
-后续将会开发参数统一配置功能
+    需要启用`sfc-ext-local-mq`插件，`sys.service.mq-provider`才能使用`local`
+
+```yaml
+spring:
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: "jdbc:sqlite:./xyy.db"
+
+sys:
+  redis:
+    # Redis 是否启用，默认为 true。设置为 false 可以在不启动 Redis 的情况下运行系统
+    # 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider设置为local）、RPC等功能
+    enabled: false
+  service:
+    # 缓存provider，默认 redis，可选 local（程序内缓存）
+    cache-provider: local
+    # 资源锁 provider，默认 redisson，可选 local（仅当前服务实例内生效，且不注入 Redisson）
+    lock-provider: local
+    # MQ provider，默认 redis
+    # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
+    mq-provider: local
+    # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
+    rpc-provider: mq
+```
+
+完整配置见 [附录1: config.yml](#1configyml)
 
 ## 附录1：config.yml默认内容
 ```yaml
@@ -38,59 +61,74 @@ spring:
   jpa:
     database: mysql
   datasource:
-    druid:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
-      username: root
-      password: test
-  redis:
-    host: 127.0.0.1
-    port: 6379
-#    database: 0
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "jdbc:mysql://${DB_HOST:127.0.0.1}/${DB_NAME:xyy}?${JDBC_PARAMETER:-useSSL=false&serverTimezone=UTC}"
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:test}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:0}
 #    password:
 
 sys:
-  common:
-    # 注册邀请码
-    reg-code: 114514
-  sync:
-    # 自动同步间隔，单位分钟，-1表示关闭自动同步(该功能不稳定,不推荐使用同步和存储切换功能,建议一开始就确定好存储模式后不要再在管理员后台改动了)
-    interval: -1
-
-    # 咸鱼云启动时立即同步，默认关闭
-    sync-on-launch: false
+  redis:
+    # Redis 是否启用，默认为 true。设置为 false 可以在不启动 Redis 的情况下运行系统
+    # 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider需设置为local）、RPC等功能
+    enabled: ${REDIS_ENABLED:true}
+  service:
+    # 缓存provider，默认 redis，可选 local（程序内缓存）
+    cache-provider: ${CACHE_PROVIDER:redis}
+    # 资源锁 provider，默认 redisson，可选 local（仅当前服务实例内生效，且不注入 Redisson）
+    lock-provider: ${LOCK_PROVIDER:redisson}
+    # MQ provider，默认 redis
+    # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
+    mq-provider: ${MQ_PROVIDER:redis}
+    # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
+    rpc-provider: ${RPC_PROVIDER:redis}
+    local-cache:
+      # 本地缓存默认过期时间（毫秒），默认 15 分钟
+      default-expire-ms: ${LOCAL_CACHE_DEFAULT_EXPIRE_MS:900000}
+      # 本地缓存最大数量，超过后按最旧写入顺序淘汰
+      max-cache-size: ${LOCAL_CACHE_MAX_CACHE_SIZE:4096}
+      # 是否启用本地缓存持久化，启用后会定时异步刷盘，并在系统关闭时再次落盘
+      persist-enabled: ${LOCAL_CACHE_PERSIST_ENABLED:true}
+      # 本地缓存持久化文件路径，系统启动时会尝试从该文件恢复缓存内容
+      persist-file-path: ${LOCAL_CACHE_PERSIST_FILE_PATH:./localcache.data}
+    local-mq:
+      # 本地消息队列的历史消息记录最长长度，默认为 4096。过大的值可能会导致OOM
+      max-queue-size: 4096
+      # 淘汰目标比例，消息数超出 max-queue-size 时淘汰至 max-queue-size * evict-target-ratio，默认 0.85
+      evict-target-ratio: 0.85
   store:
     # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
-    archive-encoding: gbk
+    archive-encoding: ${ARCHIVE_ENCODING:}
 
     # 存储服务类型，可选hdfs（需要hdfs拓展）或local
-    type: local
+    type: ${STORE_TYPE:local}
 
-    # 各类资源根目录存储路径
-    root: store
+    # 除公共网盘外，各类资源根目录存储路径（缩略图、缓存、临时文件、私人网盘数据、用户头像、按哈希组织的文件集合等数据）
+    root: ${STORE_ROOT:store}
 
-    # 公共网盘根目录路径
-    public-root: public
+    # 单独的公共网盘根目录路径
+    # 仅在 管理员后台-系统-基础配置-存储模式 设置为 UNIQUE(默认) 时有效。（注：切换存储模式会触发全网盘数据重新组织，中途出错可能会导致数据丢失和损坏，请谨慎切换并做好数据备份）
+    public-root: ${PUBLIC_ROOT:public}
 
-    # 存储模式，可选 raw - 原始存储 或 unique - 唯一存储
-    # 注意:仅首次启动有效, 后续需要切换请在管理员后台切换, 但需要注意的是切换功能不是特别稳定, 容易导致数据丢失, 所以最好一开始就确定好存储模式不要再动了
-    # (切换功能已经修过好几次严重bug了, 虽然目前没发现有bug, 但不确保真的没bug)
-    mode: unique
-  ftp:
-    # FTP控制端口
-    control-port: 21
+    # minio存储配置
+    # 安装了 sfc-ext-minio-store 插件后，sys.store.type设置为minio后生效
+    minio:
+      access-key: ${MINIO_ACCESS_KEY:xyy}
+      secret-key: ${MINIO_SECRET_KEY:xyy123456}
+      bucket: ${MINIO_BUCKET:xyy}
 
-    # FTP监听地址
-    listen-addr: 0.0.0.0
-
-    # 是否开启FTP
-    ftp-enable: true
-
-    # FTP被动模式传输重定向地址
-    passive-addr: localhost
-
-    # FTP被动模式传输端口范围
-    passive-port: 20000-30000
+    # hdfs存储配置
+    # 安装了 sfc-ext-hadoop-store 插件后，sys.store.type设置为hdfs后生效
+    # 注意：该插件未在jdk25中进行测试，使用时请确保hadoop版本和jdk版本兼容，且hadoop环境配置正确，否则可能会导致程序无法启动或运行时异常
+    hdfs:
+      url: ${HDFS_URL:hdfs://localhost:9000}
+      root: ${HDFS_ROOT:/xyy2}
+      user: ${HDFS_USER:xiaotao}
 
 ```
 
@@ -102,91 +140,65 @@ server:
     encoding:
       charset: utf-8
       enabled: true
-      force: true
+      force: false
   tomcat:
     remoteip:
       remote-ip-header: X-Real-IP
-mybatis:
-  configuration:
-    map-underscore-to-camel-case: true
+
 spring:
   jpa:
     database: mysql
     open-in-view: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
+    properties:
+      hibernate:
+        order_inserts: true
+        enable_lazy_load_no_trans: true
+        jdbc:
+          batch_size: 200
+
   datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    druid:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
-      username: root
-      password: test
-      test-while-idle: true
-      test-on-borrow: false
-      test-on-return: false
-  redis:
-    host: 127.0.0.1
-    port: 6379
-    lettuce:
-      pool:
-        min-idle: 0
-        max-idle: 8
-        max-active: 8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
+    username: root
+    password: test
+    hikari:
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      lettuce:
+        pool:
+          min-idle: 0
+          max-idle: 8
+          max-active: 8
   servlet:
     multipart:
       max-file-size: 8192MB
       max-request-size: 8192MB
+  profiles:
+    active: ^spring-profile^
+  web:
+    resources:
+      add-mappings: false
 logging:
+  file:
+    name: ./log/output.log
   level:
     org: warn
     com: warn
-    com.xiaotao: debug
-    com.xiaotao.saltedfishcloud.dao.mybatis: warn
-    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
+    com.sfc: info
+    com.xiaotao: info
+    com.saltedfishcloud: info
+#    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
+
+management:
+  health:
+    mail:
+      enabled: false
 app:
   version: ^project.version^
-
-
-sys:
-  common:
-    # 注册邀请码
-    reg-code: 114514
-  sync:
-    # 自动同步间隔，单位分钟，-1表示关闭自动同步
-    interval: -1
-
-    # 咸鱼云启动时立即同步，默认关闭
-    sync-on-launch: false
-  store:
-    # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
-    archive-encoding: gbk
-
-    # 存储服务类型，可选hdfs（需要hdfs拓展）或local
-    type: local
-
-    # 各类资源根目录存储路径
-    root: store
-
-    # 公共网盘根目录路径
-    public-root: public
-
-    # 存储模式，可选 raw - 原始存储 或 unique - 唯一存储
-    mode: unique
-  ftp:
-    # FTP控制端口
-    control-port: 21
-
-    # FTP监听地址
-    listen-addr: 0.0.0.0
-
-    # 是否开启FTP
-    ftp-enable: true
-
-    # FTP被动模式传输重定向地址
-    passive-addr: localhost
-
-    # FTP被动模式传输端口范围
-    passive-port: 20000-30000
 
 ```
