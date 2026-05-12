@@ -23,5 +23,15 @@ public class LocalCacheProperty {
      * 小于等于 0 时表示不限制。
      */
     private int maxCacheSize = 4096;
+
+    /**
+     * 是否启用本地缓存持久化。
+     */
+    private boolean persistEnabled = true;
+
+    /**
+     * 本地缓存持久化文件路径。
+     */
+    private String persistFilePath = "./localcache.data";
 }
 

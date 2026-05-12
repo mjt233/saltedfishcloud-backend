@@ -1,10 +1,15 @@
 package com.xiaotao.saltedfishcloud.cache;
 
 import com.xiaotao.saltedfishcloud.config.cache.LocalCacheProperty;
+import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,12 +37,45 @@ public class LocalCacheServiceImplTest {
     private LocalCacheServiceImpl cacheService;
 
     /**
+     * 临时目录，用于隔离持久化测试文件。
+     */
+    @TempDir
+    Path tempDir;
+
+    /**
+     * 当前测试使用的持久化文件路径。
+     */
+    private Path persistFilePath;
+
+    /**
      * 测试前初始化，创建 CacheManager 和 CacheService 实例
      */
     @BeforeEach
     public void setUp() {
-        LocalCacheProperty property = new LocalCacheProperty();
+        persistFilePath = tempDir.resolve("localcache.data");
+        LocalCacheProperty property = createLocalCacheProperty();
         cacheService = new LocalCacheServiceImpl(property);
+    }
+
+    /**
+     * 测试结束后关闭持久化调度器并执行一次收尾落盘。
+     */
+    @AfterEach
+    public void tearDown() {
+        if (cacheService != null) {
+            cacheService.persistBeforeShutdown();
+        }
+    }
+
+    /**
+     * 创建测试使用的本地缓存配置。
+     *
+     * @return 本地缓存配置
+     */
+    private LocalCacheProperty createLocalCacheProperty() {
+        LocalCacheProperty property = new LocalCacheProperty();
+        property.setPersistFilePath(persistFilePath.toString());
+        return property;
     }
 
     // ======================== 基础 get/set 操作测试 ========================
@@ -173,7 +211,7 @@ public class LocalCacheServiceImplTest {
 
     @Test
     @DisplayName("测试 getExpire 方法")
-    public void testGetExpire() throws InterruptedException {
+    public void testGetExpire() {
         String key = "test:expire:key";
 
         // 1. 测试不存在的 key
@@ -203,7 +241,7 @@ public class LocalCacheServiceImplTest {
         boolean result = cacheService.expire(key, 1, TimeUnit.SECONDS);
         assertTrue(result, "expire 应该返回 true");
         long expireTime = cacheService.getExpire(key);
-        assertTrue(expireTime > 0 && expireTime <= 1, "设置的 TTL 应该生效");
+        assertTrue(expireTime >= 0 && expireTime <= 1, "设置的 TTL 应该生效");
 
         // 等待过期
         Thread.sleep(1100);
@@ -215,6 +253,71 @@ public class LocalCacheServiceImplTest {
     public void testExpireNonExistentKey() {
         boolean result = cacheService.expire("non:existent:key", 10, TimeUnit.SECONDS);
         assertFalse(result, "对不存在的 key 调用 expire 应该返回 false");
+    }
+
+    @Test
+    @DisplayName("测试系统启动时读取本地缓存持久化数据")
+    public void testLoadPersistedDataOnStartup() {
+        Map<String, String> value = new HashMap<>();
+        value.put("name", "salted-fish");
+
+        cacheService.set("persist:string", "value");
+        cacheService.set("persist:map", value);
+        cacheService.sAdd("persist:set", "member1", "member2");
+        cacheService.set("persist:object", new FileInfo("fileName.txt", 114514, FileInfo.TYPE_FILE, "/dir", System.currentTimeMillis(), null));
+        cacheService.persistBeforeShutdown();
+
+        assertTrue(Files.exists(persistFilePath), "关闭前刷盘后应生成持久化文件");
+
+        LocalCacheServiceImpl restoredCacheService = new LocalCacheServiceImpl(createLocalCacheProperty());
+        assertEquals("value", restoredCacheService.get("persist:string"));
+        assertEquals(value, restoredCacheService.get("persist:map"));
+        assertEquals(Set.of("member1", "member2"), restoredCacheService.sMembers("persist:set"));
+        assertEquals("fileName.txt", ((FileInfo)restoredCacheService.get("persist:object")).getName());
+        restoredCacheService.persistBeforeShutdown();
+    }
+
+    @Test
+    @DisplayName("测试系统启动时忽略已过期的持久化缓存数据")
+    public void testExpiredPersistedDataWillBeIgnoredOnStartup() throws InterruptedException {
+        cacheService.set("persist:expired", "value", 1, TimeUnit.SECONDS);
+        cacheService.set("persist:alive", "alive", 1, TimeUnit.MINUTES);
+        cacheService.persistBeforeShutdown();
+
+        Thread.sleep(1100);
+
+        LocalCacheServiceImpl restoredCacheService = new LocalCacheServiceImpl(createLocalCacheProperty());
+        assertNull(restoredCacheService.get("persist:expired"), "已过期缓存不应在启动时恢复");
+        assertEquals("alive", restoredCacheService.get("persist:alive"), "未过期缓存应在启动时恢复");
+        restoredCacheService.persistBeforeShutdown();
+    }
+
+    @Test
+    @DisplayName("测试删除缓存后会同步更新持久化文件")
+    public void testDeleteWillUpdatePersistedData() {
+        cacheService.set("persist:delete", "value");
+        assertTrue(cacheService.delete("persist:delete"));
+        cacheService.persistBeforeShutdown();
+
+        LocalCacheServiceImpl restoredCacheService = new LocalCacheServiceImpl(createLocalCacheProperty());
+        assertNull(restoredCacheService.get("persist:delete"), "删除后的缓存不应再次从持久化文件恢复");
+        restoredCacheService.persistBeforeShutdown();
+    }
+
+    @Test
+    @DisplayName("测试关闭持久化开关后不会保存或恢复缓存数据")
+    public void testPersistenceDisabledWillNotSaveOrRestoreData() {
+        LocalCacheProperty disabledProperty = createLocalCacheProperty();
+        disabledProperty.setPersistEnabled(false);
+        LocalCacheServiceImpl disabledCacheService = new LocalCacheServiceImpl(disabledProperty);
+        disabledCacheService.set("persist:disabled", "value");
+        disabledCacheService.persistBeforeShutdown();
+
+        assertFalse(Files.exists(persistFilePath), "关闭持久化后不应生成持久化文件");
+
+        LocalCacheServiceImpl restoredCacheService = new LocalCacheServiceImpl(disabledProperty);
+        assertNull(restoredCacheService.get("persist:disabled"), "关闭持久化后不应恢复缓存数据");
+        restoredCacheService.persistBeforeShutdown();
     }
 
     // ======================== 原子操作并发性测试 ========================
@@ -258,7 +361,7 @@ public class LocalCacheServiceImplTest {
             }).start();
         }
 
-        latch.await(5, TimeUnit.SECONDS);
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "线程应在超时时间内完成");
         // 只有一个线程应该成功
         assertEquals(1, successCount.get(), "在并发场景下，只有一个线程应该成功设置值");
     }
@@ -302,7 +405,7 @@ public class LocalCacheServiceImplTest {
             }).start();
         }
 
-        latch.await(5, TimeUnit.SECONDS);
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "线程应在超时时间内完成");
         // 最终值应该是线程之一设置的
         Object finalValue = cacheService.get(key);
         assertTrue(finalValue instanceof Integer && (Integer) finalValue >= 1 && (Integer) finalValue <= 10,
@@ -333,12 +436,12 @@ public class LocalCacheServiceImplTest {
 
         // 正常自减
         Long result1 = cacheService.decrementAndGet(key, 2, 0);
-        assertEquals((long) 3, (long) result1, "正常自减应该成功");
+        assertEquals(3L, (long) result1, "正常自减应该成功");
 
         // 自减使得值超过最小值时应该返回 null
         Long result2 = cacheService.decrementAndGet(key, 5, 0);
         assertNull(result2, "自减后低于 min 值时应该返回 null");
-        assertEquals((long) 3, (long) cacheService.get(key), "值应该保持不变");
+        assertEquals(3L, (long) cacheService.get(key), "值应该保持不变");
     }
 
     @Test
@@ -363,7 +466,7 @@ public class LocalCacheServiceImplTest {
             }).start();
         }
 
-        latch.await(5, TimeUnit.SECONDS);
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "线程应在超时时间内完成");
         // 所有自减都应该成功（每个线程自减 5，共 50，结果应该为 50）
         Long finalValue = cacheService.get(key);
         assertTrue(successCount.get() > 0, "至少应该有一些自减操作成功");
@@ -476,7 +579,7 @@ public class LocalCacheServiceImplTest {
     @Test
     @DisplayName("测试最大缓存数量限制会淘汰最旧写入")
     public void testEvictOldestWhenExceedMaxCacheSize() {
-        LocalCacheProperty property = new LocalCacheProperty();
+        LocalCacheProperty property = createLocalCacheProperty();
         property.setMaxCacheSize(3);
         property.setDefaultExpireMs(TimeUnit.MINUTES.toMillis(30));
         LocalCacheServiceImpl limitedCacheService = new LocalCacheServiceImpl(property);

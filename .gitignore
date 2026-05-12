@@ -43,7 +43,8 @@ sfc-web/src/main/resources/application.yml
 /release/*
 /ext
 /temp
-.db
+/xyy.db
+/localcache.data
 
 log/**
 .log
