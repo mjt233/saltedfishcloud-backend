@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface CollectionInfoRepo extends JpaRepository<CollectionInfo, Long> {
     @Transactional
-    @Query("UPDATE CollectionInfo C SET C.state = 'CLOSED' WHERE C.expiredAt <= function('NOW') ")
+    @Query("UPDATE CollectionInfo C SET C.state = 'CLOSED' WHERE C.expiredAt <= CURRENT_TIMESTAMP")
     @Modifying
     int updateState();
 

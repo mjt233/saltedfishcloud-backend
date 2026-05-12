@@ -16,6 +16,6 @@ public class BaseModel implements Serializable {
 
     @Id
     @SnowFlakeIdGenerator
-    @Column(name = "id", columnDefinition = "BIGINT UNSIGNED COMMENT '主键'")
+    @Column(name = "id")
     private Long id;
 }

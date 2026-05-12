@@ -2,14 +2,18 @@ server:
   port: 8087
 spring:
   jpa:
+    database: default
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
     show-sql: true
   thymeleaf:
     cache: false
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
-    username: root
-    password: test
+    driver-class-name: org.sqlite.JDBC
+    url: "jdbc:sqlite:./xyy.db"
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
+#    username: root
+#    password: test
   data:
     redis:
       host: 127.0.0.1

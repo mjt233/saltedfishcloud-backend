@@ -27,7 +27,7 @@ import java.util.List;
 @Table(
         name = "`collection`",
         indexes = {
-                @Index(name = "uid_index", columnList = "uid"),
+                @Index(name = "idx_collection_uid", columnList = "uid"),
                 @Index(name = "expired_index", columnList = "expired_at")
         }
 )

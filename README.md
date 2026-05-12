@@ -143,7 +143,7 @@ docker compose up -d --build
 
 ### 代码与架构重构
 
-- [ ] 收敛`redisTemplate`使用，统一封装缓存接口，降低对`redis`的直接依赖
+- [X] 收敛`redisTemplate`使用，统一封装缓存接口，降低对`redis`的直接依赖
 - [ ] 运行环境不依赖外部`redis` 和 `mysql`，直接单程序运行（内置轻量级数据库和缓存方案）
 - [ ] 消息队列可选配置 `redis stream` / `rabbitmq` / `kafka` 等方案
 - [ ] 文件系统接口重构，优化性能，文件列表支持不依赖数据库提高IO吞吐量

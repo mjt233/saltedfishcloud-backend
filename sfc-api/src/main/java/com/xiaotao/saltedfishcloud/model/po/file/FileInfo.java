@@ -33,7 +33,7 @@ import java.util.Optional;
         indexes = {
                 @Index(name = "file_index", columnList = "node,name,uid", unique = true),
                 @Index(name = "md5_index", columnList = "md5"),
-                @Index(name = "uid_index", columnList = "uid")
+                @Index(name = "idx_file_table_uid", columnList = "uid")
         })
 @Entity
 public class FileInfo extends AuditModel {

@@ -13,7 +13,7 @@ import java.util.Date;
  */
 @Entity
 @Table(indexes = {
-        @Index(name = "idx_uid", columnList = "uid")
+        @Index(name = "idx_async_task_record_uid", columnList = "uid")
 })
 @Getter
 @Setter

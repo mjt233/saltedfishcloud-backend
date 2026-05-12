@@ -15,7 +15,7 @@ import jakarta.persistence.Table;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(indexes = {
-        @Index(name = "idx_task_id", columnList = "taskId")
+        @Index(name = "idx_encode_convert_task_log_task_id", columnList = "taskId")
 })
 public class EncodeConvertTaskLog extends BaseModel {
     /**
