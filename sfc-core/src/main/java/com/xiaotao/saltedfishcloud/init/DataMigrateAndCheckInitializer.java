@@ -17,6 +17,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 数据迁移与版本检查器<br>
@@ -50,6 +51,104 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
             log.info("[ConfigFieldMigration] config表字段迁移完成");
         } catch (SQLException e) {
             throw new RuntimeException("迁移config表字段时出错", e);
+        }
+    }
+
+    /**
+     * 迁移文件收集表的历史表名与字段名，避免MySQL下使用关键字命名导致的DDL执行失败。
+     * <p>迁移规则：</p>
+     * <ul>
+     *     <li>表名：collection -&gt; collection_info</li>
+     *     <li>字段名：describe -&gt; describe_content</li>
+     * </ul>
+     * @param dataSource 数据源
+     */
+    private void migrateCollectionTable(DataSource dataSource) {
+        try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
+            if (DBUtils.tableExists(dataSource, "collection") && !DBUtils.tableExists(dataSource, "collection_info")) {
+                String oldTableName = DBUtils.quoteIdentifier(connection, "collection");
+                String newTableName = DBUtils.quoteIdentifier(connection, "collection_info");
+                String dbType = DBUtils.getDatabaseProductName(connection);
+                String renameTableSql;
+                if (dbType.contains("mysql") || dbType.contains("mariadb")) {
+                    renameTableSql = "RENAME TABLE " + oldTableName + " TO " + newTableName;
+                } else {
+                    renameTableSql = "ALTER TABLE " + oldTableName + " RENAME TO " + newTableName;
+                }
+                statement.execute(renameTableSql);
+                log.info("[CollectionTableMigration] 数据表迁移完成: collection -> collection_info");
+            }
+
+            if (!DBUtils.tableExists(dataSource, "collection_info")) {
+                return;
+            }
+
+            if (DBUtils.columnExists(dataSource, "collection_info", "describe")
+                    && !DBUtils.columnExists(dataSource, "collection_info", "describe_content")) {
+                String tableName = DBUtils.quoteIdentifier(connection, "collection_info");
+                String oldColumnName = DBUtils.quoteIdentifier(connection, "describe");
+                String newColumnName = DBUtils.quoteIdentifier(connection, "describe_content");
+                statement.execute("ALTER TABLE " + tableName + " RENAME COLUMN " + oldColumnName + " TO " + newColumnName);
+                log.info("[CollectionTableMigration] 字段迁移完成: collection_info.describe -> collection_info.describe_content");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("迁移文件收集表结构时出错", e);
+        }
+    }
+
+    /**
+     * 获取本次索引重命名对应的旧索引清理配置。key 为表名，value 为需要删除的旧索引名称列表。
+     * @return 旧索引清理配置
+     */
+    @NotNull
+    private List<Map.Entry<String, List<String>>> getLegacyIndexMappings() {
+        return List.of(
+                Map.entry("download_task", List.of("idx_uid")),
+                Map.entry("async_task_record", List.of("idx_uid")),
+                Map.entry("async_task_log_record", List.of("idx_task_id")),
+                Map.entry("wol_device", List.of("idx_uid")),
+                Map.entry("web_dav_auth", List.of("uid_index")),
+                Map.entry("quick_share", List.of("idx_uid")),
+                Map.entry("user_custom_attribute", List.of("idx_uid")),
+                Map.entry("collection_info", List.of("uid_index")),
+                Map.entry("desktop_component_config", List.of("idx_uid", "idx_name")),
+                Map.entry("mount_point", List.of("idx_uid")),
+                Map.entry("file_table", List.of("uid_index")),
+                Map.entry("shell_execute_record", List.of("idx_uid")),
+                Map.entry("share", List.of("uid_index")),
+                Map.entry("third_party_platform_user", List.of("idx_uid")),
+                Map.entry("encode_convert_task_log", List.of("idx_task_id")),
+                Map.entry("encode_convert_task", List.of("idx_uid", "idx_task_id")),
+                Map.entry("third_party_app", List.of("idx_name"))
+        );
+    }
+
+    /**
+     * 在JPA初始化之前清理已废弃的旧索引名称，防止Hibernate仅创建新索引而保留旧索引。
+     * 该操作仅针对非SQLite数据库执行，避免影响SQLite环境下已兼容的新索引结构。
+     * @param dataSource 数据源
+     */
+    private void cleanupLegacyIndexes(DataSource dataSource) {
+        try (Connection connection = dataSource.getConnection()) {
+            if (DBUtils.isSQLite(connection)) {
+                log.debug("[LegacyIndexMigration] 当前数据库为SQLite，跳过旧索引清理");
+                return;
+            }
+            for (Map.Entry<String, List<String>> entry : getLegacyIndexMappings()) {
+                String tableName = entry.getKey();
+                if (!DBUtils.tableExists(dataSource, tableName)) {
+                    continue;
+                }
+                for (String indexName : entry.getValue()) {
+                    if (!DBUtils.indexExists(connection, tableName, indexName)) {
+                        continue;
+                    }
+                    log.info("[LegacyIndexMigration] 删除旧索引: {}.{}", tableName, indexName);
+                    DBUtils.dropIndex(connection, tableName, indexName);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("清理旧索引时出错", e);
         }
     }
 
@@ -127,6 +226,12 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
 
         // 执行字段迁移，确保后续操作使用新字段名
         migrateConfigTable(dataSource);
+
+        // 迁移历史上使用关键字命名的文件收集表结构
+        migrateCollectionTable(dataSource);
+
+        // 清理被重命名的旧索引，避免非SQLite数据库保留历史索引
+        cleanupLegacyIndexes(dataSource);
 
     }
 

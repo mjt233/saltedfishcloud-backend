@@ -20,8 +20,8 @@ import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
+import com.xiaotao.saltedfishcloud.cache.LockFactory;
+import java.util.concurrent.locks.Lock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -50,7 +50,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     private final Map<String, ThumbnailHandler> handlerCache = new ConcurrentHashMap<>();
 
     private final FileResourceMd5Resolver md5Resolver;
-    private final RedissonClient redisson;
+    private final LockFactory lockFactory;
     private final SysCommonConfig sysCommonConfig;
 
     private AttachStorage thumbnailStorage;
@@ -161,7 +161,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
         if (existResource != null) {
             return existResource;
         }
-        RLock lock = redisson.getLock(fileIdentify);
+        Lock lock = lockFactory.getLock(fileIdentify);
         try {
             lock.lock();
 

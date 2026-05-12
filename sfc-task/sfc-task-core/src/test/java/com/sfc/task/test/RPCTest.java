@@ -1,10 +1,13 @@
 package com.sfc.task.test;
 
 import com.sfc.task.AsyncTaskExecutor;
-import com.sfc.rpc.RPCManager;
+import com.sfc.rpc.DefaultRPCRegistry;
+import com.sfc.rpc.RPCInvoker;
+import com.sfc.rpc.RPCRegistry;
 import com.sfc.rpc.RPCRequest;
 import com.sfc.rpc.RPCResponse;
-import com.sfc.rpc.RedisRPCManager;
+import com.sfc.rpc.RPCRegistryStore;
+import com.sfc.rpc.RedisRPCInvoker;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,7 +49,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @ActiveProfiles("test")
 public class RPCTest {
-    private RPCManager rpcManager;
+    /**
+     * 测试上下文中的RPC注册中心。
+     */
+    @Autowired
+    private RPCRegistry rpcRegistry;
+
+    /**
+     * 测试上下文中的RPC调用器。
+     */
+    @Autowired
+    private RPCInvoker rpcInvoker;
 
     @Autowired
     private RedisConnectionFactory factory;
@@ -55,20 +68,25 @@ public class RPCTest {
     private AsyncTaskExecutor executor;
 
     /**
-     * 测试多个管理器监听时
-     * @throws IOException
+     * 测试多个RPC监听器同时存在时仅由匹配节点处理请求。
+     *
+     * @throws BrokenBarrierException 栅栏等待异常
+     * @throws InterruptedException   线程等待中断异常
      */
     @Test
-    public void testHandleOnce() throws IOException, BrokenBarrierException, InterruptedException {
+    public void testHandleOnce() throws BrokenBarrierException, InterruptedException {
         AtomicInteger aCount = new AtomicInteger();
         AtomicInteger bCount = new AtomicInteger();
-        RPCManager rpcManager2 = new RedisRPCManager(factory, null);
-        this.rpcManager.registerRpcHandler("testFunc", request -> {
+        RPCRegistryStore rpcRegistryStore = new RPCRegistryStore();
+        RPCInvoker rpcInvoker2 = new RedisRPCInvoker(factory, null, rpcRegistryStore);
+        RPCRegistry rpcRegistry2 = new DefaultRPCRegistry(rpcInvoker2, rpcRegistryStore);
+        this.rpcRegistry.registerRpcHandler("testFunc", request -> {
             boolean isHandled = Integer.parseInt(request.getParam()) % 2 == 0;
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
+                log.error("等待测试处理器1执行时线程被中断", e);
             }
             if (isHandled) {
                 aCount.incrementAndGet();
@@ -79,12 +97,13 @@ public class RPCTest {
                     .build();
         });
 
-        rpcManager2.registerRpcHandler("testFunc", request -> {
+        rpcRegistry2.registerRpcHandler("testFunc", request -> {
             boolean isHandled = Integer.parseInt(request.getParam()) % 2 != 0;
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
+                log.error("等待测试处理器2执行时线程被中断", e);
             }
             if (isHandled) {
                 bCount.incrementAndGet();
@@ -107,11 +126,11 @@ public class RPCTest {
                             .functionName("testFunc")
                             .param(j + "")
                             .build();
-                    response = this.rpcManager.call(request, String.class);
+                    response = this.rpcInvoker.call(request, String.class);
                     System.out.println("处理结果：" + response.getResult());
                     barrier.await();
                 } catch (IOException | InterruptedException | BrokenBarrierException e) {
-                    e.printStackTrace();
+                    log.error("并发RPC测试执行失败", e);
                 }
             }).start();
         }

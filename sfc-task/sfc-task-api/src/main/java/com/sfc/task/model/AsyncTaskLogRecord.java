@@ -9,7 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(indexes = {
-        @Index(name = "idx_task_id", columnList = "taskId")
+        @Index(name = "idx_async_task_log_record_task_id", columnList = "taskId")
 })
 public class AsyncTaskLogRecord extends AuditModel {
 

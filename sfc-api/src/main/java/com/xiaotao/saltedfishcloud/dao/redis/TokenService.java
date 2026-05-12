@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.redis;
 
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
@@ -14,7 +15,7 @@ public interface TokenService {
      * @return key
      */
     static String getTokenKey(Long uid, String token) {
-        return "xyy::token::" + uid + "::" + SecureUtils.getMd5(token);
+        return CacheKeyPrefixes.TOKEN + uid + "::" + SecureUtils.getMd5(token);
     }
 
     /**

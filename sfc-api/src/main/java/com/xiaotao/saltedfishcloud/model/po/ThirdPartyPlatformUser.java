@@ -15,7 +15,7 @@ import lombok.*;
 @Setter
 @Table(
         indexes = {
-                @Index(name = "idx_uid", columnList = "uid"),
+                @Index(name = "idx_third_party_platform_user_uid", columnList = "uid"),
                 @Index(name = "idx_pid", columnList = "thirdPartyUserId,platformType")
         }
 )

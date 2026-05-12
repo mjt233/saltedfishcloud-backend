@@ -25,7 +25,7 @@ class CollectionInfoRepositoryTest {
     @Test
     public void testUpdateState() {
 
-        System.out.println(repository.updateState());
+        System.out.println(repository.updateState(new Date()));
     }
 
     @Test

@@ -1,5 +1,7 @@
 package com.xiaotao.saltedfishcloud.service;
 
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.error.OAuthError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppTokenRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -18,17 +20,16 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     private final ThirdPartyAppAuthorizationService authorizationService;
     private final ThirdPartyAppService appService;
     private final ThirdPartyAppKeyService keyService;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final CacheService cacheService;
 
 
     @Override
@@ -50,7 +51,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
                 .thirdPartyApp(app)
                 .authorization(authorizeResult)
                 .build();
-        redisTemplate.opsForValue().set(getAuthorizationCodeCacheKey(code), authorizationVo, Duration.ofMinutes(15));
+        cacheService.set(getAuthorizationCodeCacheKey(code), authorizationVo, 15, TimeUnit.MINUTES);
         return code;
     }
 
@@ -70,7 +71,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
                 .uid(tokenRecord.getUid())
                 .scope(authorizationVo.getAuthorization().getScope())
                 .jti(IdUtil.getId())
-                .build(), (int) Duration.ofMinutes(15).toSeconds());
+                .build(), (int) TimeUnit.MINUTES.toSeconds(15));
         tokenRecord.setApiTicket(apiTicket);
         save(tokenRecord);
 
@@ -82,11 +83,11 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     }
 
     private void disableApiTicket(String apiTicket) {
-        redisTemplate.opsForValue().set("oauthApp::disabledTicket::" + SecureUtils.getMd5(apiTicket), 1, Duration.ofMinutes(15));
+        cacheService.set(CacheKeyPrefixes.OAUTH_DISABLED_TICKET + SecureUtils.getMd5(apiTicket), 1, 15, TimeUnit.MINUTES);
     }
 
     private void checkApiTicketIsDisabled(String apiTicket) {
-        if(redisTemplate.opsForValue().get("oauthApp::disabledTicket::" + SecureUtils.getMd5(apiTicket)) != null) {
+        if(cacheService.get(CacheKeyPrefixes.OAUTH_DISABLED_TICKET + SecureUtils.getMd5(apiTicket)) != null) {
             throw new JsonException(OAuthError.INVALID_TOKEN);
         }
     }
@@ -102,7 +103,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     }
 
     private String getAuthorizationCodeCacheKey(String code) {
-        return "oauthApp::authCode::" + code;
+        return CacheKeyPrefixes.OAUTH_AUTH_CODE + code;
     }
 
     /**
@@ -126,7 +127,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     public String getAccessToken(String code, String clientSecret) {
         // 验证授权码是否有效，并解析授权码
         String codeKey = getAuthorizationCodeCacheKey(code);
-        ThirdPartyAppUserAuthorizationVo vo = (ThirdPartyAppUserAuthorizationVo) redisTemplate.opsForValue().get(codeKey);
+        ThirdPartyAppUserAuthorizationVo vo = cacheService.get(codeKey);
         if (vo == null) {
             throw new JsonException(OAuthError.INVALID_CODE);
         }
@@ -157,7 +158,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
         save(tokenRecord);
 
         // 移除授权码有效缓存
-        redisTemplate.delete(codeKey);
+        cacheService.delete(codeKey);
         return accessToken;
     }
 

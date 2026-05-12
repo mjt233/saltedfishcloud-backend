@@ -1,10 +1,16 @@
 name: tag-release
 
-# 仅在推送版本标签时触发发布流程（例如 v3.1.0）
+# 在推送版本标签时触发，或通过 GitHub 网页手动触发（需指定 tag 名称，例如 v3.1.0）
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag 名称（例如 v3.1.0）'
+        required: true
+        type: string
 
 # 创建 Release 并上传附件需要写入仓库内容权限
 permissions:
@@ -30,22 +36,21 @@ jobs:
           java-version: '25'
           cache: maven
 
-      # 安装 Node.js 24，并按前端 lock 文件启用 npm 缓存
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: saltedfishcloud-frontend/package-lock.json
-
       # 校验 tag 对应提交是否在 master 上，并生成 Release 元数据
       - name: Validate tag commit and prepare release metadata
         id: meta
         shell: bash
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
-          COMMIT_SHA="$(git rev-list -n 1 "${GITHUB_REF}")"
+          # 手动触发时取 input.tag，推送标签时取 GITHUB_REF_NAME
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+            git fetch --tags
+            COMMIT_SHA="$(git rev-list -n 1 "refs/tags/${TAG}")"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            COMMIT_SHA="$(git rev-list -n 1 "${GITHUB_REF}")"
+          fi
 
           git fetch origin master
           if ! git merge-base --is-ancestor "${COMMIT_SHA}" origin/master; then
@@ -70,6 +75,14 @@ jobs:
           repository: mjt233/saltedfishcloud-frontend
           ref: ${{ steps.meta.outputs.tag }}
           path: saltedfishcloud-frontend
+
+      # 安装 Node.js 24，并按前端 lock 文件启用 npm 缓存
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: saltedfishcloud-frontend/package-lock.json
 
       # 在前端目录安装依赖并构建 dist
       - name: Build frontend

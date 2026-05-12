@@ -2,7 +2,9 @@
 
 ## 项目说明
 
-这是一个基于 SpringBoot 的网盘项目
+这是一个基于 SpringBoot 的网盘项目。
+
+注意：这是一个多模块 Maven 项目（见根 `pom.xml` 的 <modules>），主要模块包括 `sfc-core`、`sfc-api`、`sfc-ext`、`sfc-task`、`sfc-download`、`sfc-rpc`、`sfc-archive`。扩展插件位于 `sfc-ext` 目录（例如 `sfc-ext-webdav`、`sfc-ext-minio-store` 等）。
 
 ## 核心技术栈
 
@@ -11,6 +13,20 @@
 - Redis
 - MySQL
 
+附加/常用库（本仓库可见）：
+
+- Spring Security（认证/鉴权）
+- WebSocket（实时通知 / websocket endpoints）
+- Redisson / redisson-spring-boot-starter（分布式锁 / Redis 客户端）
+- Springfox (Swagger) 用于接口文档
+- Lombok（实体/DTO 代码简化）
+- okhttp（HTTP 客户端）
+- jjwt（JWT 处理）
+- Thymeleaf（部分页面模板）
+- OSHI（系统硬件信息收集）
+
+此外：项目根 `pom.xml` 指定的 Java 版本为 Java 25 — 请在本地构建或运行时确保 JDK 版本兼容（或使用工具链/容器）。
+
 ## 代码规范
 
 - 文档化：所有新增方法和字段必须添加 JavaDoc 文档注释
@@ -18,6 +34,12 @@
 - JPA Repository层分页查询必须使用`Pageable`参数，返回值为`Page`(org.springframework.data.domain.Page)。
 - 异常处理：优先抛出业务自定义异常（JsonException），由全局异常处理器拦截。
 - 实体类需要getter或setter时，尽可能使用 Lombok 注解（如 @Data、@Getter、@Setter）来简化代码。
+
+示例参考：
+
+- 分页封装示例：`sfc-api/src/main/java/com/xiaotao/saltedfishcloud/utils/PageUtils.java`、`sfc-task/sfc-task-core/src/main/java/com/sfc/task/controller/AsyncTaskController.java`。
+- UID 注解示例（Controller 参数）：`sfc-core/src/main/java/com/xiaotao/saltedfishcloud/controller/ResourceController.java` 的多处方法使用 `@UID` 注解来保证 uid 校验。
+- 涉及SpringBoot应用参数配置的修改，如果是在`sys.`节点下，需要同步修改`application-develop.yml`、`application-product.yml`和`pre-release/config.yml`中的对应项，不需要修改`application.yml`，`application.yml`下不需要有`sys.`节点。
 
 ## 权限与安全
 
@@ -64,6 +86,9 @@
 - 公共资源（uid=0）的写入逻辑是否做了管理员校验？
 - 是否已经通过 build_project 验证？
 - JavaDoc 是否已补全？
+
+- 是否确认本地/CI 的 JDK 版本满足项目要求（根 pom 指定 Java 25）？
+- 是否注意到这是多模块项目（必要时在模块级别运行编译或打包）？
 
 ### Git 提交规范
 

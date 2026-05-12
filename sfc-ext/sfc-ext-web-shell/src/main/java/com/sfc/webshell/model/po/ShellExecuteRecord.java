@@ -20,7 +20,7 @@ import jakarta.validation.constraints.NotBlank;
 @Getter
 @Setter
 @Table(indexes = {
-        @Index(name = "idx_uid", columnList = "uid")
+        @Index(name = "idx_shell_execute_record_uid", columnList = "uid")
 })
 public class ShellExecuteRecord extends AuditModel {
     /**

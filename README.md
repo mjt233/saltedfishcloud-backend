@@ -1,7 +1,7 @@
 # 咸鱼云网盘后端
 
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.8-green.svg)
-![Java](https://img.shields.io/badge/Java-25-green.svg)
+![Java](https://img.shields.io/badge/Java-25-purple.svg)
 ![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)
 
 咸鱼云网盘是一个基于 Spring Boot 的网盘后端系统，支持公共资源与私人存储双域管理，提供文件管理、分享协作、在线预览、外部存储挂载与插件化扩展能力。
@@ -39,17 +39,19 @@
 - 统一配置体系，支持后台动态管理大量配置项
 - 支持 Maven 构建与 Docker 部署
 
-## 项目结构
+## 界面展示
 
-项目采用多模块结构，核心模块如下：
+| 目录浏览与`README.md`自动预览 | 移动端兼容 |
+| --- | --- |
+| ![filelist.png](docs/img/filelist.png) | ![mobile.png](docs/img/mobile.png) |
 
-- `sfc-core`: 主程序入口与核心业务实现
-- `sfc-api`: 公共 API 与基础模型
-- `sfc-archive`: 压缩包处理能力
-- `sfc-download`: 下载能力模块
-- `sfc-task`: 异步任务相关能力
-- `sfc-rpc`: RPC 相关能力
-- `sfc-ext`: 官方扩展插件集合
+| 首页(可自定义)                                                                        |
+|---------------------------------------------------------------------------------|
+| ![main.png](docs/img/main.png) |
+
+| 管理后台                                                                                   | 管理后台                                               |
+|----------------------------------------------------------------------------------------|----------------------------------------------------|
+| ![plugin.png](docs/img/plugin.png) | ![desktop-config.png](docs/img/desktop-config.png) |
 
 ## 快速开始
 
@@ -137,21 +139,18 @@ docker compose up -d --build
 - 新功能建议补充文档与配置说明
 - 涉及插件开发可参考 `docs/develop/plugin/`
 
-## 界面示例
+## v3.2 版本迭代计划
 
-- 目录浏览与`README.md`自动预览
+### 代码与架构重构
 
-![filelist.png](docs/img/filelist.png)
+- [X] 收敛`redisTemplate`使用，统一封装缓存接口，降低对`redis`的直接依赖
+- [X] 运行环境不依赖外部`redis` 和 `mysql`，直接单程序运行（内置轻量级数据库和缓存方案）
+- [ ] 消息队列可选配置 `redis stream` / `rabbitmq` / `kafka` 等方案
+- [ ] 文件系统接口重构，优化性能，文件列表支持不依赖数据库提高IO吞吐量
+- [ ] 高级文件搜索，自定义搜索范围，不依赖文件记录服务
 
-- 移动端兼容
+### 功能迭代
 
-![mobile.png](docs/img/mobile.png)
-
-- 首页组件自定义
-
-![main.png](docs/img/main.png)
-![desktop-config.png](docs/img/desktop-config.png)
-
-- 管理后台插件系统
-
-![](./docs/img/plugin.png)
+- [ ] 实现回收站功能
+- [ ] 用户网盘空间配额控制
+- [ ] 接口速率限制

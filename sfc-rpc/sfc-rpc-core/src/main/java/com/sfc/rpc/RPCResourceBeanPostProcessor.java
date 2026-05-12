@@ -23,14 +23,13 @@ import java.util.List;
  * <br>
  * 若在不通过Spring而是手动管理的对象中，同样可以使用:
  * <ol>
- *     <li>{@link RPCManager#registerRPCClient(Class)} - 注册RPC客户端</li>
- *     <li>{@link RPCManager#getRPCClient(Class)} - 获取RPC客户端实现</li>
- *     <li>{@link RPCManager#registerRPCService(Object)} - 注册RPC服务提供者</li>
+ *     <li>{@link RPCInvoker} - RPC调用器，负责发起RPC调用请求</li>
+ *     <li>{@link RPCRegistry} - RPC注册中心，负责服务/客户端/handler的注册与获取</li>
  * </ol>
  *
  */
 public class RPCResourceBeanPostProcessor implements BeanPostProcessor {
-    private RPCManager rpcManager;
+    private RPCRegistry rpcManager;
     private List<Tuple2<RPCService, Object>> waitRegisterServiceBean = new ArrayList<>();
     private List<Tuple2<Object, Field>> waitInjectResourceBean = new ArrayList<>();
 
@@ -76,8 +75,8 @@ public class RPCResourceBeanPostProcessor implements BeanPostProcessor {
                 });
 
         // 判断是否为RPC管理器完成初始化，如果是则把暂存的服务/客户端注册、客户端实例字段注入统一消费掉
-        if (rpcManager == null && bean instanceof RPCManager) {
-            rpcManager = (RPCManager) bean;
+        if (rpcManager == null && bean instanceof RPCRegistry) {
+            rpcManager = (RPCRegistry) bean;
             if (!waitRegisterServiceBean.isEmpty()) {
                 waitRegisterServiceBean.forEach(this::registerBeanToRPCManager);
             }

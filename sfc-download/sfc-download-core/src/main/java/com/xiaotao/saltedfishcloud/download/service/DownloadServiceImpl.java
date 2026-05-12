@@ -38,9 +38,12 @@ import java.util.Optional;
 @Service
 public class DownloadServiceImpl implements DownloadService {
     static final private Collection<Integer> FINISH_TYPE = Arrays.asList(
+            AsyncTaskConstants.Status.FINISH
+    );
+    static final private Collection<Integer> FAILED_TYPE = Arrays.asList(
             AsyncTaskConstants.Status.FAILED,
-            AsyncTaskConstants.Status.FINISH,
-            AsyncTaskConstants.Status.CANCEL
+            AsyncTaskConstants.Status.CANCEL,
+            AsyncTaskConstants.Status.OFFLINE
     );
     static final private Collection<Integer> DOWNLOADING_TYPE = Arrays.asList(
             AsyncTaskConstants.Status.RUNNING,
@@ -79,6 +82,8 @@ public class DownloadServiceImpl implements DownloadService {
             tasks = downloadDao.findByUid(uid, pageRequest);
         } else if (type == TaskType.DOWNLOADING) {
             tasks = downloadDao.findByUidAndState(uid, DOWNLOADING_TYPE, pageRequest);
+        } else if (type == TaskType.FAILED) {
+            tasks = downloadDao.findByUidAndState(uid, FAILED_TYPE, pageRequest);
         } else {
             tasks = downloadDao.findByUidAndState(uid, FINISH_TYPE, pageRequest);
         }

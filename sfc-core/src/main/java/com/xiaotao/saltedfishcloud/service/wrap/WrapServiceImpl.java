@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.wrap;
 
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -14,19 +15,18 @@ import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class WrapServiceImpl implements WrapService {
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final CacheService cacheService;
     private final FileRecordService fileRecordService;
     private final DiskFileSystemArchiveService archiveService;
 
@@ -37,16 +37,16 @@ public class WrapServiceImpl implements WrapService {
     @Override
     public String registerWrap(Long uid, FileTransferInfo files) {
         String wid = SecureUtils.getUUID();
-        redisTemplate.opsForValue().set(
+        cacheService.set(
                 RedisKeyGenerator.getWrapKey(wid),
                 new WrapInfo(uid, files),
-                Duration.ofMinutes(30));
+                30, TimeUnit.MINUTES);
         return wid;
     }
 
     @Override
     public WrapInfo getWrapInfo(String wid) {
-        return (WrapInfo)redisTemplate.opsForValue().get(RedisKeyGenerator.getWrapKey(wid));
+        return cacheService.get(RedisKeyGenerator.getWrapKey(wid));
     }
 
     @Override

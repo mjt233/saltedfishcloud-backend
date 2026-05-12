@@ -152,6 +152,25 @@ public class DBUtils {
     }
 
     /**
+     * 获取数据库产品名，并统一转为小写，便于进行方言判断。
+     * @param connection 数据库连接
+     * @return 小写数据库产品名
+     */
+    @NotNull
+    public static String getDatabaseProductName(Connection connection) throws SQLException {
+        return connection.getMetaData().getDatabaseProductName().toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * 判断当前数据库是否为SQLite。
+     * @param connection 数据库连接
+     * @return 若为SQLite则返回true
+     */
+    public static boolean isSQLite(Connection connection) throws SQLException {
+        return "sqlite".equals(getDatabaseProductName(connection));
+    }
+
+    /**
      * 在新事务中执行Runnable
      * @param propagationBehavior 事务传播行为，使用TransactionDefinition中的常量如PROPAGATION_REQUIRED等
      * @param runnable 要执行的任务
@@ -254,13 +273,67 @@ public class DBUtils {
     }
 
     /**
+     * 判断某个数据表中是否存在指定索引，兼容MySQL、SQLite、PostgreSQL。
+     * @param connection 数据库连接
+     * @param tableName 表名（不区分大小写）
+     * @param indexName 索引名（不区分大小写）
+     * @return 是否存在
+     */
+    public static boolean indexExists(Connection connection, String tableName, String indexName) {
+        try {
+            DatabaseMetaData meta = connection.getMetaData();
+            try (ResultSet rs = meta.getIndexInfo(connection.getCatalog(), connection.getSchema(), tableName, false, false)) {
+                while (rs.next()) {
+                    short type = rs.getShort("TYPE");
+                    String currentIndexName = rs.getString("INDEX_NAME");
+                    String currentTableName = rs.getString("TABLE_NAME");
+                    if (type == DatabaseMetaData.tableIndexStatistic || currentIndexName == null || currentTableName == null) {
+                        continue;
+                    }
+                    if (currentTableName.equalsIgnoreCase(tableName) && currentIndexName.equalsIgnoreCase(indexName)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } catch (SQLException e) {
+            throw new RuntimeException("检查索引是否存在时出错: " + tableName + "." + indexName, e);
+        }
+    }
+
+    /**
+     * 删除指定数据表上的索引，兼容MySQL、SQLite、PostgreSQL。
+     * @param connection 数据库连接
+     * @param tableName 表名
+     * @param indexName 索引名
+     */
+    public static void dropIndex(Connection connection, String tableName, String indexName) {
+        try (Statement statement = connection.createStatement()) {
+            String dbType = getDatabaseProductName(connection);
+            String quotedTableName = quoteIdentifier(connection, tableName);
+            String quotedIndexName = quoteIdentifier(connection, indexName);
+            String sql;
+            if (dbType.contains("mysql") || dbType.contains("mariadb")) {
+                sql = "ALTER TABLE " + quotedTableName + " DROP INDEX " + quotedIndexName;
+            } else if (dbType.contains("sqlite") || dbType.contains("postgre")) {
+                sql = "DROP INDEX IF EXISTS " + quotedIndexName;
+            } else {
+                throw new IllegalArgumentException("不支持删除索引的数据库类型：" + dbType);
+            }
+            statement.execute(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException("删除索引时出错: " + tableName + "." + indexName, e);
+        }
+    }
+
+    /**
      * 使用数据库方言对应的引用符包装标识符，避免key/value等保留关键字导致SQL执行失败。
      */
     @NotNull
     public static String quoteIdentifier(Connection connection, String identifier) throws SQLException {
         String quote = connection.getMetaData().getIdentifierQuoteString();
         if (quote == null || quote.isBlank()) {
-            String dbType = connection.getMetaData().getDatabaseProductName().toLowerCase();
+            String dbType = getDatabaseProductName(connection);
             if (dbType.contains("mysql") || dbType.contains("mariadb")) {
                 quote = "`";
             } else if (dbType.contains("sqlite") || dbType.contains("postgre")) {

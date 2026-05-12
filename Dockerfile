@@ -29,7 +29,7 @@ WORKDIR /saltedfish
 # 从编译构建环境复制构建产物到运行环境
 COPY --from=build /saltedfish/release/ .
 # 复制咸鱼云的配置文件到运行环境
-COPY ./conf/config.yml .
+COPY ./pre-release/config.yml .
 EXPOSE 8087
 VOLUME [ "/saltedfish/store" ]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 CMD curl -f http://localhost:8087/api/hello/feature || exit 1

@@ -20,20 +20,20 @@ public class AuditModel extends BaseModel {
     /**
      * 数据所属人
      */
-    @Column(name = "uid", columnDefinition = "BIGINT UNSIGNED COMMENT '数据所属人'")
+    @Column(name = "uid")
     private Long uid;
 
     /**
      * 数据创建日期
      */
     @CreatedDate
-    @Column(name = "create_at", columnDefinition = "DATETIME COMMENT '创建日期'")
+    @Column(name = "create_at")
     private Date createAt;
 
     /**
      * 数据更新日期
      */
     @LastModifiedDate
-    @Column(name = "update_at", columnDefinition = "DATETIME COMMENT '修改日期'")
+    @Column(name = "update_at")
     private Date updateAt;
 }

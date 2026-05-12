@@ -17,7 +17,7 @@ import java.util.Date;
 @Getter
 @Entity
 @Table(name = "download_task", indexes = {
-        @Index(name = "idx_uid", columnList = "uid")
+        @Index(name = "idx_download_task_uid", columnList = "uid")
 })
 @EntityListeners(AuditingEntityListener.class)
 public class DownloadTaskInfo {

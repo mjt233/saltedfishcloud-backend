@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
@@ -28,7 +30,6 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
@@ -39,8 +40,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -69,7 +70,7 @@ public class OAuthController {
     private ThirdPartyPlatformUserService thirdPartyPlatformUserService;
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private CacheService cacheService;
 
     @Autowired
     private ThirdPartyAppService thirdPartyAppService;
@@ -101,9 +102,9 @@ public class OAuthController {
     @AllowAnonymous
     public ModelAndView callback(@PathVariable("platformType") String platformType, HttpServletRequest request) {
         try {
-            String key = "oauth::cb::" + platformType + "::" + Optional.ofNullable(request.getQueryString()).map(SecureUtils::getMd5).orElse("");
-            Boolean isSuccess = redisTemplate.opsForValue().setIfAbsent(key, true, Duration.ofSeconds(20));
-            if (!Boolean.TRUE.equals(isSuccess)) {
+            String key = CacheKeyPrefixes.OAUTH_CALLBACK + platformType + "::" + Optional.ofNullable(request.getQueryString()).map(SecureUtils::getMd5).orElse("");
+            boolean isSuccess = cacheService.setIfAbsent(key, true, 20, TimeUnit.SECONDS);
+            if (!isSuccess) {
                 return new ModelAndView("thirdPlatformCallback")
                         .addObject("error", "不能重复访问");
             }

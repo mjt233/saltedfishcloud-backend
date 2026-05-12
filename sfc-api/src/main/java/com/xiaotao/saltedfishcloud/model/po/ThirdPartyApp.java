@@ -15,7 +15,7 @@ import org.hibernate.validator.constraints.URL;
  */
 @Entity
 @Table(name = "third_party_app", indexes = {
-    @Index(name = "idx_name", columnList = "name", unique = true)
+    @Index(name = "idx_third_party_app_name", columnList = "name", unique = true)
 })
 @Data
 @EqualsAndHashCode(callSuper = true)
