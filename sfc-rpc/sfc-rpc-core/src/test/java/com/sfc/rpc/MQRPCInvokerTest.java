@@ -36,17 +36,17 @@ class MQRPCInvokerTest {
     void callShouldReturnHandledResponseFromMatchingHandler() throws IOException {
         try (LocalMQService mqService = createLocalMqService()) {
             ClusterService clusterService = createClusterService(2);
-            RPCPair pair1 = createRpcPair(mqService, clusterService);
-            RPCPair pair2 = createRpcPair(mqService, clusterService);
+            RPCManager pair1 = createRpcManager(mqService, clusterService);
+            RPCManager pair2 = createRpcManager(mqService, clusterService);
 
-            pair1.rpcRegistry().registerRpcHandler("testFunc", request -> {
+            pair1.getRegistry().registerRpcHandler("testFunc", request -> {
                 boolean handled = Integer.parseInt(request.getParam()) % 2 == 0;
                 return RPCResponse.<String>builder()
                         .isHandled(handled)
                         .result("handler-1:" + request.getParam())
                         .build();
             });
-            pair2.rpcRegistry().registerRpcHandler("testFunc", request -> {
+            pair2.getRegistry().registerRpcHandler("testFunc", request -> {
                 boolean handled = Integer.parseInt(request.getParam()) % 2 != 0;
                 return RPCResponse.<String>builder()
                         .isHandled(handled)
@@ -54,11 +54,11 @@ class MQRPCInvokerTest {
                         .build();
             });
 
-            RPCResponse<String> evenResponse = pair1.rpcInvoker().call(RPCRequest.builder()
+            RPCResponse<String> evenResponse = pair1.getInvoker().call(RPCRequest.builder()
                     .functionName("testFunc")
                     .param("2")
                     .build(), String.class, Duration.ofSeconds(2));
-            RPCResponse<String> oddResponse = pair1.rpcInvoker().call(RPCRequest.builder()
+            RPCResponse<String> oddResponse = pair1.getInvoker().call(RPCRequest.builder()
                     .functionName("testFunc")
                     .param("3")
                     .build(), String.class, Duration.ofSeconds(2));
@@ -84,13 +84,13 @@ class MQRPCInvokerTest {
     void callAllShouldCollectAllResponses() throws IOException {
         try (LocalMQService mqService = createLocalMqService()) {
             ClusterService clusterService = createClusterService(2);
-            RPCPair pair1 = createRpcPair(mqService, clusterService);
-            RPCPair pair2 = createRpcPair(mqService, clusterService);
+            RPCManager pair1 = createRpcManager(mqService, clusterService);
+            RPCManager pair2 = createRpcManager(mqService, clusterService);
 
-            pair1.rpcRegistry().registerRpcHandler("testFunc", ignored -> RPCResponse.success("handler-1"));
-            pair2.rpcRegistry().registerRpcHandler("testFunc", ignored -> RPCResponse.ignore());
+            pair1.getRegistry().registerRpcHandler("testFunc", ignored -> RPCResponse.success("handler-1"));
+            pair2.getRegistry().registerRpcHandler("testFunc", ignored -> RPCResponse.ignore());
 
-            List<RPCResponse<String>> responses = pair1.rpcInvoker().callAll(RPCRequest.builder()
+            List<RPCResponse<String>> responses = pair1.getInvoker().callAll(RPCRequest.builder()
                     .functionName("testFunc")
                     .isReportIgnore(true)
                     .param("payload")
@@ -113,13 +113,13 @@ class MQRPCInvokerTest {
     void callShouldThrowIgnoreExceptionWhenAllNodesIgnore() {
         try (LocalMQService mqService = createLocalMqService()) {
             ClusterService clusterService = createClusterService(2);
-            RPCPair pair1 = createRpcPair(mqService, clusterService);
-            RPCPair pair2 = createRpcPair(mqService, clusterService);
+            RPCManager pair1 = createRpcManager(mqService, clusterService);
+            RPCManager pair2 = createRpcManager(mqService, clusterService);
 
-            pair1.rpcRegistry().registerRpcHandler("testFunc", ignored -> RPCResponse.ignore());
-            pair2.rpcRegistry().registerRpcHandler("testFunc", ignored -> RPCResponse.ignore());
+            pair1.getRegistry().registerRpcHandler("testFunc", ignored -> RPCResponse.ignore());
+            pair2.getRegistry().registerRpcHandler("testFunc", ignored -> RPCResponse.ignore());
 
-            assertThrows(RPCIgnoreException.class, () -> pair1.rpcInvoker().call(RPCRequest.builder()
+            assertThrows(RPCIgnoreException.class, () -> pair1.getInvoker().call(RPCRequest.builder()
                     .functionName("testFunc")
                     .isReportIgnore(true)
                     .param("payload")
@@ -141,18 +141,22 @@ class MQRPCInvokerTest {
         return new LocalMQService(new LocalMQProperties());
     }
 
-    /**
-     * 创建一组供测试使用的 RPC 调用器与注册中心。
-     *
-     * @param mqService      本地消息队列服务
-     * @param clusterService 集群服务
-     * @return RPC 组件组合
-     */
-    private RPCPair createRpcPair(MQService mqService, ClusterService clusterService) {
+
+    private RPCManager createRpcManager(MQService mqService, ClusterService clusterService) {
         RPCRegistryStore rpcRegistryStore = new RPCRegistryStore();
         MQRPCInvoker rpcInvoker = new MQRPCInvoker(mqService, clusterService, rpcRegistryStore);
         DefaultRPCRegistry rpcRegistry = new DefaultRPCRegistry(rpcInvoker, rpcRegistryStore);
-        return new RPCPair(rpcInvoker, rpcRegistry);
+        return new RPCManager() {
+            @Override
+            public RPCInvoker getInvoker() {
+                return rpcInvoker;
+            }
+
+            @Override
+            public RPCRegistry getRegistry() {
+                return rpcRegistry;
+            }
+        };
     }
 
     /**

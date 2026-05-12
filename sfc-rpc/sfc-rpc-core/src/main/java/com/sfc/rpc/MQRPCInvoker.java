@@ -36,7 +36,7 @@ public class MQRPCInvoker implements RPCInvoker {
     /**
      * RPC 请求广播主题名称。
      */
-    public static final String RPC_REQUEST_TOPIC = "ASYNC_TASK_RPC";
+    public static final String RPC_REQUEST_TOPIC = "RPC_REQUEST";
 
     /**
      * RPC 响应订阅组前缀。
