@@ -132,7 +132,7 @@ sys:
 
 ```
 
-## 附录1：application.yml默认内容
+## 附录2：application.yml默认内容
 ```yaml
 server:
   port: 8087
