@@ -18,9 +18,15 @@ spring:
 #    password:
 
 sys:
+  redis:
+    # Redis 是否启用，默认为 true。设置为 false 可以在不启动 Redis 的情况下运行系统
+    # 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider需设置为local）、RPC等功能
+    enabled: ${REDIS_ENABLED:true}
   service:
     # 缓存provider，默认 redis，可选 local（程序内缓存）
     cache-provider: ${CACHE_PROVIDER:redis}
+    # 资源锁 provider，默认 redisson，可选 local（仅当前服务实例内生效，且不注入 Redisson）
+    lock-provider: ${LOCK_PROVIDER:redisson}
     # MQ provider，默认 redis
     # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
     mq-provider: ${MQ_PROVIDER:redis}
