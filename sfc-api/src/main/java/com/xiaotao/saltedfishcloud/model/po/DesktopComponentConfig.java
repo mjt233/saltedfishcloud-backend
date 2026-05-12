@@ -14,8 +14,8 @@ import jakarta.persistence.Table;
 @Getter
 @Setter
 @Table(indexes = {
-        @Index(name = "idx_uid", columnList = "uid"),
-        @Index(name = "idx_name", columnList = "name"),
+        @Index(name = "idx_desktop_component_config_uid", columnList = "uid"),
+        @Index(name = "idx_desktop_component_config_name", columnList = "name"),
 })
 public class DesktopComponentConfig extends AuditModel {
     /**

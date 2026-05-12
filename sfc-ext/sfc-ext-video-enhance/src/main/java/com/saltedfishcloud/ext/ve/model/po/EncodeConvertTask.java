@@ -10,8 +10,8 @@ import org.hibernate.annotations.NotFoundAction;
 
 @Entity
 @Table(indexes = {
-        @Index(name = "idx_uid", columnList = "uid"),
-        @Index(name = "idx_task_id", columnList = "task_id")
+        @Index(name = "idx_encode_convert_task_uid", columnList = "uid"),
+        @Index(name = "idx_encode_convert_task_task_id", columnList = "task_id")
 })
 @Getter
 @Setter

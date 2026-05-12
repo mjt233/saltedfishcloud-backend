@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(indexes = {
-        @Index(name = "idx_uid", columnList = "uid")
+        @Index(name = "idx_user_custom_attribute_uid", columnList = "uid")
 })
 public class UserCustomAttribute extends AuditModel {
     /**

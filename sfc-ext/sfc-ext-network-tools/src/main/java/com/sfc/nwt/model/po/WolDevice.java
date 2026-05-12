@@ -16,7 +16,7 @@ import java.util.Date;
 @Setter
 @Entity
 @Table(indexes = {
-        @Index(name = "idx_uid", columnList = "uid")
+        @Index(name = "idx_wol_device_uid", columnList = "uid")
 })
 public class WolDevice extends AuditModel {
 

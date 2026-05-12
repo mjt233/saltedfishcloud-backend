@@ -10,7 +10,7 @@ import lombok.Setter;
 
 @Entity
 @Table(indexes = {
-        @Index(name = "uid_index", columnList = "uid", unique = true),
+        @Index(name = "idx_webdav_auth_uid", columnList = "uid", unique = true),
         @Index(name = "username_index", columnList = "username", unique = true)
 })
 @Setter

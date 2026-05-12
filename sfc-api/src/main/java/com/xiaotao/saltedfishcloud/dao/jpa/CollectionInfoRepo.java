@@ -5,15 +5,23 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
 
 public interface CollectionInfoRepo extends JpaRepository<CollectionInfo, Long> {
+    /**
+     * 将截止到指定时间已过期的收集任务状态更新为关闭。
+     *
+     * @param expiredAt 当前比较时间
+     * @return 更新的记录数
+     */
     @Transactional
-    @Query("UPDATE CollectionInfo C SET C.state = 'CLOSED' WHERE C.expiredAt <= function('NOW') ")
+    @Query("UPDATE CollectionInfo C SET C.state = 'CLOSED' WHERE C.expiredAt <= :expiredAt")
     @Modifying
-    int updateState();
+    int updateState(@Param("expiredAt") Date expiredAt);
 
     List<CollectionInfo> findByUidEquals(Long uid, Sort sort);
 

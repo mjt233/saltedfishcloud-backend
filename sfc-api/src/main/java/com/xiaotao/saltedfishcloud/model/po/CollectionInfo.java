@@ -25,9 +25,9 @@ import java.util.List;
 @Data
 @Accessors(chain = true)
 @Table(
-        name = "`collection`",
+        name = "collection_info",
         indexes = {
-                @Index(name = "uid_index", columnList = "uid"),
+                @Index(name = "idx_collection_uid", columnList = "uid"),
                 @Index(name = "expired_index", columnList = "expired_at")
         }
 )
@@ -60,7 +60,7 @@ public class CollectionInfo {
      * 收集任务描述
      */
     @Lob
-    @Column(name = "`describe`")
+    @Column(name = "describe_content")
     private String describe;
 
     /**

@@ -18,7 +18,7 @@ import java.util.Objects;
 @Table(
         name = "mount_point",
         indexes = {
-                @Index(name = "idx_uid", columnList = "uid,nid")
+                @Index(name = "idx_mount_point_uid_nid", columnList = "uid,nid")
         }
 )
 @EntityListeners(AuditingEntityListener.class)
