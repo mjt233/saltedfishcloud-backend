@@ -1,7 +1,7 @@
 package com.sfc.webshell.controller;
 
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.sfc.rpc.RPCManager;
+import com.sfc.rpc.RPCRegistry;
 import com.sfc.webshell.constans.WebShellMQTopic;
 import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecuteRPCService;
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @ServerEndpoint("/api/webshell/{sessionId}")
 public class WebShellEndpointHandler {
     private ShellExecuteService shellExecuteService;
-    private RPCManager rpcManager;
+    private RPCRegistry rpcRegistry;
 
     private MQService mqService;
 
@@ -51,16 +51,16 @@ public class WebShellEndpointHandler {
         return shellExecuteService;
     }
 
-    private RPCManager getRpcManager() {
-        if (rpcManager == null) {
-            rpcManager = SpringContextUtils.getContext().getBean(RPCManager.class);
+    private RPCRegistry getRpcRegistry() {
+        if (rpcRegistry == null) {
+            rpcRegistry = SpringContextUtils.getContext().getBean(RPCRegistry.class);
         }
-        return rpcManager;
+        return rpcRegistry;
     }
 
     private void auth(Session wsSession, Long sessionId) throws IOException {
         UserPrincipal user = (UserPrincipal) ((UsernamePasswordAuthenticationToken) wsSession.getUserPrincipal()).getPrincipal();
-        ShellSessionRecord sessionRecord = getRpcManager()
+        ShellSessionRecord sessionRecord = getRpcRegistry()
                 .getRPCClient(ShellExecuteRPCService.class)
                 .getSessionById(sessionId);
         if (sessionRecord == null) {

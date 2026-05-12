@@ -11,7 +11,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.nio.charset.Charset;
-import java.util.Objects;
 
 @Slf4j
 @Configuration
@@ -73,6 +72,11 @@ public class SysProperties implements InitializingBean {
          * 消息队列服务提供者，可选 redis 或 local。
          */
         private String mqProvider = "redis";
+
+        /**
+         * RPC 服务提供者，可选 redis 或 mq。
+         */
+        private String rpcProvider = "redis";
     }
 
 
