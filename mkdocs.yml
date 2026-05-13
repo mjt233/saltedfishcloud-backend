@@ -79,3 +79,4 @@ nav:
         - 获取用户基本信息: oauth/api/user/profile.md
   - 版本更新日志:
     - 3.1.0: release-notes/3.1.0.md
+    - 3.1.1: release-notes/3.1.1.md
