@@ -303,7 +303,7 @@ public class FileController {
                              @RequestParam("oldName") @Valid @FileName String oldName,
                              @RequestParam("newName") @Valid @FileName String newName) throws IOException {
         String from = URLUtils.getRequestFilePath(PREFIX + uid + "/name", request);
-        if (newName.length() < 1) {
+        if (newName.isEmpty()) {
             throw new JsonException(400, "文件名不能为空");
         }
         fileSystemManager.getMainFileSystem().rename(uid, from, oldName, newName);
@@ -322,11 +322,11 @@ public class FileController {
      * 删除文件或目录
      */
     @DeleteMapping("content/**")
-    public JsonResult<Long> delete(HttpServletRequest request,
+    public JsonResult<Object> delete(HttpServletRequest request,
                              @PathVariable @UID(true) long uid,
                              @RequestBody @Validated FileNameList fileName) throws IOException {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/content", request);
-        long res = fileSystemManager.getMainFileSystem().deleteFile(uid, path, fileName.getFileName());
-        return JsonResultImpl.getInstance(res);
+        fileSystemManager.getMainFileSystem().deleteFile(uid, path, fileName.getFileName());
+        return JsonResult.emptySuccess();
     }
 }
