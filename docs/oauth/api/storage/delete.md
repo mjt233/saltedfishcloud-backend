@@ -27,12 +27,10 @@
 **成功响应示例**:
 ```json
 {
+    "data": null,
     "code": 200,
-    "businessCode": 200,
-    "msg": "OK",
-    "data": 2
+    "msg": "ok",
+    "businessCode": 200
 }
 ```
-
-**说明**: `data` 为实际删除的文件/目录数量。
 

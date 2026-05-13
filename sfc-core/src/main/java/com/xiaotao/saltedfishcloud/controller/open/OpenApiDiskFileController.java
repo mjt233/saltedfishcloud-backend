@@ -213,14 +213,14 @@ public class OpenApiDiskFileController {
     @ApiOperation("删除文件或目录")
     @DeleteMapping("/delete/v1")
     @PreAuthorize("hasAuthority('SCOPE_storage_write')")
-    public JsonResult<Long> delete(
+    public JsonResult<Object> delete(
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
             @ApiParam(value = "文件所在目录路径", required = true)
             @RequestParam("path") String path,
             @RequestBody @Validated FileNameList param) throws IOException {
-        long count = diskFileSystemManager.getMainFileSystem().deleteFile(uid, path, param.getFileName());
-        return JsonResultImpl.getInstance(count);
+        diskFileSystemManager.getMainFileSystem().deleteFile(uid, path, param.getFileName());
+        return JsonResult.emptySuccess();
     }
 
     // ========================= Inner DTO =========================
