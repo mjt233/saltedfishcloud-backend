@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 ### 1. 生成发布日志
 
-1. 获取当前版本号：从项目根目录的`pom.xml`文件中读取当前maven项目的版本号作为发布版本号
+1. 获取当前版本号：从项目根目录的`pom.xml`文件中读取当前maven项目的版本号作为发布版本号（取当前maven项目模块的版本，禁止取父模块版本号，禁止使用字符串搜索，必须读取整个完整的pom.xml文件）
 2. 从`master`分支中的`pom.xml`获取上次发布的版本号，展示版本号变化让用户确认，用户确认后执行下一步操作
 3. 对比从`master`分支到当前的`develop`分支提交记录，生成markdown格式的release发布日志草稿到`docs/release-notes/{版本号}.md`。
     release发布日志草稿采用以下格式:
