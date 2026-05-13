@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -46,20 +47,28 @@ public class OpenApiDiskFileController {
      *
      * @param uid  用户ID（0 为公共网盘）
      * @param path 目录路径，以 "/" 开头，默认为根目录
-     * @return 目录与文件信息列表，索引 0 为子目录列表，索引 1 为文件列表
+     * @return 目录与文件的合并列表（目录项在前，文件项在后）
      * @throws IOException 文件系统访问异常
      */
     @ApiOperation("获取网盘文件列表")
     @GetMapping("/fileList/v1")
     @PreAuthorize("hasAuthority('SCOPE_storage_read')")
-    public JsonResult<Collection<? extends FileInfo>[]> getFileList(
+    public JsonResult<List<FileInfo>> getFileList(
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
             @ApiParam(value = "目录路径，默认为根目录 /", defaultValue = "/")
             @RequestParam(value = "path", defaultValue = "/") String path) throws IOException {
         DiskFileSystem fs = diskFileSystemManager.getMainFileSystem();
         Collection<? extends FileInfo>[] fileList = fs.getUserFileList(uid, path);
-        return JsonResultImpl.getInstance(fileList);
+        List<FileInfo> mergedList = new ArrayList<>();
+        if (fileList != null) {
+            for (Collection<? extends FileInfo> group : fileList) {
+                if (group != null) {
+                    mergedList.addAll(group);
+                }
+            }
+        }
+        return JsonResultImpl.getInstance(mergedList);
     }
 
     /**

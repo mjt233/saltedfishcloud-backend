@@ -18,29 +18,22 @@
     "businessCode": 200,
     "msg": "OK",
     "data": [
-        [
-            {
-                "name": "documents",
-                "size": 0,
-                "md5": null,
-                "type": "DIR",
-                "ctime": 1715000000000,
-                "mtime": 1715000000000
-            }
-        ],
-        [
-            {
-                "name": "photo.jpg",
-                "size": 204800,
-                "md5": "d41d8cd98f00b204e9800998ecf8427e",
-                "type": "FILE",
-                "ctime": 1715000000000,
-                "mtime": 1715000000000
-            }
-        ]
+        {
+            "name": "documents",
+            "size": 0,
+            "md5": null,
+            "type": "DIR",
+            "ctime": 1715000000000,
+            "mtime": 1715000000000
+        },
+        {
+            "name": "photo.jpg",
+            "size": 204800,
+            "md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "type": "FILE",
+            "ctime": 1715000000000,
+            "mtime": 1715000000000
+        }
     ]
 }
 ```
-
-**说明**: 返回的 `data` 是一个含两个元素的数组，索引 `0` 为子目录列表，索引 `1` 为文件列表。
-
