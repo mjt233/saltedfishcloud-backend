@@ -1,5 +1,6 @@
 package com.sfc.mcp.service;
 
+import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.sfc.mcp.model.McpFileEntry;
 import com.sfc.mcp.model.McpFileListResult;
 import com.sfc.mcp.model.McpOperationResult;
@@ -16,6 +17,7 @@ import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import lombok.RequiredArgsConstructor;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.core.io.ByteArrayResource;
@@ -33,10 +35,12 @@ import java.util.Optional;
  * <p>
  * 该服务通过 Spring AI 的 {@link Tool} 注解向 MCP Server 暴露网盘工具，
  * 并复用系统现有的 OAuth + Spring Security 上下文与网盘文件系统能力。
+ * 所有工具方法均要求当前请求已通过 OAuth ApiTicket 认证，并拥有 {@link SysRole#OAUTH_USER} 角色。
  * </p>
  */
 @Service
 @RequiredArgsConstructor
+@RolesAllowed(SysRole.OAUTH_USER)
 public class McpDiskToolService {
 
     private final DiskFileSystemManager diskFileSystemManager;
