@@ -96,7 +96,7 @@ public class McpOAuthAppInitializer implements ApplicationRunner {
         ThirdPartyApp app = new ThirdPartyApp();
         app.setUid(SYSTEM_UID);
         app.setName(McpConstant.MCP_OAUTH_APP_NAME);
-        app.setCallbackUrl(null);
+        app.setCallbackUrl("");
         app.setIsEnabled(true);
         app.setAllowPermanentApiTicket(true);
         return app;
