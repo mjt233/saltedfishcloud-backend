@@ -14,6 +14,7 @@ import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/mcp/oauth")
 @Api(tags = "MCP OAuth 授权")
+@Slf4j
 @RequiredArgsConstructor
 public class McpOAuthController {
 
@@ -78,8 +80,8 @@ public class McpOAuthController {
         try {
             thirdPartyAppTokenService.parseAndValidateApiTicket(tokenRecord.getApiTicket());
             return JsonResultImpl.getInstance(maskApiTicket(tokenRecord.getApiTicket()));
-        } catch (JsonException e) {
-            // ApiTicket 无效或已撤销
+        } catch (Exception e) {
+            log.debug("ApiTicket验证失败，视为无效: {}", e.getMessage());
             return JsonResultImpl.getInstance(null);
         }
     }
