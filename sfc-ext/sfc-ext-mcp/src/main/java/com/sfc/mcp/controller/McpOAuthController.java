@@ -1,6 +1,7 @@
 package com.sfc.mcp.controller;
 
 import com.sfc.mcp.constant.McpConstant;
+import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppTokenRepo;
@@ -37,6 +38,20 @@ public class McpOAuthController {
     private final ThirdPartyAppRepo thirdPartyAppRepo;
     private final ThirdPartyAppTokenRepo thirdPartyAppTokenRepo;
     private final CacheService cacheService;
+
+    /**
+     * 查询系统内置 MCP OAuth 应用的 ID。
+     * <p>
+     * 该 ID 可用于前端发起 OAuth 授权流程时识别系统预置的 MCP 应用。
+     *
+     * @return MCP OAuth 应用 ID
+     */
+    @ApiOperation("查询系统MCP OAuth应用ID")
+    @GetMapping("/getAppId")
+    @AllowAnonymous
+    public JsonResult<Long> getAppId() {
+        return JsonResultImpl.getInstance(getMcpApp().getId());
+    }
 
     /**
      * 通过授权码换取永久 ApiTicket。
