@@ -9,7 +9,7 @@
 所有开放接口请求必须在请求头中包含ApiTicket：
 
 ```http
-Authentication: ApiTicket {api_ticket}
+Authorization: ApiTicket {api_ticket}
 Content-Type: application/json
 ```
 
@@ -62,10 +62,12 @@ Content-Type: application/json
 | `60003` | 应用已被停用 | 400 |
 | `60004` | 未授权的操作 | 403 |
 | `60005` | Client Secret验证失败 | 400 |
+| `60006` | 当前应用不允许申请永久ApiTicket | 400 |
 
 
 ## 相关文档
 
 - [OAuth授权流程](../index.md): 完整的授权流程说明
+- [授权确认接口](auth/authorize.md): 用户确认授权并获取授权码
 - [获取Access Token接口](auth/get-access-token.md): 获取Access Token
 - [获取ApiTicket接口](auth/get-api-ticket.md): 获取ApiTicket

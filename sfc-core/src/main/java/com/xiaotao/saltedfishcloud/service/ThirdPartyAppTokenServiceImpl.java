@@ -3,9 +3,11 @@ package com.xiaotao.saltedfishcloud.service;
 import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.error.OAuthError;
+import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppApiTicketRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppTokenRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
+import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppApiTicket;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppToken;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
@@ -28,6 +30,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +41,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     private final ThirdPartyAppService appService;
     private final ThirdPartyAppKeyService keyService;
     private final CacheService cacheService;
+    private final ThirdPartyAppApiTicketRepo thirdPartyAppApiTicketRepo;
 
 
     @Override
@@ -56,34 +60,132 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     }
 
     @Override
-    public String getApiTicket(Long appId, Long uid, String accessToken) {
+    public String getApiTicket(Long appId, Long uid, String accessToken, boolean permanent) {
         Date now = new Date();
         // 获取 Access Token 对应的用户授权信息
         ThirdPartyAppToken tokenRecord = Optional.ofNullable(repository.findByAppIdAndUid(appId, uid))
                 .filter(t -> SecureUtils.getBCryptPasswordEncoder().matches(accessToken, t.getAccessToken()) && now.before(t.getAccessTokenExpiredDate()) )
                 .orElseThrow(() -> new JsonException(OAuthError.INVALID_TOKEN));
         ThirdPartyAppUserAuthorizationVo authorizationVo = authorizationService.getUserAppAuthorization(tokenRecord.getAppId(), tokenRecord.getUid());
-        String originApiTicket = tokenRecord.getApiTicket();
+        ThirdPartyAppAuthorization authorization = Optional.ofNullable(authorizationVo.getAuthorization())
+                .orElseThrow(() -> new JsonException(OAuthError.PERMISSION_DENIED));
+        ThirdPartyApp app = authorizationVo.getThirdPartyApp();
+        this.checkPermanentApiTicketPermission(app, permanent);
+        this.revokeSameTypeApiTickets(tokenRecord.getAppId(), tokenRecord.getUid(), permanent);
 
         // 生成JWT凭证作为 Api Ticket
-        String apiTicket = generateApiTicket(ThirdPartyAppApiTicketPayload.builder()
+        ThirdPartyAppApiTicketPayload apiTicketPayload = ThirdPartyAppApiTicketPayload.builder()
                 .appId(tokenRecord.getAppId())
                 .uid(tokenRecord.getUid())
-                .scope(authorizationVo.getAuthorization().getScope())
+                .scope(authorization.getScope())
+                .permanent(permanent)
                 .jti(IdUtil.getId())
-                .build(), (int) TimeUnit.MINUTES.toSeconds(15));
+                .build();
+        String apiTicket = generateApiTicket(apiTicketPayload, permanent ? 0 : (int) TimeUnit.MINUTES.toSeconds(15));
         tokenRecord.setApiTicket(apiTicket);
         save(tokenRecord);
 
-        // 将未过期的原凭证拉入黑名单
-        if (StringUtils.hasText(originApiTicket) && !JwtUtils.checkIsExpired(originApiTicket)) {
-            this.disableApiTicket(originApiTicket);
-        }
+        ThirdPartyAppApiTicket apiTicketRecord = new ThirdPartyAppApiTicket();
+        apiTicketRecord.setAppId(tokenRecord.getAppId());
+        apiTicketRecord.setUid(tokenRecord.getUid());
+        apiTicketRecord.setJti(apiTicketPayload.getJti());
+        apiTicketRecord.setPermanent(permanent);
+        apiTicketRecord.setExpiredDate(this.calculateApiTicketExpiredDate(now, permanent));
+        apiTicketRecord.setRevoked(false);
+        thirdPartyAppApiTicketRepo.save(apiTicketRecord);
         return apiTicket;
     }
 
+    /**
+     * 校验应用是否允许申请永久有效的 ApiTicket。
+     *
+     * @param app       第三方应用配置
+     * @param permanent 是否申请永久票据
+     */
+    private void checkPermanentApiTicketPermission(ThirdPartyApp app, boolean permanent) {
+        if (permanent && !Boolean.TRUE.equals(app.getAllowPermanentApiTicket())) {
+            throw new JsonException(OAuthError.PERMANENT_API_TICKET_NOT_ALLOWED);
+        }
+    }
+
+    /**
+     * 计算 ApiTicket 的过期时间。
+     *
+     * @param now       当前时间
+     * @param permanent 是否永久票据
+     * @return 过期时间，为空时表示永久有效
+     */
+    private Date calculateApiTicketExpiredDate(Date now, boolean permanent) {
+        if (permanent) {
+            return null;
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(now);
+        calendar.add(Calendar.MINUTE, 15);
+        return calendar.getTime();
+    }
+
+    /**
+     * 撤销指定应用指定用户指定类型的历史 ApiTicket。
+     *
+     * @param appId     第三方应用id
+     * @param uid       用户id
+     * @param permanent 是否永久票据
+     */
+    private void revokeSameTypeApiTickets(Long appId, Long uid, boolean permanent) {
+        thirdPartyAppApiTicketRepo.revokeByAppIdAndUidAndPermanent(appId, uid, permanent);
+    }
+
+    /**
+     * 使指定 ApiTicket 失效。
+     *
+     * @param apiTicket 待失效的 ApiTicket
+     */
     private void disableApiTicket(String apiTicket) {
-        cacheService.set(CacheKeyPrefixes.OAUTH_DISABLED_TICKET + SecureUtils.getMd5(apiTicket), 1, 15, TimeUnit.MINUTES);
+        ThirdPartyAppApiTicketPayload payload = this.tryParseApiTicketPayload(apiTicket);
+        if (payload != null && payload.getJti() != null) {
+            Optional<ThirdPartyAppApiTicket> ticketRecord = thirdPartyAppApiTicketRepo.findByJti(payload.getJti());
+            if (ticketRecord.isPresent()) {
+                ThirdPartyAppApiTicket record = ticketRecord.get();
+                if (!Boolean.TRUE.equals(record.getRevoked())) {
+                    record.setRevoked(true);
+                    thirdPartyAppApiTicketRepo.save(record);
+                }
+                return;
+            }
+        }
+        this.disableLegacyApiTicket(apiTicket, payload);
+    }
+
+    /**
+     * 将旧版 ApiTicket 拉入缓存黑名单。
+     *
+     * @param apiTicket 待失效的 ApiTicket
+     * @param payload   ApiTicket 载荷，解析失败时允许为空
+     */
+    private void disableLegacyApiTicket(String apiTicket, ThirdPartyAppApiTicketPayload payload) {
+        String key = CacheKeyPrefixes.OAUTH_DISABLED_TICKET + SecureUtils.getMd5(apiTicket);
+        if (payload != null && Boolean.TRUE.equals(payload.getPermanent())) {
+            cacheService.set(key, 1);
+            return;
+        }
+        if (!JwtUtils.checkIsExpired(apiTicket)) {
+            cacheService.set(key, 1, 15, TimeUnit.MINUTES);
+        }
+    }
+
+    /**
+     * 尝试解析 ApiTicket 载荷。
+     *
+     * @param apiTicket ApiTicket 原文
+     * @return 解析成功时返回载荷，失败时返回 {@code null}
+     */
+    private ThirdPartyAppApiTicketPayload tryParseApiTicketPayload(String apiTicket) {
+        try {
+            return MapperHolder.parseJson(JwtUtils.parse(apiTicket), ThirdPartyAppApiTicketPayload.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void checkApiTicketIsDisabled(String apiTicket) {
@@ -95,9 +197,40 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     @Override
     public ThirdPartyAppApiTicketPayload parseAndValidateApiTicket(String apiTicket) {
         try {
+            ThirdPartyAppApiTicketPayload payload = MapperHolder.parseJson(JwtUtils.parse(apiTicket), ThirdPartyAppApiTicketPayload.class);
+            this.validateApiTicketRecord(apiTicket, payload);
+            return payload;
+        } catch (JsonException | IOException e) {
+            throw new JsonException(OAuthError.INVALID_TOKEN);
+        }
+    }
+
+    /**
+     * 校验 ApiTicket 持久化记录是否有效。
+     *
+     * @param apiTicket ApiTicket 原文
+     * @param payload   ApiTicket 载荷
+     */
+    private void validateApiTicketRecord(String apiTicket, ThirdPartyAppApiTicketPayload payload) {
+        Optional<ThirdPartyAppApiTicket> ticketRecordOptional = Optional.ofNullable(payload.getJti())
+                .flatMap(thirdPartyAppApiTicketRepo::findByJti);
+        if (ticketRecordOptional.isEmpty()) {
+            if (payload.getPermanent() != null) {
+                throw new JsonException(OAuthError.INVALID_TOKEN);
+            }
             this.checkApiTicketIsDisabled(apiTicket);
-            return MapperHolder.parseJson(JwtUtils.parse(apiTicket), ThirdPartyAppApiTicketPayload.class);
-        } catch (IOException e) {
+            return;
+        }
+        ThirdPartyAppApiTicket ticketRecord = ticketRecordOptional.get();
+        if (Boolean.TRUE.equals(ticketRecord.getRevoked())) {
+            throw new JsonException(OAuthError.INVALID_TOKEN);
+        }
+        if (ticketRecord.getExpiredDate() != null && new Date().after(ticketRecord.getExpiredDate())) {
+            throw new JsonException(OAuthError.INVALID_TOKEN);
+        }
+        if (!Objects.equals(ticketRecord.getAppId(), payload.getAppId())
+                || !Objects.equals(ticketRecord.getUid(), payload.getUid())
+                || !Objects.equals(Boolean.TRUE.equals(ticketRecord.getPermanent()), Boolean.TRUE.equals(payload.getPermanent()))) {
             throw new JsonException(OAuthError.INVALID_TOKEN);
         }
     }
@@ -171,6 +304,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
                 .map(ThirdPartyAppToken::getApiTicket)
                 .filter(StringUtils::hasText)
                 .ifPresent(this::disableApiTicket);
+        thirdPartyAppApiTicketRepo.revokeByAppIdAndUid(appId, uid);
 
         // 移除Token
         Optional.ofNullable(tokenRecord)

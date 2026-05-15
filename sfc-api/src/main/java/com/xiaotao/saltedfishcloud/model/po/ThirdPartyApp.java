@@ -56,4 +56,9 @@ public class ThirdPartyApp extends AuditModel {
      * 是否已启用
      */
     private Boolean isEnabled;
+
+    /**
+     * 是否允许第三方应用申请永久有效的 ApiTicket
+     */
+    private Boolean allowPermanentApiTicket;
 }
