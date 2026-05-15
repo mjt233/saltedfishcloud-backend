@@ -6,7 +6,7 @@
 
 ## 约束
 
-- 仅修改 `sfc-ext-mcp` 模块内的代码（`CacheKeyPrefixes` 除外）
+- 仅修改 `sfc-ext-mcp` 模块内的代码，不改动其他模块
 - 复用现有 `ThirdPartyAppTokenService`、`ThirdPartyAppKeyService` 等 service
 - 不新增数据库实体，不改表结构
 - 接口不允许匿名访问
@@ -19,7 +19,26 @@
 |------|------|------|
 | `sfc-ext/sfc-ext-mcp/.../McpOAuthAppInitializer.java` | 修改 | 启动时确保 MCP 应用拥有 clientSecret 并缓存，新增注入 `ThirdPartyAppKeyService`、`ThirdPartyAppKeyRepo`、`CacheService` |
 | `sfc-ext/sfc-ext-mcp/.../controller/McpOAuthController.java` | 新建 | 两个 OAuth 接口 |
-| `sfc-api/.../cache/CacheKeyPrefixes.java` | 修改 | 新增缓存 key 前缀常量 |
+| `sfc-ext/sfc-ext-mcp/.../constant/McpConstant.java` | 新建 | MCP 模块常量（缓存 key 前缀、应用名等） |
+
+### 常量定义（McpConstant）
+
+```java
+public final class McpConstant {
+    /** MCP OAuth 应用名称，用于查找应用 */
+    public static final String MCP_OAUTH_APP_NAME = "咸鱼云网盘MCP服务";
+
+    /** MCP OAuth clientSecret 缓存 key 前缀 */
+    public static final String MCP_OAUTH_CLIENT_SECRET_CACHE_PREFIX = "sfc:mcp:oauth:client_secret:";
+
+    /** MCP OAuth 初始化分布式锁缓存 key 前缀 */
+    public static final String MCP_OAUTH_INIT_LOCK_CACHE_PREFIX = "sfc:mcp:oauth:init_lock:";
+
+    private McpConstant() {}
+}
+```
+
+将原来 `McpOAuthAppInitializer` 中的 `MCP_OAUTH_APP_NAME` 常量迁移至此处统一管理。
 
 ### 数据流
 
@@ -49,10 +68,10 @@
 
 ```
 ensureClientSecret(app):
-  1. cacheKey = "sfc:mcp:oauth:client_secret:{appId}"
+  1. cacheKey = McpConstant.MCP_OAUTH_CLIENT_SECRET_CACHE_PREFIX + appId
   2. 从 CacheService 读取 clientSecret
      → 命中：直接返回
-  3. lockKey = "sfc:mcp:oauth:init_lock:{appId}"
+  3. lockKey = McpConstant.MCP_OAUTH_INIT_LOCK_CACHE_PREFIX + appId
   4. cacheService.setIfAbsent(lockKey, "1", 30s) 尝试获取分布式锁
      → 成功（获得锁）：
         a. 再次检查缓存（双重检查，防止并发）
