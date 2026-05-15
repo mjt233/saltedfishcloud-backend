@@ -137,7 +137,7 @@ public class McpOAuthAppInitializer implements ApplicationRunner {
                 // 清理旧密钥并生成新密钥
                 thirdPartyAppKeyService.deleteByAppId(Collections.singletonList(appId));
                 String rawKey = createAndSaveKey(app);
-                cacheService.set(cacheKey, rawKey);
+                cacheService.set(cacheKey, rawKey, 365 * 24 * 10, TimeUnit.HOURS);
                 log.info("[MCP插件] 已生成并缓存 clientSecret。应用ID：{}", appId);
             } finally {
                 cacheService.delete(lockKey);
