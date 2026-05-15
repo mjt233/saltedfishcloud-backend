@@ -28,10 +28,9 @@ public class ThirdPartyApp extends AuditModel {
     private String name;
 
     /**
-     * 用户确认授权后的回调URL
+     * 用户确认授权后的回调URL，可为空（为空时授权接口需要由调用方通过参数传入重定向URL）
      */
     @URL
-    @NotBlank
     @Column(length = 1024)
     private String callbackUrl;
 
@@ -57,4 +56,9 @@ public class ThirdPartyApp extends AuditModel {
      * 是否已启用
      */
     private Boolean isEnabled;
+
+    /**
+     * 是否允许第三方应用申请永久有效的 ApiTicket
+     */
+    private Boolean allowPermanentApiTicket;
 }
