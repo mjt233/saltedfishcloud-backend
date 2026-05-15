@@ -18,6 +18,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -134,7 +135,7 @@ public class McpOAuthAppInitializer implements ApplicationRunner {
                 }
 
                 // 清理旧密钥并生成新密钥
-                thirdPartyAppKeyService.deleteByAppId(java.util.Collections.singletonList(appId));
+                thirdPartyAppKeyService.deleteByAppId(Collections.singletonList(appId));
                 String rawKey = createAndSaveKey(app);
                 cacheService.set(cacheKey, rawKey);
                 log.info("[MCP插件] 已生成并缓存 clientSecret。应用ID：{}", appId);
@@ -177,7 +178,7 @@ public class McpOAuthAppInitializer implements ApplicationRunner {
         key.setAppId(app.getId());
         key.setUid(SYSTEM_UID);
         key.setClientSecretHash(SecureUtils.getBCryptPasswordEncoder().encode(rawKey));
-        key.setClientSecretMaskValue(rawKey.substring(0, 6) + "******" + rawKey.substring(rawKey.length() - 6));
+        key.setClientSecretMaskValue(rawKey.substring(0, 6) + "*".repeat(rawKey.length() - 12) + rawKey.substring(rawKey.length() - 6));
         thirdPartyAppKeyRepo.save(key);
         return rawKey;
     }
