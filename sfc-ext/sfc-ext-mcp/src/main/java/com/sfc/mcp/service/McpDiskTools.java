@@ -1,10 +1,10 @@
 package com.sfc.mcp.service;
 
-import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.sfc.mcp.model.McpFileEntry;
 import com.sfc.mcp.model.McpFileListResult;
 import com.sfc.mcp.model.McpOperationResult;
 import com.sfc.mcp.model.McpUploadResult;
+import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
@@ -16,19 +16,16 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
-import lombok.RequiredArgsConstructor;
 import jakarta.annotation.security.RolesAllowed;
+import lombok.RequiredArgsConstructor;
+import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * MCP 网盘工具服务。
@@ -38,10 +35,10 @@ import java.util.Optional;
  * 所有工具方法均要求当前请求已通过 OAuth ApiTicket 认证，并拥有 {@link SysRole#OAUTH_USER} 角色。
  * </p>
  */
-@Service
+@Component
 @RequiredArgsConstructor
 @RolesAllowed(SysRole.OAUTH_USER)
-public class McpDiskToolService {
+public class McpDiskTools {
 
     private final DiskFileSystemManager diskFileSystemManager;
     private final UserService userService;
@@ -51,7 +48,7 @@ public class McpDiskToolService {
      *
      * @return 当前用户信息
      */
-    @Tool(name = "get_current_user_info", description = "获取当前 OAuth ApiTicket 对应的用户信息")
+    @McpTool(name = "get_current_user_info", description = "获取当前 OAuth ApiTicket 对应的用户信息")
     public UserVO getCurrentUserInfo() {
         Long currentUid = requireCurrentUid();
         return toUserVo(currentUid);
@@ -66,9 +63,9 @@ public class McpDiskToolService {
      * @param uid 用户 ID
      * @return 用户信息
      */
-    @Tool(name = "get_user_info", description = "获取指定用户 ID 的用户信息，仅允许查询当前用户自己，或管理员查询任意用户")
+    @McpTool(name = "get_user_info", description = "获取指定用户 ID 的用户信息，仅允许查询当前用户自己，或管理员查询任意用户")
     public UserVO getUserInfo(
-            @ToolParam(description = "要查询的用户 ID") Long uid
+            @McpToolParam(description = "要查询的用户 ID") Long uid
     ) {
         UIDValidator.validateWithException(uid, true);
         return toUserVo(uid);
@@ -82,10 +79,10 @@ public class McpDiskToolService {
      * @return 文件列表结果
      * @throws IOException 文件系统访问异常
      */
-    @Tool(name = "list_files", description = "获取公共网盘或私人网盘指定目录下的文件和文件夹列表")
+    @McpTool(name = "list_files", description = "获取公共网盘或私人网盘指定目录下的文件和文件夹列表")
     public McpFileListResult listFiles(
-            @ToolParam(description = "资源所属用户 ID，0 表示公共网盘，正整数表示私人网盘") Long uid,
-            @ToolParam(description = "目录路径，以 / 开头，例如 / 或 /文档") String path
+            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，正整数表示私人网盘") Long uid,
+            @McpToolParam(description = "目录路径，以 / 开头，例如 / 或 /文档") String path
     ) throws IOException {
         UIDValidator.validateWithException(uid, false);
         List<FileInfo>[] fileList = diskFileSystemManager.getMainFileSystem().getUserFileList(uid, path);
@@ -103,11 +100,11 @@ public class McpDiskToolService {
      * @return 操作结果
      * @throws IOException 文件系统访问异常
      */
-    @Tool(name = "delete_files", description = "删除公共网盘或私人网盘指定目录下的文件或文件夹")
+    @McpTool(name = "delete_files", description = "删除公共网盘或私人网盘指定目录下的文件或文件夹")
     public McpOperationResult deleteFiles(
-            @ToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
-            @ToolParam(description = "文件所在目录路径，以 / 开头") String path,
-            @ToolParam(description = "待删除的文件或目录名称列表") List<String> names
+            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
+            @McpToolParam(description = "文件所在目录路径，以 / 开头") String path,
+            @McpToolParam(description = "待删除的文件或目录名称列表") List<String> names
     ) throws IOException {
         UIDValidator.validateWithException(uid, true);
         long deleted = diskFileSystemManager.getMainFileSystem().deleteFile(uid, path, names);
@@ -126,14 +123,14 @@ public class McpDiskToolService {
      * @return 操作结果
      * @throws IOException 文件系统访问异常
      */
-    @Tool(name = "copy_files", description = "复制文件，支持公共网盘与私人网盘之间的跨用户复制")
+    @McpTool(name = "copy_files", description = "复制文件，支持公共网盘与私人网盘之间的跨用户复制")
     public McpOperationResult copyFiles(
-            @ToolParam(description = "源资源所属用户 ID，0 表示公共网盘") Long sourceUid,
-            @ToolParam(description = "源目录路径，以 / 开头") String sourcePath,
-            @ToolParam(required = false, description = "待复制文件名列表；为空时复制源目录下所有文件") List<String> files,
-            @ToolParam(description = "目标资源所属用户 ID，0 表示公共网盘") Long targetUid,
-            @ToolParam(description = "目标目录路径，以 / 开头") String targetPath,
-            @ToolParam(required = false, description = "是否覆盖同名文件，默认 false") Boolean overwrite
+            @McpToolParam(description = "源资源所属用户 ID，0 表示公共网盘") Long sourceUid,
+            @McpToolParam(description = "源目录路径，以 / 开头") String sourcePath,
+            @McpToolParam(required = false, description = "待复制文件名列表；为空时复制源目录下所有文件") List<String> files,
+            @McpToolParam(description = "目标资源所属用户 ID，0 表示公共网盘") Long targetUid,
+            @McpToolParam(description = "目标目录路径，以 / 开头") String targetPath,
+            @McpToolParam(required = false, description = "是否覆盖同名文件，默认 false") Boolean overwrite
     ) throws IOException {
         UIDValidator.validateWithException(sourceUid, false);
         UIDValidator.validateWithException(targetUid, true);
@@ -160,13 +157,13 @@ public class McpDiskToolService {
      * @return 操作结果
      * @throws IOException 文件系统访问异常
      */
-    @Tool(name = "move_files", description = "在同一用户网盘内移动文件或目录")
+    @McpTool(name = "move_files", description = "在同一用户网盘内移动文件或目录")
     public McpOperationResult moveFiles(
-            @ToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
-            @ToolParam(description = "源目录路径，以 / 开头") String sourcePath,
-            @ToolParam(description = "目标目录路径，以 / 开头") String targetPath,
-            @ToolParam(description = "待移动的文件或目录名称列表") List<String> names,
-            @ToolParam(required = false, description = "是否覆盖同名文件，默认 false") Boolean overwrite
+            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
+            @McpToolParam(description = "源目录路径，以 / 开头") String sourcePath,
+            @McpToolParam(description = "目标目录路径，以 / 开头") String targetPath,
+            @McpToolParam(description = "待移动的文件或目录名称列表") List<String> names,
+            @McpToolParam(required = false, description = "是否覆盖同名文件，默认 false") Boolean overwrite
     ) throws IOException {
         UIDValidator.validateWithException(uid, true);
         boolean overwriteValue = Boolean.TRUE.equals(overwrite);
@@ -186,12 +183,12 @@ public class McpDiskToolService {
      * @return 上传结果
      * @throws IOException 文件系统访问异常
      */
-    @Tool(name = "upload_file", description = "通过 Base64 文件内容上传文件到公共网盘或私人网盘，适合小文件或无法使用秒传时使用")
+    @McpTool(name = "upload_file", description = "通过 Base64 文件内容上传文件到公共网盘或私人网盘，适合小文件或无法使用秒传时使用")
     public McpUploadResult uploadFile(
-            @ToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
-            @ToolParam(description = "目标目录路径，以 / 开头") String path,
-            @ToolParam(description = "保存后的文件名称") String filename,
-            @ToolParam(description = "文件内容的 Base64 编码字符串") String contentBase64
+            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
+            @McpToolParam(description = "目标目录路径，以 / 开头") String path,
+            @McpToolParam(description = "保存后的文件名称") String filename,
+            @McpToolParam(description = "文件内容的 Base64 编码字符串") String contentBase64
     ) throws IOException {
         UIDValidator.validateWithException(uid, true);
         byte[] content = Base64.getDecoder().decode(contentBase64);
@@ -226,12 +223,12 @@ public class McpDiskToolService {
      * @return 上传结果
      * @throws IOException 文件系统访问异常
      */
-    @Tool(name = "quick_save_file", description = "通过文件 MD5 秒传保存文件，不传输文件内容，适合大文件或系统中已有文件的场景")
+    @McpTool(name = "quick_save_file", description = "通过文件 MD5 秒传保存文件，不传输文件内容，适合大文件或系统中已有文件的场景")
     public McpUploadResult quickSaveFile(
-            @ToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
-            @ToolParam(description = "目标目录路径，以 / 开头") String path,
-            @ToolParam(description = "保存后的文件名称") String filename,
-            @ToolParam(description = "文件 MD5，用于命中系统中已有文件") String md5
+            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
+            @McpToolParam(description = "目标目录路径，以 / 开头") String path,
+            @McpToolParam(description = "保存后的文件名称") String filename,
+            @McpToolParam(description = "文件 MD5，用于命中系统中已有文件") String md5
     ) throws IOException {
         UIDValidator.validateWithException(uid, true);
         boolean saved = diskFileSystemManager.getMainFileSystem().quickSave(uid, path, filename, md5);
@@ -251,12 +248,12 @@ public class McpDiskToolService {
      * @return 操作结果
      * @throws IOException 文件系统访问异常
      */
-    @Tool(name = "rename_file", description = "重命名公共网盘或私人网盘中的文件或目录")
+    @McpTool(name = "rename_file", description = "重命名公共网盘或私人网盘中的文件或目录")
     public McpOperationResult renameFile(
-            @ToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
-            @ToolParam(description = "文件所在目录路径，以 / 开头") String path,
-            @ToolParam(description = "原文件名或目录名") String oldName,
-            @ToolParam(description = "新文件名或目录名") String newName
+            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
+            @McpToolParam(description = "文件所在目录路径，以 / 开头") String path,
+            @McpToolParam(description = "原文件名或目录名") String oldName,
+            @McpToolParam(description = "新文件名或目录名") String newName
     ) throws IOException {
         UIDValidator.validateWithException(uid, true);
         diskFileSystemManager.getMainFileSystem().rename(uid, path, oldName, newName);
@@ -271,10 +268,10 @@ public class McpDiskToolService {
      * @return 操作结果
      * @throws IOException 文件系统访问异常
      */
-    @Tool(name = "create_directory", description = "在公共网盘或私人网盘中递归创建目录")
+    @McpTool(name = "create_directory", description = "在公共网盘或私人网盘中递归创建目录")
     public McpOperationResult createDirectory(
-            @ToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
-            @ToolParam(description = "要创建的完整目录路径，以 / 开头，例如 /新目录 或 /文档/归档") String path
+            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") Long uid,
+            @McpToolParam(description = "要创建的完整目录路径，以 / 开头，例如 /新目录 或 /文档/归档") String path
     ) throws IOException {
         UIDValidator.validateWithException(uid, true);
         diskFileSystemManager.getMainFileSystem().mkdirs(uid, path);
