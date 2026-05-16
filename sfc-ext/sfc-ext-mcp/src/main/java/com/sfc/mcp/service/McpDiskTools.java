@@ -180,43 +180,6 @@ public class McpDiskTools {
     }
 
     /**
-     * 上传文件到指定网盘目录。
-     *
-     * @param uid           资源所属用户 ID
-     * @param path          目标目录路径
-     * @param filename      文件名称
-     * @param contentBase64 文件内容的 Base64 编码字符串
-     * @return 上传结果
-     * @throws IOException 文件系统访问异常
-     */
-    @McpTool(name = "upload_file", description = "通过 Base64 文件内容上传文件到公共网盘或私人网盘，适合小文件或无法使用秒传时使用")
-    public McpUploadResult uploadFile(
-            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") String uid,
-            @McpToolParam(description = "目标目录路径，以 / 开头") String path,
-            @McpToolParam(description = "保存后的文件名称") String filename,
-            @McpToolParam(description = "文件内容的 Base64 编码字符串") String contentBase64
-    ) throws IOException {
-        long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, true);
-        byte[] content = Base64.getDecoder().decode(contentBase64);
-        ByteArrayResource byteArrayResource = new ByteArrayResource(content) {
-            @Override
-            public String getFilename() {
-                return filename;
-            }
-        };
-        FileInfo fileInfo = new FileInfo();
-        fileInfo.setUid(uidValue);
-        fileInfo.setName(filename);
-        fileInfo.setSize((long) content.length);
-        fileInfo.setType(FileInfo.TYPE_FILE);
-        fileInfo.setMtime(System.currentTimeMillis());
-        fileInfo.setStreamSource(byteArrayResource);
-        long saveResult = diskFileSystemManager.getMainFileSystem().saveFile(fileInfo, path);
-        return new McpUploadResult(true, resolveSaveMessage(saveResult), filename, (long) content.length, path);
-    }
-
-    /**
      * 通过文件 MD5 秒传保存文件。
      * <p>
      * 该方式不需要上传文件内容，仅在系统中已经存在相同 MD5 文件时生效，
