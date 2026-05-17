@@ -297,7 +297,6 @@ public class OAuthController {
                                        @RequestParam("scope") String scope,
                                        @RequestParam(value = "redirect", defaultValue = "true") boolean redirect,
                                        @RequestParam(value = "redirectUrl", required = false) String redirectUrl) {
-        String authorizeCode = thirdPartyAppTokenService.authorize(appId, SecureUtils.getCurrentUid(), scope);
         ThirdPartyApp app = thirdPartyAppService.checkAndGetById(appId);
 
         // 确定最终回调URL
@@ -319,6 +318,7 @@ public class OAuthController {
             effectiveCallbackUrl = appCallbackUrl;
         }
 
+        String authorizeCode = thirdPartyAppTokenService.authorize(appId, SecureUtils.getCurrentUid(), scope);
         String finalUrl = UriComponentsBuilder.fromHttpUrl(effectiveCallbackUrl)
                 .queryParam("code", authorizeCode)
                 .encode(StandardCharsets.UTF_8)

@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller.open;
 
 import com.xiaotao.saltedfishcloud.constant.SysRole;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
@@ -9,7 +10,11 @@ import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
+import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -57,7 +62,7 @@ public class OpenApiDiskFileController {
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
             @ApiParam(value = "目录路径，默认为根目录 /", defaultValue = "/")
-            @RequestParam(value = "path", defaultValue = "/") String path) throws IOException {
+            @RequestParam(value = "path", defaultValue = "/") @ValidPath String path) throws IOException {
         DiskFileSystem fs = diskFileSystemManager.getMainFileSystem();
         Collection<? extends FileInfo>[] fileList = fs.getUserFileList(uid, path);
         List<FileInfo> mergedList = new ArrayList<>();
@@ -93,6 +98,12 @@ public class OpenApiDiskFileController {
         if (file == null || file.isEmpty()) {
             throw new JsonException(400, "文件为空");
         }
+        if (!ValidPathValidator.isValid(path)) {
+            throw new JsonException(FileSystemError.INVALID_PATH, "当前值：" + path);
+        }
+        if (StringUtils.hasText(file.getName()) && !FileNameValidator.valid(file.getName())) {
+            throw new JsonException(FileSystemError.INVALID_FILE_NAME, "当前值：" + file.getName());
+        }
         FileInfo fileInfo = new FileInfo(file);
         fileInfo.setUid(uid);
         long result = diskFileSystemManager.getMainFileSystem().saveFile(fileInfo, path);
@@ -115,7 +126,7 @@ public class OpenApiDiskFileController {
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
             @ApiParam(value = "父目录路径", required = true)
-            @RequestParam("path") String path,
+            @RequestParam("path") @ValidPath String path,
             @ApiParam(value = "新目录名称", required = true)
             @RequestParam("name") String name) throws IOException {
         diskFileSystemManager.getMainFileSystem().mkdir(uid, path, name);
@@ -189,7 +200,7 @@ public class OpenApiDiskFileController {
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
             @ApiParam(value = "文件所在目录路径", required = true)
-            @RequestParam("path") String path,
+            @RequestParam("path") @ValidPath String path,
             @ApiParam(value = "原文件名", required = true)
             @RequestParam("oldName") String oldName,
             @ApiParam(value = "新文件名", required = true)
@@ -217,7 +228,7 @@ public class OpenApiDiskFileController {
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
             @ApiParam(value = "文件所在目录路径", required = true)
-            @RequestParam("path") String path,
+            @RequestParam("path") @ValidPath String path,
             @RequestBody @Validated FileNameList param) throws IOException {
         diskFileSystemManager.getMainFileSystem().deleteFile(uid, path, param.getFileName());
         return JsonResult.emptySuccess();

@@ -12,6 +12,7 @@ import com.sfc.archive.service.DiskFileSystemArchiveService;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
@@ -27,7 +28,6 @@ import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -85,7 +85,9 @@ public class ArchiveController {
     public JsonResult<Long> asyncExtract(@RequestBody AsyncArchiveExtractParam param) throws IOException {
         // UID 安全校验：公共资源（uid=0）的写入仅允许管理员
         UIDValidator.validateWithException(param.getUid(), true);
-        ValidPathValidator.valid(param.getPath());
+        if(!ValidPathValidator.isValid(param.getPath())) {
+            throw new JsonException(FileSystemError.INVALID_PATH);
+        }
 
         // 构建异步任务记录
         AsyncTaskRecord record = new AsyncTaskRecord();

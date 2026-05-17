@@ -9,13 +9,20 @@ import java.util.regex.Pattern;
 
 public class ValidPathValidator implements ConstraintValidator<ValidPath, Object> {
     private final static Pattern pattern = Pattern.compile(RejectRegex.PATH);
-    public static boolean valid(CharSequence input) {
-        return !pattern.matcher(input).find();
+    private final static Pattern pattern2 = Pattern.compile(RejectRegex.PATH_NODE);
+
+    /**
+     * 校验路径是否合法
+     * @param input 待校验路径
+     * @return  合法返回true，不合法返回false
+     */
+    public static boolean isValid(CharSequence input) {
+        return !(pattern.matcher(input).find() || pattern2.matcher(input).find());
     }
     @Override
     public boolean isValid(Object value, ConstraintValidatorContext context) {
-        if (value instanceof CharSequence) {
-            return valid((CharSequence)value);
+        if (value instanceof CharSequence charSeq) {
+            return isValid(charSeq);
         } else {
             throw new IllegalArgumentException("该验证注解只能使用在CharSequence的实现类字段上，错误的字段类型：" + value.getClass().getName());
         }
