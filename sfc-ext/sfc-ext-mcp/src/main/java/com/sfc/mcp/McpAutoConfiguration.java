@@ -1,11 +1,12 @@
 package com.sfc.mcp;
 
 import com.sfc.mcp.controller.McpOAuthController;
-import com.sfc.mcp.service.McpDiskTools;
-import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import com.sfc.mcp.model.McpProperty;
+import com.sfc.mcp.prompt.McpDiskPrompt;
+import com.sfc.mcp.service.McpUploadService;
+import com.sfc.mcp.tools.McpDiskTools;
+import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
@@ -19,22 +20,17 @@ import org.springframework.context.annotation.Import;
 @Import({
 		McpOAuthAppInitializer.class,
 		McpDiskTools.class,
-		McpOAuthController.class
+		McpOAuthController.class,
+		McpDiskPrompt.class,
+		McpUploadService.class
 })
-//@ComponentScan("com.sfc.mcp")
 public class McpAutoConfiguration {
 
-//	/**
-//	 * 注册 Spring AI MCP 工具回调提供器。
-//	 *
-//	 * @param mcpDiskTools 网盘 MCP 工具服务
-//	 * @return 工具回调提供器
-//	 */
-//	@Bean
-//	public ToolCallbackProvider mcpToolCallbackProvider(McpDiskTools mcpDiskTools) {
-//		return MethodToolCallbackProvider.builder()
-//				.toolObjects(mcpDiskTools)
-//				.build();
-//	}
+	@Bean
+	public McpProperty mcpProperty(ConfigService  configService) {
+		McpProperty mcpProperty = new McpProperty();
+		configService.bindPropertyEntity(mcpProperty);
+		return mcpProperty;
+	}
 }
 

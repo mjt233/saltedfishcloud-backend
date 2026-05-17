@@ -5,12 +5,11 @@ spring:
         protocol: STREAMABLE
         name: saltedfishcloud-mcp
         version: 3.1.1
-        instructions: >-
-          通过 OAuth ApiTicket 访问咸鱼云网盘工具，支持公共网盘与私人网盘的文件列表、删除、复制、移动、上传、秒传、重命名、目录创建与用户信息获取能力。
+        instructions: 访问咸鱼云网盘工具，支持公共网盘与私人网盘的文件列表、删除、复制、移动、上传、重命名、目录创建与用户信息获取能力。
         streamable-http:
           mcp-endpoint: /api/mcp/stream
         capabilities:
           tool: true
-          prompt: false
+          prompt: true
           resource: false
           completion: false

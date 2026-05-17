@@ -1,9 +1,9 @@
-package com.sfc.mcp.service;
+package com.sfc.mcp.tools;
 
 import com.sfc.mcp.model.McpFileEntry;
 import com.sfc.mcp.model.McpFileListResult;
 import com.sfc.mcp.model.McpOperationResult;
-import com.sfc.mcp.model.McpUploadResult;
+import com.sfc.mcp.service.McpUploadService;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -14,18 +14,21 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.RequestContextUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * MCP 网盘工具服务。
@@ -35,13 +38,13 @@ import java.util.*;
  * 所有工具方法均要求当前请求已通过 OAuth ApiTicket 认证，并拥有 {@link SysRole#OAUTH_USER} 角色。
  * </p>
  */
-@Component
 @RequiredArgsConstructor
 @RolesAllowed(SysRole.OAUTH_USER)
 public class McpDiskTools {
 
     private final DiskFileSystemManager diskFileSystemManager;
     private final UserService userService;
+    private final McpUploadService mcpUploadService;
 
     /**
      * 获取当前 OAuth / ApiTicket 对应用户的信息。
@@ -180,33 +183,12 @@ public class McpDiskTools {
     }
 
     /**
-     * 通过文件 MD5 秒传保存文件。
-     * <p>
-     * 该方式不需要上传文件内容，仅在系统中已经存在相同 MD5 文件时生效，
-     * 更适合大文件场景，可显著降低 MCP JSON 传输体积。
-     * </p>
-     *
-     * @param uid      资源所属用户 ID
-     * @param path     目标目录路径
-     * @param filename 保存后的文件名称
-     * @param md5      文件 MD5
-     * @return 上传结果
-     * @throws IOException 文件系统访问异常
+     * 让 MCP 客户端获知上传文件到咸鱼云的方法
      */
-    @McpTool(name = "quick_save_file", description = "通过文件 MD5 秒传保存文件，不传输文件内容，适合大文件或系统中已有文件的场景")
-    public McpUploadResult quickSaveFile(
-            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") String uid,
-            @McpToolParam(description = "目标目录路径，以 / 开头") String path,
-            @McpToolParam(description = "保存后的文件名称") String filename,
-            @McpToolParam(description = "文件 MD5，用于命中系统中已有文件") String md5
-    ) throws IOException {
-        long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, true);
-        boolean saved = diskFileSystemManager.getMainFileSystem().quickSave(uidValue, path, filename, md5);
-        if (!saved) {
-            return new McpUploadResult(false, "秒传失败：系统中不存在该 MD5 对应文件，请改用 upload_file 传输文件内容", filename, null, path);
-        }
-        return new McpUploadResult(true, "秒传完成，未传输文件内容", filename, null, path);
+    @McpTool(name = "get_upload_file_method", description = "获取上传文件到咸鱼云网盘的方法")
+    public McpOperationResult getUploadFileMethod() {
+        HttpServletRequest request = RequestContextUtils.getHttpServletRequest().orElseThrow();
+        return new McpOperationResult(true, mcpUploadService.getUploadPrompt(request), 0L);
     }
 
     /**
