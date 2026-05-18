@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service;
 import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.error.OAuthError;
-import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppApiTicketRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppTokenRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
@@ -13,6 +12,7 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppToken;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppKeyService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
@@ -41,7 +41,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     private final ThirdPartyAppService appService;
     private final ThirdPartyAppKeyService keyService;
     private final CacheService cacheService;
-    private final ThirdPartyAppApiTicketRepo thirdPartyAppApiTicketRepo;
+    private final ThirdPartyAppApiTicketService thirdPartyAppApiTicketService;
 
 
     @Override
@@ -94,7 +94,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
         apiTicketRecord.setPermanent(permanent);
         apiTicketRecord.setExpiredDate(this.calculateApiTicketExpiredDate(now, permanent));
         apiTicketRecord.setRevoked(false);
-        thirdPartyAppApiTicketRepo.save(apiTicketRecord);
+        thirdPartyAppApiTicketService.save(apiTicketRecord);
         return apiTicket;
     }
 
@@ -135,7 +135,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
      * @param permanent 是否永久票据
      */
     private void revokeSameTypeApiTickets(Long appId, Long uid, boolean permanent) {
-        thirdPartyAppApiTicketRepo.revokeByAppIdAndUidAndPermanent(appId, uid, permanent);
+        thirdPartyAppApiTicketService.revokeByAppIdAndUidAndPermanent(appId, uid, permanent);
     }
 
     /**
@@ -146,13 +146,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     private void disableApiTicket(String apiTicket) {
         ThirdPartyAppApiTicketPayload payload = this.tryParseApiTicketPayload(apiTicket);
         if (payload != null && payload.getJti() != null) {
-            Optional<ThirdPartyAppApiTicket> ticketRecord = thirdPartyAppApiTicketRepo.findByJti(payload.getJti());
-            if (ticketRecord.isPresent()) {
-                ThirdPartyAppApiTicket record = ticketRecord.get();
-                if (!Boolean.TRUE.equals(record.getRevoked())) {
-                    record.setRevoked(true);
-                    thirdPartyAppApiTicketRepo.save(record);
-                }
+            if (thirdPartyAppApiTicketService.revokeByJti(payload.getJti())) {
                 return;
             }
         }
@@ -215,7 +209,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
      */
     private void validateApiTicketRecord(String apiTicket, ThirdPartyAppApiTicketPayload payload) {
         Optional<ThirdPartyAppApiTicket> ticketRecordOptional = Optional.ofNullable(payload.getJti())
-                .flatMap(thirdPartyAppApiTicketRepo::findByJti);
+                .flatMap(thirdPartyAppApiTicketService::findByJti);
         if (ticketRecordOptional.isEmpty()) {
             if (payload.getPermanent() != null) {
                 throw new JsonException(OAuthError.INVALID_TOKEN);
@@ -306,7 +300,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
                 .map(ThirdPartyAppToken::getApiTicket)
                 .filter(StringUtils::hasText)
                 .ifPresent(this::disableApiTicket);
-        thirdPartyAppApiTicketRepo.revokeByAppIdAndUid(appId, uid);
+        thirdPartyAppApiTicketService.revokeByAppIdAndUid(appId, uid);
 
         // 移除Token
         Optional.ofNullable(tokenRecord)
