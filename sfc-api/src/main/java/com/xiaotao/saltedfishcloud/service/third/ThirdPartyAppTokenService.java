@@ -33,7 +33,7 @@ public interface ThirdPartyAppTokenService extends CrudService<ThirdPartyAppToke
      * @return 开放平台接口访问凭证 ApiTicket
      */
     default String getApiTicket(Long appId, Long uid, String accessToken) {
-        return getApiTicket(appId, uid, accessToken, false);
+        return getApiTicket(appId, uid, accessToken, false, false);
     }
 
     /**
@@ -45,9 +45,10 @@ public interface ThirdPartyAppTokenService extends CrudService<ThirdPartyAppToke
      * @param uid         用户id
      * @param accessToken 接口访问授权Access Token
      * @param permanent   是否申请永久有效的ApiTicket
+     * @param revokeOlder 是否自动撤销该用户id在该OAuth应用中旧ApiTicket的有效性
      * @return 开放平台接口访问凭证 ApiTicket
      */
-    String getApiTicket(Long appId, Long uid, String accessToken, boolean permanent);
+    String getApiTicket(Long appId, Long uid, String accessToken, boolean permanent, boolean revokeOlder);
 
     /**
      * 解析并验证Api Ticket是否有效

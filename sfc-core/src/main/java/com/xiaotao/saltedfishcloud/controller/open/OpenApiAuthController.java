@@ -33,6 +33,6 @@ public class OpenApiAuthController {
             @RequestParam("uid") Long uid,
             @RequestParam("accessToken") String accessToken,
             @RequestParam(value = "permanent", defaultValue = "false") boolean permanent) {
-        return JsonResultImpl.getInstance(thirdPartyAppTokenService.getApiTicket(appId, uid, accessToken, permanent));
+        return JsonResultImpl.getInstance(thirdPartyAppTokenService.getApiTicket(appId, uid, accessToken, permanent, false));
     }
 }

@@ -60,7 +60,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     }
 
     @Override
-    public String getApiTicket(Long appId, Long uid, String accessToken, boolean permanent) {
+    public String getApiTicket(Long appId, Long uid, String accessToken, boolean permanent, boolean revokeOlder) {
         Date now = new Date();
         // 获取 Access Token 对应的用户授权信息
         ThirdPartyAppToken tokenRecord = Optional.ofNullable(repository.findByAppIdAndUid(appId, uid))
@@ -71,7 +71,9 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
                 .orElseThrow(() -> new JsonException(OAuthError.PERMISSION_DENIED));
         ThirdPartyApp app = authorizationVo.getThirdPartyApp();
         this.checkPermanentApiTicketPermission(app, permanent);
-        this.revokeSameTypeApiTickets(tokenRecord.getAppId(), tokenRecord.getUid(), permanent);
+        if (revokeOlder) {
+            this.revokeSameTypeApiTickets(tokenRecord.getAppId(), tokenRecord.getUid(), permanent);
+        }
 
         // 生成JWT凭证作为 Api Ticket
         ThirdPartyAppApiTicketPayload apiTicketPayload = ThirdPartyAppApiTicketPayload.builder()
