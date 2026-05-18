@@ -146,14 +146,15 @@ GET /api/openApi/auth/getAccessToken/v1?code={code}&clientSecret={clientSecret}
 
 #### 步骤4：获取ApiTicket
 
-使用Access Token、App ID和用户ID获取ApiTicket：
+使用 Access Token 获取 ApiTicket：
 
 ```bash
-GET /api/openApi/auth/getApiTicket/v1?appId={appId}&uid={uid}&accessToken={accessToken}&permanent={permanent}
+GET /api/openApi/auth/getApiTicket/v1?accessToken={accessToken}&permanent={permanent}
 ```
 
 **参数说明**：
 
+- `accessToken`: 第 3 步获取的 Access Token，内部已包含应用与用户授权上下文
 - `permanent`: 是否申请永久有效的ApiTicket（可选，默认 `false`）
 
 **行为说明**：

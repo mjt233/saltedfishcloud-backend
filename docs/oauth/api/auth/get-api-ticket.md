@@ -2,7 +2,7 @@
 
 ## 接口说明
 
-该接口用于第三方应用使用Access Token获取ApiTicket。ApiTicket是访问咸鱼云网盘开放接口的凭证，默认签发15分钟有效的临时票据；对已开启能力的第三方应用，也支持申请永久有效的ApiTicket。
+该接口用于第三方应用使用 Access Token 获取 ApiTicket。ApiTicket 是访问咸鱼云网盘开放接口的凭证，默认签发 15 分钟有效的临时票据；对已开启能力的第三方应用，也支持申请永久有效的 ApiTicket。
 
 **接口路径**: `GET /api/openApi/auth/getApiTicket/v1`
 
@@ -10,8 +10,6 @@
 
 | 参数名 | 类型 | 必填 | 说明 | 示例 |
 |--------|------|------|------|------|
-| `appId` | Long | 是 | 第三方应用ID | `123` |
-| `uid` | Long | 是 | 用户ID | `456` |
 | `accessToken` | String | 是 | Access Token | `s2w6KU-gxLSn8momzzG7mmnA5wQzToONi5OjZcuTXhM` |
 | `permanent` | Boolean | 否 | 是否申请永久有效的ApiTicket，默认 `false` | `true` |
 
@@ -68,7 +66,7 @@ Authorization: ApiTicket eyJhbGciOiJIUzI1NiJ9...
 ### 1. 有效期管理
 - **临时ApiTicket有效期**: 15分钟
 - **永久ApiTicket有效期**: 不设置JWT过期时间，仅允许已开启永久ApiTicket能力的应用申请
-- **自动失效**: 每次获取新的同类型ApiTicket时，旧的同类型ApiTicket会立即失效
+- **自动失效**: 每次获取新的同类型 ApiTicket 时，旧的同类型 ApiTicket 会立即失效
 - **撤销授权失效**: 用户撤销授权后，该应用下该用户的所有ApiTicket（包含永久ApiTicket）都会立即失效
 - **建议缓存时间**: 临时ApiTicket建议缓存14分钟，提前1分钟刷新；永久ApiTicket也应在收到401/400无效token后及时重新申请
 

@@ -6674,7 +6674,7 @@
                       "raw": "{\r\n    \"icon\": \"http://localhost:4000/api/resource/0/fileContentByMD5/97a6025128b8f80c6e6bbccdf7edb128/screen.png\"\r\n}"
                     },
                     "url": {
-                      "raw": "{{addr}}/api/openApi/auth/getApiTicket/v1?accessToken=M39AXlwn0Nxof5UBuHWGK0059zaUKZm09_3Q1GkkLZM&appId=1252006382572404736&uid=1251642958063599616",
+                      "raw": "{{addr}}/api/openApi/auth/getApiTicket/v1?accessToken=eyJhbGciOiJIUzI1NiJ9...&permanent=false",
                       "host": [
                         "{{addr}}"
                       ],
@@ -6688,18 +6688,13 @@
                       "query": [
                         {
                           "key": "accessToken",
-                          "value": "M39AXlwn0Nxof5UBuHWGK0059zaUKZm09_3Q1GkkLZM",
+                          "value": "eyJhbGciOiJIUzI1NiJ9...",
                           "description": "接口访问授权Access Token"
                         },
                         {
-                          "key": "appId",
-                          "value": "1252006382572404736",
-                          "description": "第三方OAuth应用id"
-                        },
-                        {
-                          "key": "uid",
-                          "value": "1251642958063599616",
-                          "description": "系统用户id"
+                          "key": "permanent",
+                          "value": "false",
+                          "description": "是否申请永久有效的ApiTicket"
                         }
                       ]
                     }

@@ -66,10 +66,9 @@ public class McpOAuthController {
     public JsonResult<String> getApiTicket(@RequestParam("code") String code) {
         ThirdPartyApp app = getMcpApp();
         String clientSecret = getClientSecret(app.getId());
-        Long uid = SecureUtils.getCurrentUid();
 
         String accessToken = thirdPartyAppTokenService.getAccessToken(code, clientSecret);
-        String apiTicket = thirdPartyAppTokenService.getApiTicket(app.getId(), uid, accessToken, true, true);
+        String apiTicket = thirdPartyAppTokenService.getApiTicket(accessToken, true, true);
         return JsonResultImpl.getInstance(apiTicket);
     }
 
