@@ -24,11 +24,6 @@ public class ThirdPartyAppToken extends AuditModel {
      */
     private Long appId;
 
-    /**
-     * 临时API凭证
-     */
-    @Column(length = 1024)
-    private String apiTicket;
 
     /**
      * Access Token的 BCrypt哈希值

@@ -50,10 +50,6 @@ public interface ThirdPartyAppTokenService extends CrudService<ThirdPartyAppToke
      */
     String getApiTicket(Long appId, Long uid, String accessToken, boolean permanent, boolean revokeOlder);
 
-    /**
-     * 解析并验证Api Ticket是否有效
-     */
-    ThirdPartyAppApiTicketPayload parseAndValidateApiTicket(String apiTicket);
 
     /**
      * 撤销授权

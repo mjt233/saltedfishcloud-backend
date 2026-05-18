@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -41,6 +42,12 @@ public class ThirdPartyAppApiTicket extends AuditModel {
      * 票据到期时间，为空时表示永久有效
      */
     private Date expiredDate;
+
+    /**
+     * 签发的 ApiTicket 字符串，JWT 格式。长度较长，限制为 1024 字符。
+     */
+    @Column(length = 1024)
+    private String apiTicket;
 
     /**
      * 票据是否已被撤销
