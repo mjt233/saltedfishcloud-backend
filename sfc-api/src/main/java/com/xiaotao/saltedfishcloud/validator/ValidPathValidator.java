@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.validator;
 
 
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 
 import jakarta.validation.ConstraintValidator;
@@ -19,6 +21,17 @@ public class ValidPathValidator implements ConstraintValidator<ValidPath, Object
     public static boolean isValid(CharSequence input) {
         return !(pattern.matcher(input).find() || pattern2.matcher(input).find());
     }
+
+    /**
+     * 校验路径是否合法，不合法的路径直接抛出异常
+     * @param input 待校验路径
+     */
+    public static void valid(CharSequence input) {
+        if (!isValid(input)) {
+            throw new JsonException(FileSystemError.INVALID_PATH);
+        }
+    }
+
     @Override
     public boolean isValid(Object value, ConstraintValidatorContext context) {
         if (value instanceof CharSequence charSeq) {
