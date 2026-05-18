@@ -1,8 +1,10 @@
 package com.xiaotao.saltedfishcloud.controller.open;
 
 import com.xiaotao.saltedfishcloud.constant.SysRole;
+import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.FileNameList;
@@ -10,6 +12,7 @@ import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -21,11 +24,13 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -51,6 +56,11 @@ import java.util.List;
 public class OpenApiDiskFileController {
 
     private final DiskFileSystemManager diskFileSystemManager;
+
+    /**
+     * 文件临时链接服务。
+     */
+    private final FileLinkService fileLinkService;
 
     /**
      * 获取用户网盘指定目录下的文件列表。
@@ -111,6 +121,40 @@ public class OpenApiDiskFileController {
         }
 
         return ResourceUtils.wrapResource(resource, fileName);
+    }
+
+    /**
+     * 创建网盘文件的临时下载链接。
+     *
+     * @param uid     用户ID（0 为公共网盘）
+     * @param path    文件完整路径（包含文件名）
+     * @param request HTTP 请求对象
+     * @return 临时下载链接
+     */
+    @ApiOperation("创建网盘文件下载链接")
+    @GetMapping("/downloadLink/v1")
+    @PreAuthorize("hasAuthority('SCOPE_storage_read')")
+    public JsonResult<String> createDownloadLink(
+            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @RequestParam("uid") @UID long uid,
+            @ApiParam(value = "文件完整路径（包含文件名）", required = true)
+            @RequestParam("path") @ValidPath String path,
+            HttpServletRequest request) {
+        String parentPath = PathUtils.getParentPath(path);
+        String fileName = PathUtils.getLastNode(path);
+        ResourceRequest resourceRequest = ResourceRequest.builder()
+                .protocol(ResourceProtocol.MAIN)
+                .targetId(String.valueOf(uid))
+                .path(parentPath)
+                .name(fileName)
+                .build();
+
+        String baseUrl = UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
+                .replacePath("/api/fileLink/download")
+                .replaceQuery(null)
+                .build()
+                .toUriString();
+        return JsonResultImpl.getInstance(fileLinkService.createLink(baseUrl, resourceRequest));
     }
 
     /**
