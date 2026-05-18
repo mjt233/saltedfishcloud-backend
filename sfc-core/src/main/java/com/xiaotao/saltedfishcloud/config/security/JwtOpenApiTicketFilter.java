@@ -4,13 +4,14 @@ import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,11 +23,11 @@ import java.util.Arrays;
 import java.util.List;
 
 public class JwtOpenApiTicketFilter extends OncePerRequestFilter {
-    private final ThirdPartyAppTokenService thirdPartyAppTokenService;
+    private final ThirdPartyAppApiTicketService thirdPartyAppApiTicketService;
     private final UserService userService;
 
-    public JwtOpenApiTicketFilter(ThirdPartyAppTokenService thirdPartyAppTokenService, UserService userService) {
-        this.thirdPartyAppTokenService = thirdPartyAppTokenService;
+    public JwtOpenApiTicketFilter(ThirdPartyAppApiTicketService thirdPartyAppApiTicketService, UserService userService) {
+        this.thirdPartyAppApiTicketService = thirdPartyAppApiTicketService;
         this.userService = userService;
     }
 
@@ -38,7 +39,7 @@ public class JwtOpenApiTicketFilter extends OncePerRequestFilter {
             return;
         }
         String apiTicket = authorization.substring(10);
-        ThirdPartyAppApiTicketPayload apiTicketPayload = thirdPartyAppTokenService.parseAndValidateApiTicket(apiTicket);
+        ThirdPartyAppApiTicketPayload apiTicketPayload = thirdPartyAppApiTicketService.parseAndValidateApiTicket(apiTicket);
         Long uid = apiTicketPayload.getUid();
         User user = userService.getUserById(uid);
         UserPrincipal principal = UserPrincipal.from(user);
@@ -49,8 +50,7 @@ public class JwtOpenApiTicketFilter extends OncePerRequestFilter {
                 .forEach(scope -> authorities.add(new SimpleGrantedAuthority("SCOPE_" + scope)));
 
 
-        OidcAuthenticationToken authenticationToken = new OidcAuthenticationToken(principal, apiTicket, authorities);
-        authenticationToken.setAuthenticated(true);
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(principal, apiTicket, authorities);
         authenticationToken.setDetails(apiTicketPayload);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         filterChain.doFilter(request, response);

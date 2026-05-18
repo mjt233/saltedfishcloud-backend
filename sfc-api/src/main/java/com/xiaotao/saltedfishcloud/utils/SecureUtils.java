@@ -9,9 +9,11 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.DigestUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,6 +56,26 @@ public class SecureUtils {
      */
     public static String getMd5(String input) {
         return DigestUtils.md5DigestAsHex(input.getBytes());
+    }
+
+    /**
+     * 获取字符串的 SHA-256 十六进制摘要。
+     *
+     * @param input 输入字符串
+     * @return SHA-256 运算结果
+     */
+    public static String getSha256(String input) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            byte[] bytes = messageDigest.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder stringBuilder = new StringBuilder(bytes.length * 2);
+            for (byte item : bytes) {
+                stringBuilder.append(String.format("%02x", item));
+            }
+            return stringBuilder.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256算法不可用", e);
+        }
     }
 
     /**

@@ -80,6 +80,7 @@ nav:
       - 网盘存储相关接口:
         - 获取文件列表: oauth/api/storage/file-list.md
         - 上传文件: oauth/api/storage/upload.md
+        - 下载文件: oauth/api/storage/download.md
         - 创建目录: oauth/api/storage/mkdir.md
         - 复制文件或目录: oauth/api/storage/copy.md
         - 移动文件或目录: oauth/api/storage/move.md

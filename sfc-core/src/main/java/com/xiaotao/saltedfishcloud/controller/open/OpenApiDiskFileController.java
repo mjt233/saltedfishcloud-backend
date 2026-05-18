@@ -10,6 +10,8 @@ import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
@@ -20,12 +22,15 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import jakarta.annotation.security.RolesAllowed;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -74,6 +79,38 @@ public class OpenApiDiskFileController {
             }
         }
         return JsonResultImpl.getInstance(mergedList);
+    }
+
+    /**
+     * 下载用户网盘指定路径的文件。
+     *
+     * @param uid  用户ID（0 为公共网盘）
+     * @param path 文件完整路径（包含文件名），以 "/" 开头
+     * @return HTTP 响应，包含文件内容和相应的响应头
+     * @throws IOException              文件系统访问异常
+     * @throws UnsupportedEncodingException 文件名编码异常
+     */
+    @ApiOperation("下载网盘文件")
+    @GetMapping("/download/v1")
+    @PreAuthorize("hasAuthority('SCOPE_storage_read')")
+    public ResponseEntity<Resource> download(
+            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @RequestParam("uid") @UID long uid,
+            @ApiParam(value = "文件完整路径（包含文件名）", required = true)
+            @RequestParam("path") @ValidPath String path) throws IOException, UnsupportedEncodingException {
+        // 从完整路径中提取目录路径和文件名
+        String parentPath = PathUtils.getParentPath(path);
+        String fileName = PathUtils.getLastNode(path);
+
+        // 获取文件资源
+        DiskFileSystem fs = diskFileSystemManager.getMainFileSystem();
+        Resource resource = fs.getResource(uid, parentPath, fileName);
+
+        if (resource == null) {
+            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+        }
+
+        return ResourceUtils.wrapResource(resource, fileName);
     }
 
     /**
@@ -290,4 +327,3 @@ public class OpenApiDiskFileController {
         private Boolean isOverwrite;
     }
 }
-

@@ -66,6 +66,11 @@
     UIDValidator.validate(dto.getUid());
   ```
 
+#### PATH 安全校验
+
+- 同 `UID 安全校验`，对Controller的参数或封装对象进行校验，需要添加`@ValidPath`注解。
+- Controller中对于对象封装的path字段，则使用`ValidPathValidator.valid(java.lang.CharSequence)`
+
 ## 工作流与验证机制
 
 ### 行为约束

@@ -4,12 +4,12 @@ import com.sfc.mcp.constant.McpConstant;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRepo;
-import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppTokenRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppToken;
+import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppApiTicket;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import io.swagger.annotations.Api;
@@ -34,9 +34,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class McpOAuthController {
 
+    private final ThirdPartyAppApiTicketService thirdPartyAppApiTicketService;
     private final ThirdPartyAppTokenService thirdPartyAppTokenService;
     private final ThirdPartyAppRepo thirdPartyAppRepo;
-    private final ThirdPartyAppTokenRepo thirdPartyAppTokenRepo;
     private final CacheService cacheService;
 
     /**
@@ -66,10 +66,9 @@ public class McpOAuthController {
     public JsonResult<String> getApiTicket(@RequestParam("code") String code) {
         ThirdPartyApp app = getMcpApp();
         String clientSecret = getClientSecret(app.getId());
-        Long uid = SecureUtils.getCurrentUid();
 
         String accessToken = thirdPartyAppTokenService.getAccessToken(code, clientSecret);
-        String apiTicket = thirdPartyAppTokenService.getApiTicket(app.getId(), uid, accessToken, true, true);
+        String apiTicket = thirdPartyAppTokenService.getApiTicket(accessToken, true, true);
         return JsonResultImpl.getInstance(apiTicket);
     }
 
@@ -87,15 +86,17 @@ public class McpOAuthController {
         ThirdPartyApp app = getMcpApp();
         Long uid = SecureUtils.getCurrentUid();
 
-        ThirdPartyAppToken tokenRecord = thirdPartyAppTokenRepo.findByAppIdAndUid(app.getId(), uid);
-        if (tokenRecord == null || tokenRecord.getApiTicket() == null) {
+        ThirdPartyAppApiTicket ticketRecord = thirdPartyAppApiTicketService
+                .findLatestActivePermanentTicket(app.getId(), uid)
+                .orElse(null);
+        if (ticketRecord == null || ticketRecord.getApiTicket() == null) {
             return JsonResultImpl.getInstance(null);
         }
 
         try {
-            thirdPartyAppTokenService.parseAndValidateApiTicket(tokenRecord.getApiTicket());
-            return JsonResultImpl.getInstance(maskApiTicket(tokenRecord.getApiTicket()));
-        } catch (Exception e) {
+            thirdPartyAppApiTicketService.parseAndValidateApiTicket(ticketRecord.getApiTicket());
+            return JsonResultImpl.getInstance(maskApiTicket(ticketRecord.getApiTicket()));
+        } catch (JsonException e) {
             log.debug("ApiTicket验证失败，视为无效: {}", e.getMessage());
             return JsonResultImpl.getInstance(null);
         }
