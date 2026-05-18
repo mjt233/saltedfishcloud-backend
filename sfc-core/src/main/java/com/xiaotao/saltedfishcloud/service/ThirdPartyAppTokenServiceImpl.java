@@ -6,7 +6,6 @@ import com.xiaotao.saltedfishcloud.constant.error.OAuthError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppTokenRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppApiTicket;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppToken;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
@@ -16,21 +15,15 @@ import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppKeyService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
-import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -71,31 +64,13 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
                 .orElseThrow(() -> new JsonException(OAuthError.PERMISSION_DENIED));
         ThirdPartyApp app = authorizationVo.getThirdPartyApp();
         this.checkPermanentApiTicketPermission(app, permanent);
-        if (revokeOlder) {
-            this.revokeSameTypeApiTickets(tokenRecord.getAppId(), tokenRecord.getUid(), permanent);
-        }
-
-        // 生成JWT凭证作为 Api Ticket
         ThirdPartyAppApiTicketPayload apiTicketPayload = ThirdPartyAppApiTicketPayload.builder()
                 .appId(tokenRecord.getAppId())
                 .uid(tokenRecord.getUid())
                 .scope(authorization.getScope())
                 .permanent(permanent)
-                .jti(IdUtil.getId())
                 .build();
-        String apiTicket = generateApiTicket(apiTicketPayload, permanent ? 0 : (int) TimeUnit.MINUTES.toSeconds(15));
-        tokenRecord.setApiTicket(apiTicket);
-        save(tokenRecord);
-
-        ThirdPartyAppApiTicket apiTicketRecord = new ThirdPartyAppApiTicket();
-        apiTicketRecord.setAppId(tokenRecord.getAppId());
-        apiTicketRecord.setUid(tokenRecord.getUid());
-        apiTicketRecord.setJti(apiTicketPayload.getJti());
-        apiTicketRecord.setPermanent(permanent);
-        apiTicketRecord.setExpiredDate(this.calculateApiTicketExpiredDate(now, permanent));
-        apiTicketRecord.setRevoked(false);
-        thirdPartyAppApiTicketService.save(apiTicketRecord);
-        return apiTicket;
+        return thirdPartyAppApiTicketService.issue(apiTicketPayload, revokeOlder);
     }
 
     /**
@@ -110,139 +85,8 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
         }
     }
 
-    /**
-     * 计算 ApiTicket 的过期时间。
-     *
-     * @param now       当前时间
-     * @param permanent 是否永久票据
-     * @return 过期时间，为空时表示永久有效
-     */
-    private Date calculateApiTicketExpiredDate(Date now, boolean permanent) {
-        if (permanent) {
-            return null;
-        }
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(now);
-        calendar.add(Calendar.MINUTE, 15);
-        return calendar.getTime();
-    }
-
-    /**
-     * 撤销指定应用指定用户指定类型的历史 ApiTicket。
-     *
-     * @param appId     第三方应用id
-     * @param uid       用户id
-     * @param permanent 是否永久票据
-     */
-    private void revokeSameTypeApiTickets(Long appId, Long uid, boolean permanent) {
-        thirdPartyAppApiTicketService.revokeByAppIdAndUidAndPermanent(appId, uid, permanent);
-    }
-
-    /**
-     * 使指定 ApiTicket 失效。
-     *
-     * @param apiTicket 待失效的 ApiTicket
-     */
-    private void disableApiTicket(String apiTicket) {
-        ThirdPartyAppApiTicketPayload payload = this.tryParseApiTicketPayload(apiTicket);
-        if (payload != null && payload.getJti() != null) {
-            if (thirdPartyAppApiTicketService.revokeByJti(payload.getJti())) {
-                return;
-            }
-        }
-        this.disableLegacyApiTicket(apiTicket, payload);
-    }
-
-    /**
-     * 将旧版 ApiTicket 拉入缓存黑名单。
-     *
-     * @param apiTicket 待失效的 ApiTicket
-     * @param payload   ApiTicket 载荷，解析失败时允许为空
-     */
-    private void disableLegacyApiTicket(String apiTicket, ThirdPartyAppApiTicketPayload payload) {
-        String key = CacheKeyPrefixes.OAUTH_DISABLED_TICKET + SecureUtils.getMd5(apiTicket);
-        if (payload != null && Boolean.TRUE.equals(payload.getPermanent())) {
-            cacheService.set(key, 1);
-            return;
-        }
-        if (!JwtUtils.checkIsExpired(apiTicket)) {
-            cacheService.set(key, 1, 15, TimeUnit.MINUTES);
-        }
-    }
-
-    /**
-     * 尝试解析 ApiTicket 载荷。
-     *
-     * @param apiTicket ApiTicket 原文
-     * @return 解析成功时返回载荷，失败时返回 {@code null}
-     */
-    private ThirdPartyAppApiTicketPayload tryParseApiTicketPayload(String apiTicket) {
-        try {
-            return MapperHolder.parseJson(JwtUtils.parse(apiTicket), ThirdPartyAppApiTicketPayload.class);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private void checkApiTicketIsDisabled(String apiTicket) {
-        if(cacheService.get(CacheKeyPrefixes.OAUTH_DISABLED_TICKET + SecureUtils.getMd5(apiTicket)) != null) {
-            throw new JsonException(OAuthError.INVALID_TOKEN);
-        }
-    }
-
-    @Override
-    public ThirdPartyAppApiTicketPayload parseAndValidateApiTicket(String apiTicket) {
-        try {
-            ThirdPartyAppApiTicketPayload payload = MapperHolder.parseJson(JwtUtils.parse(apiTicket), ThirdPartyAppApiTicketPayload.class);
-            this.validateApiTicketRecord(apiTicket, payload);
-            return payload;
-        } catch (JsonException | IOException e) {
-            throw new JsonException(OAuthError.INVALID_TOKEN);
-        }
-    }
-
-    /**
-     * 校验 ApiTicket 持久化记录是否有效。
-     *
-     * @param apiTicket ApiTicket 原文
-     * @param payload   ApiTicket 载荷
-     */
-    private void validateApiTicketRecord(String apiTicket, ThirdPartyAppApiTicketPayload payload) {
-        Optional<ThirdPartyAppApiTicket> ticketRecordOptional = Optional.ofNullable(payload.getJti())
-                .flatMap(thirdPartyAppApiTicketService::findByJti);
-        if (ticketRecordOptional.isEmpty()) {
-            if (payload.getPermanent() != null) {
-                throw new JsonException(OAuthError.INVALID_TOKEN);
-            }
-            this.checkApiTicketIsDisabled(apiTicket);
-            return;
-        }
-        ThirdPartyAppApiTicket ticketRecord = ticketRecordOptional.get();
-        if (Boolean.TRUE.equals(ticketRecord.getRevoked())) {
-            throw new JsonException(OAuthError.INVALID_TOKEN);
-        }
-        if (ticketRecord.getExpiredDate() != null && new Date().after(ticketRecord.getExpiredDate())) {
-            throw new JsonException(OAuthError.INVALID_TOKEN);
-        }
-        if (!Objects.equals(ticketRecord.getAppId(), payload.getAppId())
-                || !Objects.equals(ticketRecord.getUid(), payload.getUid())
-                || !Objects.equals(Boolean.TRUE.equals(ticketRecord.getPermanent()), Boolean.TRUE.equals(payload.getPermanent()))) {
-            throw new JsonException(OAuthError.INVALID_TOKEN);
-        }
-    }
-
     private String getAuthorizationCodeCacheKey(String code) {
         return CacheKeyPrefixes.OAUTH_AUTH_CODE + code;
-    }
-
-    /**
-     * 生成第三方应用使用的Token
-     *
-     * @param payload token载荷数据
-     * @param expr    有效时长，<=0表示无限
-     */
-    private String generateApiTicket(Object payload, int expr) {
-        return JwtUtils.generateToken(MapperHolder.toJsonNoEx(payload), expr);
     }
 
     private String generateAccessToken() {
@@ -295,11 +139,6 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     @Transactional
     public void revoke(Long appId, Long uid) {
         ThirdPartyAppToken tokenRecord = repository.findByAppIdAndUid(appId, uid);
-        // 失效原凭证
-        Optional.ofNullable(tokenRecord)
-                .map(ThirdPartyAppToken::getApiTicket)
-                .filter(StringUtils::hasText)
-                .ifPresent(this::disableApiTicket);
         thirdPartyAppApiTicketService.revokeByAppIdAndUid(appId, uid);
 
         // 移除Token
