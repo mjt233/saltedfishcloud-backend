@@ -1,7 +1,10 @@
 package com.xiaotao.saltedfishcloud.cache;
 
 import com.xiaotao.saltedfishcloud.config.cache.LocalCacheProperty;
+import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
+import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -302,6 +305,102 @@ public class LocalCacheServiceImplTest {
         LocalCacheServiceImpl restoredCacheService = new LocalCacheServiceImpl(createLocalCacheProperty());
         assertNull(restoredCacheService.get("persist:delete"), "删除后的缓存不应再次从持久化文件恢复");
         restoredCacheService.persistBeforeShutdown();
+    }
+
+    @Test
+    @DisplayName("测试各种类型的缓存值能被正确持久化和恢复")
+    public void testPersistVariousValueTypes() {
+        // 基本类型包装类
+        cacheService.set("persist:int", 42);
+        cacheService.set("persist:long", 1234567890L);
+        cacheService.set("persist:double", 3.14);
+        cacheService.set("persist:boolean", true);
+
+        // 字符串
+        cacheService.set("persist:string", "hello");
+
+        // 集合
+        cacheService.sAdd("persist:set", "a", "b", "c");
+        cacheService.set("persist:list", Arrays.asList(1, 2, 3));
+
+        // 嵌套对象（Map 内包含其他对象）
+        Map<String, Object> nested = new HashMap<>();
+        nested.put("name", "nested");
+        nested.put("count", 100);
+        nested.put("tags", Arrays.asList("tag1", "tag2"));
+        cacheService.set("persist:nested", nested);
+
+        // 实现了 Serializable 的复杂对象
+        FileInfo fileInfo = new FileInfo("test.txt", 999, FileInfo.TYPE_FILE, "/test", System.currentTimeMillis(), null);
+        cacheService.set("persist:serializable", fileInfo);
+
+        // 未实现 Serializable 的对象（JSON 序列化的核心优势）
+        NonSerializableObject nonSerializable = new NonSerializableObject("custom-value", 42, List.of("item1", "item2"));
+        cacheService.set("persist:non-serializable", nonSerializable);
+        ThirdPartyApp thirdPartyApp = new ThirdPartyApp();
+        thirdPartyApp.setName("testName");
+        cacheService.set("persist:netsed-non-serializable", ThirdPartyAppUserAuthorizationVo.builder()
+                        .thirdPartyApp(thirdPartyApp)
+                .build());
+
+        cacheService.persistBeforeShutdown();
+        assertTrue(Files.exists(persistFilePath), "持久化文件应存在");
+
+        LocalCacheServiceImpl restored = new LocalCacheServiceImpl(createLocalCacheProperty());
+
+        // 基本类型包装类
+        assertEquals(42, (int) restored.get("persist:int"));
+        assertEquals(1234567890L, (long) restored.get("persist:long"));
+        assertEquals(3.14, ((Number) restored.get("persist:double")).doubleValue(), 0.001);
+        assertEquals(true, restored.get("persist:boolean"));
+
+        // 字符串
+        assertEquals("hello", restored.get("persist:string"));
+
+        // 集合
+        assertEquals(Set.of("a", "b", "c"), restored.sMembers("persist:set"));
+        assertEquals(Arrays.asList(1, 2, 3), restored.get("persist:list"));
+
+        // 嵌套对象
+        Map<String, Object> restoredNested = restored.get("persist:nested");
+        assertNotNull(restoredNested);
+        assertEquals("nested", restoredNested.get("name"));
+        assertEquals(100, restoredNested.get("count"));
+
+        // Serializable 对象
+        FileInfo restoredFile = restored.get("persist:serializable");
+        assertNotNull(restoredFile);
+        assertEquals("test.txt", restoredFile.getName());
+        assertEquals(999, restoredFile.getSize());
+
+        // 非 Serializable 对象
+        NonSerializableObject restoredNon = restored.get("persist:non-serializable");
+        ThirdPartyAppUserAuthorizationVo appUserAuthorizationVo = restored.get("persist:netsed-non-serializable");
+        assertNotNull(restoredNon, "未实现 Serializable 的对象应能被正确持久化和恢复");
+        assertEquals("custom-value", restoredNon.name);
+        assertEquals(42, restoredNon.value);
+        assertEquals(List.of("item1", "item2"), restoredNon.items);
+        assertEquals("testName", appUserAuthorizationVo.getThirdPartyApp().getName());
+
+        restored.persistBeforeShutdown();
+    }
+
+    /**
+     * 未实现 Serializable 的测试对象，用于验证 JSON 序列化不再要求 Serializable 接口。
+     */
+    private static class NonSerializableObject {
+        public String name;
+        public int value;
+        public List<String> items;
+
+        public NonSerializableObject() {
+        }
+
+        public NonSerializableObject(String name, int value, List<String> items) {
+            this.name = name;
+            this.value = value;
+            this.items = items;
+        }
     }
 
     @Test

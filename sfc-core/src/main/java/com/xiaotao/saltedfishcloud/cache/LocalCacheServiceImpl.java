@@ -1,20 +1,20 @@
 package com.xiaotao.saltedfishcloud.cache;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.xiaotao.saltedfishcloud.config.cache.LocalCacheProperty;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.time.Duration;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -42,6 +42,12 @@ public class LocalCacheServiceImpl implements CacheService {
      * 永不过期时间戳。
      */
     private static final long NEVER_EXPIRE_AT = Long.MAX_VALUE;
+
+    /**
+     * Jackson ObjectMapper，用于缓存持久化的 JSON 序列化/反序列化。
+     * 配置与 RedisConfig 保持一致，使用 DefaultTyping 保留类型信息。
+     */
+    private final ObjectMapper objectMapper;
 
     /**
      * 实际本地缓存存储。
@@ -99,6 +105,7 @@ public class LocalCacheServiceImpl implements CacheService {
         this.maxCacheSize = localCacheProperty.getMaxCacheSize();
         this.persistEnabled = localCacheProperty.isPersistEnabled();
         this.persistFilePath = resolvePersistFilePath(localCacheProperty.getPersistFilePath());
+        this.objectMapper = createObjectMapper();
         this.persistScheduler = persistEnabled ? createPersistScheduler() : null;
         if (persistEnabled) {
             loadPersistedData();
@@ -440,6 +447,25 @@ public class LocalCacheServiceImpl implements CacheService {
     }
 
     /**
+     * 创建用于缓存持久化的 ObjectMapper，配置与 RedisConfig 保持一致。
+     *
+     * @return ObjectMapper
+     */
+    private ObjectMapper createObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.activateDefaultTyping(
+                mapper.getPolymorphicTypeValidator(),
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
+        mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.setTypeFactory(mapper.getTypeFactory().withClassLoader(Thread.currentThread().getContextClassLoader()));
+        return mapper;
+    }
+
+    /**
      * 创建本地缓存持久化调度器。
      *
      * @return 调度器
@@ -478,9 +504,9 @@ public class LocalCacheServiceImpl implements CacheService {
         if (Files.notExists(persistFilePath)) {
             return;
         }
-        try (ObjectInputStream inputStream = new ObjectInputStream(Files.newInputStream(persistFilePath))) {
-            Object snapshotObject = inputStream.readObject();
-            if (!(snapshotObject instanceof PersistedCacheSnapshot(List<PersistedCacheEntry> entries, long persistSequence))) {
+        try {
+            PersistedCacheSnapshot snapshot = objectMapper.readValue(persistFilePath.toFile(), PersistedCacheSnapshot.class);
+            if (snapshot == null || snapshot.entries() == null) {
                 log.warn("本地缓存持久化文件格式无效，已跳过加载: {}", persistFilePath);
                 return;
             }
@@ -490,7 +516,7 @@ public class LocalCacheServiceImpl implements CacheService {
                 writeOrder.clear();
                 long now = System.currentTimeMillis();
                 long maxVersion = 0;
-                for (PersistedCacheEntry entry : entries) {
+                for (PersistedCacheEntry entry : snapshot.entries()) {
                     if (entry == null || entry.key() == null || isExpired(entry.expireAt(), now)) {
                         continue;
                     }
@@ -499,7 +525,7 @@ public class LocalCacheServiceImpl implements CacheService {
                     writeOrder.offerLast(new CacheEntryRef(entry.key(), entry.version()));
                     maxVersion = Math.max(maxVersion, entry.version());
                 }
-                sequence.set(Math.max(persistSequence, maxVersion));
+                sequence.set(Math.max(snapshot.sequence(), maxVersion));
                 evictOverflow();
                 log.info("本地缓存持久化文件加载完成，耗时: {}s", (System.currentTimeMillis() - now)/1000d);
             }
@@ -540,10 +566,7 @@ public class LocalCacheServiceImpl implements CacheService {
             Files.createDirectories(parent);
         }
         Path tempFilePath = persistFilePath.resolveSibling(persistFilePath.getFileName() + ".tmp");
-        try (ObjectOutputStream outputStream = new ObjectOutputStream(Files.newOutputStream(tempFilePath))) {
-            outputStream.writeObject(snapshot);
-            outputStream.flush();
-        }
+        objectMapper.writeValue(tempFilePath.toFile(), snapshot);
         try {
             Files.move(tempFilePath, persistFilePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (AtomicMoveNotSupportedException e) {
@@ -566,52 +589,25 @@ public class LocalCacheServiceImpl implements CacheService {
             if (current == null || current.version() != entryRef.version() || isCacheExpired(current, now)) {
                 continue;
             }
-            try {
-                Object persistValue = normalizePersistValue(current.value());
-                entries.add(new PersistedCacheEntry(entryRef.key(), persistValue, current.expireAt(), current.version()));
-            } catch (NotSerializableException e) {
-                log.warn("本地缓存键 [{}] 的值不支持持久化，已跳过该条目", entryRef.key(), e);
-            }
+            Object persistValue = normalizePersistValue(current.value());
+            entries.add(new PersistedCacheEntry(entryRef.key(), persistValue, current.expireAt(), current.version()));
         }
         return new PersistedCacheSnapshot(entries, sequence.get());
     }
 
     /**
-     * 标准化缓存值，确保其可被序列化。
+     * 标准化缓存值，将不可反序列化的集合实现转为标准类型。
+     * 例如 ConcurrentHashMap.newKeySet() 产生的 KeySetView 无法被 Jackson 反序列化，
+     * 需要转为 LinkedHashSet。
      *
      * @param value 原始缓存值
      * @return 可持久化的缓存值
-     * @throws NotSerializableException 值不可序列化时抛出
      */
-    private Object normalizePersistValue(Object value) throws NotSerializableException {
-        if (value == null) {
-            return null;
+    private Object normalizePersistValue(Object value) {
+        if (value instanceof Set<?> set && !(value instanceof LinkedHashSet)) {
+            return new LinkedHashSet<>(set);
         }
-        if (value instanceof Set<?> set) {
-            Set<Object> copy = new LinkedHashSet<>(set.size());
-            for (Object item : set) {
-                copy.add(normalizePersistValue(item));
-            }
-            return copy;
-        }
-        if (value instanceof List<?> list) {
-            List<Object> copy = new ArrayList<>(list.size());
-            for (Object item : list) {
-                copy.add(normalizePersistValue(item));
-            }
-            return copy;
-        }
-        if (value instanceof Map<?, ?> map) {
-            Map<Object, Object> copy = new LinkedHashMap<>(map.size());
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                copy.put(normalizePersistValue(entry.getKey()), normalizePersistValue(entry.getValue()));
-            }
-            return copy;
-        }
-        if (value instanceof Serializable) {
-            return value;
-        }
-        throw new NotSerializableException(value.getClass().getName());
+        return value;
     }
 
     /**
@@ -711,7 +707,7 @@ public class LocalCacheServiceImpl implements CacheService {
      * @param entries 持久化条目
      * @param sequence 当前版本序列号
      */
-    private record PersistedCacheSnapshot(List<PersistedCacheEntry> entries, long sequence) implements Serializable {
+    private record PersistedCacheSnapshot(List<PersistedCacheEntry> entries, long sequence) {
     }
 
     /**
@@ -722,7 +718,7 @@ public class LocalCacheServiceImpl implements CacheService {
      * @param expireAt 过期时间戳（毫秒）
      * @param version 缓存写入版本号
      */
-    private record PersistedCacheEntry(String key, Object value, long expireAt, long version) implements Serializable {
+    private record PersistedCacheEntry(String key, Object value, long expireAt, long version) {
     }
 
     /**
