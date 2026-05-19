@@ -4,25 +4,32 @@ import com.sfc.mcp.model.McpFileEntry;
 import com.sfc.mcp.model.McpFileListResult;
 import com.sfc.mcp.model.McpOperationResult;
 import com.sfc.mcp.service.McpUploadService;
+import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
+import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.RequestContextUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,6 +52,7 @@ public class McpDiskTools {
     private final DiskFileSystemManager diskFileSystemManager;
     private final UserService userService;
     private final McpUploadService mcpUploadService;
+    private final FileLinkService fileLinkService;
 
     /**
      * 获取当前 OAuth / ApiTicket 对应用户的信息。
@@ -189,6 +197,64 @@ public class McpDiskTools {
     public McpOperationResult getUploadFileMethod() {
         HttpServletRequest request = RequestContextUtils.getHttpServletRequest().orElseThrow();
         return new McpOperationResult(true, mcpUploadService.getUploadPrompt(request), 0L);
+    }
+
+    /**
+     * 创建网盘文件的临时下载链接。
+     *
+     * @param uid  资源所属用户 ID
+     * @param path 文件完整路径（包含文件名）
+     * @return 操作结果，message 字段为生成的下载链接
+     */
+    @McpTool(name = "create_file_download_link", description = "创建网盘文件临时下载链接")
+    public McpOperationResult createFileDownloadLink(
+            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，正整数表示私人网盘") String uid,
+            @McpToolParam(description = "文件完整路径（包含文件名），以 / 开头") String path
+    ) {
+        long uidValue = parseUid(uid);
+        UIDValidator.validateWithException(uidValue, false);
+        ValidPathValidator.valid(path);
+
+        String fileName = PathUtils.getLastNode(path);
+        if (!StringUtils.hasText(fileName)) {
+            throw new JsonException(CommonError.FORMAT_ERROR, "path必须包含文件名");
+        }
+
+        String parentPath = PathUtils.getParentPath(path);
+        ResourceRequest resourceRequest = ResourceRequest.builder()
+                .protocol(ResourceProtocol.MAIN)
+                .targetId(String.valueOf(uidValue))
+                .path(parentPath)
+                .name(fileName)
+                .build();
+        HttpServletRequest request = RequestContextUtils.getHttpServletRequest().orElseThrow();
+        String baseUrl = UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
+                .replacePath("/api/fileLink/download")
+                .replaceQuery(null)
+                .build()
+                .toUriString();
+        String link = fileLinkService.createLink(baseUrl, resourceRequest);
+        return new McpOperationResult(true, link, 1L);
+    }
+
+    /**
+     * 获取通过开放平台下载文件的方法说明。
+     *
+     * @return 操作结果，message 字段为下载方法说明
+     */
+    @McpTool(name = "get_download_file_method", description = "获取通过开放平台下载文件的方法说明")
+    public McpOperationResult getDownloadFileMethod() {
+        HttpServletRequest request = RequestContextUtils.getHttpServletRequest().orElseThrow();
+        String downloadApi = UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
+                .replacePath("/api/openApi/diskFile/download/v1")
+                .replaceQuery(null)
+                .build()
+                .toUriString();
+        String prompt = "通过开放平台下载文件请使用 GET " + downloadApi + "，并传递 query 参数 uid 与 path。\n"
+                + "Authorization 请求头需携带 ApiTicket access_token，且 token 需具备 storage_read 权限。\n"
+                + "示例：curl -X GET \"" + downloadApi + "?uid=0&path=/document.pdf\" -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\" -o document.pdf\n"
+                + "说明：path 必须以 / 开头且为有效路径；uid=0 表示公共网盘，uid>0 表示私人网盘。";
+        return new McpOperationResult(true, prompt, 0L);
     }
 
     /**

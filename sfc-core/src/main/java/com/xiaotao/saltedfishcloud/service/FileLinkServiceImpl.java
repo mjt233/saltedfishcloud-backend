@@ -1,14 +1,14 @@
 package com.xiaotao.saltedfishcloud.service;
 
-import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
-import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 文件临时链接服务实现。
@@ -30,19 +29,9 @@ public class FileLinkServiceImpl implements FileLinkService {
     public static final String TOKEN_QUERY_PARAM = "token";
 
     /**
-     * 临时授权码长度。
+     * 链接无效提示。
      */
-    private static final int TOKEN_LENGTH = 8;
-
-    /**
-     * 创建缓存 key 的最大重试次数。
-     */
-    private static final int MAX_RETRY = 20;
-
-    /**
-     * 缓存服务。
-     */
-    private final CacheService cacheService;
+    private static final String INVALID_LINK_MSG = "链接无效或已过期";
 
     /**
      * 系统资源服务。
@@ -63,7 +52,7 @@ public class FileLinkServiceImpl implements FileLinkService {
             throw new JsonException(400, "resourceRequest不能为空");
         }
 
-        String token = registerToken(resourceRequest);
+        String token = createToken(resourceRequest);
         return appendToken(baseUrl, token);
     }
 
@@ -71,47 +60,51 @@ public class FileLinkServiceImpl implements FileLinkService {
     public Resource parseLink(String url) throws IOException {
         String token = extractToken(url);
         if (!StringUtils.hasText(token)) {
-            throw new JsonException(400, "链接无效或已过期");
+            throw new JsonException(400, INVALID_LINK_MSG);
         }
-
-        ResourceRequest request = cacheService.get(RedisKeyGenerator.getFileLinkKey(token));
-        if (request == null) {
-            throw new JsonException(400, "链接无效或已过期");
-        }
+        ResourceRequest request = parseRequestFromToken(token);
 
         Resource resource;
         try {
             resource = resourceService.getResource(request);
         } catch (UnsupportedProtocolException e) {
-            throw new JsonException(400, "链接无效或已过期");
+            throw new JsonException(400, INVALID_LINK_MSG);
         }
         if (resource == null) {
-            throw new JsonException(400, "链接无效或已过期");
+            throw new JsonException(400, INVALID_LINK_MSG);
         }
         return resource;
     }
 
     /**
-     * 注册临时授权码并将资源请求参数写入缓存。
+     * 创建用于下载链接的 JWT 临时授权码。
      *
      * @param resourceRequest 资源请求参数
      * @return 临时授权码
      */
-    private String registerToken(ResourceRequest resourceRequest) {
-        long expireMinutes = getLinkExpireMinutes();
-        for (int i = 0; i < MAX_RETRY; i++) {
-            String token = StringUtils.getRandomString(TOKEN_LENGTH);
-            boolean success = cacheService.setIfAbsent(
-                    RedisKeyGenerator.getFileLinkKey(token),
-                    resourceRequest,
-                    expireMinutes,
-                    TimeUnit.MINUTES
-            );
-            if (success) {
-                return token;
+    private String createToken(ResourceRequest resourceRequest) {
+        long expireSeconds = getLinkExpireMinutes() * 60L;
+        int jwtExpireSeconds = expireSeconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) expireSeconds;
+        String payload = MapperHolder.toJsonNoEx(resourceRequest);
+        return JwtUtils.generateToken(payload, jwtExpireSeconds);
+    }
+
+    /**
+     * 从 JWT 临时授权码中解析资源请求参数。
+     *
+     * @param token 临时授权码
+     * @return 资源请求参数
+     */
+    private ResourceRequest parseRequestFromToken(String token) {
+        try {
+            String payload = JwtUtils.parse(token);
+            if (!StringUtils.hasText(payload)) {
+                throw new JsonException(400, INVALID_LINK_MSG);
             }
+            return MapperHolder.parseAsJson(payload, ResourceRequest.class);
+        } catch (Exception e) {
+            throw new JsonException(400, INVALID_LINK_MSG);
         }
-        throw new JsonException(500, "创建临时链接失败，请稍后重试");
     }
 
     /**
