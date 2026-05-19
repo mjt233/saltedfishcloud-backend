@@ -63,7 +63,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
         // 获取 Access Token 对应的用户授权信息
         ThirdPartyAppToken tokenRecord = Optional.ofNullable(repository.findByAppIdAndUid(accessTokenPayload.getAppId(), accessTokenPayload.getUid()))
                 .filter(t -> SecureUtils.getBCryptPasswordEncoder().matches(accessTokenFingerprint, t.getAccessToken()))
-                .filter(t -> t.getAccessTokenExpiredDate() != null && now.before(t.getAccessTokenExpiredDate()))
+                .filter(t -> t.getAccessTokenExpiredDate() == null || now.before(t.getAccessTokenExpiredDate()))
                 .orElseThrow(() -> new JsonException(OAuthError.INVALID_TOKEN));
         ThirdPartyAppUserAuthorizationVo authorizationVo = authorizationService.getUserAppAuthorization(tokenRecord.getAppId(), tokenRecord.getUid());
         ThirdPartyAppAuthorization authorization = Optional.ofNullable(authorizationVo.getAuthorization())
