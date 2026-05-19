@@ -252,7 +252,7 @@ public class McpDiskTools {
                 .toUriString();
         String prompt = "通过开放平台下载文件请使用 GET " + downloadApi + "，并传递 query 参数 uid 与 path。\n"
                 + "Authorization 请求头需携带 ApiTicket access_token，且 token 需具备 storage_read 权限。\n"
-                + "示例：curl -X GET \"" + downloadApi + "?uid=0&path=/document.pdf\" -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\" -o document.pdf\n"
+                + "示例：curl -X GET \"" + downloadApi + "?uid=0&path=/document.pdf\" -H \"Authorization: ApiTicket YOUR_ACCESS_TOKEN\" -o document.pdf\n"
                 + "说明：path 必须以 / 开头且为有效路径；uid=0 表示公共网盘，uid>0 表示私人网盘。";
         return new McpOperationResult(true, prompt, 0L);
     }
