@@ -228,6 +228,22 @@ npm run build-ext-{插件id}
 
 ---
 
+### 4.5 整合进插件
+
+将打包产物`index.umd.js`和`style.css`（如果有）等资源路径添加到插件目录下的 `plugin.json` 的 `autoLoad` 字段：
+
+```json
+{
+  "name": "sfc-ext-{插件id}",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
+}
+```
+
+js和css代码将在页面加载完成后、前端应用完成初始化前自动加载。
+
 ## 5. 插件 API 参考
 
 插件运行时可访问宿主应用注入的以下全局变量：
