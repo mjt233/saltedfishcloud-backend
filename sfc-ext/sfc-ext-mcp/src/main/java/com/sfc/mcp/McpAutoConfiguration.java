@@ -1,5 +1,6 @@
 package com.sfc.mcp;
 
+import com.sfc.mcp.controller.McpOAuthCallbackStaticController;
 import com.sfc.mcp.controller.McpOAuthController;
 import com.sfc.mcp.model.McpProperty;
 import com.sfc.mcp.prompt.McpDiskPrompt;
@@ -21,6 +22,7 @@ import org.springframework.context.annotation.Import;
 		McpOAuthAppInitializer.class,
 		McpDiskTools.class,
 		McpOAuthController.class,
+		McpOAuthCallbackStaticController.class,
 		McpDiskPrompt.class,
 		McpUploadService.class
 })
