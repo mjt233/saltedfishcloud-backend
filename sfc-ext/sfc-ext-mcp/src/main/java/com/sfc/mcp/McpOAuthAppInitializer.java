@@ -9,15 +9,19 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppKeyService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
+import java.io.InputStream;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -99,6 +103,14 @@ public class McpOAuthAppInitializer implements ApplicationRunner {
         app.setCallbackUrl("");
         app.setIsEnabled(true);
         app.setAllowPermanentApiTicket(true);
+        try {
+            ClassPathResource iconResource = new ClassPathResource("/static/mcp/icon.svg");
+            try (InputStream is = iconResource.getInputStream()) {
+                app.setIcon("data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(is.readAllBytes()));
+            }
+        } catch (Exception e) {
+            log.error("生成 MCP 应用图标时出错了", e);
+        }
         return app;
     }
 
