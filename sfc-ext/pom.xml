@@ -5,14 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.xiaotao</groupId>
-    <version>3.1.0</version>
+    <version>3.1.1</version>
     <artifactId>sfc-ext</artifactId>
     <packaging>pom</packaging>
 
     <properties>
         <java.version>25</java.version>
         <lombok.version>1.18.42</lombok.version>
-        <api.version>3.1.0</api.version>
+        <api.version>3.1.1</api.version>
         <rpc.version>1.0.0</rpc.version>
         <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
@@ -43,6 +43,7 @@
         <module>sfc-ext-webrtc</module>
         <module>sfc-ext-webdav</module>
         <module>sfc-ext-webdav-store</module>
+        <module>sfc-ext-mcp</module>
     </modules>
 
 
@@ -97,6 +98,9 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/assert</directory>
             </resource>
         </resources>
         <plugins>

@@ -2,7 +2,7 @@
 
 ## 接口说明
 
-该接口用于第三方应用使用授权码换取Access Token。Access Token是90天有效的刷新令牌，用于获取短期有效的ApiTicket。
+该接口用于第三方应用使用授权码换取Access Token。Access Token是90天有效的刷新令牌，用于获取临时或永久有效的ApiTicket。
 
 **接口路径**: `GET /api/openApi/auth/getAccessToken/v1`
 
@@ -72,6 +72,7 @@
 ## 下一步
 
 - [获取ApiTicket接口](get-api-ticket.md): 使用Access Token获取ApiTicket
+- [授权确认接口](authorize.md): 用户确认授权并获取授权码
 
 ## 相关接口
 

@@ -9,7 +9,7 @@
 1. 用户授权：第三方应用引导用户跳转到咸鱼云网盘授权页面
 2. 获取授权码：用户确认授权后，咸鱼云网盘返回授权码
 3. 获取Access Token：第三方应用使用授权码换取Access Token
-4. 获取ApiTicket：使用Access Token获取短期有效的API访问凭证
+4. 获取ApiTicket：使用Access Token获取临时或永久有效的API访问凭证
 5. 调用API：使用ApiTicket访问咸鱼云网盘开放接口
 
 ## 授权范围
@@ -83,7 +83,32 @@ https://cloud.example.com/oauth?appId=123&scope=profile storage_read
 
 #### 步骤2：处理授权回调
 
-用户确认授权后，咸鱼云网盘会将页面重定向到第三方应用配置的回调URL，并在URL中添加授权码参数：
+用户在授权确认页面点击“确认授权”后，咸鱼云网盘会调用授权确认接口完成授权，并根据参数决定是直接302跳转，还是返回包含授权码的JSON数据。
+
+授权确认接口：
+
+```bash
+GET /api/oauth/authorize?appId={appId}&scope={scope}&redirect={redirect}&redirectUrl={redirectUrl}
+```
+
+**参数说明**：
+
+- `appId`: 第三方应用的唯一标识（必填）
+- `scope`: 授权范围，多个范围用空格分隔（必填）
+- `redirect`: 是否直接返回302跳转响应（可选，默认 `true`）
+- `redirectUrl`: 自定义重定向地址（可选）
+
+**回调地址规则**：
+
+- 当第三方应用已配置回调URL时：
+  - 未传 `redirectUrl`：使用应用已配置的回调URL
+  - 传入 `redirectUrl` 且与已配置回调URL一致：允许请求
+  - 传入 `redirectUrl` 且与已配置回调URL不一致：拒绝请求
+- 当第三方应用未配置回调URL时：
+  - 必须传入 `redirectUrl`
+  - 最终将以 `redirectUrl` 作为回调地址
+
+当 `redirect=true` 时，最终会重定向到以下地址，并在URL中追加授权码参数：
 
 ```
 https://your-callback-domain/callback?code={authorization_code}
@@ -91,7 +116,23 @@ https://your-callback-domain/callback?code={authorization_code}
 
 **参数说明**：
 
-- `code`: 授权码，用于换取Access Token（有效期10分钟）
+- `code`: 授权码，用于换取Access Token（有效期15分钟）
+
+当 `redirect=false` 时，接口会直接返回JSON数据，例如：
+
+```json
+{
+    "code": 200,
+    "businessCode": 200,
+    "data": {
+        "code": "77afb8216bf847368c7e7aaf7b1224eb",
+        "redirectUrl": "https://your-callback-domain/callback?code=77afb8216bf847368c7e7aaf7b1224eb"
+    },
+    "msg": "OK"
+}
+```
+
+**接口详情**：参见[授权确认接口文档](api/auth/authorize.md)
 
 #### 步骤3：获取Access Token
 
@@ -105,11 +146,23 @@ GET /api/openApi/auth/getAccessToken/v1?code={code}&clientSecret={clientSecret}
 
 #### 步骤4：获取ApiTicket
 
-使用Access Token、App ID和用户ID获取ApiTicket：
+使用 Access Token 获取 ApiTicket：
 
 ```bash
-GET /api/openApi/auth/getApiTicket/v1?appId={appId}&uid={uid}&accessToken={accessToken}
+GET /api/openApi/auth/getApiTicket/v1?accessToken={accessToken}&permanent={permanent}
 ```
+
+**参数说明**：
+
+- `accessToken`: 第 3 步获取的 Access Token，内部已包含应用与用户授权上下文
+- `permanent`: 是否申请永久有效的ApiTicket（可选，默认 `false`）
+
+**行为说明**：
+
+- 当 `permanent=false` 时，签发15分钟有效的临时ApiTicket
+- 当 `permanent=true` 时，仅允许已开启“允许永久ApiTicket”能力的第三方应用申请永久ApiTicket
+- 再次获取同类型（临时/永久）ApiTicket 时，旧的同类型ApiTicket会立即失效
+- 用户撤销授权后，该应用下该用户的所有ApiTicket（包含永久ApiTicket）都会立即失效
 
 **接口详情**：参见[获取ApiTicket接口文档](api/auth/get-api-ticket.md)
 
@@ -119,7 +172,7 @@ GET /api/openApi/auth/getApiTicket/v1?appId={appId}&uid={uid}&accessToken={acces
 在调用咸鱼云网盘开放接口时，需要在请求头中添加ApiTicket：
 
 ```
-Authentication: ApiTicket {api_ticket}
+Authorization: ApiTicket {api_ticket}
 ```
 
 ## 安全注意事项
@@ -127,7 +180,7 @@ Authentication: ApiTicket {api_ticket}
 1. **Client Secret保护**：Client Secret是应用的核心机密，必须妥善保管，不应在客户端代码中暴露
 2. **HTTPS要求**：所有通信必须使用HTTPS协议，确保数据传输安全
 3. **授权码有效期**：授权码有效期为15分钟，获取后应立即使用
-4. **ApiTicket有效期**：ApiTicket有效期为15分钟，过期后需要重新获取
+4. **ApiTicket有效期**：默认签发15分钟有效的临时ApiTicket；若应用已开启永久ApiTicket能力，也可以申请永久ApiTicket
 5. **权限最小化**：只请求应用实际需要的权限范围
 6. **错误处理**：妥善处理各种错误情况，如授权被拒绝、token过期等
 
@@ -145,8 +198,12 @@ A: 可以，在scope参数中使用空格分隔多个范围，如：`profile sto
 ### Q: 如何撤销授权？
 A: 用户可以在咸鱼云网盘的个人中心 - 第三方应用授权 中撤销授权
 
+### Q: 永久ApiTicket会一直有效吗？
+A: 永久ApiTicket不会因JWT时间过期而失效，但再次获取同类型永久ApiTicket或用户主动撤销授权后，它会立即失效。
+
 ## 下一步
 
+- [授权确认接口文档](api/auth/authorize.md)
 - [获取Access Token接口文档](api/auth/get-access-token.md)
 - [获取ApiTicket接口文档](api/auth/get-api-ticket.md)
 - [开放接口列表](api/index.md)

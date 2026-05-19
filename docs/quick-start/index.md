@@ -1,6 +1,6 @@
 # 起步
 
-## 0. 打包与编译
+## 1. 打包与编译
 对根项目执行maven的package，执行成功后会在release目录下创建程序主程序jar包和相关文件
 创建release后，目录结构如下：
 ```
@@ -16,28 +16,29 @@ release
     └── start.sh                            - Linux/Mac 下 bash/dash 用的启动脚本
 
 ```
-
-## 1. 准备环境
-项目依赖以下组件：
-
-- MySQL
-- Redis
-
-## 2. 运行项目
-
-### 启动命令行指定外部spring yml配置文件
+### 1. 启动命令行指定外部spring yml配置文件
 
 将主程序jar包同目录下的config.yml配置完成后，直接执行下面的命令即可启动。
 当然你也可以修改file:config.yml这个参数指定任意路径的yml配置文件。
+
 ```shell
 # 以下为start.sh的内容，是最简单的启动命令
 java -jar sfc-core.jar --spring.config.import=file:config.yml
 ```
-配置文件config.yml的配置内容与spring的application.yml完全一致且会覆盖默认的application.yml的内容。而config.yml中未配置的项将取application.yml的配置项作为默认值
+
+> 项目首次启动后会自动初始化数据库
 
 ---
 
-项目启动后会自动初始化数据库。若初始化失败，可尝试手动给数据库执行初始化脚本，脚本位于`sfc-core/src/main/resource/sql/full.sql`
+!!! info
+
+
+    配置文件`config.yml`的配置内容与spring的`application.yml`完全一致，且会覆盖默认的`application.yml`·`的内容。
+
+    `config.yml`中未配置的项将取`application.yml`的配置项作为默认值
+
+    具体配置项说明见[参数配置](./config.md)
+
 
 ## 3. 完成
 

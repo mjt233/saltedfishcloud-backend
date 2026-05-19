@@ -8,6 +8,8 @@ theme:
 #    - navigation.sections
 #    - navigation.indexes
 markdown_extensions:
+  - admonition
+  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
@@ -75,3 +77,16 @@ nav:
         - 获取ApiTicket: oauth/api/auth/get-api-ticket.md
       - 用户相关接口:
         - 获取用户基本信息: oauth/api/user/profile.md
+      - 网盘存储相关接口:
+        - 获取文件列表: oauth/api/storage/file-list.md
+        - 上传文件: oauth/api/storage/upload.md
+        - 下载文件: oauth/api/storage/download.md
+        - 创建下载链接: oauth/api/storage/download-link.md
+        - 创建目录: oauth/api/storage/mkdir.md
+        - 复制文件或目录: oauth/api/storage/copy.md
+        - 移动文件或目录: oauth/api/storage/move.md
+        - 重命名文件或目录: oauth/api/storage/rename.md
+        - 删除文件或目录: oauth/api/storage/delete.md
+  - 版本更新日志:
+    - v3.1.1: release-notes/3.1.1.md
+    - v3.1.0: release-notes/3.1.0.md

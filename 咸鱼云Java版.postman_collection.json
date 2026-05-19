@@ -427,7 +427,9 @@
                       "    pm.environment.set(\"token\", res.data)\r",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -6470,7 +6472,7 @@
                       "raw": "{\r\n    \"icon\": \"http://localhost:4000/api/resource/0/fileContentByMD5/97a6025128b8f80c6e6bbccdf7edb128/screen.png\"\r\n}"
                     },
                     "url": {
-                      "raw": "{{addr}}/api/oauth/getUserAuthorization?appId=1226973239364812800",
+                      "raw": "{{addr}}/api/oauth/getUserAuthorization?appId=1252006382572404736",
                       "host": [
                         "{{addr}}"
                       ],
@@ -6482,7 +6484,7 @@
                       "query": [
                         {
                           "key": "appId",
-                          "value": "1226973239364812800",
+                          "value": "1252006382572404736",
                           "description": "第三方OAuth应用id"
                         }
                       ]
@@ -6503,7 +6505,7 @@
                       "raw": "{\r\n    \"icon\": \"http://localhost:4000/api/resource/0/fileContentByMD5/97a6025128b8f80c6e6bbccdf7edb128/screen.png\"\r\n}"
                     },
                     "url": {
-                      "raw": "{{addr}}/api/oauth/authorize?appId=1226973239364812800&scope=profile storage_read storage_read_write",
+                      "raw": "{{addr}}/api/oauth/authorize?appId=1252006382572404736&scope=profile storage_read storage_write",
                       "host": [
                         "{{addr}}"
                       ],
@@ -6515,12 +6517,12 @@
                       "query": [
                         {
                           "key": "appId",
-                          "value": "1226973239364812800",
+                          "value": "1252006382572404736",
                           "description": "第三方OAuth应用id"
                         },
                         {
                           "key": "scope",
-                          "value": "profile storage_read storage_read_write",
+                          "value": "profile storage_read storage_write",
                           "description": "授权范围（增量授权，多个权限使用空格分割）"
                         }
                       ]
@@ -6616,7 +6618,7 @@
                       "raw": "{\r\n    \"icon\": \"http://localhost:4000/api/resource/0/fileContentByMD5/97a6025128b8f80c6e6bbccdf7edb128/screen.png\"\r\n}"
                     },
                     "url": {
-                      "raw": "{{addr}}/api/openApi/auth/getAccessToken/v1?code=e5ea1a66b7f7447185d293dcb55bbdc6&clientSecret=bd3a820b2636428d9e8653cf3ffb2cfe",
+                      "raw": "{{addr}}/api/openApi/auth/getAccessToken/v1?code=80a0ace274134a79ac737887dabec258&clientSecret=390e98f5268e4fe8a30a4a6b85326550",
                       "host": [
                         "{{addr}}"
                       ],
@@ -6630,12 +6632,12 @@
                       "query": [
                         {
                           "key": "code",
-                          "value": "e5ea1a66b7f7447185d293dcb55bbdc6",
+                          "value": "80a0ace274134a79ac737887dabec258",
                           "description": "用户授权码"
                         },
                         {
                           "key": "clientSecret",
-                          "value": "bd3a820b2636428d9e8653cf3ffb2cfe",
+                          "value": "390e98f5268e4fe8a30a4a6b85326550",
                           "description": "第三方OAuth应用客户端密钥"
                         }
                       ]
@@ -6645,6 +6647,22 @@
                 },
                 {
                   "name": "获取ApiTicket",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "let res = JSON.parse(pm.response.text())\r",
+                          "if (pm.response.code === 200) {\r",
+                          "    pm.environment.set(\"oauth-api-ticket\", res.data)\r",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
                   "protocolProfileBehavior": {
                     "disableBodyPruning": true
                   },
@@ -6656,7 +6674,7 @@
                       "raw": "{\r\n    \"icon\": \"http://localhost:4000/api/resource/0/fileContentByMD5/97a6025128b8f80c6e6bbccdf7edb128/screen.png\"\r\n}"
                     },
                     "url": {
-                      "raw": "{{addr}}/api/openApi/auth/getApiTicket/v1?accessToken=Be4wixjkp6HsrWw_xR1lyk_e3n9OsTX68uRmGFHKqyw&appId=1226973239364812800&uid=1054223881344122880",
+                      "raw": "{{addr}}/api/openApi/auth/getApiTicket/v1?accessToken=eyJhbGciOiJIUzI1NiJ9...&permanent=false",
                       "host": [
                         "{{addr}}"
                       ],
@@ -6670,18 +6688,13 @@
                       "query": [
                         {
                           "key": "accessToken",
-                          "value": "Be4wixjkp6HsrWw_xR1lyk_e3n9OsTX68uRmGFHKqyw",
+                          "value": "eyJhbGciOiJIUzI1NiJ9...",
                           "description": "接口访问授权Access Token"
                         },
                         {
-                          "key": "appId",
-                          "value": "1226973239364812800",
-                          "description": "第三方OAuth应用id"
-                        },
-                        {
-                          "key": "uid",
-                          "value": "1054223881344122880",
-                          "description": "系统用户id"
+                          "key": "permanent",
+                          "value": "false",
+                          "description": "是否申请永久有效的ApiTicket"
                         }
                       ]
                     }
@@ -6696,14 +6709,33 @@
                 {
                   "name": "获取用户信息",
                   "request": {
+                    "auth": {
+                      "type": "oauth2",
+                      "oauth2": [
+                        {
+                          "key": "tokenType",
+                          "value": "",
+                          "type": "string"
+                        },
+                        {
+                          "key": "accessToken",
+                          "value": "",
+                          "type": "string"
+                        },
+                        {
+                          "key": "addTokenTo",
+                          "value": "header",
+                          "type": "string"
+                        },
+                        {
+                          "key": "headerPrefix",
+                          "value": "ApiTicket",
+                          "type": "string"
+                        }
+                      ]
+                    },
                     "method": "GET",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "ApiTicket eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wiYXBwSWRcIjpcIjEyMjY5NzMyMzkzNjQ4MTI4MDBcIixcInVpZFwiOlwiMTA1NDIyMzg4MTM0NDEyMjg4MFwiLFwic2NvcGVcIjpcIiBwcm9maWxlIHN0b3JhZ2VfcmVhZCBzdG9yYWdlX3JlYWRfd3JpdGVcIixcImp0aVwiOlwiMTIyOTI2ODYwMDEyOTMyMzAwOFwifSIsImV4cCI6MTc3MzI0NzgzOCwiaWF0IjoxNzczMjQ2OTM4fQ.vtpBrUte-UG4xj20FEJmoDSmY5Q6gauCXwXPOcSNaP0",
-                        "type": "text"
-                      }
-                    ],
+                    "header": [],
                     "url": {
                       "raw": "{{addr}}/api/openApi/user/profile/v1",
                       "host": [
@@ -6715,6 +6747,457 @@
                         "user",
                         "profile",
                         "v1"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "网盘存储操作",
+              "item": [
+                {
+                  "name": "列出文件",
+                  "request": {
+                    "auth": {
+                      "type": "oauth2",
+                      "oauth2": [
+                        {
+                          "key": "addTokenTo",
+                          "value": "header",
+                          "type": "string"
+                        },
+                        {
+                          "key": "headerPrefix",
+                          "value": "ApiTicket",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{addr}}/api/openApi/diskFile/fileList/v1?uid=1251642958063599616&path=/【4】",
+                      "host": [
+                        "{{addr}}"
+                      ],
+                      "path": [
+                        "api",
+                        "openApi",
+                        "diskFile",
+                        "fileList",
+                        "v1"
+                      ],
+                      "query": [
+                        {
+                          "key": "uid",
+                          "value": "1251642958063599616"
+                        },
+                        {
+                          "key": "path",
+                          "value": "/【4】"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "上传文件",
+                  "request": {
+                    "auth": {
+                      "type": "oauth2",
+                      "oauth2": [
+                        {
+                          "key": "tokenType",
+                          "value": "",
+                          "type": "string"
+                        },
+                        {
+                          "key": "accessToken",
+                          "value": "{{oauth-api-ticket}}",
+                          "type": "string"
+                        },
+                        {
+                          "key": "addTokenTo",
+                          "value": "header",
+                          "type": "string"
+                        },
+                        {
+                          "key": "headerPrefix",
+                          "value": "ApiTicket",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "uid",
+                          "value": "1251642958063599616",
+                          "type": "text",
+                          "uuid": "4571567a-b7ea-4e19-abef-1a16487e95f5"
+                        },
+                        {
+                          "key": "path",
+                          "value": "/",
+                          "type": "text",
+                          "uuid": "cdaff1eb-509e-456f-896e-170a20e8abd1"
+                        },
+                        {
+                          "key": "file",
+                          "type": "file",
+                          "uuid": "48a3c470-d9e0-443a-9392-f9eda4384b7c",
+                          "src": "/C:/Users/xiaotao/Desktop/伊雷娜2.jpg"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{addr}}/api/openApi/diskFile/upload/v1",
+                      "host": [
+                        "{{addr}}"
+                      ],
+                      "path": [
+                        "api",
+                        "openApi",
+                        "diskFile",
+                        "upload",
+                        "v1"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "创建目录",
+                  "request": {
+                    "auth": {
+                      "type": "oauth2",
+                      "oauth2": [
+                        {
+                          "key": "tokenType",
+                          "value": "",
+                          "type": "string"
+                        },
+                        {
+                          "key": "accessToken",
+                          "value": "{{oauth-api-ticket}}",
+                          "type": "string"
+                        },
+                        {
+                          "key": "addTokenTo",
+                          "value": "header",
+                          "type": "string"
+                        },
+                        {
+                          "key": "headerPrefix",
+                          "value": "ApiTicket",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "urlencoded",
+                      "urlencoded": [
+                        {
+                          "key": "uid",
+                          "value": "1251642958063599616",
+                          "type": "text",
+                          "uuid": "f94c822e-2641-4fc7-8ab5-009e4cad9bcc"
+                        },
+                        {
+                          "key": "path",
+                          "value": "/",
+                          "type": "text",
+                          "uuid": "4760a908-ca8b-4ea1-98ca-34f74cf38134"
+                        },
+                        {
+                          "key": "name",
+                          "value": "新建文件夹",
+                          "type": "text",
+                          "uuid": "584e0800-5ecd-49e3-9637-04d7d7fc8212"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{addr}}/api/openApi/diskFile/mkdir/v1",
+                      "host": [
+                        "{{addr}}"
+                      ],
+                      "path": [
+                        "api",
+                        "openApi",
+                        "diskFile",
+                        "mkdir",
+                        "v1"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "复制文件或目录",
+                  "request": {
+                    "auth": {
+                      "type": "oauth2",
+                      "oauth2": [
+                        {
+                          "key": "tokenType",
+                          "value": "",
+                          "type": "string"
+                        },
+                        {
+                          "key": "accessToken",
+                          "value": "{{oauth-api-ticket}}",
+                          "type": "string"
+                        },
+                        {
+                          "key": "addTokenTo",
+                          "value": "header",
+                          "type": "string"
+                        },
+                        {
+                          "key": "headerPrefix",
+                          "value": "ApiTicket",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"sourcePath\": \"/\",\r\n    \"files\": [\"新建文件夹\"],\r\n    \"targetPath\": \"/111\",\r\n    \"isOverwrite\": true\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{addr}}/api/openApi/diskFile/copy/v1?uid=1251642958063599616",
+                      "host": [
+                        "{{addr}}"
+                      ],
+                      "path": [
+                        "api",
+                        "openApi",
+                        "diskFile",
+                        "copy",
+                        "v1"
+                      ],
+                      "query": [
+                        {
+                          "key": "uid",
+                          "value": "1251642958063599616"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "移动文件或目录",
+                  "request": {
+                    "auth": {
+                      "type": "oauth2",
+                      "oauth2": [
+                        {
+                          "key": "tokenType",
+                          "value": "",
+                          "type": "string"
+                        },
+                        {
+                          "key": "accessToken",
+                          "value": "{{oauth-api-ticket}}",
+                          "type": "string"
+                        },
+                        {
+                          "key": "addTokenTo",
+                          "value": "header",
+                          "type": "string"
+                        },
+                        {
+                          "key": "headerPrefix",
+                          "value": "ApiTicket",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"sourcePath\": \"/\",\r\n    \"files\": [\"新建文件夹\"],\r\n    \"targetPath\": \"/123\",\r\n    \"isOverwrite\": true\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{addr}}/api/openApi/diskFile/move/v1?uid=1251642958063599616",
+                      "host": [
+                        "{{addr}}"
+                      ],
+                      "path": [
+                        "api",
+                        "openApi",
+                        "diskFile",
+                        "move",
+                        "v1"
+                      ],
+                      "query": [
+                        {
+                          "key": "uid",
+                          "value": "1251642958063599616"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "重命名文件或目录",
+                  "request": {
+                    "auth": {
+                      "type": "oauth2",
+                      "oauth2": [
+                        {
+                          "key": "tokenType",
+                          "value": "",
+                          "type": "string"
+                        },
+                        {
+                          "key": "accessToken",
+                          "value": "{{oauth-api-ticket}}",
+                          "type": "string"
+                        },
+                        {
+                          "key": "addTokenTo",
+                          "value": "header",
+                          "type": "string"
+                        },
+                        {
+                          "key": "headerPrefix",
+                          "value": "ApiTicket",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "urlencoded",
+                      "urlencoded": [
+                        {
+                          "key": "uid",
+                          "value": "1251642958063599616",
+                          "type": "text",
+                          "uuid": "b34accc6-0fc8-4aa6-852d-f8d555f06fbc"
+                        },
+                        {
+                          "key": "path",
+                          "value": "/",
+                          "type": "text",
+                          "uuid": "96e1bec5-2d19-47d1-a191-79fdb4ce554f"
+                        },
+                        {
+                          "key": "oldName",
+                          "value": "新建文件夹",
+                          "type": "text",
+                          "uuid": "128a5acf-8b3e-4fbc-b0b4-7eff39263697"
+                        },
+                        {
+                          "key": "newName",
+                          "value": "旧建文件夹",
+                          "type": "text",
+                          "uuid": "8b596228-c695-482f-be11-9584a46e6c9f"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{addr}}/api/openApi/diskFile/rename/v1",
+                      "host": [
+                        "{{addr}}"
+                      ],
+                      "path": [
+                        "api",
+                        "openApi",
+                        "diskFile",
+                        "rename",
+                        "v1"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "删除文件或目录",
+                  "request": {
+                    "auth": {
+                      "type": "oauth2",
+                      "oauth2": [
+                        {
+                          "key": "tokenType",
+                          "value": "",
+                          "type": "string"
+                        },
+                        {
+                          "key": "accessToken",
+                          "value": "{{oauth-api-ticket}}",
+                          "type": "string"
+                        },
+                        {
+                          "key": "addTokenTo",
+                          "value": "header",
+                          "type": "string"
+                        },
+                        {
+                          "key": "headerPrefix",
+                          "value": "ApiTicket",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "DELETE",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"fileName\": [ \"新建文件夹\" ]\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{addr}}/api/openApi/diskFile/delete/v1?uid=1251642958063599616&path=/",
+                      "host": [
+                        "{{addr}}"
+                      ],
+                      "path": [
+                        "api",
+                        "openApi",
+                        "diskFile",
+                        "delete",
+                        "v1"
+                      ],
+                      "query": [
+                        {
+                          "key": "uid",
+                          "value": "1251642958063599616"
+                        },
+                        {
+                          "key": "path",
+                          "value": "/"
+                        }
                       ]
                     }
                   },

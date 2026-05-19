@@ -15,6 +15,11 @@ public class ThirdPartyAppApiTicketPayload {
     private String scope;
 
     /**
+     * 是否为永久有效的 ApiTicket
+     */
+    private Boolean permanent;
+
+    /**
      * 预留的JWT id标识，暂时用不上
      */
     private Long jti;

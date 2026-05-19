@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -24,14 +23,11 @@ public class ThirdPartyAppToken extends AuditModel {
      */
     private Long appId;
 
-    /**
-     * 临时API凭证
-     */
-    @Column(length = 1024)
-    private String apiTicket;
 
     /**
-     * Access Token的 BCrypt哈希值
+     * Access Token Sha256 的 BCrypt 值。
+     * <p>
+     * Access Token 原文可能较长，因此会先计算固定长度摘要，再执行 BCrypt 后持久化。
      */
     private String accessToken;
 

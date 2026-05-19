@@ -101,6 +101,14 @@ public class SysCommonConfig {
     private Boolean isUseCommonUpload;
 
     @ConfigProperty(
+            title = "文件临时下载链接有效期（分钟）",
+            defaultValue = "120",
+            describe = "受保护文件临时下载链接中授权码的有效期，单位：分钟。过期后链接将失效",
+            group = "common"
+    )
+    private Long fileLinkExpireMinutes;
+
+    @ConfigProperty(
             title = "缩略图源文件最大大小",
             defaultValue = "[]",
             describe = "尝试提取一个文件的缩略图时，文件大小超过该值时会忽略提取缩略图。该项单位为：MiB。如果未配置则视为默认值32 MiB",

@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.exception.MessageException;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
+import com.xiaotao.saltedfishcloud.utils.RequestContextUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -23,6 +24,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -103,8 +106,14 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(Exception.class)
-    public JsonResult<String> defaultHandle(Exception e) {
-        log.error("异常", e);
+    public JsonResult<String> defaultHandle(Exception e, HttpServletResponse response) {
+        if (e instanceof NoResourceFoundException) {
+            log.warn("{} {}", LOG_PREFIX, e.getMessage());
+            response.setStatus(404);
+            return JsonResultImpl.getInstance(404, 404, null, e.getMessage());
+        } else {
+            log.error("异常", e);
+        }
         if (e instanceof MessageException) {
             return responseError(500, e.getMessage());
         } else {

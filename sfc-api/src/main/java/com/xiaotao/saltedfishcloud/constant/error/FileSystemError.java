@@ -16,7 +16,9 @@ public enum FileSystemError implements ErrorInfo {
     MOUNT_POINT_EXIST(1007, 400, "已存在同名挂载点"),
     FILE_EXIST(1008, 400, "已存在同名文件"),
     NOT_ALLOW_FILE_OVERWRITE_DIR(1009, 400, "不能用文件覆盖目录"),
-    NOT_ALLOW_DIR_OVERWRITE_FILE(1009, 400, "不能用目录覆盖文件");
+    NOT_ALLOW_DIR_OVERWRITE_FILE(1009, 400, "不能用目录覆盖文件"),
+    INVALID_PATH(1010, 400, "无效的文件路径，不得包含'?<>:*\"'、回车/换行符、'/../' 或使用 '/..' 结尾"),
+    INVALID_FILE_NAME(1011, 400, "无效的文件路径，不得包含'?<>:*\"'、回车/换行符、/或\\");
 
     private final int code;
     private final int status;
