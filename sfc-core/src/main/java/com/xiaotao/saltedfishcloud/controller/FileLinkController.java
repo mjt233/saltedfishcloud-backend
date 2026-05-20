@@ -50,15 +50,6 @@ public class FileLinkController {
     @ApiOperation("创建临时下载链接")
     @PostMapping("/create")
     public JsonResult<String> createLink(@RequestParam("baseUrl") String baseUrl,@RequestBody @Valid ResourceRequest resourceRequest) throws IOException {
-        Resource resource;
-        try {
-            resource = resourceService.getResource(resourceRequest);
-        } catch (UnsupportedProtocolException e) {
-            throw new JsonException(400, "无效的资源协议");
-        }
-        if (resource == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
-        }
         return JsonResultImpl.getInstance(fileLinkService.createLink(baseUrl, resourceRequest));
     }
 
