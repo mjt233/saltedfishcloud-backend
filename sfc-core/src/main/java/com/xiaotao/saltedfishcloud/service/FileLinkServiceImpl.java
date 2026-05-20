@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service;
 
+import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
@@ -50,6 +51,18 @@ public class FileLinkServiceImpl implements FileLinkService {
         }
         if (resourceRequest == null) {
             throw new JsonException(400, "resourceRequest不能为空");
+        }
+        Resource resource;
+        try {
+            // 确保创建链接的会话能够根据该参数读取资源，证明有权操作读取
+            resource = resourceService.getResource(resourceRequest);
+        } catch (UnsupportedProtocolException e) {
+            throw new JsonException(400, "无效的资源协议");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        if (resource == null) {
+            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }
 
         String token = createToken(resourceRequest);
