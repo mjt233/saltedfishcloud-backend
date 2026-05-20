@@ -2,7 +2,7 @@
 
 该文档将指导您如何通过源代码和maven项目工程来编译、运行和打包构建咸鱼云网盘项目
 
-> 如果您需要通过 Docker 进行容器化构建，请参考 [Docker Compose 部署](docker/docker-compose.md) 或 [Dockerfile 构建](docker/dockerfile.md)
+> 如果您需要通过 Docker 进行容器化构建，请参考 [Docker Compose 部署](../quick-start/docker/docker-compose.md) 或 [Dockerfile 构建](../quick-start/docker/dockerfile.md)
 
 ## 0. 环境准备
 
