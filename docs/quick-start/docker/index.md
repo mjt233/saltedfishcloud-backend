@@ -2,6 +2,10 @@
 
 该部分文档介绍如何使用 Docker 构建和部署咸鱼云网盘项目。
 
+!!! info "前提条件"
+    通过Docker构建和部署需要先拉取咸鱼云源代码
+    > git clone https://github.com/mjt233/saltedfishcloud-backend.git
+
 ## 文档导览
 
 ### [Dockerfile 构建](dockerfile.md)
@@ -47,6 +51,6 @@ docker run -d \
 
 ## 相关链接
 
-- [项目构建](../build.md)
-- [运行部署](../../quick-start/index.md)
-- [配置参数](../../quick-start/config.md)
+- [项目构建](../../develop/build.md)
+- [运行部署](../index.md)
+- [配置参数](../config.md)

@@ -2,6 +2,10 @@
 
 该文档介绍如何使用项目根目录下的 `docker-compose.yml` 一键启动完整的开发环境，并详细说明构建参数与环境变量的使用。
 
+!!! info "前提条件"
+    通过Docker构建和部署需要先拉取咸鱼云源代码
+    > git clone https://github.com/mjt233/saltedfishcloud-backend.git
+
 ## 1. 适用场景
 
 适用于以下场景：
@@ -431,7 +435,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ## 12. 相关文档
 
 - [Dockerfile 构建](dockerfile.md)
-- [项目构建](../build.md)
-- [运行部署](../../quick-start/index.md)
-- [配置参数](../../quick-start/config.md)
+- [项目构建](../../develop/build.md)
+- [运行部署](../index.md)
+- [配置参数](../config.md)
 - [Docker Compose 官方文档](https://docs.docker.com/compose/)

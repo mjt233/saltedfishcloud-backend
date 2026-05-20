@@ -2,6 +2,11 @@
 
 该文档介绍如何使用项目根目录下的 `Dockerfile` 构建咸鱼云网盘镜像，并说明构建参数、运行方式与注意事项。
 
+!!! info "前提条件"
+    通过Docker构建和部署需要先拉取咸鱼云源代码
+    > git clone https://github.com/mjt233/saltedfishcloud-backend.git
+
+
 ## 1. 适用场景
 
 适用于以下场景：
@@ -85,6 +90,6 @@ docker run -d \
 
 ## 7. 相关文档
 
-- [项目构建](../build.md)
+- [项目构建](../../develop/build.md)
 - [Docker Compose 部署](docker-compose.md)
-- [运行部署](../../quick-start/index.md)
+- [运行部署](../index.md)

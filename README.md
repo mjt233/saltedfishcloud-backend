@@ -4,9 +4,9 @@
 ![Java](https://img.shields.io/badge/Java-25-purple.svg)
 ![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)
 
-咸鱼云网盘是一个基于 Spring Boot 的网盘后端系统，支持公共资源与私人存储双域管理，提供文件管理、分享协作、在线预览、外部存储挂载与插件化扩展能力。
+咸鱼云网盘是一个基于 Spring Boot 的网盘后端系统，支持公共资源与私人存储双域管理，提供文件管理、分享协作、在线预览、外部存储挂载与插件化扩展能力，并提供MCP服务支持。
 
-- 在线文档: [https://mjt233.github.io/saltedfishcloud-backend/](https://mjt233.github.io/saltedfishcloud-backend/)
+- 在线文档: [https://mjt233.github.io/saltedfishcloud-backend/](https://mjt233.github.io/saltedfishcloud-backend/)  
 - 前端项目（独立仓库）: [Gitee](https://gitee.com/xiaotao233/saltedfishcloud-frontend) | [Github](https://github.com/mjt233/saltedfishcloud-frontend)
 
 ## 核心能力
@@ -19,6 +19,7 @@
 - 文本/Markdown 在线编辑与预览（支持粘贴图片）
 - 视频播放、转码基础能力
 - 默认基于文件哈希组织，支持秒传场景
+- 支持 MCP 服务，让AI Agent获得操作网盘的能力（实验功能）
 
 ### 存储与扩展能力
 
@@ -41,16 +42,16 @@
 
 ## 界面展示
 
-| 目录浏览与`README.md`自动预览 | 移动端兼容 |
-| --- | --- |
+| 目录浏览与`README.md`自动预览                   | 移动端兼容                              |
+|----------------------------------------|------------------------------------|
 | ![filelist.png](docs/img/filelist.png) | ![mobile.png](docs/img/mobile.png) |
 
-| 首页(可自定义)                                                                        |
-|---------------------------------------------------------------------------------|
+| 首页(可自定义)                       |
+|--------------------------------|
 | ![main.png](docs/img/main.png) |
 
-| 管理后台                                                                                   | 管理后台                                               |
-|----------------------------------------------------------------------------------------|----------------------------------------------------|
+| 管理后台                               | 管理后台                                               |
+|------------------------------------|----------------------------------------------------|
 | ![plugin.png](docs/img/plugin.png) | ![desktop-config.png](docs/img/desktop-config.png) |
 
 ## 快速开始
@@ -93,7 +94,9 @@ java -jar release/sfc-core.jar --spring.config.import=file:conf/config.yml
 docker compose up -d --build
 ```
 
-> 构建期间默认从maven官方中央仓库拉取依赖，如果想通过更换镜像地址加速构建，请参考 [Docker Compose 部署](docs/develop/docker/docker-compose.md) 或 [Dockerfile 构建](docs/develop/docker/dockerfile.md)
+
+> 构建期间默认从maven官方中央仓库拉取依赖，如果想通过更换镜像地址加速构建，请参考 [Docker Compose 部署](docs/quick-start/docker/docker-compose.md)
+或 [Dockerfile 构建](docs/quick-start/docker/dockerfile.md)
 
 ## 插件生态
 
@@ -101,25 +104,27 @@ docker compose up -d --build
 
 当前仓库内主要插件包括：
 
-| 插件                       | 说明                      |
-|--------------------------|-------------------------|
-| `sfc-ext-apk-parser`     | APK 图标缩略图提取             |
-| `sfc-ext-ftp-server`     | FTP 服务端访问网盘             |
-| `sfc-ext-webdav`         | WebDAV 服务端访问网盘          |
-| `sfc-ext-oss-store`      | S3/OSS 协议对象存储支持         |
-| `sfc-ext-minio-store`    | MinIO 存储支持（逐步并入 OSS 方案） |
-| `sfc-ext-sftp-store`     | SFTP 存储挂载               |
-| `sfc-ext-ftp-store`      | FTP 存储挂载                |
-| `sfc-ext-samba-store`    | Samba 存储挂载              |
-| `sfc-ext-webdav-store`   | 外部 WebDAV 存储挂载          |
-| `sfc-ext-video-enhance`  | 视频转码、封面与字幕能力增强          |
-| `sfc-ext-only-office`    | OnlyOffice 在线文档与协作能力    |
-| `sfc-ext-static-publish` | 目录静态站点发布                |
-| `sfc-ext-web-shell`      | 管理后台 WebShell           |
-| `sfc-ext-network-tools`  | 网络工具与 WOL 支持            |
-| `sfc-ext-quick-share`    | 文件极速分享能力                |
-| `sfc-ext-webrtc`         | WebRTC 相关扩展             |
-| `sfc-ext-music`          | 音频能力扩展                  |
+| 插件                       | 说明                           |
+|--------------------------|------------------------------|
+| `sfc-ext-apk-parser`     | APK 图标缩略图提取                  |
+| `sfc-ext-ftp-server`     | FTP 服务端访问网盘                  |
+| `sfc-ext-webdav`         | WebDAV 服务端访问网盘               |
+| `sfc-ext-oss-store`      | S3/OSS 协议对象存储支持              |
+| `sfc-ext-minio-store`    | MinIO 存储支持（逐步并入 OSS 方案）      |
+| `sfc-ext-sftp-store`     | SFTP 存储挂载                    |
+| `sfc-ext-ftp-store`      | FTP 存储挂载                     |
+| `sfc-ext-local-mq`       | 提供基于本地内存的消息队列实现              |
+| `sfc-ext-mcp`            | 提供 MCP 服务，让AI Agent获得操作网盘的能力 |
+| `sfc-ext-samba-store`    | Samba 存储挂载                   |
+| `sfc-ext-webdav-store`   | 外部 WebDAV 存储挂载               |
+| `sfc-ext-video-enhance`  | 视频转码、封面与字幕能力增强               |
+| `sfc-ext-only-office`    | OnlyOffice 在线文档与协作能力         |
+| `sfc-ext-static-publish` | 目录静态站点发布                     |
+| `sfc-ext-web-shell`      | 管理后台 WebShell                |
+| `sfc-ext-network-tools`  | 网络工具与 WOL 支持                 |
+| `sfc-ext-quick-share`    | 文件极速分享能力                     |
+| `sfc-ext-webrtc`         | WebRTC 相关扩展                  |
+| `sfc-ext-music`          | 音频能力扩展                       |
 
 > 说明：外部存储相关插件仍在持续迭代中，建议在生产环境充分测试后启用。
 
@@ -153,6 +158,7 @@ docker compose up -d --build
 
 ### 功能迭代
 
+- [X] 实现 MCP 服务插件，提供面向 AI 客户端的网盘能力接入
 - [ ] 实现回收站功能
 - [ ] 用户网盘空间配额控制
 - [ ] 接口速率限制
