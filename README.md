@@ -1,4 +1,4 @@
-# 咸鱼云网盘后端
+# 咸鱼云网盘 - 后端
 
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.8-green.svg)
 ![Java](https://img.shields.io/badge/Java-25-purple.svg)
@@ -6,8 +6,12 @@
 
 咸鱼云网盘是一个基于 Spring Boot 的网盘后端系统，支持公共资源与私人存储双域管理，提供文件管理、分享协作、在线预览、外部存储挂载与插件化扩展能力，并提供MCP服务支持。
 
-- 在线文档: [https://mjt233.github.io/saltedfishcloud-backend/](https://mjt233.github.io/saltedfishcloud-backend/)  
-- 前端项目（独立仓库）: [Gitee](https://gitee.com/xiaotao233/saltedfishcloud-frontend) | [Github](https://github.com/mjt233/saltedfishcloud-frontend)
+<div style="text-align: center;">
+
+[在线文档](https://mjt233.github.io/saltedfishcloud-backend/) ｜ [前端(Gitee)](https://gitee.com/xiaotao233/saltedfishcloud-frontend) ｜ [前端(Github)](https://github.com/mjt233/saltedfishcloud-frontend)
+
+</div>
+
 
 ## 核心能力
 
@@ -50,9 +54,10 @@
 |--------------------------------|
 | ![main.png](docs/img/main.png) |
 
-| 管理后台                               | 管理后台                                               |
-|------------------------------------|----------------------------------------------------|
-| ![plugin.png](docs/img/plugin.png) | ![desktop-config.png](docs/img/desktop-config.png) |
+| 管理后台                                               |
+|----------------------------------------------------|
+| ![plugin.png](docs/img/plugin.png)                 |
+| ![desktop-config.png](docs/img/desktop-config.png) |
 
 ## 快速开始
 
@@ -96,7 +101,7 @@ docker compose up -d --build
 
 
 > 构建期间默认从maven官方中央仓库拉取依赖，如果想通过更换镜像地址加速构建，请参考 [Docker Compose 部署](docs/quick-start/docker/docker-compose.md)
-或 [Dockerfile 构建](docs/quick-start/docker/dockerfile.md)
+> 或 [Dockerfile 构建](docs/quick-start/docker/dockerfile.md)
 
 ## 插件生态
 
