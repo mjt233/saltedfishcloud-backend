@@ -13,6 +13,7 @@
 当前内置工具（`McpDiskTools`）包括：
 
 - `list_files`
+- `search_files`
 - `delete_files`
 - `copy_files`
 - `move_files`

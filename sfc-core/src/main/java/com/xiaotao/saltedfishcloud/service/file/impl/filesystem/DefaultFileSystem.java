@@ -318,9 +318,16 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
+        return search(uid, key, page, 10);
+    }
+
+    @Override
+    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
         // todo 重构搜索功能，支持异步任务/遍历式搜索，更丰富的参数控制
         key = key.replace("%", "").replaceAll("\\s+", "%");
-        Page<FileInfoSearchResult> searchResult = fileInfoRepo.search(uid, key, PageRequest.of(page, 10));
+        int pageIndex = Math.max(Optional.ofNullable(page).orElse(0), 0);
+        int pageSize = Math.max(Optional.ofNullable(size).orElse(10), 1);
+        Page<FileInfoSearchResult> searchResult = fileInfoRepo.search(uid, key, PageRequest.of(pageIndex, pageSize));
         CommonPageInfo<FileInfo> pageInfo = new CommonPageInfo<>();
         pageInfo.setTotalPage(searchResult.getTotalPages());
         pageInfo.setTotalCount(searchResult.getTotalElements());

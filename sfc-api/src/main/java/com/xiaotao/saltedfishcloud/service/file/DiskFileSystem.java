@@ -150,6 +150,19 @@ public interface DiskFileSystem {
     CommonPageInfo<FileInfo> search(long uid, String key, Integer page);
 
     /**
+     * 搜索目标用户网盘中的文件或目录，并指定分页大小。
+     *
+     * @param uid 资源所属用户ID
+     * @param key 搜索关键字
+     * @param page 页码（从0开始）
+     * @param size 每页数量
+     * @return 分页搜索结果
+     */
+    default CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
+        return search(uid, key, page);
+    }
+
+    /**
      * 通过移动本地文件的方式存储文件
      * todo 编写默认实现
      * @param uid               用户ID

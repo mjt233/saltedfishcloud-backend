@@ -560,6 +560,11 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
     }
 
     @Override
+    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
+        return mainFileSystem.search(uid, key, page, size);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
         if (fileInfo != null && fileInfo.getName() != null) {
