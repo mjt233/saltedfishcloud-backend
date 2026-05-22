@@ -5,6 +5,8 @@ import com.saltedfishcloud.ext.minio.MinioProperties;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.*;
+import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import io.minio.MinioClient;
@@ -15,7 +17,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-public class MinioFileSystemFactory extends AbstractRawStorageFactory<MinioProperties, RawDiskFileSystem> {
+public class MinioFileSystemFactory extends AbstractRawStorageFactory<MinioProperties, Storage> {
+
+    /**
+     * 兼容现有自动配置注入的缩略图服务。
+     */
     @Setter
     private ThumbnailService thumbnailService;
 
@@ -55,21 +61,19 @@ public class MinioFileSystemFactory extends AbstractRawStorageFactory<MinioPrope
     }
 
     @Override
-    public RawDiskFileSystem generateDiskFileSystem(MinioProperties property) throws IOException {
+    public Storage generateStorage(MinioProperties property) throws IOException {
         MinioClient client = MinioClient.builder()
                 .endpoint(property.getEndpoint())
                 .credentials(property.getAccessKey(), property.getSecretKey())
                 .build();
         MinioDirectRawHandler rawHandler = new MinioDirectRawHandler(client, property);
-        RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(rawHandler, "/");
-        rawDiskFileSystem.setThumbnailService(thumbnailService);
-        return rawDiskFileSystem;
+        return new ScopedStorage(rawHandler, "/");
     }
 
     @Override
-    public void testFileSystem(DiskFileSystem fileSystem) throws FileSystemParameterException {
+    public void testStorage(Storage storage) throws FileSystemParameterException {
         try {
-            ((RawDiskFileSystem) fileSystem).getStoreHandler().listFiles("/");
+            storage.listFiles("/");
         } catch (IOException e) {
             throw new FileSystemParameterException(e.getMessage(), e);
         }

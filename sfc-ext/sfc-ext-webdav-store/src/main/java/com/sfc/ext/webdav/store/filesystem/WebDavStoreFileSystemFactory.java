@@ -3,33 +3,29 @@ package com.sfc.ext.webdav.store.filesystem;
 import com.sfc.ext.webdav.store.handler.WebDavStoreRawHandler;
 import com.sfc.ext.webdav.store.model.WebDavClientProperty;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
-import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
+import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
-public class WebDavStoreFileSystemFactory extends AbstractRawStorageFactory<WebDavClientProperty, DiskFileSystem> {
+public class WebDavStoreFileSystemFactory extends AbstractRawStorageFactory<WebDavClientProperty, Storage> {
     @Override
     public WebDavClientProperty parseProperty(Map<String, Object> params) {
         return ObjectUtils.mapToBean(params, WebDavClientProperty.class);
     }
 
     @Override
-    public DiskFileSystem generateDiskFileSystem(WebDavClientProperty property) throws IOException {
-        RawDiskFileSystem diskFileSystem = new RawDiskFileSystem(
+    public Storage generateStorage(WebDavClientProperty property) throws IOException {
+        return new ScopedStorage(
                 new WebDavStoreRawHandler(property),
                 Optional.ofNullable(property.getBasePath()).filter(StringUtils::hasText).orElse("/")
         );
-        diskFileSystem.setThumbnailService(SpringContextUtils.getContext().getBean(ThumbnailService.class));
-        return diskFileSystem;
     }
 
     @Override

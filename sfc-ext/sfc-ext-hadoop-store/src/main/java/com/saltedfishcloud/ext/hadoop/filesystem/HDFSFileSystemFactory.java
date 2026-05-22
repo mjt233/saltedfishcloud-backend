@@ -5,6 +5,8 @@ import com.saltedfishcloud.ext.hadoop.HDFSUtils;
 import com.saltedfishcloud.ext.hadoop.store.HDFSStoreHandler;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.*;
+import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import lombok.Setter;
@@ -15,9 +17,13 @@ import java.io.IOException;
 import java.util.*;
 
 @Slf4j
-public class HDFSFileSystemFactory extends AbstractRawStorageFactory<HDFSProperties, RawDiskFileSystem> {
+public class HDFSFileSystemFactory extends AbstractRawStorageFactory<HDFSProperties, Storage> {
+    /**
+     * 兼容现有自动配置注入的缩略图服务。
+     */
     @Setter
     private ThumbnailService thumbnailService;
+
     private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("hdfs")
@@ -51,16 +57,12 @@ public class HDFSFileSystemFactory extends AbstractRawStorageFactory<HDFSPropert
     }
 
     @Override
-    public RawDiskFileSystem generateDiskFileSystem(HDFSProperties property) throws IOException {
-
-        RawDiskFileSystem hdfsFileSystem;
+    public Storage generateStorage(HDFSProperties property) throws IOException {
         FileSystem fileSystem = null;
         try {
             fileSystem = HDFSUtils.getFileSystem(property);
             HDFSStoreHandler storeHandler = new HDFSStoreHandler(fileSystem);
-            hdfsFileSystem = new RawDiskFileSystem(storeHandler, property.getRoot());
-            hdfsFileSystem.setThumbnailService(thumbnailService);
-            return hdfsFileSystem;
+            return new ScopedStorage(storeHandler, property.getRoot());
         } catch (Exception e) {
             if (fileSystem != null) {
                 try {

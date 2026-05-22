@@ -5,7 +5,8 @@ import com.saltedfishcloud.ext.samba.SambaProperty;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
-import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
@@ -18,8 +19,12 @@ import java.util.Map;
 import java.util.Optional;
 
 @RequiredArgsConstructor
-public class SambaStorageFactory extends AbstractRawStorageFactory<SambaProperty, RawDiskFileSystem> {
+public class SambaStorageFactory extends AbstractRawStorageFactory<SambaProperty, Storage> {
+    /**
+     * 兼容现有构造注入的缩略图服务。
+     */
     private final ThumbnailService thumbnailService;
+
     private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("samba")
@@ -57,11 +62,8 @@ public class SambaStorageFactory extends AbstractRawStorageFactory<SambaProperty
     }
 
     @Override
-    public RawDiskFileSystem generateDiskFileSystem(SambaProperty property) throws IOException {
-        SambaStorage handler = new SambaStorage(property);
-        RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getBasePath());
-        fileSystem.setThumbnailService(thumbnailService);
-        return fileSystem;
+    public Storage generateStorage(SambaProperty property) throws IOException {
+        return new ScopedStorage(new SambaStorage(property), property.getBasePath());
     }
 
     @Override

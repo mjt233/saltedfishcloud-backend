@@ -5,7 +5,8 @@ import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
-import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import lombok.Setter;
@@ -17,7 +18,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @Slf4j
-public class SFTPStorageFactory extends AbstractRawStorageFactory<SFTPProperty, RawDiskFileSystem> {
+public class SFTPStorageFactory extends AbstractRawStorageFactory<SFTPProperty, Storage> {
     private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("sftp")
@@ -36,6 +37,9 @@ public class SFTPStorageFactory extends AbstractRawStorageFactory<SFTPProperty, 
                     .build()))
             .build();
 
+    /**
+     * 兼容现有自动配置注入的缩略图服务。
+     */
     @Setter
     private ThumbnailService thumbnailService;
 
@@ -49,12 +53,9 @@ public class SFTPStorageFactory extends AbstractRawStorageFactory<SFTPProperty, 
     }
 
     @Override
-    public RawDiskFileSystem generateDiskFileSystem(SFTPProperty property) {
-        RawDiskFileSystem fileSystem = null;
+    public Storage generateStorage(SFTPProperty property) {
         try {
-            fileSystem = new RawDiskFileSystem(new SFTPStorage(property), property.getPath());
-            fileSystem.setThumbnailService(thumbnailService);
-            return fileSystem;
+            return new ScopedStorage(new SFTPStorage(property), property.getPath());
         } catch (IOException e) {
             log.error("获取文件系统失败", e);
             throw new RuntimeException(e);

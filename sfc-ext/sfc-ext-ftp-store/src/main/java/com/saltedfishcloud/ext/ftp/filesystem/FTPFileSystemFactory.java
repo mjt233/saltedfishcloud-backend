@@ -4,7 +4,8 @@ import com.saltedfishcloud.ext.ftp.FTPStorage;
 import com.saltedfishcloud.ext.ftp.FTPProperty;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
-import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
@@ -14,7 +15,7 @@ import java.io.IOException;
 import java.util.Map;
 
 
-public class FTPFileSystemFactory extends AbstractRawStorageFactory<FTPProperty, RawDiskFileSystem> {
+public class FTPFileSystemFactory extends AbstractRawStorageFactory<FTPProperty, Storage> {
     private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("ftp")
@@ -22,8 +23,13 @@ public class FTPFileSystemFactory extends AbstractRawStorageFactory<FTPProperty,
             .describe("FTP文件传输（实验性功能）")
             .configNode(PropertyUtils.getConfigNodeFromEntityClass(FTPProperty.class).values())
             .build();
+
+    /**
+     * 兼容现有自动配置注入的缩略图服务。
+     */
     @Setter
     private ThumbnailService thumbnailService;
+
     @Override
     public FTPProperty parseProperty(Map<String, Object> params) {
         return CollectionUtils.validMap(params)
@@ -32,14 +38,8 @@ public class FTPFileSystemFactory extends AbstractRawStorageFactory<FTPProperty,
     }
 
     @Override
-    public RawDiskFileSystem generateDiskFileSystem(FTPProperty property) throws IOException {
-        FTPStorage handler = new FTPStorage(property);
-        RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getPath());
-
-        if (property.getUseThumbnail()) {
-            fileSystem.setThumbnailService(thumbnailService);
-        }
-        return fileSystem;
+    public Storage generateStorage(FTPProperty property) throws IOException {
+        return new ScopedStorage(new FTPStorage(property), property.getPath());
     }
 
     @Override

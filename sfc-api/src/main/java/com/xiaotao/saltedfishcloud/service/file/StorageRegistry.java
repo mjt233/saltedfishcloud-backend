@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 
 import java.util.List;
 import java.util.Map;
@@ -9,8 +10,6 @@ import java.util.Map;
  * 存储工厂注册表。
  * <p>
  * 负责统一管理系统内可用的 {@link StorageFactory}，并按协议解析出对应的存储实现。
- * 当前处于渐进式重构阶段，因此 {@link #getStorage(String, Map)} 的返回值暂时仍保持为
- * {@link DiskFileSystem}，后续再按计划切换为更底层的存储接口。
  * </p>
  */
 public interface StorageRegistry {
@@ -40,10 +39,10 @@ public interface StorageRegistry {
      *
      * @param protocol 存储协议
      * @param params 参数
-     * @return 存储实例（当前阶段暂时仍返回 {@link DiskFileSystem}）
+     * @return 存储实例
      * @throws FileSystemParameterException 参数错误导致的存储获取失败
      */
-    DiskFileSystem getStorage(String protocol, Map<String, Object> params) throws FileSystemParameterException;
+    Storage getStorage(String protocol, Map<String, Object> params) throws FileSystemParameterException;
 
     /**
      * 根据协议获取存储工厂。

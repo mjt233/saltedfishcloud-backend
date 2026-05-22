@@ -4,11 +4,9 @@ import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
-import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStorage;
-import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -18,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class LocalFileSystemFactory extends AbstractRawStorageFactory<String, RawDiskFileSystem> {
+public class LocalFileSystemFactory extends AbstractRawStorageFactory<String, Storage> {
     private static final List<ConfigNode> CONFIG_NODE_LIST = new ArrayList<>();
     private static final StorageMetadata DESCRIBE;
     static {
@@ -44,10 +42,6 @@ public class LocalFileSystemFactory extends AbstractRawStorageFactory<String, Ra
                 .build();
     }
 
-    @Autowired
-    @Lazy
-    private ThumbnailService thumbnailService;
-
     private void checkParams(Map<String, Object> params) {
         if (!params.containsKey("path")) {
             throw new IllegalArgumentException("缺少参数path");
@@ -62,11 +56,8 @@ public class LocalFileSystemFactory extends AbstractRawStorageFactory<String, Ra
     }
 
     @Override
-    public RawDiskFileSystem generateDiskFileSystem(String path) throws IOException {
-        LocalStorage handler = new LocalStorage();
-        RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(handler, path);
-        rawDiskFileSystem.setThumbnailService(thumbnailService);
-        return rawDiskFileSystem;
+    public Storage generateStorage(String path) throws IOException {
+        return new ScopedStorage(new LocalStorage(), path);
     }
 
     @Override

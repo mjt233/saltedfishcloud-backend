@@ -3,9 +3,9 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,12 +72,12 @@ public class DefaultStorageRegistry implements StorageRegistry {
     }
 
     @Override
-    public DiskFileSystem getStorage(String protocol, Map<String, Object> params) throws FileSystemParameterException {
+    public Storage getStorage(String protocol, Map<String, Object> params) throws FileSystemParameterException {
         StorageFactory factory = factoryMap.get(protocol);
         if (factory == null) {
             throw new UnsupportedFileSystemProtocolException(protocol);
         }
-        return factory.getFileSystem(params);
+        return factory.getStorage(params);
     }
 
     @Override

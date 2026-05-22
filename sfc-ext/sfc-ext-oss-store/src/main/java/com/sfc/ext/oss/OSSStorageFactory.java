@@ -1,9 +1,8 @@
 package com.sfc.ext.oss;
 
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
-import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
+import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
@@ -18,8 +17,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @RequiredArgsConstructor
-public class OSSStorageFactory extends AbstractRawStorageFactory<OSSProperty, DiskFileSystem> {
+public class OSSStorageFactory extends AbstractRawStorageFactory<OSSProperty, Storage> {
+    /**
+     * 兼容现有构造注入的缩略图服务。
+     */
     private final ThumbnailService thumbnailService;
+
     private final Map<String, Function<OSSProperty, Storage>> factoryMap = new ConcurrentHashMap<>();
 
     /**
@@ -53,11 +56,9 @@ public class OSSStorageFactory extends AbstractRawStorageFactory<OSSProperty, Di
     }
 
     @Override
-    public DiskFileSystem generateDiskFileSystem(OSSProperty property) throws IOException {
+    public Storage generateStorage(OSSProperty property) throws IOException {
         Function<OSSProperty, Storage> storeFactory = Objects.requireNonNull(factoryMap.get(property.getType()), "未注册类型为" + property.getType() + "的OSS存储");
         Storage rawStoreHandler = storeFactory.apply(property);
-        RawDiskFileSystem fileSystem = new RawDiskFileSystem(rawStoreHandler, "/");
-        fileSystem.setThumbnailService(thumbnailService);
-        return fileSystem;
+        return new ScopedStorage(rawStoreHandler, "/");
     }
 }

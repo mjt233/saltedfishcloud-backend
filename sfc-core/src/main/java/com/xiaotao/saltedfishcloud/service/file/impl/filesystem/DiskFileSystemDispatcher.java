@@ -21,7 +21,10 @@ import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordComplete
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
+import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
@@ -68,6 +71,17 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+
+    /**
+     * 挂载存储适配为文件系统时使用的缩略图服务。
+     */
+    @Autowired(required = false)
+    private ThumbnailService thumbnailService;
+
+    /**
+     * 挂载存储到文件系统适配器缓存。
+     */
+    private final Map<Storage, DiskFileSystem> storageAdapterCache = Collections.synchronizedMap(new WeakHashMap<>());
 
 
     public void setMainFileSystem(DiskFileSystem mainFileSystem) {
@@ -127,11 +141,32 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         } else {
             try {
                 Map<String, Object> map = MapperHolder.parseJsonToMap(mountPoint.getParams());
-                DiskFileSystem fileSystem = storageRegistry.getStorage(mountPoint.getProtocol(), map);
+                Storage storage = storageRegistry.getStorage(mountPoint.getProtocol(), map);
+                DiskFileSystem fileSystem = getStorageAdapter(storage);
                 return new FileSystemMatchResult(fileSystem,mountPoint ,resolvePath(mountPoint.getPath(), path));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    /**
+     * 获取挂载存储对应的文件系统适配器。
+     *
+     * @param storage 挂载存储
+     * @return 文件系统适配器
+     */
+    private DiskFileSystem getStorageAdapter(Storage storage) {
+        synchronized (storageAdapterCache) {
+            return storageAdapterCache.computeIfAbsent(storage, key -> {
+                try {
+                    RawDiskFileSystem adapter = new RawDiskFileSystem(key, "/");
+                    adapter.setThumbnailService(thumbnailService);
+                    return adapter;
+                } catch (IOException e) {
+                    throw new RuntimeException("创建挂载存储适配器失败", e);
+                }
+            });
         }
     }
 

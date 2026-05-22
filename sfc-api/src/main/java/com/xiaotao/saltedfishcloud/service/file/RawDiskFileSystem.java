@@ -246,13 +246,44 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
 
     @Override
     public void close() throws IOException {
-        if (storeHandler instanceof Closeable) {
-            ((Closeable) storeHandler).close();
+        try {
+            storeHandler.close();
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("关闭存储失败", e);
         }
     }
 
     @Override
     public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
         storeHandler.updateTime(StringUtils.appendPath(basePath, path), names, attribute);
+    }
+
+    /**
+     * 基于底层存储实例与作用域根路径比较两个原始文件系统适配器是否等价。
+     *
+     * @param obj 待比较对象
+     * @return 是否等价
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof RawDiskFileSystem other)) {
+            return false;
+        }
+        return storeHandler == other.storeHandler && Objects.equals(basePath, other.basePath);
+    }
+
+    /**
+     * 计算基于底层存储实例与作用域根路径的哈希值。
+     *
+     * @return 哈希值
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(System.identityHashCode(storeHandler), basePath);
     }
 }

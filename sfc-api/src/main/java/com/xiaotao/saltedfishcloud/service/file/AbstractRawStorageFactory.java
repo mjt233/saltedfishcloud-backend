@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -12,20 +12,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * 抽象的原始文件系统工厂类，用于快速构建支持缓存机制的用于挂载的外部文件系统工厂
- * @param <T>   参数实体类型
- * @param <D>   文件系统类型
+ * 抽象的原始存储工厂类，用于快速构建支持缓存机制的挂载存储工厂。
+ *
+ * @param <T> 参数实体类型
+ * @param <D> 存储类型
  */
 @Slf4j
-public abstract class AbstractRawStorageFactory<T, D extends DiskFileSystem> implements StorageFactory {
+public abstract class AbstractRawStorageFactory<T, D extends Storage> implements StorageFactory {
     private final Map<T, D> CACHE = new ConcurrentHashMap<>();
 
     @Override
-    public DiskFileSystem getFileSystem(Map<String, Object> params) throws FileSystemParameterException {
+    public Storage getStorage(Map<String, Object> params) throws FileSystemParameterException {
         T property = parseProperty(params);
         return CACHE.computeIfAbsent(property, key -> {
             try {
-                return generateDiskFileSystem(property);
+                return generateStorage(property);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -33,9 +34,9 @@ public abstract class AbstractRawStorageFactory<T, D extends DiskFileSystem> imp
     }
 
     @Override
-    public void testFileSystem(DiskFileSystem fileSystem) throws FileSystemParameterException {
+    public void testStorage(Storage storage) throws FileSystemParameterException {
         try {
-            fileSystem.exist(0, "/");
+            storage.exist("/");
         } catch (IOException e) {
             throw new FileSystemParameterException("测试失败",e);
         }
@@ -48,14 +49,12 @@ public abstract class AbstractRawStorageFactory<T, D extends DiskFileSystem> imp
         for (Map.Entry<T, D> entry : CACHE.entrySet()) {
             try {
                 if (!paramSet.contains(entry.getKey())) {
-                    D diskFileSystem = entry.getValue();
-                    if (diskFileSystem instanceof Closeable closeable) {
-                        closeable.close();
-                    }
+                    D storage = entry.getValue();
+                    storage.close();
                     CACHE.remove(entry.getKey());
                 }
-            } catch (IOException err) {
-                log.error("清理文件系统缓存失败", err);
+            } catch (Exception err) {
+                log.error("清理存储缓存失败", err);
             }
         }
     }
@@ -63,24 +62,35 @@ public abstract class AbstractRawStorageFactory<T, D extends DiskFileSystem> imp
     @Override
     public void clearCache(Map<String, Object> params) {
         T property = this.parseProperty(params);
-        D diskFileSystem = CACHE.get(property);
-        if (diskFileSystem == null) {
-            log.warn("文件系统缓存不存在: {}", params);
+        D storage = CACHE.get(property);
+        if (storage == null) {
+            log.warn("存储缓存不存在: {}", params);
             return;
         }
         try {
-            if (diskFileSystem instanceof Closeable closeable) {
-                closeable.close();
-            }
+            storage.close();
             CACHE.remove(property);
-        } catch (IOException e) {
-            log.error("清理文件系统缓存失败", e);
+        } catch (Exception e) {
+            log.error("清理存储缓存失败", e);
         }
     }
 
+    /**
+     * 将参数映射解析为存储属性对象。
+     *
+     * @param params 原始参数
+     * @return 解析后的属性对象
+     */
     public abstract T parseProperty(Map<String, Object> params);
 
-    public abstract D generateDiskFileSystem(T property) throws IOException;
+    /**
+     * 根据属性创建对应的存储实例。
+     *
+     * @param property 存储属性
+     * @return 存储实例
+     * @throws IOException 创建失败时抛出
+     */
+    public abstract D generateStorage(T property) throws IOException;
 
 
 }
