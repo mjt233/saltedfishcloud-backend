@@ -14,19 +14,19 @@ import java.util.Optional;
 
 /**
  * 通用的文件系统复制与移动操作器。
- * 子类只需提供{@link StoreReader}，目录创建与单个文件的复制/移动方法，CopyAndMoveHandler即可实现目录的复制与移动，且支持目录合并与同名文件覆盖控制。
+ * 子类只需提供{@link DirectRawStoreHandler}，目录创建与单个文件的复制/移动方法，CopyAndMoveHandler即可实现目录的复制与移动，且支持目录合并与同名文件覆盖控制。
  */
 @Slf4j
 public abstract class CopyAndMoveHandler {
     private final static int MAX_DEPTH = 128;
 
-    private final StoreReader reader;
+    private final DirectRawStoreHandler reader;
 
     /**
      * 实例化复制移动操作器
      * @param reader    存储读取器
      */
-    public CopyAndMoveHandler(StoreReader reader) {
+    public CopyAndMoveHandler(DirectRawStoreHandler reader) {
         this.reader = reader;
     }
 
