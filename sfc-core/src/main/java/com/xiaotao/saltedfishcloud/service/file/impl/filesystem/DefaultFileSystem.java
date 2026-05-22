@@ -16,9 +16,6 @@ import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
-import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
-import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
-import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
@@ -27,7 +24,6 @@ import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -36,12 +32,10 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
-import org.springframework.data.util.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -85,6 +79,12 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
      */
     @Autowired
     private DefaultFileSystemMainExecutor mainExecutor;
+
+    /**
+     * 复制编排组件。
+     */
+    @Autowired
+    private DefaultFileSystemCopyCoordinator copyCoordinator;
 
     /**
      * 元数据操作组件。
@@ -280,169 +280,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
-        doCopyInternal(param, callback, 0);
-    }
-
-    /**
-     * 核心复制逻辑，支持跨文件系统复制与挂载点记录同步。
-     *
-     * @param param 复制参数
-     * @param callback 复制回调
-     * @param depth 当前递归深度
-     */
-    private void doCopyInternal(SimpleFileTransferParam param, FileTransferCallback callback, int depth) throws IOException {
-        if (depth > 32) {
-            throw new JsonException(FileSystemError.DIR_TOO_DEPTH, "目录深度超过32");
-        }
-        if (Objects.equals(param.getSourceUid(), param.getTargetUid())) {
-            if (CollectionUtils.isEmpty(param.getFiles())) {
-                if (PathUtils.isSubDir(param.getSourcePath(), param.getTargetPath())) {
-                    throw new JsonException(FileSystemError.TARGET_IS_SUB_DIR, param.getSourcePath());
-                }
-            } else {
-                boolean anyMatch = param.getFiles().stream().anyMatch(fileName -> {
-                    String targetFullPath = StringUtils.appendPath(param.getTargetPath(), fileName);
-                    String sourceFullPath = StringUtils.appendPath(param.getSourcePath(), fileName);
-                    return PathUtils.isSubDir(sourceFullPath, targetFullPath);
-                });
-                if (anyMatch) {
-                    throw new JsonException(FileSystemError.TARGET_IS_SUB_DIR, param.getSourcePath());
-                }
-            }
-        }
-        Long sourceUid = param.getSourceUid();
-        String sourcePath = param.getSourcePath();
-        Long targetUid = param.getTargetUid();
-        String targetPath = param.getTargetPath();
-        Boolean overwrite = param.getIsOverwrite();
-        if (sourceUid == null || targetUid == null || sourcePath == null || targetPath == null) {
-            throw new IllegalArgumentException("sourceUid, targetUid, sourcePath, targetPath 不能为 null");
-        }
-
-        FileSystemRouteContext sourceRoute = matchFileSystem(sourceUid, sourcePath);
-        FileSystemRouteContext targetRoute = matchFileSystem(targetUid, targetPath);
-        if (sourceRoute.sameFileSystem(targetRoute)) {
-            if (callback != null && callback.shouldInterrupt()) {
-                return;
-            }
-            if (sourceRoute.isMainRoute()) {
-                mainExecutor.copy(param, callback);
-                return;
-            }
-            if (sourceRoute.requiresMainMetadataSync()) {
-                if (callback != null) {
-                    callback.onAdditionalEvent(UpdateFileRecordStartEvent.of());
-                }
-                metadataOperator.copy(param, callback);
-                if (callback != null) {
-                    callback.onAdditionalEvent(UpdateFileRecordCompleteEvent.of(FileTransferItem.builder()
-                            .from(param.getSourcePath())
-                            .to(param.getTargetPath())
-                            .build()));
-                }
-            }
-            sourceRoute.requireDelegateFileSystem().copy(SimpleFileTransferParam.builder()
-                    .sourceUid(sourceUid)
-                    .sourcePath(sourceRoute.getResolvedPath())
-                    .files(param.getFiles())
-                    .targetUid(targetUid)
-                    .targetPath(targetRoute.getResolvedPath())
-                    .isOverwrite(overwrite)
-                    .build(), callback);
-            return;
-        }
-
-        Lazy<String> nodeId = Lazy.of(() -> metadataOperator.getNodeIdByPath(targetUid, targetPath)
-                .orElseThrow(() -> new JsonException(404, "路径" + targetPath + "节点信息丢失")));
-        List<FileInfo> sourceFileList = ObjectUtils.cloneListElement(
-                this.getUserFileList(sourceUid, sourcePath, param.getFiles()),
-                FileInfo::new
-        );
-        List<String> sourceNames = sourceFileList.stream().map(FileInfo::getName).toList();
-        Map<String, FileInfo> targetExistFileMap = this.getUserFileList(targetUid, targetPath, sourceNames)
-                .stream()
-                .collect(Collectors.toMap(FileInfo::getName, file -> ObjectUtils.clone(file, FileInfo::new)));
-
-        for (FileInfo sourceFile : sourceFileList) {
-            if (callback != null && callback.shouldInterrupt()) {
-                return;
-            }
-            sourceFile.setUid(targetUid);
-            sourceFile.setPath(targetRoute.getDelegatePath(targetPath));
-            if (targetRoute.requiresMainMetadataSync()) {
-                sourceFile.setNode(nodeId.get());
-                sourceFile.setIsMount(true);
-            }
-
-            FileInfo existFile = targetExistFileMap.get(sourceFile.getName());
-            if (existFile != null && existFile.isDir() != sourceFile.isDir()) {
-                if (sourceFile.isFile()) {
-                    throw new JsonException(FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR);
-                } else {
-                    throw new JsonException(FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE);
-                }
-            }
-
-            FileTransferItem transferRecord = FileTransferItem.builder()
-                    .from(StringUtils.appendPath(sourcePath, sourceFile.getName()))
-                    .to(StringUtils.appendPath(targetPath, sourceFile.getName()))
-                    .fileInfo(sourceFile)
-                    .total(sourceFile.isDir() ? 0 : sourceFile.getSize())
-                    .loaded(0L)
-                    .build();
-            if (sourceFile.isFile()) {
-                if (callback != null) {
-                    callback.onFileStart(transferRecord);
-                }
-                if (!Boolean.TRUE.equals(param.getIsOverwrite()) && existFile != null) {
-                    transferRecord.setIsSkip(true);
-                    if (callback != null) {
-                        callback.onFileComplete(transferRecord);
-                    }
-                    continue;
-                }
-                if (callback != null && callback.shouldInterrupt()) {
-                    return;
-                }
-                Resource resource = getMatchedResource(sourceRoute, sourceUid, sourceRoute.getResolvedPath(), sourceFile.getName());
-                if (resource == null) {
-                    throw new JsonException(FileSystemError.FILE_NOT_FOUND, StringUtils.appendPath(sourcePath, sourceFile.getName()));
-                }
-                FileInfo targetFile = new FileInfo();
-                BeanUtils.copyProperties(sourceFile, targetFile);
-                targetFile.setStreamSource(resource);
-                targetFile.setId(null);
-                targetFile.setNode(null);
-                saveFileToMatchedFileSystem(targetRoute, param.getTargetPath(), targetFile, os -> {
-                    try (InputStream is = resource.getInputStream()) {
-                        return StreamUtils.copyStreamAndComputeMd5(is, os, sourceFile.getMd5(), (buffer, len) -> {
-                            Objects.requireNonNull(buffer);
-                            transferRecord.setLoaded(transferRecord.getLoaded() + len);
-                        }).applyTo(targetFile);
-                    }
-                });
-                if (callback != null) {
-                    callback.onFileComplete(transferRecord);
-                }
-            } else {
-                String nextSourcePath = StringUtils.appendPath(sourcePath, sourceFile.getName());
-                String nextTargetPath = StringUtils.appendPath(targetPath, sourceFile.getName());
-                if (callback != null) {
-                    callback.onDirStart(nextTargetPath);
-                }
-                this.mkdir(targetUid, targetPath, sourceFile.getName());
-                doCopyInternal(SimpleFileTransferParam.builder()
-                        .sourceUid(sourceUid)
-                        .sourcePath(nextSourcePath)
-                        .targetUid(targetUid)
-                        .targetPath(nextTargetPath)
-                        .isOverwrite(param.getIsOverwrite())
-                        .build(), callback, depth + 1);
-                if (callback != null) {
-                    callback.onDirComplete(nextTargetPath);
-                }
-            }
-        }
+        copyCoordinator.copy(param, callback);
     }
 
     /**
@@ -459,26 +297,6 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             return mainExecutor.getResource(uid, delegatePath, name);
         }
         return routeContext.requireDelegateFileSystem().getResource(uid, delegatePath, name);
-    }
-
-    /**
-     * 向匹配到的文件系统写入文件，并在代理挂载点下补充文件记录。
-     *
-     * @param routeContext 路由上下文
-     * @param originPath 原始目录路径
-     * @param fileInfo 文件信息
-     * @param streamConsumer 输出流消费函数
-     */
-    private void saveFileToMatchedFileSystem(FileSystemRouteContext routeContext, String originPath, FileInfo fileInfo,
-                                             OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
-        if (routeContext.isMainRoute()) {
-            mainExecutor.saveFileByStream(fileInfo, routeContext.getResolvedPath(), streamConsumer);
-            return;
-        }
-        routeContext.requireDelegateFileSystem().saveFileByStream(fileInfo, routeContext.getResolvedPath(), streamConsumer);
-        if (routeContext.requiresMainMetadataSync()) {
-            metadataOperator.saveRecord(fileInfo, originPath);
-        }
     }
 
     @Override
@@ -529,14 +347,14 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
                 }
             }
         } else {
-            doCopyInternal(SimpleFileTransferParam.builder()
+            copyCoordinator.copy(SimpleFileTransferParam.builder()
                     .sourceUid(uid)
                     .sourcePath(source)
                     .files(List.of(name))
                     .targetUid(uid)
                     .targetPath(target)
                     .isOverwrite(overwrite)
-                    .build(), null, 0);
+                    .build(), null);
             doDeleteFile(uid, source, Collections.singletonList(name));
         }
 
