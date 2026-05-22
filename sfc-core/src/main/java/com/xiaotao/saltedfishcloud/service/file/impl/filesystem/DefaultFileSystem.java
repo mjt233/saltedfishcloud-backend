@@ -1,319 +1,577 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
-import com.xiaotao.saltedfishcloud.dao.jpa.projection.FileInfoSearchResult;
+import com.xiaotao.saltedfishcloud.event.cm.FileMoveEvent;
+import com.xiaotao.saltedfishcloud.event.dir.MkdirEvent;
+import com.xiaotao.saltedfishcloud.event.file.FileDeleteEvent;
+import com.xiaotao.saltedfishcloud.event.file.FileStoreEvent;
+import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
-import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
+import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
-import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEventLevel;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
-import com.xiaotao.saltedfishcloud.service.file.*;
-import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.hello.FeatureProvider;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
-import com.xiaotao.saltedfishcloud.utils.*;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
-import lombok.RequiredArgsConstructor;
+import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
+import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
+import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
-import com.xiaotao.saltedfishcloud.cache.LockFactory;
-import java.util.concurrent.locks.Lock;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.PathResource;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.util.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PRIVATE;
-import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PUBLIC;
-
 /**
- * 默认的文件系统实现，采用 文件元数据节点记录服务 + 文件内容存储服务 结合的结构
+ * 统一的文件系统编排入口，负责挂载点路由、主文件系统分发与事件编排。
  */
 @Slf4j
 @Component
-public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, InitializingBean {
-    private final static String LOG_PREFIX = "[默认文件系统]";
+public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
+    private static final String LOG_PREFIX = "[FileSystem]";
 
+    /**
+     * Spring事件发布器。
+     */
     @Autowired
-    private StoreServiceFactory storeServiceFactory;
+    private ApplicationEventPublisher eventPublisher;
 
+    /**
+     * 挂载点服务。
+     */
     @Autowired
-    private FileInfoRepo fileInfoRepo;
+    private MountPointService mountPointService;
 
+    /**
+     * 文件系统路由解析器。
+     */
     @Autowired
-    private FileRecordService fileRecordService;
+    private DiskFileSystemRouteResolver routeResolver;
 
+    /**
+     * 主文件系统执行组件。
+     */
     @Autowired
-    private UserCustomStoreService userCustomStoreService;
+    private DefaultFileSystemMainExecutor mainExecutor;
 
+    /**
+     * 元数据操作组件。
+     */
     @Autowired
-    private FileResourceMd5Resolver md5Resolver;
+    private DefaultFileSystemMetadataOperator metadataOperator;
 
-    @Autowired
-    private LockFactory lockFactory;
-
-    @Autowired
-    private ThumbnailService thumbnailService;
-
-    @Autowired
-    private DiskFileSystemManager diskFileSystemManager;
-
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        diskFileSystemManager.setMainFileSystem(this);
-    }
-
-    @Override
-    public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
-        StoreService storeService = storeServiceFactory.getService();
-        FileInfo fileInfo = fileRecordService.getByPath(uid, path).orElse(null);
-        if (fileInfo == null || fileInfo.isFile()) {
-            log.warn("{} 找不到路径{}:{}对应的节点，无法修改文件日期信息", LOG_PREFIX, uid, path);
-            return;
-        }
-        List<FileInfo> fileInfoList = fileRecordService.findByUidAndNodeId(uid, fileInfo.getNode(), names);
-        fileInfoList.forEach(f -> {
-            if (attribute.apply(f)) {
-                fileRecordService.save(f);
-            }
-        });
-        if (!storeService.isUnique()) {
-            storeService.updateTime(uid, path, names, attribute);
-        }
+    /**
+     * 根据请求路径匹配对应文件系统。
+     *
+     * @param uid 用户ID
+     * @param path 请求路径
+     * @return 匹配结果
+     */
+    private FileSystemRouteContext matchFileSystem(long uid, String path) {
+        return routeResolver.matchFileSystem(uid, path);
     }
 
     /**
-     * 获取写文件时用到分布式锁key
+     * 校验目标完整路径是否与挂载点路径冲突。
      *
-     * @param uid  用户id
-     * @param path 文件所在路径
+     * @param uid 用户ID
+     * @param path 目标目录路径
      * @param name 文件名
      */
-    private static String getStoreLockKey(long uid, String path, String name) {
-        return uid + ":" + StringUtils.appendPath(path, name);
+    private void validateNotMountPointPath(long uid, String path, String name) {
+        String fullPath = StringUtils.appendPath(path, name);
+        FileSystemRouteContext routeContext = matchFileSystem(uid, fullPath);
+        if (routeContext.matchesMountPath(fullPath)) {
+            throw new JsonException(FileSystemError.MOUNT_POINT_EXIST);
+        }
+    }
+
+    @Override
+    public List<FileInfo> getUserFileList(long uid, String path, @Nullable Collection<String> nameList) throws IOException {
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        if (routeContext.usesMainMetadata()) {
+            return mainExecutor.getUserFileList(uid, path, nameList);
+        }
+        return routeContext.getDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath(), nameList);
     }
 
     @Override
     public Resource getThumbnail(long uid, String path, String name) throws IOException {
-        String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, name));
-        if (md5 != null) {
-            return thumbnailService.getThumbnail(md5, FileUtils.getSuffix(name));
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        if (routeContext.isMainRoute()) {
+            return mainExecutor.getThumbnail(uid, path, name);
         }
-        return null;
+        return routeContext.getDelegateFileSystem().getThumbnail(uid, routeContext.getResolvedPath(), name);
     }
-
-    /**
-     * 获取写文件时用到分布式锁key
-     *
-     * @param uid  用户id
-     * @param dest 文件所在路径
-     */
-    public static String getStoreLockKey(long uid, String dest) {
-        return uid + ":" + dest;
-    }
-
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
-        List<FileInfo> files = fileRecordService.getFileInfoByMd5(md5, 1);
-        if (files.isEmpty()) {
-            return false;
+        validateNotMountPointPath(uid, path, name);
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        boolean success = routeContext.isMainRoute()
+                ? mainExecutor.quickSave(uid, path, name, md5)
+                : routeContext.getDelegateFileSystem().quickSave(uid, routeContext.getResolvedPath(), name, md5);
+        if (success && routeContext.requiresMainMetadataSync()) {
+            syncProxyQuickSaveRecord(routeContext, uid, path, name);
         }
-        FileInfo existMd5File = ObjectUtils.clone(files.get(0), FileInfo::new);
-        String filePath = fileRecordService.getPathByNodeId(existMd5File.getUid(), existMd5File.getNode())
-                .orElse(null);
-        if (filePath == null) {
-            return false;
+        if (success) {
+            publishFileStoreEvent(routeContext.getFileSystemOr(this), uid, routeContext.getDelegatePath(path), name,
+                    StringUtils.appendPath(path, name), null);
         }
-        Resource resource = getResource(existMd5File.getUid(), filePath, existMd5File.getName());
-        if (resource == null) {
-            return false;
-        }
-        try {
-            StoreService storeService = storeServiceFactory.getService();
-            FileInfo newFile = FileInfo.createFrom(existMd5File, false);
-            newFile.setId(null);
-            newFile.setUid(uid);
-            newFile.setStreamSource(resource);
-            newFile.setName(name);
-            if (!storeService.isUnique()) {
-                saveFile(newFile, path);
-            } else {
-                fileRecordService.saveRecord(newFile, path);
-            }
-        } catch (IOException e) {
-            log.trace("错误：{}", e.getMessage());
-            return false;
-        }
-        return true;
+        return success;
     }
 
     @Override
-    public boolean exist(long uid, String path) {
-        return fileRecordService.exist(uid, PathUtils.getParentPath(path), PathUtils.getLastNode(path));
+    public boolean exist(long uid, String path) throws IOException {
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        if (routeContext.isMountRoot()) {
+            return true;
+        }
+        if (routeContext.usesMainMetadata()) {
+            return mainExecutor.exist(uid, path);
+        }
+        return routeContext.getDelegateFileSystem().exist(uid, routeContext.getResolvedPath());
     }
 
     @Override
     public Resource getResource(long uid, String path, String name) throws IOException {
-        Resource resource = storeServiceFactory.getService().getResource(uid, path, name);
-        if (resource == null) {
-            return null;
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        if (routeContext.isMainRoute()) {
+            return mainExecutor.getResource(uid, path, name);
         }
-        return ResourceUtils.bindFileInfo(resource, () -> fileRecordService.getFileInfo(uid, path, name));
+        return routeContext.getDelegateFileSystem().getResource(uid, routeContext.getResolvedPath(), name);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String mkdirs(long uid, String path) throws IOException {
-        PathBuilder pb = new PathBuilder();
-        pb.append(path);
-        if (pb.getPath().isEmpty()) {
-            return uid + "";
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        if (routeContext.matchesMountPath(path)) {
+            throw new JsonException(FileSystemError.MOUNT_POINT_EXIST);
         }
-        String parent = pb.range(-1);
-        String name = pb.range(1, -1);
-        if (getResource(uid, parent, name) != null) {
-            throw new UnsupportedOperationException("已存在同名文件：" + path);
+        String dirNodeId = routeContext.isMainRoute()
+                ? mainExecutor.mkdirs(uid, path)
+                : routeContext.getDelegateFileSystem().mkdirs(uid, routeContext.getResolvedPath());
+        if (routeContext.requiresMainMetadataSync()) {
+            metadataOperator.mkdirs(uid, path, true);
         }
-        String nid = fileRecordService.getAndMkdirs(uid, path, false);
-        final StoreService storeService = storeServiceFactory.getService();
-        if (!storeService.isUnique()) {
-            storeService.mkdir(uid, path, "");
-        }
-        return nid;
+        eventPublisher.publishEvent(new MkdirEvent(this, uid, path, dirNodeId));
+        return dirNodeId;
     }
 
     @Override
+    public Resource getResourceByMd5(String md5) throws IOException {
+        List<FileInfo> files = metadataOperator.getFileInfoByMd5(md5, 1);
+        if (files.isEmpty()) {
+            return null;
+        }
+        FileInfo fileInfo = files.get(0);
+        String path = metadataOperator.getPathByNodeId(fileInfo.getUid(), fileInfo.getNode())
+                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+        fileInfo.setPath(StringUtils.appendPath(path, fileInfo.getName()));
+        Resource resource = getResource(fileInfo.getUid(), path, fileInfo.getName());
+        return resource == null ? null : ResourceUtils.bindFileInfo(resource, fileInfo);
+    }
+
+    /**
+     * 同步代理挂载点 quickSave 后的文件记录。
+     *
+     * @param matchResult 文件系统匹配结果
+     * @param uid 用户ID
+     * @param path 目标目录
+     * @param name 文件名
+     */
+    private void syncProxyQuickSaveRecord(FileSystemRouteContext routeContext, long uid, String path, String name) throws IOException {
+        List<FileInfo> fileInfos = routeContext.getDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath(), Collections.singletonList(name));
+        if (fileInfos == null || fileInfos.isEmpty()) {
+            throw new JsonException(FileSystemError.FILE_NOT_FOUND, StringUtils.appendPath(path, name));
+        }
+        FileInfo savedFile = ObjectUtils.clone(fileInfos.get(0), FileInfo::new);
+        savedFile.setUid(uid);
+        savedFile.setId(null);
+        savedFile.setNode(null);
+        metadataOperator.saveRecord(savedFile, path);
+    }
+
+    /**
+     * 发布文件保存事件。
+     *
+     * @param diskFileSystem 目标文件系统
+     * @param uid 用户ID
+     * @param delegatePath 文件在目标文件系统中的目录路径
+     * @param name 文件名
+     * @param fullPath 文件在统一文件系统中的完整路径
+     * @param fileInfo 已知文件信息，可为null
+     */
+    private void publishFileStoreEvent(DiskFileSystem diskFileSystem, Long uid, String delegatePath, String name,
+                                       String fullPath, FileInfo fileInfo) {
+        eventPublisher.publishEvent(new FileStoreEvent(this, uid, fullPath, () -> {
+            try {
+                if (fileInfo != null) {
+                    fileInfo.setPath(fullPath);
+                    return fileInfo;
+                }
+                List<FileInfo> result = diskFileSystem.getUserFileList(uid, delegatePath, Collections.singletonList(name));
+                if (result == null || result.isEmpty()) {
+                    log.warn("{} 文件保存事件中未查询到文件信息 uid: {} fullPath: {}", LOG_PREFIX, uid, fullPath);
+                    return null;
+                }
+                FileInfo stored = result.get(0);
+                stored.setPath(fullPath);
+                return stored;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }));
+    }
+
+    /**
+     * 发布文件移动事件。
+     *
+     * @param sourcePath 原路径
+     * @param targetPath 目标路径
+     */
+    private void publishFileMoveEvent(String sourcePath, String targetPath) {
+        eventPublisher.publishEvent(new FileMoveEvent(this, sourcePath, targetPath));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void copy(SimpleFileTransferParam param, FileTransferCallback callback) throws IOException {
-        FileTransferItem transferItem = FileTransferItem.builder()
-                .from(param.getSourcePath())
-                .to(param.getTargetPath())
-                .build();
-        if (callback != null) {
-            callback.onAdditionalEvent(UpdateFileRecordStartEvent.of());
+        doCopyInternal(param, callback, 0);
+    }
+
+    /**
+     * 核心复制逻辑，支持跨文件系统复制与挂载点记录同步。
+     *
+     * @param param 复制参数
+     * @param callback 复制回调
+     * @param depth 当前递归深度
+     */
+    private void doCopyInternal(SimpleFileTransferParam param, FileTransferCallback callback, int depth) throws IOException {
+        if (depth > 32) {
+            throw new JsonException(FileSystemError.DIR_TOO_DEPTH, "目录深度超过32");
         }
-        fileRecordService.copy(param, callback);
-        if (callback != null) {
-            callback.onAdditionalEvent(UpdateFileRecordCompleteEvent.of(transferItem));
+        if (Objects.equals(param.getSourceUid(), param.getTargetUid())) {
+            if (CollectionUtils.isEmpty(param.getFiles())) {
+                if (PathUtils.isSubDir(param.getSourcePath(), param.getTargetPath())) {
+                    throw new JsonException(FileSystemError.TARGET_IS_SUB_DIR, param.getSourcePath());
+                }
+            } else {
+                boolean anyMatch = param.getFiles().stream().anyMatch(fileName -> {
+                    String targetFullPath = StringUtils.appendPath(param.getTargetPath(), fileName);
+                    String sourceFullPath = StringUtils.appendPath(param.getSourcePath(), fileName);
+                    return PathUtils.isSubDir(sourceFullPath, targetFullPath);
+                });
+                if (anyMatch) {
+                    throw new JsonException(FileSystemError.TARGET_IS_SUB_DIR, param.getSourcePath());
+                }
+            }
         }
-        StoreService storeService = storeServiceFactory.getService();
-        if (!storeService.isUnique()) {
-            if (callback != null) {
-                callback.onAdditionalEvent(new CopyProgressEvent() {
-                    {
-                        setMessage("哈希存储模式下，物理存储无需操作，已跳过");
-                        setName("Store Skip");
+        Long sourceUid = param.getSourceUid();
+        String sourcePath = param.getSourcePath();
+        Long targetUid = param.getTargetUid();
+        String targetPath = param.getTargetPath();
+        Boolean overwrite = param.getIsOverwrite();
+        if (sourceUid == null || targetUid == null || sourcePath == null || targetPath == null) {
+            throw new IllegalArgumentException("sourceUid, targetUid, sourcePath, targetPath 不能为 null");
+        }
+
+        FileSystemRouteContext sourceRoute = matchFileSystem(sourceUid, sourcePath);
+        FileSystemRouteContext targetRoute = matchFileSystem(targetUid, targetPath);
+        if (sourceRoute.sameFileSystem(targetRoute)) {
+            if (callback != null && callback.shouldInterrupt()) {
+                return;
+            }
+            if (sourceRoute.isMainRoute()) {
+                mainExecutor.copy(param, callback);
+                return;
+            }
+            if (sourceRoute.requiresMainMetadataSync()) {
+                if (callback != null) {
+                    callback.onAdditionalEvent(UpdateFileRecordStartEvent.of());
+                }
+                metadataOperator.copy(param, callback);
+                if (callback != null) {
+                    callback.onAdditionalEvent(UpdateFileRecordCompleteEvent.of(FileTransferItem.builder()
+                            .from(param.getSourcePath())
+                            .to(param.getTargetPath())
+                            .build()));
+                }
+            }
+            sourceRoute.getDelegateFileSystem().copy(SimpleFileTransferParam.builder()
+                    .sourceUid(sourceUid)
+                    .sourcePath(sourceRoute.getResolvedPath())
+                    .files(param.getFiles())
+                    .targetUid(targetUid)
+                    .targetPath(targetRoute.getResolvedPath())
+                    .isOverwrite(overwrite)
+                    .build(), callback);
+            return;
+        }
+
+        Lazy<String> nodeId = Lazy.of(() -> metadataOperator.getNodeIdByPath(targetUid, targetPath)
+                .orElseThrow(() -> new JsonException(404, "路径" + targetPath + "节点信息丢失")));
+        List<FileInfo> sourceFileList = ObjectUtils.cloneListElement(
+                this.getUserFileList(sourceUid, sourcePath, param.getFiles()),
+                FileInfo::new
+        );
+        List<String> sourceNames = sourceFileList.stream().map(FileInfo::getName).toList();
+        Map<String, FileInfo> targetExistFileMap = this.getUserFileList(targetUid, targetPath, sourceNames)
+                .stream()
+                .collect(Collectors.toMap(FileInfo::getName, file -> ObjectUtils.clone(file, FileInfo::new)));
+
+        for (FileInfo sourceFile : sourceFileList) {
+            if (callback != null && callback.shouldInterrupt()) {
+                return;
+            }
+            sourceFile.setUid(targetUid);
+            sourceFile.setPath(targetRoute.getDelegatePath(targetPath));
+            if (targetRoute.requiresMainMetadataSync()) {
+                sourceFile.setNode(nodeId.get());
+                sourceFile.setIsMount(true);
+            }
+
+            FileInfo existFile = targetExistFileMap.get(sourceFile.getName());
+            if (existFile != null && existFile.isDir() != sourceFile.isDir()) {
+                throw new JsonException(sourceFile.isFile()
+                        ? FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR
+                        : FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE);
+            }
+
+            FileTransferItem transferRecord = FileTransferItem.builder()
+                    .from(StringUtils.appendPath(sourcePath, sourceFile.getName()))
+                    .to(StringUtils.appendPath(targetPath, sourceFile.getName()))
+                    .fileInfo(sourceFile)
+                    .total(sourceFile.isDir() ? 0 : sourceFile.getSize())
+                    .loaded(0L)
+                    .build();
+            if (sourceFile.isFile()) {
+                if (callback != null) {
+                    callback.onFileStart(transferRecord);
+                }
+                if (!Boolean.TRUE.equals(param.getIsOverwrite()) && existFile != null) {
+                    transferRecord.setIsSkip(true);
+                    if (callback != null) {
+                        callback.onFileComplete(transferRecord);
                     }
-                    @Override
-                    public CopyProgressEventLevel getLevel() {
-                        return CopyProgressEventLevel.INFO;
+                    continue;
+                }
+                if (callback != null && callback.shouldInterrupt()) {
+                    return;
+                }
+                Resource resource = getMatchedResource(sourceRoute, sourceUid, sourceRoute.getResolvedPath(), sourceFile.getName());
+                if (resource == null) {
+                    throw new JsonException(FileSystemError.FILE_NOT_FOUND, StringUtils.appendPath(sourcePath, sourceFile.getName()));
+                }
+                FileInfo targetFile = new FileInfo();
+                BeanUtils.copyProperties(sourceFile, targetFile);
+                targetFile.setStreamSource(resource);
+                targetFile.setId(null);
+                targetFile.setNode(null);
+                saveFileToMatchedFileSystem(targetRoute, param.getTargetPath(), targetFile, os -> {
+                    try (InputStream is = resource.getInputStream()) {
+                        return StreamUtils.copyStreamAndComputeMd5(is, os, sourceFile.getMd5(), (buf, len) ->
+                                transferRecord.setLoaded(transferRecord.getLoaded() + len)
+                        ).applyTo(targetFile);
                     }
                 });
+                if (callback != null) {
+                    callback.onFileComplete(transferRecord);
+                }
+            } else {
+                String nextSourcePath = StringUtils.appendPath(sourcePath, sourceFile.getName());
+                String nextTargetPath = StringUtils.appendPath(targetPath, sourceFile.getName());
+                if (callback != null) {
+                    callback.onDirStart(nextTargetPath);
+                }
+                this.mkdir(targetUid, targetPath, sourceFile.getName());
+                doCopyInternal(SimpleFileTransferParam.builder()
+                        .sourceUid(sourceUid)
+                        .sourcePath(nextSourcePath)
+                        .targetUid(targetUid)
+                        .targetPath(nextTargetPath)
+                        .isOverwrite(param.getIsOverwrite())
+                        .build(), callback, depth + 1);
+                if (callback != null) {
+                    callback.onDirComplete(nextTargetPath);
+                }
             }
-            storeService.copy(param, callback);
+        }
+    }
+
+    /**
+     * 获取匹配文件系统上的文件资源。
+     *
+     * @param matchResult 匹配结果
+     * @param uid 用户ID
+     * @param delegatePath 实际文件系统中的目录路径
+     * @param name 文件名
+     * @return 文件资源
+     */
+    private Resource getMatchedResource(FileSystemRouteContext routeContext, long uid, String delegatePath, String name) throws IOException {
+        if (routeContext.isMainRoute()) {
+            return mainExecutor.getResource(uid, delegatePath, name);
+        }
+        return routeContext.getDelegateFileSystem().getResource(uid, delegatePath, name);
+    }
+
+    /**
+     * 向匹配到的文件系统写入文件，并在代理挂载点下补充文件记录。
+     *
+     * @param matchResult 匹配结果
+     * @param originPath 原始目录路径
+     * @param fileInfo 文件信息
+     * @param streamConsumer 输出流消费函数
+     */
+    private void saveFileToMatchedFileSystem(FileSystemRouteContext routeContext, String originPath, FileInfo fileInfo,
+                                             OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
+        if (routeContext.isMainRoute()) {
+            mainExecutor.saveFileByStream(fileInfo, routeContext.getResolvedPath(), streamConsumer);
+            return;
+        }
+        routeContext.getDelegateFileSystem().saveFileByStream(fileInfo, routeContext.getResolvedPath(), streamConsumer);
+        if (routeContext.requiresMainMetadataSync()) {
+            metadataOperator.saveRecord(fileInfo, originPath);
         }
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
-        Lock lock = lockFactory.getLock(getStoreLockKey(uid, target, name));
-        try {
-            lock.lock();
-            target = URLDecoder.decode(target, StandardCharsets.UTF_8);
-            fileRecordService.move(uid, source, target, name, overwrite);
-            final StoreService storeService = storeServiceFactory.getService();
-            if (!storeService.isUnique()) {
-                storeService.move(uid, source, target, name, overwrite);
+        String fullSourcePath = StringUtils.appendPath(source, name);
+        String fullTargetPath = StringUtils.appendPath(target, name);
+        FileSystemRouteContext targetRoute = matchFileSystem(uid, target);
+        FileSystemRouteContext sourceRoute = matchFileSystem(uid, source);
+        FileSystemRouteContext sourceFullRoute = matchFileSystem(uid, fullSourcePath);
+        FileSystemRouteContext targetFullRoute = matchFileSystem(uid, fullTargetPath);
+
+        List<MountPoint> mountPoints = null;
+        Resource resource = getMatchedResource(sourceRoute, uid, sourceRoute.getResolvedPath(), name);
+        if (resource == null) {
+            mountPoints = mountPointService.listByPath(uid, fullSourcePath);
+            if (targetRoute.isMountRoute() || targetFullRoute.matchesMountPath(fullTargetPath)) {
+                if (mountPoints != null && !mountPoints.isEmpty()) {
+                    throw new JsonException("目录包含挂载点，不能移动到其他挂载点下");
+                }
+                if (sourceFullRoute.matchesMountPath(fullSourcePath)) {
+                    throw new JsonException("挂载点不允许移动到其他挂载点下");
+                }
             }
-        } catch (DuplicateKeyException e) {
-            throw new JsonException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
-        } catch (UnsupportedEncodingException e) {
-            throw new JsonException(400, "不支持的编码（请使用UTF-8）");
-        } finally {
-            lock.unlock();
+
+            if (sourceFullRoute.matchesMountPath(fullSourcePath)) {
+                String nodeId = metadataOperator.getNodeIdByPath(uid, target)
+                        .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+                MountPoint mountPoint = sourceFullRoute.getMountPoint();
+                mountPoint.setNid(nodeId);
+                try {
+                    mountPointService.saveMountPoint(mountPoint);
+                    publishFileMoveEvent(fullSourcePath, fullTargetPath);
+                    return;
+                } catch (FileSystemParameterException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
+
+        if (sourceRoute.sameFileSystem(targetRoute)) {
+            if (sourceRoute.isMainRoute()) {
+                mainExecutor.move(uid, source, target, name, overwrite);
+            } else {
+                sourceRoute.getDelegateFileSystem().move(uid, sourceRoute.getResolvedPath(), targetRoute.getResolvedPath(), name, overwrite);
+                if (sourceRoute.requiresMainMetadataSync()) {
+                    metadataOperator.move(uid, source, target, name, overwrite);
+                }
+            }
+        } else {
+            doCopyInternal(SimpleFileTransferParam.builder()
+                    .sourceUid(uid)
+                    .sourcePath(source)
+                    .files(List.of(name))
+                    .targetUid(uid)
+                    .targetPath(target)
+                    .isOverwrite(overwrite)
+                    .build(), null, 0);
+            doDeleteFile(uid, source, Collections.singletonList(name));
+        }
+
+        if (mountPoints != null && !mountPoints.isEmpty()) {
+            mountPointService.clearCache(uid);
+        }
+        publishFileMoveEvent(fullSourcePath, fullTargetPath);
     }
 
     @Override
     public List<FileInfo>[] getUserFileList(long uid, String path) throws IOException {
-        return fileRecordService.getNodeIdByPath(uid, path)
-                .map(nodeId -> getUserFileListByNodeId(uid, nodeId))
-                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        List<FileInfo>[] result;
+        if (routeContext.usesMainMetadata()) {
+            result = mainExecutor.getUserFileList(uid, path);
+        } else {
+            result = routeContext.getDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath());
+        }
+        if (routeContext.isMountRoute()) {
+            markMountFiles(uid, result);
+        }
+        return result;
     }
 
-    @Override
-    public List<FileInfo> getUserFileList(long uid, String path, @Nullable Collection<String> nameList) throws IOException {
-
-        return fileRecordService.getNodeIdByPath(uid, path)
-                .map(nodeId -> fileRecordService.findByUidAndNodeId(uid, nodeId, nameList))
-                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, path));
+    /**
+     * 为挂载点返回的文件列表补充挂载标识。
+     *
+     * @param uid 用户ID
+     * @param fileLists 文件列表数组
+     */
+    private void markMountFiles(long uid, List<FileInfo>[] fileLists) {
+        for (List<FileInfo> fileList : fileLists) {
+            for (FileInfo fileInfo : fileList) {
+                fileInfo.setIsMount(true);
+                fileInfo.setUid(uid);
+            }
+        }
     }
 
     @Override
     public LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse) {
-        LinkedHashMap<String, List<FileInfo>> res = new LinkedHashMap<>();
-        List<FileInfo> dirs = new LinkedList<>();
-
-        // 根目录使用用户id作为id
-        String strId = "" + uid;
-        dirs.add(FileInfo.getRoot(uid));
-        dirs.addAll(fileRecordService.listChildDirs(uid, strId, -1));
-
-        //  获取目录结构
-        if (reverse) Collections.reverse(dirs);
-        for (FileInfo dirInfo : dirs) {
-            String dir = fileRecordService.getPathByNodeId(uid, dirInfo.getMd5())
-                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "数据移除，节点信息" + dirInfo.getMd5() + "丢失"));
-            res.put(dir, fileRecordService.findByUidAndNodeId(uid, dirInfo.getMd5()));
-        }
-        return res;
+        return mainExecutor.collectFiles(uid, reverse);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId) {
-        List<FileInfo> fileList = fileRecordService.findByUidAndNodeId(uid, nodeId);
-        List<FileInfo> dirs = new LinkedList<>(), files = new LinkedList<>();
-        fileList.forEach(file -> {
-            if (file.isFile()) {
-                file.setType(FileInfo.TYPE_FILE);
-                files.add(file);
-            } else {
-                file.setType(FileInfo.TYPE_DIR);
-                dirs.add(file);
-            }
-        });
-        return new List[]{dirs, files};
+        return mainExecutor.getUserFileListByNodeId(uid, nodeId);
     }
 
     @Override
@@ -323,52 +581,47 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
 
     @Override
     public CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
-        // todo 重构搜索功能，支持异步任务/遍历式搜索，更丰富的参数控制
-        key = key.replace("%", "").replaceAll("\\s+", "%");
-        int pageIndex = Math.max(Optional.ofNullable(page).orElse(0), 0);
-        int pageSize = Math.max(Optional.ofNullable(size).orElse(10), 1);
-        Page<FileInfoSearchResult> searchResult = fileInfoRepo.search(uid, key, PageRequest.of(pageIndex, pageSize));
-        CommonPageInfo<FileInfo> pageInfo = new CommonPageInfo<>();
-        pageInfo.setTotalPage(searchResult.getTotalPages());
-        pageInfo.setTotalCount(searchResult.getTotalElements());
-        pageInfo.setContent(searchResult.getContent().stream().map(r -> {
-            FileInfo fileInfo = r.getFileInfo();
-            fileInfo.setParent(r.getParent());
-            return fileInfo;
-        }).toList());
-        return pageInfo;
+        return mainExecutor.search(uid, key, page, size);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
-        Lock lock = lockFactory.getLock(getStoreLockKey(uid, path, fileInfo.getName()));
-        try {
-            lock.lock();
+        if (fileInfo != null && fileInfo.getName() != null) {
+            validateNotMountPointPath(uid, path, fileInfo.getName());
             fileInfo.setUid(uid);
-            storeServiceFactory.getService().moveToSave(uid, nativeFilePath, path, fileInfo);
-            fileRecordService.saveRecord(fileInfo, path);
-        } finally {
-            lock.unlock();
         }
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        if (routeContext.isMainRoute()) {
+            mainExecutor.moveToSaveFile(uid, nativeFilePath, path, fileInfo);
+        } else {
+            routeContext.getDelegateFileSystem().moveToSaveFile(uid, nativeFilePath, routeContext.getResolvedPath(), fileInfo);
+            if (routeContext.requiresMainMetadataSync()) {
+                metadataOperator.saveRecord(fileInfo, path);
+            }
+        }
+        publishFileStoreEvent(routeContext.getFileSystemOr(this), uid, routeContext.getDelegatePath(path),
+                fileInfo.getName(), StringUtils.appendPath(path, fileInfo.getName()), null);
     }
 
-    /**
-     * 按 uid 和 path 分组批量保存文件，减少重复目录查询与单条入库操作。
-     *
-     * @param fileInfos 待保存文件
-     * @param callback 文件传输回调，可为 null
-     * @throws IOException 文件操作异常
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void batchSaveFiles(List<FileInfo> fileInfos, @Nullable FileTransferCallback callback) throws IOException {
-        if (fileInfos == null || fileInfos.isEmpty()) {
+        if (CollectionUtils.isEmpty(fileInfos)) {
             return;
         }
-        record SaveKey(Long uid, String path) {}
+        class BatchGroup {
+            private final Long uid;
+            private final String originPath;
+            private final List<FileInfo> sourceFiles = new ArrayList<>();
 
-        LinkedHashMap<SaveKey, List<FileInfo>> groupedFiles = new LinkedHashMap<>();
+            private BatchGroup(Long uid, String originPath) {
+                this.uid = uid;
+                this.originPath = originPath;
+            }
+        }
+
+        LinkedHashMap<String, BatchGroup> grouped = new LinkedHashMap<>();
         for (FileInfo fileInfo : fileInfos) {
             if (fileInfo == null
                     || fileInfo.getUid() == null
@@ -377,174 +630,152 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
                     || fileInfo.getStreamSource() == null) {
                 throw new IllegalArgumentException("batchSaveFiles param invalid: uid/path/name/streamSource must not be null");
             }
-            groupedFiles.computeIfAbsent(new SaveKey(fileInfo.getUid(), fileInfo.getPath()), e -> new ArrayList<>()).add(fileInfo);
+            validateNotMountPointPath(fileInfo.getUid(), fileInfo.getPath(), fileInfo.getName());
+            String key = fileInfo.getUid() + ":" + fileInfo.getPath();
+            BatchGroup group = grouped.computeIfAbsent(key, item -> new BatchGroup(fileInfo.getUid(), fileInfo.getPath()));
+            group.sourceFiles.add(fileInfo);
         }
 
-        StoreService storeService = storeServiceFactory.getService();
-        for (Map.Entry<SaveKey, List<FileInfo>> entry : groupedFiles.entrySet()) {
-            SaveKey key = entry.getKey();
-            List<FileInfo> group = entry.getValue();
-            for (FileInfo fileInfo : group) {
-                if (callback != null && callback.shouldInterrupt()) {
-                    return;
-                }
-                FileTransferItem item = FileTransferItem.builder()
-                        .from(fileInfo.getName())
-                        .to(StringUtils.appendPath(key.path(), fileInfo.getName()))
-                        .total(fileInfo.getSize())
-                        .loaded(0L)
-                        .fileInfo(fileInfo)
-                        .build();
-                if (callback != null) {
-                    callback.onFileStart(item);
-                }
-                LockUtils.execute(getStoreLockKey(key.uid(), key.path(), fileInfo.getName()),
-                        () -> doStoreBySource(storeService, fileInfo, key.path(), item));
-                item.setLoaded(item.getTotal());
-                if (callback != null) {
-                    callback.onFileComplete(item);
+        for (BatchGroup group : grouped.values()) {
+            FileSystemRouteContext routeContext = matchFileSystem(group.uid, group.originPath);
+            List<FileInfo> delegateFiles = new ArrayList<>(group.sourceFiles.size());
+            for (FileInfo sourceFile : group.sourceFiles) {
+                FileInfo delegateFile = new FileInfo();
+                BeanUtils.copyProperties(sourceFile, delegateFile);
+                delegateFile.setPath(routeContext.getDelegatePath(group.originPath));
+                delegateFiles.add(delegateFile);
+            }
+
+            if (routeContext.isMainRoute()) {
+                mainExecutor.batchSaveFiles(delegateFiles, callback);
+            } else {
+                routeContext.getDelegateFileSystem().batchSaveFiles(delegateFiles, callback);
+                if (routeContext.requiresMainMetadataSync()) {
+                    metadataOperator.batchSaveFileInSameDirectory(group.uid, group.originPath, delegateFiles);
                 }
             }
-            fileRecordService.batchSaveFileInSameDirectory(key.uid(), key.path(), group);
+            for (FileInfo fileInfo : delegateFiles) {
+                publishFileStoreEvent(routeContext.getFileSystemOr(this), fileInfo.getUid(),
+                        routeContext.getDelegatePath(group.originPath), fileInfo.getName(),
+                        StringUtils.appendPath(group.originPath, fileInfo.getName()), fileInfo);
+            }
+        }
+    }
+
+    @Override
+    public void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
+        if (!FileNameValidator.valid(file.getName())) {
+            throw new IllegalArgumentException("非法文件名，不可包含/\\<>?|:换行符，回车符或文件名为..");
+        }
+        validateNotMountPointPath(file.getUid(), savePath, file.getName());
+        FileSystemRouteContext routeContext = matchFileSystem(file.getUid(), savePath);
+        if (routeContext.isMainRoute()) {
+            mainExecutor.saveFileByStream(file, savePath, streamConsumer);
+        } else {
+            routeContext.getDelegateFileSystem().saveFileByStream(file, routeContext.getResolvedPath(), streamConsumer);
+            if (routeContext.requiresMainMetadataSync()) {
+                metadataOperator.saveRecord(file, savePath);
+            }
+        }
+        publishFileStoreEvent(routeContext.getFileSystemOr(this), file.getUid(), routeContext.getDelegatePath(savePath),
+                file.getName(), StringUtils.appendPath(savePath, file.getName()), file);
+    }
+
+    @Override
+    public void mkdir(long uid, String path, String name) throws IOException {
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        if (routeContext.isMainRoute()) {
+            mainExecutor.mkdir(uid, path, name);
+        } else {
+            routeContext.getDelegateFileSystem().mkdir(uid, routeContext.getResolvedPath(), name);
+            if (routeContext.requiresMainMetadataSync()) {
+                metadataOperator.mkdirs(uid, StringUtils.appendPath(path, name), true);
+            }
         }
     }
 
     /**
-     * 执行数据写入到存储服务，并将写入中的实时进度更新到传输项。
+     * 执行删除逻辑，并在必要时移除挂载点元数据。
      *
-     * @param storeService 存储服务
-     * @param fileInfo     待保存文件信息
-     * @param savePath     目标目录路径
-     * @param item         文件传输项，方法内会持续更新其 loaded 字段
-     * @throws IOException 写入异常
+     * @param uid 用户ID
+     * @param path 父目录路径
+     * @param names 待删除文件名列表
+     * @return 删除数量
      */
-    private void doStoreBySource(StoreService storeService, FileInfo fileInfo, String savePath, FileTransferItem item) throws IOException {
-        storeService.storeByStream(fileInfo, savePath, os -> {
-            try (InputStream is = fileInfo.getStreamSource().getInputStream()) {
-                return StreamUtils.copyStreamAndComputeMd5(is, os, fileInfo.getMd5(), (buf, len) -> {
-                    Long currentLoaded = item.getLoaded();
-                    if (currentLoaded == null || currentLoaded < 0) {
-                        currentLoaded = 0L;
-                    }
-                    item.setLoaded(currentLoaded + len);
-                }).applyTo(fileInfo);
-            }
-        });
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public long saveFile(FileInfo file, String savePath) throws IOException {
-        saveFileByStream(file, savePath, os -> DiskFileSystemUtils.saveFile(file, os));
-        return SAVE_NEW_FILE;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
-        // 判断目录是否存在，若不存在则尝试创建
-        Long uid = file.getUid();
-        StoreService storeService = storeServiceFactory.getService();
-        String nid = fileRecordService.getNodeIdByPath(uid, savePath).orElseGet(() -> {
-            try {
-                return mkdirs(file.getUid(), savePath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        LockUtils.execute(getStoreLockKey(uid, savePath, file.getName()), () -> {
-            FileInfo originInfo = fileRecordService.getFileInfoByNode(uid, nid, file.getName());
-            // 判断是否存在同名文件，若存在同名文件则先保存为临时文件后，再删除将临时文件重命名为同名文件覆盖
-            if (originInfo != null) {
-                if (originInfo.isDir()) {
-                    throw new IllegalArgumentException("无法使用文件来覆盖文件夹 path: " + savePath + " name:" + file.getName());
-                }
-                FileInfo tmpFile = new FileInfo();
-                BeanUtils.copyProperties(file, tmpFile);
-                tmpFile.setName(tmpFile.getName() + "." + IdUtil.getId() + ".tmp");
-
-                storeService.storeByStream(tmpFile, savePath, streamConsumer);
-                fileRecordService.saveRecord(tmpFile, savePath);
-
-                deleteFile(uid, savePath, Collections.singletonList(file.getName()));
-                rename(file.getUid(), savePath, tmpFile.getName(), file.getName());
-            } else {
-                storeService.storeByStream(file, savePath, streamConsumer);
-                fileRecordService.saveRecord(file, savePath);
-            }
-        });
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void mkdir(long uid, String path, String name) throws IOException {
-        final StoreService storeService = storeServiceFactory.getService();
-        if (!storeService.isUnique() && !storeService.mkdir(uid, path, name)) {
-            throw new IOException("在" + path + "创建文件夹失败");
+    private long doDeleteFile(long uid, String path, List<String> names) throws IOException {
+        FileSystemRouteContext routeContext = matchFileSystem(uid, path);
+        Map<String, MountPoint> mountPointMap = mountPointService.findMountPointPathByUid(uid);
+        Map<Long, MountPoint> needRemoveMountPointMap = names.stream()
+                .flatMap(name -> mountPointMap.entrySet().stream()
+                        .filter(entry -> entry.getKey().startsWith(StringUtils.appendPath(path, name)))
+                        .map(Map.Entry::getValue))
+                .collect(Collectors.toMap(MountPoint::getId, Function.identity(), (oldValue, newValue) -> oldValue));
+        if (!needRemoveMountPointMap.isEmpty()) {
+            log.info("{}:删除的路径中存在以下挂载点需要删除：{}", LOG_PREFIX, needRemoveMountPointMap.keySet());
+            mountPointService.batchRemove(uid, needRemoveMountPointMap.keySet());
         }
-        fileRecordService.mkdirs(uid, StringUtils.appendPath(path, name), false);
+        if (routeContext.isMainRoute()) {
+            return mainExecutor.deleteFile(uid, path, names);
+        }
+        if (routeContext.requiresMainMetadataSync()) {
+            metadataOperator.deleteRecords(uid, path, names);
+        }
+        return routeContext.getDelegateFileSystem().deleteFile(uid, routeContext.getResolvedPath(), names);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long deleteFile(long uid, String path, List<String> name) throws IOException {
-        ArrayList<Lock> locks = new ArrayList<>();
-        for (String s : name) {
-            Lock lock = lockFactory.getLock(getStoreLockKey(uid, path, s));
-            lock.lock();
-            locks.add(lock);
-        }
-        try {
-            // 计数删除数
-            long res = 0L;
-            List<FileInfo> fileInfos = fileRecordService.deleteRecords(uid, path, name);
-            final StoreService storeService = storeServiceFactory.getService();
-
-            // 唯一存储下确认文件无引用后再执行通过md5删除
-            if (storeService.isUnique()) {
-                Map<String, List<FileInfo>> md5FileGroup = fileInfos.stream().filter(FileInfo::isFile)
-                        .collect(Collectors.groupingBy(FileInfo::getMd5));
-                Set<String> inRefMd5Set = CollectionUtils.partition(md5FileGroup.keySet(), 500)
-                        .stream()
-                        .flatMap(md5List -> md5Resolver.checkHasRef(md5List).stream())
-                        .collect(Collectors.toSet());
-                List<String> toDeleteMd5 = md5FileGroup.keySet()
-                        .stream()
-                        .filter(s -> !inRefMd5Set.contains(s))
-                        .toList();
-                if (!toDeleteMd5.isEmpty()) {
-                    for (String md5 : toDeleteMd5) {
-                        storeService.delete(md5);
-                    }
-                }
-            } else {
-                res += storeService.delete(uid, path, name);
-            }
-            return res;
-        } finally {
-            for (Lock lock : locks) {
-                lock.unlock();
-            }
-        }
+        long result = doDeleteFile(uid, path, name);
+        eventPublisher.publishEvent(new FileDeleteEvent(this, uid, path, name));
+        return result;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rename(long uid, String path, String name, String newName) throws IOException {
-        Lock lock1 = lockFactory.getLock(getStoreLockKey(uid, path, name));
-        Lock lock2 = lockFactory.getLock(getStoreLockKey(uid, path, newName));
-        lock1.lock();
-        lock2.lock();
-        try {
-            fileRecordService.rename(uid, path, name, newName);
-            final StoreService storeService = storeServiceFactory.getService();
-            if (!storeService.isUnique()) {
-                storeService.rename(uid, path, name, newName);
+        String originPath = StringUtils.appendPath(path, name);
+        FileSystemRouteContext routeContext = matchFileSystem(uid, originPath);
+        if (routeContext.matchesMountPath(originPath)) {
+            if (exist(uid, StringUtils.appendPath(path, newName))) {
+                throw new JsonException(FileSystemError.FILE_EXIST);
             }
-        } finally {
-            lock1.unlock();
-            lock2.unlock();
+            try {
+                routeContext.getMountPoint().setName(newName);
+                mountPointService.saveMountPoint(routeContext.getMountPoint());
+            } catch (FileSystemParameterException e) {
+                log.error("{}重命名文件时发生错误", LOG_PREFIX, e);
+                throw new JsonException(e.getMessage());
+            }
+            return;
+        }
+
+        routeContext = matchFileSystem(uid, path);
+        if (routeContext.isMainRoute()) {
+            mainExecutor.rename(uid, path, name, newName);
+        } else {
+            if (routeContext.requiresMainMetadataSync()) {
+                metadataOperator.rename(uid, path, name, newName);
+            }
+            routeContext.getDelegateFileSystem().rename(uid, routeContext.getResolvedPath(), name, newName);
+        }
+    }
+
+    @Override
+    public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
+        for (String name : names) {
+            String filePath = StringUtils.appendPath(path, name);
+            FileSystemRouteContext routeContext = matchFileSystem(uid, filePath);
+            if (routeContext.isMainRoute()) {
+                mainExecutor.updateTime(uid, path, Collections.singletonList(name), attribute);
+            } else {
+                if (routeContext.requiresMainMetadataSync()) {
+                    metadataOperator.updateTime(uid, path, Collections.singletonList(name), attribute);
+                }
+                String parentPath = PathUtils.getParentPath(routeContext.getResolvedPath());
+                String delegateName = PathUtils.getLastNode(routeContext.getResolvedPath());
+                routeContext.getDelegateFileSystem().updateTime(uid, parentPath, Collections.singletonList(delegateName), attribute);
+            }
         }
     }
 
@@ -554,66 +785,13 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider, Initi
         helloService.appendFeatureDetail(FeatureName.EXTRACT_ARCHIVE_TYPE, "zip");
     }
 
-    /**
-     * 文件数量和用户使用量大小的统计会查询数据库，文件数量较多时会严重影响性能，因此使用懒加载，只有在用到的时候再去统计
-     * todo 考虑使用缓存，完善用户配额统计和限制功能
-     */
-    @RequiredArgsConstructor
-    private static class LazyFileSystemStatus extends FileSystemStatus {
-        @JsonIgnore
-        private transient final FileInfoRepo fileInfoRepo;
-
-        private boolean isPrivate() {
-            return AREA_PRIVATE.equals(this.getArea());
-        }
-
-        @Override
-        public Long getFileCount() {
-            if (super.getFileCount() == null) {
-                this.setFileCount(isPrivate() ? fileInfoRepo.getUserFileCount() : fileInfoRepo.getPublicFileCount());
-            }
-            return super.getFileCount();
-        }
-
-        @Override
-        public Long getDirCount() {
-            if (super.getDirCount() == null) {
-                this.setDirCount(isPrivate() ? fileInfoRepo.getUserDirCount() : fileInfoRepo.getPublicDirCount());
-            }
-            return super.getDirCount();
-        }
-
-        @Override
-        public Long getSysUsed() {
-            if (super.getSysUsed() == null) {
-                this.setSysUsed(isPrivate() ? fileInfoRepo.getUserTotalSize() : fileInfoRepo.getPublicTotalSize());
-            }
-            return super.getSysUsed();
-        }
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + " - Managed";
     }
 
     @Override
     public List<FileSystemStatus> getStatus() {
-        List<FileSystemStatus> status = storeServiceFactory.getService().getStatus();
-        Map<String, FileSystemStatus> areaMap;
-        if (status != null) {
-            areaMap = status.stream().collect(Collectors.toMap(FileSystemStatus::getArea, e -> e));
-        } else {
-            areaMap = new HashMap<>();
-        }
-
-        areaMap.putIfAbsent(AREA_PRIVATE, FileSystemStatus.builder().area(AREA_PRIVATE).build());
-        areaMap.putIfAbsent(AREA_PUBLIC, FileSystemStatus.builder().area(AREA_PUBLIC).build());
-
-        FileSystemStatus publicStatus = areaMap.get(AREA_PUBLIC);
-        LazyFileSystemStatus lazyPublicStatus = new LazyFileSystemStatus(fileInfoRepo);
-        BeanUtils.copyProperties(publicStatus, lazyPublicStatus);
-
-
-        FileSystemStatus privateStatus = areaMap.get(FileSystemStatus.AREA_PRIVATE);
-        LazyFileSystemStatus lazyPrivateStatus = new LazyFileSystemStatus(fileInfoRepo);
-        BeanUtils.copyProperties(privateStatus, lazyPrivateStatus);
-
-        return Arrays.asList(lazyPublicStatus, lazyPrivateStatus);
+        return mainExecutor.getStatus();
     }
 }

@@ -35,17 +35,17 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
 
 
     @Autowired
-    private DiskFileSystemDispatcher dispatcher;
+    private DefaultFileSystem defaultFileSystem;
 
 
     @Override
     public DiskFileSystem getMainFileSystem() {
-        return dispatcher;
+        return defaultFileSystem;
     }
 
     @Override
     public void setMainFileSystem(DiskFileSystem fileSystem) {
-        dispatcher.setMainFileSystem(fileSystem);
+        throw new UnsupportedOperationException("主文件系统由Spring管理，不支持运行时覆盖");
     }
 
     @Override
