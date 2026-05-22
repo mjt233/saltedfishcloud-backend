@@ -26,7 +26,7 @@
       - [X] 转移`getFileSystemFactory`方法，并重命名为`getStorageFactory`  
       - [X] 转移`isSupportedProtocol`  
 
-- [ ] 外部存储挂载实现重构
+- [X] 外部存储挂载实现重构
   - 外部存储实现取消对`DiskFileSystem`接口的实现，取消对`RawDiskFileSystem`的依赖。
   - `StorageFactorygetFileSystem`重命名为`getStorage`，返回值改为`Storage`
   - `StorageFactorytestFileSystem`重命名为`testStorage`，参数改为`Storage`
