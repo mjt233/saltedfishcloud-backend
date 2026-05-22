@@ -141,9 +141,12 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
         validateNotMountPointPath(uid, path, name);
         FileSystemRouteContext routeContext = matchFileSystem(uid, path);
-        boolean success = routeContext.isMainRoute()
-                ? mainExecutor.quickSave(uid, path, name, md5)
-                : routeContext.requireDelegateFileSystem().quickSave(uid, routeContext.getResolvedPath(), name, md5);
+        boolean success;
+        if (routeContext.isMainRoute()) {
+            success = mainExecutor.quickSave(uid, path, name, md5);
+        } else {
+            success = routeContext.requireDelegateFileSystem().quickSave(uid, routeContext.getResolvedPath(), name, md5);
+        }
         if (success && routeContext.requiresMainMetadataSync()) {
             syncProxyQuickSaveRecord(routeContext, uid, path, name);
         }
@@ -182,9 +185,12 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.matchesMountPath(path)) {
             throw new JsonException(FileSystemError.MOUNT_POINT_EXIST);
         }
-        String dirNodeId = routeContext.isMainRoute()
-                ? mainExecutor.mkdirs(uid, path)
-                : routeContext.requireDelegateFileSystem().mkdirs(uid, routeContext.getResolvedPath());
+        String dirNodeId;
+        if (routeContext.isMainRoute()) {
+            dirNodeId = mainExecutor.mkdirs(uid, path);
+        } else {
+            dirNodeId = routeContext.requireDelegateFileSystem().mkdirs(uid, routeContext.getResolvedPath());
+        }
         if (routeContext.requiresMainMetadataSync()) {
             metadataOperator.mkdirs(uid, path, true);
         }
@@ -203,7 +209,10 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
                 .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
         fileInfo.setPath(StringUtils.appendPath(path, fileInfo.getName()));
         Resource resource = getResource(fileInfo.getUid(), path, fileInfo.getName());
-        return resource == null ? null : ResourceUtils.bindFileInfo(resource, fileInfo);
+        if (resource == null) {
+            return null;
+        }
+        return ResourceUtils.bindFileInfo(resource, fileInfo);
     }
 
     /**
@@ -367,9 +376,11 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
 
             FileInfo existFile = targetExistFileMap.get(sourceFile.getName());
             if (existFile != null && existFile.isDir() != sourceFile.isDir()) {
-                throw new JsonException(sourceFile.isFile()
-                        ? FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR
-                        : FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE);
+                if (sourceFile.isFile()) {
+                    throw new JsonException(FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR);
+                } else {
+                    throw new JsonException(FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE);
+                }
             }
 
             FileTransferItem transferRecord = FileTransferItem.builder()
