@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem.factory;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.AbstractStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class LocalFileSystemFactory extends AbstractRawStorageFactory<String, Storage> {
+public class LocalStorageFactory extends AbstractStorageFactory<String, Storage> {
     private static final List<ConfigNode> CONFIG_NODE_LIST = new ArrayList<>();
     private static final StorageMetadata DESCRIBE;
     static {

@@ -32,7 +32,7 @@ import java.util.stream.StreamSupport;
  * 基于Minio的存储直接操作器
  */
 @Slf4j
-public class MinioDirectRawHandler implements Storage {
+public class MinioStorage implements Storage {
     private final MinioClient client;
     private final MinioProperties properties;
     private final static String LOG_PREFIX = "[Minio]";
@@ -42,7 +42,7 @@ public class MinioDirectRawHandler implements Storage {
      * @param client        minio客户端
      * @param properties    minio配置参数
      */
-    public MinioDirectRawHandler(MinioClient client, MinioProperties properties) {
+    public MinioStorage(MinioClient client, MinioProperties properties) {
         this.client = client;
         this.properties = properties;
     }

@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.minio.filesystem;
 
-import com.saltedfishcloud.ext.minio.MinioDirectRawHandler;
+import com.saltedfishcloud.ext.minio.MinioStorage;
 import com.saltedfishcloud.ext.minio.MinioProperties;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-public class MinioFileSystemFactory extends AbstractRawStorageFactory<MinioProperties, Storage> {
+public class MinioStorageFactory extends AbstractStorageFactory<MinioProperties, Storage> {
 
     /**
      * 兼容现有自动配置注入的缩略图服务。
@@ -66,7 +66,7 @@ public class MinioFileSystemFactory extends AbstractRawStorageFactory<MinioPrope
                 .endpoint(property.getEndpoint())
                 .credentials(property.getAccessKey(), property.getSecretKey())
                 .build();
-        MinioDirectRawHandler rawHandler = new MinioDirectRawHandler(client, property);
+        MinioStorage rawHandler = new MinioStorage(client, property);
         return new ScopedStorage(rawHandler, "/");
     }
 

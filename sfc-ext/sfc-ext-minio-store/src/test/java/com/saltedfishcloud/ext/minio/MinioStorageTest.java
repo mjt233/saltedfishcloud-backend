@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class MinioDirectRawHandlerTest {
+class MinioStorageTest {
 
     public MinioProperties getProperties() {
         MinioProperties properties = new MinioProperties();
@@ -34,7 +34,7 @@ class MinioDirectRawHandlerTest {
         MinioProperties properties = getProperties();
         MinioClient client = getClient();
 
-        MinioDirectRawHandler handler = new MinioDirectRawHandler(client, properties);
+        MinioStorage handler = new MinioStorage(client, properties);
 
         // 测试文件夹创建
         String testDir = "xyy-dir";

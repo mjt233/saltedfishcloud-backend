@@ -13,17 +13,17 @@ import java.nio.file.Path;
 import java.util.List;
 
 
-class S3DirectRawHandlerTest {
+class S3StorageTest {
     private static OSSProperty ossProperty = null;
-    private static S3DirectRawHandler handler;
+    private static S3Storage handler;
 
     static {
         try {
             ossProperty = MapperHolder.mapper.readValue(
-                    S3DirectRawHandlerTest.class.getClassLoader().getResourceAsStream("test-oss-property.json"),
+                    S3StorageTest.class.getClassLoader().getResourceAsStream("test-oss-property.json"),
                     OSSProperty.class
             );
-            handler = new S3DirectRawHandler(ossProperty);
+            handler = new S3Storage(ossProperty);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

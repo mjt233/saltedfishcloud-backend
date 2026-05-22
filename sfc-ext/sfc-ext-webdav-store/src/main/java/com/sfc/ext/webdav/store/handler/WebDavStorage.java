@@ -30,11 +30,11 @@ import java.util.concurrent.Semaphore;
 import java.util.regex.Pattern;
 
 @Slf4j
-public class WebDavStoreRawHandler implements Storage, Closeable {
+public class WebDavStorage implements Storage, Closeable {
     private final WebDavClientProperty property;
     private final Sardine sardine;
 
-    public WebDavStoreRawHandler(WebDavClientProperty property) {
+    public WebDavStorage(WebDavClientProperty property) {
         this.property = property;
         this.formatProperty();
         this.validProperty();
@@ -121,7 +121,7 @@ public class WebDavStoreRawHandler implements Storage, Closeable {
         return davResources.stream()
                 // 第一个元素是目录本身，所以跳过
                 .skip(1)
-                .map(WebDavStoreRawHandler::convertToFileInfo)
+                .map(WebDavStorage::convertToFileInfo)
                 .sorted(Comparator.comparing(FileInfo::getName))
                 .toList();
     }

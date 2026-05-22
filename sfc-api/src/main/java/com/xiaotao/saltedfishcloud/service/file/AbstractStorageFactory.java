@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * @param <D> 存储类型
  */
 @Slf4j
-public abstract class AbstractRawStorageFactory<T, D extends Storage> implements StorageFactory {
+public abstract class AbstractStorageFactory<T, D extends Storage> implements StorageFactory {
     private final Map<T, D> CACHE = new ConcurrentHashMap<>();
 
     @Override

@@ -1,8 +1,8 @@
 package com.sfc.ext.webdav.store.filesystem;
 
-import com.sfc.ext.webdav.store.handler.WebDavStoreRawHandler;
+import com.sfc.ext.webdav.store.handler.WebDavStorage;
 import com.sfc.ext.webdav.store.model.WebDavClientProperty;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.AbstractStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
-public class WebDavStoreFileSystemFactory extends AbstractRawStorageFactory<WebDavClientProperty, Storage> {
+public class WebDavStorageFactory extends AbstractStorageFactory<WebDavClientProperty, Storage> {
     @Override
     public WebDavClientProperty parseProperty(Map<String, Object> params) {
         return ObjectUtils.mapToBean(params, WebDavClientProperty.class);
@@ -23,7 +23,7 @@ public class WebDavStoreFileSystemFactory extends AbstractRawStorageFactory<WebD
     @Override
     public Storage generateStorage(WebDavClientProperty property) throws IOException {
         return new ScopedStorage(
-                new WebDavStoreRawHandler(property),
+                new WebDavStorage(property),
                 Optional.ofNullable(property.getBasePath()).filter(StringUtils::hasText).orElse("/")
         );
     }

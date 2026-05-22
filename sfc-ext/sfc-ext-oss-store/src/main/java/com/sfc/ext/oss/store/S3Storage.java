@@ -42,12 +42,12 @@ import java.util.stream.Stream;
 
 
 @Slf4j
-public class S3DirectRawHandler implements Storage {
+public class S3Storage implements Storage {
     private final static String LOG_PREFIX = "[OSS存储]";
     private final AmazonS3 s3Client;
     private final OSSProperty property;
 
-    public S3DirectRawHandler(OSSProperty ossProperty) {
+    public S3Storage(OSSProperty ossProperty) {
         this.property = ossProperty;
         ClientConfiguration clientConfig = new ClientConfiguration();
         clientConfig.setMaxConnections(ossProperty.getMaxConnections() != null ? ossProperty.getMaxConnections() : 50);

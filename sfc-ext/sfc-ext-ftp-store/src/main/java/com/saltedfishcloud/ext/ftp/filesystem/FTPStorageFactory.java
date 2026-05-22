@@ -2,7 +2,7 @@ package com.saltedfishcloud.ext.ftp.filesystem;
 
 import com.saltedfishcloud.ext.ftp.FTPStorage;
 import com.saltedfishcloud.ext.ftp.FTPProperty;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.AbstractStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.Map;
 
 
-public class FTPFileSystemFactory extends AbstractRawStorageFactory<FTPProperty, Storage> {
+public class FTPStorageFactory extends AbstractStorageFactory<FTPProperty, Storage> {
     private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("ftp")

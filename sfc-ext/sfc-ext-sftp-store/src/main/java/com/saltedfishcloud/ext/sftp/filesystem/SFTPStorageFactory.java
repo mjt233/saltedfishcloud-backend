@@ -3,7 +3,7 @@ package com.saltedfishcloud.ext.sftp.filesystem;
 import com.saltedfishcloud.ext.sftp.SFTPStorage;
 import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.AbstractStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @Slf4j
-public class SFTPStorageFactory extends AbstractRawStorageFactory<SFTPProperty, Storage> {
+public class SFTPStorageFactory extends AbstractStorageFactory<SFTPProperty, Storage> {
     private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("sftp")

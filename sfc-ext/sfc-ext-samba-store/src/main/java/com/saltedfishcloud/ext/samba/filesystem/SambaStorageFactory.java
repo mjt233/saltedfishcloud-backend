@@ -3,7 +3,7 @@ package com.saltedfishcloud.ext.samba.filesystem;
 import com.saltedfishcloud.ext.samba.SambaStorage;
 import com.saltedfishcloud.ext.samba.SambaProperty;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.AbstractStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RequiredArgsConstructor
-public class SambaStorageFactory extends AbstractRawStorageFactory<SambaProperty, Storage> {
+public class SambaStorageFactory extends AbstractStorageFactory<SambaProperty, Storage> {
     /**
      * 兼容现有构造注入的缩略图服务。
      */

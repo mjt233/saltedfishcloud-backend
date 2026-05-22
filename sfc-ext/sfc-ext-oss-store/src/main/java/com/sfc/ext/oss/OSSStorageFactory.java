@@ -1,6 +1,6 @@
 package com.sfc.ext.oss;
 
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.AbstractStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @RequiredArgsConstructor
-public class OSSStorageFactory extends AbstractRawStorageFactory<OSSProperty, Storage> {
+public class OSSStorageFactory extends AbstractStorageFactory<OSSProperty, Storage> {
     /**
      * 兼容现有构造注入的缩略图服务。
      */

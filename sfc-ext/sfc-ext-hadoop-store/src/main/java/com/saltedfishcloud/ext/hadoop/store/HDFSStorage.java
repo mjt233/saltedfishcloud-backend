@@ -26,9 +26,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-public class HDFSStoreHandler implements Storage, Closeable {
+public class HDFSStorage implements Storage, Closeable {
     private final FileSystem fs;
-    public HDFSStoreHandler(FileSystem fs) {
+    public HDFSStorage(FileSystem fs) {
         this.fs = fs;
     }
 

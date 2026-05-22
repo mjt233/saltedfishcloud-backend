@@ -116,12 +116,7 @@ public interface Storage extends AutoCloseable {
      * @param path 待检测路径
      */
     default boolean exist(String path) throws IOException {
-        try {
-            return getFileInfo(path) != null;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
+        return getFileInfo(path) != null;
     }
 
     /**

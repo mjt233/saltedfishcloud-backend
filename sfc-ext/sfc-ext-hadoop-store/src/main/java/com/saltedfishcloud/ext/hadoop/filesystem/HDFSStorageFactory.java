@@ -2,7 +2,7 @@ package com.saltedfishcloud.ext.hadoop.filesystem;
 
 import com.saltedfishcloud.ext.hadoop.HDFSProperties;
 import com.saltedfishcloud.ext.hadoop.HDFSUtils;
-import com.saltedfishcloud.ext.hadoop.store.HDFSStoreHandler;
+import com.saltedfishcloud.ext.hadoop.store.HDFSStorage;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.*;
 
 @Slf4j
-public class HDFSFileSystemFactory extends AbstractRawStorageFactory<HDFSProperties, Storage> {
+public class HDFSStorageFactory extends AbstractStorageFactory<HDFSProperties, Storage> {
     /**
      * 兼容现有自动配置注入的缩略图服务。
      */
@@ -61,7 +61,7 @@ public class HDFSFileSystemFactory extends AbstractRawStorageFactory<HDFSPropert
         FileSystem fileSystem = null;
         try {
             fileSystem = HDFSUtils.getFileSystem(property);
-            HDFSStoreHandler storeHandler = new HDFSStoreHandler(fileSystem);
+            HDFSStorage storeHandler = new HDFSStorage(fileSystem);
             return new ScopedStorage(storeHandler, property.getRoot());
         } catch (Exception e) {
             if (fileSystem != null) {

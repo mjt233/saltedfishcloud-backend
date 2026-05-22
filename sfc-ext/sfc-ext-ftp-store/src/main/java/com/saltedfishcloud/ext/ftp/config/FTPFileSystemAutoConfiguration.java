@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.ftp.config;
 
-import com.saltedfishcloud.ext.ftp.filesystem.FTPFileSystemFactory;
+import com.saltedfishcloud.ext.ftp.filesystem.FTPStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -12,8 +12,8 @@ public class FTPFileSystemAutoConfiguration {
     private ThumbnailService thumbnailService;
 
     @Bean
-    public FTPFileSystemFactory ftpFileSystemFactory() {
-        FTPFileSystemFactory factory = new FTPFileSystemFactory();
+    public FTPStorageFactory ftpFileSystemFactory() {
+        FTPStorageFactory factory = new FTPStorageFactory();
         factory.setThumbnailService(thumbnailService);
         return factory;
     }
