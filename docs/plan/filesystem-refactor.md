@@ -8,10 +8,10 @@
 
 ## 实施步骤
 
-1. [ ] 接口语义调整
-  - [ ] 将`StoreReader`和`StoreWriter`直接并入`DirectRawStoreHandler`
-  - [ ] `DirectRawStoreHandler`重命名为`Storage`，继承`AutoCloseable`，作为底层存储能力接口
-  - [ ] 原`DirectRawStoreHandler`实现类重命名为`XxxStorage`，如：`LocalStorage`、`WebDavStorage`
+1. [X] 接口语义调整
+    - [X] 将`StoreReader`和`StoreWriter`直接并入`DirectRawStoreHandler`
+    - [X] `DirectRawStoreHandler`重命名为`Storage`，继承`AutoCloseable`，作为底层存储能力接口
+    - [X] 原`DirectRawStoreHandler`实现类重命名为`XxxStorage`，如：`LocalStorage`、`WebDavStorage`
 2. [ ] 外部存储挂载优化
   - 接口定义重构
     - [ ] 定义`StorageFactory`类，负责根据配置创建`Storage`实例、声明和管理`Storage`的元数据，完全接管`DiskFileSystemFactory`的职责，对`DiskFileSystemFactory`进行以下调整：
