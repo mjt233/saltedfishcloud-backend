@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
@@ -19,6 +20,7 @@ class FileSystemRouteContext {
     /**
      * 在对应文件系统上解析后的路径。
      */
+    @Getter
     private final String resolvedPath;
 
     /**
@@ -95,32 +97,21 @@ class FileSystemRouteContext {
     }
 
     /**
-     * 获取当前路由在对应文件系统上的实际路径。
+     * 获取匹配到的委托文件系统，若当前不是挂载路由则抛出异常。
      *
-     * @return 解析后的实际路径
+     * @return 委托文件系统
      */
-    public String getResolvedPath() {
-        return resolvedPath;
+    public DiskFileSystem requireDelegateFileSystem() {
+        return Objects.requireNonNull(delegateFileSystem, "delegateFileSystem");
     }
 
     /**
-     * 获取匹配到的挂载点。
+     * 获取匹配到的挂载点，若当前未命中挂载点则抛出异常。
      *
-     * @return 挂载点，主文件系统路由时返回null
+     * @return 挂载点
      */
-    @Nullable
-    public MountPoint getMountPoint() {
-        return mountPoint;
-    }
-
-    /**
-     * 获取匹配到的委托文件系统。
-     *
-     * @return 委托文件系统，主文件系统路由时返回null
-     */
-    @Nullable
-    public DiskFileSystem getDelegateFileSystem() {
-        return delegateFileSystem;
+    public MountPoint requireMountPoint() {
+        return Objects.requireNonNull(mountPoint, "mountPoint");
     }
 
     /**
@@ -130,7 +121,7 @@ class FileSystemRouteContext {
      * @return 主文件系统或委托文件系统
      */
     public DiskFileSystem getFileSystemOr(DiskFileSystem mainFileSystem) {
-        return isMainRoute() ? mainFileSystem : Objects.requireNonNull(delegateFileSystem, "delegateFileSystem");
+        return isMainRoute() ? mainFileSystem : requireDelegateFileSystem();
     }
 
     /**

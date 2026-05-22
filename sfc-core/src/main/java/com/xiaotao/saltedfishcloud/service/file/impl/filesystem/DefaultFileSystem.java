@@ -90,7 +90,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
      * 元数据操作组件。
      */
     @Autowired
-    private DefaultFileSystemMetadataOperator metadataOperator;
+    private FileSystemMetadataOperator metadataOperator;
 
     /**
      * 根据请求路径匹配对应文件系统。
@@ -124,7 +124,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.usesMainMetadata()) {
             return mainExecutor.getUserFileList(uid, path, nameList);
         }
-        return routeContext.getDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath(), nameList);
+        return routeContext.requireDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath(), nameList);
     }
 
     @Override
@@ -133,7 +133,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.isMainRoute()) {
             return mainExecutor.getThumbnail(uid, path, name);
         }
-        return routeContext.getDelegateFileSystem().getThumbnail(uid, routeContext.getResolvedPath(), name);
+        return routeContext.requireDelegateFileSystem().getThumbnail(uid, routeContext.getResolvedPath(), name);
     }
 
     @Override
@@ -143,7 +143,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         FileSystemRouteContext routeContext = matchFileSystem(uid, path);
         boolean success = routeContext.isMainRoute()
                 ? mainExecutor.quickSave(uid, path, name, md5)
-                : routeContext.getDelegateFileSystem().quickSave(uid, routeContext.getResolvedPath(), name, md5);
+                : routeContext.requireDelegateFileSystem().quickSave(uid, routeContext.getResolvedPath(), name, md5);
         if (success && routeContext.requiresMainMetadataSync()) {
             syncProxyQuickSaveRecord(routeContext, uid, path, name);
         }
@@ -163,7 +163,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.usesMainMetadata()) {
             return mainExecutor.exist(uid, path);
         }
-        return routeContext.getDelegateFileSystem().exist(uid, routeContext.getResolvedPath());
+        return routeContext.requireDelegateFileSystem().exist(uid, routeContext.getResolvedPath());
     }
 
     @Override
@@ -172,7 +172,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.isMainRoute()) {
             return mainExecutor.getResource(uid, path, name);
         }
-        return routeContext.getDelegateFileSystem().getResource(uid, routeContext.getResolvedPath(), name);
+        return routeContext.requireDelegateFileSystem().getResource(uid, routeContext.getResolvedPath(), name);
     }
 
     @Override
@@ -184,7 +184,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         }
         String dirNodeId = routeContext.isMainRoute()
                 ? mainExecutor.mkdirs(uid, path)
-                : routeContext.getDelegateFileSystem().mkdirs(uid, routeContext.getResolvedPath());
+                : routeContext.requireDelegateFileSystem().mkdirs(uid, routeContext.getResolvedPath());
         if (routeContext.requiresMainMetadataSync()) {
             metadataOperator.mkdirs(uid, path, true);
         }
@@ -198,7 +198,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (files.isEmpty()) {
             return null;
         }
-        FileInfo fileInfo = files.get(0);
+        FileInfo fileInfo = files.getFirst();
         String path = metadataOperator.getPathByNodeId(fileInfo.getUid(), fileInfo.getNode())
                 .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
         fileInfo.setPath(StringUtils.appendPath(path, fileInfo.getName()));
@@ -209,17 +209,17 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     /**
      * 同步代理挂载点 quickSave 后的文件记录。
      *
-     * @param matchResult 文件系统匹配结果
+     * @param routeContext 文件系统路由上下文
      * @param uid 用户ID
      * @param path 目标目录
      * @param name 文件名
      */
     private void syncProxyQuickSaveRecord(FileSystemRouteContext routeContext, long uid, String path, String name) throws IOException {
-        List<FileInfo> fileInfos = routeContext.getDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath(), Collections.singletonList(name));
+        List<FileInfo> fileInfos = routeContext.requireDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath(), Collections.singletonList(name));
         if (fileInfos == null || fileInfos.isEmpty()) {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND, StringUtils.appendPath(path, name));
         }
-        FileInfo savedFile = ObjectUtils.clone(fileInfos.get(0), FileInfo::new);
+        FileInfo savedFile = ObjectUtils.clone(fileInfos.getFirst(), FileInfo::new);
         savedFile.setUid(uid);
         savedFile.setId(null);
         savedFile.setNode(null);
@@ -249,7 +249,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
                     log.warn("{} 文件保存事件中未查询到文件信息 uid: {} fullPath: {}", LOG_PREFIX, uid, fullPath);
                     return null;
                 }
-                FileInfo stored = result.get(0);
+                FileInfo stored = result.getFirst();
                 stored.setPath(fullPath);
                 return stored;
             } catch (IOException e) {
@@ -332,7 +332,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
                             .build()));
                 }
             }
-            sourceRoute.getDelegateFileSystem().copy(SimpleFileTransferParam.builder()
+            sourceRoute.requireDelegateFileSystem().copy(SimpleFileTransferParam.builder()
                     .sourceUid(sourceUid)
                     .sourcePath(sourceRoute.getResolvedPath())
                     .files(param.getFiles())
@@ -404,9 +404,10 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
                 targetFile.setNode(null);
                 saveFileToMatchedFileSystem(targetRoute, param.getTargetPath(), targetFile, os -> {
                     try (InputStream is = resource.getInputStream()) {
-                        return StreamUtils.copyStreamAndComputeMd5(is, os, sourceFile.getMd5(), (buf, len) ->
-                                transferRecord.setLoaded(transferRecord.getLoaded() + len)
-                        ).applyTo(targetFile);
+                        return StreamUtils.copyStreamAndComputeMd5(is, os, sourceFile.getMd5(), (buffer, len) -> {
+                            Objects.requireNonNull(buffer);
+                            transferRecord.setLoaded(transferRecord.getLoaded() + len);
+                        }).applyTo(targetFile);
                     }
                 });
                 if (callback != null) {
@@ -436,7 +437,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     /**
      * 获取匹配文件系统上的文件资源。
      *
-     * @param matchResult 匹配结果
+     * @param routeContext 路由上下文
      * @param uid 用户ID
      * @param delegatePath 实际文件系统中的目录路径
      * @param name 文件名
@@ -446,13 +447,13 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.isMainRoute()) {
             return mainExecutor.getResource(uid, delegatePath, name);
         }
-        return routeContext.getDelegateFileSystem().getResource(uid, delegatePath, name);
+        return routeContext.requireDelegateFileSystem().getResource(uid, delegatePath, name);
     }
 
     /**
      * 向匹配到的文件系统写入文件，并在代理挂载点下补充文件记录。
      *
-     * @param matchResult 匹配结果
+     * @param routeContext 路由上下文
      * @param originPath 原始目录路径
      * @param fileInfo 文件信息
      * @param streamConsumer 输出流消费函数
@@ -463,7 +464,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             mainExecutor.saveFileByStream(fileInfo, routeContext.getResolvedPath(), streamConsumer);
             return;
         }
-        routeContext.getDelegateFileSystem().saveFileByStream(fileInfo, routeContext.getResolvedPath(), streamConsumer);
+        routeContext.requireDelegateFileSystem().saveFileByStream(fileInfo, routeContext.getResolvedPath(), streamConsumer);
         if (routeContext.requiresMainMetadataSync()) {
             metadataOperator.saveRecord(fileInfo, originPath);
         }
@@ -495,7 +496,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             if (sourceFullRoute.matchesMountPath(fullSourcePath)) {
                 String nodeId = metadataOperator.getNodeIdByPath(uid, target)
                         .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
-                MountPoint mountPoint = sourceFullRoute.getMountPoint();
+                MountPoint mountPoint = sourceFullRoute.requireMountPoint();
                 mountPoint.setNid(nodeId);
                 try {
                     mountPointService.saveMountPoint(mountPoint);
@@ -511,7 +512,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             if (sourceRoute.isMainRoute()) {
                 mainExecutor.move(uid, source, target, name, overwrite);
             } else {
-                sourceRoute.getDelegateFileSystem().move(uid, sourceRoute.getResolvedPath(), targetRoute.getResolvedPath(), name, overwrite);
+                sourceRoute.requireDelegateFileSystem().move(uid, sourceRoute.getResolvedPath(), targetRoute.getResolvedPath(), name, overwrite);
                 if (sourceRoute.requiresMainMetadataSync()) {
                     metadataOperator.move(uid, source, target, name, overwrite);
                 }
@@ -541,7 +542,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.usesMainMetadata()) {
             result = mainExecutor.getUserFileList(uid, path);
         } else {
-            result = routeContext.getDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath());
+            result = routeContext.requireDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath());
         }
         if (routeContext.isMountRoute()) {
             markMountFiles(uid, result);
@@ -587,15 +588,16 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void moveToSaveFile(long uid, Path nativeFilePath, String path, FileInfo fileInfo) throws IOException {
-        if (fileInfo != null && fileInfo.getName() != null) {
-            validateNotMountPointPath(uid, path, fileInfo.getName());
-            fileInfo.setUid(uid);
+        if (fileInfo == null || fileInfo.getName() == null) {
+            throw new IllegalArgumentException("fileInfo/name 不能为空");
         }
+        validateNotMountPointPath(uid, path, fileInfo.getName());
+        fileInfo.setUid(uid);
         FileSystemRouteContext routeContext = matchFileSystem(uid, path);
         if (routeContext.isMainRoute()) {
             mainExecutor.moveToSaveFile(uid, nativeFilePath, path, fileInfo);
         } else {
-            routeContext.getDelegateFileSystem().moveToSaveFile(uid, nativeFilePath, routeContext.getResolvedPath(), fileInfo);
+            routeContext.requireDelegateFileSystem().moveToSaveFile(uid, nativeFilePath, routeContext.getResolvedPath(), fileInfo);
             if (routeContext.requiresMainMetadataSync()) {
                 metadataOperator.saveRecord(fileInfo, path);
             }
@@ -632,7 +634,11 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             }
             validateNotMountPointPath(fileInfo.getUid(), fileInfo.getPath(), fileInfo.getName());
             String key = fileInfo.getUid() + ":" + fileInfo.getPath();
-            BatchGroup group = grouped.computeIfAbsent(key, item -> new BatchGroup(fileInfo.getUid(), fileInfo.getPath()));
+            BatchGroup group = grouped.get(key);
+            if (group == null) {
+                group = new BatchGroup(fileInfo.getUid(), fileInfo.getPath());
+                grouped.put(key, group);
+            }
             group.sourceFiles.add(fileInfo);
         }
 
@@ -649,7 +655,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             if (routeContext.isMainRoute()) {
                 mainExecutor.batchSaveFiles(delegateFiles, callback);
             } else {
-                routeContext.getDelegateFileSystem().batchSaveFiles(delegateFiles, callback);
+                routeContext.requireDelegateFileSystem().batchSaveFiles(delegateFiles, callback);
                 if (routeContext.requiresMainMetadataSync()) {
                     metadataOperator.batchSaveFileInSameDirectory(group.uid, group.originPath, delegateFiles);
                 }
@@ -672,7 +678,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.isMainRoute()) {
             mainExecutor.saveFileByStream(file, savePath, streamConsumer);
         } else {
-            routeContext.getDelegateFileSystem().saveFileByStream(file, routeContext.getResolvedPath(), streamConsumer);
+            routeContext.requireDelegateFileSystem().saveFileByStream(file, routeContext.getResolvedPath(), streamConsumer);
             if (routeContext.requiresMainMetadataSync()) {
                 metadataOperator.saveRecord(file, savePath);
             }
@@ -687,7 +693,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.isMainRoute()) {
             mainExecutor.mkdir(uid, path, name);
         } else {
-            routeContext.getDelegateFileSystem().mkdir(uid, routeContext.getResolvedPath(), name);
+            routeContext.requireDelegateFileSystem().mkdir(uid, routeContext.getResolvedPath(), name);
             if (routeContext.requiresMainMetadataSync()) {
                 metadataOperator.mkdirs(uid, StringUtils.appendPath(path, name), true);
             }
@@ -709,7 +715,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
                 .flatMap(name -> mountPointMap.entrySet().stream()
                         .filter(entry -> entry.getKey().startsWith(StringUtils.appendPath(path, name)))
                         .map(Map.Entry::getValue))
-                .collect(Collectors.toMap(MountPoint::getId, Function.identity(), (oldValue, newValue) -> oldValue));
+                .collect(Collectors.toMap(MountPoint::getId, Function.identity(), DefaultFileSystem::keepExistingValue));
         if (!needRemoveMountPointMap.isEmpty()) {
             log.info("{}:删除的路径中存在以下挂载点需要删除：{}", LOG_PREFIX, needRemoveMountPointMap.keySet());
             mountPointService.batchRemove(uid, needRemoveMountPointMap.keySet());
@@ -720,7 +726,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         if (routeContext.requiresMainMetadataSync()) {
             metadataOperator.deleteRecords(uid, path, names);
         }
-        return routeContext.getDelegateFileSystem().deleteFile(uid, routeContext.getResolvedPath(), names);
+        return routeContext.requireDelegateFileSystem().deleteFile(uid, routeContext.getResolvedPath(), names);
     }
 
     @Override
@@ -741,8 +747,9 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
                 throw new JsonException(FileSystemError.FILE_EXIST);
             }
             try {
-                routeContext.getMountPoint().setName(newName);
-                mountPointService.saveMountPoint(routeContext.getMountPoint());
+                MountPoint mountPoint = routeContext.requireMountPoint();
+                mountPoint.setName(newName);
+                mountPointService.saveMountPoint(mountPoint);
             } catch (FileSystemParameterException e) {
                 log.error("{}重命名文件时发生错误", LOG_PREFIX, e);
                 throw new JsonException(e.getMessage());
@@ -757,7 +764,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             if (routeContext.requiresMainMetadataSync()) {
                 metadataOperator.rename(uid, path, name, newName);
             }
-            routeContext.getDelegateFileSystem().rename(uid, routeContext.getResolvedPath(), name, newName);
+            routeContext.requireDelegateFileSystem().rename(uid, routeContext.getResolvedPath(), name, newName);
         }
     }
 
@@ -774,9 +781,22 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
                 }
                 String parentPath = PathUtils.getParentPath(routeContext.getResolvedPath());
                 String delegateName = PathUtils.getLastNode(routeContext.getResolvedPath());
-                routeContext.getDelegateFileSystem().updateTime(uid, parentPath, Collections.singletonList(delegateName), attribute);
+                routeContext.requireDelegateFileSystem().updateTime(uid, parentPath, Collections.singletonList(delegateName), attribute);
             }
         }
+    }
+
+    /**
+     * 在收集重复键时保留首个值。
+     *
+     * @param existing 已存在的值
+     * @param replacement 重复值
+     * @param <T> 值类型
+     * @return 已存在的值
+     */
+    private static <T> T keepExistingValue(T existing, T replacement) {
+        Objects.requireNonNull(replacement);
+        return existing;
     }
 
     @Override

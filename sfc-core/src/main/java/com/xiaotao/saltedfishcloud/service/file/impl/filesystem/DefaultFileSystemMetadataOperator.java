@@ -35,10 +35,10 @@ import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PRIVATE;
 import static com.xiaotao.saltedfishcloud.model.FileSystemStatus.AREA_PUBLIC;
 
 /**
- * 默认文件系统元数据操作组件，统一封装文件记录与索引仓库访问。
+ * 默认文件系统元数据操作实现，统一封装基于 FileRecordService 的文件记录与索引仓库访问。
  */
 @Component
-public class DefaultFileSystemMetadataOperator {
+public class DefaultFileSystemMetadataOperator implements FileSystemMetadataOperator {
     /**
      * 文件信息仓库。
      */
@@ -89,10 +89,9 @@ public class DefaultFileSystemMetadataOperator {
      *
      * @param fileInfo 文件信息
      * @param path 所在目录
-     * @return 保存后的文件信息
      */
-    public FileInfo saveRecord(FileInfo fileInfo, String path) {
-        return fileRecordService.saveRecord(fileInfo, path);
+    public void saveRecord(FileInfo fileInfo, String path) {
+        fileRecordService.saveRecord(fileInfo, path);
     }
 
     /**

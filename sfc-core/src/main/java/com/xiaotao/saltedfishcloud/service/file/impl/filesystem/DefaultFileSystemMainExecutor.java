@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.cache.LockFactory;
-import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
@@ -40,7 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -57,7 +56,7 @@ public class DefaultFileSystemMainExecutor {
      * 元数据操作组件。
      */
     @Autowired
-    private DefaultFileSystemMetadataOperator metadataOperator;
+    private FileSystemMetadataOperator metadataOperator;
 
     /**
      * 主存储执行组件。
@@ -132,7 +131,7 @@ public class DefaultFileSystemMainExecutor {
         if (files.isEmpty()) {
             return false;
         }
-        FileInfo existMd5File = ObjectUtils.clone(files.get(0), FileInfo::new);
+        FileInfo existMd5File = ObjectUtils.clone(files.getFirst(), FileInfo::new);
         String filePath = metadataOperator.getPathByNodeId(existMd5File.getUid(), existMd5File.getNode()).orElse(null);
         if (filePath == null) {
             return false;
@@ -338,7 +337,7 @@ public class DefaultFileSystemMainExecutor {
      * @param fileInfos 文件列表
      * @param callback 传输回调
      */
-    public void batchSaveFiles(List<FileInfo> fileInfos, @Nullable FileTransferCallback callback) throws IOException {
+    public void batchSaveFiles(List<FileInfo> fileInfos, @Nullable FileTransferCallback callback) {
         if (fileInfos == null || fileInfos.isEmpty()) {
             return;
         }
@@ -353,7 +352,10 @@ public class DefaultFileSystemMainExecutor {
                     || fileInfo.getStreamSource() == null) {
                 throw new IllegalArgumentException("batchSaveFiles param invalid: uid/path/name/streamSource must not be null");
             }
-            groupedFiles.computeIfAbsent(new SaveKey(fileInfo.getUid(), fileInfo.getPath()), item -> new ArrayList<>()).add(fileInfo);
+            SaveKey saveKey = new SaveKey(fileInfo.getUid(), fileInfo.getPath());
+            groupedFiles.putIfAbsent(saveKey, new ArrayList<>());
+            List<FileInfo> groupedFileList = groupedFiles.get(saveKey);
+            groupedFileList.add(fileInfo);
         }
 
         for (java.util.Map.Entry<SaveKey, List<FileInfo>> entry : groupedFiles.entrySet()) {
@@ -394,7 +396,8 @@ public class DefaultFileSystemMainExecutor {
     private void storeBySource(FileInfo fileInfo, String savePath, FileTransferItem item) throws IOException {
         storeOperator.storeByStream(fileInfo, savePath, os -> {
             try (InputStream is = fileInfo.getStreamSource().getInputStream()) {
-                return StreamUtils.copyStreamAndComputeMd5(is, os, fileInfo.getMd5(), (buf, len) -> {
+                return StreamUtils.copyStreamAndComputeMd5(is, os, fileInfo.getMd5(), (buffer, len) -> {
+                    Objects.requireNonNull(buffer);
                     Long currentLoaded = item.getLoaded();
                     if (currentLoaded == null || currentLoaded < 0) {
                         currentLoaded = 0L;
