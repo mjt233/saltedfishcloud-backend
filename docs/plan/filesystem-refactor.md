@@ -28,8 +28,8 @@
       - [ ]`getFileSystem`方法返回值改为`Storage` 
       - [X]转移`getFileSystemFactory`方法，并重命名为`getStorageFactory`
       - [X]转移`isSupportedProtocol`
-    - [ ] 实现`StorageFactory`的默认实现，支持本地文件系统和常见云存储（如S3、MinIO、Local）
-    - [ ] `DiskFileSystemDispatcher`通过`StorageFactory`获取`Storage`实例，消除对具体实现的依赖
-  - 存储实现与存储路由重构
-    - [ ] 将原`DiskFileSystemDispatcher`中的存储相关逻辑迁移到新的`StorageFactory`实现中
-    - [ ] `DiskFileSystemDispatcher`专注于文件系统调度和管理，调用`StorageFactory`获取底层存储能力
+
+3. [ ] 存储实现与存储路由重构
+   - [ ] 在`DefaultFileSystem`中实现存储路由功能，根据路径前缀或其他标识来路由到不同的`Storage`实例
+   - [ ] 将`DefaultFileSystem`设置为主文件系统，吞并`DiskFileSystemDispatcher`的存储路由功能
+   
