@@ -3,13 +3,14 @@ package com.xiaotao.saltedfishcloud.service.third.handler;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
-import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamCopyResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -33,11 +34,19 @@ import java.util.Optional;
 @Slf4j
 public abstract class AbstractThirdPartyPlatformHandler<T> implements ThirdPartyPlatformHandler {
     private final ProxyInfoService proxyInfoService;
-    private final StoreServiceFactory storeServiceFactory;
+    /**
+     * 第三方平台头像缓存附属存储。
+     */
+    private final AttachStorage thirdPlatformAvatarStorage;
 
-    protected AbstractThirdPartyPlatformHandler(ProxyInfoService proxyInfoService, StoreServiceFactory storeServiceFactory) {
+    protected AbstractThirdPartyPlatformHandler(ProxyInfoService proxyInfoService, AttachStorageManager attachStorageManager) {
         this.proxyInfoService = proxyInfoService;
-        this.storeServiceFactory = storeServiceFactory;
+        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
+                .id("third_platform_avatar")
+                .name("第三方平台头像缓存")
+                .description("第三方登录头像缓存")
+                .build());
+        this.thirdPlatformAvatarStorage = attachStorageManager.getStorage("third_platform_avatar");
     }
 
     private final static RestClient defaultRestClient = RestClient.builder()
@@ -141,11 +150,9 @@ public abstract class AbstractThirdPartyPlatformHandler<T> implements ThirdParty
         }
 
         try {
-            TempStoreService storeService = storeServiceFactory.getTempStoreService();
-            String cacheFileName = SecureUtils.getMd5(avatarUrl);
-            String cacheFilePath = "thirdPlatformAvatar/" + cacheFileName;
+            String cacheFilePath = SecureUtils.getMd5(avatarUrl);
             InputStreamSource inputStreamSource;
-            if (!storeService.exist(cacheFilePath)) {
+            if (!thirdPlatformAvatarStorage.exist(cacheFilePath)) {
                 // 未缓存头像，从原始URL读取数据后存入
 
                 getRestClient(platform)
@@ -153,19 +160,21 @@ public abstract class AbstractThirdPartyPlatformHandler<T> implements ThirdParty
                         .uri(avatarUrl)
                         .exchange((req, resp) -> {
                             if (resp.getStatusCode().is2xxSuccessful()) {
-                                try (InputStream is = resp.getBody()) {
-                                    FileInfo fileInfo = new FileInfo();
-                                    fileInfo.setName(cacheFileName);
-                                    fileInfo.setPath(cacheFilePath);
-                                    storeService.store(fileInfo, cacheFilePath, -1, is);
-                                    return true;
-                                }
+                                thirdPlatformAvatarStorage.saveFile(cacheFilePath, out -> {
+                                    try (InputStream is = resp.getBody()) {
+                                        return new StreamCopyResult(StreamUtils.copy(is, out), null);
+                                    }
+                                });
+                                return true;
                             }
                             return false;
                         });
 
             }
-            inputStreamSource = storeService.getResource(cacheFilePath);
+            inputStreamSource = thirdPlatformAvatarStorage.getFile(cacheFilePath).orElse(null);
+            if (inputStreamSource == null) {
+                return null;
+            }
             try (InputStream is = inputStreamSource.getInputStream()) {
                 String res = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(StreamUtils.copyToByteArray(is));
                 is.close();

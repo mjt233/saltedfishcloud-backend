@@ -63,6 +63,10 @@ public class DefaultAttachStorageManager implements AttachStorageManager {
         copiedDefinition.setId(normalizedStorageDomainId);
         AttachStorageDomainDefinition exists = definitionMap.putIfAbsent(normalizedStorageDomainId, copiedDefinition);
         if (exists != null) {
+            // 不同服务可能会复用一个存储域，当存储域配置相同时允许重复注册
+            if (exists.equals(copiedDefinition)) {
+                return;
+            }
             throw new JsonException(400, "附属存储域已注册：" + normalizedStorageDomainId);
         }
         try {

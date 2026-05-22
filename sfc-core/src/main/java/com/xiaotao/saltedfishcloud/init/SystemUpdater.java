@@ -103,6 +103,17 @@ public class SystemUpdater {
         MigrateUtils.moveDirectory("temp/thumbnail", "attach/thumbnail");
     }
 
+    /**
+     * 迁移 3.1.2 版本调整后的临时数据目录。
+     * <p>
+     * 由于移除了 {@code TempStoreService}，原本位于临时目录中的第三方平台头像缓存需要迁移到附属存储目录中。
+     */
+    @UpdateAction("3.1.2")
+    public void update3_1_2() throws IOException {
+        MigrateUtils.moveDirectory("temp/thirdPlatformAvatar", "attach/third_platform_avatar");
+        MigrateUtils.moveDirectory("temp/quick_share", "attach/quick_share");
+    }
+
 
     @RollbackAction("2.7.0")
     public void rollback2_7_0() throws SQLException {

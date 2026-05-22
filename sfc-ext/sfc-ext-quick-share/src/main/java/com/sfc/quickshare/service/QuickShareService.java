@@ -3,25 +3,24 @@ package com.sfc.quickshare.service;
 import com.sfc.quickshare.model.QuickShare;
 import com.sfc.quickshare.model.QuickShareProperty;
 import com.sfc.quickshare.repo.QuickShareRepo;
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.store.Storage;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
-import com.xiaotao.saltedfishcloud.cache.CacheService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -32,20 +31,36 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class QuickShareService {
     private final static String LOG_PREFIX = "[快速分享]";
-    private final static String PREFIX_DIR = "quick_share";
 
     @Autowired
     @Getter
     private QuickShareRepo repo;
 
     @Autowired
-    private StoreServiceFactory storeServiceFactory;
-
-    @Autowired
     private CacheService cacheService;
 
     @Autowired
     private QuickShareProperty property;
+
+    /**
+     * 快速分享文件附属存储。
+     */
+    private AttachStorage quickShareStorage;
+
+    /**
+     * 注册快速分享附属存储域。
+     *
+     * @param attachStorageManager 附属存储管理器
+     */
+    @Autowired
+    public void setAttachStorageManager(AttachStorageManager attachStorageManager) {
+        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
+                .id("quick_share")
+                .name("快速分享")
+                .description("快速分享临时文件")
+                .build());
+        quickShareStorage = attachStorageManager.getStorage("quick_share");
+    }
 
     private String getCacheKey(String code) {
         return CacheKeyPrefixes.QUICK_SHARE + code;
@@ -95,9 +110,7 @@ public class QuickShareService {
         repo.saveAndFlush(quickShare);
 
         // 存储文件
-        try(InputStream is = resource.getInputStream()) {
-            storeServiceFactory.getTempStoreService().store(FileInfo.getFromResource(resource, quickShare.getUid(), FileInfo.TYPE_FILE), StringUtils.appendPath(PREFIX_DIR, quickShare.getId().toString()), fileSize, is);
-        }
+        quickShareStorage.saveFile(this.getFilePath(quickShare.getId()), resource);
 
         // 生成并记录提取码
         String actualCode = this.saveCode(quickShare.getCode(), quickShare.getId());
@@ -129,14 +142,14 @@ public class QuickShareService {
      * @param id    分享id
      */
     private String getFilePath(Long id) {
-        return StringUtils.appendPath(PREFIX_DIR, id.toString());
+        return id.toString();
     }
 
     /**
      * 获取快速分享文件的文件存储服务
      */
-    private Storage getStoreService() {
-        return storeServiceFactory.getTempStoreService();
+    private AttachStorage getStoreService() {
+        return quickShareStorage;
     }
 
     /**
@@ -182,7 +195,7 @@ public class QuickShareService {
      */
     public Resource getFileById(Long id) throws IOException {
         this.checkIsEnable();
-        Resource resource = this.getStoreService().getResource(this.getFilePath(id));
+        Resource resource = this.getStoreService().getFile(this.getFilePath(id)).orElse(null);
         if (resource == null || !resource.exists()) {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }

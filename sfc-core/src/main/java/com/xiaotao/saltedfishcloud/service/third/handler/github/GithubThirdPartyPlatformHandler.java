@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
 import com.xiaotao.saltedfishcloud.service.third.handler.AbstractThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
@@ -27,8 +27,8 @@ import java.util.function.Supplier;
 public class GithubThirdPartyPlatformHandler extends AbstractThirdPartyPlatformHandler<GithubPlatformProperty> {
 
     @Autowired
-    public GithubThirdPartyPlatformHandler(ProxyInfoService proxyInfoService, StoreServiceFactory storeServiceFactory) {
-        super(proxyInfoService, storeServiceFactory);
+    public GithubThirdPartyPlatformHandler(ProxyInfoService proxyInfoService, AttachStorageManager attachStorageManager) {
+        super(proxyInfoService, attachStorageManager);
     }
 
     private final Supplier<List<ConfigNode>> configNodeList = Lazy.of(() -> {

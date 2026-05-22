@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
  * 所有文件操作路径均会被约束在 {@code sys.store.root/attach/<storageDomainId>} 目录下。
  */
 public class DefaultAttachStorage implements AttachStorage {
-    private static final Pattern STORAGE_DOMAIN_ID_PATTERN = Pattern.compile("^[A-Za-z0-9._-]+$");
 
     private final StoreServiceFactory storeServiceFactory;
     private final String storageDomainRootPath;

@@ -28,6 +28,11 @@ public class MigrateUtils {
         String srcPath = StringUtils.appendPath(root, src);
         String descPath = StringUtils.appendPath(root, dest);
 
+        if (!storageProvider.exist(srcPath)) {
+            log.info("源路径不存在，无需迁移 {} => {}", srcPath, descPath);
+            return;
+        }
+
         log.info("开始迁移数据 {} => {}", srcPath, descPath);
         if (storageProvider.exist(descPath)) {
             if(storageProvider.listFiles(descPath).isEmpty()) {

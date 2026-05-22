@@ -52,7 +52,6 @@ public abstract class AbstractRawStoreService implements StoreService {
     protected FileResourceMd5Resolver md5Resolver;
 
     private volatile StoreService uniqueStoreService;
-    private volatile TempStoreService tempStoreService;
 
     public AbstractRawStoreService(Storage handler,
                                    FileResourceMd5Resolver md5Resolver
@@ -66,7 +65,7 @@ public abstract class AbstractRawStoreService implements StoreService {
 
     /**
      * 文件移动是否需要递归执行。
-     * @return 若返回值为true，则通过递归逐个移动文件。若为false，则直接调用{@link CopyAndMoveHandler#moveFile(java.lang.String, java.lang.String)}方法进行移动。
+     * @return 若返回值为true，则通过递归逐个移动文件。若为false，则直接调用{@link CopyAndMoveHandler#moveFile(java.lang.String, java.lang.String, com.xiaotao.saltedfishcloud.model.progress.FileTransferItem)}方法进行移动。
      * 使用递归移动时，支持同名目录合并。
      *
      */
@@ -323,21 +322,6 @@ public abstract class AbstractRawStoreService implements StoreService {
         copyAndMoveHandler.move(src, dst, overwrite);
     }
 
-    @Override
-    public TempStoreService getTempFileHandler() {
-        // 双重校验锁懒汉单例
-        if (tempStoreService != null) {
-            return tempStoreService;
-        }
-        synchronized (this) {
-            if (tempStoreService != null) {
-                return tempStoreService;
-            }
-            String tempRoot = getTempRoot();
-            tempStoreService = new DefaultTempStoreService(handler, tempRoot);
-        }
-        return tempStoreService;
-    }
 
     @Override
     public List<FileSystemStatus> getStatus() {

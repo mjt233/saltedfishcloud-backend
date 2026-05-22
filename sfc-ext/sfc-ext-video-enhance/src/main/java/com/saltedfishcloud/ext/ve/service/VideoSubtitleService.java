@@ -8,9 +8,6 @@ import com.xiaotao.saltedfishcloud.common.ResponseResource;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
@@ -27,7 +24,6 @@ import org.springframework.validation.annotation.Validated;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -41,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 public class VideoSubtitleService {
     private final ResourceService resourceService;
     private final VideoService videoService;
-    private final StoreServiceFactory storeServiceFactory;
 
     private final Semaphore semaphore = new Semaphore(
             Math.max(1, Runtime.getRuntime().availableProcessors() - 1)
