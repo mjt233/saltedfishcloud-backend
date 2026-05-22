@@ -7,7 +7,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -18,7 +17,7 @@ import java.util.stream.Collectors;
  * @param <D>   文件系统类型
  */
 @Slf4j
-public abstract class AbstractRawDiskFileSystemFactory<T, D extends DiskFileSystem> implements DiskFileSystemFactory {
+public abstract class AbstractRawStorageFactory<T, D extends DiskFileSystem> implements StorageFactory {
     private final Map<T, D> CACHE = new ConcurrentHashMap<>();
 
     @Override

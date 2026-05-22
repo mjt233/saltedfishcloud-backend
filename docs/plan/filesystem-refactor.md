@@ -15,11 +15,11 @@
 2. [ ] 外部存储挂载优化
   - 接口定义重构
     - [ ] 定义`StorageFactory`类，负责根据配置创建`Storage`实例、声明和管理`Storage`的元数据，完全接管`DiskFileSystemFactory`的职责，对`DiskFileSystemFactory`进行以下调整：
-      - 接口类`DiskFileSystemFactory`重命名为`StorageFactory`
-      - 类`DiskFileSystemDescribe`重命名为`StorageMetadata`
-      - 方法`getDescribe`重命名为`getMatedata`
-      - `getFileSystem`重命名为`getStorage`，返回值改为`Storage`
-      - `testFileSystem`重命名为`testStorage`，参数改为`Storage`
+      - [X]接口类`DiskFileSystemFactory`重命名为`StorageFactory`
+      - [X]类`DiskFileSystemDescribe`重命名为`StorageMetadata`
+      - [X]方法`getDescribe`重命名为`getMatedata`
+      - [ ]`getFileSystem`重命名为`getStorage`，返回值改为`Storage`
+      - [ ]`testFileSystem`重命名为`testStorage`，参数改为`Storage`
     - [ ] 定义`StorageRegistry`接口，负责注册和管理不同类型的`StorageFactory`，抽离的`DiskFileSystemManager`这部分的职责
       - 转移`registerFileSystem`方法，并重命名为`registerStorageFactory`
       - 转移`listAllFileSystem`方法，并重命名为`listStorageFactory`

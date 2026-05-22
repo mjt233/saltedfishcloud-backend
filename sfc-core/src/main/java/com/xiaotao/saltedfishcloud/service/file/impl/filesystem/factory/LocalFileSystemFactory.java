@@ -2,8 +2,8 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem.factory;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
+import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStorage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<String, RawDiskFileSystem> {
+public class LocalFileSystemFactory extends AbstractRawStorageFactory<String, RawDiskFileSystem> {
     private static final List<ConfigNode> CONFIG_NODE_LIST = new ArrayList<>();
-    private static final DiskFileSystemDescribe DESCRIBE;
+    private static final StorageMetadata DESCRIBE;
     static {
         CONFIG_NODE_LIST.add(ConfigNode.builder()
                         .name("基本信息")
@@ -35,7 +35,7 @@ public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<Str
                                         .build()
                         ))
                 .build());
-        DESCRIBE = DiskFileSystemDescribe.builder()
+        DESCRIBE = StorageMetadata.builder()
                 .configNode(CONFIG_NODE_LIST)
                 .name("本地文件系统")
                 .describe("访问本地文件系统")
@@ -70,7 +70,7 @@ public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<Str
     }
 
     @Override
-    public DiskFileSystemDescribe getDescribe() {
+    public StorageMetadata getMetadata() {
         return DESCRIBE;
     }
 }

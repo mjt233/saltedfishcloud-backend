@@ -13,7 +13,7 @@ import java.util.Collection;
 @Getter
 @Builder
 @ToString
-public class DiskFileSystemDescribe {
+public class StorageMetadata {
 
     /**
      * 名称描述

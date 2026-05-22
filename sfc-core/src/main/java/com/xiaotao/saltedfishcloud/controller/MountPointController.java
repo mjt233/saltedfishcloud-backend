@@ -7,8 +7,8 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.MountPointSyncFileRecordParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
+import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
@@ -37,8 +37,8 @@ public class MountPointController {
      * 获取可用的文件系统
      */
     @GetMapping("listAvailableFileSystem")
-    public JsonResult<List<DiskFileSystemDescribe>> listAvailableFileSystem() {
-        return JsonResultImpl.getInstance(fileSystemManager.listPublicFileSystem().stream().map(DiskFileSystemFactory::getDescribe).collect(Collectors.toList()));
+    public JsonResult<List<StorageMetadata>> listAvailableFileSystem() {
+        return JsonResultImpl.getInstance(fileSystemManager.listPublicFileSystem().stream().map(StorageFactory::getMetadata).collect(Collectors.toList()));
     }
 
     /**

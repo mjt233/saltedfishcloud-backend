@@ -2,9 +2,9 @@ package com.sfc.ext.webdav.store.filesystem;
 
 import com.sfc.ext.webdav.store.handler.WebDavStoreRawHandler;
 import com.sfc.ext.webdav.store.model.WebDavClientProperty;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
+import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
-public class WebDavStoreFileSystemFactory extends AbstractRawDiskFileSystemFactory<WebDavClientProperty, DiskFileSystem> {
+public class WebDavStoreFileSystemFactory extends AbstractRawStorageFactory<WebDavClientProperty, DiskFileSystem> {
     @Override
     public WebDavClientProperty parseProperty(Map<String, Object> params) {
         return ObjectUtils.mapToBean(params, WebDavClientProperty.class);
@@ -33,8 +33,8 @@ public class WebDavStoreFileSystemFactory extends AbstractRawDiskFileSystemFacto
     }
 
     @Override
-    public DiskFileSystemDescribe getDescribe() {
-        return DiskFileSystemDescribe.builder()
+    public StorageMetadata getMetadata() {
+        return StorageMetadata.builder()
                 .describe("第三方系统 WebDAV 存储服务")
                 .name("WebDAV")
                 .isPublic(true)

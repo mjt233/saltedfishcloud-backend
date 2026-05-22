@@ -3,7 +3,6 @@ package com.saltedfishcloud.ext.hadoop.filesystem;
 import com.saltedfishcloud.ext.hadoop.HDFSProperties;
 import com.saltedfishcloud.ext.hadoop.HDFSUtils;
 import com.saltedfishcloud.ext.hadoop.store.HDFSStoreHandler;
-import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
@@ -14,14 +13,12 @@ import org.apache.hadoop.fs.FileSystem;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Slf4j
-public class HDFSFileSystemFactory extends AbstractRawDiskFileSystemFactory<HDFSProperties, RawDiskFileSystem> {
+public class HDFSFileSystemFactory extends AbstractRawStorageFactory<HDFSProperties, RawDiskFileSystem> {
     @Setter
     private ThumbnailService thumbnailService;
-    private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
+    private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("hdfs")
             .name("HDFS分布式存储")
@@ -79,7 +76,7 @@ public class HDFSFileSystemFactory extends AbstractRawDiskFileSystemFactory<HDFS
 
 
     @Override
-    public DiskFileSystemDescribe getDescribe() {
+    public StorageMetadata getMetadata() {
         return DESCRIBE;
     }
 

@@ -3,8 +3,8 @@ package com.saltedfishcloud.ext.sftp.filesystem;
 import com.saltedfishcloud.ext.sftp.SFTPStorage;
 import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
+import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
@@ -17,8 +17,8 @@ import java.util.Collections;
 import java.util.Map;
 
 @Slf4j
-public class SFTPDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<SFTPProperty, RawDiskFileSystem> {
-    private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
+public class SFTPStorageFactory extends AbstractRawStorageFactory<SFTPProperty, RawDiskFileSystem> {
+    private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("sftp")
             .name("SFTP文件传输")
@@ -62,7 +62,7 @@ public class SFTPDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<
     }
 
     @Override
-    public DiskFileSystemDescribe getDescribe() {
+    public StorageMetadata getMetadata() {
         return DESCRIBE;
     }
 

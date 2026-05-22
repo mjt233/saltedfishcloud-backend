@@ -3,8 +3,8 @@ package com.saltedfishcloud.ext.samba.filesystem;
 import com.saltedfishcloud.ext.samba.SambaStorage;
 import com.saltedfishcloud.ext.samba.SambaProperty;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
+import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
@@ -18,9 +18,9 @@ import java.util.Map;
 import java.util.Optional;
 
 @RequiredArgsConstructor
-public class SambaDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<SambaProperty, RawDiskFileSystem> {
+public class SambaStorageFactory extends AbstractRawStorageFactory<SambaProperty, RawDiskFileSystem> {
     private final ThumbnailService thumbnailService;
-    private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
+    private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("samba")
             .name("Samba文件共享")
@@ -65,7 +65,7 @@ public class SambaDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory
     }
 
     @Override
-    public DiskFileSystemDescribe getDescribe() {
+    public StorageMetadata getMetadata() {
         return DESCRIBE;
     }
 }

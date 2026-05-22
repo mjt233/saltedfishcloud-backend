@@ -1,15 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
-import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
@@ -32,7 +30,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
     /**
      * 记录各个文件系统对应的所支持的协议
      */
-    private final Map<String, DiskFileSystemFactory> factoryMap = new ConcurrentHashMap<>();
+    private final Map<String, StorageFactory> factoryMap = new ConcurrentHashMap<>();
 
     @Autowired
     @Lazy
@@ -46,14 +44,14 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
     private DiskFileSystemDispatcher dispatcher;
 
     @Autowired(required = false)
-    public void setFactories(List<DiskFileSystemFactory> factories) {
+    public void setFactories(List<StorageFactory> factories) {
         if (factories != null) {
             factories.forEach(this::registerFileSystem);
         }
     }
 
     @Override
-    public List<DiskFileSystemFactory> listAllFileSystem() {
+    public List<StorageFactory> listAllFileSystem() {
         return List.copyOf(factoryMap.values());
     }
 
@@ -69,20 +67,20 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
     }
 
     @Override
-    public void registerFileSystem(DiskFileSystemFactory factory) {
-        DiskFileSystemFactory existFactory = factoryMap.get(factory.getDescribe().getProtocol().toLowerCase());
+    public void registerFileSystem(StorageFactory factory) {
+        StorageFactory existFactory = factoryMap.get(factory.getMetadata().getProtocol().toLowerCase());
         if (existFactory != null) {
-            throw new IllegalArgumentException(factory.getDescribe().getProtocol() + "协议的文件系统已经被注册：" + factory.getDescribe());
+            throw new IllegalArgumentException(factory.getMetadata().getProtocol() + "协议的文件系统已经被注册：" + factory.getMetadata());
         } else {
-            log.info("{}为{}协议注册文件系统：{}", LOG_PREFIX, factory.getDescribe().getProtocol(), factory.getDescribe().getName());
-            factoryMap.put(factory.getDescribe().getProtocol(), factory);
+            log.info("{}为{}协议注册文件系统：{}", LOG_PREFIX, factory.getMetadata().getProtocol(), factory.getMetadata().getName());
+            factoryMap.put(factory.getMetadata().getProtocol(), factory);
         }
     }
 
 
     @Override
     public DiskFileSystem getFileSystem(String protocol, Map<String, Object> params) throws FileSystemParameterException {
-        DiskFileSystemFactory factory = factoryMap.get(protocol);
+        StorageFactory factory = factoryMap.get(protocol);
         if (factory == null) {
             throw new UnsupportedFileSystemProtocolException(protocol);
         }
@@ -90,7 +88,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
     }
 
     @Override
-    public DiskFileSystemFactory getFileSystemFactory(String protocol) {
+    public StorageFactory getFileSystemFactory(String protocol) {
         return factoryMap.get(protocol.toLowerCase());
     }
 
@@ -100,19 +98,19 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
     }
 
     @Override
-    public List<DiskFileSystemFactory> listPublicFileSystem() {
+    public List<StorageFactory> listPublicFileSystem() {
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user != null && user.isAdmin()) {
             return new ArrayList<>(factoryMap.values());
         } else {
-            return factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).collect(Collectors.toList());
+            return factoryMap.values().stream().filter(e -> e.getMetadata().isPublic()).collect(Collectors.toList());
         }
     }
 
     @Override
     public List<ConfigNode> provideItem(Map<String, ConfigNode> existItem) {
-        String protocols = factoryMap.values().stream().map(e -> e.getDescribe().getProtocol()).collect(Collectors.joining(","));
-        String publicProtocols = factoryMap.values().stream().filter(e -> e.getDescribe().isPublic()).map(e -> e.getDescribe().getProtocol()).collect(Collectors.joining(","));
+        String protocols = factoryMap.values().stream().map(e -> e.getMetadata().getProtocol()).collect(Collectors.joining(","));
+        String publicProtocols = factoryMap.values().stream().filter(e -> e.getMetadata().isPublic()).map(e -> e.getMetadata().getProtocol()).collect(Collectors.joining(","));
         String tempSize = StringUtils.getFormatSize(new File(PathUtils.getTempDirectory()).getFreeSpace());
         return Collections.singletonList(ConfigNode.builder()
                         .name("fileSystemFeature")

@@ -1,8 +1,8 @@
 package com.sfc.ext.oss;
 
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
+import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @RequiredArgsConstructor
-public class OSSDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<OSSProperty, DiskFileSystem> {
+public class OSSStorageFactory extends AbstractRawStorageFactory<OSSProperty, DiskFileSystem> {
     private final ThumbnailService thumbnailService;
     private final Map<String, Function<OSSProperty, Storage>> factoryMap = new ConcurrentHashMap<>();
 
@@ -34,8 +34,8 @@ public class OSSDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<O
     }
 
     @Override
-    public DiskFileSystemDescribe getDescribe() {
-        return DiskFileSystemDescribe.builder()
+    public StorageMetadata getMetadata() {
+        return StorageMetadata.builder()
                 .isPublic(true)
                 .protocol("oss")
                 .name("OSS对象存储")

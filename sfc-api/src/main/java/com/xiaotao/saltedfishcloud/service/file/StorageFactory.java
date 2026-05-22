@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import java.util.Collection;
 import java.util.Map;
 
-public interface DiskFileSystemFactory {
+public interface StorageFactory {
     /**
      * 根据给定的参数获取对应的文件系统
      * @param params    参数map
@@ -39,5 +39,5 @@ public interface DiskFileSystemFactory {
      * 获取该文件系统的描述信息，
      * @return  协议名称
      */
-    DiskFileSystemDescribe getDescribe();
+    StorageMetadata getMetadata();
 }

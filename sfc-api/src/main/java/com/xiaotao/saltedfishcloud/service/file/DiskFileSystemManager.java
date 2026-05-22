@@ -18,17 +18,17 @@ public interface DiskFileSystemManager {
     /**
      * 注册一个新的文件系统
      */
-    void registerFileSystem(DiskFileSystemFactory factory);
+    void registerFileSystem(StorageFactory factory);
 
     /**
      * 获取所有公开可用的文件系统
      */
-    List<DiskFileSystemFactory> listPublicFileSystem();
+    List<StorageFactory> listPublicFileSystem();
 
     /**
      * 获取所有的文件系统
      */
-    List<DiskFileSystemFactory> listAllFileSystem();
+    List<StorageFactory> listAllFileSystem();
 
     /**
      * 设置一个文件系统为主文件系统
@@ -48,7 +48,7 @@ public interface DiskFileSystemManager {
      * 获取文件系统工程
      * @param protocol  文件协议
      */
-    DiskFileSystemFactory getFileSystemFactory(String protocol);
+    StorageFactory getFileSystemFactory(String protocol);
 
     /**
      * 判断所有注册的文件系统中是否含有支持指定协议的

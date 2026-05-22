@@ -12,7 +12,7 @@ import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.utils.*;
@@ -222,14 +222,14 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         if(fileSystemManager.getMainFileSystem().exist(mountPoint.getUid(), path)) {
             throw new JsonException(FileSystemError.FILE_EXIST);
         }
-        boolean protocolIsAvailable = fileSystemManager.listPublicFileSystem().stream().anyMatch(e -> e.getDescribe().getProtocol().equals(mountPoint.getProtocol()));
+        boolean protocolIsAvailable = fileSystemManager.listPublicFileSystem().stream().anyMatch(e -> e.getMetadata().getProtocol().equals(mountPoint.getProtocol()));
         if (!protocolIsAvailable) {
             throw new JsonException("找不到或无权创建对应的文件系统协议");
         }
 
         // 测试挂载点参数
         Map<String, Object> paramMap = MapperHolder.parseJsonToMap(mountPoint.getParams());
-        DiskFileSystemFactory factory = fileSystemManager.getFileSystemFactory(mountPoint.getProtocol());
+        StorageFactory factory = fileSystemManager.getFileSystemFactory(mountPoint.getProtocol());
         if (factory == null) {
             throw new JsonException("不支持的协议" + mountPoint.getProtocol());
         }

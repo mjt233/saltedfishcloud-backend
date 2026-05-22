@@ -15,11 +15,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-public class MinioFileSystemFactory extends AbstractRawDiskFileSystemFactory<MinioProperties, RawDiskFileSystem> {
+public class MinioFileSystemFactory extends AbstractRawStorageFactory<MinioProperties, RawDiskFileSystem> {
     @Setter
     private ThumbnailService thumbnailService;
 
-    private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
+    private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("minio")
             .name("Minio对象存储")
@@ -76,7 +76,7 @@ public class MinioFileSystemFactory extends AbstractRawDiskFileSystemFactory<Min
     }
 
     @Override
-    public DiskFileSystemDescribe getDescribe() {
+    public StorageMetadata getMetadata() {
         return DESCRIBE;
     }
 

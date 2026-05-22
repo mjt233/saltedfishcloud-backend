@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.schedule;
 
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -32,8 +32,8 @@ public class MountFileSystemClearSchedule {
     @Scheduled(fixedRate = 1000 * 60 * 30, initialDelay = 5000)
     public void autoClear() {
         Map<String, List<MountPoint>> mountGroup = mountPointService.listAll().stream().collect(Collectors.groupingBy(MountPoint::getProtocol));
-        for (DiskFileSystemFactory factory : diskFileSystemManager.listAllFileSystem()) {
-            List<MountPoint> mountPoints = mountGroup.get(factory.getDescribe().getProtocol());
+        for (StorageFactory factory : diskFileSystemManager.listAllFileSystem()) {
+            List<MountPoint> mountPoints = mountGroup.get(factory.getMetadata().getProtocol());
             if (mountPoints == null || mountPoints.isEmpty()) {
                 continue;
             }

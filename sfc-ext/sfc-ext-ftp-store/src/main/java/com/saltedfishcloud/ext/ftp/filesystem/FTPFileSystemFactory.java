@@ -2,8 +2,8 @@ package com.saltedfishcloud.ext.ftp.filesystem;
 
 import com.saltedfishcloud.ext.ftp.FTPStorage;
 import com.saltedfishcloud.ext.ftp.FTPProperty;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
+import com.xiaotao.saltedfishcloud.service.file.AbstractRawStorageFactory;
+import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
@@ -14,8 +14,8 @@ import java.io.IOException;
 import java.util.Map;
 
 
-public class FTPFileSystemFactory extends AbstractRawDiskFileSystemFactory<FTPProperty, RawDiskFileSystem> {
-    private static final DiskFileSystemDescribe DESCRIBE = DiskFileSystemDescribe.builder()
+public class FTPFileSystemFactory extends AbstractRawStorageFactory<FTPProperty, RawDiskFileSystem> {
+    private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
             .isPublic(true)
             .protocol("ftp")
             .name("FTP文件传输")
@@ -43,7 +43,7 @@ public class FTPFileSystemFactory extends AbstractRawDiskFileSystemFactory<FTPPr
     }
 
     @Override
-    public DiskFileSystemDescribe getDescribe() {
+    public StorageMetadata getMetadata() {
         return DESCRIBE;
     }
 }
