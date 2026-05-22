@@ -9,7 +9,7 @@ import com.xiaotao.saltedfishcloud.model.param.MountPointSyncFileRecordParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
@@ -31,14 +31,14 @@ public class MountPointController {
     private MountPointService mountPointService;
 
     @Autowired
-    private DiskFileSystemManager fileSystemManager;
+    private StorageRegistry storageRegistry;
 
     /**
      * 获取可用的文件系统
      */
     @GetMapping("listAvailableFileSystem")
     public JsonResult<List<StorageMetadata>> listAvailableFileSystem() {
-        return JsonResultImpl.getInstance(fileSystemManager.listPublicFileSystem().stream().map(StorageFactory::getMetadata).collect(Collectors.toList()));
+        return JsonResultImpl.getInstance(storageRegistry.listPublicStorageFactory().stream().map(StorageFactory::getMetadata).collect(Collectors.toList()));
     }
 
     /**

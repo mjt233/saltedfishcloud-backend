@@ -20,13 +20,14 @@
       - [X]方法`getDescribe`重命名为`getMatedata`
       - [ ]`getFileSystem`重命名为`getStorage`，返回值改为`Storage`
       - [ ]`testFileSystem`重命名为`testStorage`，参数改为`Storage`
-    - [ ] 定义`StorageRegistry`接口，负责注册和管理不同类型的`StorageFactory`，抽离的`DiskFileSystemManager`这部分的职责
-      - 转移`registerFileSystem`方法，并重命名为`registerStorageFactory`
-      - 转移`listAllFileSystem`方法，并重命名为`listStorageFactory`
-      - 转移`listPublicFileSystem`方法，并重命名为`listPublicStorageFactory`
-      - 转移`getFileSystem`方法，并重命名为`getStorage`，返回值改为`Storage`
-      - 转移`getFileSystemFactory`方法，并重命名为`getStorageFactory`
-      - 转移`isSupportedProtocol`
+    - [X] 定义`StorageRegistry`接口，负责注册和管理不同类型的`StorageFactory`，抽离的`DiskFileSystemManager`这部分的职责
+      - [X]转移`registerFileSystem`方法，并重命名为`registerStorageFactory`
+      - [X]转移`listAllFileSystem`方法，并重命名为`listStorageFactory`
+      - [X]转移`listPublicFileSystem`方法，并重命名为`listPublicStorageFactory`
+      - [X]转移`getFileSystem`方法，并重命名为`getStorage`
+      - [ ]`getFileSystem`方法返回值改为`Storage` 
+      - [X]转移`getFileSystemFactory`方法，并重命名为`getStorageFactory`
+      - [X]转移`isSupportedProtocol`
     - [ ] 实现`StorageFactory`的默认实现，支持本地文件系统和常见云存储（如S3、MinIO、Local）
     - [ ] `DiskFileSystemDispatcher`通过`StorageFactory`获取`Storage`实例，消除对具体实现的依赖
   - 存储实现与存储路由重构

@@ -20,8 +20,8 @@ import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordCompleteEvent;
 import com.xiaotao.saltedfishcloud.model.progress.event.UpdateFileRecordStartEvent;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
+import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
@@ -61,7 +61,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
 
     @Autowired
     @Lazy
-    private DiskFileSystemManager diskFileSystemManager;
+    private StorageRegistry storageRegistry;
 
     @Autowired
     private FileRecordService fileRecordService;
@@ -127,7 +127,7 @@ public class DiskFileSystemDispatcher implements DiskFileSystem {
         } else {
             try {
                 Map<String, Object> map = MapperHolder.parseJsonToMap(mountPoint.getParams());
-                DiskFileSystem fileSystem = diskFileSystemManager.getFileSystem(mountPoint.getProtocol(), map);
+                DiskFileSystem fileSystem = storageRegistry.getStorage(mountPoint.getProtocol(), map);
                 return new FileSystemMatchResult(fileSystem,mountPoint ,resolvePath(mountPoint.getPath(), path));
             } catch (Exception e) {
                 throw new RuntimeException(e);
