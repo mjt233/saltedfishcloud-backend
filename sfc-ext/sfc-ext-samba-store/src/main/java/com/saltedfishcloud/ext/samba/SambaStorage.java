@@ -23,7 +23,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -51,7 +51,7 @@ import java.util.function.Function;
  * Samba文件共享存储操作器
  */
 @Slf4j
-public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closeable {
+public class SambaStorage implements Storage, Closeable {
     private static final String LOG_PREFIX = "[Samba]";
     @Getter
     private final SambaProperty sambaProperty;
@@ -59,7 +59,7 @@ public class SambaDirectRawStoreHandler implements DirectRawStoreHandler, Closea
     private final SMBClient client;
     private final ObjectPool<Session> sessionObjectPool;
     private static final Set<AccessMask> ACCESS_MASK_SET = new HashSet<>(List.of(AccessMask.GENERIC_ALL));
-    public SambaDirectRawStoreHandler(SambaProperty property) {
+    public SambaStorage(SambaProperty property) {
         this.sambaProperty = property;
         this.client = new SMBClient(SmbConfig.createDefaultConfig());
         sessionObjectPool = PoolUtils.createObjectPool(new BasePooledObjectFactory<Session>() {

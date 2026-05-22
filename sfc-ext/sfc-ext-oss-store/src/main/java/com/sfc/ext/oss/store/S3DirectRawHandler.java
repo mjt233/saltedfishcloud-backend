@@ -14,7 +14,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 
 
 @Slf4j
-public class S3DirectRawHandler implements DirectRawStoreHandler {
+public class S3DirectRawHandler implements Storage {
     private final static String LOG_PREFIX = "[OSS存储]";
     private final AmazonS3 s3Client;
     private final OSSProperty property;
@@ -366,5 +366,10 @@ public class S3DirectRawHandler implements DirectRawStoreHandler {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+        s3Client.shutdown();
     }
 }

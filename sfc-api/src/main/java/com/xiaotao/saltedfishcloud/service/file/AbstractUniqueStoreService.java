@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
@@ -35,7 +35,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     private static final String LOG_TITLE = "Store-Unique";
 
     public AbstractUniqueStoreService(
-            DirectRawStoreHandler handler,
+            Storage handler,
             FileResourceMd5Resolver md5Resolver,
             StoreService rawStoreService
     ) {

@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
@@ -20,14 +20,14 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class OSSDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<OSSProperty, DiskFileSystem> {
     private final ThumbnailService thumbnailService;
-    private final Map<String, Function<OSSProperty, DirectRawStoreHandler>> factoryMap = new ConcurrentHashMap<>();
+    private final Map<String, Function<OSSProperty, Storage>> factoryMap = new ConcurrentHashMap<>();
 
     /**
      * 注册一个新的OSS存储类型
      * @param type  OSS类型
      * @param factory   存储工厂方法
      */
-    public void registerOSSStoreType(String type, Function<OSSProperty, DirectRawStoreHandler> factory) {
+    public void registerOSSStoreType(String type, Function<OSSProperty, Storage> factory) {
         if(factoryMap.putIfAbsent(type, factory) != null) {
             throw new IllegalArgumentException("类型为" + type + "的OSS存储已注册");
         }
@@ -54,8 +54,8 @@ public class OSSDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<O
 
     @Override
     public DiskFileSystem generateDiskFileSystem(OSSProperty property) throws IOException {
-        Function<OSSProperty, DirectRawStoreHandler> storeFactory = Objects.requireNonNull(factoryMap.get(property.getType()), "未注册类型为" + property.getType() + "的OSS存储");
-        DirectRawStoreHandler rawStoreHandler = storeFactory.apply(property);
+        Function<OSSProperty, Storage> storeFactory = Objects.requireNonNull(factoryMap.get(property.getType()), "未注册类型为" + property.getType() + "的OSS存储");
+        Storage rawStoreHandler = storeFactory.apply(property);
         RawDiskFileSystem fileSystem = new RawDiskFileSystem(rawStoreHandler, "/");
         fileSystem.setThumbnailService(thumbnailService);
         return fileSystem;

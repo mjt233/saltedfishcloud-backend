@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.springframework.core.io.Resource;
@@ -45,7 +45,7 @@ public class DefaultAttachStorage implements AttachStorage {
      *
      * @return 底层原始存储操作器
      */
-    private DirectRawStoreHandler getStorageProvider() {
+    private Storage getStorageProvider() {
         return storeServiceFactory.getService().getStorageProvider();
     }
 
@@ -122,7 +122,7 @@ public class DefaultAttachStorage implements AttachStorage {
      */
     @Override
     public Optional<Resource> getFile(String path) throws IOException {
-        DirectRawStoreHandler storageProvider = getStorageProvider();
+        Storage storageProvider = getStorageProvider();
         return Optional.ofNullable(storageProvider.getResource(resolveStoragePath(path)));
     }
 
@@ -150,7 +150,7 @@ public class DefaultAttachStorage implements AttachStorage {
      */
     @Override
     public Optional<List<FileInfo>> listFiles(String path) throws IOException {
-        DirectRawStoreHandler storageProvider = getStorageProvider();
+        Storage storageProvider = getStorageProvider();
         String targetPath = resolveStoragePath(path);
         FileInfo fileInfo = storageProvider.getFileInfo(targetPath);
         if (fileInfo == null || !fileInfo.isDir()) {

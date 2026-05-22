@@ -3,7 +3,7 @@ package com.saltedfishcloud.ext.ftp;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -24,21 +24,19 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class FTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeable {
+public class FTPStorage implements Storage, Closeable {
     private final static String LOG_PREFIX = "[FTP Client]";
     private final ObjectPool<FTPSession> pool;
     private final static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
-    public FTPDirectRawStoreHandler(FTPProperty property) {
+    public FTPStorage(FTPProperty property) {
         pool = PoolUtils.createObjectPool(new BasePooledObjectFactory<>() {
             @Override
             public FTPSession create() throws Exception {

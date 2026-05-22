@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.samba.filesystem;
 
-import com.saltedfishcloud.ext.samba.SambaDirectRawStoreHandler;
+import com.saltedfishcloud.ext.samba.SambaStorage;
 import com.saltedfishcloud.ext.samba.SambaProperty;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
@@ -58,7 +58,7 @@ public class SambaDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory
 
     @Override
     public RawDiskFileSystem generateDiskFileSystem(SambaProperty property) throws IOException {
-        SambaDirectRawStoreHandler handler = new SambaDirectRawStoreHandler(property);
+        SambaStorage handler = new SambaStorage(property);
         RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getBasePath());
         fileSystem.setThumbnailService(thumbnailService);
         return fileSystem;

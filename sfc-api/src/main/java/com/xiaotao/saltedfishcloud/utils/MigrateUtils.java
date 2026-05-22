@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,7 +23,7 @@ public class MigrateUtils {
      * @param dest  在存储服务中的目标新路径
      */
     public static void moveDirectory(String src, String dest) throws IOException {
-        DirectRawStoreHandler storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
+        Storage storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
         String root = SpringContextUtils.getContext().getBean(SysProperties.class).getStore().getRoot();
         String srcPath = StringUtils.appendPath(root, src);
         String descPath = StringUtils.appendPath(root, dest);

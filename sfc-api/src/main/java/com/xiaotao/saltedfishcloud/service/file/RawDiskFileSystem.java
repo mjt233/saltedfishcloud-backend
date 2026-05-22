@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  */
 public class RawDiskFileSystem implements DiskFileSystem, Closeable {
     @Getter
-    private final DirectRawStoreHandler storeHandler;
+    private final Storage storeHandler;
 
     @Getter
     private final CopyAndMoveHandler camHandler;
@@ -49,7 +49,7 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
      * @param storeHandler  存储操作器
      * @param basePath      统一给所有操作添加的路径前缀
      */
-    public RawDiskFileSystem(DirectRawStoreHandler storeHandler, String basePath) throws IOException {
+    public RawDiskFileSystem(Storage storeHandler, String basePath) throws IOException {
         if ("".equals(basePath)) {
             basePath = ".";
         }
@@ -66,7 +66,7 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
      * @param storeHandler  存储操作器
      * @param basePath      统一给所有操作添加的路径前缀
      */
-    public RawDiskFileSystem(DirectRawStoreHandler storeHandler, String basePath, CopyAndMoveProperty property) throws IOException {
+    public RawDiskFileSystem(Storage storeHandler, String basePath, CopyAndMoveProperty property) throws IOException {
         if ("".equals(basePath)) {
             basePath = ".";
         }

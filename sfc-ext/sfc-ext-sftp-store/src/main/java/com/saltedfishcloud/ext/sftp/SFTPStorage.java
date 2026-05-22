@@ -4,7 +4,7 @@ import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeable {
+public class SFTPStorage implements Storage, Closeable {
     private final static String LOG_PREFIX = "[SFTP]";
     private final static EnumSet<OpenMode> CREATE_OPEN_MODE = EnumSet.of(OpenMode.WRITE, OpenMode.CREAT, OpenMode.TRUNC);
 
@@ -41,7 +41,7 @@ public class SFTPDirectRawStoreHandler implements DirectRawStoreHandler, Closeab
 
     private final ObjectPool<SFTPSession> pool;
 
-    public SFTPDirectRawStoreHandler(SFTPProperty property) {
+    public SFTPStorage(SFTPProperty property) {
         this.property = property;
         pool = PoolUtils.createObjectPool(new BasePooledObjectFactory<>() {
             @Override

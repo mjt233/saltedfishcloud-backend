@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.store;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
@@ -28,7 +28,7 @@ import java.util.Optional;
  * 本地文件系统的直接原始操作类
  */
 @Slf4j
-public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
+public class LocalStorage implements Storage {
     @Override
     public OutputStream newOutputStream(String path) throws IOException {
         if (exist(path)) {
@@ -192,5 +192,10 @@ public class LocalDirectRawStoreHandler implements DirectRawStoreHandler {
                         log.warn("无法更新文件属性: {} -> {}", filePath, e.getMessage());
                     }
                 });
+    }
+
+    @Override
+    public void close() throws Exception {
+
     }
 }

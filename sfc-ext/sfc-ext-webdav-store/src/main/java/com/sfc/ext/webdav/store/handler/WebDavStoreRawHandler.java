@@ -10,7 +10,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.RejectRegex;
@@ -30,7 +30,7 @@ import java.util.concurrent.Semaphore;
 import java.util.regex.Pattern;
 
 @Slf4j
-public class WebDavStoreRawHandler implements DirectRawStoreHandler, Closeable {
+public class WebDavStoreRawHandler implements Storage, Closeable {
     private final WebDavClientProperty property;
     private final Sardine sardine;
 

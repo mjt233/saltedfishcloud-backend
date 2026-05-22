@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-public class HDFSStoreHandler implements DirectRawStoreHandler, Closeable {
+public class HDFSStoreHandler implements Storage, Closeable {
     private final FileSystem fs;
     public HDFSStoreHandler(FileSystem fs) {
         this.fs = fs;

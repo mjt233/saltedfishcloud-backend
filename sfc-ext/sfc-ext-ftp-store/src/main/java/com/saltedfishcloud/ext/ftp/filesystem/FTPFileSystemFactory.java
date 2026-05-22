@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.ftp.filesystem;
 
-import com.saltedfishcloud.ext.ftp.FTPDirectRawStoreHandler;
+import com.saltedfishcloud.ext.ftp.FTPStorage;
 import com.saltedfishcloud.ext.ftp.FTPProperty;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
@@ -33,7 +33,7 @@ public class FTPFileSystemFactory extends AbstractRawDiskFileSystemFactory<FTPPr
 
     @Override
     public RawDiskFileSystem generateDiskFileSystem(FTPProperty property) throws IOException {
-        FTPDirectRawStoreHandler handler = new FTPDirectRawStoreHandler(property);
+        FTPStorage handler = new FTPStorage(property);
         RawDiskFileSystem fileSystem = new RawDiskFileSystem(handler, property.getPath());
 
         if (property.getUseThumbnail()) {

@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemDescribe;
 import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalDirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.impl.store.LocalStorage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -63,7 +63,7 @@ public class LocalFileSystemFactory extends AbstractRawDiskFileSystemFactory<Str
 
     @Override
     public RawDiskFileSystem generateDiskFileSystem(String path) throws IOException {
-        LocalDirectRawStoreHandler handler = new LocalDirectRawStoreHandler();
+        LocalStorage handler = new LocalStorage();
         RawDiskFileSystem rawDiskFileSystem = new RawDiskFileSystem(handler, path);
         rawDiskFileSystem.setThumbnailService(thumbnailService);
         return rawDiskFileSystem;

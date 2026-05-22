@@ -43,7 +43,7 @@ public class LocalStoreService extends AbstractRawStoreService implements Applic
     }
 
     public LocalStoreService(FileResourceMd5Resolver md5Resolver) {
-        super(new LocalDirectRawStoreHandler(), md5Resolver);
+        super(new LocalStorage(), md5Resolver);
     }
 
     @Override

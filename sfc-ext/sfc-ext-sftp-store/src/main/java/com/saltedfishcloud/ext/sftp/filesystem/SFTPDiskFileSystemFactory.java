@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.sftp.filesystem;
 
-import com.saltedfishcloud.ext.sftp.SFTPDirectRawStoreHandler;
+import com.saltedfishcloud.ext.sftp.SFTPStorage;
 import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawDiskFileSystemFactory;
@@ -52,7 +52,7 @@ public class SFTPDiskFileSystemFactory extends AbstractRawDiskFileSystemFactory<
     public RawDiskFileSystem generateDiskFileSystem(SFTPProperty property) {
         RawDiskFileSystem fileSystem = null;
         try {
-            fileSystem = new RawDiskFileSystem(new SFTPDirectRawStoreHandler(property), property.getPath());
+            fileSystem = new RawDiskFileSystem(new SFTPStorage(property), property.getPath());
             fileSystem.setThumbnailService(thumbnailService);
             return fileSystem;
         } catch (IOException e) {

@@ -13,7 +13,7 @@ import java.io.InputStream;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SFTPResource extends AbstractResource {
-    private SFTPDirectRawStoreHandler handler;
+    private SFTPStorage handler;
     private String path;
     private long size;
     private long lastModified;

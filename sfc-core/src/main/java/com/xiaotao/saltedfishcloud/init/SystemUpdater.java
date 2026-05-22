@@ -9,7 +9,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileInfoService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.MigrateUtils;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
@@ -65,7 +65,7 @@ public class SystemUpdater {
     public void update3_1_0() throws IOException {
         // 迁移头像数据
         // 升级到 3.1.0 由于头像存储采用了统一的 AttachStorage附属存储机制 和 单独的 UserCustomStore接口，需要将数据从旧的存储区中迁移到新的存储区
-        DirectRawStoreHandler storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
+        Storage storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
         SysProperties sysProperties = SpringContextUtils.getContext().getBean(SysProperties.class);
         UserCustomStoreService userCustomStoreService = SpringContextUtils.getContext().getBean(UserCustomStoreService.class);
 

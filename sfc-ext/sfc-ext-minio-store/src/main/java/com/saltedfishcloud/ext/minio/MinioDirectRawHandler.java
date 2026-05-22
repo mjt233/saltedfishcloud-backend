@@ -4,7 +4,7 @@ import com.saltedfishcloud.ext.minio.utils.MinioUtils;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -32,7 +32,7 @@ import java.util.stream.StreamSupport;
  * 基于Minio的存储直接操作器
  */
 @Slf4j
-public class MinioDirectRawHandler implements DirectRawStoreHandler {
+public class MinioDirectRawHandler implements Storage {
     private final MinioClient client;
     private final MinioProperties properties;
     private final static String LOG_PREFIX = "[Minio]";
@@ -327,5 +327,9 @@ public class MinioDirectRawHandler implements DirectRawStoreHandler {
     @Override
     public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
 
+    }
+
+    @Override
+    public void close() throws Exception {
     }
 }

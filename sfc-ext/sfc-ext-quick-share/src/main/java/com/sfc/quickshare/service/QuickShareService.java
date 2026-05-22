@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.Getter;
@@ -135,7 +135,7 @@ public class QuickShareService {
     /**
      * 获取快速分享文件的文件存储服务
      */
-    private DirectRawStoreHandler getStoreService() {
+    private Storage getStoreService() {
         return storeServiceFactory.getTempStoreService();
     }
 

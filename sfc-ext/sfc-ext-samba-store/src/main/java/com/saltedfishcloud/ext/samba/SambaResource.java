@@ -15,14 +15,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class SambaResource extends AbstractResource {
-    private final SambaDirectRawStoreHandler handler;
+    private final SambaStorage handler;
     private final String path;
 
     private String filename;
     private Long lastModified;
     private String smbPath;
 
-    public SambaResource(SambaDirectRawStoreHandler handler, String path, String filename, Long lastModified, String smbPath) {
+    public SambaResource(SambaStorage handler, String path, String filename, Long lastModified, String smbPath) {
         this.handler = handler;
         this.path = path;
         this.filename = filename;
