@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class StoreTypeSwitch {
 
     private void doSwitch(StoreMode targetMode) throws IOException {
         log.info("[Store Switch]切换到{}", targetMode);
-        List<User> users = userRepo.getUserList();
+        List<User> users = new ArrayList<>(userRepo.getUserList());
         users.add(User.getPublicUser());
 
         final StoreService srcStoreService = targetMode == StoreMode.UNIQUE ?
