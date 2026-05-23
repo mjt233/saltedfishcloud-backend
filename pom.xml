@@ -27,7 +27,7 @@
     <description>咸鱼云网盘</description>
 
     <properties>
-        <revision>3.1.1</revision>
+        <revision>3.1.2</revision>
         <!--  前端项目路径通过环境变量 SFC_FRONT_END_PATH 提供，配置后在 package 时自动打包到 webapp -->
         <java.version>25</java.version>
         <lombok.version>1.18.42</lombok.version>
@@ -249,14 +249,6 @@
                     <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
                     <parameters>true</parameters>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>versions-maven-plugin</artifactId>
-                <version>2.3</version>
-                <configuration>
-                    <generateBackupPoms>false</generateBackupPoms>
                 </configuration>
             </plugin>
 

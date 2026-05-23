@@ -12,7 +12,8 @@
     <properties>
         <java.version>25</java.version>
         <lombok.version>1.18.42</lombok.version>
-        <revision>3.1.1</revision>
+        <revision>3.1.2</revision>
+        <api.version>${revision}</api.version>
         <rpc.version>1.0.0</rpc.version>
         <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
