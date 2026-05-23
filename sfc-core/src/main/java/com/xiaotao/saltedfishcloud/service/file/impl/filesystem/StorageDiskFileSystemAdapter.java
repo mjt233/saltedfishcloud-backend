@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -175,11 +174,6 @@ public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
         result[0] = fileInfos.stream().filter(FileInfo::isDir).collect(Collectors.toList());
         result[1] = fileInfos.stream().filter(FileInfo::isFile).collect(Collectors.toList());
         return result;
-    }
-
-    @Override
-    public LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

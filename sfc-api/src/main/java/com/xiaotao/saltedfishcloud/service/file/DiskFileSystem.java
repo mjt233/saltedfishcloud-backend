@@ -22,7 +22,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -129,15 +128,6 @@ public interface DiskFileSystem {
      * @param nameList 路径下要筛选的文件列表，可为空或null表示不限制
      */
     List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException;
-
-    /**
-     * 获取用户所有文件信息<br>
-     * 默认正序为根目录优先，倒序为最深级目录优先
-     * @param uid   用户ID
-     * @param reverse 目录排序倒序
-     * @return      文件信息集合，key为目录名，value为该目录下的文件信息列表
-     */
-    LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse);
 
     /**
      * 通过节点ID获取节点下的文件信息

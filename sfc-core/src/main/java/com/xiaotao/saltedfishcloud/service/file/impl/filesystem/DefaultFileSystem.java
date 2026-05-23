@@ -395,11 +395,6 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     }
 
     @Override
-    public LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse) {
-        return mainExecutor.collectFiles(uid, reverse);
-    }
-
-    @Override
     public List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId) {
         return mainExecutor.getUserFileListByNodeId(uid, nodeId);
     }

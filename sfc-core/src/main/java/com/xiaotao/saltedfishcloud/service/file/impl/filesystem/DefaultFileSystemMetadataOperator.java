@@ -22,9 +22,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -330,30 +328,6 @@ public class DefaultFileSystemMetadataOperator implements FileSystemMetadataOper
             }
         });
         return new List[]{dirs, files};
-    }
-
-    /**
-     * 采集用户全部目录及其子文件。
-     *
-     * @param uid 用户ID
-     * @param reverse 是否倒序
-     * @return 目录到文件列表的映射
-     */
-    public LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse) {
-        LinkedHashMap<String, List<FileInfo>> result = new LinkedHashMap<>();
-        List<FileInfo> dirs = new LinkedList<>();
-        String rootNodeId = String.valueOf(uid);
-        dirs.add(FileInfo.getRoot(uid));
-        dirs.addAll(fileRecordService.listChildDirs(uid, rootNodeId, -1));
-        if (reverse) {
-            Collections.reverse(dirs);
-        }
-        for (FileInfo dirInfo : dirs) {
-            String dir = getPathByNodeId(uid, dirInfo.getMd5())
-                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "数据移除，节点信息" + dirInfo.getMd5() + "丢失"));
-            result.put(dir, findByUidAndNodeId(uid, dirInfo.getMd5()));
-        }
-        return result;
     }
 
     /**

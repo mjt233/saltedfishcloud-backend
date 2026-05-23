@@ -10,7 +10,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -226,15 +225,6 @@ public interface FileSystemMetadataOperator {
      * @return 文件列表数组
      */
     List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId);
-
-    /**
-     * 采集用户全部目录及其子文件。
-     *
-     * @param uid 用户ID
-     * @param reverse 是否倒序
-     * @return 目录到文件列表的映射
-     */
-    LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse);
 
     /**
      * 执行文件搜索。

@@ -9,6 +9,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
+import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,9 +20,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 存储类型切换器
@@ -66,19 +65,18 @@ public class StoreTypeSwitch {
         for (User user : users) {
             long uid = user.getId();
             log.debug("[Store Switch]处理用户：{}", user.getUser());
-            LinkedHashMap<String, List<FileInfo>> allFile = fileService.getMainFileSystem().collectFiles(user.getId(), false);
-
-            //  文件迁移
-            for (Map.Entry<String, List<FileInfo>> entry : allFile.entrySet()) {
-                String dirPath = entry.getKey();
-                List<FileInfo> files = entry.getValue();
-                for (FileInfo file : files) {
+            DiskFileSystemUtils.walk(fileService.getMainFileSystem(), uid, "/", (dirPath, fileList) -> {
+                for (FileInfo file : fileList) {
+                    if (Boolean.TRUE.equals(file.getIsMount()) || file.getMountId() != null) {
+                        // 挂载的外部存储不处理
+                        continue;
+                    }
                     if(file.isDir()) {
                         if (targetMode == StoreMode.RAW) {
                             destStoreService.mkdir(uid, dirPath, file.getName());
                         }
                         continue;
-                    };
+                    }
                     final String diskFullPath = StringUtils.appendPath(dirPath, file.getName());
 
                     // unique不支持list
@@ -97,11 +95,10 @@ public class StoreTypeSwitch {
                     try(final InputStream is = resource.getInputStream()) {
                         destStoreService.store(uid, is, dirPath, file);
                     } catch (FileNotFoundException e) {
-                        log.error("[Store Switch]出错：{}/{}",dirPath, file.getName());
-                        e.printStackTrace();
+                        log.error("[Store Switch]出错：{}/{} ",dirPath, file.getName(), e);
                     }
                 }
-            }
+            });
         }
 
         // 切换后，清理存储仓库

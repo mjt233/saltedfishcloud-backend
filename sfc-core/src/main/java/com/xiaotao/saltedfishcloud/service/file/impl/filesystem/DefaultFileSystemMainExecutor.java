@@ -277,17 +277,6 @@ public class DefaultFileSystemMainExecutor {
     }
 
     /**
-     * 采集主文件系统全部目录结构。
-     *
-     * @param uid 用户ID
-     * @param reverse 是否倒序
-     * @return 目录到文件列表映射
-     */
-    public LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse) {
-        return metadataOperator.collectFiles(uid, reverse);
-    }
-
-    /**
      * 按节点ID列出主文件系统中的文件。
      *
      * @param uid 用户ID
