@@ -50,8 +50,6 @@ public class DebugController {
         }
         data.put("READ_ONLY_LEVEL", SysRuntimeConfig.getInstance().getProtectModeLevel());
         data.put("read_only_level", SysRuntimeConfig.getInstance().getProtectModeLevel());
-        data.put("sync_delay", sysCommonConfig.getSyncInterval());
-
         return JsonResultImpl.getInstance(200, data, "小写字段将在后续版本中废弃");
     }
 }

@@ -3,11 +3,10 @@ package com.xiaotao.saltedfishcloud.service.file.store.attach;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -64,6 +63,10 @@ public class DefaultAttachStorageManager implements AttachStorageManager {
         copiedDefinition.setId(normalizedStorageDomainId);
         AttachStorageDomainDefinition exists = definitionMap.putIfAbsent(normalizedStorageDomainId, copiedDefinition);
         if (exists != null) {
+            // 不同服务可能会复用一个存储域，当存储域配置相同时允许重复注册
+            if (exists.equals(copiedDefinition)) {
+                return;
+            }
             throw new JsonException(400, "附属存储域已注册：" + normalizedStorageDomainId);
         }
         try {
@@ -105,7 +108,7 @@ public class DefaultAttachStorageManager implements AttachStorageManager {
     /**
      * 获取当前生效的底层原始存储操作器。
      */
-    private DirectRawStoreHandler getStorageProvider() {
+    private Storage getStorageProvider() {
         return storeServiceFactory.getService().getStorageProvider();
     }
 

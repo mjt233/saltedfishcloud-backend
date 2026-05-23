@@ -9,7 +9,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileInfoService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.MigrateUtils;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
@@ -65,7 +65,7 @@ public class SystemUpdater {
     public void update3_1_0() throws IOException {
         // 迁移头像数据
         // 升级到 3.1.0 由于头像存储采用了统一的 AttachStorage附属存储机制 和 单独的 UserCustomStore接口，需要将数据从旧的存储区中迁移到新的存储区
-        DirectRawStoreHandler storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
+        Storage storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
         SysProperties sysProperties = SpringContextUtils.getContext().getBean(SysProperties.class);
         UserCustomStoreService userCustomStoreService = SpringContextUtils.getContext().getBean(UserCustomStoreService.class);
 
@@ -101,6 +101,17 @@ public class SystemUpdater {
 
         // 迁移缩略图缓存
         MigrateUtils.moveDirectory("temp/thumbnail", "attach/thumbnail");
+    }
+
+    /**
+     * 迁移 3.1.2 版本调整后的临时数据目录。
+     * <p>
+     * 由于移除了 {@code TempStoreService}，原本位于临时目录中的第三方平台头像缓存需要迁移到附属存储目录中。
+     */
+    @UpdateAction("3.1.2")
+    public void update3_1_2() throws IOException {
+        MigrateUtils.moveDirectory("temp/thirdPlatformAvatar", "attach/third_platform_avatar");
+        MigrateUtils.moveDirectory("temp/quick_share", "attach/quick_share");
     }
 
 

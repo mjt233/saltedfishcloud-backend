@@ -2,6 +2,8 @@ package com.sfc.mcp.tools;
 
 import com.sfc.mcp.model.McpFileEntry;
 import com.sfc.mcp.model.McpFileListResult;
+import com.sfc.mcp.model.McpFileSearchEntry;
+import com.sfc.mcp.model.McpFileSearchResult;
 import com.sfc.mcp.model.McpOperationResult;
 import com.sfc.mcp.service.McpUploadService;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
@@ -9,11 +11,13 @@ import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -34,8 +38,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * MCP 网盘工具服务。
@@ -50,6 +57,7 @@ import java.util.Optional;
 public class McpDiskTools {
 
     private final DiskFileSystemManager diskFileSystemManager;
+    private final FileRecordService fileRecordService;
     private final UserService userService;
     private final McpUploadService mcpUploadService;
     private final FileLinkService fileLinkService;
@@ -102,6 +110,34 @@ public class McpDiskTools {
         List<McpFileEntry> dirs = fileList == null ? Collections.emptyList() : toEntries(fileList[0]);
         List<McpFileEntry> files = fileList == null ? Collections.emptyList() : toEntries(fileList[1]);
         return new McpFileListResult(uidValue, path, dirs, files);
+    }
+
+    /**
+     * 按关键字分页搜索网盘文件或目录。
+     *
+     * @param uid 资源所属用户 ID。0 表示公共网盘，正整数表示私人网盘
+     * @param keyword 搜索关键词，不能为空
+     * @param page 页码，从 1 开始
+     * @param size 每页大小，最小 1
+     * @return 搜索分页结果
+     */
+    @McpTool(name = "search_files", description = "根据关键字分页搜索公共网盘或私人网盘中的文件和目录")
+    public McpFileSearchResult searchFiles(
+            @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，正整数表示私人网盘") String uid,
+            @McpToolParam(description = "搜索关键字，不能为空") String keyword,
+            @McpToolParam(description = "页码，从 0 开始") String page,
+            @McpToolParam(description = "每页大小，范围 1-200") String size
+    ) throws IOException {
+        long uidValue = parseUid(uid);
+        UIDValidator.validateWithException(uidValue, false);
+        if (!StringUtils.hasText(keyword)) {
+            throw new JsonException(CommonError.FORMAT_ERROR, "keyword不能为空");
+        }
+        int pageValue = parsePositiveInt(page, "page", null);
+        int sizeValue = parsePositiveInt(size, "size", 200);
+        CommonPageInfo<FileInfo> result = diskFileSystemManager.getMainFileSystem()
+                .search(uidValue, keyword, pageValue, sizeValue);
+        return toSearchResult(uidValue, keyword, pageValue, sizeValue, result);
     }
 
     /**
@@ -326,6 +362,79 @@ public class McpDiskTools {
             entries.add(new McpFileEntry(fileInfo.getName(), fileInfo.getSize(), fileInfo.getMtime(), fileInfo.isDir(), md5));
         }
         return entries;
+    }
+
+    /**
+     * 将搜索结果分页信息转换为 MCP 搜索返回结构。
+     *
+     * @param uid 资源所属用户 ID
+     * @param keyword 搜索关键字
+     * @param page 页码（从 1 开始）
+     * @param size 每页大小
+     * @param result 原始分页结果
+     * @return MCP 搜索分页结果
+     */
+    private McpFileSearchResult toSearchResult(long uid, String keyword, int page, int size, CommonPageInfo<FileInfo> result) throws IOException {
+        List<McpFileSearchEntry> entries = toSearchEntries(uid, result == null ? null : result.getContent());
+        long totalPage = result == null ? 0L : result.getTotalPage();
+        long totalCount = result == null ? 0L : result.getTotalCount();
+        return new McpFileSearchResult(uid, keyword, page, size, totalPage, totalCount, entries);
+    }
+
+    /**
+     * 将文件信息列表转换为 MCP 搜索条目列表。
+     *
+     * @param fileInfos 文件信息列表
+     * @return MCP 搜索条目列表
+     */
+    private List<McpFileSearchEntry> toSearchEntries(long uid, List<FileInfo> fileInfos) throws IOException {
+        List<FileInfo> items = Optional.ofNullable(fileInfos).orElse(Collections.emptyList());
+        Map<String, List<FileInfo>> groupedByNode = items.stream()
+                .filter(fileInfo -> StringUtils.hasText(fileInfo.getNode()))
+                .collect(Collectors.groupingBy(FileInfo::getNode, LinkedHashMap::new, Collectors.toList()));
+
+        List<McpFileSearchEntry> entries = new ArrayList<>();
+        for (Map.Entry<String, List<FileInfo>> entry : groupedByNode.entrySet()) {
+            String nodeId = entry.getKey();
+            String parentPath = fileRecordService.getPathByNodeId(uid, nodeId).orElse(null);
+            if (!StringUtils.hasText(parentPath)) {
+                continue;
+            }
+            for (FileInfo fileInfo : entry.getValue()) {
+                entries.add(new McpFileSearchEntry(
+                        fileInfo.getName(),
+                        fileInfo.getSize(),
+                        fileInfo.getMtime(),
+                        fileInfo.isDir(),
+                        fileInfo.getMd5(),
+                        StringUtils.appendPath(parentPath, fileInfo.getName())
+                ));
+            }
+        }
+        return entries;
+    }
+
+    /**
+     * 解析正整数参数（可选上限）。
+     *
+     * @param value 参数值
+     * @param paramName 参数名
+     * @param max 最大值，null 表示不限制
+     * @return 解析后的正整数
+     */
+    private int parsePositiveInt(String value, String paramName, Integer max) {
+        try {
+            int parsedValue = Integer.parseInt(value);
+            if (parsedValue < 0) {
+                throw new JsonException(CommonError.FORMAT_ERROR, paramName + "必须大于等于0");
+            }
+            if (max != null && parsedValue > max) {
+                throw new JsonException(CommonError.FORMAT_ERROR, paramName + "必须小于等于" + max);
+            }
+            return parsedValue;
+        } catch (NumberFormatException ex) {
+            throw new JsonException(CommonError.FORMAT_ERROR, paramName + "格式错误");
+        }
     }
 
     /**

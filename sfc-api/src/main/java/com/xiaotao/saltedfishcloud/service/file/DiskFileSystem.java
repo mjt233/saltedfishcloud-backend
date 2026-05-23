@@ -22,7 +22,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -130,24 +129,20 @@ public interface DiskFileSystem {
      */
     List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException;
 
-    /**
-     * 获取用户所有文件信息<br>
-     * 默认正序为根目录优先，倒序为最深级目录优先
-     * @param uid   用户ID
-     * @param reverse 目录排序倒序
-     * @return      文件信息集合，key为目录名，value为该目录下的文件信息列表
-     */
-    LinkedHashMap<String, List<FileInfo>> collectFiles(long uid, boolean reverse);
-
-    /**
-     * 通过节点ID获取节点下的文件信息
-     * @param uid       用户ID
-     * @param nodeId    节点ID
-     * @return          一个List数组，数组下标0为目录，1为文件，或null
-     */
-    List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId);
-
     CommonPageInfo<FileInfo> search(long uid, String key, Integer page);
+
+    /**
+     * 搜索目标用户网盘中的文件或目录，并指定分页大小。
+     *
+     * @param uid 资源所属用户ID
+     * @param key 搜索关键字
+     * @param page 页码（从0开始）
+     * @param size 每页数量
+     * @return 分页搜索结果
+     */
+    default CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
+        return search(uid, key, page);
+    }
 
     /**
      * 通过移动本地文件的方式存储文件

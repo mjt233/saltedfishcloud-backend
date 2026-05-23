@@ -2,10 +2,10 @@ package com.saltedfishcloud.ext.minio;
 
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStoreService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 
 public class MinioStoreService extends AbstractRawStoreService {
-    public MinioStoreService(DirectRawStoreHandler handler, FileResourceMd5Resolver md5Resolver) {
+    public MinioStoreService(Storage handler, FileResourceMd5Resolver md5Resolver) {
         super(handler, md5Resolver);
     }
 

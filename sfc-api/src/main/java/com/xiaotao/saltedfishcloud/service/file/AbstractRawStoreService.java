@@ -13,18 +13,15 @@ import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
-import com.xiaotao.saltedfishcloud.utils.FileUtils;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
-import com.xiaotao.saltedfishcloud.validator.FileValidator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -50,14 +47,13 @@ public abstract class AbstractRawStoreService implements StoreService {
     @Setter
     private int maxDepth = 64;
 
-    protected final DirectRawStoreHandler handler;
+    protected final Storage handler;
     protected final CopyAndMoveHandler copyAndMoveHandler;
     protected FileResourceMd5Resolver md5Resolver;
 
     private volatile StoreService uniqueStoreService;
-    private volatile TempStoreService tempStoreService;
 
-    public AbstractRawStoreService(DirectRawStoreHandler handler,
+    public AbstractRawStoreService(Storage handler,
                                    FileResourceMd5Resolver md5Resolver
     ) {
         Assert.notNull(handler, "未能获取到存储操作器");
@@ -69,7 +65,7 @@ public abstract class AbstractRawStoreService implements StoreService {
 
     /**
      * 文件移动是否需要递归执行。
-     * @return 若返回值为true，则通过递归逐个移动文件。若为false，则直接调用{@link CopyAndMoveHandler#moveFile(java.lang.String, java.lang.String)}方法进行移动。
+     * @return 若返回值为true，则通过递归逐个移动文件。若为false，则直接调用{@link CopyAndMoveHandler#moveFile(java.lang.String, java.lang.String, com.xiaotao.saltedfishcloud.model.progress.FileTransferItem)}方法进行移动。
      * 使用递归移动时，支持同名目录合并。
      *
      */
@@ -82,9 +78,9 @@ public abstract class AbstractRawStoreService implements StoreService {
     }
 
     private static class CopyAndMoveHandlerImpl extends CopyAndMoveHandler {
-        private final DirectRawStoreHandler handler;
+        private final Storage handler;
         private final boolean moveWithRecursion;
-        public CopyAndMoveHandlerImpl(DirectRawStoreHandler handler, boolean moveWithRecursion) {
+        public CopyAndMoveHandlerImpl(Storage handler, boolean moveWithRecursion) {
             super(handler);
             this.handler = handler;
             this.moveWithRecursion = moveWithRecursion;
@@ -326,21 +322,6 @@ public abstract class AbstractRawStoreService implements StoreService {
         copyAndMoveHandler.move(src, dst, overwrite);
     }
 
-    @Override
-    public TempStoreService getTempFileHandler() {
-        // 双重校验锁懒汉单例
-        if (tempStoreService != null) {
-            return tempStoreService;
-        }
-        synchronized (this) {
-            if (tempStoreService != null) {
-                return tempStoreService;
-            }
-            String tempRoot = getTempRoot();
-            tempStoreService = new DefaultTempStoreService(handler, tempRoot);
-        }
-        return tempStoreService;
-    }
 
     @Override
     public List<FileSystemStatus> getStatus() {
@@ -354,7 +335,7 @@ public abstract class AbstractRawStoreService implements StoreService {
     }
 
     @Override
-    public DirectRawStoreHandler getStorageProvider() {
+    public Storage getStorageProvider() {
         return this.handler;
     }
 }

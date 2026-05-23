@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.List;
 @Slf4j
 public class DefaultUniqueStoreService extends AbstractUniqueStoreService {
     private final AbstractRawStoreService rawStoreService;
-    public DefaultUniqueStoreService(DirectRawStoreHandler handler,
+    public DefaultUniqueStoreService(Storage handler,
                                      FileResourceMd5Resolver md5Resolver,
                                      AbstractRawStoreService rawStoreService
     ) {
