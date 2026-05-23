@@ -11,7 +11,7 @@ import java.util.Objects;
 /**
  * 文件系统路由上下文，封装一次路径匹配后的执行语义。
  */
-class FileSystemRouteContext {
+public class FileSystemRouteContext {
     /**
      * 匹配到的委托文件系统。主文件系统路由时为null。
      */
