@@ -22,16 +22,17 @@
     <artifactId>saltedfishcloud</artifactId>
 
     <!--  主版本号   -->
-    <version>3.1.1</version>
+    <version>${revision}</version>
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
     <properties>
+        <revision>3.1.1</revision>
         <!--  前端项目路径通过环境变量 SFC_FRONT_END_PATH 提供，配置后在 package 时自动打包到 webapp -->
         <java.version>25</java.version>
         <lombok.version>1.18.42</lombok.version>
         <!--   系统核心api模块版本     -->
-        <api.version>3.1.1</api.version>
+        <api.version>${revision}</api.version>
         <task.version>1.0.0</task.version>
         <rpc.version>1.0.0</rpc.version>
         <oshi.version>6.4.0</oshi.version>
