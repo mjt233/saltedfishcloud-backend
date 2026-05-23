@@ -34,9 +34,12 @@ public class MountPointController {
     private StorageRegistry storageRegistry;
 
     /**
-     * 获取可用的文件系统
+     * 获取可用的外部存储
      */
-    @GetMapping("listAvailableFileSystem")
+    @GetMapping({
+            "listAvailableFileSystem",
+            "listAvailableStorage"
+    })
     public JsonResult<List<StorageMetadata>> listAvailableFileSystem() {
         return JsonResultImpl.getInstance(storageRegistry.listPublicStorageFactory().stream().map(StorageFactory::getMetadata).collect(Collectors.toList()));
     }
