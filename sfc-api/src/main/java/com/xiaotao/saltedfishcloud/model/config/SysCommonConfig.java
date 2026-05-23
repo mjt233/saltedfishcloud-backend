@@ -73,14 +73,6 @@ public class SysCommonConfig {
     )
     private StoreMode storeMode;
 
-    @ConfigProperty(
-            title = "自动同步间隔(该功能已暂时弃用)",
-            defaultValue = "-1",
-            describe = "文件记录服务与存储服务文件信息自动执行同步的间隔。\n单位：分钟，-1关闭",
-            group = "store"
-    )
-    private Long syncInterval;
-
     // todo 用bindPropertyEntity对整个bean动态绑定时，Version无法反序列化，需要支持自定义的反序列化
     @ConfigProperty(
             title = "系统版本",

@@ -6,8 +6,4 @@ package com.xiaotao.saltedfishcloud.service.file;
  */
 public interface StoreServiceFactory {
     StoreService getService();
-
-    default TempStoreService getTempStoreService() {
-        return getService().getTempFileHandler();
-    }
 }

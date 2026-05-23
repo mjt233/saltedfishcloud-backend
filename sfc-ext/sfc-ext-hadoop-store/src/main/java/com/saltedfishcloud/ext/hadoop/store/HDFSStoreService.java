@@ -3,13 +3,13 @@ package com.saltedfishcloud.ext.hadoop.store;
 import com.saltedfishcloud.ext.hadoop.HDFSProperties;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStoreService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 
 public class HDFSStoreService extends AbstractRawStoreService {
 
     private final HDFSProperties properties;
 
-    public HDFSStoreService(DirectRawStoreHandler handler, HDFSProperties properties, FileResourceMd5Resolver md5Resolver) {
+    public HDFSStoreService(Storage handler, HDFSProperties properties, FileResourceMd5Resolver md5Resolver) {
         super(handler, md5Resolver);
         this.properties = properties;
     }

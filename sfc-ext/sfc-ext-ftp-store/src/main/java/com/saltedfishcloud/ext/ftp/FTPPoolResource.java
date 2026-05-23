@@ -12,10 +12,10 @@ import java.io.InputStream;
 public class FTPPoolResource extends AbstractResource {
     private final static String LOG_PREFIX = "[FTP Resource]";
     private final FTPFile file;
-    private final FTPDirectRawStoreHandler handler;
+    private final FTPStorage handler;
     private final String fullPath;
 
-    public FTPPoolResource(FTPDirectRawStoreHandler handler, FTPFile file, String fullPath) {
+    public FTPPoolResource(FTPStorage handler, FTPFile file, String fullPath) {
         this.handler = handler;
         this.file = file;
         this.fullPath = fullPath;

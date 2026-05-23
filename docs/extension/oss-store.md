@@ -84,7 +84,7 @@
 
 ### 实现OSS的存储接口
 
-可参考`com.sfc.ext.oss.store.S3DirectRawHandler`
+可参考`com.sfc.ext.oss.store.S3Storage`
 
 ### 注册OSS存储接口
 
