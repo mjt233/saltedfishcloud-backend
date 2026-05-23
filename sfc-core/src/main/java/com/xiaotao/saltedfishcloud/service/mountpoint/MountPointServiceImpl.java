@@ -12,11 +12,11 @@ import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
+import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.StorageDiskFileSystemAdapter;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
@@ -358,7 +358,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         // 重建记录
         Map<String, Object> params = MapperHolder.parseJsonToMap(mountPoint.getParams());
         Storage storage = storageRegistry.getStorage(mountPoint.getProtocol(), params);
-        DiskFileSystem fileSystem = new RawDiskFileSystem(storage, "/");
+        DiskFileSystem fileSystem = new StorageDiskFileSystemAdapter(storage);
         DiskFileSystemUtils.walk(fileSystem, uid, "/", (path, fileList) -> {
             try {
                 for (FileInfo fileInfo : fileList) {

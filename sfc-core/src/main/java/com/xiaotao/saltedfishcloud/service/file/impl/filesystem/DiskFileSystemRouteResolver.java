@@ -2,7 +2,6 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.RawDiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -103,13 +101,9 @@ public class DiskFileSystemRouteResolver {
     private DiskFileSystem getStorageAdapter(Storage storage) {
         synchronized (storageAdapterCache) {
             return storageAdapterCache.computeIfAbsent(storage, key -> {
-                try {
-                    RawDiskFileSystem adapter = new RawDiskFileSystem(key, "/");
-                    adapter.setThumbnailService(thumbnailService);
-                    return adapter;
-                } catch (IOException e) {
-                    throw new RuntimeException("创建挂载存储适配器失败", e);
-                }
+                StorageDiskFileSystemAdapter adapter = new StorageDiskFileSystemAdapter(key);
+                adapter.setThumbnailService(thumbnailService);
+                return adapter;
             });
         }
     }

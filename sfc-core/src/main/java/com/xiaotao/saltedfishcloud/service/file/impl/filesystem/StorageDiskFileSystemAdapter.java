@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.service.file;
+package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
+import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveProperty;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
@@ -23,59 +24,55 @@ import org.springframework.core.io.Resource;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 原始的文件系统，根据DirectRawStoreHandler和basePath对存储操作器进行操作封装，暴露为对网盘文件系统的操作。
- * 需要手动设置单独的ThumbnailService以提供缩略图服务
+ * 将作用域化后的 {@link Storage} 适配为 {@link DiskFileSystem}，用于挂载点委托文件系统场景。
  */
-public class RawDiskFileSystem implements DiskFileSystem, Closeable {
+public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
+    /**
+     * 底层存储实现。
+     */
     @Getter
-    private final Storage storeHandler;
+    private final Storage storage;
 
+    /**
+     * 基于底层存储构建的复制/移动处理器。
+     */
     @Getter
-    private final CopyAndMoveHandler camHandler;
+    private final CopyAndMoveHandler copyAndMoveHandler;
 
-    @Getter
-    private final String basePath;
-
+    /**
+     * 可选的缩略图服务。
+     */
     @Setter
     private ThumbnailService thumbnailService;
 
     /**
-     * 将直接存储操作器封装为文件系统操作
-     * @param storeHandler  存储操作器
-     * @param basePath      统一给所有操作添加的路径前缀
+     * 使用默认复制/移动配置创建存储文件系统适配器。
+     *
+     * @param storage 已完成作用域包装的底层存储
      */
-    public RawDiskFileSystem(Storage storeHandler, String basePath) throws IOException {
-        if ("".equals(basePath)) {
-            basePath = ".";
-        }
-        if(!storeHandler.exist(basePath)) {
-            throw new IllegalArgumentException("文件系统创建失败，无法验证路径有效：" + basePath);
-        }
-        this.storeHandler = storeHandler;
-        camHandler = CopyAndMoveHandler.createByStoreHandler(storeHandler, CopyAndMoveProperty.builder().build());
-        this.basePath = basePath;
+    public StorageDiskFileSystemAdapter(Storage storage) {
+        this(storage, CopyAndMoveProperty.builder().build());
     }
 
     /**
-     * 将直接存储操作器封装为文件系统操作
-     * @param storeHandler  存储操作器
-     * @param basePath      统一给所有操作添加的路径前缀
+     * 使用指定复制/移动配置创建存储文件系统适配器。
+     *
+     * @param storage 已完成作用域包装的底层存储
+     * @param property 复制/移动配置
      */
-    public RawDiskFileSystem(Storage storeHandler, String basePath, CopyAndMoveProperty property) throws IOException {
-        if ("".equals(basePath)) {
-            basePath = ".";
-        }
-        if(!storeHandler.exist(basePath)) {
-            throw new IllegalArgumentException("文件系统创建失败，无法验证路径有效：" + basePath);
-        }
-        this.storeHandler = storeHandler;
-        camHandler = CopyAndMoveHandler.createByStoreHandler(storeHandler, property);
-        this.basePath = basePath;
+    public StorageDiskFileSystemAdapter(Storage storage, CopyAndMoveProperty property) {
+        this.storage = Objects.requireNonNull(storage, "storage must not be null");
+        this.copyAndMoveHandler = CopyAndMoveHandler.createByStoreHandler(storage, Objects.requireNonNull(property, "property must not be null"));
     }
 
     @Override
@@ -84,17 +81,13 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
             List<FileInfo>[] userFileList = getUserFileList(uid, path);
             if (userFileList == null) {
                 return null;
-            } else {
-                return Stream.concat(
-                        userFileList[0].stream(),
-                        userFileList[1].stream()
-                ).collect(Collectors.toList());
             }
+            return Stream.concat(userFileList[0].stream(), userFileList[1].stream()).collect(Collectors.toList());
         }
         Set<String> nameSet = new HashSet<>(nameList);
-        return storeHandler.listFiles(StringUtils.appendPath(basePath, path))
+        return storage.listFiles(path)
                 .stream()
-                .filter(f -> nameSet.contains(f.getName()))
+                .filter(fileInfo -> nameSet.contains(fileInfo.getName()))
                 .toList();
     }
 
@@ -104,37 +97,35 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
             return null;
         }
         String suffix = FileUtils.getSuffix(name);
-        if(!thumbnailService.isSupport(suffix)) {
+        if (!thumbnailService.isSupport(suffix)) {
             return null;
         }
-
         Resource resource = getResource(uid, path, name);
         if (resource == null) {
             return null;
         }
         String lastModified = String.valueOf(resource.lastModified());
-        return thumbnailService.getThumbnail(resource, suffix, SecureUtils.getMd5(StringUtils.appendPath(path,name, lastModified)));
+        return thumbnailService.getThumbnail(resource, suffix, SecureUtils.getMd5(StringUtils.appendPath(path, name, lastModified)));
     }
 
-
     @Override
-    public boolean quickSave(long uid, String path, String name, String md5) throws IOException {
+    public boolean quickSave(long uid, String path, String name, String md5) {
         return false;
     }
 
     @Override
     public boolean exist(long uid, String path) throws IOException {
-        return storeHandler.exist(StringUtils.appendPath(basePath, path));
+        return storage.exist(path);
     }
 
     @Override
     public Resource getResource(long uid, String path, String name) throws IOException {
-        return storeHandler.getResource(StringUtils.appendPath(basePath, path, name));
+        return storage.getResource(StringUtils.appendPath(path, name));
     }
 
     @Override
     public String mkdirs(long uid, String path) throws IOException {
-        storeHandler.mkdirs(StringUtils.appendPath(basePath, path));
+        storage.mkdirs(path);
         return null;
     }
 
@@ -144,27 +135,24 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
             throw new IllegalArgumentException("sourceUid 和 targetUid 不能为空");
         }
         if (!param.getSourceUid().equals(param.getTargetUid())) {
-            throw new UnsupportedOperationException("默认的RawDiskFileSystem不支持跨用户网盘复制");
+            throw new UnsupportedOperationException("默认的挂载适配器不支持跨用户网盘复制");
         }
 
         List<String> files = param.getFiles();
         if (files == null || files.isEmpty()) {
-            files = storeHandler.listFiles(param.getSourcePath()).stream().map(FileInfo::getName).toList();
+            files = storage.listFiles(param.getSourcePath()).stream().map(FileInfo::getName).toList();
         }
 
         boolean overwrite = Boolean.TRUE.equals(param.getIsOverwrite());
         String sourcePath = param.getSourcePath();
         String targetPath = param.getTargetPath();
-
         for (String fileName : files) {
-            // 检查是否被中断
             if (callback != null && callback.shouldInterrupt()) {
                 return;
             }
-
-            camHandler.copy(
-                    StringUtils.appendPath(basePath, sourcePath, fileName),
-                    StringUtils.appendPath(basePath, targetPath, fileName),
+            copyAndMoveHandler.copy(
+                    StringUtils.appendPath(sourcePath, fileName),
+                    StringUtils.appendPath(targetPath, fileName),
                     overwrite,
                     callback
             );
@@ -173,20 +161,20 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
 
     @Override
     public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
-        camHandler.move(StringUtils.appendPath(basePath, source, name), StringUtils.appendPath(basePath, target, name), overwrite);
+        copyAndMoveHandler.move(StringUtils.appendPath(source, name), StringUtils.appendPath(target, name), overwrite);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public List<FileInfo>[] getUserFileList(long uid, String path) throws IOException {
-        List<FileInfo> fileInfos = storeHandler.listFiles(StringUtils.appendPath(basePath, path));
+        List<FileInfo> fileInfos = storage.listFiles(path);
         if (fileInfos == null) {
             return null;
         }
-        List<FileInfo>[] res = new List[2];
-        res[0] = fileInfos.stream().filter(FileInfo::isDir).collect(Collectors.toList());
-        res[1] = fileInfos.stream().filter(FileInfo::isFile).collect(Collectors.toList());
-        return res;
+        List<FileInfo>[] result = new List[2];
+        result[0] = fileInfos.stream().filter(FileInfo::isDir).collect(Collectors.toList());
+        result[1] = fileInfos.stream().filter(FileInfo::isFile).collect(Collectors.toList());
+        return result;
     }
 
     @Override
@@ -206,48 +194,48 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
 
     @Override
     public void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
-        String finalTargetPath = StringUtils.appendPath(basePath, savePath, file.getName());
+        String finalTargetPath = StringUtils.appendPath(savePath, file.getName());
         String tmpPath = finalTargetPath + "." + IdUtil.getId() + ".tmp";
-        boolean isSuccess = false;
-        try(OutputStream os = storeHandler.newOutputStream(tmpPath)) {
-            streamConsumer.accept(os).applyTo(file);
-            os.close();
-            isSuccess = true;
-            if(!storeHandler.move(tmpPath, finalTargetPath, null)) {
-                if(storeHandler.exist(finalTargetPath)) {
-                    storeHandler.delete(finalTargetPath);
+        boolean success = false;
+        try (OutputStream outputStream = storage.newOutputStream(tmpPath)) {
+            streamConsumer.accept(outputStream).applyTo(file);
+            outputStream.close();
+            success = true;
+            if (!storage.move(tmpPath, finalTargetPath, null)) {
+                if (storage.exist(finalTargetPath)) {
+                    storage.delete(finalTargetPath);
                 }
-                storeHandler.move(tmpPath, finalTargetPath, null);
+                storage.move(tmpPath, finalTargetPath, null);
             }
         } finally {
-            if (!isSuccess) {
-                storeHandler.delete(tmpPath);
+            if (!success) {
+                storage.delete(tmpPath);
             }
         }
     }
 
     @Override
     public void mkdir(long uid, String path, String name) throws IOException {
-        storeHandler.mkdir(StringUtils.appendPath(basePath, path, name));
+        storage.mkdir(StringUtils.appendPath(path, name));
     }
 
     @Override
     public long deleteFile(long uid, String path, List<String> name) throws IOException {
-        for (String n : name) {
-            storeHandler.delete(StringUtils.appendPath(basePath, path, n));
+        for (String item : name) {
+            storage.delete(StringUtils.appendPath(path, item));
         }
         return name.size();
     }
 
     @Override
     public void rename(long uid, String path, String name, String newName) throws IOException {
-        storeHandler.rename(StringUtils.appendPath(basePath, path, name), newName);
+        storage.rename(StringUtils.appendPath(path, name), newName);
     }
 
     @Override
     public void close() throws IOException {
         try {
-            storeHandler.close();
+            storage.close();
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {
@@ -257,11 +245,11 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
 
     @Override
     public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
-        storeHandler.updateTime(StringUtils.appendPath(basePath, path), names, attribute);
+        storage.updateTime(path, names, attribute);
     }
 
     /**
-     * 基于底层存储实例与作用域根路径比较两个原始文件系统适配器是否等价。
+     * 基于底层存储实例判断两个适配器是否等价。
      *
      * @param obj 待比较对象
      * @return 是否等价
@@ -271,19 +259,19 @@ public class RawDiskFileSystem implements DiskFileSystem, Closeable {
         if (this == obj) {
             return true;
         }
-        if (!(obj instanceof RawDiskFileSystem other)) {
+        if (!(obj instanceof StorageDiskFileSystemAdapter other)) {
             return false;
         }
-        return storeHandler == other.storeHandler && Objects.equals(basePath, other.basePath);
+        return storage == other.storage;
     }
 
     /**
-     * 计算基于底层存储实例与作用域根路径的哈希值。
+     * 计算基于底层存储实例的哈希值。
      *
      * @return 哈希值
      */
     @Override
     public int hashCode() {
-        return Objects.hash(System.identityHashCode(storeHandler), basePath);
+        return Integer.hashCode(System.identityHashCode(storage));
     }
 }
