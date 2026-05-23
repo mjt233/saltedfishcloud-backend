@@ -32,7 +32,15 @@
   - `StorageFactorytestFileSystem`重命名为`testStorage`，参数改为`Storage`
   - `StorageRegistry#getFileSystem`方法返回值改为`Storage`
 
-- [ ] 存储实现与存储路由重构
-   - [ ] 在`DefaultFileSystem`中实现存储路由功能，根据路径前缀或其他标识来路由到不同的`Storage`实例
-   - [ ] 将`DefaultFileSystem`设置为主文件系统，吞并`DiskFileSystemDispatcher`的存储路由功能
+- [X] 存储实现与存储路由重构
+   - [X] 在`DefaultFileSystem`中实现存储路由功能，根据路径前缀或其他标识来路由到不同的`Storage`实例
+   - [X] 将`DefaultFileSystem`设置为主文件系统，吞并`DiskFileSystemDispatcher`的存储路由功能
+
+
+## 后续计划
+
+- [ ] 将搜索功能迁移出`DiskFileSystem`接口
+- [ ] 收敛`FileRecordService`接口，作为文件系统的内部实现，其他模块去掉基于文件所在节点id的硬依赖
+- [ ] 当存储模式为`RAW`时，文件系统支持停用`FileRecordService`，完全基于存储进行文件操作
+
    
