@@ -177,11 +177,6 @@ public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
         throw new UnsupportedOperationException();
     }

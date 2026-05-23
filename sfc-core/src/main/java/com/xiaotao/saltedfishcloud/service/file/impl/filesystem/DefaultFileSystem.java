@@ -395,11 +395,6 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     }
 
     @Override
-    public List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId) {
-        return mainExecutor.getUserFileListByNodeId(uid, nodeId);
-    }
-
-    @Override
     public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
         return search(uid, key, page, 10);
     }

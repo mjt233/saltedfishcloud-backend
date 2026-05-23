@@ -129,14 +129,6 @@ public interface DiskFileSystem {
      */
     List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException;
 
-    /**
-     * 通过节点ID获取节点下的文件信息
-     * @param uid       用户ID
-     * @param nodeId    节点ID
-     * @return          一个List数组，数组下标0为目录，1为文件，或null
-     */
-    List<FileInfo>[] getUserFileListByNodeId(long uid, String nodeId);
-
     CommonPageInfo<FileInfo> search(long uid, String key, Integer page);
 
     /**
