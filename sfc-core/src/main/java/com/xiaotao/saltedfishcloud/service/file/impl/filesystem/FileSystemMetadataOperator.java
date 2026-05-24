@@ -128,14 +128,15 @@ public interface FileSystemMetadataOperator {
     /**
      * 移动文件记录。
      *
-     * @param uid 用户ID
+     * @param sourceUid 源用户ID
      * @param source 源目录
+     * @param targetUid 目标用户ID
      * @param target 目标目录
      * @param name 文件名
      * @param overwrite 是否覆盖
      * @throws NoSuchFileException 路径不存在时抛出
      */
-    void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException;
+    void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws NoSuchFileException;
 
     /**
      * 在同目录下批量保存文件记录。

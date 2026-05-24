@@ -17,6 +17,7 @@ import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
@@ -242,24 +243,48 @@ public class OpenApiDiskFileController {
     }
 
     /**
-     * 移动文件或目录到目标目录。
+     * 移动文件或目录到目标目录（支持跨用户网盘）。
+     * <p>
+     * sourceUid 和 targetUid 优先从请求体 param 中获取，
+     * 若未指定则回退到 QueryParam 的 uid（仅作兼容使用）。
+     * </p>
      *
-     * @param uid   用户ID（0 为公共网盘）
-     * @param param 移动参数，包括源目录、文件名列表和目标目录
+     * @param uid   用户ID（兼容参数，优先使用 param.sourceUid / param.targetUid）
+     * @param param 移动参数，包括源目录、文件名列表、目标目录及可选的 sourceUid/targetUid
      * @return 空成功响应
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("移动文件或目录")
+    @ApiOperation("移动文件或目录（支持跨用户网盘）")
     @PostMapping("/move/v1")
     @PreAuthorize("hasAuthority('SCOPE_storage_write')")
     public JsonResult<Object> move(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID(true) long uid,
+            @ApiParam("用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
+            @RequestParam("uid") Long uid,
             @RequestBody @Validated OpenApiMoveParam param) throws IOException {
+        long sourceUid;
+        if (param.getSourceUid() != null) {
+            sourceUid = param.getSourceUid();
+        } else if (uid != null) {
+            sourceUid = uid;
+        } else {
+            throw new JsonException(400, "缺少 sourceUid 参数，请通过请求体 sourceUid 字段或 QueryParam uid 指定");
+        }
+
+        long targetUid;
+        if (param.getTargetUid() != null) {
+            targetUid = param.getTargetUid();
+        } else if (uid != null) {
+            targetUid = uid;
+        } else {
+            throw new JsonException(400, "缺少 targetUid 参数，请通过请求体 targetUid 字段或 QueryParam uid 指定");
+        }
+
+        UIDValidator.validateWithException(sourceUid, false);
+        UIDValidator.validateWithException(targetUid, true);
         DiskFileSystem fs = diskFileSystemManager.getMainFileSystem();
         boolean overwrite = param.getIsOverwrite() != null && param.getIsOverwrite();
         for (String name : param.getFiles()) {
-            fs.move(uid, param.getSourcePath(), param.getTargetPath(), name, overwrite);
+            fs.move(sourceUid, param.getSourcePath(), targetUid, param.getTargetPath(), name, overwrite);
         }
         return JsonResult.emptySuccess();
     }
@@ -345,15 +370,29 @@ public class OpenApiDiskFileController {
     }
 
     /**
-     * 开放 API 文件移动参数。
+     * 开放 API 文件移动参数（支持跨用户网盘）。
+     * <p>
+     * 优先使用 sourceUid 和 targetUid 分别指定源和目标用户，
+     * 若未指定则回退到 QueryParam 的 uid。
+     * </p>
      */
     @lombok.Data
     public static class OpenApiMoveParam {
 
         /**
+         * 源用户ID，优先使用；不传则使用 QueryParam 的 uid
+         */
+        private Long sourceUid;
+
+        /**
          * 文件当前所在目录路径
          */
         private String sourcePath;
+
+        /**
+         * 目标用户ID，优先使用；不传则使用 QueryParam 的 uid
+         */
+        private Long targetUid;
 
         /**
          * 待移动的文件名列表

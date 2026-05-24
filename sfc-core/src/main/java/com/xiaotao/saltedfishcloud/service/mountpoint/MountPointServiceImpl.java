@@ -187,7 +187,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         if (!Objects.equals(mountPoint.getNid(), dbObj.getNid())) {
             String originNodePath = fileRecordService.getPathByNodeId(uid, dbObj.getNid())
                     .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "原节点丢失"));
-            fileRecordService.move(uid, originNodePath, newNodePath.get().orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "移动失败，节点丢失")), dbObj.getName(), true);
+            fileRecordService.move(uid, originNodePath, uid, newNodePath.get().orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "移动失败，节点丢失")), dbObj.getName(), true);
         }
         // 清理该挂载点的缓存
         clearFileSystemFactoryCache(dbObj);

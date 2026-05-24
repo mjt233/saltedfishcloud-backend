@@ -178,14 +178,15 @@ public interface FileRecordService {
     /**
      * 操作数据库移动网盘文件或目录到指定目录下
      *
-     * @param uid       用户ID
+     * @param sourceUid 源用户ID
      * @param source    网盘文件或目录所在目录
+     * @param targetUid 目标用户ID
      * @param target    网盘目标目录
      * @param name      文件名
      * @param overwrite 是否覆盖原文件信息
      * @throws NoSuchFileException 当原目录或目标目录不存在时抛出
      */
-    void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException;
+    void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws NoSuchFileException;
 
 
     /**

@@ -231,19 +231,20 @@ public class DefaultFileSystemMainExecutor {
     /**
      * 移动主文件系统中的文件。
      *
-     * @param uid 用户ID
+     * @param sourceUid 源用户ID
      * @param source 原目录
+     * @param targetUid 目标用户ID
      * @param target 目标目录
      * @param name 文件名
      * @param overwrite 是否覆盖
      */
-    public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
-        Lock lock = lockFactory.getLock(getStoreLockKey(uid, target, name));
+    public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException {
+        Lock lock = lockFactory.getLock(getStoreLockKey(targetUid, target, name));
         try {
             lock.lock();
             String decodedTarget = URLDecoder.decode(target, StandardCharsets.UTF_8);
-            metadataOperator.move(uid, source, decodedTarget, name, overwrite);
-            storeOperator.move(uid, source, decodedTarget, name, overwrite);
+            metadataOperator.move(sourceUid, source, targetUid, decodedTarget, name, overwrite);
+            storeOperator.move(sourceUid, source, targetUid, decodedTarget, name, overwrite);
         } catch (DuplicateKeyException e) {
             throw new JsonException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
         } catch (UnsupportedEncodingException e) {

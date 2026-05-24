@@ -199,29 +199,33 @@ public class McpDiskTools {
     }
 
     /**
-     * 移动指定目录下的文件或目录到目标目录。
+     * 移动指定目录下的文件或目录到目标目录（支持跨用户网盘）。
      *
      * @param uid       资源所属用户 ID
      * @param sourcePath 源目录路径
      * @param targetPath 目标目录路径
      * @param names     要移动的文件或目录名称列表
      * @param overwrite 是否允许覆盖同名文件
+     * @param targetUid 目标用户 ID，不传则与 uid 一致
      * @return 操作结果
      * @throws IOException 文件系统访问异常
      */
-    @McpTool(name = "move_files", description = "在同一用户网盘内移动文件或目录")
+    @McpTool(name = "move_files", description = "移动文件或目录，支持跨用户网盘移动")
     public McpOperationResult moveFiles(
             @McpToolParam(description = "资源所属用户 ID，0 表示公共网盘，仅管理员允许写入") String uid,
             @McpToolParam(description = "源目录路径，以 / 开头") String sourcePath,
+            @McpToolParam(description = "目标用户 ID") String targetUid,
             @McpToolParam(description = "目标目录路径，以 / 开头") String targetPath,
             @McpToolParam(description = "待移动的文件或目录名称列表") List<String> names,
             @McpToolParam(required = false, description = "是否覆盖同名文件，默认 false") Boolean overwrite
     ) throws IOException {
         long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, true);
+        long targetUidValue = targetUid != null && !targetUid.isBlank() ? parseUid(targetUid) : uidValue;
+        UIDValidator.validateWithException(uidValue, false);
+        UIDValidator.validateWithException(targetUidValue, true);
         boolean overwriteValue = Boolean.TRUE.equals(overwrite);
         for (String name : names) {
-            diskFileSystemManager.getMainFileSystem().move(uidValue, sourcePath, targetPath, name, overwriteValue);
+            diskFileSystemManager.getMainFileSystem().move(uidValue, sourcePath, targetUidValue, targetPath, name, overwriteValue);
         }
         return new McpOperationResult(true, "移动完成", (long) names.size());
     }

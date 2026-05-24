@@ -226,7 +226,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     }
 
     @Override
-    public void move(long uid, String source, String target, String name, boolean overwrite) {
+    public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) {
         throw new UnsupportedOperationException();
     }
 
