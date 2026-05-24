@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller.open;
 
-import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
+import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -26,14 +26,16 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -216,25 +218,32 @@ public class OpenApiDiskFileController {
     }
 
     /**
-     * 复制文件或目录到目标目录。
+     * 复制文件或目录到目标目录（支持跨用户网盘）。
+     * <p>
+     * sourceUid 和 targetUid 优先从请求体 param 中获取，
+     * 若未指定则回退到 QueryParam 的 uid（仅作兼容使用）。
+     * </p>
      *
-     * @param uid   用户ID（0 为公共网盘）
-     * @param param 复制参数，包括源路径、待复制文件列表及目标路径
+     * @param uid   用户ID（兼容参数，优先使用 param.sourceUid / param.targetUid）
+     * @param param 复制参数，包括源路径、待复制文件列表、目标路径及可选的 sourceUid/targetUid
      * @return 空成功响应
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("复制文件或目录")
+    @ApiOperation("复制文件或目录（支持跨用户网盘）")
     @PostMapping("/copy/v1")
     @PreAuthorize("hasAuthority('SCOPE_storage_write')")
     public JsonResult<Object> copy(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID(true) long uid,
-            @RequestBody @Validated OpenApiCopyParam param) throws IOException {
+            @ApiParam("用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
+            @RequestParam("uid") Long uid,
+            @RequestBody @Validated OpenApiFileTransferParam param) throws IOException {
+        ResolvedTransferUid resolved = resolveTransferUids(uid, param);
+        UIDValidator.validateWithException(resolved.getSourceUid(), false);
+        UIDValidator.validateWithException(resolved.getTargetUid(), true);
         SimpleFileTransferParam transferParam = SimpleFileTransferParam.builder()
-                .sourceUid(uid)
+                .sourceUid(resolved.getSourceUid())
                 .sourcePath(param.getSourcePath())
                 .files(param.getFiles())
-                .targetUid(uid)
+                .targetUid(resolved.getTargetUid())
                 .targetPath(param.getTargetPath())
                 .isOverwrite(param.getIsOverwrite() != null && param.getIsOverwrite())
                 .build();
@@ -260,31 +269,14 @@ public class OpenApiDiskFileController {
     public JsonResult<Object> move(
             @ApiParam("用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
             @RequestParam("uid") Long uid,
-            @RequestBody @Validated OpenApiMoveParam param) throws IOException {
-        long sourceUid;
-        if (param.getSourceUid() != null) {
-            sourceUid = param.getSourceUid();
-        } else if (uid != null) {
-            sourceUid = uid;
-        } else {
-            throw new JsonException(400, "缺少 sourceUid 参数，请通过请求体 sourceUid 字段或 QueryParam uid 指定");
-        }
-
-        long targetUid;
-        if (param.getTargetUid() != null) {
-            targetUid = param.getTargetUid();
-        } else if (uid != null) {
-            targetUid = uid;
-        } else {
-            throw new JsonException(400, "缺少 targetUid 参数，请通过请求体 targetUid 字段或 QueryParam uid 指定");
-        }
-
-        UIDValidator.validateWithException(sourceUid, false);
-        UIDValidator.validateWithException(targetUid, true);
+            @RequestBody @Validated OpenApiFileTransferParam param) throws IOException {
+        ResolvedTransferUid resolved = resolveTransferUids(uid, param);
+        UIDValidator.validateWithException(resolved.getSourceUid(), true);
+        UIDValidator.validateWithException(resolved.getTargetUid(), true);
         DiskFileSystem fs = diskFileSystemManager.getMainFileSystem();
         boolean overwrite = param.getIsOverwrite() != null && param.getIsOverwrite();
         for (String name : param.getFiles()) {
-            fs.move(sourceUid, param.getSourcePath(), targetUid, param.getTargetPath(), name, overwrite);
+            fs.move(resolved.getSourceUid(), param.getSourcePath(), resolved.getTargetUid(), param.getTargetPath(), name, overwrite);
         }
         return JsonResult.emptySuccess();
     }
@@ -343,10 +335,19 @@ public class OpenApiDiskFileController {
     // ========================= Inner DTO =========================
 
     /**
-     * 开放 API 文件复制参数。
+     * 开放 API 文件传输参数（支持跨用户网盘）。
+     * <p>
+     * 用于 copy 和 move 操作。优先使用 sourceUid 和 targetUid 分别指定源和目标用户，
+     * 若未指定则回退到 QueryParam 的 uid。
+     * </p>
      */
-    @lombok.Data
-    public static class OpenApiCopyParam {
+    @Data
+    public static class OpenApiFileTransferParam {
+
+        /**
+         * 源用户ID，优先使用；不传则使用 QueryParam 的 uid
+         */
+        private Long sourceUid;
 
         /**
          * 源文件所在目录路径
@@ -354,7 +355,12 @@ public class OpenApiDiskFileController {
         private String sourcePath;
 
         /**
-         * 待复制的文件名列表，为 null 则复制 sourcePath 下的所有文件
+         * 目标用户ID，优先使用；不传则使用 QueryParam 的 uid
+         */
+        private Long targetUid;
+
+        /**
+         * 待传输的文件名列表，为 null 则操作 sourcePath 下的所有文件
          */
         private List<String> files;
 
@@ -370,43 +376,46 @@ public class OpenApiDiskFileController {
     }
 
     /**
-     * 开放 API 文件移动参数（支持跨用户网盘）。
+     * 解析后的文件传输 UID 结果。
+     */
+    @AllArgsConstructor
+    @Data
+    private static class ResolvedTransferUid {
+        private long sourceUid;
+        private long targetUid;
+    }
+
+    /**
+     * 从请求参数中解析源和目标用户ID。
      * <p>
-     * 优先使用 sourceUid 和 targetUid 分别指定源和目标用户，
+     * sourceUid 和 targetUid 优先从请求体 param 中获取，
      * 若未指定则回退到 QueryParam 的 uid。
      * </p>
+     *
+     * @param uid   QueryParam 的兼容用户ID
+     * @param param 文件传输参数
+     * @return 解析后的 sourceUid 和 targetUid
+     * @throws JsonException 缺少必要参数时抛出
      */
-    @lombok.Data
-    public static class OpenApiMoveParam {
+    private ResolvedTransferUid resolveTransferUids(Long uid, OpenApiFileTransferParam param) {
+        long sourceUid;
+        if (param.getSourceUid() != null) {
+            sourceUid = param.getSourceUid();
+        } else if (uid != null) {
+            sourceUid = uid;
+        } else {
+            throw new JsonException(400, "缺少 sourceUid 参数，请通过请求体 sourceUid 字段或 QueryParam uid 指定");
+        }
 
-        /**
-         * 源用户ID，优先使用；不传则使用 QueryParam 的 uid
-         */
-        private Long sourceUid;
+        long targetUid;
+        if (param.getTargetUid() != null) {
+            targetUid = param.getTargetUid();
+        } else if (uid != null) {
+            targetUid = uid;
+        } else {
+            throw new JsonException(400, "缺少 targetUid 参数，请通过请求体 targetUid 字段或 QueryParam uid 指定");
+        }
 
-        /**
-         * 文件当前所在目录路径
-         */
-        private String sourcePath;
-
-        /**
-         * 目标用户ID，优先使用；不传则使用 QueryParam 的 uid
-         */
-        private Long targetUid;
-
-        /**
-         * 待移动的文件名列表
-         */
-        private List<String> files;
-
-        /**
-         * 目标目录路径
-         */
-        private String targetPath;
-
-        /**
-         * 是否覆盖同名文件
-         */
-        private Boolean isOverwrite;
+        return new ResolvedTransferUid(sourceUid, targetUid);
     }
 }
