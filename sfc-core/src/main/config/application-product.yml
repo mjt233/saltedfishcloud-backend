@@ -59,3 +59,20 @@ sys:
       url: hdfs://localhost:9000
       root: /xyy2
       user: xiaotao
+
+  # OIDC/OAuth2 授权服务器配置
+  oidc:
+    # 是否启用内置 OIDC 授权服务器
+    enabled: false
+    # OIDC Issuer 地址，例如 https://cloud.example.com
+    issuer:
+    authorization-endpoint: /oauth2/authorize
+    token-endpoint: /oauth2/token
+    user-info-endpoint: /oauth2/userinfo
+    jwk-set-endpoint: /oauth2/jwks
+    revocation-endpoint: /oauth2/revoke
+    introspection-endpoint: /oauth2/introspect
+    logout-endpoint: /connect/logout
+    jwk:
+      key-id: oidc-key-1
+      key-store-path: ./oidc-jwk.json
