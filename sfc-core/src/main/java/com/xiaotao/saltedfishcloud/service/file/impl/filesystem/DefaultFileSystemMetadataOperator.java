@@ -186,15 +186,16 @@ public class DefaultFileSystemMetadataOperator implements FileSystemMetadataOper
     /**
      * 移动文件记录。
      *
-     * @param uid 用户ID
+     * @param sourceUid 源用户ID
      * @param source 源目录
      * @param target 目标目录
      * @param name 文件名
      * @param overwrite 是否覆盖
+     * @param targetUid 目标用户ID
      * @throws NoSuchFileException 路径不存在时抛出
      */
-    public void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
-        fileRecordService.move(uid, source, target, name, overwrite);
+    public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws NoSuchFileException {
+        fileRecordService.move(sourceUid, source, targetUid, target, name, overwrite);
     }
 
     /**

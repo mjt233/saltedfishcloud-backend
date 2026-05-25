@@ -204,7 +204,7 @@ public class WebDavResourceController {
             throw new BadRequestException("Can not handle virtual directory");
         }
         String sourceParent = PathUtils.getParentPath(source.getPath());
-        if (Objects.equals(sourceParent, newParent.getPath())) {
+        if (Objects.equals(sourceParent, newParent.getPath()) && Objects.equals(source.getUid(), newParent.getUid())) {
             // 父级目录相同，执行重命名
             return doRename(source, newParent, newName);
         } else {
@@ -226,7 +226,8 @@ public class WebDavResourceController {
      * 移动文件或目录
      */
     public WebDavItem doMove(WebDavItem source, WebDavItem newParent, String newName) throws IOException {
-        long uid = source.getResourceArea() == PUBLIC ? UserConstants.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
+        long sourceUid = source.getResourceArea() == PUBLIC ? UserConstants.PUBLIC_USER_ID : getCurUser(source.getUid()).getId();
+        long targetUid = newParent.getResourceArea() == PUBLIC ? UserConstants.PUBLIC_USER_ID : getCurUser(newParent.getUid()).getId();
         DiskFileSystem fileSystem = diskFileSystemManagerLazy.get().getMainFileSystem();
         String sourcePath = PathUtils.getParentPath(source.getPath());
         String targetPath = newParent.getPath();
@@ -238,30 +239,30 @@ public class WebDavResourceController {
             String tempName = source.getName() + "_" + System.currentTimeMillis() + "_tmp";
             
             // 1. 先重命名源文件为临时名称
-            fileSystem.rename(uid, sourcePath, source.getName(), tempName);
+            fileSystem.rename(sourceUid, sourcePath, source.getName(), tempName);
             
             try {
                 // 2. 移动到目标位置（使用临时名称）
-                fileSystem.move(uid, sourcePath, targetPath, tempName, true);
+                fileSystem.move(sourceUid, sourcePath, targetUid, targetPath, tempName, true);
                 
                 // 3. 最后重命名为目标名称
-                if (getFileItemFromPath(uid, targetName, tempName) != null) {
+                if (getFileItemFromPath(targetUid, targetPath, targetName) != null) {
                     // 目标名称已存在，就用临时名称了
                     targetName = tempName;
                 }
                 
-                fileSystem.rename(uid, targetPath, tempName, targetName);
+                fileSystem.rename(targetUid, targetPath, tempName, targetName);
             } catch (IOException e) {
                 // 如果移动失败，需要恢复原名称
-                fileSystem.rename(uid, sourcePath, tempName, source.getName());
+                fileSystem.rename(sourceUid, sourcePath, tempName, source.getName());
                 throw e;
             }
         } else {
             // 名称相同 - 直接移动
-            fileSystem.move(uid, sourcePath, targetPath, targetName, true);
+            fileSystem.move(sourceUid, sourcePath, targetUid, targetPath, targetName, true);
         }
 
-        return getFileItemFromPath(uid, targetPath, targetName);
+        return getFileItemFromPath(targetUid, targetPath, targetName);
     }
 
     /**

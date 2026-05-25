@@ -99,13 +99,14 @@ public interface DiskFileSystem {
 
     /**
      * 移动网盘中的文件或目录到指定目录下
-     * @param uid       用户ID
+     * @param sourceUid 源文件所属用户ID
      * @param source    要被移动的网盘文件或目录所在目录
+     * @param targetUid 目标用户ID
      * @param target    要移动到的目标目录
      * @param name      文件名
      * @param overwrite 是否覆盖原文件
      */
-    void move(long uid, String source, String target, String name, boolean overwrite) throws IOException;
+    void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException;
 
     /**
      * 获取某个用户网盘目录下的所有文件信息<br>

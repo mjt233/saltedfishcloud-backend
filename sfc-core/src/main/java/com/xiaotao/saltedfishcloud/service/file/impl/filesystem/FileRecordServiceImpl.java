@@ -304,14 +304,19 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void move(long uid, String source, String target, String name, boolean overwrite) throws NoSuchFileException {
-        String sourceNode = this.getNodeIdByPath(uid, source).orElseThrow(() -> new JsonException(404, "原文件所在目录不存在"));
-        String targetNode = this.getNodeIdByPath(uid, target).orElseThrow(() -> new JsonException(404, "目标文件所在目录不存在"));
-        FileInfo sourceFileInfo = fileInfoRepo.findFileInfo(uid, name, sourceNode);
+    public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws NoSuchFileException {
+        String sourceNode = this.getNodeIdByPath(sourceUid, source).orElseThrow(() -> new JsonException(404, "原文件所在目录不存在"));
+        String targetNode = this.getNodeIdByPath(targetUid, target).orElseThrow(() -> new JsonException(404, "目标文件所在目录不存在"));
+        FileInfo sourceFileInfo = fileInfoRepo.findFileInfo(sourceUid, name, sourceNode);
         if (sourceFileInfo == null) {
             throw new NoSuchFileException("资源不存在，目录" + source + " 文件名：" + name);
         }
-        FileInfo targetFileInfo = fileInfoRepo.findFileInfo(uid, name, targetNode);
+        FileInfo targetFileInfo;
+        if (sourceUid != targetUid) {
+            targetFileInfo = fileInfoRepo.findFileInfo(targetUid, name, targetNode);
+        } else {
+            targetFileInfo = fileInfoRepo.findFileInfo(sourceUid, name, targetNode);
+        }
 
         if (sourceFileInfo.isDir()) {
             if (PathUtils.isSubDir(StringUtils.appendPath(source, name), StringUtils.appendPath(target, name))) {
@@ -321,44 +326,50 @@ public class FileRecordServiceImpl implements FileRecordService {
                 if (targetFileInfo.getIsMount() != null || sourceFileInfo.getIsMount() != null) {
                     throw new JsonException("存在同名的挂载点目录\"" + name + "\"，无法移动:" + source + "->" + target);
                 }
-                // 当移动目录时存在同名文件或目录
                 if (targetFileInfo.isDir()) {
-                    // 目录 -> 目录 同名的是目录，则根据overwrite规则合并
                     copy(SimpleFileTransferParam.builder()
-                            .sourceUid(uid)
-                            .targetUid(uid)
+                            .sourceUid(sourceUid)
+                            .targetUid(targetUid)
                             .sourcePath(source)
                             .targetPath(target)
                             .files(List.of(name))
                             .isOverwrite(overwrite)
                             .build(), null);
-                    deleteRecords(uid, source, Collections.singleton(name));
+                    deleteRecords(sourceUid, source, Collections.singleton(name));
                 } else {
-                    // 目录 -> 文件 同名的是文件，不支持的操作，需要手动解决
                     throw new JsonException("目标位置存在同名文件\"" + name + "\"，无法移动");
                 }
             } else {
-                // 不存在同名目录，直接修改节点ID
-//                cacheService.deleteNodeCache(uid, Collections.singleton(sourceFileInfo.getMd5()));
-                sourceFileInfo.setNode(targetNode);
-                fileInfoRepo.save(sourceFileInfo);
+                if (sourceUid != targetUid) {
+                    copy(SimpleFileTransferParam.builder()
+                            .sourceUid(sourceUid)
+                            .targetUid(targetUid)
+                            .sourcePath(source)
+                            .targetPath(target)
+                            .files(List.of(name))
+                            .isOverwrite(overwrite)
+                            .build(), null);
+                    deleteRecords(sourceUid, source, Collections.singleton(name));
+                } else {
+                    sourceFileInfo.setNode(targetNode);
+                    fileInfoRepo.save(sourceFileInfo);
+                }
             }
         } else {
             if (targetFileInfo != null) {
-                // 当移动文件时存在同名文件或目录
                 if (targetFileInfo.isFile()) {
-                    // 文件 -> 文件，覆盖/删除
                     if (overwrite) {
                         targetFileInfo.setNode(sourceFileInfo.getNode());
                         fileInfoRepo.save(targetFileInfo);
                         fileInfoRepo.delete(sourceFileInfo);
                     }
                 } else if (targetFileInfo.isDir()) {
-                    // 文件 -> 目录 不支持的操作，需要手动解决
                     throw new JsonException("目标位置存在同名目录\"" + name + "\"，无法移动");
                 }
             } else {
-                // 不存在同名文件，直接修改文件所属节点ID
+                if (sourceUid != targetUid) {
+                    sourceFileInfo.setUid(targetUid);
+                }
                 sourceFileInfo.setNode(targetNode);
                 fileInfoRepo.save(sourceFileInfo);
             }
@@ -775,16 +786,14 @@ public class FileRecordServiceImpl implements FileRecordService {
 
         StringBuilder curPath = new StringBuilder();
         List<String> parts = new PathBuilder().append(path).getPath();
-        int idx = 0;
         for (String dirName : parts) {
-            idx++;
             String parentNodeId = visitedPath.isEmpty() ? strId : visitedPath.getLast().getMd5();
             FileInfo file = this.getByParentId(uid, parentNodeId, dirName);
             if (file == null) {
                 log.warn("{}路径不存在:{}", LOG_PREFIX, path);
                 return null;
             }
-            if (idx != parts.size() && file.isFile()) {
+            if (file.isFile()) {
                 log.warn("{}路径中的节点为文件而不是目录: {}", LOG_PREFIX, file.getName());
                 return null;
             }

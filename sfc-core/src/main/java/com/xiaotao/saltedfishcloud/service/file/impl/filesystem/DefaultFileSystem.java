@@ -301,18 +301,18 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
+    public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException {
         String fullSourcePath = StringUtils.appendPath(source, name);
         String fullTargetPath = StringUtils.appendPath(target, name);
-        FileSystemRouteContext targetRoute = matchFileSystem(uid, target);
-        FileSystemRouteContext sourceRoute = matchFileSystem(uid, source);
-        FileSystemRouteContext sourceFullRoute = matchFileSystem(uid, fullSourcePath);
-        FileSystemRouteContext targetFullRoute = matchFileSystem(uid, fullTargetPath);
+        FileSystemRouteContext targetRoute = matchFileSystem(targetUid, target);
+        FileSystemRouteContext sourceRoute = matchFileSystem(sourceUid, source);
+        FileSystemRouteContext sourceFullRoute = matchFileSystem(sourceUid, fullSourcePath);
+        FileSystemRouteContext targetFullRoute = matchFileSystem(targetUid, fullTargetPath);
 
         List<MountPoint> mountPoints = null;
-        Resource resource = getMatchedResource(sourceRoute, uid, sourceRoute.getResolvedPath(), name);
+        Resource resource = getMatchedResource(sourceRoute, sourceUid, sourceRoute.getResolvedPath(), name);
         if (resource == null) {
-            mountPoints = mountPointService.listByPath(uid, fullSourcePath);
+            mountPoints = mountPointService.listByPath(sourceUid, fullSourcePath);
             if (targetRoute.isMountRoute() || targetFullRoute.matchesMountPath(fullTargetPath)) {
                 if (mountPoints != null && !mountPoints.isEmpty()) {
                     throw new JsonException("目录包含挂载点，不能移动到其他挂载点下");
@@ -323,7 +323,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             }
 
             if (sourceFullRoute.matchesMountPath(fullSourcePath)) {
-                String nodeId = metadataOperator.getNodeIdByPath(uid, target)
+                String nodeId = metadataOperator.getNodeIdByPath(targetUid, target)
                         .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
                 MountPoint mountPoint = sourceFullRoute.requireMountPoint();
                 mountPoint.setNid(nodeId);
@@ -337,29 +337,41 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             }
         }
 
+        boolean crossUid = sourceUid != targetUid;
+
         if (sourceRoute.sameFileSystem(targetRoute)) {
-            if (sourceRoute.isMainRoute()) {
-                mainExecutor.move(uid, source, target, name, overwrite);
+            if (crossUid) {
+                copyCoordinator.copy(SimpleFileTransferParam.builder()
+                        .sourceUid(sourceUid)
+                        .sourcePath(source)
+                        .files(List.of(name))
+                        .targetUid(targetUid)
+                        .targetPath(target)
+                        .isOverwrite(overwrite)
+                        .build(), null);
+                doDeleteFile(sourceUid, source, Collections.singletonList(name));
+            } else if (sourceRoute.isMainRoute()) {
+                mainExecutor.move(sourceUid, source, targetUid, target, name, overwrite);
             } else {
-                sourceRoute.requireDelegateFileSystem().move(uid, sourceRoute.getResolvedPath(), targetRoute.getResolvedPath(), name, overwrite);
+                sourceRoute.requireDelegateFileSystem().move(sourceUid, sourceRoute.getResolvedPath(), targetUid, targetRoute.getResolvedPath(), name, overwrite);
                 if (sourceRoute.requiresMainMetadataSync()) {
-                    metadataOperator.move(uid, source, target, name, overwrite);
+                    metadataOperator.move(sourceUid, source, targetUid, target, name, overwrite);
                 }
             }
         } else {
             copyCoordinator.copy(SimpleFileTransferParam.builder()
-                    .sourceUid(uid)
+                    .sourceUid(sourceUid)
                     .sourcePath(source)
                     .files(List.of(name))
-                    .targetUid(uid)
+                    .targetUid(targetUid)
                     .targetPath(target)
                     .isOverwrite(overwrite)
                     .build(), null);
-            doDeleteFile(uid, source, Collections.singletonList(name));
+            doDeleteFile(sourceUid, source, Collections.singletonList(name));
         }
 
         if (mountPoints != null && !mountPoints.isEmpty()) {
-            mountPointService.clearCache(uid);
+            mountPointService.clearCache(sourceUid);
         }
         publishFileMoveEvent(fullSourcePath, fullTargetPath);
     }

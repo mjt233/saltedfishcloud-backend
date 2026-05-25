@@ -307,9 +307,9 @@ public abstract class AbstractRawStoreService implements StoreService {
     }
 
     @Override
-    public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
-        final String src = StringUtils.appendPath(getUserFileRoot(uid), source, name);
-        final String dst = StringUtils.appendPath(getUserFileRoot(uid), target, name);
+    public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException {
+        final String src = StringUtils.appendPath(getUserFileRoot(sourceUid), source, name);
+        final String dst = StringUtils.appendPath(getUserFileRoot(targetUid), target, name);
         final String dstParent = PathUtils.getParentPath(dst);
 
         if (!handler.exist(src)) {

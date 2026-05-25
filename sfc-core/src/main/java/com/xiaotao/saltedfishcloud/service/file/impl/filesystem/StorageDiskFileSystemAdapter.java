@@ -159,7 +159,7 @@ public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
+    public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException {
         copyAndMoveHandler.move(StringUtils.appendPath(source, name), StringUtils.appendPath(target, name), overwrite);
     }
 

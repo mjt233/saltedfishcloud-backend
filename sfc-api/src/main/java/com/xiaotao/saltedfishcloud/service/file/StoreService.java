@@ -133,13 +133,14 @@ public interface StoreService {
 
     /**
      * 在网盘中移动文件，若目录名相同则合并目录
-     * @param uid     用户ID
+     * @param sourceUid 源用户ID
      * @param source  所在网盘路径
+     * @param targetUid 目标用户ID
      * @param target  目的地网盘路径
      * @param name    文件名
      * @param overwrite 是否覆盖原文件
      */
-    default void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
+    default void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException {
         throw new UnsupportedOperationException("不支持move操作");
     }
 
