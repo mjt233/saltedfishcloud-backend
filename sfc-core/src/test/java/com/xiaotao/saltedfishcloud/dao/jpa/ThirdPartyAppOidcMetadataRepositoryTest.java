@@ -3,105 +3,175 @@ package com.xiaotao.saltedfishcloud.dao.jpa;
 import com.xiaotao.saltedfishcloud.enums.OidcClientType;
 import com.xiaotao.saltedfishcloud.enums.OidcTokenEndpointAuthMethod;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppPostLogoutRedirectUri;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppRedirectUri;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * ThirdPartyApp OIDC 元数据字段与相关实体的单元测试。
+ * ThirdPartyApp OIDC 元数据字段与相关 Repository 的持久化集成测试。
  * <p>
- * 不依赖 Spring 上下文，直接构造实体对象，验证 OIDC 元数据字段的默认值、
- * 枚举值以及重定向 URI 实体的字段赋值是否符合预期。
- * 保留了原持久化测试的全部验证意图：字段存在性、默认值正确性、枚举常量完整性。
+ * 使用 {@link DataJpaTest} 和嵌入式 H2 数据库，验证 OIDC 字段的 JPA 读写往返
+ * （save → flush → clear → findById），以及 {@link ThirdPartyAppRedirectUriRepo}
+ * 的 {@code findByAppId} 和 {@code deleteByAppId} 在真实数据库上的行为。
+ * 不依赖完整 Spring Boot 上下文。JPA 审计由 {@code SaltedfishcloudApplication}
+ * 上的 {@code @EnableJpaAuditing} 提供，无需在测试中重复声明。
  * </p>
  */
+@DataJpaTest(properties = {
+        "spring.jpa.database=default",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 class ThirdPartyAppOidcMetadataRepositoryTest {
 
-    /**
-     * 验证新增 OIDC 字段的默认值符合预期。
-     */
-    @Test
-    void shouldHaveOidcFieldsWithCorrectDefaults() {
-        ThirdPartyApp app = new ThirdPartyApp();
+    @Autowired
+    private TestEntityManager entityManager;
 
-        assertFalse(app.getOidcEnabled(), "oidcEnabled 默认应为 false");
-        assertEquals(OidcClientType.CONFIDENTIAL, app.getOidcClientType(),
-                "默认客户端类型应为 CONFIDENTIAL");
-        assertFalse(app.getRequirePkce(), "requirePkce 默认应为 false");
-        assertEquals(OidcTokenEndpointAuthMethod.CLIENT_SECRET_BASIC,
-                app.getOidcTokenEndpointAuthMethod(),
-                "默认 token 端点认证方式应为 CLIENT_SECRET_BASIC");
-    }
+    @Autowired
+    private ThirdPartyAppRepo thirdPartyAppRepo;
+
+    @Autowired
+    private ThirdPartyAppRedirectUriRepo thirdPartyAppRedirectUriRepo;
+
+    // -------------------------------------------------------------------------
+    // ThirdPartyApp OIDC 字段持久化
+    // -------------------------------------------------------------------------
 
     /**
-     * 验证可以将全部 OIDC 元数据字段设置到实体对象上，并能正确读回。
-     * 模拟原持久化测试中 save → findById → 断言字段值 的核心意图。
+     * 验证 {@link ThirdPartyApp} 的 OIDC 元数据字段能被正确持久化并重新读取。
+     * 覆盖需求：save → flush → clear → findById 后断言字段值不变。
      */
     @Test
     void shouldPersistOidcClientMetadata() {
+        // Given
         ThirdPartyApp app = new ThirdPartyApp();
-        app.setName("oidc-client");
+        app.setName("oidc-client-test");
         app.setIsEnabled(true);
         app.setOidcEnabled(true);
         app.setOidcClientType(OidcClientType.PUBLIC);
         app.setRequirePkce(true);
         app.setOidcTokenEndpointAuthMethod(OidcTokenEndpointAuthMethod.NONE);
 
-        assertTrue(app.getOidcEnabled());
-        assertEquals(OidcClientType.PUBLIC, app.getOidcClientType());
-        assertTrue(app.getRequirePkce());
-        assertEquals(OidcTokenEndpointAuthMethod.NONE, app.getOidcTokenEndpointAuthMethod());
+        // When
+        ThirdPartyApp saved = thirdPartyAppRepo.save(app);
+        entityManager.flush();
+        entityManager.clear();
+
+        // Then — reload from DB bypassing the first-level cache
+        Optional<ThirdPartyApp> found = thirdPartyAppRepo.findById(saved.getId());
+        assertTrue(found.isPresent(), "持久化后应能根据 ID 查询到实体");
+        ThirdPartyApp reloaded = found.get();
+
+        assertTrue(reloaded.getOidcEnabled(), "oidcEnabled 应为 true");
+        assertEquals(OidcClientType.PUBLIC, reloaded.getOidcClientType(), "oidcClientType 应为 PUBLIC");
+        assertTrue(reloaded.getRequirePkce(), "requirePkce 应为 true");
+        assertEquals(OidcTokenEndpointAuthMethod.NONE, reloaded.getOidcTokenEndpointAuthMethod(),
+                "oidcTokenEndpointAuthMethod 应为 NONE");
     }
 
     /**
-     * 验证 {@link ThirdPartyAppRedirectUri} 可正确设置和读取 appId 及 uri 字段。
+     * 验证 {@link ThirdPartyApp} OIDC 字段的默认值在持久化读取后仍然正确。
      */
     @Test
-    void shouldCreateRedirectUri() {
-        ThirdPartyAppRedirectUri redirectUri = new ThirdPartyAppRedirectUri();
-        redirectUri.setAppId(42L);
-        redirectUri.setUri("https://client.example.com/callback");
+    void shouldPersistDefaultOidcValues() {
+        // Given — 仅设置必要字段，OIDC 字段使用默认值
+        ThirdPartyApp app = new ThirdPartyApp();
+        app.setName("default-oidc-test");
 
-        assertEquals(42L, redirectUri.getAppId());
-        assertEquals("https://client.example.com/callback", redirectUri.getUri());
-    }
+        // When
+        ThirdPartyApp saved = thirdPartyAppRepo.save(app);
+        entityManager.flush();
+        entityManager.clear();
 
-    /**
-     * 验证 {@link ThirdPartyAppPostLogoutRedirectUri} 可正确设置和读取 appId 及 uri 字段。
-     */
-    @Test
-    void shouldCreatePostLogoutRedirectUri() {
-        ThirdPartyAppPostLogoutRedirectUri uri = new ThirdPartyAppPostLogoutRedirectUri();
-        uri.setAppId(99L);
-        uri.setUri("https://client.example.com/logout");
+        // Then
+        ThirdPartyApp reloaded = thirdPartyAppRepo.findById(saved.getId()).orElseThrow();
 
-        assertEquals(99L, uri.getAppId());
-        assertEquals("https://client.example.com/logout", uri.getUri());
-    }
-
-    /**
-     * 验证 {@link OidcClientType} 枚举值完整性：包含 PUBLIC 和 CONFIDENTIAL。
-     */
-    @Test
-    void shouldSupportPublicAndConfidentialClientTypes() {
-        assertEquals(2, OidcClientType.values().length);
-        assertEquals(OidcClientType.PUBLIC, OidcClientType.valueOf("PUBLIC"));
-        assertEquals(OidcClientType.CONFIDENTIAL, OidcClientType.valueOf("CONFIDENTIAL"));
-    }
-
-    /**
-     * 验证 {@link OidcTokenEndpointAuthMethod} 枚举值完整性：包含三种认证方式。
-     */
-    @Test
-    void shouldSupportAllTokenEndpointAuthMethods() {
-        assertEquals(3, OidcTokenEndpointAuthMethod.values().length);
+        assertFalse(reloaded.getOidcEnabled(), "oidcEnabled 默认应为 false");
+        assertEquals(OidcClientType.CONFIDENTIAL, reloaded.getOidcClientType(),
+                "oidcClientType 默认应为 CONFIDENTIAL");
+        assertFalse(reloaded.getRequirePkce(), "requirePkce 默认应为 false");
         assertEquals(OidcTokenEndpointAuthMethod.CLIENT_SECRET_BASIC,
-                OidcTokenEndpointAuthMethod.valueOf("CLIENT_SECRET_BASIC"));
-        assertEquals(OidcTokenEndpointAuthMethod.CLIENT_SECRET_POST,
-                OidcTokenEndpointAuthMethod.valueOf("CLIENT_SECRET_POST"));
-        assertEquals(OidcTokenEndpointAuthMethod.NONE,
-                OidcTokenEndpointAuthMethod.valueOf("NONE"));
+                reloaded.getOidcTokenEndpointAuthMethod(),
+                "oidcTokenEndpointAuthMethod 默认应为 CLIENT_SECRET_BASIC");
+    }
+
+    // -------------------------------------------------------------------------
+    // ThirdPartyAppRedirectUriRepo 持久化行为
+    // -------------------------------------------------------------------------
+
+    /**
+     * 验证 {@link ThirdPartyAppRedirectUriRepo#findByAppId(Long)} 能返回已持久化的重定向 URI 列表。
+     */
+    @Test
+    void shouldFindRedirectUrisByAppId() {
+        // Given
+        ThirdPartyApp app = new ThirdPartyApp();
+        app.setName("find-uri-test");
+        ThirdPartyApp saved = thirdPartyAppRepo.save(app);
+        entityManager.flush();
+
+        ThirdPartyAppRedirectUri uri1 = new ThirdPartyAppRedirectUri();
+        uri1.setAppId(saved.getId());
+        uri1.setUri("https://client.example.com/callback1");
+
+        ThirdPartyAppRedirectUri uri2 = new ThirdPartyAppRedirectUri();
+        uri2.setAppId(saved.getId());
+        uri2.setUri("https://client.example.com/callback2");
+
+        thirdPartyAppRedirectUriRepo.save(uri1);
+        thirdPartyAppRedirectUriRepo.save(uri2);
+        entityManager.flush();
+        entityManager.clear();
+
+        // When
+        List<ThirdPartyAppRedirectUri> found = thirdPartyAppRedirectUriRepo.findByAppId(saved.getId());
+
+        // Then
+        assertThat(found).hasSize(2);
+        assertThat(found)
+                .extracting(ThirdPartyAppRedirectUri::getUri)
+                .containsExactlyInAnyOrder(
+                        "https://client.example.com/callback1",
+                        "https://client.example.com/callback2"
+                );
+    }
+
+    /**
+     * 验证 {@link ThirdPartyAppRedirectUriRepo#deleteByAppId(Long)} 能删除指定应用的全部重定向 URI。
+     */
+    @Test
+    void shouldDeleteRedirectUrisByAppId() {
+        // Given
+        ThirdPartyApp app = new ThirdPartyApp();
+        app.setName("delete-uri-test");
+        ThirdPartyApp saved = thirdPartyAppRepo.save(app);
+        entityManager.flush();
+
+        ThirdPartyAppRedirectUri uri = new ThirdPartyAppRedirectUri();
+        uri.setAppId(saved.getId());
+        uri.setUri("https://client.example.com/to-delete");
+        thirdPartyAppRedirectUriRepo.save(uri);
+        entityManager.flush();
+        entityManager.clear();
+
+        // Pre-condition: URI 已持久化
+        assertThat(thirdPartyAppRedirectUriRepo.findByAppId(saved.getId())).hasSize(1);
+
+        // When
+        thirdPartyAppRedirectUriRepo.deleteByAppId(saved.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        // Then
+        assertThat(thirdPartyAppRedirectUriRepo.findByAppId(saved.getId())).isEmpty();
     }
 }
