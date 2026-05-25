@@ -786,16 +786,14 @@ public class FileRecordServiceImpl implements FileRecordService {
 
         StringBuilder curPath = new StringBuilder();
         List<String> parts = new PathBuilder().append(path).getPath();
-        int idx = 0;
         for (String dirName : parts) {
-            idx++;
             String parentNodeId = visitedPath.isEmpty() ? strId : visitedPath.getLast().getMd5();
             FileInfo file = this.getByParentId(uid, parentNodeId, dirName);
             if (file == null) {
                 log.warn("{}路径不存在:{}", LOG_PREFIX, path);
                 return null;
             }
-            if (idx != parts.size() && file.isFile()) {
+            if (file.isFile()) {
                 log.warn("{}路径中的节点为文件而不是目录: {}", LOG_PREFIX, file.getName());
                 return null;
             }
