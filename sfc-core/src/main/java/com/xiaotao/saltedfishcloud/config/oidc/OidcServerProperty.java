@@ -12,6 +12,22 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class OidcServerProperty {
 
     /**
+     * 验证配置的合法性。
+     * <p>
+     * 当 {@code enabled=true} 时，{@code issuer} 不得为空；
+     * 当 {@code enabled=false} 时，跳过所有校验。
+     * </p>
+     *
+     * @throws IllegalStateException 当 OIDC 已启用但 issuer 为空时抛出
+     */
+    public void validate() {
+        if (enabled && (issuer == null || issuer.isBlank())) {
+            throw new IllegalStateException(
+                    "sys.oidc.issuer 在 sys.oidc.enabled=true 时不能为空，请在配置中设置有效的 Issuer 地址（例如：https://cloud.example.com）");
+        }
+    }
+
+    /**
      * 是否启用内置 OIDC 授权服务器，默认 {@code false}。
      */
     private boolean enabled = false;

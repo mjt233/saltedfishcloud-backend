@@ -17,7 +17,6 @@ import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
@@ -44,7 +43,6 @@ import java.util.function.Supplier;
 @EnableCaching
 @EnableJpaAuditing
 @EnableConfigurationProperties
-@ConfigurationPropertiesScan("com.xiaotao.saltedfishcloud")
 @Slf4j
 @EntityScan("com.xiaotao.saltedfishcloud.model")
 @EnableJpaRepositories(basePackages = "com.xiaotao.saltedfishcloud.dao.jpa")
