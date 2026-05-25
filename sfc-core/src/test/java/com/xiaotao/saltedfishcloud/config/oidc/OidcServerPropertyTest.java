@@ -1,47 +1,63 @@
 package com.xiaotao.saltedfishcloud.config.oidc;
 
-import com.xiaotao.saltedfishcloud.ext.PluginManager;
-import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.bind.BindResult;
+import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * {@link OidcServerProperty} 配置绑定集成测试。
+ * OidcServerProperty 配置属性绑定单元测试。
  * <p>
- * 使用 develop 环境配置（SQLite、Redis 禁用），并 Mock 掉 {@link PluginManager}，
- * 以在不依赖外部基础设施的情况下验证 {@code sys.oidc.*} 属性绑定正确性。
+ * 直接使用 Binder + MapConfigurationPropertySource 验证 sys.oidc.* 属性能否正确绑定到 OidcServerProperty。
+ * 不依赖 Spring 上下文。
  * </p>
  */
-@SpringBootTest(properties = {
-        "sys.oidc.enabled=true",
-        "sys.oidc.issuer=https://cloud.example.com",
-        "sys.oidc.jwk.key-id=oidc-key-1"
-})
-@ActiveProfiles("develop")
 class OidcServerPropertyTest {
-
-    /** Mock 掉插件管理器，避免测试上下文因缺少 pluginManager Bean 而启动失败。 */
-    @MockBean
-    private PluginManager pluginManager;
-
-    @Resource
-    private OidcServerProperty property;
-
-    /**
-     * 验证 issuer、默认端点路径以及 JWK 密钥 ID 能正确绑定。
-     */
     @Test
-    void shouldBindIssuerAndDefaultEndpoints() {
-        assertTrue(property.isEnabled());
-        assertEquals("https://cloud.example.com", property.getIssuer());
-        assertEquals("/oauth2/authorize", property.getAuthorizationEndpoint());
-        assertEquals("/oauth2/token", property.getTokenEndpoint());
-        assertEquals("/oauth2/userinfo", property.getUserInfoEndpoint());
-        assertEquals("oidc-key-1", property.getJwk().getKeyId());
+    void shouldBindOidcPropertiesCorrectly() {
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("sys.oidc.enabled", true);
+        properties.put("sys.oidc.issuer", "https://cloud.example.com");
+        properties.put("sys.oidc.jwk.key-id", "custom-key-override");
+        properties.put("sys.oidc.jwk.key-store-path", "./custom-jwk.json");
+        // 不设置 endpoint 字段，测试默认值
+
+        MapConfigurationPropertySource source = new MapConfigurationPropertySource(properties);
+        Binder binder = new Binder(source);
+        BindResult<OidcServerProperty> result = binder.bind("sys.oidc", OidcServerProperty.class);
+        assertTrue(result.isBound(), "属性绑定失败");
+        OidcServerProperty prop = result.get();
+        assertTrue(prop.isEnabled());
+        assertEquals("https://cloud.example.com", prop.getIssuer());
+        assertEquals("/oauth2/authorize", prop.getAuthorizationEndpoint());
+        assertEquals("/oauth2/token", prop.getTokenEndpoint());
+        assertEquals("/oauth2/userinfo", prop.getUserInfoEndpoint());
+        assertEquals("custom-key-override", prop.getJwk().getKeyId());
+        // 校验 JWK 其它绑定值
+        assertEquals("./custom-jwk.json", prop.getJwk().getKeyStorePath());
+    }
+
+    @Test
+    void shouldBindDefaultValuesWhenPropertiesMissing() {
+        Map<String, Object> properties = new HashMap<>();
+        // 只设置 enabled
+        properties.put("sys.oidc.enabled", false);
+        MapConfigurationPropertySource source = new MapConfigurationPropertySource(properties);
+        Binder binder = new Binder(source);
+        BindResult<OidcServerProperty> result = binder.bind("sys.oidc", OidcServerProperty.class);
+        assertTrue(result.isBound(), "属性绑定失败");
+        OidcServerProperty prop = result.get();
+        assertFalse(prop.isEnabled());
+        assertNull(prop.getIssuer());
+        assertEquals("/oauth2/authorize", prop.getAuthorizationEndpoint());
+        assertEquals("/oauth2/token", prop.getTokenEndpoint());
+        assertEquals("/oauth2/userinfo", prop.getUserInfoEndpoint());
+        assertEquals("oidc-key-1", prop.getJwk().getKeyId());
+        assertEquals("./oidc-jwk.json", prop.getJwk().getKeyStorePath());
     }
 }
-

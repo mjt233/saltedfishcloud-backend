@@ -49,3 +49,4 @@ sfc-web/src/main/resources/application.yml
 log/**
 *.log
 *.data
+*.db
