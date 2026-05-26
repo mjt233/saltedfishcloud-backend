@@ -73,6 +73,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
             <version>${api.version}</version>
