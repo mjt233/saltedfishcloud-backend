@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.enums.OidcClientType;
 import com.xiaotao.saltedfishcloud.enums.OidcTokenEndpointAuthMethod;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppRedirectUri;
+import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppPostLogoutRedirectUri;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -22,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 使用 {@link DataJpaTest} 和嵌入式 H2 数据库，验证 OIDC 字段的 JPA 读写往返
  * （save → flush → clear → findById），以及 {@link ThirdPartyAppRedirectUriRepo}
  * 的 {@code findByAppId} 和 {@code deleteByAppId} 在真实数据库上的行为。
- * 不依赖完整 Spring Boot 上下文。JPA 审计由 {@code SaltedfishcloudApplication}
+ * 不依赖完整 Spring Boot 上下文。JPA 审计由测试引导类 {@link JpaTestApplication}
  * 上的 {@code @EnableJpaAuditing} 提供，无需在测试中重复声明。
  * </p>
  */
@@ -41,6 +42,9 @@ class ThirdPartyAppOidcMetadataRepositoryTest {
 
     @Autowired
     private ThirdPartyAppRedirectUriRepo thirdPartyAppRedirectUriRepo;
+
+    @Autowired
+    private ThirdPartyAppPostLogoutRedirectUriRepo thirdPartyAppPostLogoutRedirectUriRepo;
 
     // -------------------------------------------------------------------------
     // ThirdPartyApp OIDC 字段持久化
@@ -174,4 +178,83 @@ class ThirdPartyAppOidcMetadataRepositoryTest {
         // Then
         assertThat(thirdPartyAppRedirectUriRepo.findByAppId(saved.getId())).isEmpty();
     }
+
+    /**
+     * 验证 {@link ThirdPartyAppPostLogoutRedirectUriRepo#findByAppId(Long)} 能返回已持久化的登出后重定向 URI 列表。
+     */
+    @Test
+    void shouldFindPostLogoutRedirectUrisByAppId() {
+        // Given
+        ThirdPartyApp app = new ThirdPartyApp();
+        app.setName("find-post-logout-uri-test");
+        ThirdPartyApp saved = thirdPartyAppRepo.save(app);
+        entityManager.flush();
+
+        ThirdPartyAppPostLogoutRedirectUri uri1 = new ThirdPartyAppPostLogoutRedirectUri();
+        uri1.setAppId(saved.getId());
+        uri1.setUri("https://client.example.com/post-logout1");
+
+        ThirdPartyAppPostLogoutRedirectUri uri2 = new ThirdPartyAppPostLogoutRedirectUri();
+        uri2.setAppId(saved.getId());
+        uri2.setUri("https://client.example.com/post-logout2");
+
+        thirdPartyAppPostLogoutRedirectUriRepo.save(uri1);
+        thirdPartyAppPostLogoutRedirectUriRepo.save(uri2);
+        entityManager.flush();
+        entityManager.clear();
+
+        // When
+        List<ThirdPartyAppPostLogoutRedirectUri> found = thirdPartyAppPostLogoutRedirectUriRepo.findByAppId(saved.getId());
+
+        // Then
+        assertThat(found).hasSize(2);
+        assertThat(found)
+                .extracting(ThirdPartyAppPostLogoutRedirectUri::getUri)
+                .containsExactlyInAnyOrder(
+                        "https://client.example.com/post-logout1",
+                        "https://client.example.com/post-logout2"
+                );
+    }
+
+    /**
+     * 验证 {@link ThirdPartyAppPostLogoutRedirectUriRepo#deleteByAppId(Long)} 仅删除指定应用的登出后重定向 URI，不影响其他应用。
+     */
+    @Test
+    void shouldDeletePostLogoutRedirectUrisByAppId() {
+        // Given
+        ThirdPartyApp app1 = new ThirdPartyApp();
+        app1.setName("delete-post-logout-uri-app1");
+        ThirdPartyApp saved1 = thirdPartyAppRepo.save(app1);
+
+        ThirdPartyApp app2 = new ThirdPartyApp();
+        app2.setName("delete-post-logout-uri-app2");
+        ThirdPartyApp saved2 = thirdPartyAppRepo.save(app2);
+        entityManager.flush();
+
+        ThirdPartyAppPostLogoutRedirectUri uri1 = new ThirdPartyAppPostLogoutRedirectUri();
+        uri1.setAppId(saved1.getId());
+        uri1.setUri("https://client.example.com/post-logout-app1");
+        thirdPartyAppPostLogoutRedirectUriRepo.save(uri1);
+
+        ThirdPartyAppPostLogoutRedirectUri uri2 = new ThirdPartyAppPostLogoutRedirectUri();
+        uri2.setAppId(saved2.getId());
+        uri2.setUri("https://client.example.com/post-logout-app2");
+        thirdPartyAppPostLogoutRedirectUriRepo.save(uri2);
+        entityManager.flush();
+        entityManager.clear();
+
+        // Pre-condition: 两个 app 的 URI 都已持久化
+        assertThat(thirdPartyAppPostLogoutRedirectUriRepo.findByAppId(saved1.getId())).hasSize(1);
+        assertThat(thirdPartyAppPostLogoutRedirectUriRepo.findByAppId(saved2.getId())).hasSize(1);
+
+        // When
+        thirdPartyAppPostLogoutRedirectUriRepo.deleteByAppId(saved1.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        // Then
+        assertThat(thirdPartyAppPostLogoutRedirectUriRepo.findByAppId(saved1.getId())).isEmpty();
+        assertThat(thirdPartyAppPostLogoutRedirectUriRepo.findByAppId(saved2.getId())).hasSize(1);
+    }
+
 }

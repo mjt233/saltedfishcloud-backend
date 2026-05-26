@@ -24,6 +24,7 @@ public class ThirdPartyAppRedirectUri extends AuditModel {
     /**
      * 所属第三方应用的 ID。
      */
+    @Column(nullable = false)
     private Long appId;
 
     /**
