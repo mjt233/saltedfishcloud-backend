@@ -4,6 +4,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -31,6 +32,7 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
  * </p>
  */
 @Configuration
+@ConditionalOnProperty(name = "sys.oidc.enabled", havingValue = "true")
 public class OidcAuthorizationServerConfig {
 
     /**
@@ -86,7 +88,8 @@ public class OidcAuthorizationServerConfig {
     /**
      * 创建用于 JWT 令牌签名和 JWKS 端点的 RSA 密钥源。
      * <p>
-     * 密钥由 {@link OidcJwkService} 生成，keyId 来自 {@link OidcServerProperty.Jwk#getKeyId()}。
+     * 密钥由 {@link OidcJwkService#generateJwkSet(OidcServerProperty)} 生成，
+     * keyId 来自 {@link OidcServerProperty.Jwk#getKeyId()}。
      * </p>
      *
      * @param jwkService JWK 密钥服务
@@ -96,7 +99,7 @@ public class OidcAuthorizationServerConfig {
     @Bean
     public com.nimbusds.jose.jwk.source.JWKSource<SecurityContext> jwkSource(
             OidcJwkService jwkService, OidcServerProperty property) {
-        JWKSet jwkSet = jwkService.loadOrCreate(property);
+        JWKSet jwkSet = jwkService.generateJwkSet(property);
         return new ImmutableJWKSet<>(jwkSet);
     }
 }
