@@ -67,6 +67,7 @@ public class ThirdPartyApp extends AuditModel {
     /**
      * 是否启用 OIDC（OpenID Connect）协议支持。
      */
+    @Column(nullable = false)
     private Boolean oidcEnabled = false;
 
     /**
@@ -74,12 +75,14 @@ public class ThirdPartyApp extends AuditModel {
      * 默认为机密客户端。
      */
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OidcClientType oidcClientType = OidcClientType.CONFIDENTIAL;
 
     /**
      * 是否要求客户端使用 PKCE（Proof Key for Code Exchange）流程。
      * 公开客户端建议强制开启。
      */
+    @Column(nullable = false)
     private Boolean requirePkce = false;
 
     /**
@@ -87,5 +90,6 @@ public class ThirdPartyApp extends AuditModel {
      * 默认为 HTTP Basic 认证（CLIENT_SECRET_BASIC）。
      */
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OidcTokenEndpointAuthMethod oidcTokenEndpointAuthMethod = OidcTokenEndpointAuthMethod.CLIENT_SECRET_BASIC;
 }
