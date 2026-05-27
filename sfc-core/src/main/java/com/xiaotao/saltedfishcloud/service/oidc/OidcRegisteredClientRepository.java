@@ -1,12 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.oidc;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
-import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRedirectUriRepo;
 import com.xiaotao.saltedfishcloud.enums.OidcTokenEndpointAuthMethod;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppRedirectUri;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -15,8 +14,8 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 将系统内部的 {@link ThirdPartyApp} 元数据适配为 Spring Authorization Server 的
@@ -37,7 +36,6 @@ public class OidcRegisteredClientRepository implements RegisteredClientRepositor
 
     private final ThirdPartyAppService appService;
     private final ThirdPartyAppKeyRepo keyRepo;
-    private final ThirdPartyAppRedirectUriRepo redirectUriRepo;
 
     /**
      * {@inheritDoc}
@@ -74,9 +72,10 @@ public class OidcRegisteredClientRepository implements RegisteredClientRepositor
             return null;
         }
 
-        Set<String> redirectUris = redirectUriRepo.findByAppId(app.getId()).stream()
-                .map(ThirdPartyAppRedirectUri::getUri)
-                .collect(Collectors.toSet());
+        Set<String> redirectUris = new HashSet<>();
+        if (StringUtils.hasText(app.getCallbackUrl())) {
+            redirectUris.add(app.getCallbackUrl());
+        }
 
         String clientSecret = keyRepo.findByAppId(app.getId()).stream()
                 .findFirst()

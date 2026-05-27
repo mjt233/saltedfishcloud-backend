@@ -1,12 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.oidc;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
-import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRedirectUriRepo;
 import com.xiaotao.saltedfishcloud.enums.OidcTokenEndpointAuthMethod;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppRedirectUri;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
@@ -50,9 +48,6 @@ class OidcRegisteredClientRepositoryTest {
     private ThirdPartyAppKeyRepo keyRepo;
 
     @Mock
-    private ThirdPartyAppRedirectUriRepo redirectUriRepo;
-
-    @Mock
     private ThirdPartyAppAuthorizationService authorizationService;
 
     private OidcRegisteredClientRepository clientRepository;
@@ -60,7 +55,7 @@ class OidcRegisteredClientRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        clientRepository = new OidcRegisteredClientRepository(appService, keyRepo, redirectUriRepo);
+        clientRepository = new OidcRegisteredClientRepository(appService, keyRepo);
         consentService = new OidcAuthorizationConsentService(authorizationService);
     }
 
@@ -80,12 +75,8 @@ class OidcRegisteredClientRepositoryTest {
         ThirdPartyAppKey key = new ThirdPartyAppKey();
         key.setClientSecretHash("hashed-secret");
 
-        ThirdPartyAppRedirectUri uri = new ThirdPartyAppRedirectUri();
-        uri.setUri("https://client.example.com/callback");
-
         when(appService.findById(42L)).thenReturn(app);
         when(keyRepo.findByAppId(42L)).thenReturn(List.of(key));
-        when(redirectUriRepo.findByAppId(42L)).thenReturn(List.of(uri));
 
         // When
         RegisteredClient client = clientRepository.findByClientId("42");
@@ -159,7 +150,6 @@ class OidcRegisteredClientRepositoryTest {
         ThirdPartyApp app = buildOidcApp(20L, true, true, OidcTokenEndpointAuthMethod.CLIENT_SECRET_POST, false);
         when(appService.findById(20L)).thenReturn(app);
         when(keyRepo.findByAppId(20L)).thenReturn(Collections.emptyList());
-        when(redirectUriRepo.findByAppId(20L)).thenReturn(List.of(buildRedirectUri(20L, "https://example.com/cb")));
 
         // When
         RegisteredClient client = clientRepository.findByClientId("20");
@@ -180,7 +170,6 @@ class OidcRegisteredClientRepositoryTest {
         ThirdPartyApp app = buildOidcApp(21L, true, true, OidcTokenEndpointAuthMethod.NONE, false);
         when(appService.findById(21L)).thenReturn(app);
         when(keyRepo.findByAppId(21L)).thenReturn(Collections.emptyList());
-        when(redirectUriRepo.findByAppId(21L)).thenReturn(List.of(buildRedirectUri(21L, "https://example.com/cb")));
 
         // When
         RegisteredClient client = clientRepository.findByClientId("21");
@@ -201,7 +190,6 @@ class OidcRegisteredClientRepositoryTest {
         ThirdPartyApp app = buildOidcApp(30L, true, true, OidcTokenEndpointAuthMethod.NONE, true);
         when(appService.findById(30L)).thenReturn(app);
         when(keyRepo.findByAppId(30L)).thenReturn(Collections.emptyList());
-        when(redirectUriRepo.findByAppId(30L)).thenReturn(List.of(buildRedirectUri(30L, "https://example.com/cb")));
 
         // When
         RegisteredClient client = clientRepository.findByClientId("30");
@@ -220,7 +208,6 @@ class OidcRegisteredClientRepositoryTest {
         ThirdPartyApp app = buildOidcApp(31L, true, true, OidcTokenEndpointAuthMethod.CLIENT_SECRET_BASIC, false);
         when(appService.findById(31L)).thenReturn(app);
         when(keyRepo.findByAppId(31L)).thenReturn(Collections.emptyList());
-        when(redirectUriRepo.findByAppId(31L)).thenReturn(List.of(buildRedirectUri(31L, "https://example.com/cb")));
 
         // When
         RegisteredClient client = clientRepository.findByClientId("31");
@@ -240,7 +227,6 @@ class OidcRegisteredClientRepositoryTest {
         ThirdPartyApp app = buildOidcApp(42L, true, true, OidcTokenEndpointAuthMethod.CLIENT_SECRET_BASIC, false);
         when(appService.findById(42L)).thenReturn(app);
         when(keyRepo.findByAppId(42L)).thenReturn(Collections.emptyList());
-        when(redirectUriRepo.findByAppId(42L)).thenReturn(List.of(buildRedirectUri(42L, "https://example.com/cb")));
 
         // When
         RegisteredClient client = clientRepository.findById("42");
@@ -388,19 +374,5 @@ class OidcRegisteredClientRepositoryTest {
         app.setOidcTokenEndpointAuthMethod(authMethod);
         app.setRequirePkce(requirePkce);
         return app;
-    }
-
-    /**
-     * 构建测试用的 {@link ThirdPartyAppRedirectUri} 实例。
-     *
-     * @param appId 所属应用 ID
-     * @param uri   重定向 URI
-     * @return 配置好的重定向 URI 对象
-     */
-    private ThirdPartyAppRedirectUri buildRedirectUri(Long appId, String uri) {
-        ThirdPartyAppRedirectUri redirectUri = new ThirdPartyAppRedirectUri();
-        redirectUri.setAppId(appId);
-        redirectUri.setUri(uri);
-        return redirectUri;
     }
 }

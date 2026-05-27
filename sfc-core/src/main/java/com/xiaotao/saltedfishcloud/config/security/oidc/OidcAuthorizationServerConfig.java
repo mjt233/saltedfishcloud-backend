@@ -6,7 +6,6 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
 import com.xiaotao.saltedfishcloud.controller.OidcDeviceController;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
-import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRedirectUriRepo;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationConsentService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcRegisteredClientRepository;
@@ -153,15 +152,13 @@ public class OidcAuthorizationServerConfig {
      *
      * @param appService       第三方应用服务
      * @param keyRepo          第三方应用密钥仓库
-     * @param redirectUriRepo  第三方应用回调 URI 仓库
      * @return OIDC 注册客户端仓库
      */
     @Bean
     public RegisteredClientRepository registeredClientRepository(
             ThirdPartyAppService appService,
-            ThirdPartyAppKeyRepo keyRepo,
-            ThirdPartyAppRedirectUriRepo redirectUriRepo) {
-        return new OidcRegisteredClientRepository(appService, keyRepo, redirectUriRepo);
+            ThirdPartyAppKeyRepo keyRepo) {
+        return new OidcRegisteredClientRepository(appService, keyRepo);
     }
 
     /**
