@@ -3,9 +3,15 @@ package com.xiaotao.saltedfishcloud.config.security.oidc;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
+import com.xiaotao.saltedfishcloud.service.oidc.OidcUserClaimsMapper;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -84,6 +90,30 @@ class OidcAuthorizationServerConfigTest {
             return new InMemoryRegisteredClientRepository(client);
         }
 
+        /** 提供 {@link ThirdPartyAppApiTicketService} 测试桩，满足 {@link com.xiaotao.saltedfishcloud.service.oidc.OidcTokenBridgeService} 的依赖。 */
+        @Bean
+        ThirdPartyAppApiTicketService thirdPartyAppApiTicketService() {
+            return Mockito.mock(ThirdPartyAppApiTicketService.class);
+        }
+
+        /** 提供 {@link ThirdPartyAppTokenService} 测试桩，满足 {@link com.xiaotao.saltedfishcloud.service.oidc.OidcTokenBridgeService} 的依赖。 */
+        @Bean
+        ThirdPartyAppTokenService thirdPartyAppTokenService() {
+            return Mockito.mock(ThirdPartyAppTokenService.class);
+        }
+
+        /** 提供 {@link ThirdPartyAppAuthorizationService} 测试桩，满足 {@link com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationConsentService} 的依赖。 */
+        @Bean
+        ThirdPartyAppAuthorizationService thirdPartyAppAuthorizationService() {
+            return Mockito.mock(ThirdPartyAppAuthorizationService.class);
+        }
+
+        /** 提供 {@link UserService} 测试桩，满足 {@link OidcUserClaimsMapper} 的依赖。 */
+        @Bean
+        UserService userService() {
+            return Mockito.mock(UserService.class);
+        }
+
         /**
          * 提供测试用的 {@link JwtDecoder}，从 JWK 密钥源构建，用于 OIDC UserInfo 端点的令牌验证。
          */
@@ -159,5 +189,17 @@ class OidcAuthorizationServerConfigTest {
                 .andExpect(jsonPath("$.issuer").value("https://cloud.example.com"))
                 .andExpect(jsonPath("$.authorization_endpoint").value("https://cloud.example.com/oauth2/authorize"))
                 .andExpect(jsonPath("$.jwks_uri").value("https://cloud.example.com/oauth2/jwks"));
+    }
+
+    /**
+     * 验证 Spring 应用上下文中存在 {@link OidcUserClaimsMapper} Bean，
+     * 说明 userinfo 声明映射器已通过 {@link OidcAuthorizationServerConfig} 正确注册。
+     */
+    @Autowired
+    private OidcUserClaimsMapper oidcUserClaimsMapper;
+
+    @Test
+    void oidcUserClaimsMapperBeanShouldBeRegisteredInContext() {
+        assertNotNull(oidcUserClaimsMapper, "OidcUserClaimsMapper Bean 应已在 Spring 上下文中注册");
     }
 }

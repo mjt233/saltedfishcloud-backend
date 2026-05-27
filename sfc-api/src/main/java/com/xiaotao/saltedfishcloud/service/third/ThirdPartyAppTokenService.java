@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppToken;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppAccessTokenPayload;
 import com.xiaotao.saltedfishcloud.service.CrudService;
 
 public interface ThirdPartyAppTokenService extends CrudService<ThirdPartyAppToken> {
@@ -42,4 +43,30 @@ public interface ThirdPartyAppTokenService extends CrudService<ThirdPartyAppToke
      * @param uid   用户id
      */
     void revoke(Long appId, Long uid);
+
+    /**
+     * 为指定的第三方应用与用户签发遗留格式的 Access Token（长期有效，无过期时间）。
+     * <p>
+     * 该方法用于 OIDC refresh_token 的签发路径：将遗留 Access Token 作为 OIDC refresh_token 使用。
+     * 签发的 token 以 SHA-256 指纹的 BCrypt 哈希持久化，以保证数据库安全。
+     * </p>
+     *
+     * @param appId 第三方 OAuth 应用 ID
+     * @param uid   系统用户 ID
+     * @return 遗留格式的 Access Token 字符串（JWT）
+     */
+    String issueLegacyAccessToken(Long appId, Long uid);
+
+    /**
+     * 验证遗留格式的 Access Token 并返回其中的载荷。
+     * <p>
+     * 该方法除了解析 token 中的载荷外，还会校验数据库中的持久化指纹记录，
+     * 以确保被撤销或失效的遗留 Access Token 不能继续作为 OIDC refresh_token 使用。
+     * </p>
+     *
+     * @param accessToken 遗留格式的 Access Token 字符串（JWT）
+     * @return 解析出的 {@link ThirdPartyAppAccessTokenPayload} 载荷对象
+     * @throws com.xiaotao.saltedfishcloud.exception.JsonException 当 token 格式无效时抛出
+     */
+    ThirdPartyAppAccessTokenPayload validateLegacyAccessToken(String accessToken);
 }

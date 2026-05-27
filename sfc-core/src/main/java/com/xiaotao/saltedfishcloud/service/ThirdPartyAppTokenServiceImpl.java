@@ -58,13 +58,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     public String getApiTicket(String accessToken, boolean permanent, boolean revokeOlder) {
         Date now = new Date();
         ThirdPartyAppAccessTokenPayload accessTokenPayload = this.parseAccessToken(accessToken);
-        String accessTokenFingerprint = this.getAccessTokenFingerprint(accessToken);
-
-        // 获取 Access Token 对应的用户授权信息
-        ThirdPartyAppToken tokenRecord = Optional.ofNullable(repository.findByAppIdAndUid(accessTokenPayload.getAppId(), accessTokenPayload.getUid()))
-                .filter(t -> SecureUtils.getBCryptPasswordEncoder().matches(accessTokenFingerprint, t.getAccessToken()))
-                .filter(t -> t.getAccessTokenExpiredDate() == null || now.before(t.getAccessTokenExpiredDate()))
-                .orElseThrow(() -> new JsonException(OAuthError.INVALID_TOKEN));
+        ThirdPartyAppToken tokenRecord = this.validatePersistedAccessToken(accessToken, accessTokenPayload, now);
         ThirdPartyAppUserAuthorizationVo authorizationVo = authorizationService.getUserAppAuthorization(tokenRecord.getAppId(), tokenRecord.getUid());
         ThirdPartyAppAuthorization authorization = Optional.ofNullable(authorizationVo.getAuthorization())
                 .orElseThrow(() -> new JsonException(OAuthError.PERMISSION_DENIED));
@@ -107,6 +101,24 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
         } catch (JsonException | IOException e) {
             throw new JsonException(OAuthError.INVALID_TOKEN);
         }
+    }
+
+    /**
+     * 根据 token 原文和解析出的载荷校验持久化记录是否仍然有效。
+     *
+     * @param accessToken Access Token 原文
+     * @param payload     已解析的 Access Token 载荷
+     * @param now         当前时间
+     * @return 匹配成功的持久化 token 记录
+     */
+    private ThirdPartyAppToken validatePersistedAccessToken(String accessToken,
+                                                            ThirdPartyAppAccessTokenPayload payload,
+                                                            Date now) {
+        String accessTokenFingerprint = this.getAccessTokenFingerprint(accessToken);
+        return Optional.ofNullable(repository.findByAppIdAndUid(payload.getAppId(), payload.getUid()))
+                .filter(t -> SecureUtils.getBCryptPasswordEncoder().matches(accessTokenFingerprint, t.getAccessToken()))
+                .filter(t -> t.getAccessTokenExpiredDate() == null || now.before(t.getAccessTokenExpiredDate()))
+                .orElseThrow(() -> new JsonException(OAuthError.INVALID_TOKEN));
     }
 
     private String getAuthorizationCodeCacheKey(String code) {
@@ -192,5 +204,46 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
 
         // 移除授权记录
         authorizationService.revoke(appId, uid);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * 生成遗留格式 Access Token 并以 BCrypt 哈希形式持久化，可用作 OIDC refresh_token。
+     * 调用该方法时会覆盖同一应用与用户的旧 token 记录（upsert 语义）。
+     * </p>
+     */
+    @Override
+    @Transactional
+    public String issueLegacyAccessToken(Long appId, Long uid) {
+        String accessToken = this.generateAccessToken(appId, uid);
+        String fingerprint = this.getAccessTokenFingerprint(accessToken);
+
+        ThirdPartyAppToken tokenRecord = Optional.ofNullable(repository.findByAppIdAndUid(appId, uid))
+                .orElseGet(() -> {
+                    ThirdPartyAppToken newRecord = new ThirdPartyAppToken();
+                    newRecord.setAppId(appId);
+                    newRecord.setUid(uid);
+                    return newRecord;
+                });
+
+        tokenRecord.setAccessToken(SecureUtils.getBCryptPasswordEncoder().encode(fingerprint));
+        save(tokenRecord);
+
+        return accessToken;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * 在解析 JWT 载荷后，会继续校验数据库中的 Access Token 指纹记录，
+     * 以保证已撤销的遗留 token 不能继续作为 OIDC refresh_token 使用。
+     * </p>
+     */
+    @Override
+    public ThirdPartyAppAccessTokenPayload validateLegacyAccessToken(String accessToken) {
+        ThirdPartyAppAccessTokenPayload payload = this.parseAccessToken(accessToken);
+        this.validatePersistedAccessToken(accessToken, payload, new Date());
+        return payload;
     }
 }

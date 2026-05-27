@@ -19,6 +19,7 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Collections;
 import java.util.List;
@@ -255,6 +256,25 @@ class OidcRegisteredClientRepositoryTest {
             assertThat(parts).containsExactlyInAnyOrder("openid", "profile");
             return true;
         }));
+    }
+
+    /**
+     * 验证当 consent 中不存在任何 scope 时，保存逻辑会撤销原授权而不是写入空 scope 记录。
+     */
+    @Test
+    void consentService_save_shouldRevokeWhenConsentDoesNotContainAnyScopes() {
+        // Given
+        OAuth2AuthorizationConsent consent = OAuth2AuthorizationConsent
+                .withId("100", "200")
+                .authority(new SimpleGrantedAuthority("SCOPE_"))
+                .build();
+
+        // When
+        consentService.save(consent);
+
+        // Then
+        verify(authorizationService).revoke(100L, 200L);
+        verify(authorizationService, never()).authorize(anyLong(), anyLong(), anyString());
     }
 
     /**

@@ -41,18 +41,23 @@ public class OidcAuthorizationConsentService implements OAuth2AuthorizationConse
      */
     @Override
     public void save(OAuth2AuthorizationConsent consent) {
+        Long appId = parseIdentifier(consent.getRegisteredClientId(), "registeredClientId");
+        Long uid = parseIdentifier(consent.getPrincipalName(), "principalName");
         Set<String> scopes = consent.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .filter(a -> a.startsWith("SCOPE_"))
                 .map(a -> a.substring("SCOPE_".length()))
+                .map(String::trim)
+                .filter(scope -> !scope.isEmpty())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        String scope = String.join(" ", scopes);
-        authorizationService.authorize(
-                Long.valueOf(consent.getRegisteredClientId()),
-                Long.valueOf(consent.getPrincipalName()),
-                scope
-        );
+        if (scopes.isEmpty()) {
+            // 旧授权模型没有“空 scope 但仍保留授权记录”的状态；因此这里显式对齐为整体撤销。
+            authorizationService.revoke(appId, uid);
+            return;
+        }
+
+        authorizationService.authorize(appId, uid, String.join(" ", scopes));
     }
 
     /**
@@ -66,8 +71,8 @@ public class OidcAuthorizationConsentService implements OAuth2AuthorizationConse
     @Override
     public void remove(OAuth2AuthorizationConsent consent) {
         authorizationService.revoke(
-                Long.valueOf(consent.getRegisteredClientId()),
-                Long.valueOf(consent.getPrincipalName())
+                parseIdentifier(consent.getRegisteredClientId(), "registeredClientId"),
+                parseIdentifier(consent.getPrincipalName(), "principalName")
         );
     }
 
@@ -85,8 +90,8 @@ public class OidcAuthorizationConsentService implements OAuth2AuthorizationConse
     @Override
     public OAuth2AuthorizationConsent findById(String registeredClientId, String principalName) {
         ThirdPartyAppUserAuthorizationVo vo = authorizationService.getUserAppAuthorization(
-                Long.valueOf(registeredClientId),
-                Long.valueOf(principalName)
+                parseIdentifier(registeredClientId, "registeredClientId"),
+                parseIdentifier(principalName, "principalName")
         );
 
         ThirdPartyAppAuthorization authorization = vo == null ? null : vo.getAuthorization();
@@ -105,5 +110,24 @@ public class OidcAuthorizationConsentService implements OAuth2AuthorizationConse
         }
 
         return builder.build();
+    }
+
+    /**
+     * 将适配器收到的字符串标识解析为 Long 类型。
+     *
+     * @param identifier 标识字符串
+     * @param fieldName  字段名称，用于拼装异常消息
+     * @return 解析后的 Long 标识
+     * @throws IllegalArgumentException 当标识为空、空白或不是十进制数字时抛出
+     */
+    private Long parseIdentifier(String identifier, String fieldName) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " 不能为空");
+        }
+        try {
+            return Long.valueOf(identifier);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(fieldName + " 必须是数字字符串", e);
+        }
     }
 }
