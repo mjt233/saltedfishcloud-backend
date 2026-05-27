@@ -263,7 +263,7 @@ class OidcAuthorizationServerConfigTest {
                         .queryParam("scope", "profile")
                         .queryParam("redirect_uri", "http://localhost/callback"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrlPattern("**/oauth"));
+                .andExpect(redirectedUrlPattern("**/oauth?*client_id=test-client*"));
     }
 
     /**
