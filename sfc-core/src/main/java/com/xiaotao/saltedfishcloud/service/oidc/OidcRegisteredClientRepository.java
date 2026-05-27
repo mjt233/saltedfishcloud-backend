@@ -90,6 +90,7 @@ public class OidcRegisteredClientRepository implements RegisteredClientRepositor
                 .clientSecret(clientSecret)
                 .clientAuthenticationMethod(authMethod)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.DEVICE_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .redirectUris(uris -> uris.addAll(redirectUris))
                 .scope(OidcScopes.OPENID)

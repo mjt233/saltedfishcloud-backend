@@ -83,6 +83,8 @@ sys:
     issuer: ${OIDC_ISSUER:}
     authorization-endpoint: /oauth2/authorize
     token-endpoint: /oauth2/token
+    device-authorization-endpoint: /oauth2/device_authorization
+    device-verification-endpoint: /oauth2/device_verification
     user-info-endpoint: /oauth2/userinfo
     jwk-set-endpoint: /oauth2/jwks
     revocation-endpoint: /oauth2/revoke

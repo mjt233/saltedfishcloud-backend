@@ -4,6 +4,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
+import com.xiaotao.saltedfishcloud.controller.OidcDeviceController;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRedirectUriRepo;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationConsentService;
@@ -85,13 +86,18 @@ public class OidcAuthorizationServerConfig {
                                                        OidcUserClaimsMapper claimsMapper) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer =
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
-        http.securityMatcher(authorizationServer.getEndpointsMatcher())
-                .with(authorizationServer, server -> server.oidc(oidc ->
-                        oidc.userInfoEndpoint(e -> e.userInfoMapper(claimsMapper::toOidcUserInfo))))
+        http.with(authorizationServer, server -> server
+                        .oidc(oidc -> oidc.userInfoEndpoint(e -> e.userInfoMapper(claimsMapper::toOidcUserInfo)))
+                        .deviceAuthorizationEndpoint(deviceAuthorization ->
+                                deviceAuthorization.verificationUri(OidcDeviceController.DEVICE_ACTIVATION_PATH))
+                        .deviceVerificationEndpoint(deviceVerification ->
+                                deviceVerification.consentPage(OidcDeviceController.DEVICE_CONSENT_PATH)))
+                .securityMatcher(authorizationServer.getEndpointsMatcher())
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+                .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()))
                 .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
                         new LoginUrlAuthenticationEntryPoint("/oauth"),
-                        new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
+                        new MediaTypeRequestMatcher(MediaType.TEXT_HTML, MediaType.APPLICATION_XHTML_XML)
                 ));
         return http.build();
     }
@@ -110,6 +116,8 @@ public class OidcAuthorizationServerConfig {
         return AuthorizationServerSettings.builder()
                 .issuer(property.getIssuer())
                 .authorizationEndpoint(property.getAuthorizationEndpoint())
+                .deviceAuthorizationEndpoint(property.getDeviceAuthorizationEndpoint())
+                .deviceVerificationEndpoint(property.getDeviceVerificationEndpoint())
                 .tokenEndpoint(property.getTokenEndpoint())
                 .tokenRevocationEndpoint(property.getRevocationEndpoint())
                 .tokenIntrospectionEndpoint(property.getIntrospectionEndpoint())
@@ -264,4 +272,3 @@ public class OidcAuthorizationServerConfig {
         };
     }
 }
-

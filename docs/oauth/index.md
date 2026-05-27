@@ -13,11 +13,12 @@
 
 1. `/.well-known/openid-configuration`
 2. `/oauth2/authorize`
-3. `/oauth2/token`
-4. `/oauth2/userinfo`
-5. `/oauth2/revoke`
-6. `/oauth2/introspect`
-7. `/oauth2/jwks`
+3. `/oauth2/device_authorization`
+4. `/oauth2/token`
+5. `/oauth2/userinfo`
+6. `/oauth2/revoke`
+7. `/oauth2/introspect`
+8. `/oauth2/jwks`
 
 详细说明参见：[OIDC Provider 支持](oidc.md)
 
@@ -37,7 +38,8 @@
 
 1. OIDC `access_token` 对应现有 `ApiTicket`
 2. OIDC `refresh_token` 对应现有长期 `Access Token`
-3. 用户撤销授权后，两套协议下的凭证都会一起失效
+3. 设备授权模式与授权码模式共享同一套授权事实来源
+4. 用户撤销授权后，两套协议下的凭证都会一起失效
 
 ## 授权范围
 

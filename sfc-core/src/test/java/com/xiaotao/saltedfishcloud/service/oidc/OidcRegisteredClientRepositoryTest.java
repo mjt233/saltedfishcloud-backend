@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
@@ -208,6 +209,25 @@ class OidcRegisteredClientRepositoryTest {
         // Then
         assertNotNull(client);
         assertTrue(client.getClientSettings().isRequireProofKey(), "PKCE 要求应映射到 requireProofKey");
+    }
+
+    /**
+     * 验证 OIDC 已启用的应用默认支持设备授权模式，以便标准客户端可使用 {@code device_code} 流程。
+     */
+    @Test
+    void findByClientId_shouldEnableDeviceCodeGrantForOidcClient() {
+        // Given
+        ThirdPartyApp app = buildOidcApp(31L, true, true, OidcTokenEndpointAuthMethod.CLIENT_SECRET_BASIC, false);
+        when(appService.findById(31L)).thenReturn(app);
+        when(keyRepo.findByAppId(31L)).thenReturn(Collections.emptyList());
+        when(redirectUriRepo.findByAppId(31L)).thenReturn(List.of(buildRedirectUri(31L, "https://example.com/cb")));
+
+        // When
+        RegisteredClient client = clientRepository.findByClientId("31");
+
+        // Then
+        assertNotNull(client);
+        assertThat(client.getAuthorizationGrantTypes()).contains(AuthorizationGrantType.DEVICE_CODE);
     }
 
     /**

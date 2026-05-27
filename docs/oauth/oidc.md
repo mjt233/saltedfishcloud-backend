@@ -11,6 +11,9 @@
 | `/.well-known/openid-configuration` | OIDC Discovery 元数据 |
 | `/oauth2/jwks` | `id_token` 验签公钥 |
 | `/oauth2/authorize` | 标准授权端点 |
+| `/oauth2/device_authorization` | 设备授权端点 |
+| `/oauth/device` | 设备激活页（供用户输入/确认 `user_code`） |
+| `/oauth2/device_verification` | 设备核验端点 |
 | `/oauth2/token` | 标准令牌端点 |
 | `/oauth2/userinfo` | 标准 UserInfo 端点 |
 | `/oauth2/revoke` | 标准令牌撤销端点 |
@@ -25,6 +28,7 @@
 | 标准语义 | 系统内部实现 |
 |------|------|
 | `authorization_code` | 现有用户授权结果与授权码缓存 |
+| `device_code` | 复用同一套用户授权记录与标准设备码状态 |
 | `access_token` | 现有短期 `ApiTicket` |
 | `refresh_token` | 现有长期 `Access Token` |
 | `id_token` | 标准 OIDC 身份令牌（JWK/JWKS 验签） |
@@ -89,6 +93,23 @@ GET  /oauth2/userinfo
 POST /oauth2/token(grant_type=refresh_token)
 ```
 
+### device authorization grant
+
+```text
+POST /oauth2/device_authorization
+GET  /oauth/device                    -> 用户输入或确认 user_code
+GET  /oauth2/device_verification      -> 未登录时跳转 /oauth
+GET  /oauth2/device-consent           -> 已登录后确认 scope
+POST /oauth2/device_verification      -> 完成授权
+POST /oauth2/token(grant_type=urn:ietf:params:oauth:grant-type:device_code)
+```
+
+说明：
+
+1. `verification_uri` 会返回系统自带的 `/oauth/device` 页面，而不是要求依赖外部前端资源。
+2. 设备授权完成后的 `access_token` / `refresh_token` 语义与授权码模式完全一致，仍分别映射为 `ApiTicket` 与长期 `Access Token`。
+3. 若客户端是 public client，后续 refresh_token 使用方式与标准 OIDC 流程一致。
+
 ## 与旧开放平台链路的兼容关系
 
 旧链路仍然保留：
@@ -114,6 +135,8 @@ POST /oauth2/token(grant_type=refresh_token)
 |------|------|
 | `sys.oidc.authorization-endpoint` | `/oauth2/authorize` |
 | `sys.oidc.token-endpoint` | `/oauth2/token` |
+| `sys.oidc.device-authorization-endpoint` | `/oauth2/device_authorization` |
+| `sys.oidc.device-verification-endpoint` | `/oauth2/device_verification` |
 | `sys.oidc.user-info-endpoint` | `/oauth2/userinfo` |
 | `sys.oidc.jwk-set-endpoint` | `/oauth2/jwks` |
 | `sys.oidc.revocation-endpoint` | `/oauth2/revoke` |

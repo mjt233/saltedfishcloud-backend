@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>设备授权确认</title>
+    <link rel="icon" href="data:,">
+</head>
+<body>
+<h2>设备授权确认</h2>
+<p>
+    应用 <strong th:text="${clientName}"></strong>
+    正在请求访问权限，用户代码为 <strong th:text="${userCode}"></strong>。
+</p>
+<form th:action="@{${verificationEndpoint}}" method="post">
+    <input type="hidden" name="client_id" th:value="${clientId}">
+    <input type="hidden" name="state" th:value="${state}">
+    <input type="hidden" name="user_code" th:value="${userCode}">
+
+    <div th:if="${#lists.isEmpty(scopes)}">
+        <p>当前请求未声明额外 scope。</p>
+    </div>
+    <ul th:if="${!#lists.isEmpty(scopes)}">
+        <li th:each="scope : ${scopes}">
+            <label>
+                <input type="checkbox" name="scope" th:value="${scope}" checked="checked">
+                <span th:text="${scope}"></span>
+            </label>
+        </li>
+    </ul>
+
+    <button type="submit">确认授权</button>
+</form>
+</body>
+</html>

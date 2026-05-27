@@ -48,6 +48,16 @@ public class OidcServerProperty {
     private String tokenEndpoint = "/oauth2/token";
 
     /**
+     * OAuth2 设备授权端点路径，默认 {@code /oauth2/device_authorization}。
+     */
+    private String deviceAuthorizationEndpoint = "/oauth2/device_authorization";
+
+    /**
+     * OAuth2 设备核验端点路径，默认 {@code /oauth2/device_verification}。
+     */
+    private String deviceVerificationEndpoint = "/oauth2/device_verification";
+
+    /**
      * OIDC 用户信息端点路径，默认 {@code /oauth2/userinfo}。
      */
     private String userInfoEndpoint = "/oauth2/userinfo";

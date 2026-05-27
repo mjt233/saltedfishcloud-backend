@@ -122,11 +122,13 @@ sys:
   # OIDC/OAuth2 授权服务器配置
   oidc:
     # 是否启用内置 OIDC 授权服务器
-    enabled: false
+    enabled: true
     # OIDC Issuer 地址，例如 https://cloud.example.com
-    issuer: ${OIDC_ISSUER:}
+    issuer: ${OIDC_ISSUER:http://localhost:8087}
     authorization-endpoint: /oauth2/authorize
     token-endpoint: /oauth2/token
+    device-authorization-endpoint: /oauth2/device_authorization
+    device-verification-endpoint: /oauth2/device_verification
     user-info-endpoint: /oauth2/userinfo
     jwk-set-endpoint: /oauth2/jwks
     revocation-endpoint: /oauth2/revoke
