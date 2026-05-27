@@ -13,6 +13,7 @@ import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.*;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.JpaProxyUtils;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +38,9 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     @Override
     public String authorize(Long appId, Long uid, String scope) {
         // 保存授权信息
-        ThirdPartyApp app = appService.checkAndGetById(appId);
-        ThirdPartyAppAuthorization authorizeResult = authorizationService.authorize(appId, uid, scope);
+        ThirdPartyApp app = JpaProxyUtils.unwrapProxy(appService.checkAndGetById(appId));
+        ThirdPartyAppAuthorization authorizeResult = JpaProxyUtils.unwrapProxy(authorizationService.authorize(appId, uid, scope));
+        authorizeResult.setThirdPartyApp(JpaProxyUtils.unwrapProxy(authorizeResult.getThirdPartyApp()));
 
         String code = SecureUtils.getUUID();
         ThirdPartyAppUserAuthorizationVo authorizationVo = ThirdPartyAppUserAuthorizationVo.builder()

@@ -3,7 +3,10 @@ package com.xiaotao.saltedfishcloud.service;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppTokenRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
+import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppToken;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppKeyService;
@@ -17,8 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -96,5 +103,44 @@ class ThirdPartyAppTokenServiceImplTest {
         when(tokenRepo.findByAppIdAndUid(100L, 200L)).thenReturn(null);
 
         assertThrows(JsonException.class, () -> service.validateLegacyAccessToken(token));
+    }
+
+    /**
+     * 验证授权码缓存时会移除授权实体中的嵌套应用关联，
+     * 避免本地缓存持久化阶段序列化 Hibernate 延迟加载代理。
+     */
+    @Test
+    void authorize_shouldCacheAuthorizationSnapshotWithoutNestedThirdPartyApp() {
+        ThirdPartyApp app = new ThirdPartyApp();
+        app.setId(100L);
+        app.setName("demo-app");
+
+        ThirdPartyAppAuthorization authorization = new ThirdPartyAppAuthorization();
+        authorization.setId(300L);
+        authorization.setAppId(100L);
+        authorization.setUid(200L);
+        authorization.setScope("read write");
+        authorization.setThirdPartyApp(app);
+
+        when(appService.checkAndGetById(100L)).thenReturn(app);
+        when(authorizationService.authorize(100L, 200L, "read write")).thenReturn(authorization);
+
+        service.authorize(100L, 200L, "read write");
+
+        ArgumentCaptor<ThirdPartyAppUserAuthorizationVo> authorizationVoCaptor = ArgumentCaptor.forClass(ThirdPartyAppUserAuthorizationVo.class);
+        verify(cacheService).set(anyString(), authorizationVoCaptor.capture(), eq(15L), eq(java.util.concurrent.TimeUnit.MINUTES));
+
+        ThirdPartyAppUserAuthorizationVo cachedAuthorizationVo = authorizationVoCaptor.getValue();
+        assertNotNull(cachedAuthorizationVo);
+        assertNotNull(cachedAuthorizationVo.getThirdPartyApp());
+        assertEquals(app.getId(), cachedAuthorizationVo.getThirdPartyApp().getId());
+        assertEquals(app.getName(), cachedAuthorizationVo.getThirdPartyApp().getName());
+        assertNotSame(app, cachedAuthorizationVo.getThirdPartyApp());
+        assertNotNull(cachedAuthorizationVo.getAuthorization());
+        assertEquals(authorization.getId(), cachedAuthorizationVo.getAuthorization().getId());
+        assertEquals(authorization.getAppId(), cachedAuthorizationVo.getAuthorization().getAppId());
+        assertEquals(authorization.getUid(), cachedAuthorizationVo.getAuthorization().getUid());
+        assertEquals(authorization.getScope(), cachedAuthorizationVo.getAuthorization().getScope());
+        assertNull(cachedAuthorizationVo.getAuthorization().getThirdPartyApp());
     }
 }
