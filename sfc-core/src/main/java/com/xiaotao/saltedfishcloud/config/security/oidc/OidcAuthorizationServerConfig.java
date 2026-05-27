@@ -83,10 +83,12 @@ public class OidcAuthorizationServerConfig {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain oidcSecurityFilterChain(HttpSecurity http,
-                                                       OidcUserClaimsMapper claimsMapper) throws Exception {
+                                                       OidcUserClaimsMapper claimsMapper,
+                                                       AuthorizationServerSettings settings) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer =
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
         http.with(authorizationServer, server -> server
+                        .authorizationServerSettings(settings)
                         .oidc(oidc -> oidc.userInfoEndpoint(e -> e.userInfoMapper(claimsMapper::toOidcUserInfo)))
                         .deviceAuthorizationEndpoint(deviceAuthorization ->
                                 deviceAuthorization.verificationUri(OidcDeviceController.DEVICE_ACTIVATION_PATH))
