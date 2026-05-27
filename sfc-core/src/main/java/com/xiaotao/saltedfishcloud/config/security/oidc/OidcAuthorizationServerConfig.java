@@ -4,6 +4,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
+import com.xiaotao.saltedfishcloud.config.security.JwtAuthenticationFilter;
 import com.xiaotao.saltedfishcloud.controller.OidcDeviceController;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationConsentService;
@@ -37,6 +38,7 @@ import org.springframework.security.oauth2.server.authorization.token.JwtGenerat
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 /**
@@ -83,7 +85,8 @@ public class OidcAuthorizationServerConfig {
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain oidcSecurityFilterChain(HttpSecurity http,
                                                        OidcUserClaimsMapper claimsMapper,
-                                                       AuthorizationServerSettings settings) throws Exception {
+                                                       AuthorizationServerSettings settings,
+                                                       JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer =
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
         http.with(authorizationServer, server -> server
@@ -93,6 +96,7 @@ public class OidcAuthorizationServerConfig {
                                 deviceAuthorization.verificationUri(OidcDeviceController.DEVICE_ACTIVATION_PATH))
                         .deviceVerificationEndpoint(deviceVerification ->
                                 deviceVerification.consentPage(OidcDeviceController.DEVICE_CONSENT_PATH)))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()))

@@ -4,35 +4,24 @@ import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.helper.Md5PasswordEncoder;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -40,7 +29,6 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -72,6 +60,7 @@ public class SecurityConfig {
                                            LogRecordManager logRecordManager,
                                            UserDetailsService userDetailsService,
                                            TokenService tokenService,
+                                           JwtAuthenticationFilter jwtAuthenticationFilter,
                                            RequestMappingHandlerMapping requestMappingHandlerMapping
     ) throws Exception {
         http.cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()));
@@ -83,7 +72,7 @@ public class SecurityConfig {
         loginFilter.setLogRecordManager(logRecordManager);
         loginFilter.setUserService(userService);
         http.addFilterBefore(loginFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(createJwtValidateFilter(tokenService), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtOpenApiTicketFilter(thirdPartyAppApiTicketService, userService), UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable);
 
@@ -114,34 +103,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * 创建用于校验系统登录 Token 的过滤器。
-     *
-     * @param tokenService Token 持久化服务
-     * @return Token 校验过滤器
-     */
-    private OncePerRequestFilter createJwtValidateFilter(TokenService tokenService) {
-        return new OncePerRequestFilter() {
-            @Override
-            protected void doFilterInternal(HttpServletRequest req, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
-                String token = SecureUtils.getToken(req);
-                if (token == null || token.isEmpty()) {
-                    chain.doFilter(req, response);
-                    return;
-                }
-                try {
-                    UserPrincipal user = MapperHolder.mapper.readValue(JwtUtils.parse(token), UserPrincipal.class);
-                    user.setToken(token);
-                    if (tokenService.isTokenValid(user.getId(), token)) {
-                        SecurityContextHolder.getContext()
-                                .setAuthentication(new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()));
-                    }
-                } catch (Exception ignored) {
-                }
-                chain.doFilter(req, response);
-            }
-        };
-    }
 
     private CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
