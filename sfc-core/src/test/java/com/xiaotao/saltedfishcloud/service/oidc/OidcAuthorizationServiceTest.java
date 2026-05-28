@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.oidc;
 
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppAccessTokenPayload;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,12 +47,15 @@ class OidcAuthorizationServiceTest {
     @Mock
     private RegisteredClientRepository registeredClientRepository;
 
+    @Mock
+    private UserService userService;
+
     private OidcAuthorizationService authorizationService;
 
     @BeforeEach
     void setUp() {
         authorizationService = new OidcAuthorizationService(
-                delegate, bridgeService, registeredClientRepository);
+                delegate, bridgeService, registeredClientRepository, userService);
     }
 
     /**

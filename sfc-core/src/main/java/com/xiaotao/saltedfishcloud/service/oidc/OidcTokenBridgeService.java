@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.oidc;
 
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppAccessTokenPayload;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
 import lombok.RequiredArgsConstructor;
@@ -87,5 +88,15 @@ public class OidcTokenBridgeService {
      */
     public ThirdPartyAppApiTicketPayload parseApiTicket(String apiTicket) {
         return apiTicketService.parseAndValidateApiTicket(apiTicket);
+    }
+
+    /**
+     * 根据授权码从缓存中获取授权数据。
+     *
+     * @param code 授权码
+     * @return 授权数据，授权码无效或已过期时返回 {@code null}
+     */
+    public ThirdPartyAppUserAuthorizationVo getAuthorizationCodeData(String code) {
+        return tokenService.getAuthorizationCodeData(code);
     }
 }

@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppToken;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppAccessTokenPayload;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.CrudService;
 
 public interface ThirdPartyAppTokenService extends CrudService<ThirdPartyAppToken> {
@@ -69,4 +70,31 @@ public interface ThirdPartyAppTokenService extends CrudService<ThirdPartyAppToke
      * @throws com.xiaotao.saltedfishcloud.exception.JsonException 当 token 格式无效时抛出
      */
     ThirdPartyAppAccessTokenPayload validateLegacyAccessToken(String accessToken);
+
+    /**
+     * 根据授权码从缓存中获取授权数据。
+     * <p>
+     * 授权码由 {@link #authorize(Long, Long, String)} 生成，存储在缓存中（15 分钟有效期）。
+     * 该方法用于 OIDC 授权码兑换流程，使 Spring Authorization Server 能够通过
+     * {@code OAuth2AuthorizationService.findByToken()} 查找到遗留授权码对应的授权信息。
+     * </p>
+     *
+     * @param code 授权码
+     * @return 授权数据，授权码无效或已过期时返回 {@code null}
+     */
+    ThirdPartyAppUserAuthorizationVo getAuthorizationCodeData(String code);
+
+    /**
+     * 使授权码失效，确保授权码只能被有效使用一次。
+     * <p>
+     * 授权码在以下场景中应被失效：
+     * <ul>
+     *   <li>遗留链路：{@link #getAccessToken(String, String)} 成功兑换后</li>
+     *   <li>OIDC 链路：Spring Authorization Server 完成授权码兑换后</li>
+     * </ul>
+     * </p>
+     *
+     * @param code 授权码
+     */
+    void invalidateAuthorizationCode(String code);
 }

@@ -1,11 +1,16 @@
 package com.xiaotao.saltedfishcloud.service.oidc;
 
+import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppAccessTokenPayload;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
@@ -43,9 +48,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class OidcAuthorizationService implements OAuth2AuthorizationService {
 
+    private static final OAuth2TokenType AUTHORIZATION_CODE_TOKEN_TYPE = new OAuth2TokenType("code");
+
     private final OAuth2AuthorizationService delegate;
     private final OidcTokenBridgeService bridgeService;
     private final RegisteredClientRepository registeredClientRepository;
+    private final UserService userService;
 
     /**
      * 构造混合式授权服务。
@@ -53,13 +61,16 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
      * @param delegate                    内存授权委托（通常为 {@link InMemoryOAuth2AuthorizationService}）
      * @param bridgeService               OIDC token 桥接服务
      * @param registeredClientRepository  注册客户端仓库，用于重建 {@link OAuth2Authorization}
+     * @param userService                 用户服务，用于通过 uid 获取用户名和 UserPrincipal
      */
     public OidcAuthorizationService(OAuth2AuthorizationService delegate,
                                     OidcTokenBridgeService bridgeService,
-                                    RegisteredClientRepository registeredClientRepository) {
+                                    RegisteredClientRepository registeredClientRepository,
+                                    UserService userService) {
         this.delegate = delegate;
         this.bridgeService = bridgeService;
         this.registeredClientRepository = registeredClientRepository;
+        this.userService = userService;
     }
 
     /**
@@ -137,6 +148,10 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
             return reconstructFromApiTicket(token);
         }
 
+        if (AUTHORIZATION_CODE_TOKEN_TYPE.equals(tokenType)) {
+            return reconstructFromLegacyAuthorizationCode(token);
+        }
+
         if (OAuth2TokenType.REFRESH_TOKEN.equals(tokenType)) {
             return reconstructFromLegacyRefreshToken(token);
         }
@@ -145,6 +160,59 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
             return reconstructFromApiTicket(token);
         }
         return null;
+    }
+
+    /**
+     * 通过遗留授权码重建 {@link OAuth2Authorization}。
+     * <p>
+     * 授权码由 {@link com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService#authorize(Long, Long, String)}
+     * 生成并缓存在 Redis 中。此方法从缓存中读取授权数据，构建一个包含 auth code 的 {@link OAuth2Authorization}，
+     * 使 Spring Authorization Server 的授权码兑换流程能够正常完成。
+     * </p>
+     *
+     * @param code 遗留授权码
+     * @return 重建的 {@link OAuth2Authorization}，授权码无效或已过期时返回 {@code null}
+     */
+    private OAuth2Authorization reconstructFromLegacyAuthorizationCode(String code) {
+        try {
+            ThirdPartyAppUserAuthorizationVo vo = bridgeService.getAuthorizationCodeData(code);
+            if (vo == null || vo.getAuthorization() == null) {
+                return null;
+            }
+
+            ThirdPartyAppAuthorization authorization = vo.getAuthorization();
+            Long appId = vo.getThirdPartyApp().getId();
+            RegisteredClient client = registeredClientRepository.findByClientId(appId.toString());
+            if (client == null) {
+                return null;
+            }
+
+            Long uid = authorization.getUid();
+            UserPrincipal userPrincipal = UserPrincipal.from(userService.getUserById(uid));
+            if (userPrincipal == null) {
+                return null;
+            }
+
+            String principalName = userPrincipal.getUsername();
+            Set<String> scopes = parseScopes(authorization.getScope());
+            UsernamePasswordAuthenticationToken syntheticAuth = new UsernamePasswordAuthenticationToken(
+                    userPrincipal, null, userPrincipal.getAuthorities());
+
+            OAuth2AuthorizationCode authorizationCode = new OAuth2AuthorizationCode(
+                    code, Instant.now(), Instant.now().plusSeconds(60));
+
+            return OAuth2Authorization.withRegisteredClient(client)
+                    .id(UUID.randomUUID().toString())
+                    .principalName(principalName)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .authorizedScopes(scopes)
+                    .attribute(Principal.class.getName(), syntheticAuth)
+                    .token(authorizationCode)
+                    .build();
+        } catch (Exception e) {
+            log.debug("遗留授权码解析失败：{}", e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -166,9 +234,15 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
                 return null;
             }
 
-            String principalName = payload.getUid().toString();
+            Long uid = payload.getUid();
+            UserPrincipal userPrincipal = UserPrincipal.from(userService.getUserById(uid));
+            if (userPrincipal == null) {
+                return null;
+            }
+
+            String principalName = userPrincipal.getUsername();
             UsernamePasswordAuthenticationToken syntheticAuth = new UsernamePasswordAuthenticationToken(
-                    principalName, null, Collections.emptyList());
+                    userPrincipal, null, userPrincipal.getAuthorities());
 
             return OAuth2Authorization.withRegisteredClient(client)
                     .id(payload.getTokenId())
@@ -205,11 +279,17 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
                 return null;
             }
 
-            String principalName = payload.getUid().toString();
+            Long uid = payload.getUid();
+            UserPrincipal userPrincipal = UserPrincipal.from(userService.getUserById(uid));
+            if (userPrincipal == null) {
+                return null;
+            }
+
+            String principalName = userPrincipal.getUsername();
             Set<String> scopes = parseScopes(payload.getScope());
             Instant now = Instant.now();
             UsernamePasswordAuthenticationToken syntheticAuth = new UsernamePasswordAuthenticationToken(
-                    principalName, null, Collections.emptyList());
+                    userPrincipal, null, userPrincipal.getAuthorities());
 
             return OAuth2Authorization.withRegisteredClient(client)
                     .id(UUID.randomUUID().toString())

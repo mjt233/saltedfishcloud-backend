@@ -154,8 +154,7 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
     @Override
     public String getAccessToken(String code, String clientSecret) {
         // 验证授权码是否有效，并解析授权码
-        String codeKey = getAuthorizationCodeCacheKey(code);
-        ThirdPartyAppUserAuthorizationVo vo = cacheService.get(codeKey);
+        ThirdPartyAppUserAuthorizationVo vo = getAuthorizationCodeData(code);
         if (vo == null) {
             throw new JsonException(OAuthError.INVALID_CODE);
         }
@@ -183,8 +182,8 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
         // 保存Access Token
         save(tokenRecord);
 
-        // 移除授权码有效缓存
-        cacheService.delete(codeKey);
+        // 使授权码失效，确保只能使用一次
+        invalidateAuthorizationCode(code);
         return accessToken;
     }
 
@@ -228,6 +227,16 @@ public class ThirdPartyAppTokenServiceImpl extends CrudServiceImpl<ThirdPartyApp
         save(tokenRecord);
 
         return accessToken;
+    }
+
+    @Override
+    public ThirdPartyAppUserAuthorizationVo getAuthorizationCodeData(String code) {
+        return cacheService.get(getAuthorizationCodeCacheKey(code));
+    }
+
+    @Override
+    public void invalidateAuthorizationCode(String code) {
+        cacheService.delete(getAuthorizationCodeCacheKey(code));
     }
 
     /**

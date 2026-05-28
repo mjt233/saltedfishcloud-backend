@@ -244,11 +244,13 @@ public class OidcAuthorizationServerConfig {
     @Bean
     public OAuth2AuthorizationService authorizationService(
             OidcTokenBridgeService bridgeService,
-            RegisteredClientRepository registeredClientRepository) {
+            RegisteredClientRepository registeredClientRepository,
+            UserService userService) {
         return new OidcAuthorizationService(
                 new InMemoryOAuth2AuthorizationService(),
                 bridgeService,
-                registeredClientRepository
+                registeredClientRepository,
+                userService
         );
     }
 
