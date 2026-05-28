@@ -37,7 +37,7 @@ import org.springframework.security.oauth2.server.authorization.token.JwtEncodin
 import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 /**
@@ -95,7 +95,7 @@ public class OidcAuthorizationServerConfig {
                                 deviceAuthorization.verificationUri(OidcDeviceController.DEVICE_ACTIVATION_PATH))
                         .deviceVerificationEndpoint(deviceVerification ->
                                 deviceVerification.consentPage(OidcDeviceController.DEVICE_CONSENT_PATH)))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, AbstractPreAuthenticatedProcessingFilter.class)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()))

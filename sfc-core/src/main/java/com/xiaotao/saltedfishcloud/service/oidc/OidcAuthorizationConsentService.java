@@ -3,6 +3,8 @@ package com.xiaotao.saltedfishcloud.service.oidc;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
@@ -91,7 +93,7 @@ public class OidcAuthorizationConsentService implements OAuth2AuthorizationConse
     public OAuth2AuthorizationConsent findById(String registeredClientId, String principalName) {
         ThirdPartyAppUserAuthorizationVo vo = authorizationService.getUserAppAuthorization(
                 parseIdentifier(registeredClientId, "registeredClientId"),
-                parseIdentifier(principalName, "principalName")
+                SpringContextUtils.getContext().getBean(UserService.class).getUserByUser(principalName).getId()
         );
 
         ThirdPartyAppAuthorization authorization = vo == null ? null : vo.getAuthorization();
