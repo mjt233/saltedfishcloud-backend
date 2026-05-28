@@ -254,6 +254,11 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
                 return null;
             }
 
+            ThirdPartyAppUserAuthorizationVo authVo = bridgeService.getUserAppAuthorization(payload.getAppId(), uid);
+            Set<String> scopes = (authVo != null && authVo.getAuthorization() != null)
+                    ? parseScopes(authVo.getAuthorization().getScope())
+                    : Collections.emptySet();
+
             String principalName = userPrincipal.getUsername();
             UsernamePasswordAuthenticationToken syntheticAuth = new UsernamePasswordAuthenticationToken(
                     userPrincipal, null, userPrincipal.getAuthorities());
@@ -262,6 +267,7 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
                     .id(payload.getTokenId())
                     .principalName(principalName)
                     .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                    .authorizedScopes(scopes)
                     .attribute(Principal.class.getName(), syntheticAuth)
                     .refreshToken(new OAuth2RefreshToken(token, Instant.now()))
                     .build();

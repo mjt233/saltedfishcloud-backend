@@ -1,8 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.oidc;
 
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
-import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -70,13 +68,7 @@ public class OidcTokenGenerator implements OAuth2TokenGenerator<OAuth2Token> {
         Long appId = extractAppId(context);
         Long uid = extractUid(context);
         String scope = buildScopeString(context.getAuthorizedScopes());
-        if (!StringUtils.hasText(scope)) {
-            ThirdPartyAppUserAuthorizationVo userAppAuthorization = bridgeService.getUserAppAuthorization(appId, uid);
-            if (userAppAuthorization != null) {
-                scope = userAppAuthorization.getAuthorization().getScope();
-            }
-        }
-        if (scope != null && !scope.contains(OidcScopes.OPENID)) {
+        if (!scope.contains(OidcScopes.OPENID)) {
             scope = scope + " " + OidcScopes.OPENID;
         }
 
