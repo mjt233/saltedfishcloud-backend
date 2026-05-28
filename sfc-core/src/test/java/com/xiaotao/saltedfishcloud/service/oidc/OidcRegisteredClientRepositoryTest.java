@@ -3,11 +3,13 @@ package com.xiaotao.saltedfishcloud.service.oidc;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.enums.OidcTokenEndpointAuthMethod;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
+import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
+import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,13 +52,16 @@ class OidcRegisteredClientRepositoryTest {
     @Mock
     private ThirdPartyAppAuthorizationService authorizationService;
 
+    @Mock
+    private UserService userService;
+
     private OidcRegisteredClientRepository clientRepository;
     private OidcAuthorizationConsentService consentService;
 
     @BeforeEach
     void setUp() {
         clientRepository = new OidcRegisteredClientRepository(appService, keyRepo);
-        consentService = new OidcAuthorizationConsentService(authorizationService);
+        consentService = new OidcAuthorizationConsentService(authorizationService, userService);
     }
 
     // -------------------------------------------------------------------------
@@ -247,8 +252,9 @@ class OidcRegisteredClientRepositoryTest {
     @Test
     void consentService_save_shouldExtractScopesAndCallAuthorize() {
         // Given
+        mockResolveUid("testuser", 200L);
         OAuth2AuthorizationConsent consent = OAuth2AuthorizationConsent
-                .withId("100", "200")
+                .withId("100", "testuser")
                 .scope("openid")
                 .scope("profile")
                 .build();
@@ -270,8 +276,9 @@ class OidcRegisteredClientRepositoryTest {
     @Test
     void consentService_save_shouldRevokeWhenConsentDoesNotContainAnyScopes() {
         // Given
+        mockResolveUid("testuser", 200L);
         OAuth2AuthorizationConsent consent = OAuth2AuthorizationConsent
-                .withId("100", "200")
+                .withId("100", "testuser")
                 .authority(new SimpleGrantedAuthority("SCOPE_"))
                 .build();
 
@@ -290,8 +297,9 @@ class OidcRegisteredClientRepositoryTest {
     @Test
     void consentService_remove_shouldCallRevoke() {
         // Given
+        mockResolveUid("testuser", 200L);
         OAuth2AuthorizationConsent consent = OAuth2AuthorizationConsent
-                .withId("100", "200")
+                .withId("100", "testuser")
                 .scope("openid")
                 .build();
 
@@ -309,6 +317,7 @@ class OidcRegisteredClientRepositoryTest {
     @Test
     void consentService_findById_shouldReturnConsentWhenAuthorizationExists() {
         // Given
+        mockResolveUid("testuser", 200L);
         ThirdPartyAppAuthorization authorization = new ThirdPartyAppAuthorization();
         authorization.setAppId(100L);
         authorization.setUid(200L);
@@ -320,12 +329,12 @@ class OidcRegisteredClientRepositoryTest {
         when(authorizationService.getUserAppAuthorization(100L, 200L)).thenReturn(vo);
 
         // When
-        OAuth2AuthorizationConsent found = consentService.findById("100", "200");
+        OAuth2AuthorizationConsent found = consentService.findById("100", "testuser");
 
         // Then
         assertNotNull(found, "有授权记录时应返回 OAuth2AuthorizationConsent");
         assertEquals("100", found.getRegisteredClientId());
-        assertEquals("200", found.getPrincipalName());
+        assertEquals("testuser", found.getPrincipalName());
         assertThat(found.getAuthorities())
                 .extracting("authority")
                 .containsExactlyInAnyOrder("SCOPE_openid", "SCOPE_profile");
@@ -338,13 +347,14 @@ class OidcRegisteredClientRepositoryTest {
     @Test
     void consentService_findById_shouldReturnNullWhenNoAuthorization() {
         // Given
+        mockResolveUid("testuser", 200L);
         ThirdPartyAppUserAuthorizationVo vo = ThirdPartyAppUserAuthorizationVo.builder()
                 .authorization(null)
                 .build();
         when(authorizationService.getUserAppAuthorization(100L, 200L)).thenReturn(vo);
 
         // When
-        OAuth2AuthorizationConsent found = consentService.findById("100", "200");
+        OAuth2AuthorizationConsent found = consentService.findById("100", "testuser");
 
         // Then
         assertNull(found, "没有授权记录时应返回 null");
@@ -353,6 +363,16 @@ class OidcRegisteredClientRepositoryTest {
     // -------------------------------------------------------------------------
     // Helper
     // -------------------------------------------------------------------------
+
+    /**
+     * Mock {@link UserService#getUserByUser(String)} 以支持 {@code resolveUid} 调用。
+     */
+    private void mockResolveUid(String username, Long uid) {
+        User user = new User();
+        user.setId(uid);
+        user.setUser(username);
+        when(userService.getUserByUser(username)).thenReturn(user);
+    }
 
     /**
      * 构建测试用的 {@link ThirdPartyApp} 实例。
@@ -373,6 +393,7 @@ class OidcRegisteredClientRepositoryTest {
         app.setOidcEnabled(oidcEnabled);
         app.setOidcTokenEndpointAuthMethod(authMethod);
         app.setRequirePkce(requirePkce);
+        app.setCallbackUrl("https://client.example.com/callback");
         return app;
     }
 }

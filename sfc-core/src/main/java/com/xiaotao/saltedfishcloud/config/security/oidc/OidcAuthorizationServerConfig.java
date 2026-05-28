@@ -173,8 +173,9 @@ public class OidcAuthorizationServerConfig {
      */
     @Bean
     public OAuth2AuthorizationConsentService authorizationConsentService(
-            ThirdPartyAppAuthorizationService authorizationService) {
-        return new OidcAuthorizationConsentService(authorizationService);
+            ThirdPartyAppAuthorizationService authorizationService,
+            UserService userService) {
+        return new OidcAuthorizationConsentService(authorizationService, userService);
     }
 
     /**

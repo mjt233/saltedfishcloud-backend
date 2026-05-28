@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
@@ -21,7 +20,7 @@ import java.util.stream.Collectors;
  * <p>授权同意对象 {@link OAuth2AuthorizationConsent} 与 {@link ThirdPartyAppAuthorization} 的映射关系：
  * <ul>
  *   <li>{@code registeredClientId} ↔ {@link ThirdPartyAppAuthorization#getAppId()} 的字符串形式</li>
- *   <li>{@code principalName} ↔ {@link ThirdPartyAppAuthorization#getUid()} 的字符串形式</li>
+ *   <li>{@code principalName} ↔ {@link ThirdPartyAppAuthorization#getUid()} 对应用户的用户名 的字符串形式</li>
  *   <li>scope 由 {@code SCOPE_} 前缀的 {@link GrantedAuthority} 提取并合并</li>
  * </ul>
  * </p>
@@ -30,6 +29,7 @@ import java.util.stream.Collectors;
 public class OidcAuthorizationConsentService implements OAuth2AuthorizationConsentService {
 
     private final ThirdPartyAppAuthorizationService authorizationService;
+    private final UserService userService;
 
     /**
      * {@inheritDoc}
@@ -43,8 +43,8 @@ public class OidcAuthorizationConsentService implements OAuth2AuthorizationConse
      */
     @Override
     public void save(OAuth2AuthorizationConsent consent) {
-        Long appId = parseIdentifier(consent.getRegisteredClientId(), "registeredClientId");
-        Long uid = parseIdentifier(consent.getPrincipalName(), "principalName");
+        Long appId = parseIdentifier(consent.getRegisteredClientId());
+        Long uid = resolveUid(consent.getPrincipalName());
         Set<String> scopes = consent.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .filter(a -> a.startsWith("SCOPE_"))
@@ -73,27 +73,27 @@ public class OidcAuthorizationConsentService implements OAuth2AuthorizationConse
     @Override
     public void remove(OAuth2AuthorizationConsent consent) {
         authorizationService.revoke(
-                parseIdentifier(consent.getRegisteredClientId(), "registeredClientId"),
-                parseIdentifier(consent.getPrincipalName(), "principalName")
+                parseIdentifier(consent.getRegisteredClientId()),
+                resolveUid(consent.getPrincipalName())
         );
     }
 
     /**
      * {@inheritDoc}
      *
-     * <p>根据 registeredClientId（appId）和 principalName（uid）查询授权记录，
+     * <p>根据 registeredClientId（appId）和 principalName（用户名）查询授权记录，
      * 并将其映射为 {@link OAuth2AuthorizationConsent}。
      * 若不存在授权记录则返回 {@code null}。</p>
      *
      * @param registeredClientId 注册客户端 ID（即 appId 的字符串形式）
-     * @param principalName      用户标识（即 uid 的字符串形式）
+     * @param principalName      用户名（通过 {@link UserService} 解析为 uid 查询）
      * @return 对应的 {@link OAuth2AuthorizationConsent}，不存在时返回 {@code null}
      */
     @Override
     public OAuth2AuthorizationConsent findById(String registeredClientId, String principalName) {
         ThirdPartyAppUserAuthorizationVo vo = authorizationService.getUserAppAuthorization(
-                parseIdentifier(registeredClientId, "registeredClientId"),
-                SpringContextUtils.getContext().getBean(UserService.class).getUserByUser(principalName).getId()
+                parseIdentifier(registeredClientId),
+                resolveUid(principalName)
         );
 
         ThirdPartyAppAuthorization authorization = vo == null ? null : vo.getAuthorization();
@@ -115,21 +115,38 @@ public class OidcAuthorizationConsentService implements OAuth2AuthorizationConse
     }
 
     /**
+     * 通过用户名解析为用户 ID。
+     *
+     * @param username 用户名
+     * @return 对应的用户 ID
+     * @throws IllegalArgumentException 当用户名为空或用户不存在时抛出
+     */
+    private Long resolveUid(String username) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("principalName 不能为空");
+        }
+        var user = userService.getUserByUser(username);
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在: " + username);
+        }
+        return user.getId();
+    }
+
+    /**
      * 将适配器收到的字符串标识解析为 Long 类型。
      *
      * @param identifier 标识字符串
-     * @param fieldName  字段名称，用于拼装异常消息
      * @return 解析后的 Long 标识
      * @throws IllegalArgumentException 当标识为空、空白或不是十进制数字时抛出
      */
-    private Long parseIdentifier(String identifier, String fieldName) {
+    private Long parseIdentifier(String identifier) {
         if (identifier == null || identifier.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " 不能为空");
+            throw new IllegalArgumentException("registeredClientId" + " 不能为空");
         }
         try {
             return Long.valueOf(identifier);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(fieldName + " 必须是数字字符串", e);
+            throw new IllegalArgumentException("registeredClientId" + " 必须是数字字符串", e);
         }
     }
 }
