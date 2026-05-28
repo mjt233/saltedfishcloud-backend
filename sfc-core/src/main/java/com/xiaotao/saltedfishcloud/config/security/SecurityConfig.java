@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -47,6 +48,15 @@ public class SecurityConfig {
     }
 
     @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider(
+            UserDetailsService userDetailsService,
+            PasswordEncoder md5PasswordEncoder) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(md5PasswordEncoder);
+        return provider;
+    }
+
+    @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
@@ -54,7 +64,7 @@ public class SecurityConfig {
     @Bean
     @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           AuthenticationConfiguration authenticationConfiguration,
+                                           AuthenticationManager authenticationManager,
                                            ThirdPartyAppApiTicketService thirdPartyAppApiTicketService,
                                            UserService userService,
                                            LogRecordManager logRecordManager,
@@ -68,7 +78,7 @@ public class SecurityConfig {
 
 
         //  添加Jwt登录和验证过滤器
-        JwtLoginFilter loginFilter = new JwtLoginFilter(LOGIN_URI, authenticationManager(authenticationConfiguration), tokenService);
+        JwtLoginFilter loginFilter = new JwtLoginFilter(LOGIN_URI, authenticationManager, tokenService);
         loginFilter.setLogRecordManager(logRecordManager);
         loginFilter.setUserService(userService);
         http.addFilterBefore(loginFilter, UsernamePasswordAuthenticationFilter.class)
