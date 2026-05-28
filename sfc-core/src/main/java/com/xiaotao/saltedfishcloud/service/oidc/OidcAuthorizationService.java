@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+
 /**
  * 混合式 OIDC 授权服务。
  * <p>
@@ -201,12 +203,24 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
             OAuth2AuthorizationCode authorizationCode = new OAuth2AuthorizationCode(
                     code, Instant.now(), Instant.now().plusSeconds(60));
 
+            // Build a synthetic OAuth2AuthorizationRequest so CodeVerifierAuthenticator
+            // can access additionalParameters without NPE.
+            OAuth2AuthorizationRequest authorizationRequest = OAuth2AuthorizationRequest.authorizationCode()
+                    .authorizationUri("/oauth2/authorize")
+                    .clientId(client.getClientId())
+                    .redirectUri("")
+                    .scopes(scopes)
+                    .state(null)
+                    .additionalParameters(Collections.emptyMap())
+                    .build();
+
             return OAuth2Authorization.withRegisteredClient(client)
                     .id(UUID.randomUUID().toString())
                     .principalName(principalName)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .authorizedScopes(scopes)
                     .attribute(Principal.class.getName(), syntheticAuth)
+                    .attribute(OAuth2AuthorizationRequest.class.getName(), authorizationRequest)
                     .token(authorizationCode)
                     .build();
         } catch (Exception e) {
