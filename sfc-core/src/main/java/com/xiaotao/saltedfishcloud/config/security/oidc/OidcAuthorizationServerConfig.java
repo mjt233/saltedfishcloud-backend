@@ -18,18 +18,21 @@ import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationServi
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
@@ -63,6 +66,15 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 @ConditionalOnProperty(name = "sys.oidc.enabled", havingValue = "true")
 public class OidcAuthorizationServerConfig {
 
+    @Bean
+    public ClientSecretAuthenticationProvider authenticationProvider(
+            RegisteredClientRepository registeredClientRepository,
+            OAuth2AuthorizationService oAuth2AuthorizationService) {
+        ClientSecretAuthenticationProvider authenticationProvider = new ClientSecretAuthenticationProvider(registeredClientRepository, oAuth2AuthorizationService);
+        authenticationProvider.setPasswordEncoder(SecureUtils.getBCryptPasswordEncoder());
+        return authenticationProvider;
+    }
+
     /**
      * 配置 OIDC 授权服务器安全过滤器链。
      * <p>
@@ -85,7 +97,8 @@ public class OidcAuthorizationServerConfig {
     public SecurityFilterChain oidcSecurityFilterChain(HttpSecurity http,
                                                        OidcUserClaimsMapper claimsMapper,
                                                        AuthorizationServerSettings settings,
-                                                       JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+                                                       JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                       AuthenticationProvider authenticationProvider) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer =
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
         http.with(authorizationServer, server -> server
@@ -96,6 +109,7 @@ public class OidcAuthorizationServerConfig {
                         .deviceVerificationEndpoint(deviceVerification ->
                                 deviceVerification.consentPage(OidcDeviceController.DEVICE_CONSENT_PATH)))
                 .addFilterBefore(jwtAuthenticationFilter, AbstractPreAuthenticatedProcessingFilter.class)
+                .authenticationProvider(authenticationProvider)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()))
