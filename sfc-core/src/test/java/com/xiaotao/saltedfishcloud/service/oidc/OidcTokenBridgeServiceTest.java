@@ -2,7 +2,9 @@ package com.xiaotao.saltedfishcloud.service.oidc;
 
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppAccessTokenPayload;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
+import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,11 +35,14 @@ class OidcTokenBridgeServiceTest {
     @Mock
     private ThirdPartyAppTokenService tokenService;
 
+    @Mock
+    private ThirdPartyAppAuthorizationService authorizationService;
+
     private OidcTokenBridgeService bridgeService;
 
     @BeforeEach
     void setUp() {
-        bridgeService = new OidcTokenBridgeService(apiTicketService, tokenService);
+        bridgeService = new OidcTokenBridgeService(apiTicketService, tokenService, authorizationService);
     }
 
     /**
@@ -125,5 +130,19 @@ class OidcTokenBridgeServiceTest {
         ThirdPartyAppApiTicketPayload result = bridgeService.parseApiTicket("api-ticket");
 
         assertSame(expected, result);
+    }
+
+    /**
+     * 验证查询用户应用授权信息时委托给 {@link ThirdPartyAppAuthorizationService#getUserAppAuthorization(Long, Long)}。
+     */
+    @Test
+    void getUserAppAuthorization_shouldDelegateToAuthorizationService() {
+        ThirdPartyAppUserAuthorizationVo expected = new ThirdPartyAppUserAuthorizationVo();
+        when(authorizationService.getUserAppAuthorization(100L, 200L)).thenReturn(expected);
+
+        ThirdPartyAppUserAuthorizationVo result = bridgeService.getUserAppAuthorization(100L, 200L);
+
+        assertSame(expected, result);
+        verify(authorizationService).getUserAppAuthorization(100L, 200L);
     }
 }

@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppAccessTokenPayload;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppApiTicketPayload;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +26,16 @@ public class OidcTokenBridgeService {
 
     private final ThirdPartyAppApiTicketService apiTicketService;
     private final ThirdPartyAppTokenService tokenService;
+    private final ThirdPartyAppAuthorizationService authorizationService;
+
+    /**
+     * 查询用户在指定第三方应用中已授权的权限范围
+     * @param appId 第三方应用id
+     * @param uid   用户id
+     */
+    public ThirdPartyAppUserAuthorizationVo getUserAppAuthorization(Long appId, Long uid) {
+        return authorizationService.getUserAppAuthorization(appId, uid);
+    }
 
     /**
      * 为指定应用与用户签发短期 ApiTicket，用作 OIDC {@code access_token}。

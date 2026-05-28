@@ -205,8 +205,9 @@ public class OidcAuthorizationServerConfig {
     @Bean
     public OidcTokenBridgeService oidcTokenBridgeService(
             ThirdPartyAppApiTicketService apiTicketService,
-            ThirdPartyAppTokenService tokenService) {
-        return new OidcTokenBridgeService(apiTicketService, tokenService);
+            ThirdPartyAppTokenService tokenService,
+            ThirdPartyAppAuthorizationService authorizationService) {
+        return new OidcTokenBridgeService(apiTicketService, tokenService, authorizationService);
     }
 
     /**

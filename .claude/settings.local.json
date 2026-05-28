@@ -24,7 +24,8 @@
       "Bash(mvn help:effective-pom *)",
       "Bash(jar tf *)",
       "Bash(jar xf *)",
-      "mcp__IDEA__execute_run_configuration"
+      "mcp__IDEA__execute_run_configuration",
+      "mcp__IDEA__get_run_configurations"
     ]
   }
 }
