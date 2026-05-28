@@ -78,9 +78,7 @@ public class SecurityConfig {
 
 
         //  添加Jwt登录和验证过滤器
-        JwtLoginFilter loginFilter = new JwtLoginFilter(LOGIN_URI, authenticationManager, tokenService);
-        loginFilter.setLogRecordManager(logRecordManager);
-        loginFilter.setUserService(userService);
+        JwtLoginFilter loginFilter = new JwtLoginFilter(LOGIN_URI, authenticationManager, tokenService, logRecordManager, userService);
         http.addFilterBefore(loginFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtOpenApiTicketFilter(thirdPartyAppApiTicketService, userService), UsernamePasswordAuthenticationFilter.class)
