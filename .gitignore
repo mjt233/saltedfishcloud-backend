@@ -50,3 +50,4 @@ log/**
 *.log
 *.data
 *.db
+settings.local.json
