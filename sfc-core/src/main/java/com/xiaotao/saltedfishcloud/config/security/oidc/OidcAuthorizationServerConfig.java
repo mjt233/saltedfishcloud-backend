@@ -103,6 +103,8 @@ public class OidcAuthorizationServerConfig {
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
         http.with(authorizationServer, server -> server
                         .authorizationServerSettings(settings)
+                        .authorizationEndpoint(authorizationEndpoint ->
+                                authorizationEndpoint.consentPage("/oauth"))
                         .oidc(oidc -> oidc.userInfoEndpoint(e -> e.userInfoMapper(claimsMapper::toOidcUserInfo)))
                         .deviceAuthorizationEndpoint(deviceAuthorization ->
                                 deviceAuthorization.verificationUri(OidcDeviceController.DEVICE_ACTIVATION_PATH))
@@ -112,11 +114,7 @@ public class OidcAuthorizationServerConfig {
                 .authenticationProvider(authenticationProvider)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
-                .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()))
-                .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
-                        new OidcLoginRedirectEntryPoint("/oauth"),
-                        new MediaTypeRequestMatcher(MediaType.TEXT_HTML, MediaType.APPLICATION_XHTML_XML)
-                ));
+                .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()));
         return http.build();
     }
 
