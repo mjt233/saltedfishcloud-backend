@@ -98,6 +98,7 @@ public class OidcRegisteredClientRepository implements RegisteredClientRepositor
                 .scope("storage_write")
                 .clientSettings(ClientSettings.builder()
                         .requireProofKey(Boolean.TRUE.equals(app.getRequirePkce()))
+                        .requireAuthorizationConsent(true)
                         .build())
                 .build();
     }

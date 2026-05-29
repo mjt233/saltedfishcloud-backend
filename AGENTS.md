@@ -9,6 +9,8 @@
 ## 核心技术栈
 
 - SpringBoot
+- spring-security
+- spring-security-oauth2-authorization-server
 - JPA
 - Redis
 - MySQL
