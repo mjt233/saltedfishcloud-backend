@@ -83,6 +83,26 @@ public class OidcServerProperty {
     private String logoutEndpoint = "/connect/logout";
 
     /**
+     * OAuth2 授权确认页面路径，默认 {@code /oauth}。
+     */
+    private String consentPage = "/oauth";
+
+    /**
+     * 设备授权确认页面路径，默认 {@code /oauth?grant_type=user_code}。
+     */
+    private String deviceConsentPage = "/oauth?grant_type=user_code";
+
+    /**
+     * 设备授权成功后重定向地址，默认 {@code /oauth?grant_type=user_code&success=true}。
+     */
+    private String deviceVerificationSuccessUri = "/oauth?grant_type=user_code&success=true";
+
+    /**
+     * 设备授权失败后重定向地址，默认 {@code /oauth?grant_type=user_code&error=invalid_user_code}。
+     */
+    private String deviceVerificationErrorUri = "/oauth?grant_type=user_code&error=invalid_user_code";
+
+    /**
      * JWK（JSON Web Key）相关配置。
      */
     private final Jwk jwk = new Jwk();

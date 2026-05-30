@@ -39,8 +39,9 @@ import org.springframework.security.oauth2.server.authorization.token.JwtEncodin
 import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
-import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 /**
  * OIDC 授权服务器安全配置类。
@@ -94,6 +95,7 @@ public class OidcAuthorizationServerConfig {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain oidcSecurityFilterChain(HttpSecurity http,
+                                                       OidcServerProperty property,
                                                        OidcUserClaimsMapper claimsMapper,
                                                        AuthorizationServerSettings settings,
                                                        JwtAuthenticationFilter jwtAuthenticationFilter,
@@ -103,12 +105,17 @@ public class OidcAuthorizationServerConfig {
         http.with(authorizationServer, server -> server
                         .authorizationServerSettings(settings)
                         .authorizationEndpoint(authorizationEndpoint ->
-                                authorizationEndpoint.consentPage("/oauth"))
+                                authorizationEndpoint.consentPage(property.getConsentPage()))
                         .oidc(oidc -> oidc.userInfoEndpoint(e -> e.userInfoMapper(claimsMapper::toOidcUserInfo)))
                         .deviceAuthorizationEndpoint(deviceAuthorization ->
-                                deviceAuthorization.verificationUri("/oauth?grant_type=user_code"))
-                        .deviceVerificationEndpoint(deviceVerification ->
-                                deviceVerification.consentPage("/oauth?grant_type=user_code")))
+                                deviceAuthorization.verificationUri(property.getDeviceConsentPage()))
+                        .deviceVerificationEndpoint(deviceVerification -> {
+                            deviceVerification.consentPage(property.getDeviceConsentPage());
+                            deviceVerification.deviceVerificationResponseHandler(
+                                    new SimpleUrlAuthenticationSuccessHandler(property.getDeviceVerificationSuccessUri()));
+                            deviceVerification.errorResponseHandler(
+                                    new SimpleUrlAuthenticationFailureHandler(property.getDeviceVerificationErrorUri()));
+                        }))
                 .addFilterBefore(jwtAuthenticationFilter, AbstractPreAuthenticatedProcessingFilter.class)
                 .authenticationProvider(authenticationProvider)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
