@@ -42,6 +42,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
+import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 /**
  * OIDC 授权服务器安全配置类。
@@ -120,7 +121,11 @@ public class OidcAuthorizationServerConfig {
                 .authenticationProvider(authenticationProvider)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
-                .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()));
+                .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()))
+                .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
+                        new OidcLoginRedirectEntryPoint(property.getConsentPage()),
+                        new MediaTypeRequestMatcher(MediaType.TEXT_HTML, MediaType.APPLICATION_XHTML_XML)
+                ));;
         return http.build();
     }
 
