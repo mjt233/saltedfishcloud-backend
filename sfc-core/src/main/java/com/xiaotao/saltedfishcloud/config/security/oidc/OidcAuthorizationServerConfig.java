@@ -5,7 +5,6 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
 import com.xiaotao.saltedfishcloud.config.security.JwtAuthenticationFilter;
-import com.xiaotao.saltedfishcloud.controller.OidcDeviceController;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationConsentService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationService;
@@ -107,9 +106,9 @@ public class OidcAuthorizationServerConfig {
                                 authorizationEndpoint.consentPage("/oauth"))
                         .oidc(oidc -> oidc.userInfoEndpoint(e -> e.userInfoMapper(claimsMapper::toOidcUserInfo)))
                         .deviceAuthorizationEndpoint(deviceAuthorization ->
-                                deviceAuthorization.verificationUri(OidcDeviceController.DEVICE_ACTIVATION_PATH))
+                                deviceAuthorization.verificationUri("/oauth?grant_type=user_code"))
                         .deviceVerificationEndpoint(deviceVerification ->
-                                deviceVerification.consentPage(OidcDeviceController.DEVICE_CONSENT_PATH)))
+                                deviceVerification.consentPage("/oauth?grant_type=user_code")))
                 .addFilterBefore(jwtAuthenticationFilter, AbstractPreAuthenticatedProcessingFilter.class)
                 .authenticationProvider(authenticationProvider)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
