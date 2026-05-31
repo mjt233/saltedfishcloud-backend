@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.oidc;
 
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
@@ -61,27 +62,8 @@ public class OidcUserClaimsMapper {
         OAuth2Authorization authorization = context.getAuthorization();
         String principalName = authorization.getPrincipalName();
         Set<String> scopes = authorization.getAuthorizedScopes();
-        User user = resolveUser(principalName);
+        User user = userService.getUserByUser(principalName);
         return buildClaims(user, scopes);
-    }
-
-    /**
-     * 解析 principalName 为 {@link User} 对象。
-     * <p>
-     * principalName 可能是数字 uid 字符串（如 "1"）或用户名（如 "admin"），
-     * 需要兼容两种格式进行用户查找。
-     * </p>
-     *
-     * @param principalName 主体名称（uid 数值字符串或用户名）
-     * @return 对应的用户对象
-     */
-    private User resolveUser(String principalName) {
-        try {
-            Long uid = Long.parseLong(principalName);
-            return userService.getUserById(uid);
-        } catch (NumberFormatException e) {
-            return userService.getUserByUser(principalName);
-        }
     }
 
     /**
@@ -109,12 +91,11 @@ public class OidcUserClaimsMapper {
             // 沿用遗留 open API 的头像 URL 模式，与 OpenApiUserController 保持一致
             String baseUrl = issuer.endsWith("/") ? issuer.substring(0, issuer.length() - 1) : issuer;
             claims.put("picture", baseUrl + "/api/user/avatar/" + username + "?uid=" + uid);
-        }
 
-        if (authorizedScopes.contains("email")) {
-            claims.put("email", user.getEmail());
-            // 当前系统模型中不存在持久化的邮箱验证标志，保守返回 false
-            claims.put("email_verified", false);
+            if (StringUtils.hasText(user.getEmail())) {
+                claims.put("email", user.getEmail());
+                claims.put("email_verified", true);
+            }
         }
 
         return new OidcUserInfo(claims);
