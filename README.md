@@ -63,7 +63,7 @@
 
 ### 1) 环境要求
 
-- JDK 17
+- JDK 25
 - Maven 3.8+
 - MySQL(默认，可选SQLite)
 - Redis(默认，可选单机内存缓存)
