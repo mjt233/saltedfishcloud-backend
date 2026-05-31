@@ -61,22 +61,41 @@ public class OidcUserClaimsMapper {
         OAuth2Authorization authorization = context.getAuthorization();
         String principalName = authorization.getPrincipalName();
         Set<String> scopes = authorization.getAuthorizedScopes();
-        return buildClaims(principalName, scopes);
+        User user = resolveUser(principalName);
+        return buildClaims(user, scopes);
     }
 
     /**
-     * 根据 principalName（uid 字符串）和授权 scope 集合构建 {@link OidcUserInfo}。
+     * 解析 principalName 为 {@link User} 对象。
+     * <p>
+     * principalName 可能是数字 uid 字符串（如 "1"）或用户名（如 "admin"），
+     * 需要兼容两种格式进行用户查找。
+     * </p>
+     *
+     * @param principalName 主体名称（uid 数值字符串或用户名）
+     * @return 对应的用户对象
+     */
+    private User resolveUser(String principalName) {
+        try {
+            Long uid = Long.parseLong(principalName);
+            return userService.getUserById(uid);
+        } catch (NumberFormatException e) {
+            return userService.getUserByUser(principalName);
+        }
+    }
+
+    /**
+     * 根据用户对象和授权 scope 集合构建 {@link OidcUserInfo}。
      * <p>
      * 此方法解耦了 Spring 上下文依赖，可直接用于单元测试。
      * </p>
      *
-     * @param principalName    uid 的字符串形式（对应 {@link OAuth2Authorization#getPrincipalName()}）
+     * @param user             用户对象
      * @param authorizedScopes 已授权的 scope 集合
      * @return 包含对应声明的 {@link OidcUserInfo}
      */
-    public OidcUserInfo buildClaims(String principalName, Set<String> authorizedScopes) {
-        Long uid = Long.parseLong(principalName);
-        User user = userService.getUserById(uid);
+    public OidcUserInfo buildClaims(User user, Set<String> authorizedScopes) {
+        Long uid = user.getId();
         Map<String, Object> claims = new HashMap<>();
 
         if (authorizedScopes.contains("openid")) {

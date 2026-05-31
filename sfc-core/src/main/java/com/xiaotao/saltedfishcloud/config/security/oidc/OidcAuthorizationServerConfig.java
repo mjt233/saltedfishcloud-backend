@@ -4,6 +4,8 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
+import java.time.Instant;
+import java.util.Map;
 import com.xiaotao.saltedfishcloud.config.security.JwtAuthenticationFilter;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationConsentService;
@@ -17,6 +19,9 @@ import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationServi
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +32,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
@@ -100,7 +108,8 @@ public class OidcAuthorizationServerConfig {
                                                        OidcUserClaimsMapper claimsMapper,
                                                        AuthorizationServerSettings settings,
                                                        JwtAuthenticationFilter jwtAuthenticationFilter,
-                                                       AuthenticationProvider authenticationProvider) throws Exception {
+                                                       AuthenticationProvider authenticationProvider,
+                                                       JwtDecoder jwtDecoder) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer =
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
         http.with(authorizationServer, server -> server
@@ -120,6 +129,7 @@ public class OidcAuthorizationServerConfig {
                 .addFilterBefore(jwtAuthenticationFilter, AbstractPreAuthenticatedProcessingFilter.class)
                 .authenticationProvider(authenticationProvider)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
+                .oauth2ResourceServer(resourceServer -> resourceServer.jwt(jwt -> jwt.decoder(jwtDecoder)))
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()))
                 .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
@@ -170,6 +180,38 @@ public class OidcAuthorizationServerConfig {
             OidcJwkService jwkService, OidcServerProperty property) {
         JWKSet jwkSet = jwkService.generateJwkSet(property);
         return new ImmutableJWKSet<>(jwkSet);
+    }
+
+    /**
+     * 创建 {@link JwtDecoder} Bean，用于验证 OAuth2 Bearer 访问令牌。
+     * <p>
+     * 由于本项目使用 ApiTicket（HS256 JWT）作为 {@code access_token}，
+     * 不能使用标准的 RSA JWK 解码器。该解码器使用 {@link JwtUtils#parse(String)}
+     * 验证 HS256 签名和过期时间，然后从 ApiTicket 的 {@code data} 声明中提取 claims。
+     * </p>
+     *
+     * @return JWT 解码器
+     */
+    @Bean
+    @SuppressWarnings("unchecked")
+    public JwtDecoder jwtDecoder() {
+        return token -> {
+            try {
+                String dataJson = JwtUtils.parse(token);
+                Map<String, Object> claims = MapperHolder.mapper.readValue(dataJson, Map.class);
+                return new Jwt(
+                        token,
+                        Instant.now(),
+                        Instant.now().plusSeconds(900),
+                        Map.of("alg", "HS256"),
+                        claims
+                );
+            } catch (JsonException e) {
+                throw new JwtException("无效的 ApiTicket: " + e.getMessage());
+            } catch (Exception e) {
+                throw new JwtException("ApiTicket 解码失败: " + e.getMessage());
+            }
+        };
     }
 
     /**

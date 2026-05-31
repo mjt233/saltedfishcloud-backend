@@ -81,7 +81,8 @@ public class OidcTokenGenerator implements OAuth2TokenGenerator<OAuth2Token> {
                 OAuth2AccessToken.TokenType.BEARER,
                 ticketValue,
                 issuedAt,
-                expiresAt
+                expiresAt,
+                context.getAuthorizedScopes()
         );
     }
 

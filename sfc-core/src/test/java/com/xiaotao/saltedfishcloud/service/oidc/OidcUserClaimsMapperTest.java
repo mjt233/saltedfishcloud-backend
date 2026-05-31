@@ -7,8 +7,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,15 +49,18 @@ class OidcUserClaimsMapperTest {
 
     private OidcUserClaimsMapper mapper;
 
+    private User testUser;
+
     @BeforeEach
     void setUp() {
         mapper = new OidcUserClaimsMapper(userService, ISSUER);
 
-        User user = new User();
-        user.setId(UID);
-        user.setUser(USERNAME);
-        user.setEmail(EMAIL);
-        when(userService.getUserById(UID)).thenReturn(user);
+        testUser = new User();
+        testUser.setId(UID);
+        testUser.setUser(USERNAME);
+        testUser.setEmail(EMAIL);
+        when(userService.getUserById(UID)).thenReturn(testUser);
+        when(userService.getUserByUser(USERNAME)).thenReturn(testUser);
     }
 
     /**
@@ -56,7 +68,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withOpenidScope_shouldContainSubAsUidString() {
-        OidcUserInfo userInfo = mapper.buildClaims(UID.toString(), Set.of("openid"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid"));
 
         Map<String, Object> claims = userInfo.getClaims();
         assertEquals(UID.toString(), claims.get("sub"), "sub 应为 uid 的字符串形式");
@@ -69,7 +81,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withProfileScope_shouldContainPreferredUsernameAndNameAndPicture() {
-        OidcUserInfo userInfo = mapper.buildClaims(UID.toString(), Set.of("openid", "profile"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid", "profile"));
 
         Map<String, Object> claims = userInfo.getClaims();
         assertEquals(USERNAME, claims.get("preferred_username"), "preferred_username 应为用户名");
@@ -82,7 +94,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_pictureUrlFollowsLegacyAvatarPattern() {
-        OidcUserInfo userInfo = mapper.buildClaims(UID.toString(), Set.of("profile"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("profile"));
 
         String picture = (String) userInfo.getClaims().get("picture");
         String expectedPicture = ISSUER + "/api/user/avatar/" + USERNAME + "?uid=" + UID;
@@ -95,7 +107,7 @@ class OidcUserClaimsMapperTest {
     @Test
     void buildClaims_issuerWithTrailingSlash_pictureUrlShouldNotHaveDoubleSlash() {
         OidcUserClaimsMapper mapperWithSlash = new OidcUserClaimsMapper(userService, ISSUER + "/");
-        OidcUserInfo userInfo = mapperWithSlash.buildClaims(UID.toString(), Set.of("profile"));
+        OidcUserInfo userInfo = mapperWithSlash.buildClaims(testUser, Set.of("profile"));
 
         String picture = (String) userInfo.getClaims().get("picture");
         assertFalse(picture.contains("//api/"), "picture URL 不应包含双斜杠");
@@ -108,7 +120,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withEmailScope_shouldContainEmailAndEmailVerifiedFalse() {
-        OidcUserInfo userInfo = mapper.buildClaims(UID.toString(), Set.of("openid", "email"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid", "email"));
 
         Map<String, Object> claims = userInfo.getClaims();
         assertEquals(EMAIL, claims.get("email"), "email 应为用户的绑定邮箱");
@@ -121,7 +133,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withAllScopes_shouldContainAllStandardClaims() {
-        OidcUserInfo userInfo = mapper.buildClaims(UID.toString(), Set.of("openid", "profile", "email"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid", "profile", "email"));
 
         Map<String, Object> claims = userInfo.getClaims();
         assertEquals(UID.toString(), claims.get("sub"));
@@ -137,12 +149,53 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withOnlyEmailScope_shouldContainOnlyEmailClaims() {
-        OidcUserInfo userInfo = mapper.buildClaims(UID.toString(), Set.of("email"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("email"));
 
         Map<String, Object> claims = userInfo.getClaims();
         assertFalse(claims.containsKey("sub"), "未授权 openid 时不应包含 sub");
         assertFalse(claims.containsKey("preferred_username"), "未授权 profile 时不应包含 preferred_username");
         assertTrue(claims.containsKey("email"), "应包含 email");
         assertTrue(claims.containsKey("email_verified"), "应包含 email_verified");
+    }
+
+    /**
+     * 验证 resolveUser 在 principalName 为用户名（非数字）时通过用户名查找。
+     */
+    @Test
+    void toOidcUserInfo_shouldResolveByUsernameWhenPrincipalNameIsNotNumeric() {
+        OidcUserInfo userInfo = mapper.toOidcUserInfo(buildContext(USERNAME, Set.of("openid")));
+        verify(userService).getUserByUser(USERNAME);
+        assertEquals(UID.toString(), userInfo.getClaims().get("sub"));
+    }
+
+    /**
+     * 验证 resolveUser 在 principalName 为数字 uid 时通过 ID 查找。
+     */
+    @Test
+    void toOidcUserInfo_shouldResolveByUidWhenPrincipalNameIsNumeric() {
+        OidcUserInfo userInfo = mapper.toOidcUserInfo(buildContext(UID.toString(), Set.of("openid")));
+        verify(userService).getUserById(UID);
+        assertEquals(UID.toString(), userInfo.getClaims().get("sub"));
+    }
+
+    private OidcUserInfoAuthenticationContext buildContext(String principalName, Set<String> scopes) {
+        OAuth2Authorization authorization = OAuth2Authorization
+                .withRegisteredClient(RegisteredClient.withId("test")
+                        .clientId("1")
+                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                        .redirectUri("http://localhost")
+                        .build())
+                .principalName(principalName)
+                .authorizedScopes(scopes)
+                .build();
+        OidcUserInfoAuthenticationToken authToken = new OidcUserInfoAuthenticationToken(
+                new JwtAuthenticationToken(new Jwt("token", Instant.now(),
+                        Instant.now().plusSeconds(900), Map.of("alg", "HS256"),
+                        Map.of("sub", principalName))));
+        return OidcUserInfoAuthenticationContext.with(authToken)
+                .accessToken(new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER,
+                        "token", Instant.now(), Instant.now().plusSeconds(900)))
+                .authorization(authorization)
+                .build();
     }
 }

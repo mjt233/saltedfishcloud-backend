@@ -1,7 +1,6 @@
 package com.xiaotao.saltedfishcloud.config.security.oidc;
 
 import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
 import com.xiaotao.saltedfishcloud.config.security.SecurityConfig;
 import com.xiaotao.saltedfishcloud.helper.Md5PasswordEncoder;
@@ -24,11 +23,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.web.OAuth2AuthorizationEndpointFilter;
 import org.springframework.security.oauth2.server.authorization.web.OAuth2DeviceAuthorizationEndpointFilter;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
@@ -165,13 +162,6 @@ class OidcAuthorizationServerConfigTest {
             return new HandlerMappingIntrospector();
         }
 
-        /**
-         * 提供测试用的 {@link JwtDecoder}，从 JWK 密钥源构建，用于 OIDC UserInfo 端点的令牌验证。
-         */
-        @Bean
-        JwtDecoder jwtDecoder(com.nimbusds.jose.jwk.source.JWKSource<SecurityContext> jwkSource) {
-            return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
-        }
     }
 
     @Autowired
