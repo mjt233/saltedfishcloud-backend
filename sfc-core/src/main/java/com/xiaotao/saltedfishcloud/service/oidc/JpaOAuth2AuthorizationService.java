@@ -1,8 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.oidc;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaotao.saltedfishcloud.dao.jpa.Oauth2AuthorizationRepo;
 import com.xiaotao.saltedfishcloud.model.po.OAuth2AuthorizationEntity;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.lang.Nullable;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
@@ -46,6 +48,8 @@ import java.util.Set;
  */
 public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService {
 
+    private static final ObjectMapper objectMapper = createObjectMapper();
+
     private final Oauth2AuthorizationRepo repo;
     private final RegisteredClientRepository registeredClientRepository;
 
@@ -61,6 +65,21 @@ public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService
         Assert.notNull(registeredClientRepository, "registeredClientRepository cannot be null");
         this.repo = repo;
         this.registeredClientRepository = registeredClientRepository;
+    }
+
+    /**
+     * 构造并配置用于序列化 {@link OAuth2Authorization} attributes 与 token metadata 的 {@link ObjectMapper}。
+     * <p>
+     * 对齐 Spring Authorization Server 上游 {@code JdbcOAuth2AuthorizationService} 的实现：
+     * </p>
+     */
+    private static ObjectMapper createObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ClassLoader classLoader = JpaOAuth2AuthorizationService.class.getClassLoader();
+        mapper.registerModules(SecurityJackson2Modules.getModules(classLoader));
+        mapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
+        return mapper;
     }
 
     /**
@@ -347,7 +366,7 @@ public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService
 
     private String writeMap(Map<String, Object> data) {
         try {
-            return MapperHolder.toJson(data);
+            return objectMapper.writeValueAsString(data);
         } catch (Exception ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
@@ -358,7 +377,7 @@ public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService
             return Collections.emptyMap();
         }
         try {
-            return MapperHolder.parseJsonToMap(data);
+            return objectMapper.readValue(data, new TypeReference<Map<String, Object>>() {});
         } catch (Exception ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
