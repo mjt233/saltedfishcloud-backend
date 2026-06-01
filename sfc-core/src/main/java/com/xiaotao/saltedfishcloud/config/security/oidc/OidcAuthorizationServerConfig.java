@@ -7,7 +7,9 @@ import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
 import java.time.Instant;
 import java.util.Map;
 import com.xiaotao.saltedfishcloud.config.security.JwtAuthenticationFilter;
+import com.xiaotao.saltedfishcloud.dao.jpa.Oauth2AuthorizationRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
+import com.xiaotao.saltedfishcloud.service.oidc.JpaOAuth2AuthorizationService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationConsentService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcRegisteredClientRepository;
@@ -36,7 +38,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider;
@@ -291,15 +292,18 @@ public class OidcAuthorizationServerConfig {
      *
      * @param bridgeService              OIDC token 桥接服务
      * @param registeredClientRepository 注册客户端仓库
+     * @param userService                用户服务
+     * @param repo                       授权实体仓库
      * @return 混合式授权服务
      */
     @Bean
     public OAuth2AuthorizationService authorizationService(
             OidcTokenBridgeService bridgeService,
             RegisteredClientRepository registeredClientRepository,
-            UserService userService) {
+            UserService userService,
+            Oauth2AuthorizationRepo repo) {
         return new OidcAuthorizationService(
-                new InMemoryOAuth2AuthorizationService(),
+                new JpaOAuth2AuthorizationService(repo, registeredClientRepository),
                 bridgeService,
                 registeredClientRepository,
                 userService

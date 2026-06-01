@@ -35,17 +35,16 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequ
  * <p>
  * 采用两级查找策略：
  * <ol>
- *   <li>优先从内存委托（{@link InMemoryOAuth2AuthorizationService}）中获取，
- *       适用于 auth code 兑换阶段的短生命周期授权状态。</li>
- *   <li>若内存未命中且 token 类型为 {@link OAuth2TokenType#REFRESH_TOKEN}，
+ *   <li>优先从 JPA 持久化委托（{@link JpaOAuth2AuthorizationService}）中获取完整授权状态。</li>
+ *   <li>若 JPA 未命中且 token 类型为 {@link OAuth2TokenType#REFRESH_TOKEN}，
  *       则通过 {@link OidcTokenBridgeService#validateLegacyAccessToken(String)} 验证遗留 token，
- *       并重建 {@link OAuth2Authorization} 以支持服务重启后的 refresh_token 流程。</li>
- *   <li>若内存未命中且 token 类型为 {@link OAuth2TokenType#ACCESS_TOKEN}，
+ *       并重建 {@link OAuth2Authorization} 以兼容迁移前签发的旧 token。</li>
+ *   <li>若 JPA 未命中且 token 类型为 {@link OAuth2TokenType#ACCESS_TOKEN}，
  *       则通过 {@link OidcTokenBridgeService#parseApiTicket(String)} 解析 ApiTicket，
  *       重建 {@link OAuth2Authorization} 以支持遗留 ApiTicket 的 OIDC UserInfo 查询。</li>
  * </ol>
  * </p>
- * <p>删除操作同时触发内存委托删除与遗留 token 撤销。</p>
+ * <p>删除操作同时触发 JPA 委托删除与遗留 token 撤销。</p>
  */
 @Slf4j
 public class OidcAuthorizationService implements OAuth2AuthorizationService {
@@ -60,7 +59,7 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
     /**
      * 构造混合式授权服务。
      *
-     * @param delegate                    内存授权委托（通常为 {@link InMemoryOAuth2AuthorizationService}）
+     * @param delegate                    持久化授权委托（通常为 {@link JpaOAuth2AuthorizationService}）
      * @param bridgeService               OIDC token 桥接服务
      * @param registeredClientRepository  注册客户端仓库，用于重建 {@link OAuth2Authorization}
      * @param userService                 用户服务，用于通过 uid 获取用户名和 UserPrincipal
@@ -77,7 +76,7 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
 
     /**
      * {@inheritDoc}
-     * <p>委托给内存委托服务保存授权信息。</p>
+     * <p>委托给持久化委托服务保存授权信息。</p>
      */
     @Override
     public void save(OAuth2Authorization authorization) {
@@ -89,7 +88,7 @@ public class OidcAuthorizationService implements OAuth2AuthorizationService {
      * <p>
      * 同时触发：
      * <ol>
-     *   <li>内存委托删除（移除 auth code 阶段的短生命周期状态）</li>
+     *   <li>持久化委托删除（移除持久化授权状态）</li>
      *   <li>遗留 token 撤销（通过 {@link OidcTokenBridgeService#revokeTokens(Long, Long)}）</li>
      * </ol>
      * </p>
