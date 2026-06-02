@@ -5,7 +5,6 @@ import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.helper.Md5PasswordEncoder;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,7 +64,6 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            AuthenticationManager authenticationManager,
-                                           ThirdPartyAppApiTicketService thirdPartyAppApiTicketService,
                                            UserService userService,
                                            LogRecordManager logRecordManager,
                                            UserDetailsService userDetailsService,
@@ -81,7 +79,6 @@ public class SecurityConfig {
         JwtLoginFilter loginFilter = new JwtLoginFilter(LOGIN_URI, authenticationManager, tokenService, logRecordManager, userService);
         http.addFilterBefore(loginFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new JwtOpenApiTicketFilter(thirdPartyAppApiTicketService, userService), UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable);
 
         //  处理过滤器链中出现的异常

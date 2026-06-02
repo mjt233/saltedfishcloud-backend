@@ -60,11 +60,6 @@ public class ThirdPartyApp extends AuditModel {
     private Boolean isEnabled;
 
     /**
-     * 是否允许第三方应用申请永久有效的 ApiTicket
-     */
-    private Boolean allowPermanentApiTicket;
-
-    /**
      * 是否启用 OIDC（OpenID Connect）协议支持。
      */
     private Boolean oidcEnabled = false;

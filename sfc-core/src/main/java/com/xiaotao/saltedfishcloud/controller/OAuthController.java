@@ -18,7 +18,12 @@ import com.xiaotao.saltedfishcloud.model.po.*;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppKeyVo;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
-import com.xiaotao.saltedfishcloud.service.third.*;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppKeyService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformUserService;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -30,17 +35,12 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.util.UriBuilder;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -81,9 +81,6 @@ public class OAuthController {
 
     @Autowired
     private ThirdPartyAppAuthorizationService thirdPartyAppAuthorizationService;
-
-    @Autowired
-    private ThirdPartyAppTokenService thirdPartyAppTokenService;
 
 
     @ApiOperation("使用第三方登录创建新账号")
@@ -278,71 +275,6 @@ public class OAuthController {
     @ResponseBody
     public JsonResult<ThirdPartyAppUserAuthorizationVo> getUserAuthorization(@RequestParam("appId") Long appId) {
         return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.getUserAppAuthorization(appId, SecureUtils.getCurrentUid()));
-    }
-
-    /**
-     * 当前用户确认授权第三方应用。
-     *
-     * @param appId       第三方OAuth应用ID
-     * @param scope       授权范围
-     * @param redirect    是否直接以302跳转响应，默认为 {@code true}；为 {@code false} 时返回JSON数据
-     * @param redirectUrl 自定义重定向URL。
-     *                    当第三方应用未配置回调URL时，以此参数的URL作为最终回调地址；
-     *                    若第三方应用已配置回调URL且与此参数不一致，则拒绝请求。
-     * @return 当 {@code redirect=true} 时返回302重定向响应；否则返回包含授权码和重定向URL的JSON数据
-     */
-    @ApiOperation("当前用户确认授权第三方应用")
-    @GetMapping("authorize")
-    public ResponseEntity<?> authorize(@RequestParam("appId") Long appId,
-                                       @RequestParam("scope") String scope,
-                                       @RequestParam(value = "redirect", defaultValue = "true") boolean redirect,
-                                       @RequestParam(value = "redirectUrl", required = false) String redirectUrl) {
-        ThirdPartyApp app = thirdPartyAppService.checkAndGetById(appId);
-
-        // 确定最终回调URL
-        String appCallbackUrl = app.getCallbackUrl();
-        String effectiveCallbackUrl;
-        if (redirectUrl != null && !redirectUrl.isBlank()) {
-            if (appCallbackUrl != null && !appCallbackUrl.isBlank()) {
-                // 应用已配置回调URL，传入的redirectUrl必须与之一致
-                if (!appCallbackUrl.equals(redirectUrl)) {
-                    throw new JsonException("传入的重定向URL与应用已配置的回调URL不一致，请求被拒绝");
-                }
-            }
-            // 应用未配置回调URL时，使用传入的redirectUrl
-            effectiveCallbackUrl = redirectUrl;
-        } else {
-            if (appCallbackUrl == null || appCallbackUrl.isBlank()) {
-                throw new JsonException("第三方应用未配置回调URL，请通过redirectUrl参数指定重定向地址");
-            }
-            effectiveCallbackUrl = appCallbackUrl;
-        }
-
-        String authorizeCode = thirdPartyAppTokenService.authorize(appId, SecureUtils.getCurrentUid(), scope);
-        String finalUrl = UriComponentsBuilder.fromHttpUrl(effectiveCallbackUrl)
-                .queryParam("code", authorizeCode)
-                .encode(StandardCharsets.UTF_8)
-                .toUriString();
-
-        if (redirect) {
-            return ResponseEntity.status(302)
-                    .location(java.net.URI.create(finalUrl))
-                    .build();
-        } else {
-            Map<String, String> data = new HashMap<>();
-            data.put("code", authorizeCode);
-            data.put("redirectUrl", finalUrl);
-            return ResponseEntity.ok(JsonResultImpl.getInstance(data));
-        }
-    }
-
-    @ApiOperation("撤销第三方OAuth应用授权")
-    @PostMapping("revoke")
-    @ResponseBody
-    public JsonResult<Object> revoke(@UID @RequestParam("uid") Long uid,
-                                     @RequestParam("appId") Long appId) {
-        thirdPartyAppTokenService.revoke(appId, uid);
-        return JsonResult.emptySuccess();
     }
 
     @ApiOperation("列出用户所有已关联的第三方OAuth应用授权")

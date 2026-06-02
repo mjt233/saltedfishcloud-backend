@@ -4,8 +4,6 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
-import java.time.Instant;
-import java.util.Map;
 import com.xiaotao.saltedfishcloud.config.security.JwtAuthenticationFilter;
 import com.xiaotao.saltedfishcloud.dao.jpa.Oauth2AuthorizationRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
@@ -13,17 +11,10 @@ import com.xiaotao.saltedfishcloud.service.oidc.JpaOAuth2AuthorizationService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationConsentService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcRegisteredClientRepository;
-import com.xiaotao.saltedfishcloud.service.oidc.OidcTokenBridgeService;
-import com.xiaotao.saltedfishcloud.service.oidc.OidcTokenGenerator;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcUserClaimsMapper;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppApiTicketService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
-import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -32,21 +23,14 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
-import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
-import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -63,9 +47,7 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
  *   <li>{@link com.nimbusds.jose.jwk.source.JWKSource}（JWT 签名与 JWKS 端点密钥源）</li>
  *   <li>{@link RegisteredClientRepository} → {@link OidcRegisteredClientRepository}（ThirdPartyApp 适配器）</li>
  *   <li>{@link OAuth2AuthorizationConsentService} → {@link OidcAuthorizationConsentService}（授权同意适配器）</li>
- *   <li>{@link OAuth2AuthorizationService} → {@link OidcAuthorizationService}（混合内存+遗留 token 授权服务）</li>
- *   <li>{@link OidcTokenBridgeService}（OIDC token 与遗留 token 的桥接服务）</li>
- *   <li>{@link OidcTokenGenerator}（自定义 token 生成器：ApiTicket + 遗留 Access Token + id_token）</li>
+ *   <li>{@link OAuth2AuthorizationService} → {@link OidcAuthorizationService}（JPA 持久化授权服务）</li>
  *   <li>{@link OidcUserClaimsMapper}（OIDC UserInfo 声明映射器，按 scope 过滤用户属性）</li>
  * </ul>
  * 该过滤器链与应用主过滤器链（{@code SecurityConfig.filterChain}）共存：
@@ -109,8 +91,7 @@ public class OidcAuthorizationServerConfig {
                                                        OidcUserClaimsMapper claimsMapper,
                                                        AuthorizationServerSettings settings,
                                                        JwtAuthenticationFilter jwtAuthenticationFilter,
-                                                       AuthenticationProvider authenticationProvider,
-                                                       JwtDecoder jwtDecoder) throws Exception {
+                                                       AuthenticationProvider authenticationProvider) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer =
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
         http.with(authorizationServer, server -> server
@@ -130,7 +111,7 @@ public class OidcAuthorizationServerConfig {
                 .addFilterBefore(jwtAuthenticationFilter, AbstractPreAuthenticatedProcessingFilter.class)
                 .authenticationProvider(authenticationProvider)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
-                .oauth2ResourceServer(resourceServer -> resourceServer.jwt(jwt -> jwt.decoder(jwtDecoder)))
+                .oauth2ResourceServer(Customizer.withDefaults())
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServer.getEndpointsMatcher()))
                 .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
@@ -184,38 +165,6 @@ public class OidcAuthorizationServerConfig {
     }
 
     /**
-     * 创建 {@link JwtDecoder} Bean，用于验证 OAuth2 Bearer 访问令牌。
-     * <p>
-     * 由于本项目使用 ApiTicket（HS256 JWT）作为 {@code access_token}，
-     * 不能使用标准的 RSA JWK 解码器。该解码器使用 {@link JwtUtils#parse(String)}
-     * 验证 HS256 签名和过期时间，然后从 ApiTicket 的 {@code data} 声明中提取 claims。
-     * </p>
-     *
-     * @return JWT 解码器
-     */
-    @Bean
-    @SuppressWarnings("unchecked")
-    public JwtDecoder jwtDecoder() {
-        return token -> {
-            try {
-                String dataJson = JwtUtils.parse(token);
-                Map<String, Object> claims = MapperHolder.mapper.readValue(dataJson, Map.class);
-                return new Jwt(
-                        token,
-                        Instant.now(),
-                        Instant.now().plusSeconds(900),
-                        Map.of("alg", "HS256"),
-                        claims
-                );
-            } catch (JsonException e) {
-                throw new JwtException("无效的 ApiTicket: " + e.getMessage());
-            } catch (Exception e) {
-                throw new JwtException("ApiTicket 解码失败: " + e.getMessage());
-            }
-        };
-    }
-
-    /**
      * 注册 {@link RegisteredClientRepository} Bean，将系统内部 {@link com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp}
      * 适配为 Spring Authorization Server 的注册客户端仓库。
      *
@@ -245,105 +194,22 @@ public class OidcAuthorizationServerConfig {
     }
 
     /**
-     * 注册 {@link OidcTokenBridgeService} Bean。
+     * 注册 {@link OidcAuthorizationService} Bean。
      * <p>
-     * 封装 ApiTicket 签发与遗留 Access Token 签发逻辑，为自定义 token 生成器提供统一入口。
+     * 直接委托给 JPA 持久化实现。
      * </p>
      *
-     * @param apiTicketService API 票据服务
-     * @param tokenService     第三方应用 token 服务
-     * @return OIDC token 桥接服务
-     */
-    @Bean
-    public OidcTokenBridgeService oidcTokenBridgeService(
-            ThirdPartyAppApiTicketService apiTicketService,
-            ThirdPartyAppTokenService tokenService,
-            ThirdPartyAppAuthorizationService authorizationService) {
-        return new OidcTokenBridgeService(apiTicketService, tokenService, authorizationService);
-    }
-
-    /**
-     * 注册自定义 OIDC Token 生成器 Bean。
-     * <p>
-     * 使用 {@link NimbusJwtEncoder} + id_token 订制器构建 {@link JwtGenerator}，
-     * 然后将其与 {@link OidcTokenBridgeService} 组合为 {@link OidcTokenGenerator}。
-     * </p>
-     *
-     * @param jwkSource   JWK 密钥源
-     * @param bridgeService OIDC token 桥接服务
-     * @return 自定义 token 生成器
-     */
-    @Bean
-    public OidcTokenGenerator oidcTokenGenerator(
-            com.nimbusds.jose.jwk.source.JWKSource<SecurityContext> jwkSource,
-            OidcTokenBridgeService bridgeService) {
-        NimbusJwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
-        JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
-        jwtGenerator.setJwtCustomizer(oidcIdTokenCustomizer());
-        return new OidcTokenGenerator(bridgeService, jwtGenerator);
-    }
-
-    /**
-     * 注册混合式 {@link OAuth2AuthorizationService} Bean。
-     * <p>
-     * 使用内存委托处理 auth code 阶段的短生命周期授权状态，
-     * 并在 refresh_token 缓存未命中时回退到遗留 token 验证逻辑。
-     * </p>
-     *
-     * @param bridgeService              OIDC token 桥接服务
      * @param registeredClientRepository 注册客户端仓库
-     * @param userService                用户服务
-     * @param repo                       授权实体仓库
-     * @return 混合式授权服务
+     * @param repo                       OAuth2 授权持久化仓库
+     * @return 授权服务实例
      */
     @Bean
     public OAuth2AuthorizationService authorizationService(
-            OidcTokenBridgeService bridgeService,
             RegisteredClientRepository registeredClientRepository,
-            UserService userService,
             Oauth2AuthorizationRepo repo) {
         return new OidcAuthorizationService(
-                new JpaOAuth2AuthorizationService(repo, registeredClientRepository),
-                bridgeService,
-                registeredClientRepository,
-                userService
+                new JpaOAuth2AuthorizationService(repo, registeredClientRepository)
         );
     }
 
-    /**
-     * 注册 {@link OidcUserClaimsMapper} Bean。
-     * <p>
-     * 负责将系统用户数据按 scope 映射为 OIDC 标准声明，供 UserInfo 端点使用。
-     * </p>
-     *
-     * @param userService 用户服务，用于按 uid 加载用户数据
-     * @param property    OIDC 服务端配置属性，提供 Issuer 地址用于构建 picture URL
-     * @return OIDC UserInfo 声明映射器
-     */
-    @Bean
-    public OidcUserClaimsMapper oidcUserClaimsMapper(UserService userService, OidcServerProperty property) {
-        return new OidcUserClaimsMapper(userService, property.getIssuer());
-    }
-
-    /**
-     * 创建 id_token JWT 定制器。
-     * <p>
-     * 为 id_token 注入标准 OIDC 声明（sub 等），确保在授权码兑换与 refresh_token 刷新两种流程中
-     * sub 声明始终为 uid 字符串，而非用户名。
-     * </p>
-     *
-     * @return JWT 定制器
-     */
-    private OAuth2TokenCustomizer<JwtEncodingContext> oidcIdTokenCustomizer() {
-        return context -> {
-            if (context.getTokenType() != null &&
-                    "id_token".equals(context.getTokenType().getValue())) {
-                OidcUserInfo.Builder userInfoBuilder = OidcUserInfo.builder();
-                // sub 由 Spring AS 自动填入 principalName（对我们而言 uid 字符串）
-                context.getClaims().claims(claims -> {
-                    // 保持 sub 不变；如需更多自定义声明可在此扩展
-                });
-            }
-        };
-    }
 }

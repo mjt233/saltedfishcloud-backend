@@ -1,6 +1,6 @@
 # OIDC Provider 支持
 
-咸鱼云网盘当前除了保留原有开放平台 OAuth 链路外，还提供基于 Spring Authorization Server 的标准 OIDC / OAuth 2.1 端点，供标准 OIDC 客户端直接接入。
+咸鱼云网盘提供基于 Spring Authorization Server 的标准 OIDC / OAuth 2.1 端点，支持标准 OIDC 客户端直接接入。
 
 ## 已实现能力
 
@@ -21,23 +21,21 @@
 
 > 当前版本**不建议**将 `/connect/logout` 作为稳定的 RP-Initiated Logout 能力对外依赖；如需让 OIDC 令牌立即失效，请优先使用 `/oauth2/revoke` 或现有授权撤销能力。
 
-## 令牌语义映射
+## 令牌说明
 
-标准 OIDC 返回的 token 与系统原有票据模型的对应关系如下：
+标准 OAuth 2.1 / OIDC 返回的令牌：
 
-| 标准语义 | 系统内部实现 |
+| 令牌类型 | 说明 |
 |------|------|
-| `authorization_code` | 现有用户授权结果与授权码缓存 |
-| `device_code` | 复用同一套用户授权记录与标准设备码状态 |
-| `access_token` | 现有短期 `ApiTicket` |
-| `refresh_token` | 现有长期 `Access Token` |
-| `id_token` | 标准 OIDC 身份令牌（JWK/JWKS 验签） |
+| `access_token` | 短期访问令牌，用于调用 API |
+| `refresh_token` | 长期刷新令牌，用于获取新的 access_token |
+| `id_token` | OIDC 身份令牌，包含用户身份信息（JWK/JWKS 验签） |
 
-因此：
+调用 API 时使用标准 Bearer 认证：
 
-1. 调用 **标准 OIDC UserInfo / revoke / introspect** 时，使用 `Authorization: Bearer {access_token}`。
-2. 调用 **现有开放平台接口** 时，仍使用 `Authorization: ApiTicket {access_token}`。
-3. OIDC `access_token` 本身就是一个可直接复用到旧开放接口的 `ApiTicket`。
+```
+Authorization: Bearer {access_token}
+```
 
 ## 客户端类型
 
@@ -52,7 +50,7 @@
 
 1. public client 必须启用 PKCE。
 2. confidential client 可以使用 PKCE。
-3. 客户端元数据仍由现有第三方应用管理能力维护，不需要单独维护第二套客户端表。
+3. 客户端元数据由第三方应用管理能力维护。
 
 ## 支持的 scope 与 UserInfo claims
 
@@ -107,23 +105,8 @@ POST /oauth2/token(grant_type=urn:ietf:params:oauth:grant-type:device_code)
 说明：
 
 1. `verification_uri` 会返回系统自带的 `/oauth/device` 页面，而不是要求依赖外部前端资源。
-2. 设备授权完成后的 `access_token` / `refresh_token` 语义与授权码模式完全一致，仍分别映射为 `ApiTicket` 与长期 `Access Token`。
+2. 设备授权完成后的 `access_token` / `refresh_token` 语义与授权码模式完全一致。
 3. 若客户端是 public client，后续 refresh_token 使用方式与标准 OIDC 流程一致。
-
-## 与旧开放平台链路的兼容关系
-
-旧链路仍然保留：
-
-1. `/api/oauth/authorize`
-2. `/api/openApi/auth/getAccessToken/v1`
-3. `/api/openApi/auth/getApiTicket/v1`
-
-兼容关系如下：
-
-1. 标准 OIDC 客户端直接走 `/oauth2/**`。
-2. 存量客户端继续走旧接口，不需要改造。
-3. 新旧入口共享同一套授权记录、长期 token、ApiTicket 和撤销事实来源。
-4. 用户撤销授权后，新旧协议下的 token 都会一起失效。
 
 ## 配置项
 
@@ -145,5 +128,4 @@ POST /oauth2/token(grant_type=urn:ietf:params:oauth:grant-type:device_code)
 ## 调用建议
 
 1. 标准 OIDC 客户端优先使用 discovery 自动发现端点。
-2. 若客户端还需要访问旧开放平台接口，可以直接把 OIDC 返回的 `access_token` 当作 `ApiTicket` 使用。
-3. 若应用已不再需要访问权限，请使用 `/oauth2/revoke` 或现有授权撤销能力，避免长期 refresh token 继续有效。
+2. 若应用已不再需要访问权限，请使用 `/oauth2/revoke` 现有授权撤销能力，避免长期 refresh token 继续有效。
