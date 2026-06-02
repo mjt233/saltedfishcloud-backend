@@ -5,7 +5,7 @@ import com.sfc.mcp.model.McpFileListResult;
 import com.sfc.mcp.model.McpFileSearchEntry;
 import com.sfc.mcp.model.McpFileSearchResult;
 import com.sfc.mcp.model.McpOperationResult;
-import com.sfc.mcp.service.McpUploadService;
+import com.sfc.mcp.service.McpFileTransferService;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.constant.error.CommonError;
@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
  * <p>
  * 该服务通过 Spring AI 的 {@link Tool} 注解向 MCP Server 暴露网盘工具，
  * 并复用系统现有的 OAuth + Spring Security 上下文与网盘文件系统能力。
- * 所有工具方法均要求当前请求已通过 OAuth ApiTicket 认证，并拥有 {@link SysRole#OAUTH_USER} 角色。
+ * 所有工具方法均要求当前请求已通过 MCP API Key 认证，并拥有 {@link SysRole#OAUTH_USER} 角色。
  * </p>
  */
 @RequiredArgsConstructor
@@ -59,7 +59,7 @@ public class McpDiskTools {
     private final DiskFileSystemManager diskFileSystemManager;
     private final FileRecordService fileRecordService;
     private final UserService userService;
-    private final McpUploadService mcpUploadService;
+    private final McpFileTransferService mcpFileTransferService;
     private final FileLinkService fileLinkService;
 
     /**
@@ -67,7 +67,7 @@ public class McpDiskTools {
      *
      * @return 当前用户信息
      */
-    @McpTool(name = "get_current_user_info", description = "获取当前 OAuth ApiTicket 对应的用户信息")
+    @McpTool(name = "get_current_user_info", description = "获取当前 MCP API Key 对应的用户信息")
     public UserVO getCurrentUserInfo() {
         long currentUid = requireCurrentUid();
         return toUserVo(currentUid);
@@ -236,7 +236,7 @@ public class McpDiskTools {
     @McpTool(name = "get_upload_file_method", description = "获取上传文件到咸鱼云网盘的方法")
     public McpOperationResult getUploadFileMethod() {
         HttpServletRequest request = RequestContextUtils.getHttpServletRequest().orElseThrow();
-        return new McpOperationResult(true, mcpUploadService.getUploadPrompt(request), 0L);
+        return new McpOperationResult(true, mcpFileTransferService.getUploadPrompt(request), 0L);
     }
 
     /**
@@ -285,16 +285,7 @@ public class McpDiskTools {
     @McpTool(name = "get_download_file_method", description = "获取通过开放平台下载文件的方法说明")
     public McpOperationResult getDownloadFileMethod() {
         HttpServletRequest request = RequestContextUtils.getHttpServletRequest().orElseThrow();
-        String downloadApi = UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
-                .replacePath("/api/openApi/diskFile/download/v1")
-                .replaceQuery(null)
-                .build()
-                .toUriString();
-        String prompt = "通过开放平台下载文件请使用 GET " + downloadApi + "，并传递 query 参数 uid 与 path。\n"
-                + "Authorization 请求头需携带 ApiTicket access_token，且 token 需具备 storage_read 权限。\n"
-                + "示例：curl -X GET \"" + downloadApi + "?uid=0&path=/document.pdf\" -H \"Authorization: ApiTicket YOUR_ACCESS_TOKEN\" -o document.pdf\n"
-                + "说明：path 必须以 / 开头且为有效路径；uid=0 表示公共网盘，uid>0 表示私人网盘。";
-        return new McpOperationResult(true, prompt, 0L);
+        return new McpOperationResult(true, mcpFileTransferService.getDownloadPrompt(request), 0L);
     }
 
     /**
