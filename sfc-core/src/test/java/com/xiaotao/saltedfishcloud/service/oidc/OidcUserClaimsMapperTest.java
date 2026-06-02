@@ -2,6 +2,7 @@ package com.xiaotao.saltedfishcloud.service.oidc;
 
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,8 +14,11 @@ import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContext;
+import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContextHolder;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.time.Instant;
@@ -35,6 +39,10 @@ import static org.mockito.Mockito.*;
  *   <li>picture URL 遵循遗留模式：{@code {issuer}/api/user/avatar/{username}?uid={uid}}</li>
  * </ul>
  * </p>
+ * <p>
+ * Issuer 地址通过 {@link AuthorizationServerContextHolder} 动态获取，
+ * 测试中通过 {@code @BeforeEach} 设置模拟上下文。
+ * </p>
  */
 @ExtendWith(MockitoExtension.class)
 class OidcUserClaimsMapperTest {
@@ -53,7 +61,7 @@ class OidcUserClaimsMapperTest {
 
     @BeforeEach
     void setUp() {
-        mapper = new OidcUserClaimsMapper(userService, ISSUER);
+        mapper = new OidcUserClaimsMapper(userService);
 
         testUser = new User();
         testUser.setId(UID);
@@ -61,6 +69,23 @@ class OidcUserClaimsMapperTest {
         testUser.setEmail(EMAIL);
         when(userService.getUserById(UID)).thenReturn(testUser);
         when(userService.getUserByUser(USERNAME)).thenReturn(testUser);
+
+        AuthorizationServerContext context = new AuthorizationServerContext() {
+            @Override
+            public String getIssuer() {
+                return ISSUER;
+            }
+            @Override
+            public AuthorizationServerSettings getAuthorizationServerSettings() {
+                return AuthorizationServerSettings.builder().build();
+            }
+        };
+        AuthorizationServerContextHolder.setContext(context);
+    }
+
+    @AfterEach
+    void tearDown() {
+        AuthorizationServerContextHolder.resetContext();
     }
 
     /**
@@ -68,7 +93,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withOpenidScope_shouldContainSubAsUidString() {
-        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid"), ISSUER);
 
         Map<String, Object> claims = userInfo.getClaims();
         assertEquals(UID.toString(), claims.get("sub"), "sub 应为 uid 的字符串形式");
@@ -81,7 +106,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withProfileScope_shouldContainPreferredUsernameAndNameAndPicture() {
-        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid", "profile"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid", "profile"), ISSUER);
 
         Map<String, Object> claims = userInfo.getClaims();
         assertEquals(USERNAME, claims.get("preferred_username"), "preferred_username 应为用户名");
@@ -94,7 +119,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_pictureUrlFollowsLegacyAvatarPattern() {
-        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("profile"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("profile"), ISSUER);
 
         String picture = (String) userInfo.getClaims().get("picture");
         String expectedPicture = ISSUER + "/api/user/avatar/" + USERNAME + "?uid=" + UID;
@@ -106,8 +131,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_issuerWithTrailingSlash_pictureUrlShouldNotHaveDoubleSlash() {
-        OidcUserClaimsMapper mapperWithSlash = new OidcUserClaimsMapper(userService, ISSUER + "/");
-        OidcUserInfo userInfo = mapperWithSlash.buildClaims(testUser, Set.of("profile"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("profile"), ISSUER + "/");
 
         String picture = (String) userInfo.getClaims().get("picture");
         assertFalse(picture.contains("//api/"), "picture URL 不应包含双斜杠");
@@ -120,7 +144,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withEmailScope_shouldContainEmailAndEmailVerifiedFalse() {
-        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid", "email"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid", "email"), ISSUER);
 
         Map<String, Object> claims = userInfo.getClaims();
         assertEquals(EMAIL, claims.get("email"), "email 应为用户的绑定邮箱");
@@ -133,7 +157,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withAllScopes_shouldContainAllStandardClaims() {
-        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid", "profile", "email"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("openid", "profile", "email"), ISSUER);
 
         Map<String, Object> claims = userInfo.getClaims();
         assertEquals(UID.toString(), claims.get("sub"));
@@ -149,7 +173,7 @@ class OidcUserClaimsMapperTest {
      */
     @Test
     void buildClaims_withOnlyEmailScope_shouldContainOnlyEmailClaims() {
-        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("email"));
+        OidcUserInfo userInfo = mapper.buildClaims(testUser, Set.of("email"), ISSUER);
 
         Map<String, Object> claims = userInfo.getClaims();
         assertFalse(claims.containsKey("sub"), "未授权 openid 时不应包含 sub");

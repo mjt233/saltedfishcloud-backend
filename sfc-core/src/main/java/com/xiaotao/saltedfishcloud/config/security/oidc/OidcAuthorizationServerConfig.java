@@ -132,7 +132,6 @@ public class OidcAuthorizationServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings(OidcServerProperty property) {
         return AuthorizationServerSettings.builder()
-                .issuer(property.getIssuer())
                 .authorizationEndpoint(property.getAuthorizationEndpoint())
                 .deviceAuthorizationEndpoint(property.getDeviceAuthorizationEndpoint())
                 .deviceVerificationEndpoint(property.getDeviceVerificationEndpoint())
@@ -213,12 +212,11 @@ public class OidcAuthorizationServerConfig {
      * </p>
      *
      * @param userService 用户服务
-     * @param property    OIDC 服务端配置属性
      * @return OIDC 用户信息声明映射器
      */
     @Bean
-    public OidcUserClaimsMapper oidcUserClaimsMapper(UserService userService, OidcServerProperty property) {
-        return new OidcUserClaimsMapper(userService, property.getIssuer());
+    public OidcUserClaimsMapper oidcUserClaimsMapper(UserService userService) {
+        return new OidcUserClaimsMapper(userService);
     }
 
 }

@@ -71,9 +71,6 @@ sys:
     # 是否启用内置 OIDC 授权服务器
     enabled: true
 
-    # OIDC Issuer 地址，例如 https://cloud.example.com
-    issuer: ${OIDC_ISSUER:http://localhost:8087}
-
     # OAuth2 授权端点路径（第三方应用发起授权请求的入口，引导用户进入授权的页面）
     authorization-endpoint: /oauth2/authorize
 

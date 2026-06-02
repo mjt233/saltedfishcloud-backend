@@ -22,7 +22,6 @@ class OidcServerPropertyTest {
     void shouldBindOidcPropertiesCorrectly() {
         Map<String, Object> properties = new HashMap<>();
         properties.put("sys.oidc.enabled", true);
-        properties.put("sys.oidc.issuer", "https://cloud.example.com");
         properties.put("sys.oidc.jwk.key-id", "custom-key-override");
         properties.put("sys.oidc.jwk.key-store-path", "./custom-jwk.json");
         // 不设置 endpoint 字段，测试默认值
@@ -33,7 +32,6 @@ class OidcServerPropertyTest {
         assertTrue(result.isBound(), "属性绑定失败");
         OidcServerProperty prop = result.get();
         assertTrue(prop.isEnabled());
-        assertEquals("https://cloud.example.com", prop.getIssuer());
         assertEquals("/oauth2/authorize", prop.getAuthorizationEndpoint());
         assertEquals("/oauth2/token", prop.getTokenEndpoint());
         assertEquals("/oauth2/userinfo", prop.getUserInfoEndpoint());
@@ -53,7 +51,6 @@ class OidcServerPropertyTest {
         assertTrue(result.isBound(), "属性绑定失败");
         OidcServerProperty prop = result.get();
         assertFalse(prop.isEnabled());
-        assertNull(prop.getIssuer());
         assertEquals("/oauth2/authorize", prop.getAuthorizationEndpoint());
         assertEquals("/oauth2/token", prop.getTokenEndpoint());
         assertEquals("/oauth2/userinfo", prop.getUserInfoEndpoint());
