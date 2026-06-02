@@ -9,7 +9,6 @@ import com.xiaotao.saltedfishcloud.dao.jpa.Oauth2AuthorizationRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.service.oidc.JpaOAuth2AuthorizationService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationConsentService;
-import com.xiaotao.saltedfishcloud.service.oidc.OidcAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcRegisteredClientRepository;
 import com.xiaotao.saltedfishcloud.service.oidc.OidcUserClaimsMapper;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
@@ -47,7 +46,7 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
  *   <li>{@link com.nimbusds.jose.jwk.source.JWKSource}（JWT 签名与 JWKS 端点密钥源）</li>
  *   <li>{@link RegisteredClientRepository} → {@link OidcRegisteredClientRepository}（ThirdPartyApp 适配器）</li>
  *   <li>{@link OAuth2AuthorizationConsentService} → {@link OidcAuthorizationConsentService}（授权同意适配器）</li>
- *   <li>{@link OAuth2AuthorizationService} → {@link OidcAuthorizationService}（JPA 持久化授权服务）</li>
+ *   <li>{@link OAuth2AuthorizationService} → {@link JpaOAuth2AuthorizationService}（JPA 持久化授权服务）</li>
  *   <li>{@link OidcUserClaimsMapper}（OIDC UserInfo 声明映射器，按 scope 过滤用户属性）</li>
  * </ul>
  * 该过滤器链与应用主过滤器链（{@code SecurityConfig.filterChain}）共存：
@@ -194,10 +193,7 @@ public class OidcAuthorizationServerConfig {
     }
 
     /**
-     * 注册 {@link OidcAuthorizationService} Bean。
-     * <p>
-     * 直接委托给 JPA 持久化实现。
-     * </p>
+     * 注册 OAuth2AuthorizationService Bean。
      *
      * @param registeredClientRepository 注册客户端仓库
      * @param repo                       OAuth2 授权持久化仓库
@@ -207,9 +203,7 @@ public class OidcAuthorizationServerConfig {
     public OAuth2AuthorizationService authorizationService(
             RegisteredClientRepository registeredClientRepository,
             Oauth2AuthorizationRepo repo) {
-        return new OidcAuthorizationService(
-                new JpaOAuth2AuthorizationService(repo, registeredClientRepository)
-        );
+        return new JpaOAuth2AuthorizationService(repo, registeredClientRepository);
     }
 
     /**
