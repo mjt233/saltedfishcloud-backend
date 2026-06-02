@@ -212,4 +212,19 @@ public class OidcAuthorizationServerConfig {
         );
     }
 
+    /**
+     * 注册 {@link OidcUserClaimsMapper} Bean。
+     * <p>
+     * 按照授权的 scope 将系统用户数据映射为 OIDC 标准声明（claims）。
+     * </p>
+     *
+     * @param userService 用户服务
+     * @param property    OIDC 服务端配置属性
+     * @return OIDC 用户信息声明映射器
+     */
+    @Bean
+    public OidcUserClaimsMapper oidcUserClaimsMapper(UserService userService, OidcServerProperty property) {
+        return new OidcUserClaimsMapper(userService, property.getIssuer());
+    }
+
 }
