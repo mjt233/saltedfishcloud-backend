@@ -22,8 +22,6 @@ class OidcServerPropertyTest {
     void shouldBindOidcPropertiesCorrectly() {
         Map<String, Object> properties = new HashMap<>();
         properties.put("sys.oidc.enabled", true);
-        properties.put("sys.oidc.jwk.key-id", "custom-key-override");
-        properties.put("sys.oidc.jwk.key-store-path", "./custom-jwk.json");
         // 不设置 endpoint 字段，测试默认值
 
         MapConfigurationPropertySource source = new MapConfigurationPropertySource(properties);
@@ -35,9 +33,6 @@ class OidcServerPropertyTest {
         assertEquals("/oauth2/authorize", prop.getAuthorizationEndpoint());
         assertEquals("/oauth2/token", prop.getTokenEndpoint());
         assertEquals("/oauth2/userinfo", prop.getUserInfoEndpoint());
-        assertEquals("custom-key-override", prop.getJwk().getKeyId());
-        // 校验 JWK 其它绑定值
-        assertEquals("./custom-jwk.json", prop.getJwk().getKeyStorePath());
     }
 
     @Test
@@ -54,7 +49,5 @@ class OidcServerPropertyTest {
         assertEquals("/oauth2/authorize", prop.getAuthorizationEndpoint());
         assertEquals("/oauth2/token", prop.getTokenEndpoint());
         assertEquals("/oauth2/userinfo", prop.getUserInfoEndpoint());
-        assertEquals("oidc-key-1", prop.getJwk().getKeyId());
-        assertEquals("./oidc-jwk.json", prop.getJwk().getKeyStorePath());
     }
 }

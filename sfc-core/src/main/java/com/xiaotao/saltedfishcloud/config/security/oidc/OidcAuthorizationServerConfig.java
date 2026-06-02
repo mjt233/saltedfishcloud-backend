@@ -1,10 +1,20 @@
 package com.xiaotao.saltedfishcloud.config.security.oidc;
 
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.xiaotao.saltedfishcloud.cache.LockFactory;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
 import com.xiaotao.saltedfishcloud.config.security.JwtAuthenticationFilter;
+import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
+
+import java.text.ParseException;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 import com.xiaotao.saltedfishcloud.dao.jpa.Oauth2AuthorizationRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.service.oidc.JpaOAuth2AuthorizationService;
@@ -15,6 +25,7 @@ import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationServi
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,9 +64,13 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
  * 本链通过 {@code securityMatcher} 仅匹配授权服务器端点，主链作为低优先级后备处理其余请求。
  * </p>
  */
+@Slf4j
 @Configuration
 @ConditionalOnProperty(name = "sys.oidc.enabled", havingValue = "true")
 public class OidcAuthorizationServerConfig {
+
+    private static final String JWK_CONFIG_KEY = "sys.oidc.jwk";
+    private static final String LOCK_KEY = "oidc:jwk:init";
 
     @Bean
     public ClientSecretAuthenticationProvider authenticationProvider(
@@ -147,19 +162,52 @@ public class OidcAuthorizationServerConfig {
     /**
      * 创建用于 JWT 令牌签名和 JWKS 端点的 RSA 密钥源。
      * <p>
-     * 密钥由 {@link OidcJwkService#generateJwkSet(OidcServerProperty)} 生成，
-     * keyId 来自 {@link OidcServerProperty.Jwk#getKeyId()}。
+     * 首次启动时生成 2048 位 RSA 密钥对并保存至数据库，
+     * 后续启动从数据库加载已有密钥，确保重启后令牌有效。
      * </p>
      *
-     * @param jwkService JWK 密钥服务
-     * @param property   OIDC 服务端配置属性
+     * @param configRepo  系统配置仓库
+     * @param lockFactory 分布式锁工厂
      * @return JWK 密钥源
      */
     @Bean
-    public com.nimbusds.jose.jwk.source.JWKSource<SecurityContext> jwkSource(
-            OidcJwkService jwkService, OidcServerProperty property) {
-        JWKSet jwkSet = jwkService.generateJwkSet(property);
+    public JWKSource<SecurityContext> jwkSource(ConfigRepo configRepo, LockFactory lockFactory) throws JOSEException {
+        JWKSet jwkSet = loadOrCreateJwkSet(configRepo, lockFactory);
         return new ImmutableJWKSet<>(jwkSet);
+    }
+
+    private JWKSet loadOrCreateJwkSet(ConfigRepo configRepo, LockFactory lockFactory) throws JOSEException {
+        String saved = configRepo.getConfig(JWK_CONFIG_KEY);
+        if (saved != null) {
+            log.info("从数据库加载 JWK 密钥");
+            return parseJwkSet(saved);
+        }
+        Lock lock = lockFactory.getLock(LOCK_KEY);
+        lock.lock();
+        try {
+            saved = configRepo.getConfig(JWK_CONFIG_KEY);
+            if (saved != null) {
+                log.info("从数据库加载 JWK 密钥");
+                return parseJwkSet(saved);
+            }
+            log.info("生成 JWK 密钥");
+            RSAKey rsaKey = new RSAKeyGenerator(2048)
+                    .keyID(UUID.randomUUID().toString())
+                    .generate();
+            JWKSet jwkSet = new JWKSet(rsaKey);
+            configRepo.setConfig(JWK_CONFIG_KEY, jwkSet.toString(false));
+            return jwkSet;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private static JWKSet parseJwkSet(String json) {
+        try {
+            return JWKSet.parse(json);
+        } catch (ParseException e) {
+            throw new IllegalStateException("OIDC JWK 解析失败", e);
+        }
     }
 
     /**

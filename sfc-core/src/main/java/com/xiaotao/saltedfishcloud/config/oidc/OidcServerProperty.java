@@ -90,25 +90,4 @@ public class OidcServerProperty {
      */
     private String deviceVerificationErrorUri = "/oauth?grant_type=user_code&error=invalid_user_code";
 
-    /**
-     * JWK（JSON Web Key）相关配置。
-     */
-    private final Jwk jwk = new Jwk();
-
-    /**
-     * JWK 密钥配置。
-     */
-    @Data
-    public static class Jwk {
-
-        /**
-         * JWK 密钥 ID，默认 {@code oidc-key-1}。
-         */
-        private String keyId = "oidc-key-1";
-
-        /**
-         * JWK 密钥存储文件路径，默认 {@code ./oidc-jwk.json}。
-         */
-        private String keyStorePath = "./oidc-jwk.json";
-    }
 }

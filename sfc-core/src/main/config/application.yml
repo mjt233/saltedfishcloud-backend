@@ -109,6 +109,4 @@ sys:
 
     # 设备授权确认页面路径（用户输入 user_code 及确认授权的页面）
     device-consent-page: /oauth?grant_type=user_code
-    jwk:
-      key-id: ${OIDC_JWK_KEY_ID:oidc-key-1}
-      key-store-path: ${OIDC_JWK_STORE_PATH:./oidc-jwk.json}
+

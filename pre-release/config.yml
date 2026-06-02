@@ -88,6 +88,3 @@ sys:
     revocation-endpoint: /oauth2/revoke
     introspection-endpoint: /oauth2/introspect
     logout-endpoint: /connect/logout
-    jwk:
-      key-id: ${OIDC_JWK_KEY_ID:oidc-key-1}
-      key-store-path: ${OIDC_JWK_STORE_PATH:./oidc-jwk.json}
