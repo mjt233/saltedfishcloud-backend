@@ -22,8 +22,8 @@ public interface FileInfoRepo extends BaseRepo<FileInfo> {
         FROM FileInfo f
         LEFT JOIN FileInfo f2 ON f.node = f2.md5
         WHERE f.uid = :uid
-        AND f.name
-        LIKE CONCAT('%', :key, '%')
+        AND LOWER(f.name)
+        LIKE LOWER(CONCAT('%', :key, '%'))
     """)
     Page<FileInfoSearchResult> search(@Param("uid") Long uid, @Param("key") String key, Pageable pageable);
 
