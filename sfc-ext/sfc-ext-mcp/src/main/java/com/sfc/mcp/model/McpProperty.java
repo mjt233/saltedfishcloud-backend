@@ -21,4 +21,11 @@ public class McpProperty {
             defaultValue = "/api/openApi/diskFile/upload/v1"
     )
     private String oauthUploadApiUrl;
+
+    @ConfigProperty(
+            title = "文件下载的OAuth接口URL",
+            describe = "MCP 服务会通过 Prompt 引导 Agent 使用该接口下载文件",
+            defaultValue = "/api/openApi/diskFile/download/v1"
+    )
+    private String oauthDownloadApiUrl;
 }

@@ -74,11 +74,10 @@ nav:
       - 插件前端开发: develop/plugin/create-front-end.md
   - OAuth开放平台:
     - 概述: oauth/index.md
+    - OIDC 认证: oauth/oidc.md
+    - 实现参考: oauth/impl-ref.md
     - 开放接口列表:
       - 概述与统一规范: oauth/api/index.md
-      - 授权与认证:
-        - 获取Access Token: oauth/api/auth/get-access-token.md
-        - 获取ApiTicket: oauth/api/auth/get-api-ticket.md
       - 用户相关接口:
         - 获取用户基本信息: oauth/api/user/profile.md
       - 网盘存储相关接口:
