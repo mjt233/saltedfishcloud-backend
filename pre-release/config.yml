@@ -74,3 +74,17 @@ sys:
       url: ${HDFS_URL:hdfs://localhost:9000}
       root: ${HDFS_ROOT:/xyy2}
       user: ${HDFS_USER:xiaotao}
+
+  # OIDC/OAuth2 授权服务器配置
+  oidc:
+    # 是否启用内置 OIDC 授权服务器
+    enabled: false
+    authorization-endpoint: /oauth2/authorize
+    token-endpoint: /oauth2/token
+    device-authorization-endpoint: /oauth2/device_authorization
+    device-verification-endpoint: /oauth2/device_verification
+    user-info-endpoint: /oauth2/userinfo
+    jwk-set-endpoint: /oauth2/jwks
+    revocation-endpoint: /oauth2/revoke
+    introspection-endpoint: /oauth2/introspect
+    logout-endpoint: /connect/logout

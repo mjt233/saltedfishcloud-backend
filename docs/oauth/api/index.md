@@ -1,15 +1,17 @@
 # 开放接口列表
 
-本文档列出了咸鱼云网盘开放平台提供的API接口。所有接口都需要使用ApiTicket进行身份验证。
+本文档列出了咸鱼云网盘开放平台的标准 OAuth 2.1 / OIDC 接口。
+
+如果您接入的是标准 OIDC / OAuth 2.1 客户端，请优先阅读：[OIDC Provider 支持](../oidc.md)。
 
 ## 接口调用规范
 
 ### 1. 请求头要求
 
-所有开放接口请求必须在请求头中包含ApiTicket：
+所有开放接口请求必须在请求头中包含标准 Bearer Token：
 
 ```http
-Authorization: ApiTicket {api_ticket}
+Authorization: Bearer {access_token}
 Content-Type: application/json
 ```
 
@@ -62,12 +64,9 @@ Content-Type: application/json
 | `60003` | 应用已被停用 | 400 |
 | `60004` | 未授权的操作 | 403 |
 | `60005` | Client Secret验证失败 | 400 |
-| `60006` | 当前应用不允许申请永久ApiTicket | 400 |
 
 
 ## 相关文档
 
+- [OIDC Provider 支持](../oidc.md): 标准 OIDC / OAuth 2.1 端点说明
 - [OAuth授权流程](../index.md): 完整的授权流程说明
-- [授权确认接口](auth/authorize.md): 用户确认授权并获取授权码
-- [获取Access Token接口](auth/get-access-token.md): 获取Access Token
-- [获取ApiTicket接口](auth/get-api-ticket.md): 获取ApiTicket

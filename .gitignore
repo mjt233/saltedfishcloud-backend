@@ -47,4 +47,7 @@ sfc-web/src/main/resources/application.yml
 /localcache.data
 
 log/**
-.log
+*.log
+*.data
+*.db
+settings.local.json
