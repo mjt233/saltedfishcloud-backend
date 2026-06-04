@@ -14,8 +14,11 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
@@ -25,12 +28,110 @@ import java.util.Collections;
 @Slf4j
 public class ProxyDhcpServer implements SmartLifecycle {
 
+    /**
+     * 日志前缀。
+     */
     private static final String LOG_PREFIX = "[PXE-ProxyDHCP]";
-    private static final int DHCP_PORT = 4011;
+
+    /**
+     * DHCP 服务器监听端口。
+     */
+    private static final int DHCP_PORT = 67;
+
+    /**
+     * DHCP 客户端端口。
+     */
+    private static final int DHCP_CLIENT_PORT = 68;
+
+    /**
+     * 报文缓存大小。
+     */
+    private static final int MAX_PACKET_SIZE = 1500;
+
+    /**
+     * BOOTP 固定报文长度（不含 DHCP options）。
+     */
+    private static final int BOOTP_FIXED_LEN = 236;
+
+    /**
+     * DHCP magic cookie。
+     */
     private static final int DHCP_MAGIC_COOKIE = 0x63825363;
-    private static final byte OPTION_PXE_CLIENT = 60;
-    private static final byte OPTION_TFTP_SERVER = 66;
-    private static final byte OPTION_BOOTFILE = 67;
+
+    /**
+     * DHCP option: 消息类型。
+     */
+    private static final int OPTION_MESSAGE_TYPE = 53;
+
+    /**
+     * DHCP option: 服务器标识。
+     */
+    private static final int OPTION_SERVER_IDENTIFIER = 54;
+
+    /**
+     * DHCP option: Vendor Class Identifier。
+     */
+    private static final int OPTION_VENDOR_CLASS_IDENTIFIER = 60;
+
+    /**
+     * DHCP option: TFTP 服务器名。
+     */
+    private static final int OPTION_TFTP_SERVER_NAME = 66;
+
+    /**
+     * DHCP option: 引导文件名。
+     */
+    private static final int OPTION_BOOTFILE_NAME = 67;
+
+    /**
+     * DHCP option: 填充。
+     */
+    private static final int OPTION_PAD = 0;
+
+    /**
+     * DHCP option: 结束。
+     */
+    private static final int OPTION_END = 255;
+
+    /**
+     * DHCP 消息类型：DISCOVER。
+     */
+    private static final byte DHCP_DISCOVER = 1;
+
+    /**
+     * DHCP 消息类型：OFFER。
+     */
+    private static final byte DHCP_OFFER = 2;
+
+    /**
+     * DHCP 消息类型：REQUEST。
+     */
+    private static final byte DHCP_REQUEST = 3;
+
+    /**
+     * DHCP 消息类型：ACK。
+     */
+    private static final byte DHCP_ACK = 5;
+
+    /**
+     * BOOTP 响应操作码。
+     */
+    private static final byte BOOTREPLY_OP = 2;
+
+    /**
+     * 广播标记。
+     */
+    private static final short FLAG_BROADCAST = (short) 0x8000;
+
+    /**
+     * PXE VendorClass 前缀。
+     */
+    private static final String PXE_VENDOR_PREFIX = "PXEClient";
+
+    /**
+     * IPv4 0 地址字节表示。
+     */
+    private static final byte[] ZERO_IPV4_BYTES = new byte[]{0, 0, 0, 0};
 
     @Autowired
     private PxeBootProperty property;
@@ -38,17 +139,132 @@ public class ProxyDhcpServer implements SmartLifecycle {
     @Autowired
     private ConfigService configService;
 
+    /**
+     * 当前 UDP 监听 socket。
+     */
     private DatagramSocket socket;
+
+    /**
+     * 监听线程。
+     */
     private Thread listenerThread;
+
+    /**
+     * 当前运行状态。
+     */
     private volatile boolean running = false;
+
+    /**
+     * 当前下发给客户端的 TFTP 服务器地址。
+     */
+    private volatile Inet4Address tftpServerAddress;
+
+    /**
+     * 当前下发给客户端的引导文件路径。
+     */
+    private volatile String bootFilePath;
+
+    /**
+     * DHCP 请求解析上下文。
+     */
+    @SuppressWarnings("ClassCanBeRecord")
+    private static class DhcpRequestContext {
+
+        /**
+         * 事务 ID。
+         */
+        private final int transactionId;
+
+        /**
+         * 硬件类型。
+         */
+        private final byte hardwareType;
+
+        /**
+         * 硬件地址长度。
+         */
+        private final byte hardwareAddressLength;
+
+        /**
+         * BOOTP 标志位。
+         */
+        private final short flags;
+
+        /**
+         * 客户端地址（ciaddr）。
+         */
+        private final InetAddress clientAddress;
+
+        /**
+         * 中继地址（giaddr）。
+         */
+        private final InetAddress relayAddress;
+
+        /**
+         * 客户端硬件地址（chaddr）。
+         */
+        private final byte[] clientHardwareAddress;
+
+        /**
+         * DHCP 消息类型。
+         */
+        private final byte messageType;
+
+        /**
+         * Vendor Class Identifier。
+         */
+        private final String vendorClassIdentifier;
+
+        /**
+         * 构造 DHCP 请求上下文。
+         *
+         * @param transactionId 事务 ID
+         * @param hardwareType 硬件类型
+         * @param hardwareAddressLength 硬件地址长度
+         * @param flags BOOTP 标志位
+         * @param clientAddress 客户端地址
+         * @param relayAddress 中继地址
+         * @param clientHardwareAddress 客户端硬件地址
+         * @param messageType DHCP 消息类型
+         * @param vendorClassIdentifier Vendor Class Identifier
+         */
+        private DhcpRequestContext(int transactionId,
+                                   byte hardwareType,
+                                   byte hardwareAddressLength,
+                                   short flags,
+                                   InetAddress clientAddress,
+                                   InetAddress relayAddress,
+                                   byte[] clientHardwareAddress,
+                                   byte messageType,
+                                   String vendorClassIdentifier) {
+            this.transactionId = transactionId;
+            this.hardwareType = hardwareType;
+            this.hardwareAddressLength = hardwareAddressLength;
+            this.flags = flags;
+            this.clientAddress = clientAddress;
+            this.relayAddress = relayAddress;
+            this.clientHardwareAddress = clientHardwareAddress;
+            this.messageType = messageType;
+            this.vendorClassIdentifier = vendorClassIdentifier;
+        }
+
+        /**
+         * 是否要求广播响应。
+         *
+         * @return true 表示要求广播
+         */
+        private boolean isBroadcastExpected() {
+            return (flags & FLAG_BROADCAST) == FLAG_BROADCAST;
+        }
+    }
 
     /**
      * 监听 ProxyDHCP 开关配置变更，动态启停服务
      */
     @PostConstruct
     public void init() {
-        configService.addAfterSetListener("pxe-boot.enable-proxydhcp", newVal -> {
-            if (Boolean.parseBoolean(newVal)) {
+        configService.addAfterSetListener(PxeBootProperty::getEnableProxyDhcp, newVal -> {
+            if (Boolean.TRUE.equals(newVal)) {
                 start();
             } else {
                 stop();
@@ -62,32 +278,59 @@ public class ProxyDhcpServer implements SmartLifecycle {
             return;
         }
 
-        if (!property.getEnableProxyDhcp()) {
+        if (!Boolean.TRUE.equals(property.getEnableProxyDhcp())) {
             log.info("{} ProxyDHCP 未启用", LOG_PREFIX);
             return;
         }
 
+        String listenAddress = normalizeListenAddress(property.getProxyDhcpListenAddr());
+        Inet4Address resolvedTftpAddress = resolveTftpServerAddress(listenAddress);
+        if (resolvedTftpAddress == null) {
+            log.warn("{} 未找到可用的 TFTP 服务器地址，ProxyDHCP 将以无 TFTP 模式启动", LOG_PREFIX);
+        }
+
+        String resolvedBootFilePath = normalizeBootFilePath(property.getIpxeBinaryPath());
         try {
-            socket = new DatagramSocket(new InetSocketAddress(property.getProxyDhcpListenAddr(), DHCP_PORT));
+            DatagramSocket newSocket = new DatagramSocket(null);
+            newSocket.setReuseAddress(true);
+            newSocket.setBroadcast(true);
+            newSocket.bind(new InetSocketAddress(listenAddress, DHCP_PORT));
+
+            socket = newSocket;
+            tftpServerAddress = resolvedTftpAddress;
+            bootFilePath = resolvedBootFilePath;
             running = true;
-            listenerThread = new Thread(this::listen, "PXE-ProxyDHCP-Listener");
+
+            listenerThread = new Thread(this::listenLoop, "PXE-ProxyDHCP-Listener");
             listenerThread.setDaemon(true);
             listenerThread.start();
-            log.info("{} ProxyDHCP 服务已启动，监听 {}:{}", LOG_PREFIX, property.getProxyDhcpListenAddr(), DHCP_PORT);
+
+            String tftpAddressDisplay = resolvedTftpAddress == null ? "<未设置>" : resolvedTftpAddress.getHostAddress();
+            log.info("{} ProxyDHCP 服务已启动，监听 {}:{}，TFTP={}，bootFile={}",
+                LOG_PREFIX, listenAddress, DHCP_PORT, tftpAddressDisplay, resolvedBootFilePath);
         } catch (IOException e) {
+            closeSocketQuietly();
+            running = false;
+            tftpServerAddress = null;
+            bootFilePath = null;
             log.error("{} ProxyDHCP 服务启动失败: {}", LOG_PREFIX, e.getMessage(), e);
         }
     }
 
     @Override
     public synchronized void stop() {
-        running = false;
-        if (socket != null && !socket.isClosed()) {
-            socket.close();
+        if (!running && socket == null && listenerThread == null) {
+            return;
         }
+
+        running = false;
+        closeSocketQuietly();
         if (listenerThread != null) {
             listenerThread.interrupt();
+            listenerThread = null;
         }
+        tftpServerAddress = null;
+        bootFilePath = null;
         log.info("{} ProxyDHCP 服务已停止", LOG_PREFIX);
     }
 
@@ -101,216 +344,422 @@ public class ProxyDhcpServer implements SmartLifecycle {
         return 0;
     }
 
-    private void listen() {
+    /**
+     * 主监听循环。
+     */
+    private void listenLoop() {
         while (running) {
             try {
-                byte[] buffer = new byte[1024];
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                socket.receive(packet);
+                DatagramSocket activeSocket = socket;
+                if (activeSocket == null || activeSocket.isClosed()) {
+                    return;
+                }
+                DatagramPacket packet = new DatagramPacket(new byte[MAX_PACKET_SIZE], MAX_PACKET_SIZE);
+                activeSocket.receive(packet);
                 handlePacket(packet);
             } catch (IOException e) {
                 if (running) {
-                    log.error("{} 接收数据包失败: {}", LOG_PREFIX, e.getMessage());
+                    log.error("{} 接收 DHCP 报文失败: {}", LOG_PREFIX, e.getMessage(), e);
                 }
             }
         }
     }
 
+    /**
+     * 处理单个 DHCP 请求报文。
+     *
+     * @param packet 请求报文
+     */
     private void handlePacket(DatagramPacket packet) {
-        // DHCP 最小包：236 字节固定头 + 4 字节 magic cookie
-        if (packet.getLength() < 240) {
-            return;
-        }
-
-        ByteBuffer buffer = ByteBuffer.wrap(packet.getData(), 0, packet.getLength());
-
         try {
-            // 解析 DHCP 包
-            byte op = buffer.get();          // 操作码
-            byte htype = buffer.get();       // 硬件类型
-            byte hlen = buffer.get();        // 硬件地址长度
-            byte hops = buffer.get();        // 跳数
-            int xid = buffer.getInt();       // 事务 ID
-            short secs = buffer.getShort();  // 秒数
-            short flags = buffer.getShort(); // 标志
-            int ciaddr = buffer.getInt();    // 客户端 IP
-            int yiaddr = buffer.getInt();    // 你的 IP
-            int siaddr = buffer.getInt();    // 服务器 IP
-            int giaddr = buffer.getInt();    // 网关 IP
-
-            // 仅处理以太网（htype=1, hlen=6）
-            if (htype != 1 || hlen != 6) {
+            DhcpRequestContext request = parseRequest(packet);
+            if (request == null || !isTargetPxeRequest(request)) {
                 return;
             }
 
-            // 读取客户端 MAC 地址（16 字节）
-            byte[] chaddr = new byte[16];
-            buffer.get(chaddr);
+            byte responseType = resolveResponseMessageType(request.messageType);
+            byte[] responseData = buildResponsePacket(request, responseType);
+            InetSocketAddress targetAddress = resolveResponseAddress(request);
 
-            // 跳过 server name 和 boot file（共 192 字节）
-            buffer.position(buffer.position() + 192);
+            DatagramSocket activeSocket = socket;
+            if (activeSocket == null || activeSocket.isClosed()) {
+                return;
+            }
+            activeSocket.send(new DatagramPacket(responseData, responseData.length, targetAddress));
 
-            // 检查 magic cookie
-            int magic = buffer.getInt();
-            if (magic != DHCP_MAGIC_COOKIE) {
-                return; // 不是 DHCP 包
+            log.debug("{} 已响应 PXE 请求: xid={}, vendor={}, type={}, target={}",
+                LOG_PREFIX,
+                Integer.toUnsignedString(request.transactionId),
+                request.vendorClassIdentifier,
+                Byte.toUnsignedInt(request.messageType),
+                targetAddress);
+        } catch (Exception e) {
+            log.warn("{} 处理 DHCP 请求失败: {}", LOG_PREFIX, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 解析 DHCP 请求报文。
+     *
+     * @param packet 请求报文
+     * @return 解析结果，不可识别时返回 null
+     */
+    private DhcpRequestContext parseRequest(DatagramPacket packet) {
+        try {
+            ByteBuffer buffer = ByteBuffer.wrap(packet.getData(), 0, packet.getLength());
+            if (buffer.remaining() < BOOTP_FIXED_LEN + Integer.BYTES) {
+                return null;
             }
 
-            // 解析 DHCP 选项
-            boolean isPxeClient = false;
-            while (buffer.hasRemaining()) {
-                byte optionCode = buffer.get();
-                if (optionCode == (byte) 0xFF) {
-                    break; // 结束选项
-                }
-                if (optionCode == 0) {
-                    continue; // 填充选项
-                }
+            byte op = buffer.get();
+            if (op != 1) {
+                return null;
+            }
+            byte hardwareType = buffer.get();
+            byte hardwareAddressLength = buffer.get();
+            buffer.get();
 
+            int transactionId = buffer.getInt();
+            buffer.getShort();
+            short flags = buffer.getShort();
+
+            InetAddress clientAddress = readIpv4Address(buffer);
+            readIpv4Address(buffer);
+            readIpv4Address(buffer);
+            InetAddress relayAddress = readIpv4Address(buffer);
+
+            byte[] clientHardwareAddress = new byte[16];
+            buffer.get(clientHardwareAddress);
+            buffer.position(buffer.position() + 64 + 128);
+
+            int magicCookie = buffer.getInt();
+            if (magicCookie != DHCP_MAGIC_COOKIE) {
+                return null;
+            }
+
+            byte messageType = 0;
+            String vendorClassIdentifier = "";
+            while (buffer.hasRemaining()) {
+                int optionCode = Byte.toUnsignedInt(buffer.get());
+                if (optionCode == OPTION_PAD) {
+                    continue;
+                }
+                if (optionCode == OPTION_END) {
+                    break;
+                }
                 if (!buffer.hasRemaining()) {
                     break;
                 }
-                byte optionLen = buffer.get();
-                if (optionLen < 0 || buffer.remaining() < (optionLen & 0xFF)) {
-                    break; // 选项长度越界
+                int optionLength = Byte.toUnsignedInt(buffer.get());
+                if (buffer.remaining() < optionLength) {
+                    break;
                 }
-                byte[] optionData = new byte[optionLen & 0xFF];
-                buffer.get(optionData);
-
-                if (optionCode == OPTION_PXE_CLIENT) {
-                    String vendorClass = new String(optionData);
-                    if (vendorClass.contains("PXEClient")) {
-                        isPxeClient = true;
-                    }
+                byte[] optionValue = new byte[optionLength];
+                buffer.get(optionValue);
+                if (optionCode == OPTION_MESSAGE_TYPE && optionLength > 0) {
+                    messageType = optionValue[0];
+                } else if (optionCode == OPTION_VENDOR_CLASS_IDENTIFIER) {
+                    vendorClassIdentifier = new String(optionValue, StandardCharsets.US_ASCII).trim();
                 }
             }
 
-            // 只响应 PXE 客户端
-            if (!isPxeClient) {
-                return;
-            }
-
-            // 发送 ProxyDHCP 响应
-            sendProxyDhcpResponse(packet, chaddr, xid);
-        } catch (BufferUnderflowException e) {
-            log.debug("{} 数据包格式异常，已忽略", LOG_PREFIX);
-        }
-    }
-
-    private void sendProxyDhcpResponse(DatagramPacket clientPacket, byte[] chaddr, int xid) {
-        try {
-            String tftpAddr = property.getTftpServerAddr();
-            if (tftpAddr == null || tftpAddr.isBlank()) {
-                tftpAddr = detectLanIp();
-            }
-            if (tftpAddr == null || tftpAddr.isBlank()) {
-                tftpAddr = property.getProxyDhcpListenAddr();
-            }
-            if (tftpAddr == null || tftpAddr.isBlank() || isWildcardAddress(tftpAddr)) {
-                log.error("{} 未配置有效的 TFTP 服务器地址，请设置 tftp-server-addr，当前 proxydhcp-listen-addr={}", LOG_PREFIX, property.getProxyDhcpListenAddr());
-                return;
-            }
-
-            byte[] tftpAddrBytes = tftpAddr.getBytes();
-            String bootFile = "ipxe.pxe";
-            byte[] bootFileBytes = bootFile.getBytes();
-
-            // 构建 DHCP 响应
-            ByteBuffer buffer = ByteBuffer.allocate(512);
-            buffer.put((byte) 0x02);           // BOOTP reply
-            buffer.put((byte) 0x01);           // Ethernet
-            buffer.put((byte) 0x06);           // MAC 长度
-            buffer.put((byte) 0x00);           // hops
-            buffer.putInt(xid);                 // 事务 ID
-            buffer.putShort((short) 0);         // secs
-            buffer.putShort((short) 0);         // flags
-            buffer.putInt(0);                   // ciaddr
-            buffer.putInt(0);                   // yiaddr
-            buffer.putInt(0);                   // siaddr
-            buffer.putInt(0);                   // giaddr
-            buffer.put(chaddr);                 // chaddr
-            buffer.put(new byte[16 - chaddr.length]); // padding
-
-            // server name (64 bytes)
-            byte[] serverName = "SFC-PXE".getBytes();
-            buffer.put(serverName);
-            buffer.put(new byte[64 - serverName.length]);
-
-            // boot file (128 bytes)
-            buffer.put(bootFileBytes);
-            buffer.put(new byte[128 - bootFileBytes.length]);
-
-            // magic cookie
-            buffer.putInt(DHCP_MAGIC_COOKIE);
-
-            // DHCP 选项
-            // Option 53: DHCP Message Type = OFFER
-            buffer.put((byte) 53);
-            buffer.put((byte) 1);
-            buffer.put((byte) 2); // OFFER
-
-            // Option 54: Server Identifier
-            buffer.put((byte) 54);
-            buffer.put((byte) 4);
-            buffer.put(clientPacket.getAddress().getAddress());
-
-            // Option 66: TFTP Server Name
-            buffer.put((byte) OPTION_TFTP_SERVER);
-            buffer.put((byte) tftpAddrBytes.length);
-            buffer.put(tftpAddrBytes);
-
-            // Option 67: Bootfile Name
-            buffer.put((byte) OPTION_BOOTFILE);
-            buffer.put((byte) bootFileBytes.length);
-            buffer.put(bootFileBytes);
-
-            // Option 255: End
-            buffer.put((byte) 0xFF);
-
-            // 发送响应
-            byte[] data = new byte[buffer.position()];
-            buffer.flip();
-            buffer.get(data);
-
-            DatagramPacket response = new DatagramPacket(
-                data, data.length,
-                clientPacket.getAddress(), DHCP_PORT
+            return new DhcpRequestContext(
+                transactionId,
+                hardwareType,
+                hardwareAddressLength,
+                flags,
+                clientAddress,
+                relayAddress,
+                clientHardwareAddress,
+                messageType,
+                vendorClassIdentifier
             );
-            socket.send(response);
-
-            log.info("{} 已发送 ProxyDHCP 响应到 {}", LOG_PREFIX, clientPacket.getAddress());
-        } catch (IOException e) {
-            log.error("{} 发送 ProxyDHCP 响应失败", LOG_PREFIX, e);
+        } catch (BufferUnderflowException | IOException e) {
+            log.debug("{} DHCP 报文解析失败: {}", LOG_PREFIX, e.getMessage());
+            return null;
         }
     }
 
     /**
-     * 判断地址是否为通配监听地址，通配地址不能直接下发给 PXE 客户端。
+     * 判断是否为目标 PXE 请求。
+     *
+     * @param request 请求上下文
+     * @return true 表示应当响应
      */
-    private boolean isWildcardAddress(String address) {
-        return "0.0.0.0".equals(address) || "::".equals(address) || "[::]".equals(address);
+    private boolean isTargetPxeRequest(DhcpRequestContext request) {
+        if (request.messageType != DHCP_DISCOVER && request.messageType != DHCP_REQUEST) {
+            return false;
+        }
+        return request.vendorClassIdentifier != null && request.vendorClassIdentifier.startsWith(PXE_VENDOR_PREFIX);
     }
 
     /**
-     * 自动检测服务器局域网 IPv4 地址
+     * 根据请求消息类型计算响应消息类型。
+     *
+     * @param requestType 请求消息类型
+     * @return 响应消息类型
      */
-    private String detectLanIp() {
+    private byte resolveResponseMessageType(byte requestType) {
+        if (requestType == DHCP_DISCOVER) {
+            return DHCP_OFFER;
+        }
+        return DHCP_ACK;
+    }
+
+    /**
+     * 构建 DHCP 响应报文。
+     *
+     * @param request 请求上下文
+     * @param responseType 响应消息类型
+     * @return DHCP 响应报文字节数组
+     */
+    private byte[] buildResponsePacket(DhcpRequestContext request, byte responseType) {
+        Inet4Address effectiveTftpAddress = tftpServerAddress;
+        String effectiveBootFilePath = bootFilePath;
+        if (effectiveBootFilePath == null) {
+            throw new IllegalStateException("引导文件路径不可为空");
+        }
+
+        ByteBuffer buffer = ByteBuffer.allocate(MAX_PACKET_SIZE);
+        buffer.put(BOOTREPLY_OP);
+        buffer.put(request.hardwareType);
+        buffer.put(request.hardwareAddressLength);
+        buffer.put((byte) 0);
+        buffer.putInt(request.transactionId);
+        buffer.putShort((short) 0);
+        buffer.putShort(request.flags);
+        buffer.putInt(0);
+        buffer.putInt(0);
+        byte[] tftpAddressBytes = effectiveTftpAddress == null ? ZERO_IPV4_BYTES : effectiveTftpAddress.getAddress();
+        buffer.put(tftpAddressBytes);
+        buffer.put(request.relayAddress.getAddress());
+
+        byte[] paddedHardwareAddress = new byte[16];
+        System.arraycopy(
+            request.clientHardwareAddress,
+            0,
+            paddedHardwareAddress,
+            0,
+            Math.min(request.clientHardwareAddress.length, paddedHardwareAddress.length)
+        );
+        buffer.put(paddedHardwareAddress);
+
+        buffer.put(new byte[64]);
+        byte[] bootFileFieldBytes = toAsciiBytes(effectiveBootFilePath, 127, "bootfile 字段");
+        buffer.put(bootFileFieldBytes);
+        buffer.put((byte) 0);
+        buffer.put(new byte[128 - bootFileFieldBytes.length - 1]);
+
+        buffer.putInt(DHCP_MAGIC_COOKIE);
+        writeOption(buffer, OPTION_MESSAGE_TYPE, new byte[]{responseType});
+        writeOption(buffer, OPTION_SERVER_IDENTIFIER, resolveServerIdentifierBytes(effectiveTftpAddress));
+        if (effectiveTftpAddress != null) {
+            writeOption(buffer, OPTION_TFTP_SERVER_NAME, toAsciiBytes(effectiveTftpAddress.getHostAddress(), 255, "option 66"));
+        }
+        writeOption(buffer, OPTION_BOOTFILE_NAME, toAsciiBytes(effectiveBootFilePath, 255, "option 67"));
+        buffer.put((byte) OPTION_END);
+
+        return Arrays.copyOf(buffer.array(), buffer.position());
+    }
+
+    /**
+     * 计算响应目标地址。
+     *
+     * @param request 请求上下文
+     * @return 目标 socket 地址
+     */
+    private InetSocketAddress resolveResponseAddress(DhcpRequestContext request) {
+        if (!isZeroAddress(request.relayAddress)) {
+            return new InetSocketAddress(request.relayAddress, DHCP_PORT);
+        }
+        if (request.isBroadcastExpected() || isZeroAddress(request.clientAddress)) {
+            return new InetSocketAddress("255.255.255.255", DHCP_CLIENT_PORT);
+        }
+        return new InetSocketAddress(request.clientAddress, DHCP_CLIENT_PORT);
+    }
+
+    /**
+     * 写入一个 DHCP option。
+     *
+     * @param buffer 目标缓冲区
+     * @param optionCode option 编码
+     * @param value option 数据
+     */
+    private void writeOption(ByteBuffer buffer, int optionCode, byte[] value) {
+        int length = Math.min(value.length, 255);
+        if (length != value.length) {
+            log.warn("{} DHCP option={} 数据长度超过255，已截断", LOG_PREFIX, optionCode);
+        }
+        buffer.put((byte) optionCode);
+        buffer.put((byte) length);
+        buffer.put(value, 0, length);
+    }
+
+    /**
+     * 读取一个 IPv4 地址。
+     *
+     * @param buffer 数据缓冲区
+     * @return IPv4 地址
+     * @throws IOException 解析失败
+     */
+    private InetAddress readIpv4Address(ByteBuffer buffer) throws IOException {
+        byte[] bytes = new byte[4];
+        buffer.get(bytes);
+        return InetAddress.getByAddress(bytes);
+    }
+
+    /**
+     * 判断地址是否为 0.0.0.0。
+     *
+     * @param address 待判断地址
+     * @return true 表示为 0 地址
+     */
+    private boolean isZeroAddress(InetAddress address) {
+        if (address == null) {
+            return true;
+        }
+        byte[] raw = address.getAddress();
+        for (byte value : raw) {
+            if (value != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 获取 DHCP 服务器标识地址。
+     *
+     * @param fallbackAddress 回退地址
+     * @return 服务器标识地址
+     */
+    private byte[] resolveServerIdentifierBytes(Inet4Address fallbackAddress) {
+        DatagramSocket activeSocket = socket;
+        if (activeSocket != null) {
+            InetAddress localAddress = activeSocket.getLocalAddress();
+            if (localAddress instanceof Inet4Address ipv4 && !ipv4.isAnyLocalAddress()) {
+                return ipv4.getAddress();
+            }
+        }
+        if (fallbackAddress != null) {
+            return fallbackAddress.getAddress();
+        }
+        return ZERO_IPV4_BYTES;
+    }
+
+    /**
+     * 解析 TFTP 服务器地址。
+     *
+     * @param listenAddress 监听地址
+     * @return 可用 IPv4 地址，若无可用地址返回 null
+     */
+    private Inet4Address resolveTftpServerAddress(String listenAddress) {
+        Inet4Address configuredAddress = parseIpv4Address(property.getTftpServerAddr());
+        if (configuredAddress != null) {
+            return configuredAddress;
+        }
+
+        Inet4Address listenIpv4 = parseIpv4Address(listenAddress);
+        if (listenIpv4 != null && !listenIpv4.isAnyLocalAddress()) {
+            return listenIpv4;
+        }
+
         try {
-            for (NetworkInterface iface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                if (!iface.isUp() || iface.isLoopback()) {
+            for (NetworkInterface networkInterface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                if (!networkInterface.isUp() || networkInterface.isLoopback() || networkInterface.isVirtual()) {
                     continue;
                 }
-                for (InetAddress addr : Collections.list(iface.getInetAddresses())) {
-                    if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
-                        String ip = addr.getHostAddress();
-                        log.debug("{} 检测到局域网 IP: {}", LOG_PREFIX, ip);
-                        return ip;
+                for (InetAddress address : Collections.list(networkInterface.getInetAddresses())) {
+                    if (address instanceof Inet4Address ipv4
+                        && !ipv4.isAnyLocalAddress()
+                        && !ipv4.isLoopbackAddress()
+                        && !ipv4.isLinkLocalAddress()) {
+                        return ipv4;
                     }
                 }
             }
-        } catch (Exception e) {
-            log.warn("{} 自动检测局域网 IP 失败", LOG_PREFIX, e);
+        } catch (SocketException e) {
+            log.error("{} 解析网卡地址失败: {}", LOG_PREFIX, e.getMessage(), e);
         }
         return null;
+    }
+
+    /**
+     * 将字符串解析为 IPv4 地址。
+     *
+     * @param rawAddress 原始地址文本
+     * @return IPv4 地址，解析失败返回 null
+     */
+    private Inet4Address parseIpv4Address(String rawAddress) {
+        if (rawAddress == null || rawAddress.isBlank()) {
+            return null;
+        }
+        try {
+            InetAddress address = InetAddress.getByName(rawAddress.trim());
+            if (address instanceof Inet4Address ipv4) {
+                return ipv4;
+            }
+            log.warn("{} 地址 [{}] 非 IPv4，已忽略", LOG_PREFIX, rawAddress);
+            return null;
+        } catch (IOException e) {
+            log.warn("{} 地址 [{}] 解析失败，已忽略: {}", LOG_PREFIX, rawAddress, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 规范化监听地址。
+     *
+     * @param listenAddress 监听地址
+     * @return 规范化后的监听地址
+     */
+    private String normalizeListenAddress(String listenAddress) {
+        if (listenAddress == null || listenAddress.isBlank()) {
+            return "0.0.0.0";
+        }
+        return listenAddress.trim();
+    }
+
+    /**
+     * 规范化引导文件路径。
+     *
+     * @param rawBootFilePath 原始路径
+     * @return 规范化后的路径
+     */
+    private String normalizeBootFilePath(String rawBootFilePath) {
+        String normalizedPath = (rawBootFilePath == null || rawBootFilePath.isBlank()) ? "/ipxe.pxe" : rawBootFilePath.trim();
+        normalizedPath = normalizedPath.replace('\\', '/');
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+        return normalizedPath;
+    }
+
+    /**
+     * 将字符串转换为 ASCII 字节数组并按长度截断。
+     *
+     * @param value 原始字符串
+     * @param maxLength 最大长度
+     * @param fieldName 字段名
+     * @return ASCII 字节数组
+     */
+    private byte[] toAsciiBytes(String value, int maxLength, String fieldName) {
+        byte[] bytes = value.getBytes(StandardCharsets.US_ASCII);
+        if (bytes.length <= maxLength) {
+            return bytes;
+        }
+        log.warn("{} {} 长度超过限制，已截断: {} -> {}", LOG_PREFIX, fieldName, bytes.length, maxLength);
+        return Arrays.copyOf(bytes, maxLength);
+    }
+
+    /**
+     * 安静关闭 socket 资源。
+     */
+    private void closeSocketQuietly() {
+        DatagramSocket activeSocket = socket;
+        socket = null;
+        if (activeSocket != null && !activeSocket.isClosed()) {
+            activeSocket.close();
+        }
     }
 }
