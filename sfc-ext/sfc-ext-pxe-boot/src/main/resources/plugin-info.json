@@ -1,0 +1,15 @@
+{
+  "name": "pxe-boot",
+  "loadType": "merge",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "describe": "提供 PXE/iPXE 网络启动服务，支持从网盘中的 ISO 镜像、目录或内核文件启动局域网客户端",
+  "alias": "PXE 网络启动",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^",
+  "icon": "mdi-lan-connect",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
+}

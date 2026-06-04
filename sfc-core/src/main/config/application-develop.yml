@@ -56,6 +56,7 @@ plugin:
 #    - sfc-ext/sfc-ext-webdav-store
     - sfc-ext/sfc-ext-local-mq
     - sfc-ext/sfc-ext-mcp
+    - sfc-ext/sfc-ext-pxe-boot
 
   # 开发模式下可设置为false 关闭插件前端资源的自动加载
   use-auto-load-resource: false
