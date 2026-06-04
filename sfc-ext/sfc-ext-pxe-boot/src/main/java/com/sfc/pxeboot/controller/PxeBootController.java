@@ -7,6 +7,7 @@ import com.sfc.pxeboot.model.dto.PxeSessionInfo;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.server.ipxe.IpxeScriptEngine;
 import com.sfc.pxeboot.server.iso.IsoHandler;
+import com.sfc.pxeboot.server.proxydhcp.ProxyDhcpServer;
 import com.sfc.pxeboot.server.tftp.PxeTftpServer;
 import com.sfc.pxeboot.service.BootItemService;
 import com.sfc.pxeboot.service.BootMenuManager;
@@ -14,20 +15,22 @@ import com.sfc.pxeboot.service.PxeSessionTracker;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRange;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StreamUtils;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -36,7 +39,6 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/pxeBoot")
-@RolesAllowed("ADMIN")
 public class PxeBootController {
 
     @Autowired
@@ -58,6 +60,9 @@ public class PxeBootController {
     private IpxeScriptEngine ipxeScriptEngine;
 
     @Autowired
+    private ProxyDhcpServer proxyDhcpServer;
+
+    @Autowired
     private DiskFileSystemManager diskFileSystemManager;
 
     @Autowired
@@ -69,11 +74,12 @@ public class PxeBootController {
      * 获取 PXE 服务状态
      */
     @GetMapping("status")
+    @RolesAllowed("ADMIN")
     public JsonResult<PxeServiceStatus> status() {
         PxeServiceStatus status = PxeServiceStatus.builder()
             .tftpRunning(pxeTftpServer.isRunning())
             .httpRunning(true) // HTTP 服务始终运行（复用主应用）
-            .proxyDhcpRunning(false) // TODO: 添加 ProxyDHCP 状态
+            .proxyDhcpRunning(proxyDhcpServer.isRunning())
             .tftpPort(property.getTftpPort())
             .httpPort(0) // 使用主应用端口
             .activeBootItems(bootMenuManager.getActiveItems().size())
@@ -88,6 +94,7 @@ public class PxeBootController {
      * 获取所有启动项
      */
     @GetMapping("items")
+    @RolesAllowed("ADMIN")
     public JsonResult<List<BootItem>> listItems() {
         return JsonResultImpl.getInstance(bootItemService.findAll());
     }
@@ -96,8 +103,9 @@ public class PxeBootController {
      * 创建启动项
      */
     @PostMapping("items")
-    public JsonResult<BootItem> createItem(@RequestBody BootItemDTO dto, @UID Long uid) {
-        BootItem item = bootItemService.create(dto, uid);
+    @RolesAllowed("ADMIN")
+    public JsonResult<BootItem> createItem(@RequestBody BootItemDTO dto, @AuthenticationPrincipal UserPrincipal user) {
+        BootItem item = bootItemService.create(dto, user.getId());
         bootMenuManager.refresh();
         return JsonResultImpl.getInstance(item);
     }
@@ -106,8 +114,10 @@ public class PxeBootController {
      * 更新启动项
      */
     @PutMapping("items/{id}")
+    @RolesAllowed("ADMIN")
     public JsonResult<BootItem> updateItem(@PathVariable Long id, @RequestBody BootItemDTO dto) {
         BootItem item = bootItemService.update(id, dto);
+        UIDValidator.validateWithException(item.getUid(), true);
         bootMenuManager.refresh();
         return JsonResultImpl.getInstance(item);
     }
@@ -116,6 +126,7 @@ public class PxeBootController {
      * 删除启动项
      */
     @DeleteMapping("items/{id}")
+    @RolesAllowed("ADMIN")
     public JsonResult<?> deleteItem(@PathVariable Long id) {
         bootItemService.delete(id);
         bootMenuManager.refresh();
@@ -126,6 +137,7 @@ public class PxeBootController {
      * 启用启动项
      */
     @PostMapping("items/{id}/enable")
+    @RolesAllowed("ADMIN")
     public JsonResult<?> enableItem(@PathVariable Long id) {
         bootItemService.enable(id);
         bootMenuManager.refresh();
@@ -136,6 +148,7 @@ public class PxeBootController {
      * 禁用启动项
      */
     @PostMapping("items/{id}/disable")
+    @RolesAllowed("ADMIN")
     public JsonResult<?> disableItem(@PathVariable Long id) {
         bootItemService.disable(id);
         bootMenuManager.refresh();
@@ -146,6 +159,7 @@ public class PxeBootController {
      * 更新启动项排序
      */
     @PostMapping("items/reorder")
+    @RolesAllowed("ADMIN")
     public JsonResult<?> reorderItems(@RequestBody List<Long> orderedIds) {
         bootItemService.reorder(orderedIds);
         bootMenuManager.refresh();
@@ -158,6 +172,7 @@ public class PxeBootController {
      * 获取活跃的 PXE 会话
      */
     @GetMapping("sessions")
+    @RolesAllowed("ADMIN")
     public JsonResult<List<PxeSessionInfo>> activeSessions() {
         return JsonResultImpl.getInstance(sessionTracker.getActiveSessions());
     }
@@ -168,8 +183,9 @@ public class PxeBootController {
      * 预览 iPXE 菜单脚本
      */
     @GetMapping("menu/preview")
-    public JsonResult<String> previewMenuScript() {
-        String script = ipxeScriptEngine.generateMenuScript("localhost");
+    @RolesAllowed("ADMIN")
+    public JsonResult<String> previewMenuScript(HttpServletRequest request) {
+        String script = ipxeScriptEngine.generateMenuScript(URLUtils.getBaseUrl(request.getRequestURL().toString()));
         return JsonResultImpl.getInstance(script);
     }
 

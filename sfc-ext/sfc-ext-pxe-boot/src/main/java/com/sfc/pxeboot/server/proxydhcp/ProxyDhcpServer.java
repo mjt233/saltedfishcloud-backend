@@ -10,9 +10,13 @@ import org.springframework.context.SmartLifecycle;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 
 /**
  * ProxyDHCP 服务器
@@ -197,6 +201,9 @@ public class ProxyDhcpServer implements SmartLifecycle {
         try {
             String tftpAddr = property.getTftpServerAddr();
             if (tftpAddr == null || tftpAddr.isBlank()) {
+                tftpAddr = detectLanIp();
+            }
+            if (tftpAddr == null || tftpAddr.isBlank()) {
                 tftpAddr = property.getProxyDhcpListenAddr();
             }
             if (tftpAddr == null || tftpAddr.isBlank() || isWildcardAddress(tftpAddr)) {
@@ -282,5 +289,28 @@ public class ProxyDhcpServer implements SmartLifecycle {
      */
     private boolean isWildcardAddress(String address) {
         return "0.0.0.0".equals(address) || "::".equals(address) || "[::]".equals(address);
+    }
+
+    /**
+     * 自动检测服务器局域网 IPv4 地址
+     */
+    private String detectLanIp() {
+        try {
+            for (NetworkInterface iface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                if (!iface.isUp() || iface.isLoopback()) {
+                    continue;
+                }
+                for (InetAddress addr : Collections.list(iface.getInetAddresses())) {
+                    if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
+                        String ip = addr.getHostAddress();
+                        log.debug("{} 检测到局域网 IP: {}", LOG_PREFIX, ip);
+                        return ip;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("{} 自动检测局域网 IP 失败", LOG_PREFIX, e);
+        }
+        return null;
     }
 }

@@ -54,7 +54,7 @@ public class BootMenuManager {
      */
     public Optional<BootItem> getByItemKey(String itemKey) {
         return activeItems.stream()
-            .filter(i -> i.getItemKey().equals(itemKey))
+            .filter(i -> itemKey != null && itemKey.equals(i.getItemKey()))
             .findFirst();
     }
 }

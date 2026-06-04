@@ -24,7 +24,7 @@ public class IpxeScriptEngine {
     /**
      * 生成 iPXE 菜单脚本
      *
-     * @param serverAddress 服务器地址（不含端口，使用主应用端口）
+     * @param serverAddress http服务器地址
      * @return iPXE 脚本内容
      */
     public String generateMenuScript(String serverAddress) {
@@ -65,7 +65,7 @@ public class IpxeScriptEngine {
      */
     private String generateItemBootScript(BootItem item, String serverAddress) {
         // 使用主应用的 HTTP 端口（通过 ${next-server} 变量由 iPXE 自动获取）
-        String baseUrl = "http://" + serverAddress + "/api/pxeBoot/boot";
+        String baseUrl = serverAddress + "/api/pxeBoot/boot";
 
         return switch (item.getType()) {
             case KERNEL_INITRD -> generateKernelBoot(item, baseUrl);

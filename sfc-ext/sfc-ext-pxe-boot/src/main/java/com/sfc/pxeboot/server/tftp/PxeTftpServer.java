@@ -13,6 +13,8 @@ import java.io.InputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -40,6 +42,10 @@ public class PxeTftpServer implements SmartLifecycle {
     @Override
     public void start() {
         if (running) {
+            return;
+        }
+        if (!Boolean.TRUE.equals(property.getEnable())) {
+            log.debug("{} PXE 服务未启用，跳过 TFTP 启动", LOG_PREFIX);
             return;
         }
         try {
@@ -103,65 +109,49 @@ public class PxeTftpServer implements SmartLifecycle {
         String filename = request.getFilename();
         log.info("{} 收到读请求: {} 来自 {}", LOG_PREFIX, filename, request.getAddress());
 
-        try {
-            // 从网盘加载文件
-            byte[] fileData = loadFileFromDisk(filename);
-            if (fileData == null) {
-                sendError(request, TFTPErrorPacket.FILE_NOT_FOUND, "文件不存在: " + filename);
+        try (InputStream fileStream = openFileStream(filename)) {
+            if (fileStream == null) {
+                sendError(request, "文件不存在: " + filename);
                 return;
             }
 
-            // 使用 TFTP 客户端发送数据
-            TFTPClient client = new TFTPClient();
-            client.beginBufferedOps();
+            try (DatagramSocket dataSocket = new DatagramSocket()) {
+                dataSocket.setSoTimeout(5000);
 
-            try {
-                // 发送文件数据
+                byte[] buffer = new byte[BLOCK_SIZE];
+                int bytesRead;
                 int blockNumber = 1;
-                int offset = 0;
-                while (offset < fileData.length) {
-                    int blockSize = Math.min(BLOCK_SIZE, fileData.length - offset);
-                    byte[] blockData = new byte[blockSize];
-                    System.arraycopy(fileData, offset, blockData, 0, blockSize);
+
+                while ((bytesRead = fileStream.read(buffer)) != -1) {
+                    byte[] data = Arrays.copyOf(buffer, bytesRead);
 
                     TFTPDataPacket dataPacket = new TFTPDataPacket(
-                        request.getAddress(),
-                        request.getPort(),
-                        blockNumber,
-                        blockData
-                    );
+                        request.getAddress(), request.getPort(), blockNumber, data);
+                    sendPacket(dataSocket, dataPacket);
 
-                    // 发送数据包并等待 ACK
-                    client.bufferedSend(dataPacket);
-                    TFTPPacket ackPacket = client.bufferedReceive();
-
-                    if (ackPacket.getType() != TFTPPacket.ACKNOWLEDGEMENT) {
-                        log.error("{} 收到非预期的响应: {}", LOG_PREFIX, ackPacket.getType());
+                    if (bytesRead < BLOCK_SIZE) {
                         break;
                     }
 
-                    TFTPAckPacket ack = (TFTPAckPacket) ackPacket;
-                    if (ack.getBlockNumber() != blockNumber) {
-                        log.error("{} ACK 块号不匹配: 期望 {}, 收到 {}", LOG_PREFIX, blockNumber, ack.getBlockNumber());
-                        break;
+                    TFTPPacket ack = receiveAck(dataSocket, blockNumber);
+                    if (ack == null) {
+                        log.warn("{} 未收到 ACK (块号: {}), 传输中断", LOG_PREFIX, blockNumber);
+                        return;
                     }
-
-                    offset += blockSize;
                     blockNumber++;
                 }
 
-                log.info("{} 文件传输完成: {} ({} 字节)", LOG_PREFIX, filename, fileData.length);
-            } finally {
-                client.endBufferedOps();
+                log.info("{} 文件传输完成: {} ({} 块)", LOG_PREFIX, filename, blockNumber);
             }
-
-        } catch (IOException | TFTPPacketException e) {
+        } catch (Exception e) {
             log.error("{} 文件传输失败: {}", LOG_PREFIX, filename, e);
-            sendError(request, TFTPErrorPacket.UNDEFINED, e.getMessage());
         }
     }
 
-    private byte[] loadFileFromDisk(String filename) {
+    /**
+     * 打开网盘文件输入流，用于流式传输
+     */
+    private InputStream openFileStream(String filename) {
         try {
             String normalizedPath = filename.replace("\\", "/");
             if (normalizedPath.startsWith("/")) {
@@ -184,21 +174,54 @@ public class PxeTftpServer implements SmartLifecycle {
                 return null;
             }
 
-            try (InputStream is = resource.getInputStream()) {
-                return is.readAllBytes();
-            }
+            return resource.getInputStream();
         } catch (Exception e) {
-            log.error("{} 加载文件失败: {}", LOG_PREFIX, filename, e);
+            log.error("{} 打开文件流失败: {}", LOG_PREFIX, filename, e);
             return null;
         }
     }
 
-    private void sendError(TFTPReadRequestPacket request, int errorCode, String message) {
+    /**
+     * 发送 TFTP 数据包
+     */
+    private void sendPacket(DatagramSocket socket, TFTPDataPacket packet) throws IOException {
+        DatagramPacket datagram = packet.newDatagram();
+        socket.send(datagram);
+    }
+
+    /**
+     * 接收 TFTP ACK 确认包
+     */
+    private TFTPPacket receiveAck(DatagramSocket socket, int expectedBlock) throws IOException {
+        try {
+            byte[] buf = new byte[BLOCK_SIZE + 4];
+            DatagramPacket packet = new DatagramPacket(buf, buf.length);
+            socket.receive(packet);
+            TFTPPacket tftpPacket = TFTPPacket.newTFTPPacket(packet);
+            if (tftpPacket.getType() == TFTPPacket.ACKNOWLEDGEMENT) {
+                TFTPAckPacket ack = (TFTPAckPacket) tftpPacket;
+                if (ack.getBlockNumber() != expectedBlock) {
+                    log.error("{} ACK 块号不匹配: 期望 {}, 收到 {}", LOG_PREFIX, expectedBlock, ack.getBlockNumber());
+                    return null;
+                }
+                return ack;
+            }
+            return null;
+        } catch (SocketTimeoutException e) {
+            log.warn("{} 等待 ACK 超时 (块号: {})", LOG_PREFIX, expectedBlock);
+            return null;
+        } catch (TFTPPacketException e) {
+            log.error("{} 解析 ACK 包失败 (块号: {}): {}", LOG_PREFIX, expectedBlock, e.getMessage());
+            return null;
+        }
+    }
+
+    private void sendError(TFTPReadRequestPacket request, String message) {
         try {
             TFTPErrorPacket errorPacket = new TFTPErrorPacket(
                 request.getAddress(),
                 request.getPort(),
-                errorCode,
+                    TFTPErrorPacket.FILE_NOT_FOUND,
                 message
             );
             DatagramPacket packet = errorPacket.newDatagram();

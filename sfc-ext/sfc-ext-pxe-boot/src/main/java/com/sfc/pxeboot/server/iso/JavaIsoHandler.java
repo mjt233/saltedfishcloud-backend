@@ -7,14 +7,15 @@ import com.github.stephenc.javaisotools.loopfs.udf.UDFFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.Resource;
 
+import java.io.Closeable;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -50,7 +51,7 @@ public class JavaIsoHandler implements IsoHandler {
     }
 
     @Override
-    public Resource getFileStream(Long uid, String isoPath, String isoFileName, String pathWithinIso) throws IOException {
+    public CloseableResource getFileStream(Long uid, String isoPath, String isoFileName, String pathWithinIso) throws IOException {
         Path isoLocalPath = getLocalIsoPath(uid, isoPath, isoFileName);
         String normalizedPath = normalizePath(pathWithinIso);
 
@@ -185,45 +186,146 @@ public class JavaIsoHandler implements IsoHandler {
     /**
      * 从 ISO9660 格式获取文件流
      */
-    private Resource getFileFromIso9660(Path isoPath, String normalizedPath, String originalPath) throws IOException {
+    private CloseableResource getFileFromIso9660(Path isoPath, String normalizedPath, String originalPath) throws IOException {
         Iso9660FileSystem fs = new Iso9660FileSystem(isoPath.toFile(), true);
-        return getFileFromFs(fs, normalizedPath, originalPath);
+        try {
+            return getFileFromFs(fs, normalizedPath, originalPath);
+        } catch (Exception e) {
+            try {
+                fs.close();
+            } catch (Exception ignored) {
+            }
+            throw e;
+        }
     }
 
     /**
      * 从 UDF 格式获取文件流
      */
-    private Resource getFileFromUdf(Path isoPath, String normalizedPath, String originalPath) throws IOException {
+    private CloseableResource getFileFromUdf(Path isoPath, String normalizedPath, String originalPath) throws IOException {
         UDFFileSystem fs = new UDFFileSystem(isoPath.toFile(), true);
-        return getFileFromFs(fs, normalizedPath, originalPath);
+        try {
+            return getFileFromFs(fs, normalizedPath, originalPath);
+        } catch (Exception e) {
+            try {
+                fs.close();
+            } catch (Exception ignored) {
+            }
+            throw e;
+        }
     }
 
     /**
-     * 从文件系统中获取文件流
+     * 从文件系统中获取文件流，以流式方式读取避免 OOM。
+     * 返回的 {@link CloseableResource} 持有底层 ISO 文件系统的引用，
+     * 调用方必须在使用完毕后关闭以释放文件系统资源。
      */
-    @SuppressWarnings("unchecked")
-    private <T extends FileEntry> Resource getFileFromFs(FileSystem<T> fs, String normalizedPath, String originalPath) throws IOException {
+    private <T extends FileEntry> CloseableResource getFileFromFs(FileSystem<T> fs, String normalizedPath, String originalPath) throws IOException {
         String targetPath = normalizedPath.substring(1); // 移除开头的 /
 
         for (T entry : fs) {
             if (entry.getPath().equals(targetPath) || entry.getName().equals(targetPath)) {
-                InputStream is = fs.getInputStream(entry);
                 String fileName = Path.of(originalPath).getFileName().toString();
+                long size = entry.getSize();
 
-                return new InputStreamResource(is) {
-                    @Override
-                    public String getFilename() {
-                        return fileName;
-                    }
-
-                    @Override
-                    public long contentLength() {
-                        return entry.getSize();
-                    }
-                };
+                @SuppressWarnings("unchecked")
+                FileSystem<FileEntry> rawFs = (FileSystem<FileEntry>) fs;
+                return new IsoEntryResource(rawFs, entry, fileName, originalPath, size);
             }
         }
 
         throw new IOException("文件不存在于 ISO 中: " + originalPath);
+    }
+
+    /**
+     * ISO 文件条目资源，以流式方式读取文件内容。
+     * 通过 {@link LifecycleInputStream} 将 ISO 文件系统的生命周期绑定到 InputStream，
+     * 当 InputStream 被关闭时自动关闭底层 ISO 文件系统。
+     */
+    private static class IsoEntryResource extends AbstractResource implements CloseableResource {
+        private final FileSystem<FileEntry> fileSystem;
+        private final FileEntry entry;
+        private final String fileName;
+        private final String description;
+        private final long size;
+
+        IsoEntryResource(FileSystem<FileEntry> fileSystem, FileEntry entry, String fileName, String description, long size) {
+            this.fileSystem = fileSystem;
+            this.entry = entry;
+            this.fileName = fileName;
+            this.description = description;
+            this.size = size;
+        }
+
+        @Override
+        public String getFilename() {
+            return fileName;
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            return new LifecycleInputStream(fileSystem.getInputStream(entry), fileSystem);
+        }
+
+        @Override
+        public boolean exists() {
+            return true;
+        }
+
+        @Override
+        public long contentLength() {
+            return size;
+        }
+
+        @Override
+        public String getDescription() {
+            return "ISO entry [" + description + "]";
+        }
+
+        @Override
+        public void close() throws IOException {
+            fileSystem.close();
+        }
+    }
+
+    /**
+     * 生命周期 InputStream 包装器。
+     * 关闭此流时，同时关闭底层 InputStream 和关联的 ISO 文件系统。
+     */
+    private static class LifecycleInputStream extends FilterInputStream {
+        private final Closeable lifecycle;
+        private boolean closed = false;
+
+        LifecycleInputStream(InputStream in, Closeable lifecycle) {
+            super(in);
+            this.lifecycle = lifecycle;
+        }
+
+        @Override
+        @SuppressWarnings("try")
+        public void close() throws IOException {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            IOException streamEx = null;
+            try {
+                super.close();
+            } catch (IOException e) {
+                streamEx = e;
+            }
+            try {
+                lifecycle.close();
+            } catch (IOException e) {
+                if (streamEx != null) {
+                    streamEx.addSuppressed(e);
+                    throw streamEx;
+                }
+                throw e;
+            }
+            if (streamEx != null) {
+                throw streamEx;
+            }
+        }
     }
 }

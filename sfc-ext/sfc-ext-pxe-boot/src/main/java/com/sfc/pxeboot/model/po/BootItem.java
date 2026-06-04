@@ -71,7 +71,7 @@ public class BootItem extends AuditModel {
     /**
      * 菜单排序顺序
      */
-    @Column(name = "sort_order")
+    @Column
     private Integer sortOrder = 0;
 
     /**

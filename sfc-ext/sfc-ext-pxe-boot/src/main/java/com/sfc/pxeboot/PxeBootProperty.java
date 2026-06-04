@@ -62,7 +62,25 @@ public class PxeBootProperty {
     /**
      * iPXE 固件路径
      */
-    @ConfigProperty(value = "ipxe-binary-path", title = "iPXE 固件路径", describe = "网盘中 iPXE 固件文件的路径", defaultValue = "/pxeboot/ipxe.pxe", group = "boot")
+    @ConfigProperty(
+            value = "ipxe-binary-path",
+            title = "iPXE 固件路径",
+            describe = "公共网盘中 iPXE 固件文件的路径",
+            defaultValue = "/pxeboot/ipxe.pxe",
+            group = "boot",
+            inputType = "template",
+            template = "path-selector",
+            templateParams = """
+                    {
+                        "uid": "0",
+                        "label": "iPXE 固件路径",
+                        "placeholder": "请选择 iPXE 固件文件",
+                        "fileType": "file",
+                        "editable": true,
+                        "selectFile": true
+                    }
+                    """
+    )
     private String ipxeBinaryPath = "/pxeboot/ipxe.pxe";
 
     /**
