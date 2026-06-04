@@ -15,7 +15,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.StandardProtocolFamily;
 import java.nio.BufferUnderflowException;
+import java.nio.channels.DatagramChannel;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -42,6 +44,11 @@ public class ProxyDhcpServer implements SmartLifecycle {
      * DHCP 客户端端口。
      */
     private static final int DHCP_CLIENT_PORT = 68;
+
+    /**
+     * PXE ProxyDHCP 监听端口及响应目标端口。
+     */
+    private static final int PXE_CLIENT_PORT = 4011;
 
     /**
      * 报文缓存大小。
@@ -140,14 +147,24 @@ public class ProxyDhcpServer implements SmartLifecycle {
     private ConfigService configService;
 
     /**
-     * 当前 UDP 监听 socket。
+     * DHCP 监听 socket（端口 67），用于接收 DISCOVER。
      */
-    private DatagramSocket socket;
+    private DatagramSocket dhcpSocket;
 
     /**
-     * 监听线程。
+     * ProxyDHCP 监听 socket（端口 4011），用于接收 REQUEST。
      */
-    private Thread listenerThread;
+    private DatagramSocket proxySocket;
+
+    /**
+     * DHCP 监听线程（端口 67）。
+     */
+    private Thread dhcpListenerThread;
+
+    /**
+     * ProxyDHCP 监听线程（端口 4011）。
+     */
+    private Thread proxyListenerThread;
 
     /**
      * 当前运行状态。
@@ -291,25 +308,35 @@ public class ProxyDhcpServer implements SmartLifecycle {
 
         String resolvedBootFilePath = normalizeBootFilePath(property.getIpxeBinaryPath());
         try {
-            DatagramSocket newSocket = new DatagramSocket(null);
-            newSocket.setReuseAddress(true);
-            newSocket.setBroadcast(true);
-            newSocket.bind(new InetSocketAddress(listenAddress, DHCP_PORT));
+            DatagramSocket newDhcpSocket = DatagramChannel.open(StandardProtocolFamily.INET).socket();
+            newDhcpSocket.setReuseAddress(true);
+            newDhcpSocket.setBroadcast(true);
+            newDhcpSocket.bind(new InetSocketAddress(listenAddress, DHCP_PORT));
 
-            socket = newSocket;
+            DatagramSocket newProxySocket = DatagramChannel.open(StandardProtocolFamily.INET).socket();
+            newProxySocket.setReuseAddress(true);
+            newProxySocket.setBroadcast(true);
+            newProxySocket.bind(new InetSocketAddress(listenAddress, PXE_CLIENT_PORT));
+
+            dhcpSocket = newDhcpSocket;
+            proxySocket = newProxySocket;
             tftpServerAddress = resolvedTftpAddress;
             bootFilePath = resolvedBootFilePath;
             running = true;
 
-            listenerThread = new Thread(this::listenLoop, "PXE-ProxyDHCP-Listener");
-            listenerThread.setDaemon(true);
-            listenerThread.start();
+            dhcpListenerThread = new Thread(this::dhcpListenLoop, "PXE-DHCP-Listener");
+            dhcpListenerThread.setDaemon(true);
+            dhcpListenerThread.start();
+
+            proxyListenerThread = new Thread(this::proxyListenLoop, "PXE-ProxyDHCP-Listener");
+            proxyListenerThread.setDaemon(true);
+            proxyListenerThread.start();
 
             String tftpAddressDisplay = resolvedTftpAddress == null ? "<未设置>" : resolvedTftpAddress.getHostAddress();
-            log.info("{} ProxyDHCP 服务已启动，监听 {}:{}，TFTP={}，bootFile={}",
-                LOG_PREFIX, listenAddress, DHCP_PORT, tftpAddressDisplay, resolvedBootFilePath);
+            log.info("{} ProxyDHCP 服务已启动，DHCP监听 {}:{}，Proxy监听 {}:{}，TFTP={}，bootFile={}",
+                LOG_PREFIX, listenAddress, DHCP_PORT, listenAddress, PXE_CLIENT_PORT, tftpAddressDisplay, resolvedBootFilePath);
         } catch (IOException e) {
-            closeSocketQuietly();
+            closeAllSocketsQuietly();
             running = false;
             tftpServerAddress = null;
             bootFilePath = null;
@@ -319,15 +346,20 @@ public class ProxyDhcpServer implements SmartLifecycle {
 
     @Override
     public synchronized void stop() {
-        if (!running && socket == null && listenerThread == null) {
+        if (!running && dhcpSocket == null && proxySocket == null
+            && dhcpListenerThread == null && proxyListenerThread == null) {
             return;
         }
 
         running = false;
-        closeSocketQuietly();
-        if (listenerThread != null) {
-            listenerThread.interrupt();
-            listenerThread = null;
+        closeAllSocketsQuietly();
+        if (dhcpListenerThread != null) {
+            dhcpListenerThread.interrupt();
+            dhcpListenerThread = null;
+        }
+        if (proxyListenerThread != null) {
+            proxyListenerThread.interrupt();
+            proxyListenerThread = null;
         }
         tftpServerAddress = null;
         bootFilePath = null;
@@ -345,21 +377,37 @@ public class ProxyDhcpServer implements SmartLifecycle {
     }
 
     /**
-     * 主监听循环。
+     * DHCP 监听循环（端口 67），接收 DISCOVER 请求。
      */
-    private void listenLoop() {
+    private void dhcpListenLoop() {
+        listenOnSocket(dhcpSocket, "DHCP");
+    }
+
+    /**
+     * ProxyDHCP 监听循环（端口 4011），接收 REQUEST 请求。
+     */
+    private void proxyListenLoop() {
+        listenOnSocket(proxySocket, "ProxyDHCP");
+    }
+
+    /**
+     * 通用 socket 监听循环。
+     *
+     * @param activeSocket 监听的 socket
+     * @param socketName socket 名称（用于日志）
+     */
+    private void listenOnSocket(DatagramSocket activeSocket, String socketName) {
         while (running) {
             try {
-                DatagramSocket activeSocket = socket;
                 if (activeSocket == null || activeSocket.isClosed()) {
                     return;
                 }
                 DatagramPacket packet = new DatagramPacket(new byte[MAX_PACKET_SIZE], MAX_PACKET_SIZE);
                 activeSocket.receive(packet);
-                handlePacket(packet);
+                handlePacket(packet, activeSocket);
             } catch (IOException e) {
                 if (running) {
-                    log.error("{} 接收 DHCP 报文失败: {}", LOG_PREFIX, e.getMessage(), e);
+                    log.error("{} 接收报文失败({}): {}", LOG_PREFIX, socketName, e.getMessage(), e);
                 }
             }
         }
@@ -369,30 +417,28 @@ public class ProxyDhcpServer implements SmartLifecycle {
      * 处理单个 DHCP 请求报文。
      *
      * @param packet 请求报文
+     * @param sourceSocket 接收到报文的 socket
      */
-    private void handlePacket(DatagramPacket packet) {
+    private void handlePacket(DatagramPacket packet, DatagramSocket sourceSocket) {
         try {
             DhcpRequestContext request = parseRequest(packet);
             if (request == null || !isTargetPxeRequest(request)) {
                 return;
             }
 
-            byte responseType = resolveResponseMessageType(request.messageType);
+            byte responseType = request.messageType == DHCP_DISCOVER ? DHCP_OFFER : DHCP_ACK;
             byte[] responseData = buildResponsePacket(request, responseType);
-            InetSocketAddress targetAddress = resolveResponseAddress(request);
+            InetSocketAddress targetAddress = resolveResponseAddress(request, responseType);
 
-            DatagramSocket activeSocket = socket;
-            if (activeSocket == null || activeSocket.isClosed()) {
-                return;
+            DatagramSocket sendSocket = dhcpSocket != null ? dhcpSocket : sourceSocket;
+            if (sendSocket != null && !sendSocket.isClosed()) {
+                sendSocket.send(new DatagramPacket(responseData, responseData.length, targetAddress));
             }
-            activeSocket.send(new DatagramPacket(responseData, responseData.length, targetAddress));
 
-            log.debug("{} 已响应 PXE 请求: xid={}, vendor={}, type={}, target={}",
-                LOG_PREFIX,
-                Integer.toUnsignedString(request.transactionId),
-                request.vendorClassIdentifier,
-                Byte.toUnsignedInt(request.messageType),
-                targetAddress);
+            log.debug("{} 已响应 DHCP 请求: responseType={}, target={}",
+                    LOG_PREFIX,
+                    responseType == DHCP_OFFER ? "OFFER" : "ACK",
+                    targetAddress);
         } catch (Exception e) {
             log.warn("{} 处理 DHCP 请求失败: {}", LOG_PREFIX, e.getMessage(), e);
         }
@@ -494,23 +540,10 @@ public class ProxyDhcpServer implements SmartLifecycle {
     }
 
     /**
-     * 根据请求消息类型计算响应消息类型。
-     *
-     * @param requestType 请求消息类型
-     * @return 响应消息类型
-     */
-    private byte resolveResponseMessageType(byte requestType) {
-        if (requestType == DHCP_DISCOVER) {
-            return DHCP_OFFER;
-        }
-        return DHCP_ACK;
-    }
-
-    /**
      * 构建 DHCP 响应报文。
      *
      * @param request 请求上下文
-     * @param responseType 响应消息类型
+     * @param responseType 响应消息类型（OFFER 或 ACK）
      * @return DHCP 响应报文字节数组
      */
     private byte[] buildResponsePacket(DhcpRequestContext request, byte responseType) {
@@ -557,25 +590,30 @@ public class ProxyDhcpServer implements SmartLifecycle {
             writeOption(buffer, OPTION_TFTP_SERVER_NAME, toAsciiBytes(effectiveTftpAddress.getHostAddress(), 255, "option 66"));
         }
         writeOption(buffer, OPTION_BOOTFILE_NAME, toAsciiBytes(effectiveBootFilePath, 255, "option 67"));
+        if (request.vendorClassIdentifier != null && !request.vendorClassIdentifier.isEmpty()) {
+            writeOption(buffer, OPTION_VENDOR_CLASS_IDENTIFIER, toAsciiBytes(request.vendorClassIdentifier, 255, "option 60"));
+        }
         buffer.put((byte) OPTION_END);
 
         return Arrays.copyOf(buffer.array(), buffer.position());
     }
 
     /**
-     * 计算响应目标地址。
+     * 计算响应目标地址。OFFER 发送到 DHCP 客户端端口 68，ACK 发送到 PXE 客户端端口 4011。
      *
      * @param request 请求上下文
+     * @param responseType 响应消息类型
      * @return 目标 socket 地址
      */
-    private InetSocketAddress resolveResponseAddress(DhcpRequestContext request) {
+    private InetSocketAddress resolveResponseAddress(DhcpRequestContext request, byte responseType) {
+        int targetPort = responseType == DHCP_OFFER ? DHCP_CLIENT_PORT : PXE_CLIENT_PORT;
         if (!isZeroAddress(request.relayAddress)) {
-            return new InetSocketAddress(request.relayAddress, DHCP_PORT);
+            return new InetSocketAddress(request.relayAddress, targetPort);
         }
         if (request.isBroadcastExpected() || isZeroAddress(request.clientAddress)) {
-            return new InetSocketAddress("255.255.255.255", DHCP_CLIENT_PORT);
+            return new InetSocketAddress("255.255.255.255", targetPort);
         }
-        return new InetSocketAddress(request.clientAddress, DHCP_CLIENT_PORT);
+        return new InetSocketAddress(request.clientAddress, targetPort);
     }
 
     /**
@@ -634,7 +672,7 @@ public class ProxyDhcpServer implements SmartLifecycle {
      * @return 服务器标识地址
      */
     private byte[] resolveServerIdentifierBytes(Inet4Address fallbackAddress) {
-        DatagramSocket activeSocket = socket;
+        DatagramSocket activeSocket = dhcpSocket != null ? dhcpSocket : proxySocket;
         if (activeSocket != null) {
             InetAddress localAddress = activeSocket.getLocalAddress();
             if (localAddress instanceof Inet4Address ipv4 && !ipv4.isAnyLocalAddress()) {
@@ -684,6 +722,14 @@ public class ProxyDhcpServer implements SmartLifecycle {
         return null;
     }
 
+    /**
+     * 查找第一个合适的物理网卡 IPv4 地址。
+     *
+     * @return 物理网卡 IPv4 地址，未找到返回 null
+     */
+    /**
+     * 检查网卡是否为 Docker、VirtualBox、VMware 等常见虚拟/容器适配器。
+     */
     /**
      * 将字符串解析为 IPv4 地址。
      *
@@ -753,13 +799,23 @@ public class ProxyDhcpServer implements SmartLifecycle {
     }
 
     /**
-     * 安静关闭 socket 资源。
+     * 安静关闭所有 socket 资源。
      */
-    private void closeSocketQuietly() {
-        DatagramSocket activeSocket = socket;
-        socket = null;
-        if (activeSocket != null && !activeSocket.isClosed()) {
-            activeSocket.close();
+    private void closeAllSocketsQuietly() {
+        closeSocketQuietly(dhcpSocket);
+        dhcpSocket = null;
+        closeSocketQuietly(proxySocket);
+        proxySocket = null;
+    }
+
+    /**
+     * 安静关闭单个 socket 资源。
+     *
+     * @param socketToClose 待关闭的 socket
+     */
+    private void closeSocketQuietly(DatagramSocket socketToClose) {
+        if (socketToClose != null && !socketToClose.isClosed()) {
+            socketToClose.close();
         }
     }
 }
