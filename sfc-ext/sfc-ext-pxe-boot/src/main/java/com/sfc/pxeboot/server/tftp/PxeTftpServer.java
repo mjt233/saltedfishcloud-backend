@@ -129,16 +129,30 @@ public class PxeTftpServer implements SmartLifecycle {
                         request.getAddress(), request.getPort(), blockNumber, data);
                     sendPacket(dataSocket, dataPacket);
 
-                    if (bytesRead < BLOCK_SIZE) {
-                        break;
-                    }
-
                     TFTPPacket ack = receiveAck(dataSocket, blockNumber);
                     if (ack == null) {
                         log.warn("{} 未收到 ACK (块号: {}), 传输中断", LOG_PREFIX, blockNumber);
                         return;
                     }
+
+                    if (bytesRead < BLOCK_SIZE) {
+                        // 传输完成，整个流程结束，return
+                        log.info("{} 文件传输完成: {} ({} 块)", LOG_PREFIX, filename, blockNumber);
+                        return;
+                    }
                     blockNumber++;
+                }
+
+                // 文件大小正好是块大小的整数倍（或文件为空），
+                // 发送0字节数据包标识传输结束，符合 RFC 1350
+                TFTPDataPacket endPacket = new TFTPDataPacket(
+                    request.getAddress(), request.getPort(), blockNumber, new byte[0]);
+                sendPacket(dataSocket, endPacket);
+
+                TFTPPacket ack = receiveAck(dataSocket, blockNumber);
+                if (ack == null) {
+                    log.warn("{} 未收到终止 ACK (块号: {}), 传输可能未正确结束", LOG_PREFIX, blockNumber);
+                    return;
                 }
 
                 log.info("{} 文件传输完成: {} ({} 块)", LOG_PREFIX, filename, blockNumber);
