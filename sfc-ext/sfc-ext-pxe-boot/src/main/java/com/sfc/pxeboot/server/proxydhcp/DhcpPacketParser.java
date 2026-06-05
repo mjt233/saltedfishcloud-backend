@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 import static com.sfc.pxeboot.server.proxydhcp.DhcpConstants.*;
 
 /**
- * DHCP 报文解析器，负责将原始 {@link DatagramPacket} 解析为 {@link DhcpRequestContext}。
+ * DHCP 报文解析器，负责将原始 {@link DatagramPacket} 解析为 {@link DhcpRequest}。
  */
 @Slf4j
 public class DhcpPacketParser {
@@ -25,7 +25,7 @@ public class DhcpPacketParser {
      * @param packet 请求报文
      * @return 解析结果，不可识别时返回 null
      */
-    public DhcpRequestContext parse(DatagramPacket packet) {
+    public DhcpRequest parse(DatagramPacket packet) {
         try {
             ByteBuffer buffer = ByteBuffer.wrap(packet.getData(), 0, packet.getLength());
             if (buffer.remaining() < BOOTP_FIXED_LEN + Integer.BYTES) {
@@ -84,17 +84,17 @@ public class DhcpPacketParser {
                 }
             }
 
-            return new DhcpRequestContext(
-                    transactionId,
-                    hardwareType,
-                    hardwareAddressLength,
-                    flags,
-                    clientAddress,
-                    relayAddress,
-                    clientHardwareAddress,
-                    messageType,
-                    vendorClassIdentifier
-            );
+            return DhcpRequest.builder()
+                    .transactionId(transactionId)
+                    .hardwareType(hardwareType)
+                    .hardwareAddressLength(hardwareAddressLength)
+                    .flags(flags)
+                    .clientAddress(clientAddress)
+                    .relayAddress(relayAddress)
+                    .clientHardwareAddress(clientHardwareAddress)
+                    .messageType(messageType)
+                    .vendorClassIdentifier(vendorClassIdentifier)
+                    .build();
         } catch (BufferUnderflowException | IOException e) {
             log.debug("{} DHCP 报文解析失败: {}", LOG_PREFIX, e.getMessage());
             return null;

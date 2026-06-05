@@ -262,12 +262,12 @@ public class ProxyDhcpServer implements SmartLifecycle {
      */
     private void handlePacket(DatagramPacket packet, DatagramSocket sourceSocket) {
         try {
-            DhcpRequestContext request = parser.parse(packet);
+            DhcpRequest request = parser.parse(packet);
             if (request == null || !isTargetPxeRequest(request)) {
                 return;
             }
 
-            byte responseType = request.messageType() == DhcpConstants.DHCP_DISCOVER
+            byte responseType = request.getMessageType() == DhcpConstants.DHCP_DISCOVER
                 ? DhcpConstants.DHCP_OFFER
                 : DhcpConstants.DHCP_ACK;
             byte[] serverIdentifier = resolveServerIdentifierBytes();
@@ -294,12 +294,12 @@ public class ProxyDhcpServer implements SmartLifecycle {
      * @param request 请求上下文
      * @return true 表示应当响应
      */
-    private boolean isTargetPxeRequest(DhcpRequestContext request) {
-        if (request.messageType() != DhcpConstants.DHCP_DISCOVER && request.messageType() != DhcpConstants.DHCP_REQUEST) {
+    private boolean isTargetPxeRequest(DhcpRequest request) {
+        if (request.getMessageType() != DhcpConstants.DHCP_DISCOVER && request.getMessageType() != DhcpConstants.DHCP_REQUEST) {
             return false;
         }
-        return request.vendorClassIdentifier() != null
-            && request.vendorClassIdentifier().startsWith(DhcpConstants.PXE_VENDOR_PREFIX);
+        return request.getVendorClassIdentifier() != null
+            && request.getVendorClassIdentifier().startsWith(DhcpConstants.PXE_VENDOR_PREFIX);
     }
 
     /**

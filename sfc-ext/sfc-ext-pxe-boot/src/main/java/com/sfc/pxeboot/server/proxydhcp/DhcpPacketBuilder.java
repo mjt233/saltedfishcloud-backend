@@ -33,7 +33,7 @@ public class DhcpPacketBuilder {
      * @param serverIdentifier   服务器标识地址字节
      * @return DHCP 响应报文字节数组
      */
-    public byte[] buildResponse(DhcpRequestContext request,
+    public byte[] buildResponse(DhcpRequest request,
                                 byte responseType,
                                 Inet4Address tftpServerAddress,
                                 String bootFilePath,
@@ -44,25 +44,25 @@ public class DhcpPacketBuilder {
 
         ByteBuffer buffer = ByteBuffer.allocate(MAX_PACKET_SIZE);
         buffer.put(BOOTREPLY_OP);
-        buffer.put(request.hardwareType());
-        buffer.put(request.hardwareAddressLength());
+        buffer.put(request.getHardwareType());
+        buffer.put(request.getHardwareAddressLength());
         buffer.put((byte) 0);
-        buffer.putInt(request.transactionId());
+        buffer.putInt(request.getTransactionId());
         buffer.putShort((short) 0);
-        buffer.putShort(request.flags());
+        buffer.putShort(request.getFlags());
         buffer.putInt(0);
         buffer.putInt(0);
         byte[] tftpAddressBytes = tftpServerAddress == null ? ZERO_IPV4_BYTES : tftpServerAddress.getAddress();
         buffer.put(tftpAddressBytes);
-        buffer.put(request.relayAddress().getAddress());
+        buffer.put(request.getRelayAddress().getAddress());
 
         byte[] paddedHardwareAddress = new byte[16];
         System.arraycopy(
-                request.clientHardwareAddress(),
+                request.getClientHardwareAddress(),
                 0,
                 paddedHardwareAddress,
                 0,
-                Math.min(request.clientHardwareAddress().length, paddedHardwareAddress.length)
+                Math.min(request.getClientHardwareAddress().length, paddedHardwareAddress.length)
         );
         buffer.put(paddedHardwareAddress);
 
@@ -79,8 +79,8 @@ public class DhcpPacketBuilder {
             writeOption(buffer, OPTION_TFTP_SERVER_NAME, toAsciiBytes(tftpServerAddress.getHostAddress(), 255, "option 66"));
         }
         writeOption(buffer, OPTION_BOOTFILE_NAME, toAsciiBytes(bootFilePath, 255, "option 67"));
-        if (request.vendorClassIdentifier() != null && !request.vendorClassIdentifier().isEmpty()) {
-            writeOption(buffer, OPTION_VENDOR_CLASS_IDENTIFIER, toAsciiBytes(request.vendorClassIdentifier(), 255, "option 60"));
+        if (request.getVendorClassIdentifier() != null && !request.getVendorClassIdentifier().isEmpty()) {
+            writeOption(buffer, OPTION_VENDOR_CLASS_IDENTIFIER, toAsciiBytes(request.getVendorClassIdentifier(), 255, "option 60"));
         }
         buffer.put((byte) OPTION_END);
 
@@ -94,15 +94,15 @@ public class DhcpPacketBuilder {
      * @param responseType 响应消息类型
      * @return 目标 socket 地址
      */
-    public InetSocketAddress resolveResponseAddress(DhcpRequestContext request, byte responseType) {
+    public InetSocketAddress resolveResponseAddress(DhcpRequest request, byte responseType) {
         int targetPort = responseType == DHCP_OFFER ? DHCP_CLIENT_PORT : PXE_CLIENT_PORT;
-        if (!isZeroAddress(request.relayAddress())) {
-            return new InetSocketAddress(request.relayAddress(), targetPort);
+        if (!isZeroAddress(request.getRelayAddress())) {
+            return new InetSocketAddress(request.getRelayAddress(), targetPort);
         }
-        if (request.isBroadcastExpected() || isZeroAddress(request.clientAddress())) {
+        if (request.isBroadcastExpected() || isZeroAddress(request.getClientAddress())) {
             return new InetSocketAddress("255.255.255.255", targetPort);
         }
-        return new InetSocketAddress(request.clientAddress(), targetPort);
+        return new InetSocketAddress(request.getClientAddress(), targetPort);
     }
 
     /**
