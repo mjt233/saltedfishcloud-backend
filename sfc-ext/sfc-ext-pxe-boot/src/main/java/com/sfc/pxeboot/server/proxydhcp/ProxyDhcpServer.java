@@ -1,6 +1,8 @@
 package com.sfc.pxeboot.server.proxydhcp;
 
 import com.sfc.pxeboot.PxeBootProperty;
+import com.sfc.pxeboot.server.tftp.TftpConstants;
+import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -8,16 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.StandardProtocolFamily;
+import java.net.*;
 import java.nio.channels.DatagramChannel;
+import java.util.Arrays;
 import java.util.Collections;
+
+import static com.sfc.pxeboot.server.proxydhcp.DhcpConstants.OPTION_USER_CLASS_INFO;
 
 /**
  * ProxyDHCP 服务器
@@ -35,11 +33,6 @@ public class ProxyDhcpServer implements SmartLifecycle {
      * DHCP 服务器监听端口。
      */
     private static final int DHCP_PORT = 67;
-
-    /**
-     * DHCP 客户端端口。
-     */
-    private static final int DHCP_CLIENT_PORT = 68;
 
     /**
      * PXE ProxyDHCP 监听端口及响应目标端口。
@@ -103,11 +96,6 @@ public class ProxyDhcpServer implements SmartLifecycle {
     private volatile Inet4Address tftpServerAddress;
 
     /**
-     * 当前下发给客户端的引导文件路径。
-     */
-    private volatile String bootFilePath;
-
-    /**
      * 监听 ProxyDHCP 开关配置变更，动态启停服务
      */
     @PostConstruct
@@ -138,7 +126,6 @@ public class ProxyDhcpServer implements SmartLifecycle {
             log.warn("{} 未找到可用的 TFTP 服务器地址，ProxyDHCP 将以无 TFTP 模式启动", LOG_PREFIX);
         }
 
-        String resolvedBootFilePath = normalizeBootFilePath(property.getIpxeBinaryPath());
         try {
             DatagramChannel newDhcpChannel = DatagramChannel.open(StandardProtocolFamily.INET);
             DatagramSocket newDhcpSocket = newDhcpChannel.socket();
@@ -157,7 +144,6 @@ public class ProxyDhcpServer implements SmartLifecycle {
             dhcpSocket = newDhcpSocket;
             proxySocket = newProxySocket;
             tftpServerAddress = resolvedTftpAddress;
-            bootFilePath = resolvedBootFilePath;
             running = true;
 
             dhcpListenerThread = new Thread(this::dhcpListenLoop, "PXE-DHCP-Listener");
@@ -169,13 +155,12 @@ public class ProxyDhcpServer implements SmartLifecycle {
             proxyListenerThread.start();
 
             String tftpAddressDisplay = resolvedTftpAddress == null ? "<未设置>" : resolvedTftpAddress.getHostAddress();
-            log.info("{} ProxyDHCP 服务已启动，DHCP监听 {}:{}，Proxy监听 {}:{}，TFTP={}，bootFile={}",
-                LOG_PREFIX, listenAddress, DHCP_PORT, listenAddress, PXE_CLIENT_PORT, tftpAddressDisplay, resolvedBootFilePath);
+            log.info("{} ProxyDHCP 服务已启动，DHCP监听 {}:{}，Proxy监听 {}:{}，TFTP={}",
+                LOG_PREFIX, listenAddress, DHCP_PORT, listenAddress, PXE_CLIENT_PORT, tftpAddressDisplay);
         } catch (IOException e) {
             closeAllSocketsQuietly();
             running = false;
             tftpServerAddress = null;
-            bootFilePath = null;
             log.error("{} ProxyDHCP 服务启动失败: {}", LOG_PREFIX, e.getMessage(), e);
         }
     }
@@ -198,7 +183,6 @@ public class ProxyDhcpServer implements SmartLifecycle {
             proxyListenerThread = null;
         }
         tftpServerAddress = null;
-        bootFilePath = null;
         log.info("{} ProxyDHCP 服务已停止", LOG_PREFIX);
     }
 
@@ -262,9 +246,19 @@ public class ProxyDhcpServer implements SmartLifecycle {
                 return;
             }
 
+            byte[] userClassInfo = request.getOption(OPTION_USER_CLASS_INFO);
+            String bootFilePath;
+            if (userClassInfo != null && Arrays.equals(userClassInfo, "iPXE".getBytes())) {
+                // 针对 iPXE 客户端，响应 iPXE 菜单脚本
+                bootFilePath = TftpConstants.ResourcePath.I_PXE_MENU;
+            } else {
+                // 其他非 iPXE 客户端（主板原始PXE固件），响应轻量的 iPXE 固件
+                bootFilePath = TftpConstants.ResourcePath.I_PXE;
+            }
+
             byte responseType = request.getMessageType() == DhcpConstants.DHCP_DISCOVER
-                ? DhcpConstants.DHCP_OFFER
-                : DhcpConstants.DHCP_ACK;
+                    ? DhcpConstants.DHCP_OFFER
+                    : DhcpConstants.DHCP_ACK;
             byte[] serverIdentifier = resolveServerIdentifierBytes();
             byte[] responseData = builder.buildResponse(request, responseType, tftpServerAddress, bootFilePath, serverIdentifier);
             InetSocketAddress targetAddress = builder.resolveResponseAddress(request, responseType);
@@ -274,10 +268,11 @@ public class ProxyDhcpServer implements SmartLifecycle {
                 sendSocket.send(new DatagramPacket(responseData, responseData.length, targetAddress));
             }
 
-            log.debug("{} 已响应 DHCP 请求: responseType={}, target={}",
+            log.debug("{} 已响应 DHCP 请求: responseType={}, target={} bootFilePath={}",
                     LOG_PREFIX,
                     responseType == DhcpConstants.DHCP_OFFER ? "OFFER" : "ACK",
-                    targetAddress);
+                    targetAddress,
+                    bootFilePath);
         } catch (Exception e) {
             log.warn("{} 处理 DHCP 请求失败: {}", LOG_PREFIX, e.getMessage(), e);
         }
@@ -290,11 +285,7 @@ public class ProxyDhcpServer implements SmartLifecycle {
      * @return true 表示应当响应
      */
     private boolean isTargetPxeRequest(DhcpRequest request) {
-        if (request.getMessageType() != DhcpConstants.DHCP_DISCOVER && request.getMessageType() != DhcpConstants.DHCP_REQUEST) {
-            return false;
-        }
-        return request.getVendorClassIdentifier() != null
-            && request.getVendorClassIdentifier().startsWith(DhcpConstants.PXE_VENDOR_PREFIX);
+        return request.getMessageType() == DhcpConstants.DHCP_DISCOVER || request.getMessageType() == DhcpConstants.DHCP_REQUEST;
     }
 
     /**
@@ -396,12 +387,14 @@ public class ProxyDhcpServer implements SmartLifecycle {
      * @return 规范化后的路径
      */
     private String normalizeBootFilePath(String rawBootFilePath) {
-        String normalizedPath = (rawBootFilePath == null || rawBootFilePath.isBlank()) ? "/ipxe.pxe" : rawBootFilePath.trim();
-        normalizedPath = normalizedPath.replace('\\', '/');
-        if (!normalizedPath.startsWith("/")) {
-            normalizedPath = "/" + normalizedPath;
+        if (rawBootFilePath == null || rawBootFilePath.isBlank()) {
+            return "/ipxe.pxe";
+        } else {
+            PathBuilder pathBuilder = new PathBuilder();
+            pathBuilder.setForcePrefix(true);
+            pathBuilder.append(rawBootFilePath.trim());
+            return pathBuilder.toString();
         }
-        return normalizedPath;
     }
 
     /**

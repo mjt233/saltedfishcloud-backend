@@ -25,6 +25,7 @@ logging:
     com.sfc: debug
     com.xiaotao: debug
     com.saltedfishcloud: debug
+    com.xiaotao.saltedfishcloud.aspect: info
 management:
   endpoints:
     web:

@@ -24,7 +24,7 @@ public class PxeTftpServer implements SmartLifecycle {
     private PxeBootProperty property;
 
     @Autowired
-    private DiskFileSystemManager diskFileSystemManager;
+    private TftpFileProvider tftpFileProvider;
 
     private DatagramSocket socket;
     private Thread listenerThread;
@@ -42,8 +42,7 @@ public class PxeTftpServer implements SmartLifecycle {
             return;
         }
         try {
-            TftpFileProvider fileProvider = new TftpFileProvider(diskFileSystemManager);
-            readRequestHandler = new TftpReadRequestHandler(fileProvider);
+            readRequestHandler = new TftpReadRequestHandler(tftpFileProvider);
 
             socket = new DatagramSocket(new InetSocketAddress(property.getTftpListenAddr(), property.getTftpPort()));
             running = true;

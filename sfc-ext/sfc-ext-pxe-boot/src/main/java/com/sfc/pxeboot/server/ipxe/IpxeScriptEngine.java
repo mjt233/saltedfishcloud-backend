@@ -3,6 +3,7 @@ package com.sfc.pxeboot.server.ipxe;
 import com.sfc.pxeboot.PxeBootProperty;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.service.BootMenuManager;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,6 +21,14 @@ public class IpxeScriptEngine {
 
     @Autowired
     private PxeBootProperty property;
+
+    public String generateMenuScript() {
+        if (StringUtils.hasText(property.getTftpServerAddr())) {
+            log.warn("未配置 tftp-server-addr，无法响应 ipxe menu script");
+            return null;
+        }
+        return generateMenuScript(property.getTftpServerAddr());
+    }
 
     /**
      * 生成 iPXE 菜单脚本

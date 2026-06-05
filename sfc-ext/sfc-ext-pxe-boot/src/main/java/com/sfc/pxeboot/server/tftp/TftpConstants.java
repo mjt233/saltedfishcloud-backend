@@ -27,4 +27,20 @@ public final class TftpConstants {
      * OACK 操作码。
      */
     public static final int OACK_OPCODE = 6;
+
+    /**
+     * TFTP 服务固定的资源路径
+     */
+    public static final class ResourcePath {
+        /**
+         * iPXE固件本体的 TFTP 资源路径
+         */
+        public static final String I_PXE = "ipxe.pxe";
+
+        /**
+         * 适用于 iPXE 的菜单脚本 TFTP 资源路径
+         */
+        public static final String I_PXE_MENU = "menu.ipxe";
+    }
+
 }

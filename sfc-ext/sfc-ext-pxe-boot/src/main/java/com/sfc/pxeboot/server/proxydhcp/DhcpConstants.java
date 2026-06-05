@@ -44,6 +44,11 @@ public final class DhcpConstants {
     public static final int OPTION_BOOTFILE_NAME = 67;
 
     /**
+     * DHCP option 77: 客户端身份信息
+     */
+    public static final int OPTION_USER_CLASS_INFO = 77;
+
+    /**
      * DHCP option: 填充。
      */
     public static final int OPTION_PAD = 0;
