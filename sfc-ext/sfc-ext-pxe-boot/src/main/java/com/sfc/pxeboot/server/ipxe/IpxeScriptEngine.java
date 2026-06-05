@@ -23,9 +23,27 @@ public class IpxeScriptEngine {
     private PxeBootProperty property;
 
     public String generateMenuScript() {
-        if (StringUtils.hasText(property.getTftpServerAddr())) {
-            log.warn("未配置 tftp-server-addr，无法响应 ipxe menu script");
-            return null;
+        if (!StringUtils.hasText(property.getTftpServerAddr())) {
+//            log.warn("未配置 tftp-server-addr，无法响应 ipxe menu script");
+
+            return """
+#!ipxe
+
+echo =======================================================
+echo              Salted Fish PXE Boot
+echo =======================================================
+echo .
+echo  !!! Salted Fish PXE Boot System is unavailable now. !!!
+echo  !!! Cause: pxe-boot.tftp-server-addr is not configured. !!!
+echo  !!! Please contact system administrator. !!!
+echo .
+echo =======================================================
+
+# 提示用户按任意键，不设置超时时间（--timeout 0）
+prompt --key 0x1c Press [ENTER] to reboot the computer...
+
+# 用户按下回车后执行重启
+reboot""";
         }
         return generateMenuScript(property.getTftpServerAddr());
     }
@@ -43,12 +61,12 @@ public class IpxeScriptEngine {
         StringBuilder sb = new StringBuilder();
         sb.append("#!ipxe\n\n");
         sb.append("set timeout ").append(timeout).append("\n\n");
-        sb.append("menu SFC PXE Boot Menu\n");
+        sb.append("menu Salted Fish Cloud PXE Boot\n");
         sb.append("item --gap -- Please select boot option:\n");
 
         // 添加菜单项
         for (BootItem item : items) {
-            String desc = item.getDescription() != null ? item.getDescription() : item.getDisplayName();
+            String desc = StringUtils.hasText(item.getDescription()) ? item.getDescription() : item.getDisplayName();
             sb.append("item ").append(item.getItemKey()).append(" ").append(desc).append("\n");
         }
 

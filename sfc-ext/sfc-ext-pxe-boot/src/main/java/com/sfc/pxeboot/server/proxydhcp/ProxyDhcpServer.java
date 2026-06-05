@@ -263,7 +263,12 @@ public class ProxyDhcpServer implements SmartLifecycle {
             byte[] responseData = builder.buildResponse(request, responseType, tftpServerAddress, bootFilePath, serverIdentifier);
             InetSocketAddress targetAddress = builder.resolveResponseAddress(request, responseType);
 
-            DatagramSocket sendSocket = dhcpSocket != null ? dhcpSocket : sourceSocket;
+            DatagramSocket sendSocket;
+            if (responseType == DhcpConstants.DHCP_ACK && proxySocket != null && !proxySocket.isClosed()) {
+                sendSocket = proxySocket;
+            } else {
+                sendSocket = dhcpSocket != null ? dhcpSocket : sourceSocket;
+            }
             if (sendSocket != null && !sendSocket.isClosed()) {
                 sendSocket.send(new DatagramPacket(responseData, responseData.length, targetAddress));
             }
@@ -285,7 +290,20 @@ public class ProxyDhcpServer implements SmartLifecycle {
      * @return true 表示应当响应
      */
     private boolean isTargetPxeRequest(DhcpRequest request) {
-        return request.getMessageType() == DhcpConstants.DHCP_DISCOVER || request.getMessageType() == DhcpConstants.DHCP_REQUEST;
+        if (request.getMessageType() != DhcpConstants.DHCP_DISCOVER && request.getMessageType() != DhcpConstants.DHCP_REQUEST) {
+            return false;
+        }
+        if (request.getMessageType() == DhcpConstants.DHCP_REQUEST) {
+            byte[] reqServerId = request.getOption(DhcpConstants.OPTION_SERVER_IDENTIFIER);
+            if (reqServerId != null && reqServerId.length > 0) {
+                byte[] myServerId = resolveServerIdentifierBytes();
+                if (!Arrays.equals(reqServerId, myServerId)) {
+                    log.debug("{} 忽略非目标 REQUEST 报文", LOG_PREFIX);
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**

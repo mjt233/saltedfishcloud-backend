@@ -78,10 +78,15 @@ public class DhcpPacketBuilder {
         if (tftpServerAddress != null) {
             writeOption(buffer, OPTION_TFTP_SERVER_NAME, toAsciiBytes(tftpServerAddress.getHostAddress(), 255, "option 66"));
         }
-        writeOption(buffer, OPTION_BOOTFILE_NAME, toAsciiBytes(bootFilePath, 255, "option 67"));
-        if (request.getVendorClassIdentifier() != null && !request.getVendorClassIdentifier().isEmpty()) {
-            writeOption(buffer, OPTION_VENDOR_CLASS_IDENTIFIER, toAsciiBytes(request.getVendorClassIdentifier(), 255, "option 60"));
-        }
+
+        // option 67 值的末尾需要'\0'
+        byte[] bootFileOptBytes = toAsciiBytes(bootFilePath, 254, "option 67");
+        byte[] option67 = new byte[bootFileOptBytes.length + 1];
+        System.arraycopy(bootFileOptBytes, 0, option67, 0, bootFileOptBytes.length);
+        option67[bootFileOptBytes.length] = 0;
+        writeOption(buffer, OPTION_BOOTFILE_NAME, option67);
+
+        writeOption(buffer, OPTION_VENDOR_CLASS_IDENTIFIER, toAsciiBytes("PXEClient", 255, "option 60"));
         buffer.put((byte) OPTION_END);
 
         return Arrays.copyOf(buffer.array(), buffer.position());
@@ -95,7 +100,7 @@ public class DhcpPacketBuilder {
      * @return 目标 socket 地址
      */
     public InetSocketAddress resolveResponseAddress(DhcpRequest request, byte responseType) {
-        int targetPort = responseType == DHCP_OFFER ? DHCP_CLIENT_PORT : PXE_CLIENT_PORT;
+        int targetPort = DHCP_CLIENT_PORT;
         if (!isZeroAddress(request.getRelayAddress())) {
             return new InetSocketAddress(request.getRelayAddress(), targetPort);
         }
