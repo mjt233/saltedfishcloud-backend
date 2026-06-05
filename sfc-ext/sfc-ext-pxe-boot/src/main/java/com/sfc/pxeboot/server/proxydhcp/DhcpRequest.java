@@ -6,11 +6,13 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.net.InetAddress;
+import java.util.Map;
 
 import static com.sfc.pxeboot.server.proxydhcp.DhcpConstants.FLAG_BROADCAST;
 
 /**
- * DHCP 请求解析上下文。
+ * DHCP 请求数据对象，封装从原始报文中解析出的 BOOTP 固定字段及 DHCP options。
+ * <p>应通过 {@link DhcpPacketParser#parse(java.net.DatagramPacket)} 解析报文创建实例。
  */
 @Builder
 @Getter
@@ -34,6 +36,18 @@ public class DhcpRequest {
     private final byte messageType;
     /** Vendor Class Identifier */
     private final String vendorClassIdentifier;
+    /** 所有解析到的 DHCP options（key 为 option code） */
+    private final Map<Integer, byte[]> options;
+
+    /**
+     * 获取指定 option 的原始字节值。
+     *
+     * @param code option code
+     * @return option 值的字节数组，不存在时返回 null
+     */
+    public byte[] getOption(int code) {
+        return options.get(code);
+    }
 
     /**
      * 是否要求广播响应。

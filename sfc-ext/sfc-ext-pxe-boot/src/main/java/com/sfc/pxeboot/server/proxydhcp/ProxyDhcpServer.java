@@ -58,11 +58,6 @@ public class ProxyDhcpServer implements SmartLifecycle {
     private ConfigService configService;
 
     /**
-     * DHCP 报文解析器。
-     */
-    private final DhcpPacketParser parser = new DhcpPacketParser();
-
-    /**
      * DHCP 响应报文构建器。
      */
     private final DhcpPacketBuilder builder = new DhcpPacketBuilder();
@@ -262,7 +257,7 @@ public class ProxyDhcpServer implements SmartLifecycle {
      */
     private void handlePacket(DatagramPacket packet, DatagramSocket sourceSocket) {
         try {
-            DhcpRequest request = parser.parse(packet);
+            DhcpRequest request = DhcpPacketParser.parse(packet);
             if (request == null || !isTargetPxeRequest(request)) {
                 return;
             }
