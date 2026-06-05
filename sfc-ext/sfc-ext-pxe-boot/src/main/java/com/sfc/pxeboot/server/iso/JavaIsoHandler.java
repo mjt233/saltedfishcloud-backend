@@ -83,7 +83,7 @@ public class JavaIsoHandler implements IsoHandler {
      * @throws IllegalArgumentException 如果文件不是本地存储的
      */
     private Path getLocalIsoPath(Long uid, String isoPath, String isoFileName) throws IOException {
-        Resource resource = diskFileSystemManager.getMainFileSystem().getResource(uid, isoPath, isoFileName);
+        Resource resource = diskFileSystemManager.getMainFileSystem().getResource(0L, isoPath, isoFileName);
 
         if (resource == null) {
             throw new IOException("ISO 文件不存在: " + isoPath + "/" + isoFileName);

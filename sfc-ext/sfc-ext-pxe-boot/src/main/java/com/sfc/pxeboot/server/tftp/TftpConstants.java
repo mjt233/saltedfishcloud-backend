@@ -1,0 +1,30 @@
+package com.sfc.pxeboot.server.tftp;
+
+/**
+ * TFTP 协议相关常量定义。
+ */
+public final class TftpConstants {
+
+    private TftpConstants() {
+    }
+
+    /**
+     * 日志前缀。
+     */
+    public static final String LOG_PREFIX = "[PXE-TFTP]";
+
+    /**
+     * TFTP 默认块大小（RFC 1350）。
+     */
+    public static final int DEFAULT_BLOCK_SIZE = 512;
+
+    /**
+     * TFTP 最大块大小。
+     */
+    public static final int MAX_BLOCK_SIZE = 65464;
+
+    /**
+     * OACK 操作码。
+     */
+    public static final int OACK_OPCODE = 6;
+}
