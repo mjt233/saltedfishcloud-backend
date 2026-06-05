@@ -68,6 +68,16 @@ public class ProxyDhcpServer implements SmartLifecycle {
     private final DhcpPacketBuilder builder = new DhcpPacketBuilder();
 
     /**
+     * DHCP DatagramChannel（端口 67），用于接收 DISCOVER。
+     */
+    private DatagramChannel dhcpChannel;
+
+    /**
+     * ProxyDHCP DatagramChannel（端口 4011），用于接收 REQUEST。
+     */
+    private DatagramChannel proxyChannel;
+
+    /**
      * DHCP 监听 socket（端口 67），用于接收 DISCOVER。
      */
     private DatagramSocket dhcpSocket;
@@ -135,16 +145,20 @@ public class ProxyDhcpServer implements SmartLifecycle {
 
         String resolvedBootFilePath = normalizeBootFilePath(property.getIpxeBinaryPath());
         try {
-            DatagramSocket newDhcpSocket = DatagramChannel.open(StandardProtocolFamily.INET).socket();
+            DatagramChannel newDhcpChannel = DatagramChannel.open(StandardProtocolFamily.INET);
+            DatagramSocket newDhcpSocket = newDhcpChannel.socket();
             newDhcpSocket.setReuseAddress(true);
             newDhcpSocket.setBroadcast(true);
             newDhcpSocket.bind(new InetSocketAddress(listenAddress, DHCP_PORT));
 
-            DatagramSocket newProxySocket = DatagramChannel.open(StandardProtocolFamily.INET).socket();
+            DatagramChannel newProxyChannel = DatagramChannel.open(StandardProtocolFamily.INET);
+            DatagramSocket newProxySocket = newProxyChannel.socket();
             newProxySocket.setReuseAddress(true);
             newProxySocket.setBroadcast(true);
             newProxySocket.bind(new InetSocketAddress(listenAddress, PXE_CLIENT_PORT));
 
+            dhcpChannel = newDhcpChannel;
+            proxyChannel = newProxyChannel;
             dhcpSocket = newDhcpSocket;
             proxySocket = newProxySocket;
             tftpServerAddress = resolvedTftpAddress;
@@ -401,8 +415,10 @@ public class ProxyDhcpServer implements SmartLifecycle {
     private void closeAllSocketsQuietly() {
         closeSocketQuietly(dhcpSocket);
         dhcpSocket = null;
+        dhcpChannel = null;
         closeSocketQuietly(proxySocket);
         proxySocket = null;
+        proxyChannel = null;
     }
 
     /**
