@@ -33,10 +33,10 @@ public class IpxeScriptEngine {
     /**
      * 生成 iPXE 菜单脚本
      *
-     * @param serverAddress http服务器地址
+     * @param baseUrl http服务器地址(末尾不要带/)
      * @return iPXE 脚本内容
      */
-    public String generateMenuScript(String serverAddress) {
+    public String generateMenuScript(String baseUrl) {
         List<BootItem> items = bootMenuManager.getActiveItems();
         int timeout = property.getDefaultTimeout() * 1000;
 
@@ -44,7 +44,7 @@ public class IpxeScriptEngine {
         sb.append("#!ipxe\n\n");
         sb.append("set timeout ").append(timeout).append("\n\n");
         sb.append("menu SFC PXE Boot Menu\n");
-        sb.append("item --gap -- 请选择启动项:\n");
+        sb.append("item --gap -- Please select boot option:\n");
 
         // 添加菜单项
         for (BootItem item : items) {
@@ -58,7 +58,7 @@ public class IpxeScriptEngine {
         // 生成各启动项的脚本
         for (BootItem item : items) {
             sb.append(":").append(item.getItemKey()).append("\n");
-            sb.append(generateItemBootScript(item, serverAddress));
+            sb.append(generateItemBootScript(item, baseUrl));
             sb.append("\n");
         }
 

@@ -196,14 +196,17 @@ public class PxeBootController {
      */
     @GetMapping("/boot/menu.ipxe")
     @AllowAnonymous
-    public ResponseEntity<String> getBootMenu(@RequestParam(value = "server", required = false) String server) {
+    public ResponseEntity<String> getBootMenu(
+            @RequestParam(value = "server", required = false) String server,
+            HttpServletRequest request
+    ) {
         if (server == null || server.isEmpty()) {
-            server = "localhost";
+            server = URLUtils.getBaseUrl(request.getRequestURL().toString());
         }
         String script = ipxeScriptEngine.generateMenuScript(server);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=utf-8")
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"menu.ipxe\"")
+//            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"menu.ipxe\"")
             .body(script);
     }
 
