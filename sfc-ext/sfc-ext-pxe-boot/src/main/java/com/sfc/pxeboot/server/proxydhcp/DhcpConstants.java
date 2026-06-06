@@ -19,6 +19,11 @@ public final class DhcpConstants {
     public static final int DHCP_MAGIC_COOKIE = 0x63825363;
 
     /**
+     * DHCP option: Vendor Specific Information (Option 43)。
+     */
+    public static final int OPTION_VENDOR_SPECIFIC_INFORMATION = 43;
+
+    /**
      * DHCP option: 消息类型。
      */
     public static final int OPTION_MESSAGE_TYPE = 53;

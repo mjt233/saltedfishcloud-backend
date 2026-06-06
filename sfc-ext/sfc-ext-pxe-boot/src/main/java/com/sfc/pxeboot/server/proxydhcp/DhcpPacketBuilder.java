@@ -50,7 +50,8 @@ public class DhcpPacketBuilder {
         buffer.putInt(request.getTransactionId());
         buffer.putShort((short) 0);
         buffer.putShort(request.getFlags());
-        buffer.putInt(0);
+        byte[] ciaddrBytes = request.getClientAddress() == null ? ZERO_IPV4_BYTES : request.getClientAddress().getAddress();
+        buffer.put(ciaddrBytes);
         buffer.putInt(0);
         byte[] tftpAddressBytes = tftpServerAddress == null ? ZERO_IPV4_BYTES : tftpServerAddress.getAddress();
         buffer.put(tftpAddressBytes);
@@ -87,6 +88,10 @@ public class DhcpPacketBuilder {
         writeOption(buffer, OPTION_BOOTFILE_NAME, option67);
 
         writeOption(buffer, OPTION_VENDOR_CLASS_IDENTIFIER, toAsciiBytes("PXEClient", 255, "option 60"));
+
+        byte[] pxeOption43 = new byte[]{ 6, 1, 8, (byte) 255 };
+        writeOption(buffer, OPTION_VENDOR_SPECIFIC_INFORMATION, pxeOption43);
+
         buffer.put((byte) OPTION_END);
 
         return Arrays.copyOf(buffer.array(), buffer.position());

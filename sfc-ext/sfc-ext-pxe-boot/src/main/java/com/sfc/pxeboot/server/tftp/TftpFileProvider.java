@@ -64,7 +64,7 @@ public class TftpFileProvider {
                 String scriptContent = ipxeScriptEngine.generateMenuScript();
                 return new ByteArrayInputStream(scriptContent.getBytes());
             } else {
-                log.warn("{} 请求位置路径 {}", LOG_PREFIX, requestPath);
+                log.warn("{} 非预期的请求位置路径 {}", LOG_PREFIX, requestPath);
                 return null;
             }
         } catch (Exception e) {
