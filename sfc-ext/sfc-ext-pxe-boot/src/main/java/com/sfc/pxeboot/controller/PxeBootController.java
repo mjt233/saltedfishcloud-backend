@@ -12,6 +12,7 @@ import com.sfc.pxeboot.server.proxydhcp.ProxyDhcpServer;
 import com.sfc.pxeboot.server.tftp.PxeTftpServer;
 import com.sfc.pxeboot.service.BootItemService;
 import com.sfc.pxeboot.service.BootMenuManager;
+import com.sfc.pxeboot.service.IsoResourceExtractorService;
 import com.sfc.pxeboot.service.PxeSessionTracker;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.UserConstants;
@@ -71,6 +72,9 @@ public class PxeBootController {
 
     @Autowired
     private IsoHandler isoHandler;
+
+    @Autowired
+    private IsoResourceExtractorService isoResourceExtractorService;
 
     // ==================== 服务状态 ====================
 
@@ -242,6 +246,34 @@ public class PxeBootController {
             .header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
             .body(resource);
+    }
+
+    /**
+     * 从 ISO 启动项中提取引导资源（PXE 客户端调用，无需认证）
+     *
+     * @param itemId 启动项 ID（必填）
+     * @param type   资源类型，可选 kernel、initrd（与 path 二选一）
+     * @param path   ISO 内文件路径（与 type 二选一，优先级高于 type）
+     */
+    @GetMapping("/boot/getIsoItem")
+    @AllowAnonymous
+    public ResponseEntity<Resource> getIsoItem(
+        @RequestParam Long itemId,
+        @RequestParam(required = false) String type,
+        @RequestParam(required = false) String path
+    ) throws IOException {
+        Resource resource;
+        if (path != null && !path.isEmpty()) {
+            resource = isoResourceExtractorService.extractByPath(itemId, path);
+        } else if (type != null && !type.isEmpty()) {
+            resource = isoResourceExtractorService.extractByType(itemId, type);
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+        if (resource == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResourceUtils.wrapResource(resource);
     }
 
     /**

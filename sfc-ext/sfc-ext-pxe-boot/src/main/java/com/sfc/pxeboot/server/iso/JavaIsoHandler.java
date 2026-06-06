@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Java ISO 处理器
@@ -62,6 +63,30 @@ public class JavaIsoHandler implements IsoHandler {
         // 尝试以 UDF 格式打开
         try {
             return getFileFromUdf(isoLocalPath, normalizedPath, pathWithinIso);
+        } catch (Exception e) {
+            throw new IOException("无法识别 ISO 文件格式: " + isoLocalPath, e);
+        }
+    }
+
+    @Override
+    public List<String> findFilesByPattern(Resource isoResource, String pattern, String basePath) throws IOException {
+        Path isoLocalPath = getLocalIsoPath(isoResource);
+        String normalizedBase = basePath != null ? normalizePath(basePath) : null;
+        Pattern regex = Pattern.compile(pattern);
+        String targetPrefix = normalizedBase != null ? normalizedBase.substring(1) : null;
+
+        log.debug("[PXE-ISO] 按模式搜索 ISO 文件: {}, 模式: {}, 基础路径: {}", isoLocalPath, pattern, basePath);
+
+        // 尝试以 ISO9660 格式打开
+        try (FileSystem<?> fs = openIso9660(isoLocalPath)) {
+            return findFilesByPatternFromFs(fs, regex, targetPrefix);
+        } catch (Exception e) {
+            log.debug("[PXE-ISO] ISO9660 格式打开失败，尝试 UDF 格式: {}", e.getMessage());
+        }
+
+        // 尝试以 UDF 格式打开
+        try (FileSystem<?> fs = openUdf(isoLocalPath)) {
+            return findFilesByPatternFromFs(fs, regex, targetPrefix);
         } catch (Exception e) {
             throw new IOException("无法识别 ISO 文件格式: " + isoLocalPath, e);
         }
@@ -171,6 +196,32 @@ public class JavaIsoHandler implements IsoHandler {
             return entryPath.substring(targetPath.length() + 1);
         }
         return entryPath;
+    }
+
+    /**
+     * 从文件系统中按正则模式搜索匹配的文件路径
+     *
+     * @param fs         ISO 文件系统
+     * @param regex      编译后的正则表达式
+     * @param targetPath 目标目录前缀（已移除开头的 /），空字符串表示搜索整个 ISO
+     * @return 所有匹配的完整路径列表
+     */
+    private List<String> findFilesByPatternFromFs(FileSystem<?> fs, Pattern regex, String targetPath) {
+        List<String> results = new ArrayList<>();
+
+        for (Object obj : fs) {
+            FileEntry entry = (FileEntry) obj;
+            String entryPath = entry.getPath();
+
+            // 如果指定了目标目录，检查是否在该目录下；否则搜索整个 ISO
+            if (targetPath == null || isUnderPath(entryPath, targetPath)) {
+                if (regex.matcher(entry.getName()).find()) {
+                    results.add("/" + entryPath);
+                }
+            }
+        }
+
+        return results;
     }
 
     /**

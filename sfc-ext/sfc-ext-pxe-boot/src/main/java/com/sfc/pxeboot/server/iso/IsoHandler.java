@@ -39,4 +39,14 @@ public interface IsoHandler {
          */
         String getFilename();
     }
+
+    /**
+     * 在 ISO 中按文件名正则模式搜索匹配的文件路径
+     *
+     * @param isoResource ISO 文件资源
+     * @param pattern     文件名正则表达式（如 "^vmlinuz", "^linux\\d+"）
+     * @param basePath    限定搜索的 ISO 内目录路径，null 表示搜索整个 ISO
+     * @return 所有匹配的 ISO 内完整路径列表
+     */
+    List<String> findFilesByPattern(Resource isoResource, String pattern, String basePath) throws IOException;
 }
