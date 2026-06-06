@@ -39,10 +39,10 @@ public class TftpFileProvider {
      * 打开网盘文件输入流，用于流式传输。
      *
      * @param requestPath    文件路径（TFTP 客户端请求的路径）
-     * @param hostIpAddress  服务器主机 IP 地址，用于 iPXE 脚本中构建 HTTP 访问地址
+     * @param baseUrl        服务器 HTTP 基础 URL（协议 + 主机名/IP + 端口），末尾不带 /
      * @return 文件输入流，若文件不存在或打开失败返回 null
      */
-    public InputStream openFileStream(String requestPath, String hostIpAddress) {
+    public InputStream openFileStream(String requestPath, String baseUrl) {
         try {
             switch (requestPath) {
                 case TftpConstants.ResourcePath.I_PXE -> {
@@ -65,7 +65,7 @@ public class TftpFileProvider {
                 }
                 case TftpConstants.ResourcePath.I_PXE_MENU -> {
                     // 响应 iPXE 固件菜单脚本
-                    String scriptContent = ipxeScriptEngine.generateMenuScript(hostIpAddress);
+                    String scriptContent = ipxeScriptEngine.generateMenuScript(baseUrl);
                     return new ByteArrayInputStream(scriptContent.getBytes());
                 }
                 case null, default -> {

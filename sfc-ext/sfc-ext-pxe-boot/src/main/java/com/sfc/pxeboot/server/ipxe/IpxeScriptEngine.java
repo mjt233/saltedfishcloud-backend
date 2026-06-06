@@ -1,14 +1,15 @@
 package com.sfc.pxeboot.server.ipxe;
 
 import com.sfc.pxeboot.PxeBootProperty;
+import com.sfc.pxeboot.model.enums.IsoBootMethod;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.service.BootMenuManager;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * iPXE 脚本引擎
@@ -24,49 +25,43 @@ public class IpxeScriptEngine {
     private PxeBootProperty property;
 
     /**
-     * Spring HTTP 服务端口
-     */
-    @Value("${server.port:8080}")
-    private int serverPort;
-
-    /**
      * 生成 iPXE 菜单脚本。
      *
-     * @param hostIpAddress 服务器主机 IP 地址，用于构建 HTTP 访问 URL
+     * @param baseUrl 服务器 HTTP 基础 URL（协议 + 主机名/IP + 端口），末尾不带 /
      * @return iPXE 脚本内容
      */
-    public String generateMenuScript(String hostIpAddress) {
-        String baseUrl = "http://" + hostIpAddress + ":" + serverPort;
+    public String generateMenuScript(String baseUrl) {
         List<BootItem> items = bootMenuManager.getActiveItems();
         int timeout = property.getDefaultTimeout() * 1000;
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("#!ipxe\n\n");
-        sb.append("set timeout ").append(timeout).append("\n\n");
-        sb.append("menu Salted Fish Cloud PXE Boot\n");
-        sb.append("item --gap -- Please select boot option:\n");
+        String menuItems = items.stream()
+                .map(item -> {
+                    String desc = StringUtils.hasText(item.getDescription()) ? item.getDescription() : item.getDisplayName();
+                    return "item %s %s".formatted(item.getItemKey(), desc);
+                })
+                .collect(Collectors.joining("\n"));
 
-        // 添加菜单项
-        for (BootItem item : items) {
-            String desc = StringUtils.hasText(item.getDescription()) ? item.getDescription() : item.getDisplayName();
-            sb.append("item ").append(item.getItemKey()).append(" ").append(desc).append("\n");
-        }
+        String bootScripts = items.stream()
+                .map(item -> ":%s\n%s".formatted(item.getItemKey(), generateItemBootScript(item, baseUrl)))
+                .collect(Collectors.joining("\n"));
 
-        sb.append("item shell iPXE Shell\n\n");
-        sb.append("choose --timeout ${timeout} target && goto ${target}\n\n");
+        return """
+                #!ipxe
 
-        // 生成各启动项的脚本
-        for (BootItem item : items) {
-            sb.append(":").append(item.getItemKey()).append("\n");
-            sb.append(generateItemBootScript(item, baseUrl));
-            sb.append("\n");
-        }
+                set timeout %d
 
-        // iPXE Shell
-        sb.append(":shell\n");
-        sb.append("shell\n");
+                menu Salted Fish Cloud PXE Boot
+                item --gap -- Please select boot option:
+                %s
+                item shell iPXE Shell
 
-        return sb.toString();
+                choose --timeout ${timeout} target && goto ${target}
+
+                %s
+
+                :shell
+                shell
+                """.formatted(timeout, menuItems, bootScripts);
     }
 
     /**
@@ -87,97 +82,75 @@ public class IpxeScriptEngine {
      * 生成 Linux 内核 + initrd 引导脚本
      */
     private String generateKernelBoot(BootItem item, String baseUrl) {
-        StringBuilder sb = new StringBuilder();
         String itemBaseUrl = baseUrl + "/item/" + item.getId();
-
         String kernelUrl = itemBaseUrl + "?file=" + item.getKernelFilename();
         String initrdUrl = itemBaseUrl + "?file=" + item.getInitrdFilename();
 
-        sb.append("kernel ").append(kernelUrl);
-        if (item.getInitrdFilename() != null) {
-            sb.append(" initrd=").append(item.getInitrdFilename());
-        }
-        if (item.getKernelParams() != null && !item.getKernelParams().isEmpty()) {
-            sb.append(" ").append(item.getKernelParams());
-        }
-        sb.append("\n");
+        String initrdParam = item.getInitrdFilename() != null
+                ? " initrd=" + item.getInitrdFilename() : "";
+        String kernelParams = item.getKernelParams() != null && !item.getKernelParams().isEmpty()
+                ? " " + item.getKernelParams() : "";
+        String initrdLine = item.getInitrdFilename() != null
+                ? "initrd %s\n".formatted(initrdUrl) : "";
 
-        if (item.getInitrdFilename() != null) {
-            sb.append("initrd ").append(initrdUrl).append("\n");
-        }
-
-        sb.append("boot\n");
-        return sb.toString();
+        return """
+                kernel %s%s%s
+                %sboot
+                """.formatted(kernelUrl, initrdParam, kernelParams, initrdLine);
     }
 
     /**
      * 生成目录引导脚本
      */
     private String generateDirectoryBoot(BootItem item, String baseUrl) {
-        StringBuilder sb = new StringBuilder();
         String itemBaseUrl = baseUrl + "/item/" + item.getId();
+        String kernelParams = item.getKernelParams() != null && !item.getKernelParams().isEmpty()
+                ? " " + item.getKernelParams() : "";
 
-        sb.append("kernel ").append(itemBaseUrl).append("?file=vmlinuz");
-        if (item.getKernelParams() != null && !item.getKernelParams().isEmpty()) {
-            sb.append(" ").append(item.getKernelParams());
-        }
-        sb.append("\n");
-        sb.append("initrd ").append(itemBaseUrl).append("?file=initrd.img\n");
-        sb.append("boot\n");
-
-        return sb.toString();
+        return """
+                kernel %s?file=vmlinuz%s
+                initrd %s?file=initrd.img
+                boot
+                """.formatted(itemBaseUrl, kernelParams, itemBaseUrl);
     }
 
     /**
      * 生成 ISO 引导脚本
      */
     private String generateIsoBoot(BootItem item, String baseUrl) {
-        StringBuilder sb = new StringBuilder();
         String itemBaseUrl = baseUrl + "/item/" + item.getId();
+        var bootMethod = item.getIsoBootMethod();
 
-        if (item.getIsoBootMethod() != null) {
-            switch (item.getIsoBootMethod()) {
-                case KERNEL:
-                    sb.append("kernel ").append(itemBaseUrl).append("?file=vmlinuz");
-                    if (item.getKernelParams() != null) {
-                        sb.append(" ").append(item.getKernelParams());
-                    }
-                    sb.append("\n");
-                    sb.append("initrd ").append(itemBaseUrl).append("?file=initrd.img\n");
-                    sb.append("boot\n");
-                    break;
-
-                case WIMBOOT:
-                    sb.append("kernel wimboot\n");
-                    sb.append("initrd ").append(itemBaseUrl).append("?file=bootmgr bootmgr\n");
-                    sb.append("initrd ").append(itemBaseUrl).append("?file=Boot/BCD BCD\n");
-                    sb.append("initrd ").append(itemBaseUrl).append("?file=Boot/boot.sdi boot.sdi\n");
-                    sb.append("initrd ").append(itemBaseUrl).append("?file=sources/boot.wim boot.wim\n");
-                    sb.append("boot\n");
-                    break;
-
-                case MEMDISK:
-                    sb.append("kernel memdisk\n");
-                    sb.append("initrd ").append(itemBaseUrl).append("?file=image.iso\n");
-                    sb.append("boot\n");
-                    break;
-
-                case SANBOOT:
-                    sb.append("sanboot ").append(itemBaseUrl).append("?file=image.iso\n");
-                    break;
-
-                default:
-                    sb.append("kernel memdisk\n");
-                    sb.append("initrd ").append(itemBaseUrl).append("?file=image.iso\n");
-                    sb.append("boot\n");
-                    break;
-            }
-        } else {
-            sb.append("kernel memdisk\n");
-            sb.append("initrd ").append(itemBaseUrl).append("?file=image.iso\n");
-            sb.append("boot\n");
+        if (bootMethod == IsoBootMethod.WIMBOOT) {
+            return """
+                    kernel wimboot
+                    initrd %s?file=bootmgr bootmgr
+                    initrd %s?file=Boot/BCD BCD
+                    initrd %s?file=Boot/boot.sdi boot.sdi
+                    initrd %s?file=sources/boot.wim boot.wim
+                    boot
+                    """.formatted(itemBaseUrl, itemBaseUrl, itemBaseUrl, itemBaseUrl);
         }
 
-        return sb.toString();
+        if (bootMethod == IsoBootMethod.SANBOOT) {
+            return "sanboot %s?file=image.iso\n".formatted(itemBaseUrl);
+        }
+
+        if (bootMethod == IsoBootMethod.KERNEL) {
+            String kernelParams = item.getKernelParams() != null
+                    ? " " + item.getKernelParams() : "";
+            return """
+                    kernel %s?file=vmlinuz%s
+                    initrd %s?file=initrd.img
+                    boot
+                    """.formatted(itemBaseUrl, kernelParams, itemBaseUrl);
+        }
+
+        // MEMDISK 及默认方式
+        return """
+                kernel memdisk
+                initrd %s?file=image.iso
+                boot
+                """.formatted(itemBaseUrl);
     }
 }

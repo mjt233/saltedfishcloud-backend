@@ -20,14 +20,17 @@ import java.util.Map;
 public class TftpReadRequestHandler {
 
     private final TftpFileProvider fileProvider;
+    private final int httpPort;
 
     /**
      * 构造读请求处理器。
      *
      * @param fileProvider 文件提供器
+     * @param httpPort     HTTP 服务端口，用于构造 iPXE 脚本中的访问 URL
      */
-    public TftpReadRequestHandler(TftpFileProvider fileProvider) {
+    public TftpReadRequestHandler(TftpFileProvider fileProvider, int httpPort) {
         this.fileProvider = fileProvider;
+        this.httpPort = httpPort;
     }
 
     /**
@@ -58,8 +61,8 @@ public class TftpReadRequestHandler {
 
         log.info("{} 收到读请求: {} 来自 {} (blksize={})", TftpConstants.LOG_PREFIX, filename, request.getAddress(), blockSize);
 
-        String hostIpAddress = serverSocket.getLocalAddress().getHostAddress();
-        try (InputStream fileStream = fileProvider.openFileStream(filename, hostIpAddress)) {
+        String baseUrl = "http://" + serverSocket.getLocalAddress().getHostAddress() + ":" + httpPort;
+        try (InputStream fileStream = fileProvider.openFileStream(filename, baseUrl)) {
             if (fileStream == null) {
                 sendError(serverSocket, request, "file not found: " + filename);
                 return;
@@ -71,7 +74,7 @@ public class TftpReadRequestHandler {
                 if (!options.isEmpty()) {
                     long fileSize = -1;
                     if (hasTsize) {
-                        try (InputStream sizeStream = fileProvider.openFileStream(filename, hostIpAddress)) {
+                        try (InputStream sizeStream = fileProvider.openFileStream(filename, baseUrl)) {
                             if (sizeStream != null) {
                                 fileSize = 0;
                                 byte[] skipBuf = new byte[8192];

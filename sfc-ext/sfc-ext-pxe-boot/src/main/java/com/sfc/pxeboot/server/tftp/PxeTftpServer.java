@@ -1,10 +1,10 @@
 package com.sfc.pxeboot.server.tftp;
 
 import com.sfc.pxeboot.PxeBootProperty;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.tftp.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.SmartLifecycle;
 
 import java.io.IOException;
@@ -26,6 +26,9 @@ public class PxeTftpServer implements SmartLifecycle {
     @Autowired
     private TftpFileProvider tftpFileProvider;
 
+    @Value("${server.port:8080}")
+    private int httpServerPort;
+
     private DatagramSocket socket;
     private Thread listenerThread;
     private volatile boolean running = false;
@@ -42,7 +45,7 @@ public class PxeTftpServer implements SmartLifecycle {
             return;
         }
         try {
-            readRequestHandler = new TftpReadRequestHandler(tftpFileProvider);
+            readRequestHandler = new TftpReadRequestHandler(tftpFileProvider, httpServerPort);
 
             socket = new DatagramSocket(new InetSocketAddress(property.getTftpListenAddr(), property.getTftpPort()));
             running = true;
