@@ -60,12 +60,12 @@ public class PxeBootProperty {
     // ==================== 启动配置 ====================
 
     /**
-     * iPXE 固件路径
+     * iPXE 固件路径（Legacy BIOS 版本）
      */
     @ConfigProperty(
             value = "ipxe-binary-path",
             title = "iPXE 固件路径",
-            describe = "公共网盘中 iPXE 固件文件的路径",
+            describe = "公共网盘中 iPXE 固件文件的路径（Legacy BIOS 版本）",
             defaultValue = "/pxeboot/ipxe.pxe",
             group = "boot",
             inputType = "template",
@@ -82,6 +82,30 @@ public class PxeBootProperty {
                     """
     )
     private String ipxeBinaryPath = "/pxeboot/ipxe.pxe";
+
+    /**
+     * iPXE UEFI 固件路径
+     */
+    @ConfigProperty(
+            value = "ipxe-uefi-binary-path",
+            title = "iPXE UEFI 固件路径",
+            describe = "公共网盘中 iPXE UEFI 固件文件的路径",
+            defaultValue = "/pxeboot/ipxe-x86_64.efi",
+            group = "boot",
+            inputType = "template",
+            template = "path-selector",
+            templateParams = """
+                    {
+                        "uid": "0",
+                        "label": "iPXE UEFI 固件路径",
+                        "placeholder": "请选择 iPXE UEFI 固件文件",
+                        "fileType": "file",
+                        "editable": true,
+                        "selectFile": true
+                    }
+                    """
+    )
+    private String ipxeUefiBinaryPath = "/pxeboot/ipxe-x86_64.efi";
 
     /**
      * 默认启动超时时间（秒）

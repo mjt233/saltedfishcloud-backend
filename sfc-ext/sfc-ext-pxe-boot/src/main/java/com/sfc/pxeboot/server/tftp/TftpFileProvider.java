@@ -44,17 +44,21 @@ public class TftpFileProvider {
     public InputStream openFileStream(String requestPath) {
         try {
             if (TftpConstants.ResourcePath.I_PXE.equals(requestPath)) {
-                // 响应 iPXE 固件本体
+                // 响应 iPXE 固件本体（Legacy BIOS 版本）
                 String ipxeBinaryPath = property.getIpxeBinaryPath();
                 if (!StringUtils.hasText(ipxeBinaryPath)) {
-                    log.warn("");
+                    log.warn("{} iPXE Legacy BIOS 固件路径未配置", LOG_PREFIX);
                     return null;
                 }
-                Resource resource = diskFileSystemManager.getMainFileSystem().getResource(0L, PathUtils.getParentPath(ipxeBinaryPath), PathUtils.getLastNode(ipxeBinaryPath));
-                if (resource == null) {
+                return openResourceStream(ipxeBinaryPath);
+            } else if (TftpConstants.ResourcePath.I_PXE_UEFI.equals(requestPath)) {
+                // 响应 iPXE UEFI 固件
+                String ipxeUefiBinaryPath = property.getIpxeUefiBinaryPath();
+                if (!StringUtils.hasText(ipxeUefiBinaryPath)) {
+                    log.warn("{} iPXE UEFI 固件路径未配置", LOG_PREFIX);
                     return null;
                 }
-                return resource.getInputStream();
+                return openResourceStream(ipxeUefiBinaryPath);
             } else if (TftpConstants.ResourcePath.I_PXE_MENU.equals(requestPath)) {
                 // 响应 iPXE 固件菜单脚本
                 String scriptContent = ipxeScriptEngine.generateMenuScript();
@@ -67,5 +71,19 @@ public class TftpFileProvider {
             log.error("{} 打开文件流失败: {}", TftpConstants.LOG_PREFIX, requestPath, e);
             return null;
         }
+    }
+
+    /**
+     * 从网盘文件系统中打开资源文件输入流。
+     *
+     * @param resourcePath 网盘中的文件路径
+     * @return 文件输入流，若文件不存在或打开失败返回 null
+     */
+    private InputStream openResourceStream(String resourcePath) throws Exception {
+        Resource resource = diskFileSystemManager.getMainFileSystem().getResource(0L, PathUtils.getParentPath(resourcePath), PathUtils.getLastNode(resourcePath));
+        if (resource == null) {
+            return null;
+        }
+        return resource.getInputStream();
     }
 }

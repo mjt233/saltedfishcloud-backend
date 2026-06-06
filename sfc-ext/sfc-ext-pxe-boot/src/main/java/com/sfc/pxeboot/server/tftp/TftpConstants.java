@@ -33,9 +33,14 @@ public final class TftpConstants {
      */
     public static final class ResourcePath {
         /**
-         * iPXE固件本体的 TFTP 资源路径
+         * iPXE固件本体（Legacy BIOS 版本）的 TFTP 资源路径
          */
         public static final String I_PXE = "ipxe.pxe";
+
+        /**
+         * iPXE UEFI 固件的 TFTP 资源路径
+         */
+        public static final String I_PXE_UEFI = "ipxe-x86_64.efi";
 
         /**
          * 适用于 iPXE 的菜单脚本 TFTP 资源路径

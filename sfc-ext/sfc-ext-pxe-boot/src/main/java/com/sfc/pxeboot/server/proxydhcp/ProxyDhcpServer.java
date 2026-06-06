@@ -15,6 +15,7 @@ import java.nio.channels.DatagramChannel;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static com.sfc.pxeboot.server.proxydhcp.DhcpConstants.OPTION_CLIENT_ARCHITECTURE;
 import static com.sfc.pxeboot.server.proxydhcp.DhcpConstants.OPTION_USER_CLASS_INFO;
 
 /**
@@ -251,8 +252,11 @@ public class ProxyDhcpServer implements SmartLifecycle {
             if (userClassInfo != null && Arrays.equals(userClassInfo, "iPXE".getBytes())) {
                 // 针对 iPXE 客户端，响应 iPXE 菜单脚本
                 bootFilePath = TftpConstants.ResourcePath.I_PXE_MENU;
+            } else if (isUefiClient(request)) {
+                // UEFI PXE 客户端，响应 UEFI 版本的 iPXE 固件
+                bootFilePath = TftpConstants.ResourcePath.I_PXE_UEFI;
             } else {
-                // 其他非 iPXE 客户端（主板原始PXE固件），响应轻量的 iPXE 固件
+                // Legacy BIOS PXE 客户端，响应 Legacy 版本的 iPXE 固件
                 bootFilePath = TftpConstants.ResourcePath.I_PXE;
             }
 
@@ -304,6 +308,23 @@ public class ProxyDhcpServer implements SmartLifecycle {
             }
         }
         return true;
+    }
+
+    /**
+     * 判断 PXE 客户端是否为 UEFI 架构。
+     * 通过 DHCP option 93（Client System Architecture Type）进行判断。
+     *
+     * @param request DHCP 请求
+     * @return true 表示为 UEFI 客户端
+     */
+    private boolean isUefiClient(DhcpRequest request) {
+        byte[] archType = request.getOption(OPTION_CLIENT_ARCHITECTURE);
+        if (archType == null || archType.length < 2) {
+            return false;
+        }
+        // option 93 为 2 字节大端序，值为 0 表示 Legacy BIOS，非 0 表示 UEFI
+        short value = (short) ((archType[0] & 0xFF) << 8 | (archType[1] & 0xFF));
+        return value != DhcpConstants.ARCH_TYPE_X86_BIOS;
     }
 
     /**

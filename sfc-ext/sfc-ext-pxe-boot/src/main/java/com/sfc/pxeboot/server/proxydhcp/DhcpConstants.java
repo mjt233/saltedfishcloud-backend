@@ -49,6 +49,22 @@ public final class DhcpConstants {
     public static final int OPTION_USER_CLASS_INFO = 77;
 
     /**
+     * DHCP option 93: 客户端系统架构类型（Client System Architecture Type）。
+     * 用于区分 BIOS 与 UEFI PXE 客户端。
+     */
+    public static final int OPTION_CLIENT_ARCHITECTURE = 93;
+
+    /**
+     * 客户端架构类型：Intel x86PC（BIOS/Legacy PXE）。
+     */
+    public static final short ARCH_TYPE_X86_BIOS = 0;
+
+    /**
+     * 客户端架构类型：EFI x86-64（UEFI PXE）。
+     */
+    public static final short ARCH_TYPE_EFI_X86_64 = 9;
+
+    /**
      * DHCP option: 填充。
      */
     public static final int OPTION_PAD = 0;
