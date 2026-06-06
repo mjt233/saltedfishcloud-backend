@@ -246,12 +246,16 @@ public class PxeBootController {
 
     /**
      * 获取启动项文件（PXE 客户端调用，无需认证）
+     *
+     * @param itemId   启动项 ID（必填）
+     * @param filePath 文件路径（可选）。对于 ISO 类型，为空时表示获取 ISO 文件本身，非空时表示获取 ISO 内指定文件；
+     *                 对于非 ISO 类型，此参数必填。
      */
-    @GetMapping("/boot/item/{itemId}/**")
+    @GetMapping("/boot/item")
     @AllowAnonymous
     public ResponseEntity<Resource> getBootItemFile(
-        @PathVariable Long itemId,
-        @RequestParam(value = "file", required = false) String filePath) throws IOException {
+        @RequestParam Long itemId,
+        @RequestParam(required = false) String filePath) throws IOException {
 
         BootItem item = bootItemService.findById(itemId);
         if (item == null) {
@@ -262,14 +266,27 @@ public class PxeBootController {
         switch (item.getType()) {
             case DIRECTORY:
             case KERNEL_INITRD:
-                resource = loadResource(item.getResourcePath(), filePath);
+                if (filePath == null || filePath.isEmpty()) {
+                    return ResponseEntity.badRequest().build();
+                }
+                resource = loadResource(UserConstants.PUBLIC_USER_ID, item.getResourcePath(), filePath);
                 break;
             case ISO:
                 String isoPath = item.getResourcePath();
                 int lastSlash = isoPath.lastIndexOf('/');
                 String isoDir = lastSlash >= 0 ? isoPath.substring(0, lastSlash) : "/";
                 String isoFileName = lastSlash >= 0 ? isoPath.substring(lastSlash + 1) : isoPath;
-                resource = isoHandler.getFileStream(item.getUid(), isoDir, isoFileName, filePath);
+                if (filePath == null || filePath.isEmpty()) {
+                    // filePath 为空时，返回 ISO 文件本身
+                    resource = loadResource(UserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
+                } else {
+                    // filePath 非空时，从 ISO 内部获取指定文件
+                    Resource isoResource = loadResource(UserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
+                    if (isoResource == null) {
+                        return ResponseEntity.notFound().build();
+                    }
+                    resource = isoHandler.getFileStream(isoResource, filePath);
+                }
                 break;
             default:
                 return ResponseEntity.badRequest().build();
@@ -284,12 +301,17 @@ public class PxeBootController {
 
     /**
      * 从网盘加载资源
+     *
+     * @param uid      用户 ID
+     * @param dirPath  目录路径
+     * @param fileName 文件名
+     * @return 文件资源，不存在时返回 null
      */
-    private Resource loadResource(String dirPath, String fileName) {
+    private Resource loadResource(Long uid, String dirPath, String fileName) {
         try {
-            return diskFileSystemManager.getMainFileSystem().getResource(UserConstants.PUBLIC_USER_ID, dirPath, fileName);
+            return diskFileSystemManager.getMainFileSystem().getResource(uid, dirPath, fileName);
         } catch (Exception e) {
-            log.error("加载资源失败: {}/{}", dirPath, fileName, e);
+            log.error("加载资源失败: uid={}, {}/{}", uid, dirPath, fileName, e);
             return null;
         }
     }

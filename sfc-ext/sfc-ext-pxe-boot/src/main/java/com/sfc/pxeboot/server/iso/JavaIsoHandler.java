@@ -4,9 +4,7 @@ import com.github.stephenc.javaisotools.loopfs.api.FileEntry;
 import com.github.stephenc.javaisotools.loopfs.api.FileSystem;
 import com.github.stephenc.javaisotools.loopfs.iso9660.Iso9660FileSystem;
 import com.github.stephenc.javaisotools.loopfs.udf.UDFFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.Resource;
 
@@ -25,12 +23,9 @@ import java.util.List;
 @Slf4j
 public class JavaIsoHandler implements IsoHandler {
 
-    @Autowired
-    private DiskFileSystemManager diskFileSystemManager;
-
     @Override
-    public List<String> listFiles(Long uid, String isoPath, String isoFileName, String pathWithinIso) throws IOException {
-        Path isoLocalPath = getLocalIsoPath(uid, isoPath, isoFileName);
+    public List<String> listFiles(Resource isoResource, String pathWithinIso) throws IOException {
+        Path isoLocalPath = getLocalIsoPath(isoResource);
         String normalizedPath = normalizePath(pathWithinIso);
 
         log.debug("[PXE-ISO] 列出 ISO 文件: {}, 路径: {}", isoLocalPath, normalizedPath);
@@ -51,8 +46,8 @@ public class JavaIsoHandler implements IsoHandler {
     }
 
     @Override
-    public CloseableResource getFileStream(Long uid, String isoPath, String isoFileName, String pathWithinIso) throws IOException {
-        Path isoLocalPath = getLocalIsoPath(uid, isoPath, isoFileName);
+    public CloseableResource getFileStream(Resource isoResource, String pathWithinIso) throws IOException {
+        Path isoLocalPath = getLocalIsoPath(isoResource);
         String normalizedPath = normalizePath(pathWithinIso);
 
         log.debug("[PXE-ISO] 获取 ISO 文件流: {}, 路径: {}", isoLocalPath, normalizedPath);
@@ -73,31 +68,26 @@ public class JavaIsoHandler implements IsoHandler {
     }
 
     /**
-     * 获取 ISO 文件的本地路径
+     * 从 Resource 获取 ISO 文件的本地路径
      *
-     * @param uid         用户 ID
-     * @param isoPath     ISO 文件所在目录路径
-     * @param isoFileName ISO 文件名
+     * @param isoResource ISO 文件资源
      * @return 本地文件路径
-     * @throws IOException          如果文件不存在
-     * @throws IllegalArgumentException 如果文件不是本地存储的
+     * @throws IOException               如果资源不存在
+     * @throws IllegalArgumentException  如果文件不是本地存储的
      */
-    private Path getLocalIsoPath(Long uid, String isoPath, String isoFileName) throws IOException {
-        Resource resource = diskFileSystemManager.getMainFileSystem().getResource(0L, isoPath, isoFileName);
-
-        if (resource == null) {
-            throw new IOException("ISO 文件不存在: " + isoPath + "/" + isoFileName);
+    private Path getLocalIsoPath(Resource isoResource) throws IOException {
+        if (!isoResource.exists()) {
+            throw new IOException("ISO 文件不存在: " + isoResource.getDescription());
         }
 
         try {
             // 尝试作为 PathResource 获取路径
-            if (resource instanceof org.springframework.core.io.PathResource) {
-                String pathStr = ((org.springframework.core.io.PathResource) resource).getPath();
-                return Path.of(pathStr);
+            if (isoResource instanceof org.springframework.core.io.PathResource pathResource) {
+                return Path.of(pathResource.getPath());
             }
             // 尝试通过 URI 转换
-            if (resource.isFile()) {
-                return Path.of(resource.getURI());
+            if (isoResource.isFile()) {
+                return Path.of(isoResource.getURI());
             }
         } catch (Exception e) {
             log.warn("[PXE-ISO] 获取本地路径失败: {}", e.getMessage());

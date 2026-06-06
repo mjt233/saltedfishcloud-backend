@@ -82,9 +82,8 @@ public class IpxeScriptEngine {
      * 生成 Linux 内核 + initrd 引导脚本
      */
     private String generateKernelBoot(BootItem item, String baseUrl) {
-        String itemBaseUrl = baseUrl + "/item/" + item.getId();
-        String kernelUrl = itemBaseUrl + "?file=" + item.getKernelFilename();
-        String initrdUrl = itemBaseUrl + "?file=" + item.getInitrdFilename();
+        String kernelUrl = baseUrl + "/item?itemId=" + item.getId() + "&filePath=" + item.getKernelFilename();
+        String initrdUrl = baseUrl + "/item?itemId=" + item.getId() + "&filePath=" + item.getInitrdFilename();
 
         String initrdParam = item.getInitrdFilename() != null
                 ? " initrd=" + item.getInitrdFilename() : "";
@@ -103,13 +102,13 @@ public class IpxeScriptEngine {
      * 生成目录引导脚本
      */
     private String generateDirectoryBoot(BootItem item, String baseUrl) {
-        String itemBaseUrl = baseUrl + "/item/" + item.getId();
+        String itemBaseUrl = baseUrl + "/item?itemId=" + item.getId();
         String kernelParams = item.getKernelParams() != null && !item.getKernelParams().isEmpty()
                 ? " " + item.getKernelParams() : "";
 
         return """
-                kernel %s?file=vmlinuz%s
-                initrd %s?file=initrd.img
+                kernel %s&filePath=vmlinuz%s
+                initrd %s&filePath=initrd.img
                 boot
                 """.formatted(itemBaseUrl, kernelParams, itemBaseUrl);
     }
@@ -118,38 +117,38 @@ public class IpxeScriptEngine {
      * 生成 ISO 引导脚本
      */
     private String generateIsoBoot(BootItem item, String baseUrl) {
-        String itemBaseUrl = baseUrl + "/item/" + item.getId();
+        String itemBaseUrl = baseUrl + "/item?itemId=" + item.getId();
         var bootMethod = item.getIsoBootMethod();
 
         if (bootMethod == IsoBootMethod.WIMBOOT) {
             return """
                     kernel wimboot
-                    initrd %s?file=bootmgr bootmgr
-                    initrd %s?file=Boot/BCD BCD
-                    initrd %s?file=Boot/boot.sdi boot.sdi
-                    initrd %s?file=sources/boot.wim boot.wim
+                    initrd %s&filePath=bootmgr bootmgr
+                    initrd %s&filePath=Boot/BCD BCD
+                    initrd %s&filePath=Boot/boot.sdi boot.sdi
+                    initrd %s&filePath=sources/boot.wim boot.wim
                     boot
                     """.formatted(itemBaseUrl, itemBaseUrl, itemBaseUrl, itemBaseUrl);
         }
 
         if (bootMethod == IsoBootMethod.SANBOOT) {
-            return "sanboot %s?file=image.iso\n".formatted(itemBaseUrl);
+            return "sanboot %s\n".formatted(itemBaseUrl);
         }
 
         if (bootMethod == IsoBootMethod.KERNEL) {
             String kernelParams = item.getKernelParams() != null
                     ? " " + item.getKernelParams() : "";
             return """
-                    kernel %s?file=vmlinuz%s
-                    initrd %s?file=initrd.img
+                    kernel %s&filePath=vmlinuz%s
+                    initrd %s&filePath=initrd.img
                     boot
                     """.formatted(itemBaseUrl, kernelParams, itemBaseUrl);
         }
 
-        // MEMDISK 及默认方式
+        // MEMDISK 及默认方式：filePath 为空，获取 ISO 文件本身
         return """
                 kernel memdisk
-                initrd %s?file=image.iso
+                initrd %s
                 boot
                 """.formatted(itemBaseUrl);
     }
