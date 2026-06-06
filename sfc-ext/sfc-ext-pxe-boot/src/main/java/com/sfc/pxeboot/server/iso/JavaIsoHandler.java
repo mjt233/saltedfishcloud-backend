@@ -265,7 +265,7 @@ public class JavaIsoHandler implements IsoHandler {
         String targetPath = normalizedPath.substring(1); // 移除开头的 /
 
         for (T entry : fs) {
-            if (entry.getPath().equals(targetPath) || entry.getName().equals(targetPath)) {
+            if (entry.getPath().equalsIgnoreCase(targetPath) || entry.getName().equalsIgnoreCase(targetPath)) {
                 String fileName = Path.of(originalPath).getFileName().toString();
                 long size = entry.getSize();
 
