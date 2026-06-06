@@ -43,29 +43,34 @@ public class TftpFileProvider {
      */
     public InputStream openFileStream(String requestPath) {
         try {
-            if (TftpConstants.ResourcePath.I_PXE.equals(requestPath)) {
-                // 响应 iPXE 固件本体（Legacy BIOS 版本）
-                String ipxeBinaryPath = property.getIpxeBinaryPath();
-                if (!StringUtils.hasText(ipxeBinaryPath)) {
-                    log.warn("{} iPXE Legacy BIOS 固件路径未配置", LOG_PREFIX);
+            switch (requestPath) {
+                case TftpConstants.ResourcePath.I_PXE -> {
+                    // 响应 iPXE 固件本体（Legacy BIOS 版本）
+                    String ipxeBinaryPath = property.getIpxeBinaryPath();
+                    if (!StringUtils.hasText(ipxeBinaryPath)) {
+                        log.warn("{} iPXE Legacy BIOS 固件路径未配置", LOG_PREFIX);
+                        return null;
+                    }
+                    return openResourceStream(ipxeBinaryPath);
+                }
+                case TftpConstants.ResourcePath.I_PXE_UEFI -> {
+                    // 响应 iPXE UEFI 固件
+                    String ipxeUefiBinaryPath = property.getIpxeUefiBinaryPath();
+                    if (!StringUtils.hasText(ipxeUefiBinaryPath)) {
+                        log.warn("{} iPXE UEFI 固件路径未配置", LOG_PREFIX);
+                        return null;
+                    }
+                    return openResourceStream(ipxeUefiBinaryPath);
+                }
+                case TftpConstants.ResourcePath.I_PXE_MENU -> {
+                    // 响应 iPXE 固件菜单脚本
+                    String scriptContent = ipxeScriptEngine.generateMenuScript();
+                    return new ByteArrayInputStream(scriptContent.getBytes());
+                }
+                case null, default -> {
+                    log.warn("{} 非预期的请求位置路径 {}", LOG_PREFIX, requestPath);
                     return null;
                 }
-                return openResourceStream(ipxeBinaryPath);
-            } else if (TftpConstants.ResourcePath.I_PXE_UEFI.equals(requestPath)) {
-                // 响应 iPXE UEFI 固件
-                String ipxeUefiBinaryPath = property.getIpxeUefiBinaryPath();
-                if (!StringUtils.hasText(ipxeUefiBinaryPath)) {
-                    log.warn("{} iPXE UEFI 固件路径未配置", LOG_PREFIX);
-                    return null;
-                }
-                return openResourceStream(ipxeUefiBinaryPath);
-            } else if (TftpConstants.ResourcePath.I_PXE_MENU.equals(requestPath)) {
-                // 响应 iPXE 固件菜单脚本
-                String scriptContent = ipxeScriptEngine.generateMenuScript();
-                return new ByteArrayInputStream(scriptContent.getBytes());
-            } else {
-                log.warn("{} 非预期的请求位置路径 {}", LOG_PREFIX, requestPath);
-                return null;
             }
         } catch (Exception e) {
             log.error("{} 打开文件流失败: {}", TftpConstants.LOG_PREFIX, requestPath, e);
