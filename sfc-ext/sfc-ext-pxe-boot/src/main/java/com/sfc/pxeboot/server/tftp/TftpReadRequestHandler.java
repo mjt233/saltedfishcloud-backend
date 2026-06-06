@@ -58,7 +58,8 @@ public class TftpReadRequestHandler {
 
         log.info("{} 收到读请求: {} 来自 {} (blksize={})", TftpConstants.LOG_PREFIX, filename, request.getAddress(), blockSize);
 
-        try (InputStream fileStream = fileProvider.openFileStream(filename)) {
+        String hostIpAddress = serverSocket.getLocalAddress().getHostAddress();
+        try (InputStream fileStream = fileProvider.openFileStream(filename, hostIpAddress)) {
             if (fileStream == null) {
                 sendError(serverSocket, request, "file not found: " + filename);
                 return;
@@ -70,7 +71,7 @@ public class TftpReadRequestHandler {
                 if (!options.isEmpty()) {
                     long fileSize = -1;
                     if (hasTsize) {
-                        try (InputStream sizeStream = fileProvider.openFileStream(filename)) {
+                        try (InputStream sizeStream = fileProvider.openFileStream(filename, hostIpAddress)) {
                             if (sizeStream != null) {
                                 fileSize = 0;
                                 byte[] skipBuf = new byte[8192];

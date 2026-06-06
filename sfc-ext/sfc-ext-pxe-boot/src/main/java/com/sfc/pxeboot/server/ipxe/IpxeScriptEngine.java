@@ -6,6 +6,7 @@ import com.sfc.pxeboot.service.BootMenuManager;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 
@@ -22,39 +23,20 @@ public class IpxeScriptEngine {
     @Autowired
     private PxeBootProperty property;
 
-    public String generateMenuScript() {
-        if (!StringUtils.hasText(property.getTftpServerAddr())) {
-//            log.warn("未配置 tftp-server-addr，无法响应 ipxe menu script");
-
-            return """
-#!ipxe
-
-echo =======================================================
-echo              Salted Fish PXE Boot
-echo =======================================================
-echo .
-echo  !!! Salted Fish PXE Boot System is unavailable now. !!!
-echo  !!! Cause: pxe-boot.tftp-server-addr is not configured. !!!
-echo  !!! Please contact system administrator. !!!
-echo .
-echo =======================================================
-
-# 提示用户按任意键，不设置超时时间（--timeout 0）
-prompt --key 0x1c Press [ENTER] to reboot the computer...
-
-# 用户按下回车后执行重启
-reboot""";
-        }
-        return generateMenuScript(property.getTftpServerAddr());
-    }
+    /**
+     * Spring HTTP 服务端口
+     */
+    @Value("${server.port:8080}")
+    private int serverPort;
 
     /**
-     * 生成 iPXE 菜单脚本
+     * 生成 iPXE 菜单脚本。
      *
-     * @param baseUrl http服务器地址(末尾不要带/)
+     * @param hostIpAddress 服务器主机 IP 地址，用于构建 HTTP 访问 URL
      * @return iPXE 脚本内容
      */
-    public String generateMenuScript(String baseUrl) {
+    public String generateMenuScript(String hostIpAddress) {
+        String baseUrl = "http://" + hostIpAddress + ":" + serverPort;
         List<BootItem> items = bootMenuManager.getActiveItems();
         int timeout = property.getDefaultTimeout() * 1000;
 
