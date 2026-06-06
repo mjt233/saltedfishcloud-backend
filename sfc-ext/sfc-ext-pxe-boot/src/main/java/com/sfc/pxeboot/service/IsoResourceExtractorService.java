@@ -11,10 +11,13 @@ import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomain
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
@@ -96,11 +99,14 @@ public class IsoResourceExtractorService {
     public Resource extractByPath(Long itemId, String path) throws IOException {
         String cachePath = buildCachePath(itemId, "path_" + sha256Hex(path));
         String lockKey = LOCK_PREFIX + cachePath;
+        String fileName = Path.of(path).getFileName().toString();
 
         // 第一次检查缓存
         if (cacheStorage.exist(cachePath)) {
             log.debug("{} 缓存命中: {}", LOG_PREFIX, cachePath);
-            return cacheStorage.getFile(cachePath).orElse(null);
+            return cacheStorage.getFile(cachePath)
+                .map(r -> (Resource) new NamedResource(r, fileName))
+                .orElse(null);
         }
 
         Lock lock = lockFactory.getLock(lockKey);
@@ -109,7 +115,9 @@ public class IsoResourceExtractorService {
             // 第二次检查缓存
             if (cacheStorage.exist(cachePath)) {
                 log.debug("{} 锁内缓存命中: {}", LOG_PREFIX, cachePath);
-                return cacheStorage.getFile(cachePath).orElse(null);
+                return cacheStorage.getFile(cachePath)
+                    .map(r -> (Resource) new NamedResource(r, fileName))
+                    .orElse(null);
             }
 
             // 从 ISO 提取
@@ -122,7 +130,9 @@ public class IsoResourceExtractorService {
             fileResource.close();
 
             log.info("{} 已提取并缓存: itemId={}, path={}", LOG_PREFIX, itemId, path);
-            return cacheStorage.getFile(cachePath).orElse(null);
+            return cacheStorage.getFile(cachePath)
+                .map(r -> (Resource) new NamedResource(r, fileName))
+                .orElse(null);
         } finally {
             lock.unlock();
         }
@@ -148,7 +158,7 @@ public class IsoResourceExtractorService {
         // 第一次检查缓存
         if (cacheStorage.exist(cachePath)) {
             log.debug("{} 缓存命中: {}", LOG_PREFIX, cachePath);
-            return cacheStorage.getFile(cachePath).orElse(null);
+            return getCachedResource(cachePath);
         }
 
         Lock lock = lockFactory.getLock(lockKey);
@@ -157,7 +167,7 @@ public class IsoResourceExtractorService {
             // 第二次检查缓存
             if (cacheStorage.exist(cachePath)) {
                 log.debug("{} 锁内缓存命中: {}", LOG_PREFIX, cachePath);
-                return cacheStorage.getFile(cachePath).orElse(null);
+                return getCachedResource(cachePath);
             }
 
             BootItem item = bootItemService.findById(itemId);
@@ -192,12 +202,15 @@ public class IsoResourceExtractorService {
                 throw new IOException("ISO 中未找到 " + type + " 资源: itemId=" + itemId);
             }
 
-            // 存入缓存
+            // 存入缓存，同时保存文件名元数据
+            String fileName = fileResource.getFilename();
             cacheStorage.saveFile(cachePath, fileResource);
+            assert fileName != null;
+            saveFileName(cachePath, fileName);
             fileResource.close();
 
             log.info("{} 已提取并缓存: itemId={}, type={}", LOG_PREFIX, itemId, type);
-            return cacheStorage.getFile(cachePath).orElse(null);
+            return getCachedResource(cachePath);
         } finally {
             lock.unlock();
         }
@@ -266,6 +279,82 @@ public class IsoResourceExtractorService {
             return HexFormat.of().formatHex(hash).substring(0, 16);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 算法不可用", e);
+        }
+    }
+
+    /**
+     * 保存文件名到缓存元数据文件。
+     */
+    private void saveFileName(String cachePath, String fileName) throws IOException {
+        cacheStorage.saveFile(cachePath + ".name", new org.springframework.core.io.ByteArrayResource(fileName.getBytes()));
+    }
+
+    /**
+     * 从缓存元数据文件读取文件名，不存在时返回 null。
+     */
+    private String loadFileName(String cachePath) throws IOException {
+        return cacheStorage.getFile(cachePath + ".name")
+            .map(r -> {
+                try {
+                    return new String(r.getInputStream().readAllBytes());
+                } catch (IOException e) {
+                    return null;
+                }
+            })
+            .orElse(null);
+    }
+
+    /**
+     * 从缓存获取资源并包装文件名。
+     */
+    private Resource getCachedResource(String cachePath) throws IOException {
+        return cacheStorage.getFile(cachePath)
+            .map(r -> {
+                try {
+                    String fileName = loadFileName(cachePath);
+                    return fileName != null ? (Resource) new NamedResource(r, fileName) : r;
+                } catch (IOException e) {
+                    return r;
+                }
+            })
+            .orElse(null);
+    }
+
+    /**
+     * 包装 Resource，提供正确的文件名。
+     */
+    private static class NamedResource extends AbstractResource {
+        private final Resource delegate;
+        private final String fileName;
+
+        NamedResource(Resource delegate, String fileName) {
+            this.delegate = delegate;
+            this.fileName = fileName;
+        }
+
+        @Override
+        public String getFilename() {
+            return fileName;
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            return delegate.getInputStream();
+        }
+
+        @Override
+        public boolean exists() {
+            return delegate.exists();
+        }
+
+        @Override
+        public long contentLength() throws IOException {
+            return delegate.contentLength();
+        }
+
+        @Override
+        public String getDescription() {
+            return "NamedResource [" + fileName + "]";
         }
     }
 }
