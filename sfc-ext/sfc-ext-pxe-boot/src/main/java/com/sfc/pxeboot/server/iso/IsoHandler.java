@@ -2,7 +2,6 @@ package com.sfc.pxeboot.server.iso;
 
 import org.springframework.core.io.Resource;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
@@ -16,37 +15,28 @@ public interface IsoHandler {
      *
      * @param isoResource    ISO 文件资源
      * @param pathWithinIso  ISO 内部路径
-     * @return 文件列表
+     * @return 文件名列表
      */
     List<String> listFiles(Resource isoResource, String pathWithinIso) throws IOException;
 
     /**
-     * 获取 ISO 中的文件流
+     * 获取 ISO 中的文件资源。
+     * <p>文件不存在时返回 null。</p>
+     * <p>返回的 Resource 在 getInputStream() 时打开 ISO，InputStream 关闭时自动释放。</p>
      *
      * @param isoResource    ISO 文件资源
      * @param pathWithinIso  ISO 内部文件路径
-     * @return 可关闭的文件资源，调用方负责在使用完毕后关闭以释放底层 ISO 文件系统
+     * @return 文件资源，不存在时返回 null
      */
-    CloseableResource getFileStream(Resource isoResource, String pathWithinIso) throws IOException;
+    Resource getResource(Resource isoResource, String pathWithinIso) throws IOException;
 
     /**
-     * 可关闭的资源包装，持有底层 ISO 文件系统的引用。
-     * 调用方必须在使用完毕后调用 {@link #close()} 以释放资源。
-     */
-    interface CloseableResource extends Resource, Closeable {
-        /**
-         * 获取文件名
-         */
-        String getFilename();
-    }
-
-    /**
-     * 在 ISO 中按文件名正则模式搜索匹配的文件路径
+     * 在 ISO 中按文件名正则模式搜索匹配的文件条目
      *
      * @param isoResource ISO 文件资源
      * @param pattern     文件名正则表达式（如 "^vmlinuz", "^linux\\d+"）
      * @param basePath    限定搜索的 ISO 内目录路径，null 表示搜索整个 ISO
-     * @return 所有匹配的 ISO 内完整路径列表
+     * @return 所有匹配的文件条目列表
      */
-    List<String> findFilesByPattern(Resource isoResource, String pattern, String basePath) throws IOException;
+    List<IsoFileEntry> findFilesByPattern(Resource isoResource, String pattern, String basePath) throws IOException;
 }

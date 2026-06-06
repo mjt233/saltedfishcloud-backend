@@ -1,8 +1,8 @@
 package com.sfc.pxeboot.service;
 
 import com.sfc.pxeboot.model.po.BootItem;
+import com.sfc.pxeboot.server.iso.IsoFileEntry;
 import com.sfc.pxeboot.server.iso.IsoHandler;
-import com.sfc.pxeboot.server.iso.IsoHandler.CloseableResource;
 import com.xiaotao.saltedfishcloud.cache.LockFactory;
 import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -46,8 +46,8 @@ public class IsoResourceExtractorService {
 
     // Phase 2: 已知目录正则模式（Proxmox VE）
     private static final Map<String, String[]> KNOWN_DIR_PATTERNS = Map.of(
-        "kernel", new String[]{"/boot/", "^linux\\d+"},
-        "initrd", new String[]{"/boot/", "^initrd\\.img"}
+        "kernel", new String[]{"/boot", "^linux\\d+$"},
+        "initrd", new String[]{"/boot", "^initrd\\.img$"}
     );
 
     // Phase 3: 全局正则扫描兜底
@@ -123,11 +123,13 @@ public class IsoResourceExtractorService {
             // 从 ISO 提取
             BootItem item = bootItemService.findById(itemId);
             Resource isoResource = loadIsoResource(item);
-            CloseableResource fileResource = isoHandler.getFileStream(isoResource, path);
+            Resource resource = isoHandler.getResource(isoResource, path);
+            if (resource == null) {
+                return null;
+            }
 
             // 存入缓存
-            cacheStorage.saveFile(cachePath, fileResource);
-            fileResource.close();
+            cacheStorage.saveFile(cachePath, resource);
 
             log.info("{} 已提取并缓存: itemId={}, path={}", LOG_PREFIX, itemId, path);
             return cacheStorage.getFile(cachePath)
@@ -174,16 +176,16 @@ public class IsoResourceExtractorService {
             Resource isoResource = loadIsoResource(item);
 
             // Phase 1: 已知精确路径探测
-            CloseableResource fileResource = tryKnownPaths(isoResource, KNOWN_PATHS.get(type));
+            Resource fileResource = tryKnownPaths(isoResource, KNOWN_PATHS.get(type));
 
             // Phase 2: 已知目录正则扫描
             if (fileResource == null) {
                 String[] dirPattern = KNOWN_DIR_PATTERNS.get(type);
                 if (dirPattern != null) {
-                    List<String> matches = isoHandler.findFilesByPattern(isoResource, dirPattern[1], dirPattern[0]);
+                    List<IsoFileEntry> matches = isoHandler.findFilesByPattern(isoResource, dirPattern[1], dirPattern[0]);
                     if (!matches.isEmpty()) {
-                        log.debug("{} Phase 2 命中: {}", LOG_PREFIX, matches.getFirst());
-                        fileResource = isoHandler.getFileStream(isoResource, matches.getFirst());
+                        log.debug("{} Phase 2 命中: {}", LOG_PREFIX, matches.getFirst().getPath());
+                        fileResource = isoHandler.getResource(isoResource, matches.getFirst().getPath());
                     }
                 }
             }
@@ -191,10 +193,10 @@ public class IsoResourceExtractorService {
             // Phase 3: 全局正则扫描兜底
             if (fileResource == null) {
                 String fallbackPattern = FALLBACK_PATTERNS.get(type);
-                List<String> matches = isoHandler.findFilesByPattern(isoResource, fallbackPattern, null);
+                List<IsoFileEntry> matches = isoHandler.findFilesByPattern(isoResource, fallbackPattern, null);
                 if (!matches.isEmpty()) {
-                    log.debug("{} Phase 3 命中: {}", LOG_PREFIX, matches.getFirst());
-                    fileResource = isoHandler.getFileStream(isoResource, matches.getFirst());
+                    log.debug("{} Phase 3 命中: {}", LOG_PREFIX, matches.getFirst().getPath());
+                    fileResource = isoHandler.getResource(isoResource, matches.getFirst().getPath());
                 }
             }
 
@@ -208,7 +210,6 @@ public class IsoResourceExtractorService {
             cacheStorage.saveFile(cachePath, fileResource);
             assert fileName != null;
             saveFileName(cachePath, fileName);
-            fileResource.close();
 
             log.info("{} 已提取并缓存: itemId={}, type={}", LOG_PREFIX, itemId, type);
             return getCachedResource(cachePath);
@@ -231,14 +232,16 @@ public class IsoResourceExtractorService {
     /**
      * 尝试从已知精确路径列表中提取文件。
      *
-     * @return 提取成功返回 CloseableResource，全部失败返回 null
+     * @return 提取成功返回 Resource，全部失败返回 null
      */
-    private CloseableResource tryKnownPaths(Resource isoResource, List<String> knownPaths) {
+    private Resource tryKnownPaths(Resource isoResource, List<String> knownPaths) {
         for (String path : knownPaths) {
             try {
-                CloseableResource resource = isoHandler.getFileStream(isoResource, path);
-                log.debug("{} Phase 1 命中: {}", LOG_PREFIX, path);
-                return resource;
+                Resource resource = isoHandler.getResource(isoResource, path);
+                if (resource != null) {
+                    log.debug("{} Phase 1 命中: {}", LOG_PREFIX, path);
+                    return resource;
+                }
             } catch (IOException ignored) {
                 // 该路径不存在，继续尝试下一个
             }

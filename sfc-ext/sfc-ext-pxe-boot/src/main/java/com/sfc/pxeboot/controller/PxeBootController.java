@@ -4,7 +4,6 @@ import com.sfc.pxeboot.PxeBootProperty;
 import com.sfc.pxeboot.model.dto.BootItemDTO;
 import com.sfc.pxeboot.model.dto.PxeServiceStatus;
 import com.sfc.pxeboot.model.dto.PxeSessionInfo;
-import com.sfc.pxeboot.model.enums.IsoBootMethod;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.server.ipxe.IpxeScriptEngine;
 import com.sfc.pxeboot.server.iso.IsoHandler;
@@ -23,12 +22,10 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -317,7 +314,7 @@ public class PxeBootController {
                     if (isoResource == null) {
                         return ResponseEntity.notFound().build();
                     }
-                    resource = isoHandler.getFileStream(isoResource, filePath);
+                    resource = isoHandler.getResource(isoResource, filePath);
                 }
                 break;
             default:

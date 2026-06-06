@@ -1,372 +1,77 @@
 package com.sfc.pxeboot.server.iso;
 
-import com.github.stephenc.javaisotools.loopfs.api.FileEntry;
-import com.github.stephenc.javaisotools.loopfs.api.FileSystem;
-import com.github.stephenc.javaisotools.loopfs.iso9660.Iso9660FileSystem;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFFileSystem;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.AbstractResource;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 
-import java.io.Closeable;
-import java.io.FilterInputStream;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
- * Java ISO 处理器
- * 使用 java-iso-tools 支持 ISO9660 和 UDF 格式
+ * Java ISO 处理器。
+ * <p>将 Spring {@link Resource} 转换为本地文件后委托给 {@link IsoFileSystem}。</p>
  */
 @Slf4j
 public class JavaIsoHandler implements IsoHandler {
 
     @Override
     public List<String> listFiles(Resource isoResource, String pathWithinIso) throws IOException {
-        Path isoLocalPath = getLocalIsoPath(isoResource);
-        String normalizedPath = normalizePath(pathWithinIso);
-
-        log.debug("[PXE-ISO] 列出 ISO 文件: {}, 路径: {}", isoLocalPath, normalizedPath);
-
-        // 尝试以 ISO9660 格式打开
-        try (FileSystem<?> fs = openIso9660(isoLocalPath)) {
-            return listFilesFromFs(fs, normalizedPath);
-        } catch (Exception e) {
-            log.debug("[PXE-ISO] ISO9660 格式打开失败，尝试 UDF 格式: {}", e.getMessage());
-        }
-
-        // 尝试以 UDF 格式打开
-        try (FileSystem<?> fs = openUdf(isoLocalPath)) {
-            return listFilesFromFs(fs, normalizedPath);
-        } catch (Exception e) {
-            throw new IOException("无法识别 ISO 文件格式: " + isoLocalPath, e);
-        }
+        IsoFileSystem fs = createFileSystem(isoResource);
+        return fs.listFiles(pathWithinIso).stream()
+            .map(IsoFileEntry::getName)
+            .toList();
     }
 
     @Override
-    public CloseableResource getFileStream(Resource isoResource, String pathWithinIso) throws IOException {
-        Path isoLocalPath = getLocalIsoPath(isoResource);
-        String normalizedPath = normalizePath(pathWithinIso);
-
-        log.debug("[PXE-ISO] 获取 ISO 文件流: {}, 路径: {}", isoLocalPath, normalizedPath);
-
-        // 尝试以 ISO9660 格式打开
-        try {
-            return getFileFromIso9660(isoLocalPath, normalizedPath, pathWithinIso);
-        } catch (Exception e) {
-            log.debug("[PXE-ISO] ISO9660 格式打开失败，尝试 UDF 格式: {}", e.getMessage());
-        }
-
-        // 尝试以 UDF 格式打开
-        try {
-            return getFileFromUdf(isoLocalPath, normalizedPath, pathWithinIso);
-        } catch (Exception e) {
-            throw new IOException("无法识别 ISO 文件格式: " + isoLocalPath, e);
-        }
+    public Resource getResource(Resource isoResource, String pathWithinIso) throws IOException {
+        IsoFileSystem fs = createFileSystem(isoResource);
+        return fs.getResource(pathWithinIso);
     }
 
     @Override
-    public List<String> findFilesByPattern(Resource isoResource, String pattern, String basePath) throws IOException {
-        Path isoLocalPath = getLocalIsoPath(isoResource);
-        String normalizedBase = basePath != null ? normalizePath(basePath) : null;
-        Pattern regex = Pattern.compile(pattern);
-        String targetPrefix = normalizedBase != null ? normalizedBase.substring(1) : null;
-
-        log.debug("[PXE-ISO] 按模式搜索 ISO 文件: {}, 模式: {}, 基础路径: {}", isoLocalPath, pattern, basePath);
-
-        // 尝试以 ISO9660 格式打开
-        try (FileSystem<?> fs = openIso9660(isoLocalPath)) {
-            return findFilesByPatternFromFs(fs, regex, targetPrefix);
-        } catch (Exception e) {
-            log.debug("[PXE-ISO] ISO9660 格式打开失败，尝试 UDF 格式: {}", e.getMessage());
-        }
-
-        // 尝试以 UDF 格式打开
-        try (FileSystem<?> fs = openUdf(isoLocalPath)) {
-            return findFilesByPatternFromFs(fs, regex, targetPrefix);
-        } catch (Exception e) {
-            throw new IOException("无法识别 ISO 文件格式: " + isoLocalPath, e);
-        }
+    public List<IsoFileEntry> findFilesByPattern(Resource isoResource, String pattern, String basePath) throws IOException {
+        IsoFileSystem fs = createFileSystem(isoResource);
+        return fs.findFilesByPattern(pattern, basePath);
     }
 
     /**
-     * 从 Resource 获取 ISO 文件的本地路径
+     * 从 Spring Resource 创建 IsoFileSystem。
      *
      * @param isoResource ISO 文件资源
-     * @return 本地文件路径
-     * @throws IOException               如果资源不存在
-     * @throws IllegalArgumentException  如果文件不是本地存储的
+     * @return IsoFileSystem 实例
+     * @throws IOException 如果资源不存在或不是本地文件
      */
-    private Path getLocalIsoPath(Resource isoResource) throws IOException {
+    private IsoFileSystem createFileSystem(Resource isoResource) throws IOException {
+        File isoFile = getLocalIsoFile(isoResource);
+        return new JavaIsoToolsIso9660FileSystem(isoFile);
+    }
+
+    /**
+     * 从 Resource 获取 ISO 文件的本地 File 对象。
+     *
+     * @param isoResource ISO 文件资源
+     * @return 本地文件
+     * @throws IOException              如果资源不存在
+     * @throws IllegalArgumentException 如果文件不是本地存储的
+     */
+    private File getLocalIsoFile(Resource isoResource) throws IOException {
         if (!isoResource.exists()) {
             throw new IOException("ISO 文件不存在: " + isoResource.getDescription());
         }
 
         try {
-            // 尝试作为 PathResource 获取路径
-            if (isoResource instanceof org.springframework.core.io.PathResource pathResource) {
-                return Path.of(pathResource.getPath());
+            if (isoResource instanceof PathResource pathResource) {
+                return Path.of(pathResource.getPath()).toFile();
             }
-            // 尝试通过 URI 转换
             if (isoResource.isFile()) {
-                return Path.of(isoResource.getURI());
+                return Path.of(isoResource.getURI()).toFile();
             }
         } catch (Exception e) {
             log.warn("[PXE-ISO] 获取本地路径失败: {}", e.getMessage());
         }
 
         throw new IllegalArgumentException("ISO 文件必须存储在本地文件系统，当前存储不支持直接访问");
-    }
-
-    /**
-     * 规范化 ISO 内部路径
-     */
-    private String normalizePath(String pathWithinIso) {
-        if (pathWithinIso == null || pathWithinIso.isEmpty()) {
-            return "/";
-        }
-        String normalized = pathWithinIso.replace("\\", "/");
-        if (!normalized.startsWith("/")) {
-            normalized = "/" + normalized;
-        }
-        return normalized;
-    }
-
-    /**
-     * 打开 ISO9660 文件系统
-     */
-    private FileSystem<?> openIso9660(Path isoPath) throws IOException {
-        return new Iso9660FileSystem(isoPath.toFile(), true);
-    }
-
-    /**
-     * 打开 UDF 文件系统
-     */
-    private FileSystem<?> openUdf(Path isoPath) throws IOException {
-        return new UDFFileSystem(isoPath.toFile(), true);
-    }
-
-    /**
-     * 从文件系统中列出指定路径下的文件
-     */
-    private List<String> listFilesFromFs(FileSystem<?> fs, String pathWithinIso) {
-        List<String> files = new ArrayList<>();
-        String targetPath = pathWithinIso.substring(1); // 移除开头的 /
-
-        for (Object obj : fs) {
-            FileEntry entry = (FileEntry) obj;
-            String entryPath = entry.getPath();
-
-            // 检查是否在目标目录下
-            if (isUnderPath(entryPath, targetPath)) {
-                // 获取相对路径
-                String relativePath = getRelativePath(entryPath, targetPath);
-                // 只添加直接子项（不包含更深层级的文件）
-                if (!relativePath.contains("/")) {
-                    files.add(entry.getName());
-                }
-            }
-        }
-
-        return files;
-    }
-
-    /**
-     * 检查路径是否在目标目录下
-     */
-    private boolean isUnderPath(String entryPath, String targetPath) {
-        if (targetPath.isEmpty() || targetPath.equals("/")) {
-            // 根目录：检查是否没有父路径
-            return !entryPath.contains("/");
-        }
-        return entryPath.startsWith(targetPath + "/") || entryPath.equals(targetPath);
-    }
-
-    /**
-     * 获取相对路径
-     */
-    private String getRelativePath(String entryPath, String targetPath) {
-        if (targetPath.isEmpty()) {
-            return entryPath;
-        }
-        if (entryPath.startsWith(targetPath + "/")) {
-            return entryPath.substring(targetPath.length() + 1);
-        }
-        return entryPath;
-    }
-
-    /**
-     * 从文件系统中按正则模式搜索匹配的文件路径
-     *
-     * @param fs         ISO 文件系统
-     * @param regex      编译后的正则表达式
-     * @param targetPath 目标目录前缀（已移除开头的 /），空字符串表示搜索整个 ISO
-     * @return 所有匹配的完整路径列表
-     */
-    private List<String> findFilesByPatternFromFs(FileSystem<?> fs, Pattern regex, String targetPath) {
-        List<String> results = new ArrayList<>();
-
-        for (Object obj : fs) {
-            FileEntry entry = (FileEntry) obj;
-            String entryPath = entry.getPath();
-
-            // 如果指定了目标目录，检查是否在该目录下；否则搜索整个 ISO
-            if (targetPath == null || isUnderPath(entryPath, targetPath)) {
-                if (regex.matcher(entry.getName()).find()) {
-                    results.add("/" + entryPath);
-                }
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * 从 ISO9660 格式获取文件流
-     */
-    private CloseableResource getFileFromIso9660(Path isoPath, String normalizedPath, String originalPath) throws IOException {
-        Iso9660FileSystem fs = new Iso9660FileSystem(isoPath.toFile(), true);
-        try {
-            return getFileFromFs(fs, normalizedPath, originalPath);
-        } catch (Exception e) {
-            try {
-                fs.close();
-            } catch (Exception ignored) {
-            }
-            throw e;
-        }
-    }
-
-    /**
-     * 从 UDF 格式获取文件流
-     */
-    private CloseableResource getFileFromUdf(Path isoPath, String normalizedPath, String originalPath) throws IOException {
-        UDFFileSystem fs = new UDFFileSystem(isoPath.toFile(), true);
-        try {
-            return getFileFromFs(fs, normalizedPath, originalPath);
-        } catch (Exception e) {
-            try {
-                fs.close();
-            } catch (Exception ignored) {
-            }
-            throw e;
-        }
-    }
-
-    /**
-     * 从文件系统中获取文件流，以流式方式读取避免 OOM。
-     * 返回的 {@link CloseableResource} 持有底层 ISO 文件系统的引用，
-     * 调用方必须在使用完毕后关闭以释放文件系统资源。
-     */
-    private <T extends FileEntry> CloseableResource getFileFromFs(FileSystem<T> fs, String normalizedPath, String originalPath) throws IOException {
-        String targetPath = normalizedPath.substring(1); // 移除开头的 /
-
-        for (T entry : fs) {
-            if (entry.getPath().equalsIgnoreCase(targetPath) || entry.getName().equalsIgnoreCase(targetPath)) {
-                String fileName = Path.of(originalPath).getFileName().toString();
-                long size = entry.getSize();
-
-                @SuppressWarnings("unchecked")
-                FileSystem<FileEntry> rawFs = (FileSystem<FileEntry>) fs;
-                return new IsoEntryResource(rawFs, entry, fileName, originalPath, size);
-            }
-        }
-
-        throw new IOException("文件不存在于 ISO 中: " + originalPath);
-    }
-
-    /**
-     * ISO 文件条目资源，以流式方式读取文件内容。
-     * 通过 {@link LifecycleInputStream} 将 ISO 文件系统的生命周期绑定到 InputStream，
-     * 当 InputStream 被关闭时自动关闭底层 ISO 文件系统。
-     */
-    private static class IsoEntryResource extends AbstractResource implements CloseableResource {
-        private final FileSystem<FileEntry> fileSystem;
-        private final FileEntry entry;
-        private final String fileName;
-        private final String description;
-        private final long size;
-
-        IsoEntryResource(FileSystem<FileEntry> fileSystem, FileEntry entry, String fileName, String description, long size) {
-            this.fileSystem = fileSystem;
-            this.entry = entry;
-            this.fileName = fileName;
-            this.description = description;
-            this.size = size;
-        }
-
-        @Override
-        public String getFilename() {
-            return fileName;
-        }
-
-        @Override
-        public InputStream getInputStream() throws IOException {
-            return new LifecycleInputStream(fileSystem.getInputStream(entry), fileSystem);
-        }
-
-        @Override
-        public boolean exists() {
-            return true;
-        }
-
-        @Override
-        public long contentLength() {
-            return size;
-        }
-
-        @Override
-        public String getDescription() {
-            return "ISO entry [" + description + "]";
-        }
-
-        @Override
-        public void close() throws IOException {
-            fileSystem.close();
-        }
-    }
-
-    /**
-     * 生命周期 InputStream 包装器。
-     * 关闭此流时，同时关闭底层 InputStream 和关联的 ISO 文件系统。
-     */
-    private static class LifecycleInputStream extends FilterInputStream {
-        private final Closeable lifecycle;
-        private boolean closed = false;
-
-        LifecycleInputStream(InputStream in, Closeable lifecycle) {
-            super(in);
-            this.lifecycle = lifecycle;
-        }
-
-        @Override
-        @SuppressWarnings("try")
-        public void close() throws IOException {
-            if (closed) {
-                return;
-            }
-            closed = true;
-            IOException streamEx = null;
-            try {
-                super.close();
-            } catch (IOException e) {
-                streamEx = e;
-            }
-            try {
-                lifecycle.close();
-            } catch (IOException e) {
-                if (streamEx != null) {
-                    streamEx.addSuppressed(e);
-                    throw streamEx;
-                }
-                throw e;
-            }
-            if (streamEx != null) {
-                throw streamEx;
-            }
-        }
     }
 }
