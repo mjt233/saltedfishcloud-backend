@@ -144,7 +144,7 @@ public class IsoResourceExtractorService {
      *
      * @param itemId 启动项 ID
      * @param type   资源类型，可选 "kernel"、"initrd"
-     * @return 提取后的文件资源
+     * @return 提取后的文件资源。资源不存在则返回null。
      * @throws IOException 如果提取失败
      */
     public Resource extractByType(Long itemId, String type) throws IOException {
@@ -199,7 +199,8 @@ public class IsoResourceExtractorService {
             }
 
             if (fileResource == null) {
-                throw new IOException("ISO 中未找到 " + type + " 资源: itemId=" + itemId);
+                log.warn("ISO 中未找到 " + type + " 资源: itemId=" + itemId);
+                return null;
             }
 
             // 存入缓存，同时保存文件名元数据
