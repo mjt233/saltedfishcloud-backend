@@ -4,6 +4,7 @@ import com.sfc.pxeboot.PxeBootProperty;
 import com.sfc.pxeboot.model.dto.BootItemDTO;
 import com.sfc.pxeboot.model.dto.PxeServiceStatus;
 import com.sfc.pxeboot.model.dto.PxeSessionInfo;
+import com.sfc.pxeboot.model.enums.IsoBootMethod;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.server.ipxe.IpxeScriptEngine;
 import com.sfc.pxeboot.server.iso.IsoHandler;
@@ -13,10 +14,12 @@ import com.sfc.pxeboot.service.BootItemService;
 import com.sfc.pxeboot.service.BootMenuManager;
 import com.sfc.pxeboot.service.PxeSessionTracker;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
@@ -24,6 +27,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -206,7 +210,7 @@ public class PxeBootController {
         String script = ipxeScriptEngine.generateMenuScript(server);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=utf-8")
-//            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"menu.ipxe\"")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "filename=\"menu.ipxe\"")
             .body(script);
     }
 
@@ -258,7 +262,7 @@ public class PxeBootController {
         switch (item.getType()) {
             case DIRECTORY:
             case KERNEL_INITRD:
-                resource = loadResource(item.getUid(), item.getResourcePath(), filePath);
+                resource = loadResource(item.getResourcePath(), filePath);
                 break;
             case ISO:
                 String isoPath = item.getResourcePath();
@@ -275,17 +279,15 @@ public class PxeBootController {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
-            .body(resource);
+        return ResourceUtils.wrapResource(resource);
     }
 
     /**
      * 从网盘加载资源
      */
-    private Resource loadResource(Long uid, String dirPath, String fileName) {
+    private Resource loadResource(String dirPath, String fileName) {
         try {
-            return diskFileSystemManager.getMainFileSystem().getResource(uid, dirPath, fileName);
+            return diskFileSystemManager.getMainFileSystem().getResource(UserConstants.PUBLIC_USER_ID, dirPath, fileName);
         } catch (Exception e) {
             log.error("加载资源失败: {}/{}", dirPath, fileName, e);
             return null;
