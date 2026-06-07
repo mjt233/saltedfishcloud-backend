@@ -1,15 +1,9 @@
 package com.sfc.pxeboot.server.iso;
 
 import lombok.extern.slf4j.Slf4j;
-import net.sf.sevenzipjbinding.ExtractAskMode;
-import net.sf.sevenzipjbinding.ExtractOperationResult;
-import net.sf.sevenzipjbinding.IArchiveExtractCallback;
-import net.sf.sevenzipjbinding.IInArchive;
-import net.sf.sevenzipjbinding.ISequentialOutStream;
-import net.sf.sevenzipjbinding.PropID;
-import net.sf.sevenzipjbinding.SevenZip;
-import net.sf.sevenzipjbinding.SevenZipException;
+import net.sf.sevenzipjbinding.*;
 import net.sf.sevenzipjbinding.impl.RandomAccessFileInStream;
+import net.sf.sevenzipjbinding.ISeekableStream;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.Resource;
@@ -52,7 +46,7 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
         RandomAccessFileInStream stream = new RandomAccessFileInStream(raf);
         IInArchive archive = null;
         try {
-            archive = SevenZip.openInArchive(null, stream);
+            archive = openArchive(stream);
             int itemCount = archive.getNumberOfItems();
 
             for (int i = 0; i < itemCount; i++) {
@@ -87,7 +81,7 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
         RandomAccessFileInStream stream = new RandomAccessFileInStream(raf);
         IInArchive archive = null;
         try {
-            archive = SevenZip.openInArchive(null, stream);
+            archive = openArchive(stream);
             int itemCount = archive.getNumberOfItems();
 
             for (int i = 0; i < itemCount; i++) {
@@ -103,8 +97,7 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
 
                         String fileName = Path.of(normalizedPath).getFileName().toString();
                         Long size = (Long) archive.getProperty(i, PropID.SIZE);
-                        int index = i;
-                        return new LazySevenZipResource(normalizedPath, fileName, size != null ? size : 0, index);
+                        return new LazySevenZipResource(normalizedPath, fileName, size != null ? size : 0, i);
                     }
                 } catch (SevenZipException e) {
                     throw new IOException("读取 ISO 条目属性失败", e);
@@ -121,6 +114,28 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
     // ==================== Helper Methods ====================
 
     /**
+     * 打开 ISO 文件的 archive 实例。
+     * <p>优先使用 UDF 格式打开，失败后回退到自动检测。</p>
+     *
+     * @param stream 已打开的输入流
+     * @return archive 实例
+     * @throws IOException 如果两种格式都无法打开
+     */
+    private IInArchive openArchive(RandomAccessFileInStream stream) throws IOException {
+        try {
+            return SevenZip.openInArchive(ArchiveFormat.UDF, stream);
+        } catch (SevenZipException e) {
+            log.debug("[PXE-ISO-7z] UDF 格式打开失败，尝试自动检测: {}", e.getMessage());
+            try {
+                stream.seek(0, ISeekableStream.SEEK_SET);
+                return SevenZip.openInArchive(null, stream);
+            } catch (SevenZipException e2) {
+                throw new IOException("打开 ISO 失败: " + isoFile, e2);
+            }
+        }
+    }
+
+    /**
      * 独立打开 archive 实例，提取指定索引的文件内容到 {@link ByteArrayInputStream}。
      * <p>此方法会自行管理 archive 和 stream 的生命周期，调用方无需关心资源释放。</p>
      *
@@ -133,7 +148,7 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
         RandomAccessFileInStream stream = new RandomAccessFileInStream(raf);
         IInArchive archive = null;
         try {
-            archive = SevenZip.openInArchive(null, stream);
+            archive = openArchive(stream);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
             archive.extract(new int[]{index}, false, new IArchiveExtractCallback() {
