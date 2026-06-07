@@ -1,5 +1,6 @@
 package com.sfc.pxeboot.server.iso;
 
+import com.sfc.pxeboot.PxeBootProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -10,11 +11,23 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Java ISO 处理器。
- * <p>将 Spring {@link Resource} 转换为本地文件后委托给 {@link IsoFileSystem}。</p>
+ * ISO 处理器。
+ * <p>将 Spring {@link Resource} 转换为本地文件后委托给 {@link IsoFileSystem}。
+ * 根据 {@link PxeBootProperty#getIsoEngine()} 配置动态选择 ISO 解析引擎。</p>
  */
 @Slf4j
 public class JavaIsoHandler implements IsoHandler {
+
+    private final PxeBootProperty pxeBootProperty;
+
+    /**
+     * 构造函数。
+     *
+     * @param pxeBootProperty PXE 启动配置
+     */
+    public JavaIsoHandler(PxeBootProperty pxeBootProperty) {
+        this.pxeBootProperty = pxeBootProperty;
+    }
 
     @Override
     public List<String> listFiles(Resource isoResource, String pathWithinIso) throws IOException {
@@ -37,7 +50,7 @@ public class JavaIsoHandler implements IsoHandler {
     }
 
     /**
-     * 从 Spring Resource 创建 IsoFileSystem。
+     * 根据配置创建对应的 IsoFileSystem 实现。
      *
      * @param isoResource ISO 文件资源
      * @return IsoFileSystem 实例
@@ -45,6 +58,14 @@ public class JavaIsoHandler implements IsoHandler {
      */
     private IsoFileSystem createFileSystem(Resource isoResource) throws IOException {
         File isoFile = getLocalIsoFile(isoResource);
+        String engine = pxeBootProperty.getIsoEngine();
+
+        if ("sevenzipjbinding".equalsIgnoreCase(engine)) {
+            log.debug("[PXE-ISO] 使用 SevenZipJBinding 引擎: {}", isoFile);
+            return new SevenZipJBindingIsoFileSystem(isoFile);
+        }
+
+        log.debug("[PXE-ISO] 使用 java-iso-tools 引擎: {}", isoFile);
         return new JavaIsoToolsIso9660FileSystem(isoFile);
     }
 
