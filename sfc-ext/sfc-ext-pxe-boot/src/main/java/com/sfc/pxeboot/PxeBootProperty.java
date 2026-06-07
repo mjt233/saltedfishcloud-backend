@@ -3,6 +3,7 @@ package com.sfc.pxeboot;
 import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
+import com.xiaotao.saltedfishcloud.annotations.ConfigSelectOption;
 import lombok.Data;
 
 /**
@@ -13,7 +14,8 @@ import lombok.Data;
     @ConfigPropertiesGroup(id = "basic", name = "基础配置"),
     @ConfigPropertiesGroup(id = "tftp", name = "TFTP 服务配置"),
     @ConfigPropertiesGroup(id = "proxydhcp", name = "ProxyDHCP 配置"),
-    @ConfigPropertiesGroup(id = "boot", name = "启动配置")
+    @ConfigPropertiesGroup(id = "boot", name = "启动配置"),
+    @ConfigPropertiesGroup(id = "iso", name = "ISO 配置")
 })
 public class PxeBootProperty {
 
@@ -112,4 +114,23 @@ public class PxeBootProperty {
      */
     @ConfigProperty(value = "default-timeout", title = "默认启动超时(秒)", describe = "启动菜单默认等待时间", defaultValue = "10", group = "boot")
     private Integer defaultTimeout = 10;
+
+    // ==================== ISO 配置 ====================
+
+    /**
+     * ISO 文件解析引擎
+     */
+    @ConfigProperty(
+            value = "iso-engine",
+            title = "ISO 解析引擎",
+            describe = "选择 ISO 文件解析引擎，sevenzipjbinding 兼容性更好",
+            defaultValue = "java-iso-tools",
+            group = "iso",
+            inputType = "select",
+            options = {
+                    @ConfigSelectOption(title = "java-iso-tools", value = "java-iso-tools"),
+                    @ConfigSelectOption(title = "sevenzipjbinding", value = "sevenzipjbinding")
+            }
+    )
+    private String isoEngine = "java-iso-tools";
 }
