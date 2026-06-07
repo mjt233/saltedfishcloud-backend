@@ -208,55 +208,6 @@ public class PxeBootController {
     }
 
     /**
-     * 获取 iPXE 菜单脚本（PXE 客户端调用，无需认证）
-     */
-    @GetMapping("/boot/menu.ipxe")
-    @AllowAnonymous
-    public ResponseEntity<String> getBootMenu(
-            @RequestParam(value = "server", required = false) String server,
-            HttpServletRequest request
-    ) {
-        if (server == null || server.isEmpty()) {
-            server = URLUtils.getBaseUrl(request.getRequestURL().toString());
-        }
-        String script = ipxeScriptEngine.generateMenuScript(server);
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=utf-8")
-            .header(HttpHeaders.CONTENT_DISPOSITION, "filename=\"menu.ipxe\"")
-            .body(script);
-    }
-
-    /**
-     * 获取 iPXE 固件（PXE 客户端调用，无需认证）
-     */
-    @GetMapping("/boot/ipxe.pxe")
-    @AllowAnonymous
-    public ResponseEntity<Resource> getIpxeBinary() throws IOException {
-        String path = property.getIpxeBinaryPath();
-        String dirPath;
-        String fileName;
-
-        int lastSlash = path.lastIndexOf('/');
-        if (lastSlash >= 0) {
-            dirPath = path.substring(0, lastSlash);
-            fileName = path.substring(lastSlash + 1);
-        } else {
-            dirPath = "/";
-            fileName = path;
-        }
-
-        Resource resource = diskFileSystemManager.getMainFileSystem().getResource(0L, dirPath, fileName);
-        if (resource == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-            .body(resource);
-    }
-
-    /**
      * 按类型从 ISO 启动项中提取引导资源（PXE 客户端调用，无需认证）
      *
      * @param itemId 启动项 ID
