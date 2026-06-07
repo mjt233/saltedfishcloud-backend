@@ -3,7 +3,6 @@ package com.sfc.pxeboot.controller;
 import com.sfc.pxeboot.PxeBootProperty;
 import com.sfc.pxeboot.model.dto.BootItemDTO;
 import com.sfc.pxeboot.model.dto.PxeServiceStatus;
-import com.sfc.pxeboot.model.dto.PxeSessionInfo;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.server.ipxe.IpxeScriptEngine;
 import com.sfc.pxeboot.server.iso.IsoHandler;
@@ -11,7 +10,6 @@ import com.sfc.pxeboot.server.proxydhcp.ProxyDhcpServer;
 import com.sfc.pxeboot.server.tftp.PxeTftpServer;
 import com.sfc.pxeboot.service.BootItemService;
 import com.sfc.pxeboot.service.IsoResourceExtractorService;
-import com.sfc.pxeboot.service.PxeSessionTracker;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
@@ -19,13 +17,13 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -45,9 +43,6 @@ public class PxeBootController {
 
     @Autowired
     private BootItemService bootItemService;
-
-    @Autowired
-    private PxeSessionTracker sessionTracker;
 
     @Autowired
     private PxeBootProperty property;
@@ -70,6 +65,9 @@ public class PxeBootController {
     @Autowired
     private IsoResourceExtractorService isoResourceExtractorService;
 
+    @Value("${server.port:8080}")
+    private int httpPort;
+
     // ==================== 服务状态 ====================
 
     /**
@@ -81,11 +79,10 @@ public class PxeBootController {
         PxeServiceStatus status = PxeServiceStatus.builder()
             .tftpRunning(pxeTftpServer.isRunning())
             .httpRunning(true) // HTTP 服务始终运行（复用主应用）
+            .httpPort(httpPort)
             .proxyDhcpRunning(proxyDhcpServer.isRunning())
             .tftpPort(property.getTftpPort())
-            .httpPort(0) // 使用主应用端口
             .activeBootItems(bootItemService.findEnabled().size())
-            .activeSessions(sessionTracker.getActiveSessions().size())
             .build();
         return JsonResultImpl.getInstance(status);
     }
@@ -160,17 +157,6 @@ public class PxeBootController {
     public JsonResult<?> reorderItems(@RequestBody List<Long> orderedIds) {
         bootItemService.reorder(orderedIds);
         return new JsonResultImpl<>();
-    }
-
-    // ==================== 会话监控 ====================
-
-    /**
-     * 获取活跃的 PXE 会话
-     */
-    @GetMapping("sessions")
-    @RolesAllowed("ADMIN")
-    public JsonResult<List<PxeSessionInfo>> activeSessions() {
-        return JsonResultImpl.getInstance(sessionTracker.getActiveSessions());
     }
 
     // ==================== 菜单预览 ====================
