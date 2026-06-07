@@ -8,12 +8,12 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.Resource;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.util.Date;
@@ -136,63 +136,16 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
     }
 
     /**
-     * 独立打开 archive 实例，提取指定索引的文件内容到 {@link ByteArrayInputStream}。
-     * <p>此方法会自行管理 archive 和 stream 的生命周期，调用方无需关心资源释放。</p>
+     * 独立打开 archive 实例，以流式方式提取指定索引的文件内容。
+     * <p>使用管道流（{@link PipedInputStream}/{@link PipedOutputStream}）桥接 7z 推模式提取和 HTTP 响应拉模式读取，
+     * 避免将整个文件缓冲到内存。资源生命周期由返回的 {@link InputStream} 关闭时触发。</p>
      *
      * @param index 文件在 archive 中的索引
      * @return 文件内容的输入流
-     * @throws IOException 如果提取失败
+     * @throws IOException 如果打开 archive 失败
      */
-    private ByteArrayInputStream extractByIndex(int index) throws IOException {
-        RandomAccessFile raf = new RandomAccessFile(isoFile, "r");
-        RandomAccessFileInStream stream = new RandomAccessFileInStream(raf);
-        IInArchive archive = null;
-        try {
-            archive = openArchive(stream);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-            archive.extract(new int[]{index}, false, new IArchiveExtractCallback() {
-                @Override
-                public ISequentialOutStream getStream(int idx, ExtractAskMode mode) throws SevenZipException {
-                    if (mode != ExtractAskMode.EXTRACT) {
-                        return null;
-                    }
-                    return data -> {
-                        try {
-                            baos.write(data);
-                        } catch (IOException e) {
-                            throw new SevenZipException("写入缓冲区失败", e);
-                        }
-                        return data.length;
-                    };
-                }
-
-                @Override
-                public void prepareOperation(ExtractAskMode mode) throws SevenZipException {
-                }
-
-                @Override
-                public void setOperationResult(ExtractOperationResult result) throws SevenZipException {
-                    if (result != ExtractOperationResult.OK) {
-                        throw new SevenZipException("提取失败: " + result);
-                    }
-                }
-
-                @Override
-                public void setCompleted(long completeValue) throws SevenZipException {
-                }
-
-                @Override
-                public void setTotal(long total) throws SevenZipException {
-                }
-            });
-
-            byte[] bytes = baos.toByteArray();
-            return new ByteArrayInputStream(bytes);
-        } finally {
-            closeQuietly(archive);
-            closeQuietly(stream);
-        }
+    private InputStream extractByIndex(int index) throws IOException {
+        return new StreamingSevenZipResource(index).getInputStream();
     }
 
     /**
@@ -317,6 +270,85 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
         @Override
         public String getDescription() {
             return "ISO entry [" + filePath + "]";
+        }
+    }
+
+    /**
+     * 流式提取 ISO 文件条目的资源。
+     * <p>使用 {@link PipedInputStream}/{@link PipedOutputStream} 桥接 7z 的推模式提取和 HTTP 响应的拉模式读取。
+     * 提取在后台 daemon 线程中执行，读端通过 {@link #getInputStream()} 获取数据流。</p>
+     * <p>最大内存占用为管道缓冲区大小（1MB），与文件大小无关，适用于大型 ISO 条目（如 2GB+ WIM 镜像）。</p>
+     */
+    private class StreamingSevenZipResource {
+        private static final int PIPE_BUFFER_SIZE = 1024 * 1024; // 1MB
+
+        private final int index;
+        private final PipedInputStream pipedIn;
+        private final PipedOutputStream pipedOut;
+
+        StreamingSevenZipResource(int index) throws IOException {
+            this.index = index;
+            this.pipedOut = new PipedOutputStream();
+            this.pipedIn = new PipedInputStream(pipedOut, PIPE_BUFFER_SIZE);
+        }
+
+        InputStream getInputStream() {
+            Thread extractThread = new Thread(() -> {
+                RandomAccessFile raf = null;
+                RandomAccessFileInStream stream = null;
+                IInArchive archive = null;
+                try {
+                    raf = new RandomAccessFile(isoFile, "r");
+                    stream = new RandomAccessFileInStream(raf);
+                    archive = openArchive(stream);
+
+                    archive.extract(new int[]{index}, false, new IArchiveExtractCallback() {
+                        @Override
+                        public ISequentialOutStream getStream(int idx, ExtractAskMode mode) throws SevenZipException {
+                            if (mode != ExtractAskMode.EXTRACT) {
+                                return null;
+                            }
+                            return data -> {
+                                try {
+                                    pipedOut.write(data);
+                                } catch (IOException e) {
+                                    throw new SevenZipException("写入管道流失败", e);
+                                }
+                                return data.length;
+                            };
+                        }
+
+                        @Override
+                        public void prepareOperation(ExtractAskMode mode) throws SevenZipException {
+                        }
+
+                        @Override
+                        public void setOperationResult(ExtractOperationResult result) throws SevenZipException {
+                            if (result != ExtractOperationResult.OK) {
+                                throw new SevenZipException("提取失败: " + result);
+                            }
+                        }
+
+                        @Override
+                        public void setCompleted(long completeValue) throws SevenZipException {
+                        }
+
+                        @Override
+                        public void setTotal(long total) throws SevenZipException {
+                        }
+                    });
+                } catch (Exception e) {
+                    log.error("[PXE-ISO-7z] 流式提取 ISO 条目失败: {}, index={}", isoFile, index, e);
+                } finally {
+                    closeQuietly(pipedOut);
+                    closeQuietly(archive);
+                    closeQuietly(stream);
+                }
+            }, "7z-extract-" + isoFile.getName() + "[" + index + "]");
+            extractThread.setDaemon(true);
+            extractThread.start();
+
+            return pipedIn;
         }
     }
 }
