@@ -10,7 +10,6 @@ import com.sfc.pxeboot.server.iso.IsoHandler;
 import com.sfc.pxeboot.server.proxydhcp.ProxyDhcpServer;
 import com.sfc.pxeboot.server.tftp.PxeTftpServer;
 import com.sfc.pxeboot.service.BootItemService;
-import com.sfc.pxeboot.service.BootMenuManager;
 import com.sfc.pxeboot.service.IsoResourceExtractorService;
 import com.sfc.pxeboot.service.PxeSessionTracker;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
@@ -45,9 +44,6 @@ public class PxeBootController {
 
     @Autowired
     private BootItemService bootItemService;
-
-    @Autowired
-    private BootMenuManager bootMenuManager;
 
     @Autowired
     private PxeSessionTracker sessionTracker;
@@ -87,7 +83,7 @@ public class PxeBootController {
             .proxyDhcpRunning(proxyDhcpServer.isRunning())
             .tftpPort(property.getTftpPort())
             .httpPort(0) // 使用主应用端口
-            .activeBootItems(bootMenuManager.getActiveItems().size())
+            .activeBootItems(bootItemService.findEnabled().size())
             .activeSessions(sessionTracker.getActiveSessions().size())
             .build();
         return JsonResultImpl.getInstance(status);
@@ -111,7 +107,6 @@ public class PxeBootController {
     @RolesAllowed("ADMIN")
     public JsonResult<BootItem> createItem(@RequestBody BootItemDTO dto, @AuthenticationPrincipal UserPrincipal user) {
         BootItem item = bootItemService.create(dto, user.getId());
-        bootMenuManager.refresh();
         return JsonResultImpl.getInstance(item);
     }
 
@@ -123,7 +118,6 @@ public class PxeBootController {
     public JsonResult<BootItem> updateItem(@PathVariable Long id, @RequestBody BootItemDTO dto) {
         BootItem item = bootItemService.update(id, dto);
         UIDValidator.validateWithException(item.getUid(), true);
-        bootMenuManager.refresh();
         return JsonResultImpl.getInstance(item);
     }
 
@@ -134,7 +128,6 @@ public class PxeBootController {
     @RolesAllowed("ADMIN")
     public JsonResult<?> deleteItem(@PathVariable Long id) {
         bootItemService.delete(id);
-        bootMenuManager.refresh();
         return new JsonResultImpl<>();
     }
 
@@ -145,7 +138,6 @@ public class PxeBootController {
     @RolesAllowed("ADMIN")
     public JsonResult<?> enableItem(@PathVariable Long id) {
         bootItemService.enable(id);
-        bootMenuManager.refresh();
         return new JsonResultImpl<>();
     }
 
@@ -156,7 +148,6 @@ public class PxeBootController {
     @RolesAllowed("ADMIN")
     public JsonResult<?> disableItem(@PathVariable Long id) {
         bootItemService.disable(id);
-        bootMenuManager.refresh();
         return new JsonResultImpl<>();
     }
 
@@ -167,7 +158,6 @@ public class PxeBootController {
     @RolesAllowed("ADMIN")
     public JsonResult<?> reorderItems(@RequestBody List<Long> orderedIds) {
         bootItemService.reorder(orderedIds);
-        bootMenuManager.refresh();
         return new JsonResultImpl<>();
     }
 
@@ -246,27 +236,18 @@ public class PxeBootController {
     }
 
     /**
-     * 从 ISO 启动项中提取引导资源（PXE 客户端调用，无需认证）
+     * 按类型从 ISO 启动项中提取引导资源（PXE 客户端调用，无需认证）
      *
-     * @param itemId 启动项 ID（必填）
-     * @param type   资源类型，可选 kernel、initrd（与 path 二选一）
-     * @param path   ISO 内文件路径（与 type 二选一，优先级高于 type）
+     * @param itemId 启动项 ID
+     * @param type   资源类型，如 kernel、initrd
      */
-    @GetMapping("/boot/getIsoItem")
+    @GetMapping("/boot/getIsoItem/{itemId}/type/{type}")
     @AllowAnonymous
-    public ResponseEntity<Resource> getIsoItem(
-        @RequestParam Long itemId,
-        @RequestParam(required = false) String type,
-        @RequestParam(required = false) String path
+    public ResponseEntity<Resource> getIsoItemByType(
+        @PathVariable Long itemId,
+        @PathVariable String type
     ) throws IOException {
-        Resource resource;
-        if (path != null && !path.isEmpty()) {
-            resource = isoResourceExtractorService.extractByPath(itemId, path);
-        } else if (type != null && !type.isEmpty()) {
-            resource = isoResourceExtractorService.extractByType(itemId, type);
-        } else {
-            return ResponseEntity.badRequest().build();
-        }
+        Resource resource = isoResourceExtractorService.extractByType(itemId, type);
         if (resource == null) {
             return ResponseEntity.notFound().build();
         }
@@ -274,30 +255,84 @@ public class PxeBootController {
     }
 
     /**
-     * 获取启动项文件（PXE 客户端调用，无需认证）
+     * 按路径从 ISO 启动项中提取引导资源（PXE 客户端调用，无需认证）
      *
-     * @param itemId   启动项 ID（必填）
-     * @param filePath 文件路径（可选）。对于 ISO 类型，为空时表示获取 ISO 文件本身，非空时表示获取 ISO 内指定文件；
-     *                 对于非 ISO 类型，此参数必填。
+     * @param itemId  启动项 ID
+     * @param request HTTP 请求，用于从 URI 中提取 ISO 内文件路径
      */
-    @GetMapping("/boot/item")
+    @GetMapping("/boot/getIsoItem/{itemId}/path/**")
     @AllowAnonymous
-    public ResponseEntity<Resource> getBootItemFile(
-        @RequestParam Long itemId,
-        @RequestParam(required = false) String filePath) throws IOException {
+    public ResponseEntity<Resource> getIsoItemByPath(
+        @PathVariable Long itemId,
+        HttpServletRequest request
+    ) throws IOException {
+        String uri = request.getRequestURI();
+        String prefix = "/api/pxeBoot/boot/getIsoItem/" + itemId + "/path";
+        String path = uri.substring(uri.indexOf(prefix) + prefix.length());
+        Resource resource = isoResourceExtractorService.extractByPath(itemId, path);
+        if (resource == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResourceUtils.wrapResource(resource);
+    }
 
+    /**
+     * 获取启动项文件本身（PXE 客户端调用，无需认证）。
+     * 仅用于 ISO 类型，返回 ISO 文件本身。
+     *
+     * @param itemId 启动项 ID
+     */
+    @GetMapping("/boot/item/{itemId}")
+    @AllowAnonymous
+    public ResponseEntity<Resource> getBootItemFile(@PathVariable Long itemId) throws IOException {
         BootItem item = bootItemService.findById(itemId);
         if (item == null) {
             return ResponseEntity.notFound().build();
         }
 
+        if (item.getType() != com.sfc.pxeboot.model.enums.BootItemType.ISO) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String isoPath = item.getResourcePath();
+        int lastSlash = isoPath.lastIndexOf('/');
+        String isoDir = lastSlash >= 0 ? isoPath.substring(0, lastSlash) : "/";
+        String isoFileName = lastSlash >= 0 ? isoPath.substring(lastSlash + 1) : isoPath;
+        Resource resource = loadResource(UserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
+
+        if (resource == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResourceUtils.wrapResource(resource);
+    }
+
+    /**
+     * 获取启动项内指定路径的文件（PXE 客户端调用，无需认证）。
+     * 对于 DIRECTORY/KERNEL_INITRD 类型，从网盘加载指定文件；
+     * 对于 ISO 类型，从 ISO 内部提取指定文件。
+     *
+     * @param itemId  启动项 ID
+     * @param request HTTP 请求，用于从 URI 中提取文件路径
+     */
+    @GetMapping("/boot/item/{itemId}/**")
+    @AllowAnonymous
+    public ResponseEntity<Resource> getBootItemFileWithFilePath(
+        @PathVariable Long itemId,
+        HttpServletRequest request
+    ) throws IOException {
+        BootItem item = bootItemService.findById(itemId);
+        if (item == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String uri = request.getRequestURI();
+        String prefix = "/api/pxeBoot/boot/item/" + itemId;
+        String filePath = uri.substring(uri.indexOf(prefix) + prefix.length() + 1);
+
         Resource resource;
         switch (item.getType()) {
             case DIRECTORY:
             case KERNEL_INITRD:
-                if (filePath == null || filePath.isEmpty()) {
-                    return ResponseEntity.badRequest().build();
-                }
                 resource = loadResource(UserConstants.PUBLIC_USER_ID, item.getResourcePath(), filePath);
                 break;
             case ISO:
@@ -305,17 +340,11 @@ public class PxeBootController {
                 int lastSlash = isoPath.lastIndexOf('/');
                 String isoDir = lastSlash >= 0 ? isoPath.substring(0, lastSlash) : "/";
                 String isoFileName = lastSlash >= 0 ? isoPath.substring(lastSlash + 1) : isoPath;
-                if (filePath == null || filePath.isEmpty()) {
-                    // filePath 为空时，返回 ISO 文件本身
-                    resource = loadResource(UserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
-                } else {
-                    // filePath 非空时，从 ISO 内部获取指定文件
-                    Resource isoResource = loadResource(UserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
-                    if (isoResource == null) {
-                        return ResponseEntity.notFound().build();
-                    }
-                    resource = isoHandler.getResource(isoResource, filePath);
+                Resource isoResource = loadResource(UserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
+                if (isoResource == null) {
+                    return ResponseEntity.notFound().build();
                 }
+                resource = isoHandler.getResource(isoResource, filePath);
                 break;
             default:
                 return ResponseEntity.badRequest().build();
@@ -324,7 +353,6 @@ public class PxeBootController {
         if (resource == null) {
             return ResponseEntity.notFound().build();
         }
-
         return ResourceUtils.wrapResource(resource);
     }
 

@@ -1,9 +1,10 @@
 package com.sfc.pxeboot.server.ipxe;
 
 import com.sfc.pxeboot.PxeBootProperty;
+import com.sfc.pxeboot.model.enums.BootItemType;
 import com.sfc.pxeboot.model.enums.IsoBootMethod;
 import com.sfc.pxeboot.model.po.BootItem;
-import com.sfc.pxeboot.service.BootMenuManager;
+import com.sfc.pxeboot.service.BootItemService;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 public class IpxeScriptEngine {
 
     @Autowired
-    private BootMenuManager bootMenuManager;
+    private BootItemService bootItemService;
 
     @Autowired
     private PxeBootProperty property;
@@ -32,9 +33,8 @@ public class IpxeScriptEngine {
      * @return iPXE 脚本内容
      */
     public String generateMenuScript(String baseUrl) {
-        List<BootItem> items = bootMenuManager.getActiveItems();
+        List<BootItem> items = bootItemService.findEnabled();
         int timeout = property.getDefaultTimeout() * 1000;
-        String bootApiUrl = baseUrl + "/api/pxeBoot/boot";
 
         String menuItems = items.stream()
                 .map(item -> {
@@ -44,28 +44,39 @@ public class IpxeScriptEngine {
                 .collect(Collectors.joining("\n"));
 
         String bootScripts = items.stream()
-                .map(item -> ":%s\n%s".formatted(item.getItemKey(), generateItemBootScript(item)))
+                .map(item -> ScriptTemplate.render("""
+                                :{{label}}
+                                set res_url {{res_url}}
+                                {{script_content}}
+                                {{boot_action}}
+                                """,
+                        Map.of(
+                                "label", item.getDisplayName(),
+                                "script_content", generateItemBootScript(item),
+                                "res_url", "${base_url}/api/pxeBoot/boot/item/" + item.getId(),
+                                "boot_action", item.getType() == BootItemType.ISO && item.getIsoBootMethod() == IsoBootMethod.SANBOOT ? "" : "boot"
+                        )))
                 .collect(Collectors.joining("\n"));
 
         return ScriptTemplate.render("""
                 #!ipxe
-
+                
                 set base_url {{base_url}}
                 set timeout {{timeout}}
-
+                
                 menu Salted Fish Cloud PXE Boot
                 item --gap -- Please select boot option:
                 {{menu_items}}
                 item shell iPXE Shell
-
+                
                 choose --timeout ${timeout} target && goto ${target}
-
+                
                 {{boot_scripts}}
-
+                
                 :shell
                 shell
                 """, Map.of(
-                "base_url", bootApiUrl,
+                "base_url", baseUrl,
                 "timeout", String.valueOf(timeout),
                 "menu_items", menuItems,
                 "boot_scripts", bootScripts
@@ -87,8 +98,8 @@ public class IpxeScriptEngine {
      * 生成 Linux 内核 + initrd 引导脚本
      */
     private String generateKernelBoot(BootItem item) {
-        String kernelUrl = "${base_url}/item?itemId=" + item.getId() + "&filePath=" + item.getKernelFilename();
-        String initrdUrl = "${base_url}/item?itemId=" + item.getId() + "&filePath=" + item.getInitrdFilename();
+        String kernelUrl = "${res_url}/" + item.getKernelFilename();
+        String initrdUrl = "${res_url}/" + item.getInitrdFilename();
 
         String initrdParam = item.getInitrdFilename() != null
                 ? " initrd=" + item.getInitrdFilename() : "";
@@ -99,7 +110,7 @@ public class IpxeScriptEngine {
 
         return ScriptTemplate.render("""
                 kernel {{kernel_url}}{{initrd_param}}{{kernel_params}}
-                {{initrd_line}}boot
+                {{initrd_line}}
                 """, Map.of(
                 "kernel_url", kernelUrl,
                 "initrd_param", initrdParam,
@@ -112,16 +123,13 @@ public class IpxeScriptEngine {
      * 生成目录引导脚本
      */
     private String generateDirectoryBoot(BootItem item) {
-        String itemBaseUrl = "${base_url}/item?itemId=" + item.getId();
         String kernelParams = item.getKernelParams() != null && !item.getKernelParams().isEmpty()
                 ? " " + item.getKernelParams() : "";
 
         return ScriptTemplate.render("""
-                kernel {{item_base_url}}&filePath=vmlinuz{{kernel_params}}
-                initrd {{item_base_url}}&filePath=initrd.img
-                boot
+                kernel ${res_url}/vmlinuz{{kernel_params}}
+                initrd ${res_url}/initrd.img
                 """, Map.of(
-                "item_base_url", itemBaseUrl,
                 "kernel_params", kernelParams
         ));
     }
@@ -130,33 +138,34 @@ public class IpxeScriptEngine {
      * 生成 ISO 引导脚本
      */
     private String generateIsoBoot(BootItem item) {
-        String itemBaseUrl = "${base_url}/item?itemId=" + item.getId();
         var bootMethod = item.getIsoBootMethod();
 
         if (bootMethod == IsoBootMethod.WIMBOOT) {
-            return ScriptTemplate.render("""
+            return """
                     kernel wimboot
-                    initrd {{item_base_url}}&filePath=bootmgr bootmgr
-                    initrd {{item_base_url}}&filePath=Boot/BCD BCD
-                    initrd {{item_base_url}}&filePath=Boot/boot.sdi boot.sdi
-                    initrd {{item_base_url}}&filePath=sources/boot.wim boot.wim
-                    boot
-                    """, Map.of("item_base_url", itemBaseUrl));
+                    initrd ${res_url}/bootmgr bootmgr
+                    initrd ${res_url}/Boot/BCD BCD
+                    initrd ${res_url}/Boot/boot.sdi boot.sdi
+                    initrd ${res_url}/sources/boot.wim boot.wim
+                    """;
         }
 
         if (bootMethod == IsoBootMethod.SANBOOT) {
-            return "sanboot %s\n".formatted(itemBaseUrl);
+            return "sanboot ${res_url}";
         }
 
         if (bootMethod == IsoBootMethod.KERNEL) {
             String kernelParams = item.getKernelParams() != null
                     ? " " + item.getKernelParams() : "";
+            String kernelUrl = "${base_url}/api/pxeBoot/boot/getIsoItem/" + item.getId() + "/type/kernel";
+            String initrdUrl = "${base_url}/api/pxeBoot/boot/getIsoItem/" + item.getId() + "/type/initrd";
             return ScriptTemplate.render("""
-                    kernel {{item_base_url}}&filePath=vmlinuz{{kernel_params}}
-                    initrd {{item_base_url}}&filePath=initrd.img
-                    boot
+                    set iso_url {{iso_url}}
+                    kernel --name kernel {{kernel_url}}{{kernel_params}}
+                    initrd --name initrd.img {{initrd_url}}
                     """, Map.of(
-                    "item_base_url", itemBaseUrl,
+                    "kernel_url", kernelUrl,
+                    "initrd_url", initrdUrl,
                     "kernel_params", kernelParams
             ));
         }
@@ -164,8 +173,7 @@ public class IpxeScriptEngine {
         // MEMDISK 及默认方式：filePath 为空，获取 ISO 文件本身
         return """
                 kernel memdisk
-                initrd %s
-                boot
-                """.formatted(itemBaseUrl);
+                initrd ${res_url}
+                """;
     }
 }

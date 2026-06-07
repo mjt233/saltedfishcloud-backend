@@ -7,7 +7,6 @@ import com.sfc.pxeboot.server.proxydhcp.ProxyDhcpServer;
 import com.sfc.pxeboot.server.tftp.PxeTftpServer;
 import com.sfc.pxeboot.server.tftp.TftpFileProvider;
 import com.sfc.pxeboot.service.BootItemServiceImpl;
-import com.sfc.pxeboot.service.BootMenuManager;
 import com.sfc.pxeboot.service.IsoResourceExtractorService;
 import com.sfc.pxeboot.service.PxeSessionTracker;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
@@ -26,7 +25,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Import({
         TftpFileProvider.class,
         BootItemServiceImpl.class,
-        BootMenuManager.class,
         PxeSessionTracker.class,
         JavaIsoHandler.class,
         IpxeScriptEngine.class,
