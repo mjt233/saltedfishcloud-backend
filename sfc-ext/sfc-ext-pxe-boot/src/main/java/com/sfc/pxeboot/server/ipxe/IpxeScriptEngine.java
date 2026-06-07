@@ -128,7 +128,7 @@ public class IpxeScriptEngine {
 
         if (bootMethod == IsoBootMethod.WIMBOOT) {
             return """
-                    kernel wimboot
+                    kernel ${res_url}/wimboot
                     initrd ${res_url}/bootmgr bootmgr
                     initrd ${res_url}/Boot/BCD BCD
                     initrd ${res_url}/Boot/boot.sdi boot.sdi
