@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -21,7 +22,9 @@ public class BootItemServiceImpl implements BootItemService {
 
     @Override
     public List<BootItem> findAll() {
-        return bootItemRepo.findAll();
+        List<BootItem> all = bootItemRepo.findAll();
+        all.sort(Comparator.comparing(BootItem::getSortOrder));
+        return all;
     }
 
     @Override
