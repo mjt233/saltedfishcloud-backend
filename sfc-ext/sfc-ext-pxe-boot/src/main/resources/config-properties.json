@@ -1,0 +1,23 @@
+[
+  {
+    "name": "pxe-boot",
+    "title": "PXE 服务配置",
+    "typeRef": "com.sfc.pxeboot.PxeBootProperty"
+  },
+  {
+    "name": "pxe-boot-manager",
+    "title": "启动项管理",
+    "nodes": [
+      {
+        "nodes": [
+          {
+            "name": "pxe-boot-items",
+            "title": "启动项管理",
+            "inputType": "template",
+            "template": "pxe-boot-manager"
+          }
+        ]
+      }
+    ]
+  }
+]

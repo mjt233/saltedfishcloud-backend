@@ -17,6 +17,8 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
+        validator:
+          apply_to_ddl: false
         order_inserts: true
         enable_lazy_load_no_trans: true
         jdbc:

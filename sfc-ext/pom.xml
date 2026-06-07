@@ -45,6 +45,7 @@
         <module>sfc-ext-webdav</module>
         <module>sfc-ext-webdav-store</module>
         <module>sfc-ext-mcp</module>
+        <module>sfc-ext-pxe-boot</module>
     </modules>
 
 
