@@ -11,12 +11,12 @@ public enum BootItemType {
     ISO,
 
     /**
-     * 目录（包含启动文件）
-     */
-    DIRECTORY,
-
-    /**
      * Linux 内核 + initrd 配对
      */
-    KERNEL_INITRD
+    KERNEL_INITRD,
+
+    /**
+     * 自定义 iPXE 脚本
+     */
+    CUSTOM_IPXE_SCRIPT
 }

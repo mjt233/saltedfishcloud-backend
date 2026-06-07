@@ -64,4 +64,9 @@ public class BootItemDTO {
      * ISO 启动方式
      */
     private IsoBootMethod isoBootMethod;
+
+    /**
+     * 自定义 iPXE 脚本
+     */
+    private String customIpxeScript;
 }

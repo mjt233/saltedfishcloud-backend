@@ -75,10 +75,16 @@ public class BootItem extends AuditModel {
     private Integer sortOrder = 0;
 
     /**
-     * 可选的描述信息
+     * 可选的描述信息，用于 iPXE 菜单中显示
      */
     @Column(length = 512)
     private String description;
+
+    /**
+     * 自定义的 iPXE 启动脚本段落
+     */
+    @Lob
+    private String customIpxeScript;
 
     /**
      * ISO 启动方式

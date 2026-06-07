@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -51,10 +52,10 @@ public class IpxeScriptEngine {
                                 {{boot_action}}
                                 """,
                         Map.of(
-                                "label", item.getDisplayName(),
+                                "label", item.getItemKey(),
                                 "script_content", generateItemBootScript(item),
                                 "res_url", "${base_url}/api/pxeBoot/boot/item/" + item.getId(),
-                                "boot_action", item.getType() == BootItemType.ISO && item.getIsoBootMethod() == IsoBootMethod.SANBOOT ? "" : "boot"
+                                "boot_action", item.getType() == BootItemType.CUSTOM_IPXE_SCRIPT || (item.getType() == BootItemType.ISO && item.getIsoBootMethod() == IsoBootMethod.SANBOOT) ? "" : "boot"
                         )))
                 .collect(Collectors.joining("\n"));
 
@@ -89,7 +90,7 @@ public class IpxeScriptEngine {
     private String generateItemBootScript(BootItem item) {
         return switch (item.getType()) {
             case KERNEL_INITRD -> generateKernelBoot(item);
-            case DIRECTORY -> generateDirectoryBoot(item);
+            case CUSTOM_IPXE_SCRIPT -> Optional.ofNullable(item.getCustomIpxeScript()).orElse("");
             case ISO -> generateIsoBoot(item);
         };
     }
@@ -116,21 +117,6 @@ public class IpxeScriptEngine {
                 "initrd_param", initrdParam,
                 "kernel_params", kernelParams,
                 "initrd_line", initrdLine
-        ));
-    }
-
-    /**
-     * 生成目录引导脚本
-     */
-    private String generateDirectoryBoot(BootItem item) {
-        String kernelParams = item.getKernelParams() != null && !item.getKernelParams().isEmpty()
-                ? " " + item.getKernelParams() : "";
-
-        return ScriptTemplate.render("""
-                kernel ${res_url}/vmlinuz{{kernel_params}}
-                initrd ${res_url}/initrd.img
-                """, Map.of(
-                "kernel_params", kernelParams
         ));
     }
 

@@ -331,7 +331,7 @@ public class PxeBootController {
 
         Resource resource;
         switch (item.getType()) {
-            case DIRECTORY:
+            case CUSTOM_IPXE_SCRIPT:
             case KERNEL_INITRD:
                 resource = loadResource(UserConstants.PUBLIC_USER_ID, item.getResourcePath(), filePath);
                 break;
