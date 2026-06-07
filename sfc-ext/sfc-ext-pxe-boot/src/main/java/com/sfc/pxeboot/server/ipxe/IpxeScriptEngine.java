@@ -162,7 +162,7 @@ public class IpxeScriptEngine {
 
         // MEMDISK 及默认方式：filePath 为空，获取 ISO 文件本身
         return """
-                kernel memdisk
+                kernel ${base_url}/api/pxeBoot/boot/memdisk isoraw
                 initrd ${res_url}
                 """;
     }

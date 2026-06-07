@@ -134,6 +134,30 @@ public class PxeBootProperty {
     private String wimbootPath = "/pxeboot/wimboot";
 
     /**
+     * iPXE UEFI 固件路径
+     */
+    @ConfigProperty(
+            value = "memdisk-path",
+            title = "memdisk 固件",
+            describe = "用于引导 ISO 文件等，兼容性较差且不支持 UEFI 启动",
+            defaultValue = "/pxeboot/memdisk",
+            group = "boot",
+            inputType = "template",
+            template = "path-selector",
+            templateParams = """
+                    {
+                        "uid": "0",
+                        "label": "memdisk 固件路径",
+                        "placeholder": "请选择 memdisk 固件文件",
+                        "fileType": "file",
+                        "editable": true,
+                        "selectFile": true
+                    }
+                    """
+    )
+    private String memdisk = "/pxeboot/memdisk";
+
+    /**
      * 默认启动超时时间（秒）
      */
     @ConfigProperty(value = "default-timeout", title = "默认启动超时(秒)", describe = "启动菜单默认等待时间", defaultValue = "10", group = "boot")

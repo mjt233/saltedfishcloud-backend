@@ -190,6 +190,23 @@ public class PxeBootController {
         return ResourceUtils.wrapResource(resource);
     }
 
+    @GetMapping("/boot/memdisk")
+    @AllowAnonymous
+    public ResponseEntity<Resource> getMemdisk() throws IOException {
+        String memdiskPath = property.getMemdisk();
+        if (memdiskPath == null) {
+            log.warn("未配置 memdisk 路径");
+            return ResponseEntity.notFound().build();
+        }
+        Resource resource = diskFileSystemManager.getMainFileSystem()
+                .getResource(UserConstants.PUBLIC_USER_ID, memdiskPath, null);
+        if (resource == null) {
+            log.warn("memdisk 文件不存在: {}", memdiskPath);
+            return ResponseEntity.notFound().build();
+        }
+        return ResourceUtils.wrapResource(resource);
+    }
+
     /**
      * 获取 iPXE 菜单脚本（PXE 客户端调用，无需认证）
      */
