@@ -55,7 +55,7 @@ public class IpxeScriptEngine {
                                 "label", item.getItemKey(),
                                 "script_content", generateItemBootScript(item),
                                 "res_url", "${base_url}/api/pxeBoot/boot/item/" + item.getId(),
-                                "boot_action", item.getType() == BootItemType.CUSTOM_IPXE_SCRIPT || (item.getType() == BootItemType.ISO && item.getIsoBootMethod() == IsoBootMethod.SANBOOT) ? "" : "boot"
+                                "boot_action", item.getType() == BootItemType.CUSTOM_IPXE_SCRIPT || (item.getType() == BootItemType.ISO && (item.getIsoBootMethod() == IsoBootMethod.SANBOOT || item.getIsoBootMethod() == IsoBootMethod.CUSTOM_IPXE_SCRIPT)) ? "" : "boot"
                         )))
                 .collect(Collectors.joining("\n"));
 
@@ -125,6 +125,10 @@ public class IpxeScriptEngine {
      */
     private String generateIsoBoot(BootItem item) {
         var bootMethod = item.getIsoBootMethod();
+
+        if (bootMethod == IsoBootMethod.CUSTOM_IPXE_SCRIPT) {
+            return Optional.ofNullable(item.getCustomIpxeScript()).orElse("");
+        }
 
         if (bootMethod == IsoBootMethod.WIMBOOT) {
             return """

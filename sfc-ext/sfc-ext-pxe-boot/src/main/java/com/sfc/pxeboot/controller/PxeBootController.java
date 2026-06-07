@@ -19,6 +19,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import jakarta.annotation.security.RolesAllowed;
@@ -344,7 +345,11 @@ public class PxeBootController {
                 if (isoResource == null) {
                     return ResponseEntity.notFound().build();
                 }
-                resource = isoHandler.getResource(isoResource, filePath);
+                if (filePath.startsWith("/")) {
+                    resource = isoHandler.getResource(isoResource, filePath);
+                } else {
+                    resource = isoHandler.getResource(isoResource, "/" + filePath);
+                }
                 break;
             default:
                 return ResponseEntity.badRequest().build();

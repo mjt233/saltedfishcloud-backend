@@ -23,5 +23,10 @@ public enum IsoBootMethod {
     /**
      * 使用 sanboot 启动
      */
-    SANBOOT
+    SANBOOT,
+
+    /**
+     * 自定义编写 ISO 的 iPXE 启动脚本
+     */
+    CUSTOM_IPXE_SCRIPT
 }
