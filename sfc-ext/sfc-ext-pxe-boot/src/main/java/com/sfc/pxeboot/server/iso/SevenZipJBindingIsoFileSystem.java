@@ -95,7 +95,7 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
                     String rawPath = (String) archive.getProperty(i, PropID.PATH);
                     String itemPath = normalizePath(rawPath);
 
-                    if (itemPath.equals(normalizedPath)) {
+                    if (itemPath.equalsIgnoreCase(normalizedPath)) {
                         Boolean isFolder = (Boolean) archive.getProperty(i, PropID.IS_FOLDER);
                         if (Boolean.TRUE.equals(isFolder)) {
                             return null;
@@ -208,7 +208,8 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
                     : IsoFileEntry.EntryType.FILE;
 
             long lastModifiedMillis = lastModified != null ? lastModified.getTime() : 0;
-            return new IsoFileEntry(name, normalizedPath, size, lastModifiedMillis, type);
+            long entrySize = Boolean.TRUE.equals(isFolder) ? -1 : size;
+            return new IsoFileEntry(name, normalizedPath, entrySize, lastModifiedMillis, type);
         } catch (SevenZipException e) {
             throw new IOException("读取 ISO 条目属性失败", e);
         }
