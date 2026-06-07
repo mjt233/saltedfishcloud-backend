@@ -187,6 +187,23 @@ public class PxeBootController {
 
     // ==================== PXE 引导资源（无需认证） ====================
 
+    @GetMapping("/boot/wimboot")
+    @AllowAnonymous
+    public ResponseEntity<Resource> getWimboot() throws IOException {
+        String wimbootPath = property.getWimbootPath();
+        if (wimbootPath == null) {
+            log.warn("未配置 wimboot 路径，无法提供 wimboot 引导");
+            return ResponseEntity.notFound().build();
+        }
+        Resource resource = diskFileSystemManager.getMainFileSystem()
+                .getResource(UserConstants.PUBLIC_USER_ID, wimbootPath, null);
+        if (resource == null) {
+            log.warn("wimboot 文件不存在: {}", wimbootPath);
+            return ResponseEntity.notFound().build();
+        }
+        return ResourceUtils.wrapResource(resource);
+    }
+
     /**
      * 获取 iPXE 菜单脚本（PXE 客户端调用，无需认证）
      */

@@ -110,6 +110,30 @@ public class PxeBootProperty {
     private String ipxeUefiBinaryPath = "/pxeboot/ipxe-x86_64.efi";
 
     /**
+     * iPXE UEFI 固件路径
+     */
+    @ConfigProperty(
+            value = "wimboot-path",
+            title = "WIMBOOT 固件",
+            describe = "用于引导 Windows 启动",
+            defaultValue = "/pxeboot/wimboot",
+            group = "boot",
+            inputType = "template",
+            template = "path-selector",
+            templateParams = """
+                    {
+                        "uid": "0",
+                        "label": "WIMBOOT 固件路径",
+                        "placeholder": "请选择 WIMBOOT 固件文件",
+                        "fileType": "file",
+                        "editable": true,
+                        "selectFile": true
+                    }
+                    """
+    )
+    private String wimbootPath = "/pxeboot/wimboot";
+
+    /**
      * 默认启动超时时间（秒）
      */
     @ConfigProperty(value = "default-timeout", title = "默认启动超时(秒)", describe = "启动菜单默认等待时间", defaultValue = "10", group = "boot")
