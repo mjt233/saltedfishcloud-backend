@@ -150,9 +150,10 @@ public class IpxeScriptEngine {
             String kernelUrl = "${base_url}/api/pxeBoot/boot/getIsoItem/" + item.getId() + "/type/kernel";
             String initrdUrl = "${base_url}/api/pxeBoot/boot/getIsoItem/" + item.getId() + "/type/initrd";
             return ScriptTemplate.render("""
-                    set iso_url {{iso_url}}
-                    kernel --name kernel {{kernel_url}}{{kernel_params}}
-                    initrd --name initrd.img {{initrd_url}}
+                    set kernel_url {{kernel_url}}
+                    set initrd_url {{initrd_url}}
+                    kernel ${kernel_url}{{kernel_params}}
+                    initrd ${initrd_url}
                     """, Map.of(
                     "kernel_url", kernelUrl,
                     "initrd_url", initrdUrl,
