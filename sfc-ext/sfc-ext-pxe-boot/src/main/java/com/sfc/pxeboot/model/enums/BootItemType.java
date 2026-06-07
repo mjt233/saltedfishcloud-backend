@@ -16,7 +16,7 @@ public enum BootItemType {
     KERNEL_INITRD,
 
     /**
-     * 自定义 iPXE 脚本
+     * 资源路径指定目录，完全自行编写自定义 iPXE 脚本
      */
     CUSTOM_IPXE_SCRIPT
 }
