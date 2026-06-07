@@ -102,9 +102,9 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
                         }
 
                         String fileName = Path.of(normalizedPath).getFileName().toString();
-                        long size = (Long) archive.getProperty(i, PropID.SIZE);
+                        Long size = (Long) archive.getProperty(i, PropID.SIZE);
                         int index = i;
-                        return new LazySevenZipResource(normalizedPath, fileName, size, index);
+                        return new LazySevenZipResource(normalizedPath, fileName, size != null ? size : 0, index);
                     }
                 } catch (SevenZipException e) {
                     throw new IOException("读取 ISO 条目属性失败", e);
@@ -191,7 +191,7 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
         try {
             String rawPath = (String) archive.getProperty(index, PropID.PATH);
             Boolean isFolder = (Boolean) archive.getProperty(index, PropID.IS_FOLDER);
-            long size = (Long) archive.getProperty(index, PropID.SIZE);
+            Long size = (Long) archive.getProperty(index, PropID.SIZE);
             Date lastModified = (Date) archive.getProperty(index, PropID.LAST_MODIFICATION_TIME);
 
             String normalizedPath = normalizePath(rawPath);
@@ -208,7 +208,7 @@ public class SevenZipJBindingIsoFileSystem implements IsoFileSystem {
                     : IsoFileEntry.EntryType.FILE;
 
             long lastModifiedMillis = lastModified != null ? lastModified.getTime() : 0;
-            long entrySize = Boolean.TRUE.equals(isFolder) ? -1 : size;
+            long entrySize = Boolean.TRUE.equals(isFolder) ? -1 : (size != null ? size : 0);
             return new IsoFileEntry(name, normalizedPath, entrySize, lastModifiedMillis, type);
         } catch (SevenZipException e) {
             throw new IOException("读取 ISO 条目属性失败", e);
