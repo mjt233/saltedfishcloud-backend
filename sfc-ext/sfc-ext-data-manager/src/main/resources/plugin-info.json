@@ -1,0 +1,12 @@
+{
+  "name": "data-manager",
+  "alias": "数据管理",
+  "describe": "管理员对网盘数据进行导出、导入，文件元数据定期备份",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-database-export",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^"
+}
