@@ -120,7 +120,7 @@ git clone git@github.com:mjt233/saltedfishcloud-backend.git
 1. maven的profile设置为`develop`，或指定SpringBoot配置文件为`sfc-core/src/main/config/application-develop.yml`（下面简称为
    `application-develop.yml`）
 2. 修改`application-develop.yml`，为`plugin.extra-resource`添加一项: `sfc-ext/你的插件项目目录`
-3. 如果插件有配置第三方依赖，请务必对插件的maven模块执行`mvn compile`确保依赖库能得到加载
+3. 如果插件有配置第三方依赖，请务必对插件的maven模块执行`mvn compile`确保依赖库能得到加载，并提示用户在IDE中刷新依赖信息以便后续能使用`build_project`进行验证。
 
 ## 6. 构建插件
 
