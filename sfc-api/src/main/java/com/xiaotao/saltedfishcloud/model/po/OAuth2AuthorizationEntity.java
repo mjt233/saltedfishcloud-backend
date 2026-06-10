@@ -66,7 +66,7 @@ public class OAuth2AuthorizationEntity {
      * OAuth2 授权请求的附加属性，JSON 格式。
      */
     @Lob
-    @Column
+    @Column(length = 2048)
     private String attributes;
 
     /**
@@ -78,7 +78,7 @@ public class OAuth2AuthorizationEntity {
     /**
      * 授权码（Authorization Code）的值。
      */
-    @Column(length = 1000)
+    @Column(length = 768)
     private String authorizationCodeValue;
 
     /**
@@ -97,13 +97,13 @@ public class OAuth2AuthorizationEntity {
      * 授权码的元数据，JSON 格式。
      */
     @Lob
-    @Column
+    @Column(length = 2048)
     private String authorizationCodeMetadata;
 
     /**
      * 访问令牌（Access Token）的值。
      */
-    @Column(length = 1000)
+    @Column(length = 768)
     private String accessTokenValue;
 
     /**
@@ -122,7 +122,7 @@ public class OAuth2AuthorizationEntity {
      * 访问令牌的元数据，JSON 格式。
      */
     @Lob
-    @Column
+    @Column(length = 2048)
     private String accessTokenMetadata;
 
     /**
@@ -140,7 +140,7 @@ public class OAuth2AuthorizationEntity {
     /**
      * OIDC ID Token 的值。
      */
-    @Column(length = 1000)
+    @Column(length = 768)
     private String oidcIdTokenValue;
 
     /**
@@ -159,13 +159,13 @@ public class OAuth2AuthorizationEntity {
      * OIDC ID Token 的元数据，JSON 格式。
      */
     @Lob
-    @Column
+    @Column(length = 2048)
     private String oidcIdTokenMetadata;
 
     /**
      * 刷新令牌（Refresh Token）的值。
      */
-    @Column(length = 1000)
+    @Column(length = 768)
     private String refreshTokenValue;
 
     /**
@@ -184,7 +184,7 @@ public class OAuth2AuthorizationEntity {
      * 刷新令牌的元数据，JSON 格式。
      */
     @Lob
-    @Column
+    @Column(length = 2048)
     private String refreshTokenMetadata;
 
     /**
@@ -209,7 +209,7 @@ public class OAuth2AuthorizationEntity {
      * 用户码的元数据，JSON 格式。
      */
     @Lob
-    @Column
+    @Column(length = 2048)
     private String userCodeMetadata;
 
     /**
@@ -234,6 +234,6 @@ public class OAuth2AuthorizationEntity {
      * 设备码的元数据，JSON 格式。
      */
     @Lob
-    @Column
+    @Column(length = 2048)
     private String deviceCodeMetadata;
 }
