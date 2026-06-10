@@ -78,7 +78,7 @@ public class OAuth2AuthorizationEntity {
     /**
      * 授权码（Authorization Code）的值。
      */
-    @Column(length = 1000)
+    @Column(length = 768)
     private String authorizationCodeValue;
 
     /**
@@ -103,7 +103,7 @@ public class OAuth2AuthorizationEntity {
     /**
      * 访问令牌（Access Token）的值。
      */
-    @Column(length = 1000)
+    @Column(length = 768)
     private String accessTokenValue;
 
     /**
@@ -140,7 +140,7 @@ public class OAuth2AuthorizationEntity {
     /**
      * OIDC ID Token 的值。
      */
-    @Column(length = 1000)
+    @Column(length = 768)
     private String oidcIdTokenValue;
 
     /**
@@ -165,7 +165,7 @@ public class OAuth2AuthorizationEntity {
     /**
      * 刷新令牌（Refresh Token）的值。
      */
-    @Column(length = 1000)
+    @Column(length = 768)
     private String refreshTokenValue;
 
     /**
