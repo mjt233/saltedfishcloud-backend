@@ -15,13 +15,13 @@ interface FileTypeCheckProvider {
     getId(): string
 
     /**
-     * 获取该Provider检测的文件类型名称，如：“图片”、“视频”、“文档”等。
+     * 获取该Provider检测的文件类型名称，如："图片"、"视频"、"文档"等。
      * 一个Provider应只处理一类的文件
      */
     getTypeName(): string
 
     /**
-     * 获取该Provider检测的文件类型标识，如：“image”、“video”、“document”等。
+     * 获取该Provider检测的文件类型标识，如："image"、"video"、"document"等。
      * 该标识用于内部区分不同类型的文件，使用小写字母，且不包含空格。
      */
     getTypeId(): string
@@ -59,7 +59,7 @@ interface FileTypeChecker {
      * 获取已注册的FileTypeCheckProvider列表
      */
     getProviders(): List<FileTypeCheckProvider>;
-    
+
     /**
      * 对文件进行类型检测与元数据提取
      * @param file 要检测的文件资源
@@ -73,10 +73,10 @@ interface FileTypeChecker {
  * 文件元数据定义
  */
 interface FileMetedataDefine {
-    name: string // 元数据的人类阅读友好名称，如“图片宽度”、“视频时长”等
-    key: string // 元数据的唯一标识符，如“width”、“duration”等
+    name: string // 元数据的人类阅读友好名称，如"图片宽度"、"视频时长"等
+    key: string // 元数据的唯一标识符，如"width"、"duration"等
     description?: string // 元数据的描述信息，说明该元数据的含义和用途
-    viewTag?: string // 在页面视图上展示值时使用的html标签或vue组件名称，如“span”、“div”等，如果未定义则默认为"span"
+    viewTag?: string // 在页面视图上展示值时使用的html标签或vue组件名称，如"span"、"div"等，如果未定义则默认为"span"
 }
 
 interface FileTypeCheckResult {
@@ -93,3 +93,23 @@ interface FileTypeCheckResultDetail {
     message?: string // 额外的提示信息，识别过程中遇到的问题或特殊情况等不影响识别，但需要告知用户留意的消息
 }
 ```
+
+## 与失效数据检测的集成
+
+### 触发方式
+
+文件识别通过异步任务执行，由管理员在失效数据检测完成后手动发起。
+
+并发控制：限制只能同时有一个进行中的文件识别或检测任务，识别或识别过程中不允许再次发起检测或文件识别任务。
+
+### 识别范围
+
+识别任务处理所有失效数据记录中`是否为待识别文件`字段为true的记录：
+- UNIQUE模式下的失效物理存储（无法从物理存储路径直接识别文件类型）
+- RAW模式无需识别，直接根据拓展名识别即可
+
+### 结果回写
+
+识别完成后直接更新失效数据记录的以下字段，无需管理员二次确认（识别结果仅作参考信息）：
+- `fileType`：基于系统支持的文件类型识别的typeId（如"image"、"video"、"document"等）
+- `metadata`：提取的元数据（如图片宽高、视频时长等）
