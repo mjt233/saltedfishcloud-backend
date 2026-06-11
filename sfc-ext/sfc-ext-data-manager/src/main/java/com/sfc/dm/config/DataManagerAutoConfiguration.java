@@ -7,6 +7,7 @@ import com.sfc.dm.service.ClaimService;
 import com.sfc.dm.service.InvalidDataService;
 import com.sfc.dm.service.identify.FileTypeChecker;
 import com.sfc.dm.service.identify.FileTypeCheckerImpl;
+import com.sfc.dm.service.identify.AudioCheckProvider;
 import com.sfc.dm.service.identify.VideoCheckProvider;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
@@ -55,5 +56,14 @@ public class DataManagerAutoConfiguration {
     @ConditionalOnClass(name = "com.saltedfishcloud.ext.ve.core.FFMpegHelper")
     public VideoCheckProvider videoCheckProvider(FFMpegHelper ffMpegHelper) {
         return new VideoCheckProvider(ffMpegHelper);
+    }
+
+    /**
+     * 当sfc-ext-video-enhance插件存在时，注册音频文件类型识别提供者
+     */
+    @Bean
+    @ConditionalOnClass(name = "com.saltedfishcloud.ext.ve.core.FFMpegHelper")
+    public AudioCheckProvider audioCheckProvider(FFMpegHelper ffMpegHelper) {
+        return new AudioCheckProvider(ffMpegHelper);
     }
 }
