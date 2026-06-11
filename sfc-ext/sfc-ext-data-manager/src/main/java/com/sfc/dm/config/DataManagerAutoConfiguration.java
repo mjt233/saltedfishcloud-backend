@@ -10,6 +10,8 @@ import com.sfc.dm.service.identify.FileTypeCheckerImpl;
 import com.sfc.dm.service.identify.VideoCheckProvider;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
+import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,8 +45,15 @@ public class DataManagerAutoConfiguration {
 
     @Bean
     public FileTypeChecker fileTypeChecker() {
-        FileTypeCheckerImpl checker = new FileTypeCheckerImpl();
-        checker.addProvider(new VideoCheckProvider());
-        return checker;
+        return new FileTypeCheckerImpl();
+    }
+
+    /**
+     * 当sfc-ext-video-enhance插件存在时，注册视频文件类型识别提供者
+     */
+    @Bean
+    @ConditionalOnClass(name = "com.saltedfishcloud.ext.ve.core.FFMpegHelper")
+    public VideoCheckProvider videoCheckProvider(FFMpegHelper ffMpegHelper) {
+        return new VideoCheckProvider(ffMpegHelper);
     }
 }

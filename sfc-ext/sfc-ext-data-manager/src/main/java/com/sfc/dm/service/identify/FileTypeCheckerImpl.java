@@ -3,6 +3,7 @@ package com.sfc.dm.service.identify;
 import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import lombok.Getter;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -18,6 +19,16 @@ public class FileTypeCheckerImpl implements FileTypeChecker {
     @Override
     public void addProvider(FileTypeCheckProvider provider) {
         providers.add(provider);
+    }
+
+    /**
+     * 自动注入所有{@link FileTypeCheckProvider}实现
+     */
+    @Autowired(required = false)
+    public void setProviders(List<FileTypeCheckProvider> providers) {
+        if (providers != null) {
+            providers.forEach(this::addProvider);
+        }
     }
 
     @Override
