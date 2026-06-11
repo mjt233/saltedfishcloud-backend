@@ -19,8 +19,20 @@
         <music.version>1.0.0</music.version>
     </properties>
 
-    <!-- 复用其他插件的依赖，系统加载其他插件时获得相关资源的识别能力 -->
     <dependencies>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-api</artifactId>
+            <version>${api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-task-api</artifactId>
+            <version>${task.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- 复用其他插件的依赖，系统加载其他插件时获得相关资源的识别能力 -->
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-ext-video-enhance</artifactId>
