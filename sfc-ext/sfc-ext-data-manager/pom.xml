@@ -15,6 +15,23 @@
     <properties>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
+        <ve.version>${revision}</ve.version>
+        <music.version>1.0.0</music.version>
     </properties>
 
+    <!-- 复用其他插件的依赖，系统加载其他插件时获得相关资源的识别能力 -->
+    <dependencies>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-ext-video-enhance</artifactId>
+            <version>${version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-ext-music</artifactId>
+            <version>${music.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 </project>
