@@ -2,11 +2,13 @@ package com.sfc.dm.controller;
 
 import com.sfc.dm.constant.DataManagerTaskType;
 import com.sfc.dm.model.dto.ClaimParam;
+import com.sfc.dm.model.dto.FileTypeProviderInfo;
 import com.sfc.dm.model.dto.InvalidDataQuery;
 import com.sfc.dm.model.po.ClaimRecord;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.service.ClaimService;
 import com.sfc.dm.service.InvalidDataService;
+import com.sfc.dm.service.identify.FileTypeChecker;
 import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskCreateParam;
@@ -39,6 +41,7 @@ public class InvalidDataController {
     private final ClaimService claimService;
     private final AsyncTaskManager asyncTaskManager;
     private final AsyncTaskRecordRepo asyncTaskRecordRepo;
+    private final FileTypeChecker fileTypeChecker;
 
     /**
      * 检查是否有进行中的检测或识别任务
@@ -51,6 +54,23 @@ public class InvalidDataController {
         if (count > 0) {
             throw new IllegalStateException("已有进行中的检测或识别任务，请等待完成后再发起");
         }
+    }
+
+    /**
+     * 获取系统当前支持的文件类型识别器信息
+     */
+    @GetMapping("providers")
+    public JsonResult<List<FileTypeProviderInfo>> listProviders() {
+        List<FileTypeProviderInfo> list = fileTypeChecker.getProviders().stream()
+                .map(p -> new FileTypeProviderInfo(
+                        p.getId(),
+                        p.getTypeId(),
+                        p.getTypeName(),
+                        p.getSupportedFileExtensions(),
+                        p.getMetadataDefines()
+                ))
+                .toList();
+        return JsonResultImpl.getInstance(list);
     }
 
     // === 管理员操作 ===
