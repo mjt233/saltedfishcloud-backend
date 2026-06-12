@@ -3,6 +3,7 @@ package com.sfc.dm.model.po;
 import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.enums.InvalidDataType;
 import com.sfc.dm.enums.ProcessMethod;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -85,4 +86,10 @@ public class InvalidDataRecord extends AuditModel {
      * 文件MD5
      */
     private String md5;
+
+    /**
+     * 基于哪种存储模式下检测出的结果
+     */
+    @Enumerated(EnumType.STRING)
+    private StoreMode storeMode;
 }

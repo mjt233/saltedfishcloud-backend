@@ -6,6 +6,7 @@ import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
@@ -13,7 +14,6 @@ import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.AbstractRawStoreService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
@@ -35,12 +35,20 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class InvalidDataDetectTask implements AsyncTask {
-    @Setter private InvalidDataRecordRepo invalidDataRepo;
-    @Setter private StoreServiceFactory storeServiceFactory;
-    @Setter private DiskFileSystemManager fileSystemManager;
-    @Setter private FileInfoRepo fileInfoRepo;
-    @Setter private SysCommonConfig sysCommonConfig;
-    @Setter private UserService userService;
+    @Setter
+    private InvalidDataRecordRepo invalidDataRepo;
+    @Setter
+    private StoreServiceFactory storeServiceFactory;
+    @Setter
+    private DiskFileSystemManager fileSystemManager;
+    @Setter
+    private FileInfoRepo fileInfoRepo;
+    @Setter
+    private SysCommonConfig sysCommonConfig;
+    @Setter
+    private SysProperties sysProperties;
+    @Setter
+    private UserService userService;
 
     private PrintWriter logWriter;
     private final AtomicBoolean running = new AtomicBoolean(false);
@@ -107,40 +115,47 @@ public class InvalidDataDetectTask implements AsyncTask {
         log("开始RAW模式扫描...");
         List<InvalidDataRecord> results = new ArrayList<>();
         Storage storage = storeServiceFactory.getService().getStorageProvider();
-        AbstractRawStoreService storeService = (AbstractRawStoreService) storeServiceFactory.getService();
 
         // 扫描公共网盘
-        String publicRoot = storeService.getPublicRoot();
+        String publicRoot = sysProperties.getStore().getPublicRoot();
         log("扫描公共网盘: " + publicRoot);
         try {
-            scanDirectory(storage, publicRoot, 0L, results);
+            scanDirectory(storage, publicRoot, "/", 0L, results);
         } catch (IOException e) {
             log("扫描公共网盘失败: " + e.getMessage());
         }
 
         // 扫描用户网盘
-        String storeRoot = storeService.getStoreRoot();
+        String storeRoot = sysProperties.getStore().getRoot();
         String userFileRoot = storeRoot + "/user_file";
         int page = 0;
         int pageSize = 100;
         while (true) {
-            if (interrupted.get()) break;
+            if (interrupted.get()) {
+                break;
+            }
             PageableRequest pageableRequest = new PageableRequest();
             pageableRequest.setPage(page);
             pageableRequest.setSize(pageSize);
             CommonPageInfo<User> userPage = userService.listUsers(pageableRequest);
-            if (userPage.getContent() == null || userPage.getContent().isEmpty()) break;
+            if (userPage.getContent() == null || userPage.getContent().isEmpty()) {
+                break;
+            }
             for (User user : userPage.getContent()) {
-                if (interrupted.get()) break;
+                if (interrupted.get()) {
+                    break;
+                }
                 String userDir = userFileRoot + "/" + user.getId();
                 log("扫描用户网盘: uid=" + user.getId());
                 try {
-                    scanDirectory(storage, userDir, user.getId(), results);
+                    scanDirectory(storage, userDir, "/user_file/" + user.getId(), user.getId(), results);
                 } catch (IOException e) {
                     log("扫描用户网盘失败 [" + userDir + "]: " + e.getMessage());
                 }
             }
-            if (page >= userPage.getTotalPage() - 1) break;
+            if (page >= userPage.getTotalPage() - 1) {
+                break;
+            }
             page++;
         }
         log("RAW模式扫描完成，发现 " + results.size() + " 条失效数据");
@@ -154,8 +169,7 @@ public class InvalidDataDetectTask implements AsyncTask {
         log("开始UNIQUE模式扫描...");
         List<InvalidDataRecord> results = new ArrayList<>();
         Storage storage = storeServiceFactory.getService().getStorageProvider();
-        AbstractRawStoreService storeService = (AbstractRawStoreService) storeServiceFactory.getService();
-        String storeRoot = storeService.getStoreRoot();
+        String storeRoot = sysProperties.getStore().getRoot();
 
         // 获取所有文件记录的MD5集合
         log("获取所有文件记录的MD5...");
@@ -176,25 +190,38 @@ public class InvalidDataDetectTask implements AsyncTask {
 
     /**
      * RAW模式：扫描目录下的文件，检查文件记录是否存在
+     *
+     * @param storage   物理存储
+     * @param path      物理存储的扫描路径
+     * @param diskRoot  对应的DiskFileSystem根路径，用于计算磁盘相对路径
+     * @param ownerUid  查询文件记录的文件所属用户id（公共网盘为0）
+     * @param results   接收的结果数组
      */
-    private void scanDirectory(Storage storage, String path, Long ownerUid, List<InvalidDataRecord> results) throws IOException {
-        if (interrupted.get()) return;
+    private void scanDirectory(Storage storage, String path, String diskRoot, Long ownerUid, List<InvalidDataRecord> results) throws IOException {
+        if (interrupted.get()) {
+            return;
+        }
         List<FileInfo> files = storage.listFiles(path);
-        if (files == null) return;
+        if (files == null) {
+            return;
+        }
 
         DiskFileSystem fs = fileSystemManager.getMainFileSystem();
         for (FileInfo file : files) {
-            if (interrupted.get()) return;
+            if (interrupted.get()) {
+                return;
+            }
             String fullPath = path + "/" + file.getName();
+            String diskPath = diskRoot + "/" + file.getName();
             if (file.isDir()) {
-                scanDirectory(storage, fullPath, ownerUid, results);
+                scanDirectory(storage, fullPath, diskPath, ownerUid, results);
             } else {
                 // 检查文件记录是否存在
                 try {
-                    if (!fs.exist(ownerUid, fullPath)) {
+                    if (!fs.exist(ownerUid, diskPath)) {
                         // 物理存储存在但文件记录不存在 -> 失效物理存储
                         InvalidDataRecord invalidRecord = createInvalidRecord(
-                                fullPath, ownerUid, fullPath, file.getSize(), file.getUpdateAt(), file.getMd5());
+                                fullPath, ownerUid, diskPath, file.getSize(), file.getUpdateAt(), file.getMd5());
                         results.add(invalidRecord);
                     }
                 } catch (IOException e) {
@@ -208,12 +235,18 @@ public class InvalidDataDetectTask implements AsyncTask {
      * UNIQUE模式：扫描物理存储文件，检查MD5是否有对应文件记录
      */
     private void scanUniqueStorage(Storage storage, String path, Set<String> validMd5Set, List<InvalidDataRecord> results) throws IOException {
-        if (interrupted.get()) return;
+        if (interrupted.get()) {
+            return;
+        }
         List<FileInfo> files = storage.listFiles(path);
-        if (files == null) return;
+        if (files == null) {
+            return;
+        }
 
         for (FileInfo file : files) {
-            if (interrupted.get()) return;
+            if (interrupted.get()) {
+                return;
+            }
             String fullPath = path + "/" + file.getName();
             if (file.isDir()) {
                 scanUniqueStorage(storage, fullPath, validMd5Set, results);
@@ -251,8 +284,8 @@ public class InvalidDataDetectTask implements AsyncTask {
      * 创建失效数据记录
      */
     private InvalidDataRecord createInvalidRecord(String storagePath, Long ownerUid,
-                                                   String diskPath, Long fileSize,
-                                                   Date lastModified, String md5) {
+                                                  String diskPath, Long fileSize,
+                                                  Date lastModified, String md5) {
         InvalidDataRecord record = new InvalidDataRecord();
         record.setType(InvalidDataType.PHYSICAL_STORAGE);
         record.setStoragePath(storagePath);
@@ -263,6 +296,7 @@ public class InvalidDataDetectTask implements AsyncTask {
         record.setNeedIdentify(false);
         record.setStatus(InvalidDataStatus.PENDING);
         record.setMd5(md5);
+        record.setStoreMode(sysCommonConfig.getStoreMode());
         return record;
     }
 

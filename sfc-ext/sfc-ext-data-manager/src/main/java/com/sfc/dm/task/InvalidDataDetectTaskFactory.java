@@ -5,6 +5,7 @@ import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
 import com.sfc.task.model.AsyncTaskRecord;
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -24,6 +25,7 @@ public class InvalidDataDetectTaskFactory implements AsyncTaskFactory {
     private final FileInfoRepo fileInfoRepo;
     private final SysCommonConfig sysCommonConfig;
     private final UserService userService;
+    private final SysProperties sysProperties;
 
     @Override
     public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
@@ -34,6 +36,7 @@ public class InvalidDataDetectTaskFactory implements AsyncTaskFactory {
         task.setFileInfoRepo(fileInfoRepo);
         task.setSysCommonConfig(sysCommonConfig);
         task.setUserService(userService);
+        task.setSysProperties(sysProperties);
         return task;
     }
 
