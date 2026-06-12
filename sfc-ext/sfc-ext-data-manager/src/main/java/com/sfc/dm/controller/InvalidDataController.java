@@ -80,14 +80,14 @@ public class InvalidDataController {
      */
     @PostMapping("detect")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<?> detect() throws IOException {
+    public JsonResult<Long> detect() throws IOException {
         checkConcurrentTask();
         AsyncTaskCreateParam param = new AsyncTaskCreateParam();
         param.setName("失效数据检测");
         param.setTaskType(DataManagerTaskType.INVALID_DATA_DETECT);
         param.setCpuOverhead(50);
-        asyncTaskManager.createTask(param);
-        return JsonResult.emptySuccess();
+        AsyncTaskRecord record = asyncTaskManager.createTask(param);
+        return JsonResultImpl.getInstance(record.getId());
     }
 
     /**
@@ -95,14 +95,14 @@ public class InvalidDataController {
      */
     @PostMapping("identify")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<?> identify() throws IOException {
+    public JsonResult<Long> identify() throws IOException {
         checkConcurrentTask();
         AsyncTaskCreateParam param = new AsyncTaskCreateParam();
         param.setName("文件类型识别");
         param.setTaskType(DataManagerTaskType.FILE_TYPE_CHECK);
         param.setCpuOverhead(50);
-        asyncTaskManager.createTask(param);
-        return JsonResult.emptySuccess();
+        AsyncTaskRecord record = asyncTaskManager.createTask(param);
+        return JsonResultImpl.getInstance(record.getId());
     }
 
     /**
