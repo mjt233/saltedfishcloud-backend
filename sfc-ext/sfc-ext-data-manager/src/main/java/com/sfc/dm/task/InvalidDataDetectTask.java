@@ -66,7 +66,7 @@ public class InvalidDataDetectTask implements AsyncTask {
         try {
             // 1. 清除上一轮待处理记录
             log("清除上一轮待处理的检测结果...");
-            int deleted = invalidDataRepo.deleteByStatus(InvalidDataStatus.PENDING.name());
+            int deleted = invalidDataRepo.deleteByStatus(InvalidDataStatus.PENDING);
             log("已清除 " + deleted + " 条待处理记录");
 
             // 2. 根据存储模式执行扫描
@@ -194,8 +194,7 @@ public class InvalidDataDetectTask implements AsyncTask {
                     if (!fs.exist(ownerUid, fullPath)) {
                         // 物理存储存在但文件记录不存在 -> 失效物理存储
                         InvalidDataRecord invalidRecord = createInvalidRecord(
-                                InvalidDataType.PHYSICAL_STORAGE, fullPath, ownerUid,
-                                fullPath, file.getSize(), file.getUpdateAt(), file.getMd5());
+                                fullPath, ownerUid, fullPath, file.getSize(), file.getUpdateAt(), file.getMd5());
                         results.add(invalidRecord);
                     }
                 } catch (IOException e) {
@@ -223,12 +222,10 @@ public class InvalidDataDetectTask implements AsyncTask {
                 String name = file.getName();
                 if (!name.contains(".")) {
                     // 文件名即为MD5
-                    String md5 = name;
-                    if (!validMd5Set.contains(md5)) {
+                    if (!validMd5Set.contains(name)) {
                         // MD5没有对应文件记录 -> 失效物理存储
                         InvalidDataRecord invalidRecord = createInvalidRecord(
-                                InvalidDataType.PHYSICAL_STORAGE, fullPath, 0L,
-                                null, file.getSize(), file.getUpdateAt(), md5);
+                                fullPath, 0L, null, file.getSize(), file.getUpdateAt(), name);
                         invalidRecord.setNeedIdentify(true);
                         results.add(invalidRecord);
                     }
@@ -253,11 +250,11 @@ public class InvalidDataDetectTask implements AsyncTask {
     /**
      * 创建失效数据记录
      */
-    private InvalidDataRecord createInvalidRecord(InvalidDataType type, String storagePath,
-                                                   Long ownerUid, String diskPath,
-                                                   Long fileSize, Date lastModified, String md5) {
+    private InvalidDataRecord createInvalidRecord(String storagePath, Long ownerUid,
+                                                   String diskPath, Long fileSize,
+                                                   Date lastModified, String md5) {
         InvalidDataRecord record = new InvalidDataRecord();
-        record.setType(type);
+        record.setType(InvalidDataType.PHYSICAL_STORAGE);
         record.setStoragePath(storagePath);
         record.setOwnerUid(ownerUid);
         record.setDiskPath(diskPath);

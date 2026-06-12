@@ -124,7 +124,7 @@ public class InvalidDataService {
      * 修复所有待处理的失效数据
      */
     public Map<String, Object> quickFixAll() {
-        List<Long> ids = repo.findIdsByStatus(InvalidDataStatus.PENDING.name());
+        List<Long> ids = repo.findIdsByStatus(InvalidDataStatus.PENDING);
         return quickFix(ids);
     }
 
@@ -151,7 +151,7 @@ public class InvalidDataService {
      * 丢弃所有可丢弃的数据
      */
     public Map<String, Object> discardAll() {
-        List<Long> ids = repo.findIdsByStatus(InvalidDataStatus.PENDING.name());
+        List<Long> ids = repo.findIdsByStatus(InvalidDataStatus.PENDING);
         return discard(ids);
     }
 
