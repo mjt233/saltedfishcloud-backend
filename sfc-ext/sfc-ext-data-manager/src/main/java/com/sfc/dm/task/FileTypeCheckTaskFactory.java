@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 /**
  * 文件类型识别任务工厂
  */
-@Component
 @RequiredArgsConstructor
 public class FileTypeCheckTaskFactory implements AsyncTaskFactory {
     private final InvalidDataRecordRepo invalidDataRepo;

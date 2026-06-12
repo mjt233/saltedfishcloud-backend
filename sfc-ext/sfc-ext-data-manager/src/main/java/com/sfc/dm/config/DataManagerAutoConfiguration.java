@@ -9,6 +9,8 @@ import com.sfc.dm.service.identify.FileTypeCheckerImpl;
 import com.sfc.dm.service.identify.AudioCheckProvider;
 import com.sfc.dm.service.identify.VideoCheckProvider;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
+import com.sfc.dm.task.FileTypeCheckTaskFactory;
+import com.sfc.dm.task.InvalidDataDetectTaskFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -26,7 +28,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         InvalidDataController.class,
         InvalidDataService.class,
         ClaimService.class,
-        FileTypeCheckerImpl.class
+        FileTypeCheckerImpl.class,
+        InvalidDataDetectTaskFactory.class,
+        FileTypeCheckTaskFactory.class
 })
 public class DataManagerAutoConfiguration {
 

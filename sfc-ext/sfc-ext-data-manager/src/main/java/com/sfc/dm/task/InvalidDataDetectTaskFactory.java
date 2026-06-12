@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 /**
  * 失效数据检测任务工厂
  */
-@Component
 @RequiredArgsConstructor
 public class InvalidDataDetectTaskFactory implements AsyncTaskFactory {
     private final InvalidDataRecordRepo invalidDataRepo;
