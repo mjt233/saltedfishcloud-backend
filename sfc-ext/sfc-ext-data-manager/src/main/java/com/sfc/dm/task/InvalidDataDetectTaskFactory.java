@@ -6,13 +6,12 @@ import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /**
  * 失效数据检测任务工厂
@@ -22,7 +21,7 @@ public class InvalidDataDetectTaskFactory implements AsyncTaskFactory {
     private final InvalidDataRecordRepo invalidDataRepo;
     private final StoreServiceFactory storeServiceFactory;
     private final DiskFileSystemManager fileSystemManager;
-    private final FileInfoRepo fileInfoRepo;
+    private final FileRecordService fileRecordService;
     private final SysCommonConfig sysCommonConfig;
     private final UserService userService;
     private final SysProperties sysProperties;
@@ -33,7 +32,7 @@ public class InvalidDataDetectTaskFactory implements AsyncTaskFactory {
         task.setInvalidDataRepo(invalidDataRepo);
         task.setStoreServiceFactory(storeServiceFactory);
         task.setFileSystemManager(fileSystemManager);
-        task.setFileInfoRepo(fileInfoRepo);
+        task.setFileRecordService(fileRecordService);
         task.setSysCommonConfig(sysCommonConfig);
         task.setUserService(userService);
         task.setSysProperties(sysProperties);

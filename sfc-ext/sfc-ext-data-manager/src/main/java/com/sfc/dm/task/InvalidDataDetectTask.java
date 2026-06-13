@@ -7,7 +7,6 @@ import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
@@ -16,8 +15,10 @@ import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
+import com.xiaotao.saltedfishcloud.service.node.FileTree;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Setter;
@@ -29,7 +30,7 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 /**
  * 失效数据检测异步任务
@@ -43,7 +44,7 @@ public class InvalidDataDetectTask implements AsyncTask {
     @Setter
     private DiskFileSystemManager fileSystemManager;
     @Setter
-    private FileInfoRepo fileInfoRepo;
+    private FileRecordService fileRecordService;
     @Setter
     private SysCommonConfig sysCommonConfig;
     @Setter
@@ -61,6 +62,38 @@ public class InvalidDataDetectTask implements AsyncTask {
         if (logWriter != null) {
             logWriter.println(message);
             logWriter.flush();
+        }
+    }
+
+    /**
+     * 遍历所有用户
+     *
+     * @param action 对每个用户执行的操作
+     */
+    private void forEachUser(Consumer<User> action) {
+        int page = 0;
+        int pageSize = 100;
+        while (true) {
+            if (interrupted.get()) {
+                break;
+            }
+            PageableRequest pageableRequest = new PageableRequest();
+            pageableRequest.setPage(page);
+            pageableRequest.setSize(pageSize);
+            CommonPageInfo<User> userPage = userService.listUsers(pageableRequest);
+            if (userPage.getContent() == null || userPage.getContent().isEmpty()) {
+                break;
+            }
+            for (User user : userPage.getContent()) {
+                if (interrupted.get()) {
+                    break;
+                }
+                action.accept(user);
+            }
+            if (page >= userPage.getTotalPage() - 1) {
+                break;
+            }
+            page++;
         }
     }
 
@@ -129,36 +162,15 @@ public class InvalidDataDetectTask implements AsyncTask {
         // 扫描用户网盘
         String storeRoot = sysProperties.getStore().getRoot();
         String userFileRoot = StringUtils.appendPath(storeRoot + "/user_file");
-        int page = 0;
-        int pageSize = 100;
-        while (true) {
-            if (interrupted.get()) {
-                break;
+        forEachUser(user -> {
+            String userDir = StringUtils.appendPath(userFileRoot, user.getId().toString());
+            log("扫描用户网盘: uid=" + user.getId());
+            try {
+                scanDirectory(storage, userDir, "/", user.getId(), results);
+            } catch (IOException e) {
+                log("扫描用户网盘失败 [" + userDir + "]: " + e.getMessage());
             }
-            PageableRequest pageableRequest = new PageableRequest();
-            pageableRequest.setPage(page);
-            pageableRequest.setSize(pageSize);
-            CommonPageInfo<User> userPage = userService.listUsers(pageableRequest);
-            if (userPage.getContent() == null || userPage.getContent().isEmpty()) {
-                break;
-            }
-            for (User user : userPage.getContent()) {
-                if (interrupted.get()) {
-                    break;
-                }
-                String userDir = StringUtils.appendPath(userFileRoot, user.getId().toString());
-                log("扫描用户网盘: uid=" + user.getId());
-                try {
-                    scanDirectory(storage, userDir, "/", user.getId(), results);
-                } catch (IOException e) {
-                    log("扫描用户网盘失败 [" + userDir + "]: " + e.getMessage());
-                }
-            }
-            if (page >= userPage.getTotalPage() - 1) {
-                break;
-            }
-            page++;
-        }
+        });
         log("RAW模式扫描完成，发现 " + results.size() + " 条失效数据");
         return results;
     }
@@ -272,13 +284,35 @@ public class InvalidDataDetectTask implements AsyncTask {
      * 获取所有有效文件记录的MD5集合（排除挂载文件）
      */
     private Set<String> getAllValidMd5Set() {
-        // 通过FileInfoRepo获取所有文件记录的MD5，排除挂载文件
-        List<FileInfo> allFiles = fileInfoRepo.findAll();
-        return allFiles.stream()
-                .filter(f -> !Boolean.TRUE.equals(f.getIsMount()))
-                .map(FileInfo::getMd5)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+        Set<String> md5Set = new HashSet<>();
+
+        // 获取公共网盘的MD5
+        collectMd5ByUid(0L, md5Set);
+
+        // 遍历所有用户，收集每个用户的文件MD5
+        forEachUser(user -> collectMd5ByUid(user.getId(), md5Set));
+        return md5Set;
+    }
+
+    /**
+     * 收集指定用户下所有文件的MD5
+     *
+     * @param uid    用户ID
+     * @param md5Set 接收MD5的集合
+     */
+    private void collectMd5ByUid(Long uid, Set<String> md5Set) {
+        FileTree fileTree = fileRecordService.getFullTree(uid);
+        for (FileInfo node : fileTree) {
+            if (interrupted.get()) {
+                break;
+            }
+            List<FileInfo> files = fileRecordService.findByUidAndNodeId(uid, node.getMd5());
+            for (FileInfo file : files) {
+                if (!Boolean.TRUE.equals(file.getIsMount()) && file.getMd5() != null) {
+                    md5Set.add(file.getMd5());
+                }
+            }
+        }
     }
 
     /**
