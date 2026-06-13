@@ -206,6 +206,8 @@ public class InvalidDataService {
             fileInfo.setUid(record.getOwnerUid());
             fileInfo.setName(PathUtils.getLastNode(record.getDiskPath()));
             fileInfo.setSize(record.getFileSize());
+            fileInfo.setMtime(record.getLastModified().getTime());
+            fileInfo.setCtime(record.getLastModified().getTime());
             if (record.getMd5() == null) {
                 fileInfo.setStreamSource(() -> storage.getResource(record.getStoragePath()).getInputStream());
                 fileInfo.updateMd5();
