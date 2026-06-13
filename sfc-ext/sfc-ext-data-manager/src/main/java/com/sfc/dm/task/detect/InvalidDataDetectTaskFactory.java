@@ -1,4 +1,4 @@
-package com.sfc.dm.task;
+package com.sfc.dm.task.detect;
 
 import com.sfc.dm.constant.DataManagerTaskType;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
@@ -44,3 +44,4 @@ public class InvalidDataDetectTaskFactory implements AsyncTaskFactory {
         return DataManagerTaskType.INVALID_DATA_DETECT;
     }
 }
+

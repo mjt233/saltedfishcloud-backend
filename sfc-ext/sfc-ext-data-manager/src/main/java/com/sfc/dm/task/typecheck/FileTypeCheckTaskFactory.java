@@ -1,4 +1,4 @@
-package com.sfc.dm.task;
+package com.sfc.dm.task.typecheck;
 
 import com.sfc.dm.constant.DataManagerTaskType;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
@@ -8,7 +8,6 @@ import com.sfc.task.AsyncTaskFactory;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /**
  * 文件类型识别任务工厂

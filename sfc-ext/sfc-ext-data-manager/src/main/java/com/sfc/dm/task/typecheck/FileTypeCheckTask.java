@@ -1,9 +1,8 @@
-package com.sfc.dm.task;
+package com.sfc.dm.task.typecheck;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.model.dto.FileTypeCheckResult;
-import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.sfc.dm.service.identify.FileTypeChecker;
