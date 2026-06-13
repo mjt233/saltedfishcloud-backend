@@ -128,7 +128,7 @@ public class InvalidDataDetectTask implements AsyncTask {
 
         // 扫描用户网盘
         String storeRoot = sysProperties.getStore().getRoot();
-        String userFileRoot = storeRoot + "/user_file";
+        String userFileRoot = StringUtils.appendPath(storeRoot + "/user_file");
         int page = 0;
         int pageSize = 100;
         while (true) {
@@ -146,7 +146,7 @@ public class InvalidDataDetectTask implements AsyncTask {
                 if (interrupted.get()) {
                     break;
                 }
-                String userDir = userFileRoot + "/" + user.getId();
+                String userDir = StringUtils.appendPath(userFileRoot, user.getId().toString());
                 log("扫描用户网盘: uid=" + user.getId());
                 try {
                     scanDirectory(storage, userDir, "/", user.getId(), results);
