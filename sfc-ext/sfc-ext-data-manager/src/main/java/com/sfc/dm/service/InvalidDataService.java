@@ -12,8 +12,11 @@ import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,6 +49,8 @@ public class InvalidDataService {
     private FileInfoRepo fileInfoRepo;
     @Autowired
     private SysCommonConfig sysCommonConfig;
+    @Autowired
+    private FileRecordService fileRecordService;
 
     /**
      * 查询失效数据列表（分页+筛选）
@@ -195,10 +200,17 @@ public class InvalidDataService {
         } catch (IOException e) {
             throw new IllegalStateException("检查物理存储失败: " + e.getMessage());
         }
-        DiskFileSystem fs = fileSystemManager.getMainFileSystem();
         try {
-            fs.quickSave(record.getOwnerUid(), extractParentPath(record.getDiskPath()),
-                    extractFileName(record.getDiskPath()), record.getMd5());
+            FileInfo fileInfo = new FileInfo();
+            fileInfo.setPath(PathUtils.getParentPath(record.getDiskPath()));
+            fileInfo.setUid(record.getOwnerUid());
+            fileInfo.setName(PathUtils.getLastNode(record.getDiskPath()));
+            fileInfo.setSize(record.getFileSize());
+            if (record.getMd5() == null) {
+                fileInfo.setStreamSource(() -> storage.getResource(record.getStoragePath()).getInputStream());
+                fileInfo.updateMd5();
+            }
+            fileRecordService.saveRecord(fileInfo, fileInfo.getPath());
         } catch (IOException e) {
             throw new IllegalStateException("重建文件记录失败: " + e.getMessage());
         }
@@ -208,7 +220,7 @@ public class InvalidDataService {
     }
 
     /**
-     * 修复失效文件记录
+     * 修复失效文件记录：尝试按 md5 查询已存在的相同文件，保存到物理存储
      */
     private void quickFixFileRecord(InvalidDataRecord record) {
         DiskFileSystem fs = fileSystemManager.getMainFileSystem();

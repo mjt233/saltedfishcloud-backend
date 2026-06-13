@@ -19,6 +19,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -148,7 +149,7 @@ public class InvalidDataDetectTask implements AsyncTask {
                 String userDir = userFileRoot + "/" + user.getId();
                 log("扫描用户网盘: uid=" + user.getId());
                 try {
-                    scanDirectory(storage, userDir, "/user_file/" + user.getId(), user.getId(), results);
+                    scanDirectory(storage, userDir, "/", user.getId(), results);
                 } catch (IOException e) {
                     log("扫描用户网盘失败 [" + userDir + "]: " + e.getMessage());
                 }
@@ -211,8 +212,8 @@ public class InvalidDataDetectTask implements AsyncTask {
             if (interrupted.get()) {
                 return;
             }
-            String fullPath = path + "/" + file.getName();
-            String diskPath = diskRoot + "/" + file.getName();
+            String fullPath = StringUtils.appendPath(path, file.getName());
+            String diskPath = StringUtils.appendPath(diskRoot, file.getName());
             if (file.isDir()) {
                 scanDirectory(storage, fullPath, diskPath, ownerUid, results);
             } else {
@@ -221,7 +222,7 @@ public class InvalidDataDetectTask implements AsyncTask {
                     if (!fs.exist(ownerUid, diskPath)) {
                         // 物理存储存在但文件记录不存在 -> 失效物理存储
                         InvalidDataRecord invalidRecord = createInvalidRecord(
-                                fullPath, ownerUid, diskPath, file.getSize(), file.getUpdateAt(), file.getMd5());
+                                fullPath, ownerUid, diskPath, file.getSize(), new Date(file.getMtime()), file.getMd5());
                         results.add(invalidRecord);
                     }
                 } catch (IOException e) {
