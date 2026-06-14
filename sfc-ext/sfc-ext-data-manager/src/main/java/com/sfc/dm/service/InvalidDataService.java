@@ -28,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -226,14 +227,6 @@ public class InvalidDataService {
      */
     private void quickFixFileRecord(InvalidDataRecord record) {
         DiskFileSystem fs = fileSystemManager.getMainFileSystem();
-        try {
-            // 1. 检查原路径是否可用
-            if (fs.exist(record.getOwnerUid(), record.getDiskPath())) {
-                throw new IllegalStateException("原路径已被占用");
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException("检查路径失败: " + e.getMessage());
-        }
         Storage storage = storeServiceFactory.getService().getStorageProvider();
         boolean storageExists;
         try {
@@ -259,10 +252,14 @@ public class InvalidDataService {
             for (FileInfo source : sameMd5Files) {
                 try {
                     Resource resource = fs.getResource(source.getUid(), extractParentPath(source.getName()), source.getName());
-                    if (resource == null) continue;
-                    storage.store(source, record.getStoragePath(), source.getSize(), resource.getInputStream());
-                    copied = true;
-                    break;
+                    if (resource == null) {
+                        continue;
+                    }
+                    try (InputStream is = resource.getInputStream()) {
+                        storage.store(source, record.getStoragePath(), source.getSize(), is);
+                        copied = true;
+                        break;
+                    }
                 } catch (IOException ignored) {
                 }
             }
