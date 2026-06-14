@@ -8,6 +8,8 @@ import com.sfc.dm.service.identify.util.MagicBytesUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -26,6 +28,26 @@ public class DocumentCheckProvider implements FileTypeCheckProvider {
     private static final byte[] OLE2_MAGIC = {(byte) 0xD0, (byte) 0xCF, 0x11, (byte) 0xE0, (byte) 0xA1, (byte) 0xB1, 0x1A, (byte) 0xE1};
     private static final byte[] PDF_MAGIC = {0x25, 0x50, 0x44, 0x46};
     private static final byte[] ZIP_MAGIC = {0x50, 0x4B, 0x03, 0x04};
+
+    // OLE2 根入口 CLSID（用于区分 doc/xls/ppt）
+    private static final byte[] WORD_CLSID = {
+            (byte) 0x00, (byte) 0x09, (byte) 0x02, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0xC0, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x46
+    };
+    private static final byte[] EXCEL_CLSID = {
+            (byte) 0x20, (byte) 0x08, (byte) 0x02, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0xC0, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x46
+    };
+    private static final byte[] PPT_CLSID = {
+            (byte) 0x10, (byte) 0x8D, (byte) 0x81, (byte) 0x64,
+            (byte) 0x9B, (byte) 0x4F, (byte) 0xCF, (byte) 0x11,
+            (byte) 0x86, (byte) 0xEA, (byte) 0x00, (byte) 0xAA,
+            (byte) 0x00, (byte) 0xB9, (byte) 0x29, (byte) 0xE8
+    };
 
     private static final List<String> EXTENSIONS = List.of(
             ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".pdf",
@@ -107,11 +129,44 @@ public class DocumentCheckProvider implements FileTypeCheckProvider {
         }
     }
 
+    /**
+     * 通过 OLE2 根入口 CLSID 区分 doc / xls / ppt 子类型
+     * @param file OLE2 格式文件
+     * @return [extension, mimeType] 或 null
+     * @throws IOException 读取失败时抛出
+     */
+    private String[] detectOle2SubTypeByClsid(File file) throws IOException {
+        byte[] header = MagicBytesUtils.readHeader(file, 0x80);
+        if (header.length < 0x34) return null;
+
+        int majorVersion = ByteBuffer.wrap(header, 0x1C, 2)
+                .order(ByteOrder.LITTLE_ENDIAN).getShort() & 0xFFFF;
+        int sectorSize = (majorVersion >= 4) ? 4096 : 512;
+
+        int dirSector = ByteBuffer.wrap(header, 0x30, 4)
+                .order(ByteOrder.LITTLE_ENDIAN).getInt();
+
+        long clsidOffset = (long) dirSector * sectorSize + 0x44;
+        byte[] clsid = MagicBytesUtils.readAt(file, clsidOffset, 16);
+        if (clsid.length < 16) return null;
+
+        if (Arrays.equals(clsid, WORD_CLSID))  return new String[]{".doc", "application/msword"};
+        if (Arrays.equals(clsid, EXCEL_CLSID)) return new String[]{".xls", "application/vnd.ms-excel"};
+        if (Arrays.equals(clsid, PPT_CLSID))   return new String[]{".ppt", "application/vnd.ms-powerpoint"};
+        return null;
+    }
+
     private String[] detectOle2SubType(File file) {
         String lowerName = file.getName().toLowerCase();
         if (lowerName.endsWith(".doc")) return new String[]{".doc", "application/msword"};
         if (lowerName.endsWith(".xls")) return new String[]{".xls", "application/vnd.ms-excel"};
         if (lowerName.endsWith(".ppt")) return new String[]{".ppt", "application/vnd.ms-powerpoint"};
+        // CLSID 检测优先（无需启动 Tika Server）
+        try {
+            String[] clsidResult = detectOle2SubTypeByClsid(file);
+            if (clsidResult != null) return clsidResult;
+        } catch (IOException ignored) {}
+        // Tika fallback
         try {
             String tikaType = detectByTika(file);
             if (tikaType != null) {

@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -235,11 +236,13 @@ public class TikaServerManager {
         try {
             String url = ensureRunning() + "/detect/stream";
             HttpClient client = getHttpClient();
+            // MIME 检测仅需文件头 magic bytes，只发送前 8KB 避免完整读取大文件
+            byte[] headerBytes = readFirstBytes(file, 8192);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "application/octet-stream")
-                    .PUT(HttpRequest.BodyPublishers.ofFile(file.toPath()))
+                    .PUT(HttpRequest.BodyPublishers.ofByteArray(headerBytes))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
@@ -362,6 +365,21 @@ public class TikaServerManager {
                     .build();
         }
         return httpClient;
+    }
+
+    /**
+     * 读取文件前 {@code maxBytes} 字节，用于 MIME 检测等仅需头部数据的场景
+     * @param file     目标文件
+     * @param maxBytes 最大读取字节数
+     * @return 实际读取到的字节数组（文件不足时为实际长度）
+     * @throws IOException 读取失败时抛出
+     */
+    private static byte[] readFirstBytes(File file, int maxBytes) throws IOException {
+        byte[] buf = new byte[maxBytes];
+        try (FileInputStream fis = new FileInputStream(file)) {
+            int read = fis.read(buf);
+            return (read < maxBytes) ? Arrays.copyOf(buf, read) : buf;
+        }
     }
 
     /**
