@@ -73,6 +73,7 @@ public class InvalidDataDetectTask implements AsyncTask {
             scanner.setLogWriter(logWriter);
             scanner.setInterrupted(interrupted);
             scanner.setFileSystemManager(fileSystemManager);
+            scanner.setFileRecordService(fileRecordService);
             return scanner;
         } else {
             UniqueModeScanner scanner = new UniqueModeScanner();

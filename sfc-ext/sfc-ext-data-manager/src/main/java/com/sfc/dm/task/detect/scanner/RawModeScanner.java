@@ -1,6 +1,7 @@
 package com.sfc.dm.task.detect.scanner;
 
 import com.sfc.dm.model.po.InvalidDataRecord;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -79,45 +80,57 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
 
         // 扫描公共网盘的文件记录
         log("扫描公共网盘文件记录...");
-        scanFileRecordsByUid(0L, fs, results);
+        scanFileRecordsByUid(0L, results);
 
         // 扫描用户网盘的文件记录
         forEachUser(user -> {
             log("扫描用户文件记录: uid=" + user.getId());
-            scanFileRecordsByUid(user.getId(), fs, results);
+            scanFileRecordsByUid(user.getId(), results);
         });
+    }
+
+    private String getUserStoragePath(Long uid) {
+        return uid == UserConstants.PUBLIC_USER_ID ? sysProperties.getStore().getPublicRoot() : StringUtils.appendPath(sysProperties.getStore().getRoot(), "user_file", uid.toString());
     }
 
     /**
      * 扫描指定用户的文件记录，检查物理文件是否存在
      *
      * @param uid    用户ID
-     * @param fs     文件系统
      * @param results 接收的结果列表
      */
-    private void scanFileRecordsByUid(Long uid, DiskFileSystem fs, List<InvalidDataRecord> results) {
+    private void scanFileRecordsByUid(Long uid, List<InvalidDataRecord> results) {
         FileTree fileTree = fileRecordService.getFullTree(uid);
+        Storage storage = storeServiceFactory.getService().getStorageProvider();
+        String storageRoot = getUserStoragePath(uid);
+        String rootMd5 = uid.toString();
         for (FileInfo node : fileTree) {
             if (interrupted.get()) {
                 break;
             }
-            String parentPath = node.getPath();
+            // 跳过挂载文件
+            if (Boolean.TRUE.equals(node.getIsMount()) || node.getMountId() != null) {
+                continue;
+            }
+            String diskParentPath = rootMd5.equals(node.getMd5()) ? "/" : StringUtils.appendPath(fileTree.getPath(node.getNode()), node.getName());
             List<FileInfo> files = fileRecordService.findByUidAndNodeId(uid, node.getMd5());
+
             for (FileInfo file : files) {
                 if (interrupted.get()) {
                     break;
                 }
-                // 跳过目录和挂载文件
-                if (file.isDir() || Boolean.TRUE.equals(file.getIsMount())) {
+                // 跳过挂载文件
+                if (Boolean.TRUE.equals(file.getIsMount()) || file.getMountId() != null) {
                     continue;
                 }
-                String diskPath = StringUtils.appendPath(parentPath, file.getName());
+                String diskPath = StringUtils.appendPath(diskParentPath, file.getName());
+                String storagePath = StringUtils.appendPath(storageRoot, diskParentPath, file.getName());
                 try {
                     // 检查物理文件是否存在
-                    if (!fs.exist(uid, diskPath)) {
+                    if (!storage.exist(storagePath)) {
                         // 文件记录存在但物理文件不存在 -> 失效文件记录
                         InvalidDataRecord invalidRecord = createInvalidFileRecordRecord(
-                                null, uid, diskPath, file.getSize(), file.getUpdateAt(), file.getMd5());
+                                storagePath, uid, diskPath, file.getSize(), file.getUpdateAt(), file.getMd5());
                         results.add(invalidRecord);
                     }
                 } catch (IOException e) {
