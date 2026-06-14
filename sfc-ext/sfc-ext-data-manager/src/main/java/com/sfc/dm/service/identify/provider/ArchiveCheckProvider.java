@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
-import org.apache.commons.compress.compressors.CompressorInputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 
 import java.io.*;
@@ -127,10 +126,9 @@ public class ArchiveCheckProvider implements FileTypeCheckProvider {
             try (InputStream fis = new FileInputStream(file); InputStream bis = new BufferedInputStream(fis)) {
                 InputStream decompressed = bis;
                 if (".gz".equals(ext) || ".bz2".equals(ext) || ".xz".equals(ext)) {
-                    CompressorInputStream cis = new CompressorStreamFactory().createCompressorInputStream(bis);
-                    decompressed = cis;
+                    decompressed = new CompressorStreamFactory().createCompressorInputStream(bis);
                 }
-                try (ArchiveInputStream ais = new ArchiveStreamFactory().createArchiveInputStream(decompressed)) {
+                try (InputStream src = decompressed; ArchiveInputStream<ArchiveEntry> ais = new ArchiveStreamFactory().createArchiveInputStream(src)) {
                     ArchiveEntry entry;
                     while ((entry = ais.getNextEntry()) != null) {
                         if (!entry.isDirectory()) {
