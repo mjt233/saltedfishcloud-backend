@@ -94,7 +94,7 @@ public class ArchiveCheckProvider implements FileTypeCheckProvider {
                         Map<String, String> archiveMeta = extractArchiveMetadata(file, ext);
                         metadata.putAll(archiveMeta);
                     } catch (Exception e) {
-                        log.debug("压缩包元数据提取失败: {}", file.getName(), e);
+                        log.debug("压缩包元数据提取失败: {} {}", file.getName(), e.getMessage());
                     }
                 }
                 detail.setMetadata(metadata);
@@ -102,7 +102,7 @@ public class ArchiveCheckProvider implements FileTypeCheckProvider {
 
             return detail;
         } catch (Exception e) {
-            log.debug("压缩包检测失败: {}", file.getName(), e);
+            log.debug("压缩包检测失败: {} {}", file.getName(), e.getMessage());
             return null;
         }
     }

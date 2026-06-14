@@ -191,7 +191,7 @@ public class DocumentCheckProvider implements FileTypeCheckProvider {
                 return detectOdfSubType(zipFile, mimetypeEntry);
             }
         } catch (IOException e) {
-            log.debug("ZIP 内部结构检测失败: {}", file.getName(), e);
+            log.debug("ZIP 内部结构检测失败: {} {}", file.getName(), e.getMessage());
         }
         return null;
     }

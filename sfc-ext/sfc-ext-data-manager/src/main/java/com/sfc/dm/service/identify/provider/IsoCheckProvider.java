@@ -71,7 +71,7 @@ public class IsoCheckProvider implements FileTypeCheckProvider {
 
             return detail;
         } catch (Exception e) {
-            log.debug("ISO 检测失败: {}", file.getName(), e);
+            log.debug("ISO 检测失败: {} {}", file.getName(), e.getMessage());
             return null;
         }
     }
