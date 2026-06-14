@@ -1,8 +1,10 @@
 package com.sfc.dm.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.enums.InvalidDataType;
 import com.sfc.dm.enums.ProcessMethod;
+import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.dto.InvalidDataQuery;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
@@ -15,7 +17,9 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
+import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import lombok.Getter;
@@ -26,9 +30,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +97,66 @@ public class InvalidDataService {
      */
     public InvalidDataRecord getDetail(Long id) {
         return repo.findById(id).orElseThrow(() -> new IllegalArgumentException("失效数据记录不存在"));
+    }
+
+    /**
+     * 下载失效数据内容。
+     * <p>可下载条件：</p>
+     * <ul>
+     *     <li>状态不为"处理完成"</li>
+     *     <li>类型为"失效的物理存储" 或 (类型为"失效的文件记录" 且 有md5值 且 系统存在该md5的有效物理存储)</li>
+     * </ul>
+     *
+     * @param id 失效数据记录ID
+     * @return 响应实体，包含文件资源和正确的Content-Type
+     */
+    public ResponseEntity<Resource> getDownloadResource(Long id) throws IOException {
+        InvalidDataRecord record = getDetail(id);
+
+        if (record.getStatus() == InvalidDataStatus.COMPLETED) {
+            throw new IllegalStateException("已处理完成的数据不可下载");
+        }
+
+        boolean downloadable = record.getType() == InvalidDataType.PHYSICAL_STORAGE
+                || (record.getType() == InvalidDataType.FILE_RECORD
+                    && record.getMd5() != null
+                    && !fileInfoRepo.findByMd5(record.getMd5(), PageRequest.of(0, 1)).isEmpty());
+
+        if (!downloadable) {
+            throw new IllegalStateException("该数据当前不满足下载条件");
+        }
+
+        Storage storage = storeServiceFactory.getService().getStorageProvider();
+        Resource resource = storage.getResource(record.getStoragePath());
+        if (resource == null) {
+            throw new IllegalStateException("物理存储文件不存在");
+        }
+
+        String fileName = PathUtils.getLastNode(record.getStoragePath());
+        String contentType = resolveContentType(record, fileName);
+        String disposition = ResourceUtils.generateContentDisposition(fileName);
+
+        return ResponseEntity.ok()
+                .header("Content-Type", contentType)
+                .header("Content-Disposition", disposition)
+                .body(resource);
+    }
+
+    /**
+     * 解析失效数据的Content-Type。
+     * 优先取typeCheckResult中的mimetype，否则按物理存储文件扩展名获取。
+     */
+    private String resolveContentType(InvalidDataRecord record, String fileName) {
+        if (record.getTypeCheckResult() != null) {
+            try {
+                FileTypeCheckResult result = new ObjectMapper().readValue(record.getTypeCheckResult(), FileTypeCheckResult.class);
+                if (result.getDetail() != null && result.getDetail().getMimetype() != null) {
+                    return result.getDetail().getMimetype();
+                }
+            } catch (IOException ignored) {
+            }
+        }
+        return FileUtils.getContentType(fileName);
     }
 
     /**

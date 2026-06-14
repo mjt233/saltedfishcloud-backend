@@ -14,6 +14,7 @@ import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
+import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
@@ -25,6 +26,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
+
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.util.List;
@@ -72,6 +76,15 @@ public class InvalidDataController {
                 .toList();
         return JsonResultImpl.getInstance(list);
     }
+
+    /**
+     * 下载失效数据内容
+     */
+    @GetMapping("download/{id}")
+    public ResponseEntity<Resource> download(@PathVariable Long id) throws IOException {
+        return invalidDataService.getDownloadResource(id);
+    }
+
 
     // === 管理员操作 ===
 
