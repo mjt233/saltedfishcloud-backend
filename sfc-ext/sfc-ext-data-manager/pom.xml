@@ -45,5 +45,22 @@
             <version>${music.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Apache Tika - 文件类型检测与元数据提取 -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>3.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers-standard-package</artifactId>
+            <version>3.2.3</version>
+        </dependency>
+        <!-- Apache Commons Compress - 压缩包处理 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.26.1</version>
+        </dependency>
     </dependencies>
 </project>

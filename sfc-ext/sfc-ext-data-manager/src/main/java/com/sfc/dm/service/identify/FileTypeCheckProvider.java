@@ -42,4 +42,13 @@ public interface FileTypeCheckProvider {
      * @return 识别结果，null表示无法识别
      */
     FileTypeCheckResultDetail checkFile(File file, boolean extraMetadata);
+
+    /**
+     * 获取 Provider 的优先级，数值越小优先级越高。
+     * 当多个 Provider 都能识别同一文件时，优先使用高优先级的 Provider。
+     * @return 优先级数值
+     */
+    default int getPriority() {
+        return Integer.MAX_VALUE;
+    }
 }

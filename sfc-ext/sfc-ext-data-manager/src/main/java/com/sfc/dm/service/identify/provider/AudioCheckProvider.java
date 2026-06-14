@@ -1,7 +1,8 @@
-package com.sfc.dm.service.identify;
+package com.sfc.dm.service.identify.provider;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
+import com.sfc.dm.service.identify.FileTypeCheckProvider;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.model.FormatInfo;
 import com.saltedfishcloud.ext.ve.model.StreamInfo;

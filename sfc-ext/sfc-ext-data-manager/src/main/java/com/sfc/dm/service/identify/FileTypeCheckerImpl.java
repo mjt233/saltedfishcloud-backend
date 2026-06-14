@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -27,7 +28,9 @@ public class FileTypeCheckerImpl implements FileTypeChecker {
     @Autowired(required = false)
     public void setProviders(List<FileTypeCheckProvider> providers) {
         if (providers != null) {
-            providers.forEach(this::addProvider);
+            providers.stream()
+                    .sorted(Comparator.comparingInt(FileTypeCheckProvider::getPriority))
+                    .forEach(this::addProvider);
         }
     }
 
