@@ -54,6 +54,16 @@ public class InvalidDataService {
     private FileRecordService fileRecordService;
 
     /**
+     * 列出所有待处理的失效数据记录中需要识别的记录
+     */
+    public List<InvalidDataRecord> listNeedIdentify() {
+        return repo.findAll(JpaLambdaQueryWrapper.get(InvalidDataRecord.class)
+                        .eq(InvalidDataRecord::getStatus, InvalidDataStatus.PENDING)
+                        .eq(InvalidDataRecord::getNeedIdentify, true)
+                .build());
+    }
+
+    /**
      * 查询失效数据列表（分页+筛选）
      */
     public CommonPageInfo<InvalidDataRecord> list(InvalidDataQuery query, Pageable pageable) {

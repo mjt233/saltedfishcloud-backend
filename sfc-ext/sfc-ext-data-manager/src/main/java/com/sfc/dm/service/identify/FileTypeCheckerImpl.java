@@ -31,25 +31,42 @@ public class FileTypeCheckerImpl implements FileTypeChecker {
         }
     }
 
+    /**
+     * 尝试使用一个 Provider 对一个文件的类型进行检测
+     * @return  如果无法检测类型则返回null
+     */
+    private FileTypeCheckResult tryCheck(FileTypeCheckProvider provider, File file, boolean extraMetadata) {
+        FileTypeCheckResultDetail detail = provider.checkFile(file, extraMetadata);
+        if (detail == null) {
+            return null;
+        }
+        FileTypeCheckResult result = new FileTypeCheckResult();
+        result.setProviderId(provider.getId());
+        result.setTypeId(provider.getTypeId());
+        result.setTypeName(provider.getTypeName());
+        result.setDetail(detail);
+        return result;
+    }
+
     @Override
     public FileTypeCheckResult checkFile(File file, boolean extraMetadata) {
         String fileName = file.getName().toLowerCase();
+
+        // 文件后缀名快速匹配
+        FileTypeCheckResult fastRes = providers.stream()
+                .filter(provider -> provider.getSupportedFileExtensions().stream().anyMatch(fileName::endsWith))
+                .findAny()
+                .map(provider -> tryCheck(provider, file, extraMetadata))
+                .orElse(null);
+        if (fastRes != null) {
+            return fastRes;
+        }
+
+        // 逐个识别
         for (FileTypeCheckProvider provider : providers) {
-            // 快速文件名匹配
-            boolean matched = provider.getSupportedFileExtensions().stream()
-                    .anyMatch(ext -> fileName.endsWith(ext.toLowerCase()));
-            if (!matched) {
-                continue;
-            }
-            // 实际识别
-            FileTypeCheckResultDetail detail = provider.checkFile(file, extraMetadata);
-            if (detail != null) {
-                FileTypeCheckResult result = new FileTypeCheckResult();
-                result.setProviderId(provider.getId());
-                result.setTypeId(provider.getTypeId());
-                result.setTypeName(provider.getTypeName());
-                result.setDetail(detail);
-                return result;
+            FileTypeCheckResult res = tryCheck(provider, file, extraMetadata);
+            if (res != null) {
+                return res;
             }
         }
         return null;

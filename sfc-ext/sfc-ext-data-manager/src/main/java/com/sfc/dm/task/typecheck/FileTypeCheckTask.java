@@ -10,6 +10,9 @@ import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.PathUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -34,7 +37,6 @@ public class FileTypeCheckTask implements AsyncTask {
     private final AtomicBoolean interrupted = new AtomicBoolean(false);
     private final AtomicReference<Thread> executeThread = new AtomicReference<>();
     private final ProgressRecord progressRecord = new ProgressRecord();
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private void log(String message) {
         if (logWriter != null) {
@@ -109,13 +111,14 @@ public class FileTypeCheckTask implements AsyncTask {
         }
 
         // 下载到临时文件
-        File tempFile = downloadToTemp(resource, storagePath);
+        File localFile = toLocalFile(resource);
+        boolean isLocalFile = isLocalFile(resource);
         try {
-            FileTypeCheckResult result = fileTypeChecker.checkFile(tempFile, true);
+            FileTypeCheckResult result = fileTypeChecker.checkFile(localFile, true);
             if (result != null) {
                 record.setFileType(result.getTypeId());
                 if (result.getDetail() != null && result.getDetail().getMetadata() != null) {
-                    record.setMetadata(objectMapper.writeValueAsString(result.getDetail().getMetadata()));
+                    record.setMetadata(MapperHolder.toJson(result.getDetail().getMetadata()));
                 }
                 record.setNeedIdentify(false);
                 invalidDataRepo.save(record);
@@ -124,30 +127,30 @@ public class FileTypeCheckTask implements AsyncTask {
             }
             return false;
         } finally {
-            tempFile.delete();
+            if (!isLocalFile) {
+                Files.deleteIfExists(localFile.toPath());
+            }
         }
+    }
+
+    private boolean isLocalFile(Resource resource) {
+        return resource.isFile();
     }
 
     /**
      * 将Resource下载到临时文件
      */
-    private File downloadToTemp(Resource resource, String storagePath) throws IOException {
-        String suffix = "";
-        int dotIndex = storagePath.lastIndexOf('.');
-        if (dotIndex >= 0) {
-            suffix = storagePath.substring(dotIndex);
+    private File toLocalFile(Resource resource) throws IOException {
+        if (resource.isFile()) {
+            return resource.getFile();
         }
-        File tempFile = Files.createTempFile("dm-identify-", suffix).toFile();
-        try (InputStream in = resource.getInputStream();
-             OutputStream out = new FileOutputStream(tempFile)) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = in.read(buffer)) != -1) {
-                if (interrupted.get()) break;
-                out.write(buffer, 0, bytesRead);
-            }
+        File tmpFile = PathUtils.createTemplateFilePath("file-type-check-").toFile();
+        try (InputStream is = resource.getInputStream();
+             OutputStream os = Files.newOutputStream(tmpFile.toPath())
+        ) {
+            StreamUtils.copyStream(is, os);
         }
-        return tempFile;
+        return tmpFile;
     }
 
     @Override

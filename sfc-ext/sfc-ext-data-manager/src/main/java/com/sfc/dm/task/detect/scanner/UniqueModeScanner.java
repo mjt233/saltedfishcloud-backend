@@ -25,7 +25,7 @@ public class UniqueModeScanner extends AbstractInvalidDataScanner {
         log("开始UNIQUE模式扫描...");
         List<InvalidDataRecord> results = new ArrayList<>();
         Storage storage = storeServiceFactory.getService().getStorageProvider();
-        String storeRoot = sysProperties.getStore().getRoot();
+        String storeRoot = StringUtils.appendPath(sysProperties.getStore().getRoot(), "repo");
 
         // 1. 扫描失效物理存储（物理文件存在但MD5没有对应文件记录）
         log("扫描失效物理存储...");
