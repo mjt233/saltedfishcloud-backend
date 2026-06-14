@@ -130,7 +130,7 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
                     if (!storage.exist(storagePath)) {
                         // 文件记录存在但物理文件不存在 -> 失效文件记录
                         InvalidDataRecord invalidRecord = createInvalidFileRecordRecord(
-                                storagePath, uid, diskPath, file.getSize(), file.getUpdateAt(), file.getMd5());
+                                storagePath, uid, diskPath, file.getSize(), new Date(file.getMtime()), file.getMd5());
                         results.add(invalidRecord);
                     }
                 } catch (IOException e) {

@@ -102,7 +102,7 @@ public class UniqueModeScanner extends AbstractInvalidDataScanner {
                         // 文件记录存在但物理文件不存在 -> 失效文件记录
                         String diskPath = StringUtils.appendPath(parentPath, file.getName());
                         InvalidDataRecord invalidRecord = createInvalidFileRecordRecord(
-                                md5Path, uid, diskPath, file.getSize(), file.getUpdateAt(), file.getMd5());
+                                md5Path, uid, diskPath, file.getSize(), new Date(file.getMtime()), file.getMd5());
                         results.add(invalidRecord);
                     }
                 } catch (IOException e) {
@@ -155,7 +155,7 @@ public class UniqueModeScanner extends AbstractInvalidDataScanner {
                     if (!validMd5Set.contains(name)) {
                         // MD5没有对应文件记录 -> 失效物理存储
                         InvalidDataRecord invalidRecord = createInvalidPhysicalStorageRecord(
-                                fullPath, 0L, null, file.getSize(), file.getUpdateAt(), name);
+                                fullPath, 0L, null, file.getSize(), new Date(file.getMtime()), name);
                         invalidRecord.setNeedIdentify(true);
                         results.add(invalidRecord);
                     }
