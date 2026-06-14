@@ -3,13 +3,9 @@ package com.sfc.dm.service.identify.provider;
 import com.sfc.dm.model.dto.FileMetadataDefine;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
+import com.sfc.dm.service.identify.tika.TikaServerManager;
 import com.sfc.dm.service.identify.util.MagicBytesUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.parser.ParseContext;
-import org.apache.tika.sax.BodyContentHandler;
-import org.xml.sax.ContentHandler;
 
 import java.io.*;
 import java.util.*;
@@ -21,6 +17,7 @@ import java.util.zip.ZipFile;
  */
 @Slf4j
 public class DocumentCheckProvider implements FileTypeCheckProvider {
+    private final TikaServerManager tikaServerManager;
     private static final String ID = "documentCheckProvider";
     private static final String TYPE_NAME = "文档";
     private static final String TYPE_ID = "document";
@@ -34,6 +31,10 @@ public class DocumentCheckProvider implements FileTypeCheckProvider {
             ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".pdf",
             ".odt", ".ods", ".odp"
     );
+
+    public DocumentCheckProvider(TikaServerManager tikaServerManager) {
+        this.tikaServerManager = tikaServerManager;
+    }
 
     @Override
     public String getId() { return ID; }
@@ -165,38 +166,24 @@ public class DocumentCheckProvider implements FileTypeCheckProvider {
         } catch (IOException e) { return null; }
     }
 
-    private String detectByTika(File file) throws Exception {
-        AutoDetectParser parser = new AutoDetectParser();
-        Metadata metadata = new Metadata();
-        metadata.set(org.apache.tika.metadata.TikaCoreProperties.RESOURCE_NAME_KEY, file.getName());
-        try (InputStream is = new FileInputStream(file)) {
-            parser.getDetector().detect(is, metadata);
-            return metadata.get(org.apache.tika.metadata.HttpHeaders.CONTENT_TYPE);
-        }
+    private String detectByTika(File file) {
+        if (tikaServerManager == null) return null;
+        return tikaServerManager.detect(file);
     }
 
     private Map<String, String> extractMetadata(File file) {
+        if (tikaServerManager == null) return null;
+        Map<String, String> raw = tikaServerManager.extractMetadata(file, Set.of(
+                "title", "creator", "xmpTPg:NPages", "dcterms:created"
+        ));
+        if (raw == null) return null;
+
+        // 将 Tika 返回的原始 key 映射为业务 key
         Map<String, String> metadata = new HashMap<>();
-        try {
-            AutoDetectParser parser = new AutoDetectParser();
-            ContentHandler handler = new BodyContentHandler(-1);
-            org.apache.tika.metadata.Metadata tikaMetadata = new org.apache.tika.metadata.Metadata();
-            tikaMetadata.set(org.apache.tika.metadata.TikaCoreProperties.RESOURCE_NAME_KEY, file.getName());
-            ParseContext context = new ParseContext();
-            try (InputStream is = new FileInputStream(file)) {
-                parser.parse(is, handler, tikaMetadata, context);
-            }
-            String title = tikaMetadata.get(org.apache.tika.metadata.TikaCoreProperties.TITLE);
-            if (title != null) metadata.put("title", title);
-            String author = tikaMetadata.get(org.apache.tika.metadata.TikaCoreProperties.CREATOR);
-            if (author != null) metadata.put("author", author);
-            String pageCount = tikaMetadata.get("xmpTPg:NPages");
-            if (pageCount != null) metadata.put("pageCount", pageCount);
-            String created = tikaMetadata.get(org.apache.tika.metadata.TikaCoreProperties.CREATED);
-            if (created != null) metadata.put("createdDate", created);
-        } catch (Exception e) {
-            log.debug("Tika 文档元数据提取失败: {}", file.getName(), e);
-        }
+        if (raw.containsKey("title")) metadata.put("title", raw.get("title"));
+        if (raw.containsKey("creator")) metadata.put("author", raw.get("creator"));
+        if (raw.containsKey("xmpTPg:NPages")) metadata.put("pageCount", raw.get("xmpTPg:NPages"));
+        if (raw.containsKey("dcterms:created")) metadata.put("createdDate", raw.get("dcterms:created"));
         return metadata.isEmpty() ? null : metadata;
     }
 }

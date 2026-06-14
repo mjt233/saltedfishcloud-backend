@@ -15,6 +15,7 @@ import com.sfc.dm.service.identify.provider.IsoCheckProvider;
 import com.sfc.dm.service.identify.provider.MsiCheckProvider;
 import com.sfc.dm.service.identify.provider.PlainTextCheckProvider;
 import com.sfc.dm.service.identify.provider.VideoCheckProvider;
+import com.sfc.dm.service.identify.tika.TikaServerManager;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.sfc.dm.task.typecheck.FileTypeCheckTaskFactory;
 import com.sfc.dm.task.detect.InvalidDataDetectTaskFactory;
@@ -75,11 +76,19 @@ public class DataManagerAutoConfiguration {
     @Configuration
     public static class CommonProviderConfiguration {
         /**
+         * Tika Server 子进程管理器
+         */
+        @Bean(destroyMethod = "stop")
+        public TikaServerManager tikaServerManager() {
+            return new TikaServerManager();
+        }
+
+        /**
          * 注册文档文件类型识别提供者
          */
         @Bean
-        public DocumentCheckProvider documentCheckProvider() {
-            return new DocumentCheckProvider();
+        public DocumentCheckProvider documentCheckProvider(TikaServerManager tikaServerManager) {
+            return new DocumentCheckProvider(tikaServerManager);
         }
 
         /**

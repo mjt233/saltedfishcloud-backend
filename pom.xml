@@ -26,6 +26,14 @@
     <name>saltedfishcloud</name>
     <description>咸鱼云网盘</description>
 
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <properties>
         <revision>3.1.2</revision>
         <!--  前端项目路径通过环境变量 SFC_FRONT_END_PATH 提供，配置后在 package 时自动打包到 webapp -->
