@@ -68,16 +68,17 @@ public class FileTypeCheckTask implements AsyncTask {
             int fail = 0;
 
             // 2. 逐个识别
-            for (int i = 0; i < records.size(); i++) {
+            int processed = 0;
+            for (InvalidDataRecord record : records) {
                 if (interrupted.get()) {
                     log("任务被中断");
                     break;
                 }
-                InvalidDataRecord record = records.get(i);
                 try {
-                    boolean identified = identifyFile(storage, record);
-                    if (identified) {
+                    FileTypeCheckResult result = identifyFile(storage, record);
+                    if (result != null) {
                         success++;
+                        log("识别成功 [" + record.getStoragePath() + "] -> " + result.getTypeName());
                     } else {
                         fail++;
                         log("无法识别: " + record.getStoragePath());
@@ -86,7 +87,7 @@ public class FileTypeCheckTask implements AsyncTask {
                     fail++;
                     log("识别失败 [" + record.getStoragePath() + "]: " + e.getMessage());
                 }
-                progressRecord.setLoaded(i + 1);
+                progressRecord.setLoaded(++processed);
             }
 
             log("识别完成，成功: " + success + "，失败: " + fail);
@@ -103,11 +104,11 @@ public class FileTypeCheckTask implements AsyncTask {
     /**
      * 识别单个文件
      */
-    private boolean identifyFile(Storage storage, InvalidDataRecord record) throws IOException {
+    private FileTypeCheckResult identifyFile(Storage storage, InvalidDataRecord record) throws IOException {
         String storagePath = record.getStoragePath();
         Resource resource = storage.getResource(storagePath);
         if (resource == null) {
-            return false;
+            return null;
         }
 
         // 下载到临时文件
@@ -120,17 +121,17 @@ public class FileTypeCheckTask implements AsyncTask {
                 if (result.getDetail() != null && result.getDetail().getMetadata() != null) {
                     record.setMetadata(MapperHolder.toJson(result.getDetail().getMetadata()));
                 }
+                record.setTypeCheckResult(MapperHolder.toJson(result));
                 record.setNeedIdentify(false);
                 invalidDataRepo.save(record);
-                log("识别成功 [" + storagePath + "] -> " + result.getTypeName());
-                return true;
+                return result;
             }
-            return false;
         } finally {
             if (!isLocalFile) {
                 Files.deleteIfExists(localFile.toPath());
             }
         }
+        return null;
     }
 
     private boolean isLocalFile(Resource resource) {

@@ -7,6 +7,7 @@ import com.sfc.dm.service.ClaimService;
 import com.sfc.dm.service.InvalidDataService;
 import com.sfc.dm.service.identify.FileTypeCheckerImpl;
 import com.sfc.dm.service.identify.AudioCheckProvider;
+import com.sfc.dm.service.identify.ImageCheckProvider;
 import com.sfc.dm.service.identify.VideoCheckProvider;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.sfc.dm.task.typecheck.FileTypeCheckTaskFactory;
@@ -51,6 +52,14 @@ public class DataManagerAutoConfiguration {
         @Bean
         public AudioCheckProvider audioCheckProvider(FFMpegHelper ffMpegHelper) {
             return new AudioCheckProvider(ffMpegHelper);
+        }
+
+        /**
+         * 当sfc-ext-video-enhance插件存在时，注册图片文件类型识别提供者
+         */
+        @Bean
+        public ImageCheckProvider imageCheckProvider(FFMpegHelper ffMpegHelper) {
+            return new ImageCheckProvider(ffMpegHelper);
         }
     }
 }

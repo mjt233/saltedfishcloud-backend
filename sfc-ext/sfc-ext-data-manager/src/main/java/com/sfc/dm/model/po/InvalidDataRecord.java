@@ -92,4 +92,11 @@ public class InvalidDataRecord extends AuditModel {
      */
     @Enumerated(EnumType.STRING)
     private StoreMode storeMode;
+
+    /**
+     * 文件类型检查结果JSON（{@link com.sfc.dm.model.dto.FileTypeCheckResult} 序列化存储）
+     */
+    @Lob
+    @Column(length = 2048)
+    private String typeCheckResult;
 }
