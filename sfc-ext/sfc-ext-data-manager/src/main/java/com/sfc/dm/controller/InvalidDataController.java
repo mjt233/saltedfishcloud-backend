@@ -19,6 +19,7 @@ import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import jakarta.annotation.security.RolesAllowed;
@@ -123,8 +124,8 @@ public class InvalidDataController {
      */
     @GetMapping("list")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<CommonPageInfo<InvalidDataRecord>> list(InvalidDataQuery query, Pageable pageable) {
-        return JsonResultImpl.getInstance(invalidDataService.list(query, pageable));
+    public JsonResult<CommonPageInfo<InvalidDataRecord>> list(InvalidDataQuery query, PageableRequest pageableRequest) {
+        return JsonResultImpl.getInstance(invalidDataService.list(query, pageableRequest));
     }
 
     /**

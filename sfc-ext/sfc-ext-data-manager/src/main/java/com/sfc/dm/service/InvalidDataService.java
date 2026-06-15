@@ -11,6 +11,7 @@ import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -72,10 +73,10 @@ public class InvalidDataService {
     /**
      * 查询失效数据列表（分页+筛选）
      */
-    public CommonPageInfo<InvalidDataRecord> list(InvalidDataQuery query, Pageable pageable) {
+    public CommonPageInfo<InvalidDataRecord> list(InvalidDataQuery query, PageableRequest pageable) {
         JpaLambdaQueryWrapper<InvalidDataRecord> wrapper = JpaLambdaQueryWrapper.get(InvalidDataRecord.class);
-        if (query.getStatus() != null) {
-            wrapper.eq(InvalidDataRecord::getStatus, query.getStatus());
+        if (query.getStatus() != null && !query.getStatus().isEmpty()) {
+            wrapper.in(InvalidDataRecord::getStatus, query.getStatus());
         }
         if (query.getOwnerUid() != null) {
             wrapper.eq(InvalidDataRecord::getOwnerUid, query.getOwnerUid());
@@ -86,10 +87,10 @@ public class InvalidDataService {
         if (query.getMaxFileSize() != null) {
             wrapper.le(InvalidDataRecord::getFileSize, query.getMaxFileSize());
         }
-        if (query.getFileType() != null) {
-            wrapper.eq(InvalidDataRecord::getFileType, query.getFileType());
+        if (query.getFileType() != null && !query.getFileType().isEmpty()) {
+            wrapper.in(InvalidDataRecord::getFileType, query.getFileType());
         }
-        return CommonPageInfo.of(repo.findAll(wrapper.build(), pageable));
+        return CommonPageInfo.of(repo.findAll(wrapper.build(), PageRequest.of(pageable.getPage(), pageable.getSize())));
     }
 
     /**
