@@ -201,6 +201,16 @@ public class InvalidDataController {
         return JsonResult.emptySuccess();
     }
 
+    // === 普通用户查询 ===
+
+    /**
+     * 查询已发布可认领的失效数据列表（分页+筛选，状态固定为已发布）
+     */
+    @GetMapping("publishedList")
+    public JsonResult<CommonPageInfo<InvalidDataRecord>> publishedList(InvalidDataQuery query, PageableRequest pageableRequest) {
+        return JsonResultImpl.getInstance(invalidDataService.listPublished(query, pageableRequest));
+    }
+
     // === 认领操作（普通用户+管理员） ===
 
     /**

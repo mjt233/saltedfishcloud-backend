@@ -21,21 +21,18 @@ import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +68,14 @@ public class InvalidDataService {
     }
 
     /**
+     * 查询已发布可认领的失效数据列表（分页+筛选，状态强制为PUBLISHED）
+     */
+    public CommonPageInfo<InvalidDataRecord> listPublished(InvalidDataQuery query, PageableRequest pageable) {
+        query.setStatus(List.of(InvalidDataStatus.PUBLISHED.name()));
+        return list(query, pageable);
+    }
+
+    /**
      * 查询失效数据列表（分页+筛选）
      */
     public CommonPageInfo<InvalidDataRecord> list(InvalidDataQuery query, PageableRequest pageable) {
@@ -90,7 +95,8 @@ public class InvalidDataService {
         if (query.getFileType() != null && !query.getFileType().isEmpty()) {
             wrapper.in(InvalidDataRecord::getFileType, query.getFileType());
         }
-        return CommonPageInfo.of(repo.findAll(wrapper.build(), PageRequest.of(pageable.getPage(), pageable.getSize())));
+        Sort sort = buildSort(query);
+        return CommonPageInfo.of(repo.findAll(wrapper.build(), PageRequest.of(pageable.getPage(), pageable.getSize(), sort)));
     }
 
     /**
@@ -386,6 +392,23 @@ public class InvalidDataService {
         record.setStatus(InvalidDataStatus.COMPLETED);
         record.setProcessMethod(ProcessMethod.DISCARD);
         repo.save(record);
+    }
+
+    /**
+     * 构建排序条件（仅允许 fileSize、lastModified 字段）
+     */
+    private Sort buildSort(InvalidDataQuery query) {
+        if (query.getSortBy() == null || query.getSortBy().isBlank()) {
+            return Sort.unsorted();
+        }
+        String field = query.getSortBy();
+        if (!"fileSize".equals(field) && !"lastModified".equals(field)) {
+            throw new IllegalArgumentException("不支持的排序字段: " + field);
+        }
+        Sort.Direction direction = "ASC".equalsIgnoreCase(query.getSortOrder())
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+        return Sort.by(direction, field);
     }
 
     /**

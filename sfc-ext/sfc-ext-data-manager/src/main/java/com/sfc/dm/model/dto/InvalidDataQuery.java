@@ -35,4 +35,14 @@ public class InvalidDataQuery {
      * 文件类型筛选（typeId，多选）
      */
     private List<String> fileType;
+
+    /**
+     * 排序字段，不传则不排序（支持 fileSize、lastModified）
+     */
+    private String sortBy;
+
+    /**
+     * 排序方向（ASC、DESC，默认DESC）
+     */
+    private String sortOrder;
 }
