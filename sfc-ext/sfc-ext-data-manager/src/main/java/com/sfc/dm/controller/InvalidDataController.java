@@ -14,7 +14,6 @@ import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
-import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
@@ -25,11 +24,10 @@ import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
-import org.springframework.web.bind.annotation.*;
-
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -209,8 +207,8 @@ public class InvalidDataController {
      * 认领失效数据（UNIQUE模式）
      */
     @PostMapping("claim")
-    public JsonResult<?> claim(@RequestBody @Valid ClaimParam param, @UID Long uid) {
-        claimService.claim(param, uid);
+    public JsonResult<?> claim(@RequestBody @Valid ClaimParam param) throws IOException {
+        claimService.claim(param);
         return JsonResult.emptySuccess();
     }
 

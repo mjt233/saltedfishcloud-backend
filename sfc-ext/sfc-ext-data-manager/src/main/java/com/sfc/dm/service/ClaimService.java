@@ -10,6 +10,11 @@ import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
+import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
+import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 
 import java.io.IOException;
@@ -20,7 +25,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 认领服务（仅UNIQUE模式）
@@ -35,33 +43,33 @@ public class ClaimService {
     private InvalidDataRecordRepo invalidDataRecordRepo;
     @Autowired
     private DiskFileSystemManager fileSystemManager;
+    @Autowired
+    private FileRecordService fileRecordService;
+    @Autowired
+    private StoreServiceFactory storeServiceFactory;
 
     /**
      * 认领失效数据
      */
-    public void claim(ClaimParam param, Long operatorUid) {
+    public void claim(ClaimParam param) throws IOException {
         // 1. 查询失效数据记录
+        Long operatorUid = SecureUtils.getCurrentUid();
         InvalidDataRecord record = invalidDataRecordRepo.findById(param.getInvalidDataId())
                 .orElseThrow(() -> new IllegalArgumentException("失效数据记录不存在"));
 
         // 2. 状态校验
-        if (record.getStatus() != InvalidDataStatus.PUBLISHED
-                && record.getStatus() != InvalidDataStatus.CLAIMED) {
-            throw new IllegalStateException("当前状态不允许认领");
+        if(!SecureUtils.getSpringSecurityUser().isAdmin()) {
+            // 非管理员认领时需要校验已发布可认领状态
+            if (record.getStatus() != InvalidDataStatus.PUBLISHED) {
+                throw new IllegalStateException("当前状态不允许认领");
+            }
         }
 
         // 3. 权限校验
         Long targetUid = param.getTargetUid();
-        if (record.getStatus() != InvalidDataStatus.PUBLISHED) {
-            // 未发布的数据仅管理员可操作
-            UIDValidator.validateWithException(operatorUid, true);
-        }
-        if (targetUid == 0) {
-            // 公共网盘仅管理员可操作
-            UIDValidator.validateWithException(operatorUid, true);
-        } else if (!targetUid.equals(operatorUid)) {
+        if (Objects.equals(targetUid, operatorUid)) {
             // 非自己的网盘仅管理员可操作
-            UIDValidator.validateWithException(operatorUid, true);
+            UIDValidator.validateWithException(targetUid, true);
         }
 
         // 4. 文件名冲突检查
@@ -76,11 +84,20 @@ public class ClaimService {
         }
 
         // 5. 创建文件记录
-        try {
-            fs.quickSave(targetUid, param.getSavePath(), param.getFileName(), record.getMd5());
-        } catch (IOException e) {
-            throw new IllegalStateException("创建文件记录失败: " + e.getMessage());
+        if (!StringUtils.hasText(record.getMd5())) {
+            throw new IllegalArgumentException("失效数据记录缺少MD5信息，无法认领");
         }
+        Storage storage = storeServiceFactory.getService().getStorageProvider();
+        FileInfo fileInfo = FileInfo.createFrom(storage.getFileInfo(record.getStoragePath()), false);
+        fileInfo.setMd5(record.getMd5());
+        fileInfo.setName(param.getFileName());
+        fileInfo.setUid(targetUid);
+        fileInfo.setNode(null);
+        fileInfo.setId(null);
+        fileInfo.setUpdateAt(null);
+        fileInfo.setCreateAt(null);
+        fileInfo.setPath(param.getFileName());
+        fileRecordService.saveRecord(fileInfo, param.getSavePath());
 
         // 6. 创建认领记录
         ClaimRecord claimRecord = new ClaimRecord();

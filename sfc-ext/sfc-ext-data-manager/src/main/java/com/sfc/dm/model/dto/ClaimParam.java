@@ -30,7 +30,7 @@ public class ClaimParam {
     private String fileName;
 
     /**
-     * 认领时填写的保存路径
+     * 认领时填写的文件保存目录的路径(不含文件名)
      */
     @NotBlank
     private String savePath;

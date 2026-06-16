@@ -34,7 +34,7 @@ public class ClaimRecord extends AuditModel {
     private String fileName;
 
     /**
-     * 认领时填写的保存路径
+     * 认领时填写的保存路径(不含文件名本身)
      */
     private String savePath;
 }
