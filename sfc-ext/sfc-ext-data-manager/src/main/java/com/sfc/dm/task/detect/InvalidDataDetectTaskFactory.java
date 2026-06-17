@@ -12,6 +12,7 @@ import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * 失效数据检测任务工厂
@@ -25,6 +26,7 @@ public class InvalidDataDetectTaskFactory implements AsyncTaskFactory {
     private final SysCommonConfig sysCommonConfig;
     private final UserService userService;
     private final SysProperties sysProperties;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
@@ -36,6 +38,7 @@ public class InvalidDataDetectTaskFactory implements AsyncTaskFactory {
         task.setSysCommonConfig(sysCommonConfig);
         task.setUserService(userService);
         task.setSysProperties(sysProperties);
+        task.setJdbcTemplate(jdbcTemplate);
         return task;
     }
 

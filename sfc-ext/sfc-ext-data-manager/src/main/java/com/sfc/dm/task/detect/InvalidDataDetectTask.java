@@ -18,10 +18,15 @@ import com.xiaotao.saltedfishcloud.service.user.UserService;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import com.xiaotao.saltedfishcloud.utils.DBUtils;
+import org.springframework.jdbc.core.JdbcTemplate;
+
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -29,6 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Slf4j
 public class InvalidDataDetectTask implements AsyncTask {
+    private static final int BATCH_SIZE = 200;
+
     @Setter
     private InvalidDataRecordRepo invalidDataRepo;
     @Setter
@@ -43,6 +50,8 @@ public class InvalidDataDetectTask implements AsyncTask {
     private SysProperties sysProperties;
     @Setter
     private UserService userService;
+    @Setter
+    private JdbcTemplate jdbcTemplate;
 
     private PrintWriter logWriter;
     private final AtomicBoolean running = new AtomicBoolean(false);
@@ -102,22 +111,26 @@ public class InvalidDataDetectTask implements AsyncTask {
             int deleted = invalidDataRepo.deleteByStatus(InvalidDataStatus.PENDING);
             log("已清除 " + deleted + " 条待处理记录");
 
-            // 2. 根据存储模式执行扫描
+            // 2. 流式扫描并批量保存检测结果
             InvalidDataScanner scanner = createScanner();
-            List<InvalidDataRecord> results = scanner.scan();
-
-            // 3. 批量保存检测结果
-            progressRecord.setTotal(results.size()).setLoaded(0);
-            log("开始保存检测结果，共 " + results.size() + " 条...");
-            for (int i = 0; i < results.size(); i++) {
-                if (interrupted.get()) {
-                    log("任务被中断");
-                    break;
+            log("开始扫描...");
+            AtomicInteger savedCount = new AtomicInteger(0);
+            List<InvalidDataRecord> batchBuffer = new ArrayList<>();
+            scanner.scan(record -> {
+                batchBuffer.add(record);
+                if (batchBuffer.size() >= BATCH_SIZE) {
+                    DBUtils.batchInsert(jdbcTemplate, batchBuffer);
+                    savedCount.addAndGet(batchBuffer.size());
+                    log("已保存 " + savedCount.get() + " 条");
+                    batchBuffer.clear();
                 }
-                invalidDataRepo.save(results.get(i));
-                progressRecord.setLoaded(i + 1);
+            });
+            if (!batchBuffer.isEmpty()) {
+                DBUtils.batchInsert(jdbcTemplate, batchBuffer);
+                savedCount.addAndGet(batchBuffer.size());
+                batchBuffer.clear();
             }
-            log("检测完成，共发现 " + results.size() + " 条失效数据");
+            log("检测完成，共发现 " + savedCount.get() + " 条失效数据");
         } catch (Exception e) {
             log("检测异常: " + e.getMessage());
             throw new RuntimeException(e);

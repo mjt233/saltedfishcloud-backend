@@ -2,7 +2,7 @@ package com.sfc.dm.task.detect.scanner;
 
 import com.sfc.dm.model.po.InvalidDataRecord;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 失效数据扫描器接口
@@ -10,9 +10,9 @@ import java.util.List;
 public interface InvalidDataScanner {
 
     /**
-     * 执行扫描，返回发现的失效数据记录列表
+     * 执行流式扫描，每发现一条失效数据记录时通过回调通知调用方
      *
-     * @return 失效数据记录列表
+     * @param callback 发现失效数据记录时的回调
      */
-    List<InvalidDataRecord> scan();
+    void scan(Consumer<InvalidDataRecord> callback);
 }

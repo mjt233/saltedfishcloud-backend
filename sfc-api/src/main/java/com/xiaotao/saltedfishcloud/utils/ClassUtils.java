@@ -30,7 +30,7 @@ public class ClassUtils {
      */
     public static String getEntityTableName(Class<?> clazz) {
         Table tableAnnotation = clazz.getAnnotation(Table.class);
-        if (tableAnnotation != null) {
+        if (tableAnnotation != null && StringUtils.hasText(tableAnnotation.name())) {
             return tableAnnotation.name();
         }
         String simpleName = clazz.getSimpleName();

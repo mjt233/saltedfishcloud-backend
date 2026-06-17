@@ -13,9 +13,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * RAW 模式失效数据扫描器
@@ -28,32 +28,30 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
     private FileRecordService fileRecordService;
 
     @Override
-    public List<InvalidDataRecord> scan() {
+    public void scan(Consumer<InvalidDataRecord> callback) {
         log("开始RAW模式扫描...");
-        List<InvalidDataRecord> results = new ArrayList<>();
         Storage storage = storeServiceFactory.getService().getStorageProvider();
 
         // 1. 扫描失效物理存储（物理文件存在但文件记录不存在）
         log("扫描失效物理存储...");
-        scanInvalidPhysicalStorage(storage, results);
+        scanInvalidPhysicalStorage(storage, callback);
 
         // 2. 扫描失效文件记录（文件记录存在但物理文件不存在）
         log("扫描失效文件记录...");
-        scanInvalidFileRecords(results);
+        scanInvalidFileRecords(callback);
 
-        log("RAW模式扫描完成，发现 " + results.size() + " 条失效数据");
-        return results;
+        log("RAW模式扫描完成");
     }
 
     /**
      * 扫描失效物理存储（物理文件存在但文件记录不存在）
      */
-    private void scanInvalidPhysicalStorage(Storage storage, List<InvalidDataRecord> results) {
+    private void scanInvalidPhysicalStorage(Storage storage, Consumer<InvalidDataRecord> callback) {
         // 扫描公共网盘
         String publicRoot = sysProperties.getStore().getPublicRoot();
         log("扫描公共网盘: " + publicRoot);
         try {
-            scanDirectory(storage, publicRoot, "/", 0L, results);
+            scanDirectory(storage, publicRoot, "/", 0L, callback);
         } catch (IOException e) {
             log("扫描公共网盘失败: " + e.getMessage());
         }
@@ -65,7 +63,7 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
             String userDir = StringUtils.appendPath(userFileRoot, user.getId().toString());
             log("扫描用户网盘: uid=" + user.getId());
             try {
-                scanDirectory(storage, userDir, "/", user.getId(), results);
+                scanDirectory(storage, userDir, "/", user.getId(), callback);
             } catch (IOException e) {
                 log("扫描用户网盘失败 [" + userDir + "]: " + e.getMessage());
             }
@@ -75,17 +73,17 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
     /**
      * 扫描失效文件记录（文件记录存在但物理文件不存在）
      */
-    private void scanInvalidFileRecords(List<InvalidDataRecord> results) {
+    private void scanInvalidFileRecords(Consumer<InvalidDataRecord> callback) {
         DiskFileSystem fs = fileSystemManager.getMainFileSystem();
 
         // 扫描公共网盘的文件记录
         log("扫描公共网盘文件记录...");
-        scanFileRecordsByUid(0L, results);
+        scanFileRecordsByUid(0L, callback);
 
         // 扫描用户网盘的文件记录
         forEachUser(user -> {
             log("扫描用户文件记录: uid=" + user.getId());
-            scanFileRecordsByUid(user.getId(), results);
+            scanFileRecordsByUid(user.getId(), callback);
         });
     }
 
@@ -96,10 +94,10 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
     /**
      * 扫描指定用户的文件记录，检查物理文件是否存在
      *
-     * @param uid    用户ID
-     * @param results 接收的结果列表
+     * @param uid      用户ID
+     * @param callback 发现失效数据记录时的回调
      */
-    private void scanFileRecordsByUid(Long uid, List<InvalidDataRecord> results) {
+    private void scanFileRecordsByUid(Long uid, Consumer<InvalidDataRecord> callback) {
         FileTree fileTree = fileRecordService.getFullTree(uid);
         Storage storage = storeServiceFactory.getService().getStorageProvider();
         String storageRoot = getUserStoragePath(uid);
@@ -131,7 +129,7 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
                         // 文件记录存在但物理文件不存在 -> 失效文件记录
                         InvalidDataRecord invalidRecord = createInvalidFileRecordRecord(
                                 storagePath, uid, diskPath, file.getSize(), new Date(file.getMtime()), file.getMd5());
-                        results.add(invalidRecord);
+                        callback.accept(invalidRecord);
                     }
                 } catch (IOException e) {
                     log("检查物理文件失败 [uid=" + uid + ", path=" + diskPath + "]: " + e.getMessage());
@@ -147,9 +145,10 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
      * @param path      物理存储的扫描路径
      * @param diskRoot  对应的DiskFileSystem根路径，用于计算磁盘相对路径
      * @param ownerUid  查询文件记录的文件所属用户id（公共网盘为0）
-     * @param results   接收的结果列表
+     * @param callback  发现失效数据记录时的回调
      */
-    private void scanDirectory(Storage storage, String path, String diskRoot, Long ownerUid, List<InvalidDataRecord> results) throws IOException {
+    private void scanDirectory(Storage storage, String path, String diskRoot, Long ownerUid,
+                               Consumer<InvalidDataRecord> callback) throws IOException {
         if (interrupted.get()) {
             return;
         }
@@ -166,7 +165,7 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
             String fullPath = StringUtils.appendPath(path, file.getName());
             String diskPath = StringUtils.appendPath(diskRoot, file.getName());
             if (file.isDir()) {
-                scanDirectory(storage, fullPath, diskPath, ownerUid, results);
+                scanDirectory(storage, fullPath, diskPath, ownerUid, callback);
             } else {
                 // 检查文件记录是否存在
                 try {
@@ -174,7 +173,7 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
                         // 物理存储存在但文件记录不存在 -> 失效物理存储
                         InvalidDataRecord invalidRecord = createInvalidPhysicalStorageRecord(
                                 fullPath, ownerUid, diskPath, file.getSize(), new Date(file.getMtime()), file.getMd5());
-                        results.add(invalidRecord);
+                        callback.accept(invalidRecord);
                     }
                 } catch (IOException e) {
                     log("检查文件记录失败 [" + fullPath + "]: " + e.getMessage());

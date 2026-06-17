@@ -19,6 +19,7 @@ import org.springframework.core.io.Resource;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,6 +29,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Slf4j
 public class FileTypeCheckTask implements AsyncTask {
+    private static final int BATCH_SIZE = 200;
+
     @Setter private InvalidDataRecordRepo invalidDataRepo;
     @Setter private StoreServiceFactory storeServiceFactory;
     @Setter private FileTypeChecker fileTypeChecker;
@@ -67,8 +70,9 @@ public class FileTypeCheckTask implements AsyncTask {
             int success = 0;
             int fail = 0;
 
-            // 2. 逐个识别
+            // 2. 逐个识别，积攒后批量保存
             int processed = 0;
+            List<InvalidDataRecord> batchBuffer = new ArrayList<>();
             for (InvalidDataRecord record : records) {
                 if (interrupted.get()) {
                     log("任务被中断");
@@ -78,6 +82,7 @@ public class FileTypeCheckTask implements AsyncTask {
                     FileTypeCheckResult result = identifyFile(storage, record);
                     if (result != null) {
                         success++;
+                        batchBuffer.add(record);
                         log("识别成功 [" + record.getStoragePath() + "] -> " + result.getTypeName());
                     } else {
                         fail++;
@@ -87,7 +92,15 @@ public class FileTypeCheckTask implements AsyncTask {
                     fail++;
                     log("识别失败 [" + record.getStoragePath() + "]: " + e.getMessage());
                 }
+                if (batchBuffer.size() >= BATCH_SIZE) {
+                    invalidDataRepo.saveAll(batchBuffer);
+                    batchBuffer.clear();
+                }
                 progressRecord.setLoaded(++processed);
+            }
+            if (!batchBuffer.isEmpty()) {
+                invalidDataRepo.saveAll(batchBuffer);
+                batchBuffer.clear();
             }
 
             log("识别完成，成功: " + success + "，失败: " + fail);
@@ -123,7 +136,6 @@ public class FileTypeCheckTask implements AsyncTask {
                 }
                 record.setTypeCheckResult(MapperHolder.toJson(result));
                 record.setNeedIdentify(false);
-                invalidDataRepo.save(record);
                 return result;
             }
         } finally {
