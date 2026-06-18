@@ -27,6 +27,7 @@ public class InvalidDataRecord extends AuditModel {
      * 失效数据类型
      */
     @Enumerated(EnumType.STRING)
+    @Column(length = 32)
     private InvalidDataType type;
 
     /**
@@ -74,12 +75,14 @@ public class InvalidDataRecord extends AuditModel {
      * 状态
      */
     @Enumerated(EnumType.STRING)
+    @Column(length = 32)
     private InvalidDataStatus status;
 
     /**
      * 处理方式（仅COMPLETED状态有值）
      */
     @Enumerated(EnumType.STRING)
+    @Column(length = 32)
     private ProcessMethod processMethod;
 
     /**
@@ -91,6 +94,7 @@ public class InvalidDataRecord extends AuditModel {
      * 基于哪种存储模式下检测出的结果
      */
     @Enumerated(EnumType.STRING)
+    @Column(length = 32)
     private StoreMode storeMode;
 
     /**
