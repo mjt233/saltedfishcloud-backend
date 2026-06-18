@@ -27,4 +27,12 @@ public interface InvalidDataRecordRepo extends BaseRepo<InvalidDataRecord> {
      */
     @Query("SELECT t.id FROM InvalidDataRecord t WHERE t.status = :status")
     List<Long> findIdsByStatus(@Param("status") InvalidDataStatus status);
+
+    /**
+     * 批量更新状态
+     */
+    @Transactional
+    @Modifying
+    @Query("UPDATE InvalidDataRecord t SET t.status = :status WHERE t.id IN :ids")
+    int updateStatusByIds(@Param("ids") List<Long> ids, @Param("status") InvalidDataStatus status);
 }

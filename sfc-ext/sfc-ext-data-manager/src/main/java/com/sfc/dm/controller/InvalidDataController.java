@@ -1,6 +1,7 @@
 package com.sfc.dm.controller;
 
 import com.sfc.dm.constant.DataManagerTaskType;
+import com.sfc.dm.model.dto.BatchResult;
 import com.sfc.dm.model.dto.ClaimParam;
 import com.sfc.dm.model.dto.FileTypeProviderInfo;
 import com.sfc.dm.model.dto.InvalidDataQuery;
@@ -31,7 +32,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 失效数据管理控制器
@@ -136,23 +136,21 @@ public class InvalidDataController {
     }
 
     /**
-     * 发布为可认领（UNIQUE模式）
+     * 批量发布为可认领
      */
-    @PostMapping("publish/{id}")
+    @PostMapping("publish")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<?> publish(@PathVariable Long id) {
-        invalidDataService.publish(id);
-        return JsonResult.emptySuccess();
+    public JsonResult<BatchResult> publish(@RequestBody List<Long> idList) {
+        return JsonResultImpl.getInstance(invalidDataService.publish(idList));
     }
 
     /**
-     * 取消发布（UNIQUE模式）
+     * 批量取消发布
      */
-    @PostMapping("unpublish/{id}")
+    @PostMapping("unpublish")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<?> unpublish(@PathVariable Long id) {
-        invalidDataService.unpublish(id);
-        return JsonResult.emptySuccess();
+    public JsonResult<BatchResult> unpublish(@RequestBody List<Long> idList) {
+        return JsonResultImpl.getInstance(invalidDataService.unpublish(idList));
     }
 
     /**
@@ -160,7 +158,7 @@ public class InvalidDataController {
      */
     @PostMapping("quickFix")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<Map<String, Object>> quickFix(@RequestBody List<Long> ids) {
+    public JsonResult<BatchResult> quickFix(@RequestBody List<Long> ids) {
         return JsonResultImpl.getInstance(invalidDataService.quickFix(ids));
     }
 
@@ -169,7 +167,7 @@ public class InvalidDataController {
      */
     @PostMapping("quickFix/all")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<Map<String, Object>> quickFixAll() {
+    public JsonResult<BatchResult> quickFixAll() {
         return JsonResultImpl.getInstance(invalidDataService.quickFixAll());
     }
 
@@ -178,7 +176,7 @@ public class InvalidDataController {
      */
     @PostMapping("discard")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<Map<String, Object>> discard(@RequestBody List<Long> ids) {
+    public JsonResult<BatchResult> discard(@RequestBody List<Long> ids) {
         return JsonResultImpl.getInstance(invalidDataService.discard(ids));
     }
 
@@ -187,7 +185,7 @@ public class InvalidDataController {
      */
     @PostMapping("discard/all")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<Map<String, Object>> discardAll() {
+    public JsonResult<BatchResult> discardAll() {
         return JsonResultImpl.getInstance(invalidDataService.discardAll());
     }
 

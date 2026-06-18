@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.enums.InvalidDataType;
 import com.sfc.dm.enums.ProcessMethod;
+import com.sfc.dm.model.dto.BatchResult;
 import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.dto.InvalidDataQuery;
 import com.sfc.dm.model.po.InvalidDataRecord;
@@ -36,6 +37,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 失效数据服务
@@ -179,6 +181,13 @@ public class InvalidDataService {
     }
 
     /**
+     * 批量发布为可认领
+     */
+    public BatchResult publish(List<Long> idList) {
+        return batchUpdateStatus(idList, InvalidDataStatus.PENDING, InvalidDataStatus.PUBLISHED, "发布");
+    }
+
+    /**
      * 取消发布（UNIQUE模式，PUBLISHED -> PENDING）
      */
     public void unpublish(Long id) {
@@ -191,9 +200,16 @@ public class InvalidDataService {
     }
 
     /**
+     * 批量取消发布
+     */
+    public BatchResult unpublish(List<Long> idList) {
+        return batchUpdateStatus(idList, InvalidDataStatus.PUBLISHED, InvalidDataStatus.PENDING, "取消发布");
+    }
+
+    /**
      * 批量快速修复（RAW模式）
      */
-    public Map<String, Object> quickFix(List<Long> ids) {
+    public BatchResult quickFix(List<Long> ids) {
         int success = 0;
         int fail = 0;
         List<String> errors = new ArrayList<>();
@@ -206,13 +222,13 @@ public class InvalidDataService {
                 errors.add("ID " + id + ": " + e.getMessage());
             }
         }
-        return Map.of("success", success, "fail", fail, "errors", errors);
+        return new BatchResult(success, fail, errors);
     }
 
     /**
      * 修复所有待处理的失效数据
      */
-    public Map<String, Object> quickFixAll() {
+    public BatchResult quickFixAll() {
         List<Long> ids = repo.findIdsByStatus(InvalidDataStatus.PENDING);
         return quickFix(ids);
     }
@@ -220,7 +236,7 @@ public class InvalidDataService {
     /**
      * 批量丢弃
      */
-    public Map<String, Object> discard(List<Long> ids) {
+    public BatchResult discard(List<Long> ids) {
         int success = 0;
         int fail = 0;
         List<String> errors = new ArrayList<>();
@@ -233,13 +249,13 @@ public class InvalidDataService {
                 errors.add("ID " + id + ": " + e.getMessage());
             }
         }
-        return Map.of("success", success, "fail", fail, "errors", errors);
+        return new BatchResult(success, fail, errors);
     }
 
     /**
      * 丢弃所有可丢弃的数据
      */
-    public Map<String, Object> discardAll() {
+    public BatchResult discardAll() {
         List<Long> ids = repo.findIdsByStatus(InvalidDataStatus.PENDING);
         return discard(ids);
     }
@@ -393,6 +409,45 @@ public class InvalidDataService {
         record.setProcessMethod(ProcessMethod.DISCARD);
         repo.save(record);
     }
+
+    /**
+     * 批量更新状态（分批执行，每批200条）
+     *
+     * @param idList      待更新的ID列表
+     * @param fromStatus  允许的源状态（校验用）
+     * @param toStatus    目标状态
+     * @param actionName  操作名称（用于错误信息）
+     * @return 批量操作结果
+     */
+    private BatchResult batchUpdateStatus(List<Long> idList, InvalidDataStatus fromStatus, InvalidDataStatus toStatus, String actionName) {
+        List<InvalidDataRecord> records = repo.findAllById(idList);
+
+        Map<Long, InvalidDataRecord> recordMap = records.stream()
+                .collect(Collectors.toMap(InvalidDataRecord::getId, r -> r));
+
+        List<Long> validIds = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        for (Long id : idList) {
+            InvalidDataRecord record = recordMap.get(id);
+            if (record == null) {
+                errors.add("ID " + id + ": 记录不存在");
+            } else if (record.getStatus() != fromStatus) {
+                errors.add("ID " + id + ": 当前状态不允许" + actionName);
+            } else {
+                validIds.add(id);
+            }
+        }
+
+        int success = 0;
+        for (int i = 0; i < validIds.size(); i += BATCH_SIZE) {
+            List<Long> batch = validIds.subList(i, Math.min(i + BATCH_SIZE, validIds.size()));
+            success += repo.updateStatusByIds(batch, toStatus);
+        }
+
+        return new BatchResult(success, errors.size(), errors);
+    }
+
+    private static final int BATCH_SIZE = 200;
 
     /**
      * 构建排序条件（仅允许 fileSize、lastModified 字段）
