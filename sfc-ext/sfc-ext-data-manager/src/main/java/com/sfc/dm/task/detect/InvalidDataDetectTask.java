@@ -128,6 +128,7 @@ public class InvalidDataDetectTask implements AsyncTask {
             if (!batchBuffer.isEmpty()) {
                 DBUtils.batchInsert(jdbcTemplate, batchBuffer);
                 savedCount.addAndGet(batchBuffer.size());
+                log("已保存 " + savedCount.get() + " 条");
                 batchBuffer.clear();
             }
             log("检测完成，共发现 " + savedCount.get() + " 条失效数据");
