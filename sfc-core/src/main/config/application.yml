@@ -31,6 +31,7 @@ spring:
     password: test
     hikari:
       transaction-isolation: TRANSACTION_READ_COMMITTED
+      initialization-fail-timeout: 180000
   data:
     redis:
       host: 127.0.0.1
