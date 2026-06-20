@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.provider;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
 import com.sfc.dm.service.identify.tika.TikaServerManager;
@@ -61,23 +62,18 @@ public class DocumentCheckProvider implements FileTypeCheckProvider {
     @Override
     public String getId() { return ID; }
     @Override
-    public String getTypeName() { return TYPE_NAME; }
-    @Override
-    public String getTypeId() { return TYPE_ID; }
-    @Override
-    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
-    @Override
-    public int getPriority() { return PRIORITY; }
-
-    @Override
-    public List<FileMetadataDefine> getMetadataDefines() {
-        return List.of(
+    public List<FileTypeInfo> getTypeInfoList() {
+        return List.of(new FileTypeInfo(TYPE_ID, TYPE_NAME, List.of(
                 new FileMetadataDefine("标题", "title", "文档标题", "span"),
                 new FileMetadataDefine("作者", "author", "文档作者", "span"),
                 new FileMetadataDefine("页数", "pageCount", "文档页数", "span"),
                 new FileMetadataDefine("创建时间", "createdDate", "文档创建时间", "span")
-        );
+        )));
     }
+    @Override
+    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
+    @Override
+    public int getPriority() { return PRIORITY; }
 
     @Override
     public FileTypeCheckResultDetail checkFile(File file, boolean extraMetadata) {

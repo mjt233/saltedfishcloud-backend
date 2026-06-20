@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.provider;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
@@ -35,17 +36,8 @@ public class AudioCheckProvider implements FileTypeCheckProvider {
     public String getId() { return ID; }
 
     @Override
-    public String getTypeName() { return TYPE_NAME; }
-
-    @Override
-    public String getTypeId() { return TYPE_ID; }
-
-    @Override
-    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
-
-    @Override
-    public List<FileMetadataDefine> getMetadataDefines() {
-        return List.of(
+    public List<FileTypeInfo> getTypeInfoList() {
+        return List.of(new FileTypeInfo(TYPE_ID, TYPE_NAME, List.of(
                 new FileMetadataDefine("歌曲名称", "title", "音频文件标题", "span"),
                 new FileMetadataDefine("歌手", "artist", "歌手/艺术家", "span"),
                 new FileMetadataDefine("专辑", "album", "专辑名称", "span"),
@@ -55,8 +47,11 @@ public class AudioCheckProvider implements FileTypeCheckProvider {
                 new FileMetadataDefine("采样率", "sampleRate", "音频采样率（Hz）", "span"),
                 new FileMetadataDefine("声道数", "channels", "音频声道数", "span"),
                 new FileMetadataDefine("码率", "bitRate", "音频码率（bps）", "span")
-        );
+        )));
     }
+
+    @Override
+    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
 
     @Override
     public FileTypeCheckResultDetail checkFile(File file, boolean extraMetadata) {

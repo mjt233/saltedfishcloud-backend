@@ -3,6 +3,7 @@ package com.sfc.dm.controller;
 import com.sfc.dm.constant.DataManagerTaskType;
 import com.sfc.dm.model.dto.BatchResult;
 import com.sfc.dm.model.dto.ClaimParam;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeProviderInfo;
 import com.sfc.dm.model.dto.InvalidDataQuery;
 import com.sfc.dm.model.po.ClaimRecord;
@@ -60,18 +61,20 @@ public class InvalidDataController {
     }
 
     /**
-     * 获取系统当前支持的文件类型识别器信息
+     * 获取系统当前支持的文件类型识别器信息。
+     * 每个Provider可能支持多种类型，结果按类型扁平化返回。
      */
     @GetMapping("providers")
     public JsonResult<List<FileTypeProviderInfo>> listProviders() {
         List<FileTypeProviderInfo> list = fileTypeChecker.getProviders().stream()
-                .map(p -> new FileTypeProviderInfo(
-                        p.getId(),
-                        p.getTypeId(),
-                        p.getTypeName(),
-                        p.getSupportedFileExtensions(),
-                        p.getMetadataDefines()
-                ))
+                .flatMap(p -> p.getTypeInfoList().stream()
+                        .map(typeInfo -> new FileTypeProviderInfo(
+                                p.getId() + "#" + typeInfo.getTypeId(),
+                                typeInfo.getTypeId(),
+                                typeInfo.getTypeName(),
+                                p.getSupportedFileExtensions(),
+                                typeInfo.getMetadataDefines()
+                        )))
                 .toList();
         return JsonResultImpl.getInstance(list);
     }

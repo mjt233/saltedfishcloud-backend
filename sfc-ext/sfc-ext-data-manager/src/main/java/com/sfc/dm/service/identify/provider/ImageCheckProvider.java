@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.provider;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
@@ -38,23 +39,17 @@ public class ImageCheckProvider implements FileTypeCheckProvider {
     public String getId() { return ID; }
 
     @Override
-    public String getTypeName() { return TYPE_NAME; }
-
-    @Override
-    public String getTypeId() { return TYPE_ID; }
-
-    @Override
-    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
-
-    @Override
-    public List<FileMetadataDefine> getMetadataDefines() {
-        return List.of(
+    public List<FileTypeInfo> getTypeInfoList() {
+        return List.of(new FileTypeInfo(TYPE_ID, TYPE_NAME, List.of(
                 new FileMetadataDefine("宽度", "width", "图片宽度（像素）", "span"),
                 new FileMetadataDefine("高度", "height", "图片高度（像素）", "span"),
                 new FileMetadataDefine("编码器", "codec", "图片编码器名称（如mjpeg, png, webp等）", "span"),
                 new FileMetadataDefine("封装格式", "containerFormat", "图片封装格式（如image2, mp3等）", "span")
-        );
+        )));
     }
+
+    @Override
+    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
 
     @Override
     public FileTypeCheckResultDetail checkFile(File file, boolean extraMetadata) {

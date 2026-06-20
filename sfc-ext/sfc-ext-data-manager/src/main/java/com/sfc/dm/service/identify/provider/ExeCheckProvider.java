@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.provider;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
 import com.sfc.dm.service.identify.util.MagicBytesUtils;
@@ -35,24 +36,19 @@ public class ExeCheckProvider implements FileTypeCheckProvider {
     @Override
     public String getId() { return ID; }
     @Override
-    public String getTypeName() { return TYPE_NAME; }
-    @Override
-    public String getTypeId() { return TYPE_ID; }
-    @Override
-    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
-    @Override
-    public int getPriority() { return PRIORITY; }
-
-    @Override
-    public List<FileMetadataDefine> getMetadataDefines() {
-        return List.of(
+    public List<FileTypeInfo> getTypeInfoList() {
+        return List.of(new FileTypeInfo(TYPE_ID, TYPE_NAME, List.of(
                 new FileMetadataDefine("架构", "architecture", "目标架构（x86/x64）", "span"),
                 new FileMetadataDefine("子系统", "subsystem", "子系统类型（CONSOLE/WINDOWS/NATIVE）", "span"),
                 new FileMetadataDefine("链接器版本", "linkerVersion", "链接器版本号", "span"),
                 new FileMetadataDefine("编译时间", "compileTime", "PE 编译时间戳", "span"),
                 new FileMetadataDefine("是否DLL", "isDll", "是否为动态链接库", "span")
-        );
+        )));
     }
+    @Override
+    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
+    @Override
+    public int getPriority() { return PRIORITY; }
 
     @Override
     public FileTypeCheckResultDetail checkFile(File file, boolean extraMetadata) {

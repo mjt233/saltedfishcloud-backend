@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 
 import java.io.File;
@@ -16,14 +17,25 @@ public interface FileTypeCheckProvider {
     String getId();
 
     /**
-     * 获取该Provider检测的文件类型名称
+     * 获取该Provider支持的文件类型信息列表。
+     * 一个Provider可以支持多种文件类型，根据文件内容返回最匹配的类型。
+     * 单类型Provider只需返回包含一个元素的列表。
      */
-    String getTypeName();
+    List<FileTypeInfo> getTypeInfoList();
 
     /**
-     * 获取该Provider检测的文件类型标识
+     * 获取该Provider检测的文件类型名称（取第一个类型的名称）
      */
-    String getTypeId();
+    default String getTypeName() {
+        return getTypeInfoList().getFirst().getTypeName();
+    }
+
+    /**
+     * 获取该Provider检测的文件类型标识（取第一个类型的标识）
+     */
+    default String getTypeId() {
+        return getTypeInfoList().getFirst().getTypeId();
+    }
 
     /**
      * 获取该Provider支持的文件拓展名列表
@@ -31,9 +43,11 @@ public interface FileTypeCheckProvider {
     List<String> getSupportedFileExtensions();
 
     /**
-     * 获取该Provider支持提取的元数据定义列表
+     * 获取该Provider支持提取的元数据定义列表（取第一个类型的元数据定义）
      */
-    List<FileMetadataDefine> getMetadataDefines();
+    default List<FileMetadataDefine> getMetadataDefines() {
+        return getTypeInfoList().getFirst().getMetadataDefines();
+    }
 
     /**
      * 对文件进行类型检测与元数据提取

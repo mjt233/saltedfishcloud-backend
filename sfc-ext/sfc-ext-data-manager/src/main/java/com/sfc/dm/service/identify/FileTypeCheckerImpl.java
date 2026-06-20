@@ -45,8 +45,8 @@ public class FileTypeCheckerImpl implements FileTypeChecker {
         }
         FileTypeCheckResult result = new FileTypeCheckResult();
         result.setProviderId(provider.getId());
-        result.setTypeId(provider.getTypeId());
-        result.setTypeName(provider.getTypeName());
+        result.setTypeId(detail.getTypeId() != null ? detail.getTypeId() : provider.getTypeId());
+        result.setTypeName(detail.getTypeName() != null ? detail.getTypeName() : provider.getTypeName());
         result.setDetail(detail);
         return result;
     }

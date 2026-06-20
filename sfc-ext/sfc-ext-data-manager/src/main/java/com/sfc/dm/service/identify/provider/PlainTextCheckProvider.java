@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.provider;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
 import com.sfc.dm.service.identify.util.EncodingDetector;
@@ -38,22 +39,17 @@ public class PlainTextCheckProvider implements FileTypeCheckProvider {
     @Override
     public String getId() { return ID; }
     @Override
-    public String getTypeName() { return TYPE_NAME; }
-    @Override
-    public String getTypeId() { return TYPE_ID; }
+    public List<FileTypeInfo> getTypeInfoList() {
+        return List.of(new FileTypeInfo(TYPE_ID, TYPE_NAME, List.of(
+                new FileMetadataDefine("编码", "encoding", "文件编码格式", "span"),
+                new FileMetadataDefine("行数", "lineCount", "文件行数", "span"),
+                new FileMetadataDefine("文件大小", "fileSize", "文件大小（字节）", "span")
+        )));
+    }
     @Override
     public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
     @Override
     public int getPriority() { return PRIORITY; }
-
-    @Override
-    public List<FileMetadataDefine> getMetadataDefines() {
-        return List.of(
-                new FileMetadataDefine("编码", "encoding", "文件编码格式", "span"),
-                new FileMetadataDefine("行数", "lineCount", "文件行数", "span"),
-                new FileMetadataDefine("文件大小", "fileSize", "文件大小（字节）", "span")
-        );
-    }
 
     @Override
     public FileTypeCheckResultDetail checkFile(File file, boolean extraMetadata) {

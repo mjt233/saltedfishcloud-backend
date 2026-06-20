@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.provider;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
@@ -35,25 +36,19 @@ public class VideoCheckProvider implements FileTypeCheckProvider {
     public String getId() { return ID; }
 
     @Override
-    public String getTypeName() { return TYPE_NAME; }
-
-    @Override
-    public String getTypeId() { return TYPE_ID; }
-
-    @Override
-    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
-
-    @Override
-    public List<FileMetadataDefine> getMetadataDefines() {
-        return List.of(
+    public List<FileTypeInfo> getTypeInfoList() {
+        return List.of(new FileTypeInfo(TYPE_ID, TYPE_NAME, List.of(
                 new FileMetadataDefine("时长", "duration", "视频时长（秒）", "span"),
                 new FileMetadataDefine("宽度", "width", "视频宽度（像素）", "span"),
                 new FileMetadataDefine("高度", "height", "视频高度（像素）", "span"),
                 new FileMetadataDefine("视频编码器", "videoCodec", "视频编码器名称（如h264, hevc）", "span"),
                 new FileMetadataDefine("音频编码器", "audioCodec", "音频编码器名称（如aac, mp3）", "span"),
                 new FileMetadataDefine("封装格式", "containerFormat", "视频封装格式（如mov,mp4,m4a,3gp,3g2,mj2）", "span")
-        );
+        )));
     }
+
+    @Override
+    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
 
     @Override
     public FileTypeCheckResultDetail checkFile(File file, boolean extraMetadata) {

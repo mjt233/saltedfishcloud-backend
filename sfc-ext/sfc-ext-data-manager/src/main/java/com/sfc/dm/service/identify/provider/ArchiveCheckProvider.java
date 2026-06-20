@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.provider;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
 import com.sfc.dm.service.identify.util.MagicBytesUtils;
@@ -40,22 +41,17 @@ public class ArchiveCheckProvider implements FileTypeCheckProvider {
     @Override
     public String getId() { return ID; }
     @Override
-    public String getTypeName() { return TYPE_NAME; }
-    @Override
-    public String getTypeId() { return TYPE_ID; }
+    public List<FileTypeInfo> getTypeInfoList() {
+        return List.of(new FileTypeInfo(TYPE_ID, TYPE_NAME, List.of(
+                new FileMetadataDefine("文件数量", "fileCount", "压缩包内文件总数", "span"),
+                new FileMetadataDefine("压缩方式", "compressionMethod", "压缩算法类型", "span"),
+                new FileMetadataDefine("文件列表", "fileList", "前5个文件名（JSON数组）", "span")
+        )));
+    }
     @Override
     public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
     @Override
     public int getPriority() { return PRIORITY; }
-
-    @Override
-    public List<FileMetadataDefine> getMetadataDefines() {
-        return List.of(
-                new FileMetadataDefine("文件数量", "fileCount", "压缩包内文件总数", "span"),
-                new FileMetadataDefine("压缩方式", "compressionMethod", "压缩算法类型", "span"),
-                new FileMetadataDefine("文件列表", "fileList", "前5个文件名（JSON数组）", "span")
-        );
-    }
 
     @Override
     public FileTypeCheckResultDetail checkFile(File file, boolean extraMetadata) {

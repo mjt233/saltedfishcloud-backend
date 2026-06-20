@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.provider;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
 import com.sfc.dm.service.identify.util.MagicBytesUtils;
@@ -33,23 +34,18 @@ public class MsiCheckProvider implements FileTypeCheckProvider {
     @Override
     public String getId() { return ID; }
     @Override
-    public String getTypeName() { return TYPE_NAME; }
-    @Override
-    public String getTypeId() { return TYPE_ID; }
-    @Override
-    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
-    @Override
-    public int getPriority() { return PRIORITY; }
-
-    @Override
-    public List<FileMetadataDefine> getMetadataDefines() {
-        return List.of(
+    public List<FileTypeInfo> getTypeInfoList() {
+        return List.of(new FileTypeInfo(TYPE_ID, TYPE_NAME, List.of(
                 new FileMetadataDefine("产品名称", "productName", "MSI 产品名称", "span"),
                 new FileMetadataDefine("产品版本", "productVersion", "MSI 产品版本", "span"),
                 new FileMetadataDefine("制造商", "manufacturer", "MSI 制造商", "span"),
                 new FileMetadataDefine("架构", "architecture", "目标平台架构", "span")
-        );
+        )));
     }
+    @Override
+    public List<String> getSupportedFileExtensions() { return EXTENSIONS; }
+    @Override
+    public int getPriority() { return PRIORITY; }
 
     @Override
     public FileTypeCheckResultDetail checkFile(File file, boolean extraMetadata) {
