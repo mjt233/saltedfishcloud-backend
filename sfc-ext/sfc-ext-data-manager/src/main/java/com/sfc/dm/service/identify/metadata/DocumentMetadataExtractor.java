@@ -1,10 +1,12 @@
 package com.sfc.dm.service.identify.metadata;
 
+import com.sfc.dm.model.dto.FileMetadataDefine;
 import com.sfc.dm.service.identify.tika.TikaServerManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,6 +15,16 @@ import java.util.Set;
  */
 @Slf4j
 public class DocumentMetadataExtractor implements FileMetadataExtractor {
+    private static final String TYPE_ID = "document";
+    private static final String TYPE_NAME = "文档";
+
+    private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
+            new FileMetadataDefine("标题", "title", "文档标题", "span"),
+            new FileMetadataDefine("作者", "author", "文档作者", "span"),
+            new FileMetadataDefine("页数", "pageCount", "文档页数", "span"),
+            new FileMetadataDefine("创建时间", "createdDate", "文档创建时间", "span")
+    );
+
     private final TikaServerManager tikaServerManager;
 
     public DocumentMetadataExtractor(TikaServerManager tikaServerManager) {
@@ -20,7 +32,16 @@ public class DocumentMetadataExtractor implements FileMetadataExtractor {
     }
 
     @Override
-    public Map<String, String> extract(File file, String mimeType) {
+    public String getTypeId() { return TYPE_ID; }
+
+    @Override
+    public String getTypeName() { return TYPE_NAME; }
+
+    @Override
+    public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }
+
+    @Override
+    public Map<String, String> extract(File file) {
         if (tikaServerManager == null) return null;
         Map<String, Object> raw = tikaServerManager.extractMetadata(file, Set.of(
                 "title", "creator", "xmpTPg:NPages", "dcterms:created"

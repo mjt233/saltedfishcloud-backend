@@ -1,11 +1,13 @@
 package com.sfc.dm.service.identify.metadata;
 
+import com.sfc.dm.model.dto.FileMetadataDefine;
 import com.sfc.dm.service.identify.util.MagicBytesUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,9 +15,28 @@ import java.util.Map;
  */
 @Slf4j
 public class MsiMetadataExtractor implements FileMetadataExtractor {
+    private static final String TYPE_ID = "installer";
+    private static final String TYPE_NAME = "安装包";
+
+    private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
+            new FileMetadataDefine("产品名称", "productName", "MSI 产品名称", "span"),
+            new FileMetadataDefine("产品版本", "productVersion", "MSI 产品版本", "span"),
+            new FileMetadataDefine("制造商", "manufacturer", "MSI 制造商", "span"),
+            new FileMetadataDefine("发布者", "publisher", "MSI 发布者", "span"),
+            new FileMetadataDefine("架构", "architecture", "目标平台架构", "span")
+    );
 
     @Override
-    public Map<String, String> extract(File file, String mimeType) {
+    public String getTypeId() { return TYPE_ID; }
+
+    @Override
+    public String getTypeName() { return TYPE_NAME; }
+
+    @Override
+    public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }
+
+    @Override
+    public Map<String, String> extract(File file) {
         Map<String, String> metadata = new HashMap<>();
         try {
             byte[] fileSample = MagicBytesUtils.readAt(file, 0, (int) Math.min(file.length(), 65536));

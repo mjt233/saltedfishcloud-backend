@@ -29,6 +29,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 数据管理插件自动配置
@@ -84,13 +87,13 @@ public class DataManagerAutoConfiguration {
          */
         @Bean
         public TikaFileTypeProvider tikaFileTypeProvider(TikaServerManager tikaServerManager) {
-            Map<String, FileMetadataExtractor> extractors = Map.of(
-                    "document", new DocumentMetadataExtractor(tikaServerManager),
-                    "image", new ImageMetadataExtractor(tikaServerManager),
-                    "executable", new ExeMetadataExtractor(tikaServerManager),
-                    "installer", new MsiMetadataExtractor(),
-                    "text", new TextMetadataExtractor()
-            );
+            Map<String, FileMetadataExtractor> extractors = Stream.of(
+                    new DocumentMetadataExtractor(tikaServerManager),
+                    new ImageMetadataExtractor(tikaServerManager),
+                    new ExeMetadataExtractor(tikaServerManager),
+                    new MsiMetadataExtractor(),
+                    new TextMetadataExtractor()
+            ).collect(Collectors.toMap(FileMetadataExtractor::getTypeId, Function.identity()));
             return new TikaFileTypeProvider(tikaServerManager, extractors);
         }
 

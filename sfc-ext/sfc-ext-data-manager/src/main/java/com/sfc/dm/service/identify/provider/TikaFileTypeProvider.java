@@ -1,6 +1,5 @@
 package com.sfc.dm.service.identify.provider;
 
-import com.sfc.dm.model.dto.FileMetadataDefine;
 import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResultDetail;
 import com.sfc.dm.service.identify.FileTypeCheckProvider;
@@ -29,11 +28,6 @@ public class TikaFileTypeProvider implements FileTypeCheckProvider {
     private static final String TYPE_IMAGE = "image";
     private static final String TYPE_TEXT = "text";
 
-    private static final String TYPE_NAME_DOCUMENT = "文档";
-    private static final String TYPE_NAME_INSTALLER = "安装包";
-    private static final String TYPE_NAME_EXECUTABLE = "可执行文件";
-    private static final String TYPE_NAME_IMAGE = "图片";
-    private static final String TYPE_NAME_TEXT = "纯文本";
     // endregion
 
     /**
@@ -175,42 +169,13 @@ public class TikaFileTypeProvider implements FileTypeCheckProvider {
 
     @Override
     public List<FileTypeInfo> getTypeInfoList() {
-        return List.of(
-                new FileTypeInfo(TYPE_DOCUMENT, TYPE_NAME_DOCUMENT, List.of(
-                        new FileMetadataDefine("标题", "title", "文档标题", "span"),
-                        new FileMetadataDefine("作者", "author", "文档作者", "span"),
-                        new FileMetadataDefine("页数", "pageCount", "文档页数", "span"),
-                        new FileMetadataDefine("创建时间", "createdDate", "文档创建时间", "span")
-                )),
-                new FileTypeInfo(TYPE_INSTALLER, TYPE_NAME_INSTALLER, List.of(
-                        new FileMetadataDefine("产品名称", "productName", "MSI 产品名称", "span"),
-                        new FileMetadataDefine("产品版本", "productVersion", "MSI 产品版本", "span"),
-                        new FileMetadataDefine("制造商", "manufacturer", "MSI 制造商", "span"),
-                        new FileMetadataDefine("发布者", "publisher", "MSI 发布者", "span"),
-                        new FileMetadataDefine("架构", "architecture", "目标平台架构", "span")
-                )),
-                new FileTypeInfo(TYPE_EXECUTABLE, TYPE_NAME_EXECUTABLE, List.of(
-                        new FileMetadataDefine("架构", "architecture", "目标架构（x86/x64）", "span"),
-                        new FileMetadataDefine("子系统", "subsystem", "子系统类型（CONSOLE/WINDOWS/NATIVE）", "span"),
-                        new FileMetadataDefine("链接器版本", "linkerVersion", "链接器版本号", "span"),
-                        new FileMetadataDefine("编译时间", "compileTime", "PE 编译时间戳", "span"),
-                        new FileMetadataDefine("是否DLL", "isDll", "是否为动态链接库", "span"),
-                        new FileMetadataDefine("发布者", "publisher", "文件发布者/公司名称", "span")
-                )),
-                new FileTypeInfo(TYPE_IMAGE, TYPE_NAME_IMAGE, List.of(
-                        new FileMetadataDefine("宽度", "width", "图片宽度（像素）", "span"),
-                        new FileMetadataDefine("高度", "height", "图片高度（像素）", "span"),
-                        new FileMetadataDefine("格式", "format", "图片格式", "span"),
-                        new FileMetadataDefine("拍摄设备", "cameraModel", "拍摄设备型号", "span"),
-                        new FileMetadataDefine("拍摄位置", "gpsLocation", "GPS 拍摄位置", "span")
-                )),
-                new FileTypeInfo(TYPE_TEXT, TYPE_NAME_TEXT, List.of(
-                        new FileMetadataDefine("编码", "encoding", "文件编码格式", "span"),
-                        new FileMetadataDefine("行数", "lineCount", "文件行数", "span"),
-                        new FileMetadataDefine("文件大小", "fileSize", "文件大小（字节）", "span"),
-                        new FileMetadataDefine("编程语言", "language", "编程语言", "span")
+        return metadataExtractors.entrySet().stream()
+                .map(entry -> new FileTypeInfo(
+                        entry.getKey(),
+                        entry.getValue().getTypeName(),
+                        entry.getValue().getMetadataDefines()
                 ))
-        );
+                .toList();
     }
 
     @Override
@@ -218,7 +183,7 @@ public class TikaFileTypeProvider implements FileTypeCheckProvider {
         try {
             // 空文件视为纯文本
             if (file.length() == 0) {
-                return buildTextDetail(".txt", null);
+                return buildTextDetail();
             }
 
             String mimeType = tikaServerManager.detect(file);
@@ -239,10 +204,11 @@ public class TikaFileTypeProvider implements FileTypeCheckProvider {
             detail.setExtension(extension);
             detail.setMimetype(mimeType);
             detail.setTypeId(typeId);
-            detail.setTypeName(getTypeNameByTypeId(typeId));
+            FileMetadataExtractor extractor = metadataExtractors.get(typeId);
+            detail.setTypeName(extractor != null ? extractor.getTypeName() : "未知");
 
             if (extraMetadata) {
-                Map<String, String> metadata = extractMetadataByType(typeId, file, mimeType);
+                Map<String, String> metadata = extractMetadataByType(typeId, file);
                 if (metadata != null && !metadata.isEmpty()) {
                     detail.setMetadata(metadata);
                 }
@@ -328,38 +294,25 @@ public class TikaFileTypeProvider implements FileTypeCheckProvider {
         return null;
     }
 
-    private String getTypeNameByTypeId(String typeId) {
-        return switch (typeId) {
-            case TYPE_DOCUMENT -> TYPE_NAME_DOCUMENT;
-            case TYPE_INSTALLER -> TYPE_NAME_INSTALLER;
-            case TYPE_EXECUTABLE -> TYPE_NAME_EXECUTABLE;
-            case TYPE_IMAGE -> TYPE_NAME_IMAGE;
-            case TYPE_TEXT -> TYPE_NAME_TEXT;
-            default -> "未知";
-        };
-    }
-
     /**
      * 根据类型分派元数据提取
      */
-    private Map<String, String> extractMetadataByType(String typeId, File file, String mimeType) {
+    private Map<String, String> extractMetadataByType(String typeId, File file) {
         FileMetadataExtractor extractor = metadataExtractors.get(typeId);
         if (extractor == null) return null;
-        return extractor.extract(file, mimeType);
+        return extractor.extract(file);
     }
 
     /**
      * 构建纯文本检测结果（用于空文件）
      */
-    private FileTypeCheckResultDetail buildTextDetail(String extension, Map<String, String> metadata) {
+    private FileTypeCheckResultDetail buildTextDetail() {
         FileTypeCheckResultDetail detail = new FileTypeCheckResultDetail();
-        detail.setExtension(extension);
+        detail.setExtension(".txt");
         detail.setMimetype("text/plain");
         detail.setTypeId(TYPE_TEXT);
-        detail.setTypeName(TYPE_NAME_TEXT);
-        if (metadata != null && !metadata.isEmpty()) {
-            detail.setMetadata(metadata);
-        }
+        FileMetadataExtractor textExtractor = metadataExtractors.get(TYPE_TEXT);
+        detail.setTypeName(textExtractor != null ? textExtractor.getTypeName() : "纯文本");
         return detail;
     }
 }

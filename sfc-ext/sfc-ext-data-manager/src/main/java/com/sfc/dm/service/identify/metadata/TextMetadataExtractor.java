@@ -1,10 +1,12 @@
 package com.sfc.dm.service.identify.metadata;
 
+import com.sfc.dm.model.dto.FileMetadataDefine;
 import com.sfc.dm.service.identify.util.EncodingDetector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -12,6 +14,16 @@ import java.util.Map;
  */
 @Slf4j
 public class TextMetadataExtractor implements FileMetadataExtractor {
+    private static final String TYPE_ID = "text";
+    private static final String TYPE_NAME = "纯文本";
+
+    private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
+            new FileMetadataDefine("编码", "encoding", "文件编码格式", "span"),
+            new FileMetadataDefine("行数", "lineCount", "文件行数", "span"),
+            new FileMetadataDefine("文件大小", "fileSize", "文件大小（字节）", "span"),
+            new FileMetadataDefine("编程语言", "language", "编程语言", "span")
+    );
+
     private static final Map<String, String> EXT_TO_LANGUAGE = Map.ofEntries(
             Map.entry(".java", "Java"),
             Map.entry(".py", "Python"),
@@ -66,7 +78,16 @@ public class TextMetadataExtractor implements FileMetadataExtractor {
     );
 
     @Override
-    public Map<String, String> extract(File file, String mimeType) {
+    public String getTypeId() { return TYPE_ID; }
+
+    @Override
+    public String getTypeName() { return TYPE_NAME; }
+
+    @Override
+    public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }
+
+    @Override
+    public Map<String, String> extract(File file) {
         Map<String, String> metadata = new HashMap<>();
         metadata.put("fileSize", String.valueOf(file.length()));
         try {

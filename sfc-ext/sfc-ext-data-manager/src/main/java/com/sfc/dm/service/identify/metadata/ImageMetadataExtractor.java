@@ -1,10 +1,12 @@
 package com.sfc.dm.service.identify.metadata;
 
+import com.sfc.dm.model.dto.FileMetadataDefine;
 import com.sfc.dm.service.identify.tika.TikaServerManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,6 +15,17 @@ import java.util.Set;
  */
 @Slf4j
 public class ImageMetadataExtractor implements FileMetadataExtractor {
+    private static final String TYPE_ID = "image";
+    private static final String TYPE_NAME = "图片";
+
+    private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
+            new FileMetadataDefine("宽度", "width", "图片宽度（像素）", "span"),
+            new FileMetadataDefine("高度", "height", "图片高度（像素）", "span"),
+            new FileMetadataDefine("格式", "format", "图片格式", "span"),
+            new FileMetadataDefine("拍摄设备", "cameraModel", "拍摄设备型号", "span"),
+            new FileMetadataDefine("拍摄位置", "gpsLocation", "GPS 拍摄位置", "span")
+    );
+
     private final TikaServerManager tikaServerManager;
 
     public ImageMetadataExtractor(TikaServerManager tikaServerManager) {
@@ -20,7 +33,16 @@ public class ImageMetadataExtractor implements FileMetadataExtractor {
     }
 
     @Override
-    public Map<String, String> extract(File file, String mimeType) {
+    public String getTypeId() { return TYPE_ID; }
+
+    @Override
+    public String getTypeName() { return TYPE_NAME; }
+
+    @Override
+    public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }
+
+    @Override
+    public Map<String, String> extract(File file) {
         Map<String, String> metadata = new HashMap<>();
 
         if (tikaServerManager != null) {
@@ -32,6 +54,13 @@ public class ImageMetadataExtractor implements FileMetadataExtractor {
             if (raw != null) {
                 if (raw.containsKey("tiff:ImageWidth")) metadata.put("width", String.valueOf(raw.get("tiff:ImageWidth")));
                 if (raw.containsKey("tiff:ImageLength")) metadata.put("height", String.valueOf(raw.get("tiff:ImageLength")));
+
+                String contentType = raw.containsKey("Content-Type") ? String.valueOf(raw.get("Content-Type")) : null;
+                if (contentType != null) {
+                    String format = deriveFormatFromMime(contentType);
+                    if (format != null) metadata.put("format", format);
+                }
+
                 String make = raw.get("tiff:Make") != null ? String.valueOf(raw.get("tiff:Make")) : null;
                 String model = raw.get("tiff:Model") != null ? String.valueOf(raw.get("tiff:Model")) : null;
                 if (model != null) {
@@ -45,13 +74,10 @@ public class ImageMetadataExtractor implements FileMetadataExtractor {
             }
         }
 
-        String format = deriveFormatFromMime(mimeType);
-        if (format != null) metadata.put("format", format);
-
         return metadata.isEmpty() ? null : metadata;
     }
 
-    private String deriveFormatFromMime(String mimeType) {
+    private static String deriveFormatFromMime(String mimeType) {
         if (mimeType == null) return null;
         return switch (mimeType) {
             case "image/jpeg" -> "JPEG";

@@ -1,5 +1,6 @@
 package com.sfc.dm.service.identify.metadata;
 
+import com.sfc.dm.model.dto.FileMetadataDefine;
 import com.sfc.dm.service.identify.tika.TikaServerManager;
 import com.sfc.dm.service.identify.util.MagicBytesUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +21,18 @@ import java.util.Set;
  */
 @Slf4j
 public class ExeMetadataExtractor implements FileMetadataExtractor {
+    private static final String TYPE_ID = "executable";
+    private static final String TYPE_NAME = "可执行文件";
+
+    private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
+            new FileMetadataDefine("架构", "architecture", "目标架构（x86/x64）", "span"),
+            new FileMetadataDefine("子系统", "subsystem", "子系统类型（CONSOLE/WINDOWS/NATIVE）", "span"),
+            new FileMetadataDefine("链接器版本", "linkerVersion", "链接器版本号", "span"),
+            new FileMetadataDefine("编译时间", "compileTime", "PE 编译时间戳", "span"),
+            new FileMetadataDefine("是否DLL", "isDll", "是否为动态链接库", "span"),
+            new FileMetadataDefine("发布者", "publisher", "文件发布者/公司名称", "span")
+    );
+
     private static final byte[] PE_SIGNATURE = {0x50, 0x45, 0x00, 0x00};
     private static final DateTimeFormatter PE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
@@ -30,7 +44,16 @@ public class ExeMetadataExtractor implements FileMetadataExtractor {
     }
 
     @Override
-    public Map<String, String> extract(File file, String mimeType) {
+    public String getTypeId() { return TYPE_ID; }
+
+    @Override
+    public String getTypeName() { return TYPE_NAME; }
+
+    @Override
+    public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }
+
+    @Override
+    public Map<String, String> extract(File file) {
         Map<String, String> metadata = new HashMap<>();
         try {
             byte[] peOffsetBytes = MagicBytesUtils.readAt(file, 0x3C, 4);
