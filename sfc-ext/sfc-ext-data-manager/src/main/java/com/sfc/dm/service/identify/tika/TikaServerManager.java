@@ -1,5 +1,7 @@
 package com.sfc.dm.service.identify.tika;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,10 +39,6 @@ public class TikaServerManager {
     private static final int PORT_RANGE_END = 9999;
     private static final int HEALTH_CHECK_TIMEOUT_MS = 15_000;
     private static final int IDLE_CHECK_INTERVAL_S = 60;
-
-    private static final Set<String> SUPPORTED_METADATA_KEYS = Set.of(
-            "title", "creator", "xmpTPg:NPages", "dcterms:created"
-    );
 
     private Process process;
     private int port;
@@ -262,7 +260,7 @@ public class TikaServerManager {
      * @param fields 需要提取的 Tika 元数据字段名集合
      * @return 元数据键值对，失败时返回 null
      */
-    public Map<String, String> extractMetadata(File file, Set<String> fields) {
+    public Map<String, Object> extractMetadata(File file, Set<String> fields) {
         try {
             String url = ensureRunning() + "/meta";
             HttpClient client = getHttpClient();
@@ -287,72 +285,9 @@ public class TikaServerManager {
 
     /**
      * 解析 Tika 返回的 JSON 元数据
-     * Tika /meta 返回格式: [{"title":"...","creator":"...","xmpTPg:NPages":"..."}, ...]
-     * 或单个对象 {"title":"...","creator":"..."}
      */
-    private Map<String, String> parseMetadataJson(String json, Set<String> fields) {
-        Map<String, String> result = new HashMap<>();
-        // 简单 JSON 解析，避免引入额外依赖
-        String content = json.trim();
-        // 如果是数组，取第一个元素
-        if (content.startsWith("[")) {
-            int end = content.indexOf(']');
-            if (end > 0) {
-                content = content.substring(1, end).trim();
-            }
-        }
-        if (!content.startsWith("{")) {
-            return result;
-        }
-        // 去掉首尾大括号
-        content = content.substring(1, content.lastIndexOf('}')).trim();
-
-        // 按逗号分割，处理嵌套引号
-        int depth = 0;
-        int start = 0;
-        for (int i = 0; i < content.length(); i++) {
-            char c = content.charAt(i);
-            if (c == '"') {
-                // 跳过引号内的内容
-                int endQuote = content.indexOf('"', i + 1);
-                if (endQuote < 0) break;
-                i = endQuote;
-            } else if (c == '{' || c == '[') {
-                depth++;
-            } else if (c == '}' || c == ']') {
-                depth--;
-            } else if (c == ',' && depth == 0) {
-                extractKeyValue(content.substring(start, i), fields, result);
-                start = i + 1;
-            }
-        }
-        if (start < content.length()) {
-            extractKeyValue(content.substring(start), fields, result);
-        }
-
-        return result.isEmpty() ? null : result;
-    }
-
-    /**
-     * 从单个 "key":"value" 片段中提取键值对
-     */
-    private void extractKeyValue(String pair, Set<String> fields, Map<String, String> result) {
-        pair = pair.trim();
-        int colonIdx = pair.indexOf(':');
-        if (colonIdx < 0) return;
-
-        String key = pair.substring(0, colonIdx).trim().replace("\"", "");
-        String value = pair.substring(colonIdx + 1).trim();
-        // 去掉值两端的引号
-        if (value.startsWith("\"") && value.endsWith("\"")) {
-            value = value.substring(1, value.length() - 1);
-        }
-        // 反转义
-        value = value.replace("\\\"", "\"").replace("\\\\", "\\");
-
-        if (fields.contains(key) && !value.isEmpty()) {
-            result.put(key, value);
-        }
+    private Map<String, Object> parseMetadataJson(String json, Set<String> fields) throws JsonProcessingException {
+        return MapperHolder.parseJsonToMap(json);
     }
 
     /**
