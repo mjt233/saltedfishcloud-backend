@@ -16,7 +16,7 @@ import java.util.Set;
  */
 @Slf4j
 public class DocumentMetadataExtractor implements FileMetadataExtractor {
-    private static final String TYPE_NAME = "文档";
+    
 
     private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
             new FileMetadataDefine("标题", "title", "文档标题", "span"),
@@ -35,7 +35,7 @@ public class DocumentMetadataExtractor implements FileMetadataExtractor {
     public String getTypeId() { return TikaSupportedFileType.DOCUMENT.getTypeId(); }
 
     @Override
-    public String getTypeName() { return TYPE_NAME; }
+    public String getTypeName() { return TikaSupportedFileType.DOCUMENT.getTypeName(); }
 
     @Override
     public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }

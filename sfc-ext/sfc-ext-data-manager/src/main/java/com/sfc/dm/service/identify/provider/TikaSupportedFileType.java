@@ -17,7 +17,7 @@ public enum TikaSupportedFileType {
     /**
      * 文档类型（Office、PDF、RTF 等）。
      */
-    DOCUMENT("document",
+    DOCUMENT("document", "文档",
             List.of(
                     "application/pdf",
                     "application/msword",
@@ -54,7 +54,7 @@ public enum TikaSupportedFileType {
     /**
      * 安装包类型（MSI）。
      */
-    INSTALLER("installer",
+    INSTALLER("installer", "安装包",
             List.of("application/x-msi", "application/vnd.ms-msi"),
             List.of(".msi"),
             Map.ofEntries(
@@ -67,7 +67,7 @@ public enum TikaSupportedFileType {
     /**
      * 可执行文件类型（exe/dll/sys）。
      */
-    EXECUTABLE("executable",
+    EXECUTABLE("executable", "可执行文件",
             List.of("application/x-dosexec", "application/x-executable", "application/x-msdownload"),
             List.of(".exe", ".dll", ".sys"),
             Map.of(),
@@ -77,7 +77,7 @@ public enum TikaSupportedFileType {
     /**
      * 图片类型（通过 image/* 前缀匹配，无需精确 MIME 条目）。
      */
-    IMAGE("image",
+    IMAGE("image", "图片",
             List.of(),
             List.of(
                     ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff", ".tif",
@@ -104,7 +104,7 @@ public enum TikaSupportedFileType {
     /**
      * 纯文本 / 代码类型。
      */
-    TEXT("text",
+    TEXT("text", "纯文本",
             List.of(
                     "text/html",
                     "text/css",
@@ -144,6 +144,9 @@ public enum TikaSupportedFileType {
     /** 类型标识，如 "document"、"image" */
     private final String typeId;
 
+    /** 人类可读的类型名称，如 "文档"、"图片" */
+    private final String typeName;
+
     /** 精确匹配的 MIME 列表 */
     private final List<String> mimeTypes;
 
@@ -159,10 +162,11 @@ public enum TikaSupportedFileType {
      */
     private final Set<String> ole2DisambiguationExtensions;
 
-    TikaSupportedFileType(String typeId, List<String> mimeTypes, List<String> extensions,
+    TikaSupportedFileType(String typeId, String typeName, List<String> mimeTypes, List<String> extensions,
                           Map<String, String> mimeToExtension,
                           Set<String> ole2DisambiguationExtensions) {
         this.typeId = typeId;
+        this.typeName = typeName;
         this.mimeTypes = mimeTypes;
         this.extensions = extensions;
         this.mimeToExtension = mimeToExtension;

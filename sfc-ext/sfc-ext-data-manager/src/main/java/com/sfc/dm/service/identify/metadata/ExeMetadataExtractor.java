@@ -22,7 +22,7 @@ import java.util.Set;
  */
 @Slf4j
 public class ExeMetadataExtractor implements FileMetadataExtractor {
-    private static final String TYPE_NAME = "可执行文件";
+    
 
     private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
             new FileMetadataDefine("架构", "architecture", "目标架构（x86/x64）", "span"),
@@ -47,7 +47,7 @@ public class ExeMetadataExtractor implements FileMetadataExtractor {
     public String getTypeId() { return TikaSupportedFileType.EXECUTABLE.getTypeId(); }
 
     @Override
-    public String getTypeName() { return TYPE_NAME; }
+    public String getTypeName() { return TikaSupportedFileType.EXECUTABLE.getTypeName(); }
 
     @Override
     public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }

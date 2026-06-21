@@ -15,7 +15,7 @@ import java.util.Map;
  */
 @Slf4j
 public class TextMetadataExtractor implements FileMetadataExtractor {
-    private static final String TYPE_NAME = "纯文本";
+    
 
     private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
             new FileMetadataDefine("编码", "encoding", "文件编码格式", "span"),
@@ -81,7 +81,7 @@ public class TextMetadataExtractor implements FileMetadataExtractor {
     public String getTypeId() { return TikaSupportedFileType.TEXT.getTypeId(); }
 
     @Override
-    public String getTypeName() { return TYPE_NAME; }
+    public String getTypeName() { return TikaSupportedFileType.TEXT.getTypeName(); }
 
     @Override
     public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }

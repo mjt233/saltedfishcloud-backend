@@ -16,7 +16,7 @@ import java.util.Map;
  */
 @Slf4j
 public class MsiMetadataExtractor implements FileMetadataExtractor {
-    private static final String TYPE_NAME = "安装包";
+    
 
     private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
             new FileMetadataDefine("产品名称", "productName", "MSI 产品名称", "span"),
@@ -30,7 +30,7 @@ public class MsiMetadataExtractor implements FileMetadataExtractor {
     public String getTypeId() { return TikaSupportedFileType.INSTALLER.getTypeId(); }
 
     @Override
-    public String getTypeName() { return TYPE_NAME; }
+    public String getTypeName() { return TikaSupportedFileType.INSTALLER.getTypeName(); }
 
     @Override
     public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }

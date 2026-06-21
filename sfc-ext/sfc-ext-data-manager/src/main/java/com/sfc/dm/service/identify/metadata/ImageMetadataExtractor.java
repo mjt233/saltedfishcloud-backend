@@ -16,7 +16,7 @@ import java.util.Set;
  */
 @Slf4j
 public class ImageMetadataExtractor implements FileMetadataExtractor {
-    private static final String TYPE_NAME = "图片";
+    
 
     private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
             new FileMetadataDefine("宽度", "width", "图片宽度（像素）", "span"),
@@ -36,7 +36,7 @@ public class ImageMetadataExtractor implements FileMetadataExtractor {
     public String getTypeId() { return TikaSupportedFileType.IMAGE.getTypeId(); }
 
     @Override
-    public String getTypeName() { return TYPE_NAME; }
+    public String getTypeName() { return TikaSupportedFileType.IMAGE.getTypeName(); }
 
     @Override
     public List<FileMetadataDefine> getMetadataDefines() { return METADATA_DEFINES; }
