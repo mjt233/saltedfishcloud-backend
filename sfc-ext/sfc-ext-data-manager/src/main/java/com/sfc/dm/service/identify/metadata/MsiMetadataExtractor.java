@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.metadata;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.service.identify.provider.TikaSupportedFileType;
 import com.sfc.dm.service.identify.util.MagicBytesUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +16,6 @@ import java.util.Map;
  */
 @Slf4j
 public class MsiMetadataExtractor implements FileMetadataExtractor {
-    private static final String TYPE_ID = "installer";
     private static final String TYPE_NAME = "安装包";
 
     private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
@@ -27,7 +27,7 @@ public class MsiMetadataExtractor implements FileMetadataExtractor {
     );
 
     @Override
-    public String getTypeId() { return TYPE_ID; }
+    public String getTypeId() { return TikaSupportedFileType.INSTALLER.getTypeId(); }
 
     @Override
     public String getTypeName() { return TYPE_NAME; }

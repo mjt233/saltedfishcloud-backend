@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public interface FileMetadataExtractor {
     /**
-     * 获取文件类型标识
+     * 获取声明的能提取何种文件类型标识的元数据
      * @return 类型标识，如 "document"、"image"
      */
     String getTypeId();

@@ -1,6 +1,7 @@
 package com.sfc.dm.service.identify.metadata;
 
 import com.sfc.dm.model.dto.FileMetadataDefine;
+import com.sfc.dm.service.identify.provider.TikaSupportedFileType;
 import com.sfc.dm.service.identify.tika.TikaServerManager;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +16,6 @@ import java.util.Set;
  */
 @Slf4j
 public class ImageMetadataExtractor implements FileMetadataExtractor {
-    private static final String TYPE_ID = "image";
     private static final String TYPE_NAME = "图片";
 
     private static final List<FileMetadataDefine> METADATA_DEFINES = List.of(
@@ -33,7 +33,7 @@ public class ImageMetadataExtractor implements FileMetadataExtractor {
     }
 
     @Override
-    public String getTypeId() { return TYPE_ID; }
+    public String getTypeId() { return TikaSupportedFileType.IMAGE.getTypeId(); }
 
     @Override
     public String getTypeName() { return TYPE_NAME; }
