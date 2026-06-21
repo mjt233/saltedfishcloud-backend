@@ -130,7 +130,7 @@ public class TikaServerManager {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    log.trace("[Tika] {}", line);
+                    log.debug("[Tika] {}", line);
                 }
             } catch (IOException ignored) {}
         }, "tika-output-drainer");
