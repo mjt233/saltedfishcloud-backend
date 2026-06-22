@@ -5,6 +5,8 @@ import com.sfc.dm.model.dto.BatchResult;
 import com.sfc.dm.model.dto.ClaimParam;
 import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeProviderInfo;
+import com.sfc.dm.model.dto.FileTypeCheckResult;
+import com.sfc.dm.model.dto.IdentifyParam;
 import com.sfc.dm.model.dto.InvalidDataQuery;
 import com.sfc.dm.model.po.ClaimRecord;
 import com.sfc.dm.model.po.InvalidDataRecord;
@@ -17,6 +19,7 @@ import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
@@ -107,16 +110,26 @@ public class InvalidDataController {
 
     /**
      * 发起文件识别（异步任务）
+     *
+     * @param param 识别参数，可选。包含：
+     *              <ul>
+     *                <li>ids - 指定需要识别的失效数据ID列表，不指定则处理所有待处理待识别的记录</li>
+     *                <li>reIdentify - 是否重新识别，为true时即使记录无需识别也执行重新识别并覆盖原有结果</li>
+     *              </ul>
+     * @return 创建成功后的异步任务ID
      */
     @PostMapping("identify")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<Long> identify() throws IOException {
+    public JsonResult<Long> identify(@RequestBody(required = false) IdentifyParam param) throws IOException {
         checkConcurrentTask();
-        AsyncTaskCreateParam param = new AsyncTaskCreateParam();
-        param.setName("文件类型识别");
-        param.setTaskType(DataManagerTaskType.FILE_TYPE_CHECK);
-        param.setCpuOverhead(50);
-        AsyncTaskRecord record = asyncTaskManager.createTask(param);
+        AsyncTaskCreateParam taskParam = new AsyncTaskCreateParam();
+        taskParam.setName("文件类型识别");
+        taskParam.setTaskType(DataManagerTaskType.FILE_TYPE_CHECK);
+        taskParam.setCpuOverhead(50);
+        if (param != null && (param.getIds() != null || param.getReIdentify() != null)) {
+            taskParam.setParams(MapperHolder.toJson(param));
+        }
+        AsyncTaskRecord record = asyncTaskManager.createTask(taskParam);
         return JsonResultImpl.getInstance(record.getId());
     }
 

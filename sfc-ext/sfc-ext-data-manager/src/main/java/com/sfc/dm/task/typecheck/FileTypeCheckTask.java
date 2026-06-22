@@ -35,6 +35,16 @@ public class FileTypeCheckTask implements AsyncTask {
     @Setter private StoreServiceFactory storeServiceFactory;
     @Setter private FileTypeChecker fileTypeChecker;
 
+    /**
+     * 指定需要识别的失效数据ID列表，为空则处理所有待处理记录
+     */
+    @Setter private List<Long> targetIds;
+
+    /**
+     * 是否重新识别，为true时无视needIdentify标记并覆盖原有识别结果
+     */
+    @Setter private boolean reIdentify;
+
     private PrintWriter logWriter;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean interrupted = new AtomicBoolean(false);
@@ -57,11 +67,22 @@ public class FileTypeCheckTask implements AsyncTask {
         executeThread.set(Thread.currentThread());
         logWriter = new PrintWriter(logOutputStream);
         try {
-            // 1. 查询所有待识别的失效数据记录
-            List<InvalidDataRecord> records = invalidDataRepo.findAll().stream()
-                    .filter(r -> r.getStatus() == InvalidDataStatus.PENDING)
-                    .filter(r -> Boolean.TRUE.equals(r.getNeedIdentify()))
-                    .toList();
+            // 1. 查询待识别的失效数据记录
+            List<InvalidDataRecord> records;
+            if (targetIds != null && !targetIds.isEmpty()) {
+                records = invalidDataRepo.findAllById(targetIds).stream()
+                        .filter(r -> r.getStatus() == InvalidDataStatus.PENDING)
+                        .toList();
+            } else {
+                records = invalidDataRepo.findAll().stream()
+                        .filter(r -> r.getStatus() == InvalidDataStatus.PENDING)
+                        .toList();
+            }
+            if (!reIdentify) {
+                records = records.stream()
+                        .filter(r -> Boolean.TRUE.equals(r.getNeedIdentify()))
+                        .toList();
+            }
 
             log("待识别文件数量: " + records.size());
             progressRecord.setTotal(records.size()).setLoaded(0);
