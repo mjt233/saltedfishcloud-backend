@@ -6,9 +6,9 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * 文件类型检测器默认实现
@@ -16,6 +16,11 @@ import java.util.List;
 @Getter
 public class FileTypeCheckerImpl implements FileTypeChecker {
     private final List<FileTypeCheckProvider> providers = new ArrayList<>();
+
+    /**
+     * 扩展名到 Provider 的反向索引，实现 O(1) 快速查找
+     */
+    private Map<String, FileTypeCheckProvider> extensionProviderMap = Collections.emptyMap();
 
     @Override
     public void addProvider(FileTypeCheckProvider provider) {
@@ -32,6 +37,22 @@ public class FileTypeCheckerImpl implements FileTypeChecker {
                     .sorted(Comparator.comparingInt(FileTypeCheckProvider::getPriority))
                     .forEach(this::addProvider);
         }
+        buildExtensionProviderMap();
+    }
+
+    /**
+     * 构建扩展名反向索引映射表
+     */
+    private void buildExtensionProviderMap() {
+        extensionProviderMap = providers.stream()
+                .flatMap(provider -> provider.getSupportedFileExtensions().stream()
+                        .map(ext -> Map.entry(ext.toLowerCase(), provider)))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (existing, incoming) -> existing,
+                        LinkedHashMap::new
+                ));
     }
 
     /**
@@ -55,23 +76,39 @@ public class FileTypeCheckerImpl implements FileTypeChecker {
     public FileTypeCheckResult checkFile(File file, boolean extraMetadata) {
         String fileName = file.getName().toLowerCase();
 
-        // 文件后缀名快速匹配
-        FileTypeCheckResult fastRes = providers.stream()
-                .filter(provider -> provider.getSupportedFileExtensions().stream().anyMatch(fileName::endsWith))
-                .findAny()
-                .map(provider -> tryCheck(provider, file, extraMetadata))
-                .orElse(null);
+        // 文件后缀名快速匹配（O(k) map lookup, k ≤ 3）
+        FileTypeCheckResult fastRes = fastCheckByExtension(fileName, file, extraMetadata);
         if (fastRes != null) {
             return fastRes;
         }
 
         // 逐个识别
-        for (FileTypeCheckProvider provider : providers) {
-            FileTypeCheckResult res = tryCheck(provider, file, extraMetadata);
-            if (res != null) {
-                return res;
-            }
-        }
-        return null;
+        return providers.stream()
+                .map(provider -> tryCheck(provider, file, extraMetadata))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * 基于扩展名反向索引进行快速匹配。
+     * <p>
+     * 从文件名末尾向前扫描所有 '.' 位置，生成候选扩展名（如 .tar.gz → ".gz"、".tar.gz"），
+     * 在 Map 中 O(1) 查找对应的 Provider。
+     *
+     * @param fileName      已小写的文件名
+     * @param file          待检测文件
+     * @param extraMetadata 是否提取元数据
+     * @return 匹配结果，无匹配返回 null
+     */
+    private FileTypeCheckResult fastCheckByExtension(String fileName, File file, boolean extraMetadata) {
+        return IntStream.iterate(fileName.length() - 1, i -> i >= 0, i -> i - 1)
+                .filter(i -> fileName.charAt(i) == '.')
+                .mapToObj(fileName::substring)
+                .map(extensionProviderMap::get)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(provider -> tryCheck(provider, file, extraMetadata))
+                .orElse(null);
     }
 }
