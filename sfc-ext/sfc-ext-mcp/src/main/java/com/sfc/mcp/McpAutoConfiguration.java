@@ -1,6 +1,7 @@
 package com.sfc.mcp;
 
 import com.sfc.mcp.controller.McpApiKeyController;
+import com.sfc.mcp.controller.McpDiskFileController;
 import com.sfc.mcp.dao.McpApiKeyRepo;
 import com.sfc.mcp.model.McpApiKey;
 import com.sfc.mcp.model.McpProperty;
@@ -31,6 +32,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Import({
         McpDiskTools.class,
         McpApiKeyController.class,
+        McpDiskFileController.class,
         McpDiskPrompt.class,
         McpFileTransferService.class,
         McpApiKeyService.class,
@@ -73,11 +75,11 @@ public class McpAutoConfiguration {
     public SecurityFilterChain mcpSecurityFilterChain(
             HttpSecurity http,
             McpApiKeyFilter mcpApiKeyFilter) throws Exception {
-        http.securityMatcher("/api/mcp/stream/**", "/api/openApi/diskFile/**")
+        http.securityMatcher("/api/mcp/stream/**", "/api/mcp/diskFile/**")
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(mcpApiKeyFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.OPTIONS, "/api/mcp/stream/**", "/api/openApi/diskFile/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/mcp/stream/**", "/api/mcp/diskFile/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable);
