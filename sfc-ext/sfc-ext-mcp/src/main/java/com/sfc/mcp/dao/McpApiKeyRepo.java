@@ -17,4 +17,12 @@ public interface McpApiKeyRepo extends BaseRepo<McpApiKey> {
 	 * @return API Key 列表
 	 */
 	List<McpApiKey> findAllByUidOrderByIdDesc(Long uid);
+
+	/**
+	 * 根据 token 的 SHA-256 哈希值查询 API Key。
+	 *
+	 * @param tokenHash token 的 SHA-256 哈希值
+	 * @return API Key 实体，不存在返回 null
+	 */
+	McpApiKey findByTokenHash(String tokenHash);
 }

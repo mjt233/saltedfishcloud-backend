@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
  * MCP 用户级 API Key 实体。
  * <p>
  * 每个用户可拥有一个 MCP API Key，用于 MCP 客户端认证。
- * token 字段存储 BCrypt 哈希值，原始 token 仅在生成时返回一次。
+ * token 字段存储 SHA-256 哈希值，原始 token 仅在生成时返回一次。
  */
 @Entity
 @Data
@@ -29,9 +29,9 @@ public class McpApiKey extends AuditModel {
     private String name;
 
     /**
-     * API Key 的 BCrypt 哈希值
+     * API Key 的 SHA-256 哈希值
      */
-    @Column(length = 128, nullable = false)
+    @Column(length = 64, nullable = false, unique = true)
     private String tokenHash;
 
     /**

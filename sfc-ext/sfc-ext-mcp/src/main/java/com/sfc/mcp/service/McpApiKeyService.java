@@ -12,7 +12,7 @@ import java.util.List;
  * MCP API Key 业务服务。
  * <p>
  * 提供 API Key 的生成、验证、查询和撤销功能。
- * token 原文仅在生成时返回一次，数据库仅存储 BCrypt 哈希值。
+ * token 原文仅在生成时返回一次，数据库仅存储 SHA-256 哈希值。
  */
 @Service
 @RequiredArgsConstructor
@@ -30,8 +30,8 @@ public class McpApiKeyService {
      * @return 原始 token（仅此一次返回）
      */
     public String generate(Long uid, String name) {
-        String token = "sfc_mcp_" + SecureUtils.getUUID() + SecureUtils.getUUID();
-        String tokenHash = SecureUtils.getBCryptPasswordEncoder().encode(token);
+        String token = "sfc_mcp_" + SecureUtils.getUUID();
+        String tokenHash = SecureUtils.getSha256(token);
 
         McpApiKey apiKey = new McpApiKey();
         apiKey.setUid(uid);
@@ -53,13 +53,8 @@ public class McpApiKeyService {
         if (token == null || !token.startsWith("sfc_mcp_")) {
             return null;
         }
-        Iterable<McpApiKey> allKeys = mcpApiKeyRepo.findAll();
-        for (McpApiKey key : allKeys) {
-            if (SecureUtils.getBCryptPasswordEncoder().matches(token, key.getTokenHash())) {
-                return key.getUid();
-            }
-        }
-        return null;
+        McpApiKey key = mcpApiKeyRepo.findByTokenHash(SecureUtils.getSha256(token));
+        return key != null ? key.getUid() : null;
     }
 
     /**
