@@ -47,6 +47,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>4.0.29</version>
+        </dependency>
+        <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-ext-music</artifactId>
             <version>${music.version}</version>

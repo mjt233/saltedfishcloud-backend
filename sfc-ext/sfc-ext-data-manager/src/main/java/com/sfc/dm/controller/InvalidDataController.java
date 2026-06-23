@@ -7,6 +7,7 @@ import com.sfc.dm.model.dto.FileTypeInfo;
 import com.sfc.dm.model.dto.FileTypeProviderInfo;
 import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.dto.IdentifyParam;
+import com.sfc.dm.model.dto.InvalidDataFilterResult;
 import com.sfc.dm.model.dto.InvalidDataQuery;
 import com.sfc.dm.model.po.ClaimRecord;
 import com.sfc.dm.model.po.InvalidDataRecord;
@@ -135,11 +136,31 @@ public class InvalidDataController {
 
     /**
      * 查询失效数据列表（分页+筛选）
+     *
+     * @param filterId 可选，脚本筛选缓存ID。传此值时使用缓存中的筛选结果分页，忽略 query 中的 filterScript 字段。
      */
     @GetMapping("list")
     @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<CommonPageInfo<InvalidDataRecord>> list(InvalidDataQuery query, PageableRequest pageableRequest) {
+    public JsonResult<CommonPageInfo<InvalidDataRecord>> list(
+            InvalidDataQuery query,
+            @RequestParam(required = false) String filterId,
+            PageableRequest pageableRequest) {
+        if (filterId != null && !filterId.isBlank()) {
+            return JsonResultImpl.getInstance(invalidDataService.listByFilterId(filterId, pageableRequest));
+        }
         return JsonResultImpl.getInstance(invalidDataService.list(query, pageableRequest));
+    }
+
+    /**
+     * 提交脚本筛选，执行全量查询 + Groovy 脚本筛选，缓存结果 ID 列表并返回 filterId。
+     * <p>筛选器将执行全表扫描（配合 DB 筛选条件），通过 Groovy 脚本对每条记录求值，<br>
+     * 脚本末行表达式为 true 时保留该记录。筛选后的 ID 列表会缓存 {@code filterCacheTtl} 分钟，<br>
+     * 随后可通过 {@code GET /list?filterId=xxx&page=0&size=20} 进行分页查询。</p>
+     */
+    @PostMapping("filter")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<InvalidDataFilterResult> filter(@RequestBody InvalidDataQuery query) {
+        return JsonResultImpl.getInstance(invalidDataService.createFilter(query));
     }
 
     /**

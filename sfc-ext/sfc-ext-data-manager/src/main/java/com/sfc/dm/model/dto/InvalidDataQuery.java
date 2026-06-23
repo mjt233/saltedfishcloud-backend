@@ -45,4 +45,12 @@ public class InvalidDataQuery {
      * 排序方向（ASC、DESC，默认DESC）
      */
     private String sortOrder;
+
+    /**
+     * Groovy 筛选脚本代码。
+     * <p>脚本中可通过 {@code record} 变量访问每条失效数据记录（{@link com.sfc.dm.model.po.InvalidDataRecord}），
+     * 最后一行表达式的布尔值决定是否保留该记录（true 保留，false 丢弃）。</p>
+     * <p>仅在 POST {@code /api/dataManager/invalidData/filter} 接口中使用，GET 接口忽略此字段。</p>
+     */
+    private String filterScript;
 }
