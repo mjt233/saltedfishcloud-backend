@@ -35,6 +35,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -121,6 +123,7 @@ public class InvalidDataService {
      * @param query 查询参数（含 filterScript）
      * @return 筛选结果（filterId + matchedCount）
      */
+    @Transactional(readOnly = true)
     public InvalidDataFilterResult createFilter(InvalidDataQuery query) {
         if (query.getFilterScript() == null || query.getFilterScript().isBlank()) {
             throw new IllegalArgumentException("筛选脚本不能为空");
