@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 /**
  * Groovy 脚本执行器，支持超时中断。
@@ -40,16 +41,32 @@ public class GroovyScriptExecutor implements AutoCloseable {
     private final ScheduledExecutorService interrupter;
 
     /**
-     * 编译 Groovy 脚本。
+     * 编译 Groovy 脚本（使用默认配置）。
      *
      * @param script Groovy 脚本代码
      * @throws JsonException 脚本编译失败时抛出
      */
     public GroovyScriptExecutor(String script) {
+        this(script, null);
+    }
+
+    /**
+     * 编译 Groovy 脚本，支持外部自定义编译配置。
+     * <p>默认已启用 {@code @ThreadInterrupt} AST 变换，
+     * 调用方可通过 {@code configCustomizer} 追加导入、AST 变换等配置。</p>
+     *
+     * @param script           Groovy 脚本代码
+     * @param configCustomizer 编译配置自定义回调，可为 null
+     * @throws JsonException 脚本编译失败时抛出
+     */
+    public GroovyScriptExecutor(String script, Consumer<CompilerConfiguration> configCustomizer) {
         CompilerConfiguration config = new CompilerConfiguration();
         config.addCompilationCustomizers(
                 new ASTTransformationCustomizer(ThreadInterrupt.class)
         );
+        if (configCustomizer != null) {
+            configCustomizer.accept(config);
+        }
         try {
             this.compiled = new GroovyShell(config).parse(script);
         } catch (CompilationFailedException e) {

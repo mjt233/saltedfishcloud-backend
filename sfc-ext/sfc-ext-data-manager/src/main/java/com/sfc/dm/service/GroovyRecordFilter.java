@@ -6,18 +6,27 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import groovy.lang.Binding;
+import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
  * 基于 Groovy 脚本的记录筛选器。
- * <p>将脚本编译一次，然后对每条记录反复求值。脚本中通过 {@code record} 变量访问当前记录，
- * 最后一行表达式的布尔值决定是否保留该记录。</p>
+ * <p>将脚本编译一次，然后对每条记录反复求值。脚本中可通过以下变量访问数据：</p>
+ * <ul>
+ *     <li>{@code record} — 当前记录（{@link InvalidDataRecord}）</li>
+ *     <li>{@code typeCheckResult} — 文件类型检查结果（{@link FileTypeCheckResult}，可能为 null）</li>
+ *     <li>{@code context} — 跨迭代共享的上下文 Map，可在多次脚本执行间存取数据</li>
+ * </ul>
+ * <p>{@code com.xiaotao.saltedfishcloud.utils} 包下的所有工具类已默认导入，可直接使用类名访问。</p>
+ * <p>最后一行表达式的布尔值决定是否保留该记录。</p>
  * <p>限制条件：</p>
  * <ul>
  *     <li>最大返回结果数：{@value #MAX_RESULT_SIZE} 条，超出后静默截断</li>
@@ -48,9 +57,14 @@ public class GroovyRecordFilter {
      * @throws JsonException 脚本编译失败或执行超时时抛出
      */
     public List<Long> filter(Stream<InvalidDataRecord> records, String script) {
-        try (GroovyScriptExecutor executor = new GroovyScriptExecutor(script)) {
+        try (GroovyScriptExecutor executor = new GroovyScriptExecutor(script, config -> {
+            ImportCustomizer ic = new ImportCustomizer();
+            ic.addStarImports("com.xiaotao.saltedfishcloud.utils");
+            config.addCompilationCustomizers(ic);
+        })) {
             List<Long> result = new ArrayList<>();
             Iterator<InvalidDataRecord> iterator = records.iterator();
+            Map<String, Object> context = new HashMap<>();
 
             while (iterator.hasNext()) {
                 if (result.size() >= MAX_RESULT_SIZE) {
@@ -60,6 +74,7 @@ public class GroovyRecordFilter {
                 InvalidDataRecord record = iterator.next();
                 Binding binding = new Binding();
                 binding.setVariable("record", record);
+                binding.setVariable("context", context);
                 String typeCheckResult = record.getTypeCheckResult();
                 if (StringUtils.hasText(typeCheckResult)) {
                     try {
