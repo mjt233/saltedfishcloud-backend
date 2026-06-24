@@ -50,7 +50,6 @@ public class GroovyRecordFilter {
     public List<Long> filter(Stream<InvalidDataRecord> records, String script) {
         try (GroovyScriptExecutor executor = new GroovyScriptExecutor(script)) {
             List<Long> result = new ArrayList<>();
-            long startTime = System.currentTimeMillis();
             Iterator<InvalidDataRecord> iterator = records.iterator();
 
             while (iterator.hasNext()) {
