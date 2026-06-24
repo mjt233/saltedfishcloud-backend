@@ -87,6 +87,9 @@ public class ControllerAdvice {
                 return null;
             }
         }
+        if (e.getErrorInfo() != null) {
+            setStatusCode(e.getErrorInfo().getStatus());
+        }
         return e.getRes();
     }
 

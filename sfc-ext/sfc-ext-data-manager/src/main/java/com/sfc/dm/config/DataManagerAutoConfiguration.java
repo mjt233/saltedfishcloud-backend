@@ -4,6 +4,7 @@ import com.sfc.dm.controller.InvalidDataController;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.sfc.dm.service.ClaimService;
+import com.sfc.dm.service.GroovyRecordFilter;
 import com.sfc.dm.service.InvalidDataService;
 import com.sfc.dm.service.identify.FileTypeCheckerImpl;
 import com.sfc.dm.service.identify.metadata.DocumentMetadataExtractor;
@@ -45,7 +46,8 @@ import java.util.stream.Stream;
         ClaimService.class,
         FileTypeCheckerImpl.class,
         InvalidDataDetectTaskFactory.class,
-        FileTypeCheckTaskFactory.class
+        FileTypeCheckTaskFactory.class,
+        GroovyRecordFilter.class
 })
 public class DataManagerAutoConfiguration {
 

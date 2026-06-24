@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * 失效数据记录Repository
  */
-public interface InvalidDataRecordRepo extends BaseRepo<InvalidDataRecord> {
+public interface InvalidDataRecordRepo extends BaseRepo<InvalidDataRecord>, InvalidDataRecordRepoCustom {
     /**
      * 按状态批量删除
      */

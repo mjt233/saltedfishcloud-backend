@@ -1,15 +1,19 @@
 package com.sfc.dm.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sfc.dm.constant.InvalidDataError;
 import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.enums.InvalidDataType;
 import com.sfc.dm.enums.ProcessMethod;
 import com.sfc.dm.model.dto.BatchResult;
 import com.sfc.dm.model.dto.FileTypeCheckResult;
+import com.sfc.dm.model.dto.InvalidDataFilterResult;
 import com.sfc.dm.model.dto.InvalidDataQuery;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
@@ -32,12 +36,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 失效数据服务
@@ -58,6 +68,13 @@ public class InvalidDataService {
     private SysCommonConfig sysCommonConfig;
     @Autowired
     private FileRecordService fileRecordService;
+    @Autowired
+    private GroovyRecordFilter groovyRecordFilter;
+    @Autowired
+    private CacheService cacheService;
+
+    private static final String CACHE_KEY_PREFIX = "sfc:dm:invalidData:filter:";
+    private static final int CACHE_TTL_MINUTES = 5;
 
     /**
      * 列出所有待处理的失效数据记录中需要识别的记录
@@ -99,6 +116,99 @@ public class InvalidDataService {
         }
         Sort sort = buildSort(query);
         return CommonPageInfo.of(repo.findAll(wrapper.build(), PageRequest.of(pageable.getPage(), pageable.getSize(), sort)));
+    }
+
+    /**
+     * 创建脚本筛选，执行全量查询 + Groovy 筛选，缓存筛选后的 ID 列表供后续分页查询。
+     *
+     * @param query 查询参数（含 filterScript）
+     * @return 筛选结果（filterId + matchedCount）
+     */
+    @Transactional(readOnly = true)
+    public InvalidDataFilterResult createFilter(InvalidDataQuery query) {
+        if (query.getFilterScript() == null || query.getFilterScript().isBlank()) {
+            throw new IllegalArgumentException("筛选脚本不能为空");
+        }
+
+        JpaLambdaQueryWrapper<InvalidDataRecord> wrapper = JpaLambdaQueryWrapper.get(InvalidDataRecord.class);
+        if (query.getStatus() != null && !query.getStatus().isEmpty()) {
+            wrapper.in(InvalidDataRecord::getStatus, query.getStatus());
+        }
+        if (query.getOwnerUid() != null) {
+            wrapper.eq(InvalidDataRecord::getOwnerUid, query.getOwnerUid());
+        }
+        if (query.getMinFileSize() != null) {
+            wrapper.ge(InvalidDataRecord::getFileSize, query.getMinFileSize());
+        }
+        if (query.getMaxFileSize() != null) {
+            wrapper.le(InvalidDataRecord::getFileSize, query.getMaxFileSize());
+        }
+        if (query.getFileType() != null && !query.getFileType().isEmpty()) {
+            wrapper.in(InvalidDataRecord::getFileType, query.getFileType());
+        }
+        if (query.getSortBy() != null && !query.getSortBy().isBlank()) {
+            if (!"fileSize".equals(query.getSortBy()) && !"lastModified".equals(query.getSortBy())) {
+                throw new IllegalArgumentException("不支持的排序字段: " + query.getSortBy());
+            }
+            JpaLambdaQueryWrapper.SortType type = "ASC".equalsIgnoreCase(query.getSortOrder())
+                    ? JpaLambdaQueryWrapper.SortType.ASC
+                    : JpaLambdaQueryWrapper.SortType.DESC;
+            wrapper.orderBy(type, query.getSortBy());
+        }
+
+        List<Long> filteredIds;
+        try (Stream<InvalidDataRecord> stream = repo.streamAll(wrapper.build())) {
+            filteredIds = groovyRecordFilter.filter(stream, query.getFilterScript());
+        }
+
+        String filterId = UUID.randomUUID().toString();
+        cacheService.set(CACHE_KEY_PREFIX + filterId, filteredIds, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+
+        InvalidDataFilterResult result = new InvalidDataFilterResult();
+        result.setFilterId(filterId);
+        result.setMatchedCount(filteredIds.size());
+        return result;
+    }
+
+    /**
+     * 根据 filterId 从缓存中获取筛选结果并分页返回。
+     *
+     * @param filterId 筛选缓存ID
+     * @param pageable 分页参数
+     * @return 分页结果
+     */
+    public CommonPageInfo<InvalidDataRecord> listByFilterId(String filterId, PageableRequest pageable) {
+        List<Long> allIds = cacheService.get(CACHE_KEY_PREFIX + filterId);
+        if (allIds == null) {
+            throw new JsonException(InvalidDataError.FILTER_EXPIRED);
+        }
+
+        int page = pageable.getPage();
+        int size = pageable.getSize();
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, allIds.size());
+        long totalPage = (allIds.size() + size - 1) / size;
+
+        if (fromIndex >= allIds.size()) {
+            return new CommonPageInfo<InvalidDataRecord>()
+                    .setContent(List.of())
+                    .setTotalCount(allIds.size())
+                    .setTotalPage(totalPage);
+        }
+
+        List<Long> pageIds = allIds.subList(fromIndex, toIndex);
+        List<InvalidDataRecord> records = repo.findByIds(pageIds);
+
+        Map<Long, InvalidDataRecord> recordMap = records.stream()
+                .collect(Collectors.toMap(InvalidDataRecord::getId, Function.identity()));
+        List<InvalidDataRecord> ordered = pageIds.stream()
+                .map(recordMap::get)
+                .collect(Collectors.toList());
+
+        return new CommonPageInfo<InvalidDataRecord>()
+                .setContent(ordered)
+                .setTotalCount(allIds.size())
+                .setTotalPage(totalPage);
     }
 
     /**
