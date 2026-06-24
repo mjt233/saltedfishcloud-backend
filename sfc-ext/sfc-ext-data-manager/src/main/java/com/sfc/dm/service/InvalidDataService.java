@@ -1,6 +1,7 @@
 package com.sfc.dm.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sfc.dm.constant.InvalidDataError;
 import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.enums.InvalidDataType;
 import com.sfc.dm.enums.ProcessMethod;
@@ -179,7 +180,7 @@ public class InvalidDataService {
     public CommonPageInfo<InvalidDataRecord> listByFilterId(String filterId, PageableRequest pageable) {
         List<Long> allIds = cacheService.get(CACHE_KEY_PREFIX + filterId);
         if (allIds == null) {
-            throw new JsonException("筛选结果已过期，请重新提交筛选");
+            throw new JsonException(InvalidDataError.FILTER_EXPIRED);
         }
 
         int page = pageable.getPage();

@@ -1,5 +1,6 @@
 package com.sfc.dm.service;
 
+import com.sfc.dm.constant.InvalidDataError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
@@ -52,7 +53,7 @@ public class GroovyScriptExecutor implements AutoCloseable {
         try {
             this.compiled = new GroovyShell(config).parse(script);
         } catch (CompilationFailedException e) {
-            throw new JsonException("脚本编译失败: " + e.getMessage());
+            throw new JsonException(InvalidDataError.GROOVY_COMPILE_FAIL, e.getMessage());
         }
         this.worker = Executors.newSingleThreadExecutor(DAEMON_FACTORY);
         this.interrupter = Executors.newScheduledThreadPool(1, DAEMON_FACTORY);
@@ -87,14 +88,14 @@ public class GroovyScriptExecutor implements AutoCloseable {
             Throwable cause = e.getCause();
             if (cause instanceof InterruptedException
                     || (cause.getCause() instanceof InterruptedException)) {
-                throw new JsonException("脚本执行超时，请优化筛选脚本");
+                throw new JsonException(InvalidDataError.GROOVY_TIMEOUT);
             }
-            throw new JsonException("脚本执行异常: " + cause.getMessage());
+            throw new JsonException(InvalidDataError.GROOVY_EXECUTE_ERROR, cause.getMessage());
         } catch (CancellationException | TimeoutException e) {
-            throw new JsonException("脚本执行超时，请优化筛选脚本");
+            throw new JsonException(InvalidDataError.GROOVY_TIMEOUT);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new JsonException("脚本执行超时，请优化筛选脚本");
+            throw new JsonException(InvalidDataError.GROOVY_TIMEOUT);
         }
     }
 
