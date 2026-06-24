@@ -1,10 +1,14 @@
 package com.sfc.dm.service;
 
+import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import groovy.lang.Binding;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -57,6 +61,16 @@ public class GroovyRecordFilter {
                 InvalidDataRecord record = iterator.next();
                 Binding binding = new Binding();
                 binding.setVariable("record", record);
+                String typeCheckResult = record.getTypeCheckResult();
+                if (StringUtils.hasText(typeCheckResult)) {
+                    try {
+                        binding.setVariable("typeCheckResult", MapperHolder.parseJson(typeCheckResult, FileTypeCheckResult.class));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    binding.setVariable("typeCheckResult", null);
+                }
                 Object value = executor.run(binding, TIMEOUT_MILLIS);
                 if (GroovyUtils.isTruthy(value)) {
                     result.add(record.getId());
