@@ -5,15 +5,23 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Java数据类型相关处理工具类，包含数据类型boolean，number和string的识别与转换
  */
 public class TypeUtils {
+
+    /**
+     * 按 pattern 缓存的 DateTimeFormatter，线程安全，无额外包装
+     */
+    private static final Map<String, DateTimeFormatter> DATE_FORMAT_CACHE = new ConcurrentHashMap<>();
 
     private static final Map<Class<?>, String> NUMBER_TYPE = new HashMap<>();
     static {
@@ -232,14 +240,6 @@ public class TypeUtils {
         return Date.class == type || Date.class.isAssignableFrom(type);
     }
 
-    public static Date getDate(String input, String pattern) {
-        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
-        try {
-            return sdf.parse(input);
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     /**
      * 判断类型是否为枚举类型
@@ -265,5 +265,51 @@ public class TypeUtils {
         } else {
             return input.toString();
         }
+    }
+
+    /**
+     * 获取指定 pattern 的 DateTimeFormatter（按 pattern 缓存）
+     * @param pattern 日期格式模式
+     * @return 缓存的 DateTimeFormatter 实例
+     */
+    private static DateTimeFormatter getFormatter(String pattern) {
+        return DATE_FORMAT_CACHE.computeIfAbsent(pattern, DateTimeFormatter::ofPattern);
+    }
+
+    /**
+     * 将字符串按指定日期模式解析为 Date
+     * @param input   待解析的日期字符串
+     * @param pattern 日期格式模式，如 "yyyy-MM-dd HH:mm:ss"
+     * @return 解析后的 Date 对象，输入为空时返回 null
+     */
+    public static Date toDate(String input, String pattern) {
+        if (input == null || input.isEmpty()) {
+            return null;
+        }
+        LocalDateTime ldt = LocalDateTime.parse(input, getFormatter(pattern));
+        return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    /**
+     * 将 Date 按指定日期模式格式化为字符串
+     * @param date    待格式化的 Date 对象
+     * @param pattern 日期格式模式，如 "yyyy-MM-dd HH:mm:ss"
+     * @return 格式化后的字符串，输入为空时返回 null
+     */
+    public static String dateToString(Date date, String pattern) {
+        if (date == null) {
+            return null;
+        }
+        LocalDateTime ldt = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+        return getFormatter(pattern).format(ldt);
+    }
+
+    /**
+     * 将 Date 按"yyyy-MM-dd HH:mm:ss"格式化为字符串
+     * @param date    待格式化的 Date 对象
+     * @return 格式化后的字符串，输入为空时返回 null
+     */
+    public static String dateToString(Date date) {
+        return dateToString(date, "yyyy-MM-dd HH:mm:ss");
     }
 }
