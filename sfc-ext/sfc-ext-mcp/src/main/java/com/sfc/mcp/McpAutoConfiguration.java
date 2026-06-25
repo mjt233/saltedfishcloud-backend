@@ -1,6 +1,7 @@
 package com.sfc.mcp;
 
 import com.sfc.mcp.controller.McpApiKeyController;
+import com.sfc.mcp.controller.McpDiskFileController;
 import com.sfc.mcp.dao.McpApiKeyRepo;
 import com.sfc.mcp.model.McpApiKey;
 import com.sfc.mcp.model.McpProperty;
@@ -12,11 +13,9 @@ import com.sfc.mcp.tools.McpDiskTools;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.HttpMethod;
@@ -33,6 +32,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Import({
         McpDiskTools.class,
         McpApiKeyController.class,
+        McpDiskFileController.class,
         McpDiskPrompt.class,
         McpFileTransferService.class,
         McpApiKeyService.class,
@@ -58,24 +58,6 @@ public class McpAutoConfiguration {
     }
 
     /**
-     * 为 OpenAPI 文件传输端点注册 MCP API Key 认证过滤器。
-     * <p>
-     * 该路径当前未接入专用 Spring Security 过滤器链，仍保留 Servlet Filter 注册方式。
-     * </p>
-     *
-     * @param mcpApiKeyFilter MCP API Key 认证过滤器
-     * @return OpenAPI 文件传输过滤器注册信息
-     */
-    @Bean
-    public FilterRegistrationBean<McpApiKeyFilter> mcpOpenApiKeyFilterRegistration(McpApiKeyFilter mcpApiKeyFilter) {
-        FilterRegistrationBean<McpApiKeyFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(mcpApiKeyFilter);
-        registration.addUrlPatterns("/api/openApi/diskFile/*");
-        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
-        return registration;
-    }
-
-    /**
      * 为 MCP Streamable HTTP 端点注册专用安全过滤器链。
      * <p>
      * 认证过滤器必须位于 Spring Security 过滤器链内部，
@@ -93,11 +75,11 @@ public class McpAutoConfiguration {
     public SecurityFilterChain mcpSecurityFilterChain(
             HttpSecurity http,
             McpApiKeyFilter mcpApiKeyFilter) throws Exception {
-        http.securityMatcher("/api/mcp/stream/**")
+        http.securityMatcher("/api/mcp/stream/**", "/api/mcp/diskFile/**")
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(mcpApiKeyFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.OPTIONS, "/api/mcp/stream/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/mcp/stream/**", "/api/mcp/diskFile/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable);

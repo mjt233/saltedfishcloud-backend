@@ -75,7 +75,11 @@ public class DBUtils {
                         }
 
                         for (Tuple2<String, Method> field : fields) {
-                            ps.setObject(idx++, field.getT2().invoke(entity));
+                            Object value = field.getT2().invoke(entity);
+                            if (value instanceof Enum<?> e) {
+                                value = e.name();
+                            }
+                            ps.setObject(idx++, value);
                         }
                     }
                 } catch (Throwable e) {

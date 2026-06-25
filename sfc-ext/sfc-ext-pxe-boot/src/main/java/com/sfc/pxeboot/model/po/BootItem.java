@@ -32,7 +32,7 @@ public class BootItem extends AuditModel {
     private String itemKey;
 
     /**
-     * 启动项类型
+     * 启动项的资源类型
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -81,7 +81,7 @@ public class BootItem extends AuditModel {
     private String description;
 
     /**
-     * 自定义的 iPXE 启动脚本段落
+     * 自定义的 iPXE 启动脚本段落。
      */
     @Lob
     private String customIpxeScript;

@@ -88,11 +88,26 @@ public class IpxeScriptEngine {
      * 生成单个启动项的引导脚本
      */
     private String generateItemBootScript(BootItem item) {
-        return switch (item.getType()) {
+        String script = switch (item.getType()) {
             case KERNEL_INITRD -> generateKernelBoot(item);
             case CUSTOM_IPXE_SCRIPT -> Optional.ofNullable(item.getCustomIpxeScript()).orElse("");
             case ISO -> generateIsoBoot(item);
         };
+
+        // 对于非自定义脚本类型，将 customIpxeScript 作为前置或后置脚本拼接
+        if (item.getType() != BootItemType.CUSTOM_IPXE_SCRIPT
+                && item.getIsoBootMethod() != IsoBootMethod.CUSTOM_IPXE_SCRIPT
+                && StringUtils.hasText(item.getCustomIpxeScript())) {
+            if (item.getType() == BootItemType.ISO && item.getIsoBootMethod() == IsoBootMethod.SANBOOT) {
+                // ISO 的 SANBOOT模式下，前置脚本
+                script = item.getCustomIpxeScript() + "\n" + script;
+            } else {
+                // 其他模式下后置脚本
+                script = script + "\n" + item.getCustomIpxeScript();
+            }
+        }
+
+        return script;
     }
 
     /**
@@ -102,21 +117,18 @@ public class IpxeScriptEngine {
         String kernelUrl = "${res_url}/" + item.getKernelFilename();
         String initrdUrl = "${res_url}/" + item.getInitrdFilename();
 
-        String initrdParam = item.getInitrdFilename() != null
-                ? " initrd=" + item.getInitrdFilename() : "";
         String kernelParams = item.getKernelParams() != null && !item.getKernelParams().isEmpty()
                 ? " " + item.getKernelParams() : "";
-        String initrdLine = item.getInitrdFilename() != null
-                ? "initrd %s\n".formatted(initrdUrl) : "";
 
         return ScriptTemplate.render("""
-                kernel {{kernel_url}}{{initrd_param}}{{kernel_params}}
-                {{initrd_line}}
+                set kernel_url {{kernel_url}}
+                set initrd_url {{initrd_url}}
+                kernel ${kernel_url}{{kernel_params}}
+                initrd ${initrd_url}
                 """, Map.of(
                 "kernel_url", kernelUrl,
-                "initrd_param", initrdParam,
                 "kernel_params", kernelParams,
-                "initrd_line", initrdLine
+                "initrd_url", initrdUrl
         ));
     }
 
@@ -150,9 +162,10 @@ public class IpxeScriptEngine {
             String kernelUrl = "${base_url}/api/pxeBoot/boot/getIsoItem/" + item.getId() + "/type/kernel";
             String initrdUrl = "${base_url}/api/pxeBoot/boot/getIsoItem/" + item.getId() + "/type/initrd";
             return ScriptTemplate.render("""
-                    set iso_url {{iso_url}}
-                    kernel --name kernel {{kernel_url}}{{kernel_params}}
-                    initrd --name initrd.img {{initrd_url}}
+                    set kernel_url {{kernel_url}}
+                    set initrd_url {{initrd_url}}
+                    kernel ${kernel_url}{{kernel_params}}
+                    initrd ${initrd_url}
                     """, Map.of(
                     "kernel_url", kernelUrl,
                     "initrd_url", initrdUrl,

@@ -231,9 +231,9 @@ public class McpDiskTools {
     }
 
     /**
-     * 让 MCP 客户端获知上传文件到咸鱼云的方法
+     * 让 MCP 客户端获知通过 MCP HTTP 接口上传文件到咸鱼云的方法。
      */
-    @McpTool(name = "get_upload_file_method", description = "获取上传文件到咸鱼云网盘的方法")
+    @McpTool(name = "get_upload_file_method", description = "获取通过MCP HTTP接口上传文件到咸鱼云网盘的方法")
     public McpOperationResult getUploadFileMethod() {
         HttpServletRequest request = RequestContextUtils.getHttpServletRequest().orElseThrow();
         return new McpOperationResult(true, mcpFileTransferService.getUploadPrompt(request), 0L);
@@ -278,11 +278,11 @@ public class McpDiskTools {
     }
 
     /**
-     * 获取通过开放平台下载文件的方法说明。
+     * 获取通过 MCP HTTP 接口下载文件的方法说明。
      *
      * @return 操作结果，message 字段为下载方法说明
      */
-    @McpTool(name = "get_download_file_method", description = "获取通过开放平台下载文件的方法说明")
+    @McpTool(name = "get_download_file_method", description = "获取通过MCP HTTP接口下载文件的方法说明")
     public McpOperationResult getDownloadFileMethod() {
         HttpServletRequest request = RequestContextUtils.getHttpServletRequest().orElseThrow();
         return new McpOperationResult(true, mcpFileTransferService.getDownloadPrompt(request), 0L);

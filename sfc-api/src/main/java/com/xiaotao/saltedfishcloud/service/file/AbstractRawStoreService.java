@@ -119,16 +119,10 @@ public abstract class AbstractRawStoreService implements StoreService {
 
     /**
      * 获取网盘资源存储根目录路径
-     * 自定义个性化存储根目录路径：storeRoot + "/user_profile"
-     *                私人网盘：storeRoot + "/user_file"
-     *                临时目录：storeRoot + "/temp"
+     *      私人网盘：storeRoot + "/user_file"
      *      文件总仓（唯一存储）：storeRoot + "/repo"
      */
     public abstract String getStoreRoot();
-
-    public final String getUserProfileRoot(long uid) {
-        return StringUtils.appendPath(getStoreRoot(), "user_profile", uid + "");
-    }
 
     public final String getUserFileRoot(long uid) {
         if (uid == UserConstants.PUBLIC_USER_ID) {
@@ -136,10 +130,6 @@ public abstract class AbstractRawStoreService implements StoreService {
         } else {
             return StringUtils.appendPath(getStoreRoot(), "user_file", uid + "");
         }
-    }
-
-    public final String getTempRoot() {
-        return StringUtils.appendPath(getStoreRoot(), "temp");
     }
 
     public final String getRepoRoot() {

@@ -38,8 +38,7 @@
 ### JPA 及其实体类规范
 
 - JPA Repository层分页查询必须使用`Pageable`参数，返回值为`Page`(org.springframework.data.domain.Page)。
-- JPA Entity索引名称需要符合以下格式`idx_[表名]_[列1名]_[列2名]......`
-- JPA Entity实体类字段的`@Column`注解 与 `@Table`注解都避免配置`name`属性。
+- 具体详细规范见[`generate-jpa-repository`技能](.claude/skills/generate-jpa-repository/SKILL.md)。
 
 ### 分页查询
 

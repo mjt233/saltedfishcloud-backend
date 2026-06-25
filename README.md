@@ -2,7 +2,7 @@
 
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.8-green.svg)
 ![Java](https://img.shields.io/badge/Java-25-purple.svg)
-![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
 咸鱼云网盘是一个基于 Spring Boot 的网盘后端系统，支持公共资源与私人存储双域管理，提供文件管理、分享协作、在线预览、外部存储挂载与插件化扩展能力，并提供MCP服务支持。
 
@@ -167,3 +167,7 @@ docker compose up -d --build
 - [ ] 实现回收站功能
 - [ ] 用户网盘空间配额控制
 - [ ] 接口速率限制
+
+## 技术鸣谢
+
+- [Apache Tika Server](https://tika.apache.org/) — 文件类型检测与元数据提取
