@@ -15,6 +15,7 @@ import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -99,21 +100,7 @@ public class InvalidDataService {
      */
     public CommonPageInfo<InvalidDataRecord> list(InvalidDataQuery query, PageableRequest pageable) {
         JpaLambdaQueryWrapper<InvalidDataRecord> wrapper = JpaLambdaQueryWrapper.get(InvalidDataRecord.class);
-        if (query.getStatus() != null && !query.getStatus().isEmpty()) {
-            wrapper.in(InvalidDataRecord::getStatus, query.getStatus());
-        }
-        if (query.getOwnerUid() != null) {
-            wrapper.eq(InvalidDataRecord::getOwnerUid, query.getOwnerUid());
-        }
-        if (query.getMinFileSize() != null) {
-            wrapper.ge(InvalidDataRecord::getFileSize, query.getMinFileSize());
-        }
-        if (query.getMaxFileSize() != null) {
-            wrapper.le(InvalidDataRecord::getFileSize, query.getMaxFileSize());
-        }
-        if (query.getFileType() != null && !query.getFileType().isEmpty()) {
-            wrapper.in(InvalidDataRecord::getFileType, query.getFileType());
-        }
+        applyQueryFilter(wrapper, query);
         Sort sort = buildSort(query);
         return CommonPageInfo.of(repo.findAll(wrapper.build(), PageRequest.of(pageable.getPage(), pageable.getSize(), sort)));
     }
@@ -131,30 +118,8 @@ public class InvalidDataService {
         }
 
         JpaLambdaQueryWrapper<InvalidDataRecord> wrapper = JpaLambdaQueryWrapper.get(InvalidDataRecord.class);
-        if (query.getStatus() != null && !query.getStatus().isEmpty()) {
-            wrapper.in(InvalidDataRecord::getStatus, query.getStatus());
-        }
-        if (query.getOwnerUid() != null) {
-            wrapper.eq(InvalidDataRecord::getOwnerUid, query.getOwnerUid());
-        }
-        if (query.getMinFileSize() != null) {
-            wrapper.ge(InvalidDataRecord::getFileSize, query.getMinFileSize());
-        }
-        if (query.getMaxFileSize() != null) {
-            wrapper.le(InvalidDataRecord::getFileSize, query.getMaxFileSize());
-        }
-        if (query.getFileType() != null && !query.getFileType().isEmpty()) {
-            wrapper.in(InvalidDataRecord::getFileType, query.getFileType());
-        }
-        if (query.getSortBy() != null && !query.getSortBy().isBlank()) {
-            if (!"fileSize".equals(query.getSortBy()) && !"lastModified".equals(query.getSortBy())) {
-                throw new IllegalArgumentException("不支持的排序字段: " + query.getSortBy());
-            }
-            JpaLambdaQueryWrapper.SortType type = "ASC".equalsIgnoreCase(query.getSortOrder())
-                    ? JpaLambdaQueryWrapper.SortType.ASC
-                    : JpaLambdaQueryWrapper.SortType.DESC;
-            wrapper.orderBy(type, query.getSortBy());
-        }
+        applyQueryFilter(wrapper, query);
+        applySort(wrapper, query);
 
         List<Long> filteredIds;
         try (Stream<InvalidDataRecord> stream = repo.streamAll(wrapper.build())) {
@@ -168,6 +133,23 @@ public class InvalidDataService {
         result.setFilterId(filterId);
         result.setMatchedCount(filteredIds.size());
         return result;
+    }
+
+    /**
+     * 流式查询可认领的失效数据记录（UNIQUE 模式下类型为失效物理存储）。
+     * <p>在 {@link #list(InvalidDataQuery, PageableRequest)} 的筛选条件基础上，
+     * 强制限定 type = PHYSICAL_STORAGE 且 storeMode = UNIQUE。</p>
+     *
+     * @param query 失效数据筛选条件
+     * @return 可认领记录的流，调用方负责关闭
+     */
+    public Stream<InvalidDataRecord> streamClaimableRecords(InvalidDataQuery query) {
+        JpaLambdaQueryWrapper<InvalidDataRecord> wrapper = JpaLambdaQueryWrapper.get(InvalidDataRecord.class);
+        applyQueryFilter(wrapper, query);
+        wrapper.eq(InvalidDataRecord::getType, InvalidDataType.PHYSICAL_STORAGE)
+                .eq(InvalidDataRecord::getStoreMode, StoreMode.UNIQUE);
+        applySort(wrapper, query);
+        return repo.streamAll(wrapper.build());
     }
 
     /**
@@ -558,6 +540,43 @@ public class InvalidDataService {
     }
 
     private static final int BATCH_SIZE = 200;
+
+    /**
+     * 向查询包装器应用 InvalidDataQuery 中的 5 个通用筛选条件。
+     */
+    private void applyQueryFilter(JpaLambdaQueryWrapper<InvalidDataRecord> wrapper, InvalidDataQuery query) {
+        if (query.getStatus() != null && !query.getStatus().isEmpty()) {
+            wrapper.in(InvalidDataRecord::getStatus, query.getStatus());
+        }
+        if (query.getOwnerUid() != null) {
+            wrapper.eq(InvalidDataRecord::getOwnerUid, query.getOwnerUid());
+        }
+        if (query.getMinFileSize() != null) {
+            wrapper.ge(InvalidDataRecord::getFileSize, query.getMinFileSize());
+        }
+        if (query.getMaxFileSize() != null) {
+            wrapper.le(InvalidDataRecord::getFileSize, query.getMaxFileSize());
+        }
+        if (query.getFileType() != null && !query.getFileType().isEmpty()) {
+            wrapper.in(InvalidDataRecord::getFileType, query.getFileType());
+        }
+    }
+
+    /**
+     * 向查询包装器应用排序（仅允许 fileSize、lastModified 字段）。
+     */
+    private void applySort(JpaLambdaQueryWrapper<InvalidDataRecord> wrapper, InvalidDataQuery query) {
+        if (query.getSortBy() == null || query.getSortBy().isBlank()) {
+            return;
+        }
+        if (!"fileSize".equals(query.getSortBy()) && !"lastModified".equals(query.getSortBy())) {
+            throw new IllegalArgumentException("不支持的排序字段: " + query.getSortBy());
+        }
+        JpaLambdaQueryWrapper.SortType type = "ASC".equalsIgnoreCase(query.getSortOrder())
+                ? JpaLambdaQueryWrapper.SortType.ASC
+                : JpaLambdaQueryWrapper.SortType.DESC;
+        wrapper.orderBy(type, query.getSortBy());
+    }
 
     /**
      * 构建排序条件（仅允许 fileSize、lastModified 字段）

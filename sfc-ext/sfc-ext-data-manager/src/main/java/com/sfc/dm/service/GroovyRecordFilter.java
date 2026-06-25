@@ -3,13 +3,8 @@ package com.sfc.dm.service;
 import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import groovy.lang.Binding;
-import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -49,7 +44,7 @@ public class GroovyRecordFilter {
     /**
      * 对记录流执行脚本筛选。
      * <p>结果最多返回 {@value #MAX_RESULT_SIZE} 条，超出静默截断。
-     * 脚本执行超过 {@value #TIMEOUT_MILLIS} 毫秒将抛出 {@link JsonException}。</p>
+     * 脚本执行超过 {@value #TIMEOUT_MILLIS} 毫秒将抛出 JsonException。</p>
      *
      * @param records 待筛选的记录流
      * @param script  Groovy 脚本代码
@@ -57,11 +52,7 @@ public class GroovyRecordFilter {
      * @throws JsonException 脚本编译失败或执行超时时抛出
      */
     public List<Long> filter(Stream<InvalidDataRecord> records, String script) {
-        try (GroovyScriptExecutor executor = new GroovyScriptExecutor(script, config -> {
-            ImportCustomizer ic = new ImportCustomizer();
-            ic.addStarImports("com.xiaotao.saltedfishcloud.utils");
-            config.addCompilationCustomizers(ic);
-        })) {
+        try (GroovyScriptExecutor executor = InvalidDataGroovyScriptHelper.createExecutor(script)) {
             List<Long> result = new ArrayList<>();
             Iterator<InvalidDataRecord> iterator = records.iterator();
             Map<String, Object> context = new HashMap<>();
@@ -72,20 +63,7 @@ public class GroovyRecordFilter {
                 }
 
                 InvalidDataRecord record = iterator.next();
-                Binding binding = new Binding();
-                binding.setVariable("record", record);
-                binding.setVariable("context", context);
-                String typeCheckResult = record.getTypeCheckResult();
-                if (StringUtils.hasText(typeCheckResult)) {
-                    try {
-                        binding.setVariable("typeCheckResult", MapperHolder.parseJson(typeCheckResult, FileTypeCheckResult.class));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    binding.setVariable("typeCheckResult", null);
-                }
-                Object value = executor.run(binding, TIMEOUT_MILLIS);
+                Object value = executor.run(InvalidDataGroovyScriptHelper.createBinding(record, context), TIMEOUT_MILLIS);
                 if (GroovyUtils.isTruthy(value)) {
                     result.add(record.getId());
                 }

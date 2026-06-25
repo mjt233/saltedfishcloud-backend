@@ -1,14 +1,7 @@
 package com.sfc.dm.controller;
 
 import com.sfc.dm.constant.DataManagerTaskType;
-import com.sfc.dm.model.dto.BatchResult;
-import com.sfc.dm.model.dto.ClaimParam;
-import com.sfc.dm.model.dto.FileTypeInfo;
-import com.sfc.dm.model.dto.FileTypeProviderInfo;
-import com.sfc.dm.model.dto.FileTypeCheckResult;
-import com.sfc.dm.model.dto.IdentifyParam;
-import com.sfc.dm.model.dto.InvalidDataFilterResult;
-import com.sfc.dm.model.dto.InvalidDataQuery;
+import com.sfc.dm.model.dto.*;
 import com.sfc.dm.model.po.ClaimRecord;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.service.ClaimService;
@@ -20,11 +13,11 @@ import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import jakarta.annotation.security.RolesAllowed;
@@ -234,6 +227,28 @@ public class InvalidDataController {
     public JsonResult<?> markCompleted(@PathVariable Long id) {
         invalidDataService.markCompleted(id);
         return JsonResult.emptySuccess();
+    }
+
+    /**
+     * 批量认领预览。
+     * <p>查询匹配条件的可认领失效数据（UNIQUE 模式 + 失效物理存储），
+     * 解析每条记录认领后的保存路径与文件名，最多返回前 10 条预览结果。</p>
+     */
+    @PostMapping("batchClaim/preview")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<List<ClaimPreviewItem>> batchClaimPreview(@RequestBody @Valid BatchClaimParam param) {
+        return JsonResultImpl.getInstance(claimService.previewBatchClaim(param));
+    }
+
+    /**
+     * 批量认领失效数据（仅限管理员调用）。
+     * <p>查询匹配条件的可认领失效数据（UNIQUE 模式 + 失效物理存储），
+     * 逐条解析保存路径与文件名后执行认领，跳过失败项继续处理后续记录。</p>
+     */
+    @PostMapping("batchClaim")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> batchClaim(@RequestBody @Valid BatchClaimParam param) {
+        return JsonResultImpl.getInstance(claimService.batchClaim(param));
     }
 
     // === 普通用户查询 ===
