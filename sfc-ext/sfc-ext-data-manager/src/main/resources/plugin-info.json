@@ -11,6 +11,6 @@
   "version": "^project.version^",
   "autoLoad": [
     "index.umd.js",
-    "styles.css"
+    "style.css"
   ]
 }
