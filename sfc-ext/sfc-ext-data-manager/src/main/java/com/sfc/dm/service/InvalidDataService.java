@@ -326,22 +326,91 @@ public class InvalidDataService {
     }
 
     /**
-     * 批量丢弃
+     * 批量丢弃。
+     * <p>优化策略（针对 ids 数量较大的场景）：</p>
+     * <ul>
+     *     <li>批量查询：通过 {@link InvalidDataRecordRepo#findAllById} 一次性加载所有记录，
+     *     以 1 次查询替代 N 次 {@link InvalidDataRecordRepo#findById}，在内存中校验状态。</li>
+     *     <li>按类型分流：
+     *         <ul>
+     *             <li>{@link InvalidDataType#FILE_RECORD}：无 IO，直接批量更新状态与处理方式。</li>
+     *             <li>{@link InvalidDataType#PHYSICAL_STORAGE}：需删除物理文件（IO 不可避免，逐个执行），
+     *             删除成功后再批量更新状态与处理方式；删除失败的记录保持 PENDING 并计入错误。</li>
+     *         </ul>
+     *     </li>
+     *     <li>批量更新：通过 {@link InvalidDataRecordRepo#updateProcessResultByIds} 分批
+     *     （每批 {@value #BATCH_SIZE} 条）执行 UPDATE，替代逐条 save。</li>
+     * </ul>
+     * <p>注意：本方法不加 {@code @Transactional}，避免物理 IO 期间长事务持锁；
+     * 每个批量 UPDATE 自带事务，删除失败回滚后对应记录保持 PENDING 状态。</p>
+     *
+     * @param ids 待丢弃的失效数据记录ID列表
+     * @return 批量操作结果
      */
     public BatchResult discard(List<Long> ids) {
-        int success = 0;
-        int fail = 0;
+        // 1. 批量查询：1 次 SELECT 替代 N 次 findById
+        List<InvalidDataRecord> records = repo.findAllById(ids);
+        Map<Long, InvalidDataRecord> recordMap = records.stream()
+                .collect(Collectors.toMap(InvalidDataRecord::getId, Function.identity()));
+
+        // 2. 内存校验状态，按类型分流有效记录
+        List<Long> fileRecordIds = new ArrayList<>();
+        List<Long> physicalStorageIds = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         for (Long id : ids) {
-            try {
-                discardSingle(id);
-                success++;
-            } catch (Exception e) {
-                fail++;
-                errors.add("ID " + id + ": " + e.getMessage());
+            InvalidDataRecord record = recordMap.get(id);
+            if (record == null) {
+                errors.add("ID " + id + ": 记录不存在");
+            } else if (record.getStatus() != InvalidDataStatus.PENDING) {
+                errors.add("ID " + id + ": 当前状态不允许丢弃");
+            } else if (record.getType() == InvalidDataType.PHYSICAL_STORAGE) {
+                physicalStorageIds.add(id);
+            } else {
+                fileRecordIds.add(id);
             }
         }
-        return new BatchResult(success, fail, errors);
+
+        int success = 0;
+
+        // 3. FILE_RECORD：无 IO，直接批量更新状态与处理方式
+        if (!fileRecordIds.isEmpty()) {
+            success += batchUpdateProcessResult(fileRecordIds);
+        }
+
+        // 4. PHYSICAL_STORAGE：逐个删除物理文件（IO），成功后再批量更新状态
+        if (!physicalStorageIds.isEmpty()) {
+            List<Long> deletedIds = new ArrayList<>(physicalStorageIds.size());
+            Storage storage = storeServiceFactory.getService().getStorageProvider();
+            for (Long id : physicalStorageIds) {
+                InvalidDataRecord record = recordMap.get(id);
+                try {
+                    storage.delete(record.getStoragePath());
+                    deletedIds.add(id);
+                } catch (Exception e) {
+                    errors.add("ID " + id + ": 删除物理存储失败: " + e.getMessage());
+                }
+            }
+            if (!deletedIds.isEmpty()) {
+                success += batchUpdateProcessResult(deletedIds);
+            }
+        }
+
+        return new BatchResult(success, errors.size(), errors);
+    }
+
+    /**
+     * 分批更新记录的处理结果为 COMPLETED + DISCARD，返回累计更新行数。
+     *
+     * @param ids 待更新的记录ID列表
+     * @return 实际更新的记录数
+     */
+    private int batchUpdateProcessResult(List<Long> ids) {
+        int updated = 0;
+        for (int i = 0; i < ids.size(); i += BATCH_SIZE) {
+            List<Long> batch = ids.subList(i, Math.min(i + BATCH_SIZE, ids.size()));
+            updated += repo.updateProcessResultByIds(batch, InvalidDataStatus.COMPLETED, ProcessMethod.DISCARD);
+        }
+        return updated;
     }
 
     /**
@@ -460,45 +529,6 @@ public class InvalidDataService {
         }
         record.setStatus(InvalidDataStatus.COMPLETED);
         record.setProcessMethod(ProcessMethod.AUTO_REPAIR);
-        repo.save(record);
-    }
-
-    /**
-     * 单个丢弃
-     */
-    private void discardSingle(Long id) {
-        InvalidDataRecord record = getDetail(id);
-        if (record.getStatus() != InvalidDataStatus.PENDING) {
-            throw new IllegalStateException("当前状态不允许丢弃");
-        }
-        if (record.getType() == InvalidDataType.PHYSICAL_STORAGE) {
-            discardPhysicalStorage(record);
-        } else {
-            discardFileRecord(record);
-        }
-    }
-
-    /**
-     * 丢弃失效物理存储：删除物理文件
-     */
-    private void discardPhysicalStorage(InvalidDataRecord record) {
-        Storage storage = storeServiceFactory.getService().getStorageProvider();
-        try {
-            storage.delete(record.getStoragePath());
-        } catch (IOException e) {
-            throw new IllegalStateException("删除物理存储失败: " + e.getMessage());
-        }
-        record.setStatus(InvalidDataStatus.COMPLETED);
-        record.setProcessMethod(ProcessMethod.DISCARD);
-        repo.save(record);
-    }
-
-    /**
-     * 丢弃失效文件记录：删除记录本身
-     */
-    private void discardFileRecord(InvalidDataRecord record) {
-        record.setStatus(InvalidDataStatus.COMPLETED);
-        record.setProcessMethod(ProcessMethod.DISCARD);
         repo.save(record);
     }
 

@@ -1,6 +1,7 @@
 package com.sfc.dm.repo;
 
 import com.sfc.dm.enums.InvalidDataStatus;
+import com.sfc.dm.enums.ProcessMethod;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.xiaotao.saltedfishcloud.dao.BaseRepo;
 import org.springframework.data.jpa.repository.Modifying;
@@ -35,4 +36,19 @@ public interface InvalidDataRecordRepo extends BaseRepo<InvalidDataRecord>, Inva
     @Modifying
     @Query("UPDATE InvalidDataRecord t SET t.status = :status WHERE t.id IN :ids")
     int updateStatusByIds(@Param("ids") List<Long> ids, @Param("status") InvalidDataStatus status);
+
+    /**
+     * 批量更新处理结果（同时设置状态与处理方式）。
+     *
+     * @param ids          待更新的记录ID列表
+     * @param status       目标状态
+     * @param processMethod 处理方式
+     * @return 实际更新的记录数
+     */
+    @Transactional
+    @Modifying
+    @Query("UPDATE InvalidDataRecord t SET t.status = :status, t.processMethod = :processMethod WHERE t.id IN :ids")
+    int updateProcessResultByIds(@Param("ids") List<Long> ids,
+                                 @Param("status") InvalidDataStatus status,
+                                 @Param("processMethod") ProcessMethod processMethod);
 }
