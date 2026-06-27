@@ -6,6 +6,7 @@ import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.sfc.dm.service.ClaimService;
 import com.sfc.dm.service.GroovyRecordFilter;
 import com.sfc.dm.service.InvalidDataService;
+import com.sfc.dm.service.resource.InvalidDataResourceHandler;
 import com.sfc.dm.service.identify.FileTypeCheckerImpl;
 import com.sfc.dm.service.identify.metadata.DocumentMetadataExtractor;
 import com.sfc.dm.service.identify.metadata.ExeMetadataExtractor;
@@ -44,6 +45,7 @@ import java.util.stream.Stream;
         InvalidDataController.class,
         InvalidDataService.class,
         ClaimService.class,
+        InvalidDataResourceHandler.class,
         FileTypeCheckerImpl.class,
         InvalidDataDetectTaskFactory.class,
         FileTypeCheckTaskFactory.class,
