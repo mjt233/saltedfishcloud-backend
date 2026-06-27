@@ -96,23 +96,14 @@ private List<Long> findIdsByQuery(InvalidDataQuery query, InvalidDataStatus forc
 4. 如果 `filterScript` 为空：
    - 直接通过 repo 查询 ID 列表（不加载完整实体）
 
-### 新增 Repo 方法
+### ID 查询策略
 
-在 `InvalidDataRecordRepo` 中新增基于 Specification 的 ID 查询：
+`findIdsByQuery` 的两个分支均通过 `JpaLambdaQueryWrapper` 构建条件，区别在于如何获取 ID 列表：
 
-```java
-/**
- * 按 Specification 查询匹配的记录ID列表
- */
-@Query("SELECT t.id FROM InvalidDataRecord t WHERE t IN :spec")
-List<Long> findIdsByQuery(Specification<InvalidDataRecord> spec);
-```
+- **有 filterScript**：复用现有 `createFilter()` 的模式 — `repo.streamAll(wrapper.build())` 流式加载完整实体，经 `GroovyRecordFilter.filter()` 过滤后返回 ID 列表。
+- **无 filterScript**：同样使用 `repo.streamAll(wrapper.build())` 流式查询，仅提取 `getId()` 返回 ID 列表。虽然加载了完整实体，但与 Groovy 路径保持一致，且流式处理不会一次性占用大量内存。
 
-或使用 `JpaSpecificationExecutor` 已有的能力，通过现有 `findAll(wrapper.build())` 返回的 ID 提取。
-
-考虑到现有代码使用 `JpaLambdaQueryWrapper` 构建条件，最简方案是：复用现有 `repo.findAll(wrapper.build())` 配合只查 ID 的投影，或直接用已有的 `JpaSpecificationExecutor` 接口配合 `findIds` 投影查询。
-
-**最终选择**：由于 `BaseRepo` 已继承 `JpaSpecificationExecutor`，直接使用 `findAll` 返回的 ID 即可。对于无 filterScript 的场景，可新增一个轻量的 `findIdsBySpec` 方法避免加载完整实体。
+不新增 Repo 方法，完全复用现有的 `InvalidDataRecordRepoCustom.streamAll()`。
 
 ### 三个公开方法
 
@@ -185,6 +176,5 @@ public JsonResult<BatchResult> unpublishByQuery(@RequestBody InvalidDataQuery qu
 
 | 文件 | 操作 |
 |------|------|
-| `InvalidDataRecordRepo.java` | 新增 `findIdsBySpec` 方法 |
 | `InvalidDataService.java` | 新增 `discardByQuery`, `publishByQuery`, `unpublishByQuery`, `findIdsByQuery` |
 | `InvalidDataController.java` | 新增 3 个端点 |
