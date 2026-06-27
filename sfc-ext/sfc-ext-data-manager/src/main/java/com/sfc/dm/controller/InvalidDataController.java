@@ -220,6 +220,33 @@ public class InvalidDataController {
     }
 
     /**
+     * 按条件批量丢弃
+     */
+    @PostMapping("discard/byQuery")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> discardByQuery(@RequestBody InvalidDataQuery query) {
+        return JsonResultImpl.getInstance(invalidDataService.discardByQuery(query));
+    }
+
+    /**
+     * 按条件批量发布为可认领
+     */
+    @PostMapping("publish/byQuery")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> publishByQuery(@RequestBody InvalidDataQuery query) {
+        return JsonResultImpl.getInstance(invalidDataService.publishByQuery(query));
+    }
+
+    /**
+     * 按条件批量取消发布
+     */
+    @PostMapping("unpublish/byQuery")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> unpublishByQuery(@RequestBody InvalidDataQuery query) {
+        return JsonResultImpl.getInstance(invalidDataService.unpublishByQuery(query));
+    }
+
+    /**
      * 标记处理完成（UNIQUE模式）
      */
     @PostMapping("markCompleted/{id}")
