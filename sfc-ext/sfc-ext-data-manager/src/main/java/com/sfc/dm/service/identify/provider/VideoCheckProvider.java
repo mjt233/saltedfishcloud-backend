@@ -8,6 +8,7 @@ import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.model.FormatInfo;
 import com.saltedfishcloud.ext.ve.model.StreamInfo;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
+import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -43,7 +44,8 @@ public class VideoCheckProvider implements FileTypeCheckProvider {
                 new FileMetadataDefine("高度", "height", "视频高度（像素）", "span"),
                 new FileMetadataDefine("视频编码器", "videoCodec", "视频编码器名称（如h264, hevc）", "span"),
                 new FileMetadataDefine("音频编码器", "audioCodec", "音频编码器名称（如aac, mp3）", "span"),
-                new FileMetadataDefine("封装格式", "containerFormat", "视频封装格式（如mov,mp4,m4a,3gp,3g2,mj2）", "span")
+                new FileMetadataDefine("封装格式", "containerFormat", "视频封装格式（如mov,mp4,m4a,3gp,3g2,mj2）", "span"),
+                new FileMetadataDefine("内嵌元数据", "inlineMetadata", "视频文件内部的元数据标记", "dataManagerKeyValue")
         )));
     }
 
@@ -155,6 +157,12 @@ public class VideoCheckProvider implements FileTypeCheckProvider {
             }
             if (format.getDuration() != null) {
                 metadata.put("duration", String.format("%.1f", format.getDuration()));
+            }
+
+            // 内嵌元数据
+            Map<String, String> tags = videoInfo.getFormat().getTags();
+            if (tags != null) {
+                metadata.put("inlineMetadata", MapperHolder.toJsonNoEx(tags));
             }
         }
 
