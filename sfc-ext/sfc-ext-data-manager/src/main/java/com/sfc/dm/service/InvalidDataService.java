@@ -422,6 +422,48 @@ public class InvalidDataService {
     }
 
     /**
+     * 按条件批量丢弃。
+     * <p>根据 InvalidDataQuery 查询条件（支持 Groovy 脚本过滤）筛选出 PENDING 状态的记录，
+     * 执行批量丢弃操作。状态强制为 PENDING，客户端传入的 status 字段会被忽略。</p>
+     *
+     * @param query 查询条件
+     * @return 批量操作结果
+     */
+    @Transactional
+    public BatchResult discardByQuery(InvalidDataQuery query) {
+        List<Long> ids = findIdsByQuery(query, InvalidDataStatus.PENDING);
+        return discard(ids);
+    }
+
+    /**
+     * 按条件批量发布为可认领。
+     * <p>根据 InvalidDataQuery 查询条件（支持 Groovy 脚本过滤）筛选出 PENDING 状态的记录，
+     * 执行批量发布操作。状态强制为 PENDING，客户端传入的 status 字段会被忽略。</p>
+     *
+     * @param query 查询条件
+     * @return 批量操作结果
+     */
+    @Transactional
+    public BatchResult publishByQuery(InvalidDataQuery query) {
+        List<Long> ids = findIdsByQuery(query, InvalidDataStatus.PENDING);
+        return publish(ids);
+    }
+
+    /**
+     * 按条件批量取消发布。
+     * <p>根据 InvalidDataQuery 查询条件（支持 Groovy 脚本过滤）筛选出 PUBLISHED 状态的记录，
+     * 执行批量取消发布操作。状态强制为 PUBLISHED，客户端传入的 status 字段会被忽略。</p>
+     *
+     * @param query 查询条件
+     * @return 批量操作结果
+     */
+    @Transactional
+    public BatchResult unpublishByQuery(InvalidDataQuery query) {
+        List<Long> ids = findIdsByQuery(query, InvalidDataStatus.PUBLISHED);
+        return unpublish(ids);
+    }
+
+    /**
      * 标记处理完成（UNIQUE模式，CLAIMED -> COMPLETED(CLAIM)）
      */
     public void markCompleted(Long id) {
@@ -570,6 +612,31 @@ public class InvalidDataService {
     }
 
     private static final int BATCH_SIZE = 200;
+
+    /**
+     * 按条件查询匹配的记录ID列表。
+     * 支持 DB 级别筛选条件和可选的 Groovy 脚本过滤。
+     * <p>当 query 包含 filterScript 时，先通过 DB 条件流式查询，
+     * 再经 Groovy 脚本过滤返回匹配的 ID 列表；否则直接流式提取 ID。</p>
+     *
+     * @param query         查询条件
+     * @param forcedStatus  强制注入的状态（覆盖 query.status）
+     * @return 匹配的记录ID列表
+     */
+    private List<Long> findIdsByQuery(InvalidDataQuery query, InvalidDataStatus forcedStatus) {
+        query.setStatus(List.of(forcedStatus.name()));
+        JpaLambdaQueryWrapper<InvalidDataRecord> wrapper = JpaLambdaQueryWrapper.get(InvalidDataRecord.class);
+        applyQueryFilter(wrapper, query);
+        if (query.getFilterScript() != null && !query.getFilterScript().isBlank()) {
+            try (Stream<InvalidDataRecord> stream = repo.streamAll(wrapper.build())) {
+                return groovyRecordFilter.filter(stream, query.getFilterScript());
+            }
+        } else {
+            try (Stream<InvalidDataRecord> stream = repo.streamAll(wrapper.build())) {
+                return stream.map(InvalidDataRecord::getId).collect(Collectors.toList());
+            }
+        }
+    }
 
     /**
      * 向查询包装器应用 InvalidDataQuery 中的 5 个通用筛选条件。
