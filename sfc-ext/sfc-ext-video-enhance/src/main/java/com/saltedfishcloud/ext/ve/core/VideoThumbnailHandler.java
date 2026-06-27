@@ -14,6 +14,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -165,6 +166,10 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
         try {
             int exitCode = processWrap.getProcess().waitFor();
             if (exitCode != 0) {
+                try (InputStream errorStream = processWrap.getProcess().getInputStream()) {
+                    String errorOutput = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+                    log.error("FFmpeg提取内置封面失败，退出码：{}，错误输出：{}", exitCode, errorOutput);
+                }
                 return false;
             }
             try (InputStream is = Files.newInputStream(templateFilePath)) {
@@ -226,7 +231,10 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
             ProcessWrap processWrap = ffMpegHelper.executeFFMpeg(videoFilePath, tempFile.toString(), inputArgs, outputArgs);
             int exitCode = processWrap.getProcess().waitFor();
             if (exitCode != 0) {
-                log.error("FFmpeg生成缩略图失败，退出码：{}", exitCode);
+                try (InputStream errorStream = processWrap.getProcess().getInputStream()) {
+                    String errorOutput = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+                    log.error("FFmpeg生成缩略图失败，退出码：{}，错误输出：{}", exitCode, errorOutput);
+                }
                 return false;
             }
 

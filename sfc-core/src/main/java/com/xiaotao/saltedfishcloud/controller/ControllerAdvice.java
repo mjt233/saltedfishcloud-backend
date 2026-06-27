@@ -8,6 +8,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundExce
 import com.xiaotao.saltedfishcloud.utils.RequestContextUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
@@ -114,6 +116,8 @@ public class ControllerAdvice {
             log.warn("{} {}", LOG_PREFIX, e.getMessage());
             response.setStatus(404);
             return JsonResultImpl.getInstance(404, 404, null, e.getMessage());
+        } else if (isClientAbortException(e)) {
+            log.debug("{} 客户端连接中断", LOG_PREFIX);
         } else {
             log.error("异常", e);
         }
@@ -132,8 +136,10 @@ public class ControllerAdvice {
 
     @ExceptionHandler(IOException.class)
     public Object ioError(HttpServletResponse response, IOException e) {
-        if (log.isDebugEnabled()) {
-            e.printStackTrace();
+        if (e instanceof ClientAbortException) {
+            log.debug("{} 客户端连接中断", LOG_PREFIX);
+        } else if (log.isDebugEnabled()) {
+            log.debug("{} IO异常", LOG_PREFIX, e);
         }
         String h = response.getHeader("Content-Type");
         if (h != null) {
@@ -163,5 +169,20 @@ public class ControllerAdvice {
         if (requestAttributes != null && requestAttributes.getResponse() != null) {
             requestAttributes.getResponse().setStatus(code);
         }
+    }
+
+    /**
+     * 检查异常链中是否包含客户端连接中断异常
+     */
+    private static boolean isClientAbortException(Throwable e) {
+        Throwable current = e;
+        while (current != null) {
+            if (current instanceof ClientAbortException
+                    || current instanceof AsyncRequestNotUsableException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }
