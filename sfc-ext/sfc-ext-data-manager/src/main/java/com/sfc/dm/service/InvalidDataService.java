@@ -429,6 +429,7 @@ public class InvalidDataService {
      * @param query 查询条件
      * @return 批量操作结果
      */
+    @Transactional
     public BatchResult discardByQuery(InvalidDataQuery query) {
         List<Long> ids = findIdsByQuery(query, InvalidDataStatus.PENDING);
         return discard(ids);
@@ -442,6 +443,7 @@ public class InvalidDataService {
      * @param query 查询条件
      * @return 批量操作结果
      */
+    @Transactional
     public BatchResult publishByQuery(InvalidDataQuery query) {
         List<Long> ids = findIdsByQuery(query, InvalidDataStatus.PENDING);
         return publish(ids);
@@ -455,6 +457,7 @@ public class InvalidDataService {
      * @param query 查询条件
      * @return 批量操作结果
      */
+    @Transactional
     public BatchResult unpublishByQuery(InvalidDataQuery query) {
         List<Long> ids = findIdsByQuery(query, InvalidDataStatus.PUBLISHED);
         return unpublish(ids);
