@@ -463,6 +463,37 @@ public class InvalidDataService {
     }
 
     /**
+     * 清理所有状态为已完成的失效数据记录
+     *
+     * @return 批量操作结果
+     */
+    public BatchResult cleanCompleted() {
+        int deleted = repo.deleteByStatus(InvalidDataStatus.COMPLETED);
+        return new BatchResult(deleted, 0, List.of());
+    }
+
+    /**
+     * 将所有状态为已认领的失效数据记录标记为已完成
+     *
+     * @return 批量操作结果
+     */
+    public BatchResult markAllClaimedAsCompleted() {
+        List<Long> ids = repo.findIdsByStatus(InvalidDataStatus.CLAIMED);
+        List<String> errors = new ArrayList<>();
+        int success = 0;
+        for (int i = 0; i < ids.size(); i += BATCH_SIZE) {
+            List<Long> batch = ids.subList(i, Math.min(i + BATCH_SIZE, ids.size()));
+            try {
+                success += repo.updateProcessResultByIds(batch, InvalidDataStatus.COMPLETED, ProcessMethod.CLAIM);
+            } catch (Exception e) {
+                errors.add("批量更新失败: " + e.getMessage());
+            }
+        }
+        int total = ids.size();
+        return new BatchResult(success, total - success, errors);
+    }
+
+    /**
      * 单个快速修复
      */
     private void quickFixSingle(Long id) {

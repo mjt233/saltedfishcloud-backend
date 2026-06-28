@@ -257,6 +257,24 @@ public class InvalidDataController {
     }
 
     /**
+     * 一键清理所有状态为已完成的失效数据
+     */
+    @PostMapping("cleanCompleted")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> cleanCompleted() {
+        return JsonResultImpl.getInstance(invalidDataService.cleanCompleted());
+    }
+
+    /**
+     * 一键将所有已认领的失效数据标记为已完成
+     */
+    @PostMapping("markClaimedCompleted")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> markClaimedCompleted() {
+        return JsonResultImpl.getInstance(invalidDataService.markAllClaimedAsCompleted());
+    }
+
+    /**
      * 批量认领预览。
      * <p>查询匹配条件的可认领失效数据（UNIQUE 模式 + 失效物理存储），
      * 解析每条记录认领后的保存路径与文件名，最多返回前 10 条预览结果。</p>
