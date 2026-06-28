@@ -625,7 +625,7 @@ public class InvalidDataService {
     }
 
     /**
-     * 向查询包装器应用 InvalidDataQuery 中的 5 个通用筛选条件。
+     * 向查询包装器应用 InvalidDataQuery 中的 6 个通用筛选条件。
      */
     private void applyQueryFilter(JpaLambdaQueryWrapper<InvalidDataRecord> wrapper, InvalidDataQuery query) {
         if (query.getStatus() != null && !query.getStatus().isEmpty()) {
@@ -642,6 +642,9 @@ public class InvalidDataService {
         }
         if (query.getFileType() != null && !query.getFileType().isEmpty()) {
             wrapper.in(InvalidDataRecord::getFileType, query.getFileType());
+        }
+        if (query.getType() != null && !query.getType().isEmpty()) {
+            wrapper.in(InvalidDataRecord::getType, query.getType());
         }
     }
 

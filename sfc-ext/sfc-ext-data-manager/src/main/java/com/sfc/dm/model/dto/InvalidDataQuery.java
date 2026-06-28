@@ -17,6 +17,14 @@ public class InvalidDataQuery {
     private List<String> status;
 
     /**
+     * 失效数据类型筛选（多选）。
+     * <p>可选值：FILE_RECORD（失效文件记录）、PHYSICAL_STORAGE（失效物理存储）。</p>
+     * @see com.sfc.dm.enums.InvalidDataType#FILE_RECORD
+     * @see com.sfc.dm.enums.InvalidDataType#PHYSICAL_STORAGE
+     */
+    private List<String> type;
+
+    /**
      * 所属用户id筛选
      */
     private Long ownerUid;
