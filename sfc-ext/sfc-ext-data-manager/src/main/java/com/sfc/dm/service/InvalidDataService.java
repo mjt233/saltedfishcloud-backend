@@ -13,9 +13,9 @@ import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -36,7 +36,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -213,19 +212,6 @@ public class InvalidDataService {
      */
     public ResponseEntity<Resource> getDownloadResource(Long id) throws IOException {
         InvalidDataRecord record = getDetail(id);
-
-        if (record.getStatus() == InvalidDataStatus.COMPLETED) {
-            throw new IllegalStateException("已处理完成的数据不可下载");
-        }
-
-        boolean downloadable = record.getType() == InvalidDataType.PHYSICAL_STORAGE
-                || (record.getType() == InvalidDataType.FILE_RECORD
-                    && record.getMd5() != null
-                    && !fileInfoRepo.findByMd5(record.getMd5(), PageRequest.of(0, 1)).isEmpty());
-
-        if (!downloadable) {
-            throw new IllegalStateException("该数据当前不满足下载条件");
-        }
 
         Storage storage = storeServiceFactory.getService().getStorageProvider();
         Resource resource = storage.getResource(record.getStoragePath());
