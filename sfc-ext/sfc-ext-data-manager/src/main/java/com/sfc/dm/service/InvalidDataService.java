@@ -640,7 +640,7 @@ public class InvalidDataService {
      * @param forcedStatus  强制注入的状态（覆盖 query.status）
      * @return 匹配的记录ID列表
      */
-    private List<Long> findIdsByQuery(InvalidDataQuery query, InvalidDataStatus forcedStatus) {
+    List<Long> findIdsByQuery(InvalidDataQuery query, InvalidDataStatus forcedStatus) {
         query.setStatus(List.of(forcedStatus.name()));
         JpaLambdaQueryWrapper<InvalidDataRecord> wrapper = JpaLambdaQueryWrapper.get(InvalidDataRecord.class);
         applyQueryFilter(wrapper, query);
@@ -658,7 +658,7 @@ public class InvalidDataService {
     /**
      * 向查询包装器应用 InvalidDataQuery 中的 6 个通用筛选条件。
      */
-    private void applyQueryFilter(JpaLambdaQueryWrapper<InvalidDataRecord> wrapper, InvalidDataQuery query) {
+    void applyQueryFilter(JpaLambdaQueryWrapper<InvalidDataRecord> wrapper, InvalidDataQuery query) {
         if (query.getStatus() != null && !query.getStatus().isEmpty()) {
             wrapper.in(InvalidDataRecord::getStatus, query.getStatus());
         }

@@ -296,6 +296,17 @@ public class InvalidDataController {
         return JsonResultImpl.getInstance(claimService.batchClaim(param));
     }
 
+    /**
+     * 批量撤回认领（仅限管理员调用）。
+     * <p>根据查询条件筛选已认领的失效数据（状态强制为 CLAIMED），逐条删除对应的文件记录、
+     * 将认领记录标记为已撤回，并将失效数据状态恢复为待处理。支持 Groovy 脚本过滤。</p>
+     */
+    @PostMapping("batchRevokeClaim/byQuery")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> revokeClaimByQuery(@RequestBody InvalidDataQuery query) {
+        return JsonResultImpl.getInstance(claimService.batchRevoke(query));
+    }
+
     // === 普通用户查询 ===
 
     /**

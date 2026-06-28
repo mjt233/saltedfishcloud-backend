@@ -8,6 +8,7 @@ import com.sfc.dm.model.dto.BatchResult;
 import com.sfc.dm.model.dto.ClaimParam;
 import com.sfc.dm.model.dto.ClaimPreviewItem;
 import com.sfc.dm.model.dto.FileTypeCheckResult;
+import com.sfc.dm.model.dto.InvalidDataQuery;
 import com.sfc.dm.model.po.ClaimRecord;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.ClaimRecordRepo;
@@ -39,6 +40,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -225,6 +228,65 @@ public class ClaimService {
     }
 
     /**
+     * 批量撤回认领。根据查询条件筛选已认领的失效数据记录，
+     * 删除对应的文件记录，标记认领记录为已撤回，将失效数据状态恢复为待处理。
+     *
+     * @param query 失效数据查询参数（status 强制为 CLAIMED，支持 Groovy 脚本过滤）
+     * @return 批量操作结果（成功撤回的认领记录数、失败数、错误信息）
+     */
+    @Transactional
+    public BatchResult batchRevoke(InvalidDataQuery query) {
+        List<Long> ids = invalidDataService.findIdsByQuery(query, InvalidDataStatus.CLAIMED);
+
+        if (ids.isEmpty()) {
+            return new BatchResult(0, 0, List.of("没有匹配的失效数据记录"));
+        }
+
+        List<ClaimRecord> activeClaims = claimRecordRepo.findByInvalidDataIdInAndIsRevokedFalse(ids);
+        if (activeClaims.isEmpty()) {
+            return new BatchResult(0, 0, List.of("没有可撤回的认领记录"));
+        }
+
+        int fail = 0;
+        List<String> errors = new ArrayList<>();
+        List<ClaimRecord> deletableClaims = new ArrayList<>();
+
+        var groups = activeClaims.stream().collect(Collectors.groupingBy(
+                c -> c.getTargetUid() + "|" + c.getSavePath()));
+        for (var entry : groups.entrySet()) {
+            var claims = entry.getValue();
+            try {
+                ClaimRecord first = claims.getFirst();
+                List<String> names = claims.stream().map(ClaimRecord::getFileName).toList();
+                fileRecordService.deleteRecords(first.getTargetUid(), first.getSavePath(), names);
+                deletableClaims.addAll(claims);
+            } catch (Exception e) {
+                fail += claims.size();
+                ClaimRecord first = claims.getFirst();
+                errors.add("删除文件失败(uid=" + first.getTargetUid() + ", path=" + first.getSavePath() + "): " + e.getMessage());
+            }
+        }
+
+        if (deletableClaims.isEmpty()) {
+            return new BatchResult(0, fail, errors);
+        }
+
+        List<Long> claimIds = deletableClaims.stream().map(ClaimRecord::getId).toList();
+        for (int i = 0; i < claimIds.size(); i += BATCH_SIZE) {
+            List<Long> batch = claimIds.subList(i, Math.min(i + BATCH_SIZE, claimIds.size()));
+            claimRecordRepo.batchMarkRevoked(batch);
+        }
+
+        List<Long> affectedIdList = deletableClaims.stream().map(ClaimRecord::getInvalidDataId).distinct().collect(Collectors.toList());
+        for (int i = 0; i < affectedIdList.size(); i += BATCH_SIZE) {
+            List<Long> batch = affectedIdList.subList(i, Math.min(i + BATCH_SIZE, affectedIdList.size()));
+            invalidDataRecordRepo.updateStatusByIds(batch, InvalidDataStatus.PENDING);
+        }
+
+        return new BatchResult(deletableClaims.size(), fail, errors);
+    }
+
+    /**
      * 解析认领时的保存路径与文件名。
      *
      * @param param  批量认领参数
@@ -307,4 +369,7 @@ public class ClaimService {
 
     /** 路径解析脚本超时时间（毫秒） */
     private static final long PATH_SCRIPT_TIMEOUT_MILLIS = 5_000L;
+
+    /** 批量操作每批大小 */
+    private static final int BATCH_SIZE = 200;
 }
