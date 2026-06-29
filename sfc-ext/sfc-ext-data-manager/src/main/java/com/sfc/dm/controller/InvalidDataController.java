@@ -257,6 +257,24 @@ public class InvalidDataController {
     }
 
     /**
+     * 一键清理所有状态为已完成的失效数据
+     */
+    @PostMapping("cleanCompleted")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> cleanCompleted() {
+        return JsonResultImpl.getInstance(invalidDataService.cleanCompleted());
+    }
+
+    /**
+     * 一键将所有已认领的失效数据标记为已完成
+     */
+    @PostMapping("markClaimedCompleted")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> markClaimedCompleted() {
+        return JsonResultImpl.getInstance(invalidDataService.markAllClaimedAsCompleted());
+    }
+
+    /**
      * 批量认领预览。
      * <p>查询匹配条件的可认领失效数据（UNIQUE 模式 + 失效物理存储），
      * 解析每条记录认领后的保存路径与文件名，最多返回前 10 条预览结果。</p>
@@ -276,6 +294,17 @@ public class InvalidDataController {
     @RolesAllowed(SysRole.ADMIN)
     public JsonResult<BatchResult> batchClaim(@RequestBody @Valid BatchClaimParam param) {
         return JsonResultImpl.getInstance(claimService.batchClaim(param));
+    }
+
+    /**
+     * 批量撤回认领（仅限管理员调用）。
+     * <p>根据查询条件筛选已认领的失效数据（状态强制为 CLAIMED），逐条删除对应的文件记录、
+     * 将认领记录标记为已撤回，并将失效数据状态恢复为待处理。支持 Groovy 脚本过滤。</p>
+     */
+    @PostMapping("batchRevokeClaim/byQuery")
+    @RolesAllowed(SysRole.ADMIN)
+    public JsonResult<BatchResult> revokeClaimByQuery(@RequestBody InvalidDataQuery query) {
+        return JsonResultImpl.getInstance(claimService.batchRevoke(query));
     }
 
     // === 普通用户查询 ===

@@ -13,9 +13,9 @@ import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
+import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -36,7 +36,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -213,19 +212,6 @@ public class InvalidDataService {
      */
     public ResponseEntity<Resource> getDownloadResource(Long id) throws IOException {
         InvalidDataRecord record = getDetail(id);
-
-        if (record.getStatus() == InvalidDataStatus.COMPLETED) {
-            throw new IllegalStateException("已处理完成的数据不可下载");
-        }
-
-        boolean downloadable = record.getType() == InvalidDataType.PHYSICAL_STORAGE
-                || (record.getType() == InvalidDataType.FILE_RECORD
-                    && record.getMd5() != null
-                    && !fileInfoRepo.findByMd5(record.getMd5(), PageRequest.of(0, 1)).isEmpty());
-
-        if (!downloadable) {
-            throw new IllegalStateException("该数据当前不满足下载条件");
-        }
 
         Storage storage = storeServiceFactory.getService().getStorageProvider();
         Resource resource = storage.getResource(record.getStoragePath());
@@ -477,6 +463,37 @@ public class InvalidDataService {
     }
 
     /**
+     * 清理所有状态为已完成的失效数据记录
+     *
+     * @return 批量操作结果
+     */
+    public BatchResult cleanCompleted() {
+        int deleted = repo.deleteByStatus(InvalidDataStatus.COMPLETED);
+        return new BatchResult(deleted, 0, List.of());
+    }
+
+    /**
+     * 将所有状态为已认领的失效数据记录标记为已完成
+     *
+     * @return 批量操作结果
+     */
+    public BatchResult markAllClaimedAsCompleted() {
+        List<Long> ids = repo.findIdsByStatus(InvalidDataStatus.CLAIMED);
+        List<String> errors = new ArrayList<>();
+        int success = 0;
+        for (int i = 0; i < ids.size(); i += BATCH_SIZE) {
+            List<Long> batch = ids.subList(i, Math.min(i + BATCH_SIZE, ids.size()));
+            try {
+                success += repo.updateProcessResultByIds(batch, InvalidDataStatus.COMPLETED, ProcessMethod.CLAIM);
+            } catch (Exception e) {
+                errors.add("批量更新失败: " + e.getMessage());
+            }
+        }
+        int total = ids.size();
+        return new BatchResult(success, total - success, errors);
+    }
+
+    /**
      * 单个快速修复
      */
     private void quickFixSingle(Long id) {
@@ -623,7 +640,7 @@ public class InvalidDataService {
      * @param forcedStatus  强制注入的状态（覆盖 query.status）
      * @return 匹配的记录ID列表
      */
-    private List<Long> findIdsByQuery(InvalidDataQuery query, InvalidDataStatus forcedStatus) {
+    List<Long> findIdsByQuery(InvalidDataQuery query, InvalidDataStatus forcedStatus) {
         query.setStatus(List.of(forcedStatus.name()));
         JpaLambdaQueryWrapper<InvalidDataRecord> wrapper = JpaLambdaQueryWrapper.get(InvalidDataRecord.class);
         applyQueryFilter(wrapper, query);
@@ -639,9 +656,9 @@ public class InvalidDataService {
     }
 
     /**
-     * 向查询包装器应用 InvalidDataQuery 中的 5 个通用筛选条件。
+     * 向查询包装器应用 InvalidDataQuery 中的 6 个通用筛选条件。
      */
-    private void applyQueryFilter(JpaLambdaQueryWrapper<InvalidDataRecord> wrapper, InvalidDataQuery query) {
+    void applyQueryFilter(JpaLambdaQueryWrapper<InvalidDataRecord> wrapper, InvalidDataQuery query) {
         if (query.getStatus() != null && !query.getStatus().isEmpty()) {
             wrapper.in(InvalidDataRecord::getStatus, query.getStatus());
         }
@@ -656,6 +673,9 @@ public class InvalidDataService {
         }
         if (query.getFileType() != null && !query.getFileType().isEmpty()) {
             wrapper.in(InvalidDataRecord::getFileType, query.getFileType());
+        }
+        if (query.getType() != null && !query.getType().isEmpty()) {
+            wrapper.in(InvalidDataRecord::getType, query.getType());
         }
     }
 

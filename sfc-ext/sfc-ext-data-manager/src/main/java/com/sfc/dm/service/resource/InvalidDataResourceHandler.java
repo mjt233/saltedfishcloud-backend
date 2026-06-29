@@ -1,11 +1,8 @@
 package com.sfc.dm.service.resource;
 
-import com.sfc.dm.model.po.InvalidDataRecord;
-import com.sfc.dm.repo.InvalidDataRecordRepo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.dm.service.InvalidDataService;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.resource.AbstractResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +20,7 @@ public class InvalidDataResourceHandler extends AbstractResourceProtocolHandler<
     public static final String PROTOCOL_NAME = "invalid-data";
 
     @Autowired
-    private InvalidDataRecordRepo invalidDataRecordRepo;
-
-    @Autowired
-    private StoreServiceFactory storeServiceFactory;
+    private InvalidDataService invalidDataService;
 
     @Override
     public String getProtocolName() {
@@ -35,12 +29,6 @@ public class InvalidDataResourceHandler extends AbstractResourceProtocolHandler<
 
     @Override
     public ResourceRequest validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
-        String targetId = resourceRequest.getTargetId();
-        try {
-            Long.parseLong(targetId);
-        } catch (NumberFormatException e) {
-            throw new JsonException(400, "无效的失效数据记录ID");
-        }
         return resourceRequest;
     }
 
@@ -55,14 +43,7 @@ public class InvalidDataResourceHandler extends AbstractResourceProtocolHandler<
     @Override
     public Resource getFileResource(ResourceRequest resourceRequest, ResourceRequest param) throws IOException {
         Long id = Long.parseLong(param.getTargetId());
-        InvalidDataRecord record = invalidDataRecordRepo.findById(id)
-                .orElseThrow(() -> new JsonException(404, "失效数据记录不存在"));
-
-        Resource resource = storeServiceFactory.getService().getStorageProvider().getResource(record.getStoragePath());
-        if (resource == null) {
-            throw new JsonException(404, "物理存储文件不存在");
-        }
-        return resource;
+        return invalidDataService.getDownloadResource(id).getBody();
     }
 
     @Override

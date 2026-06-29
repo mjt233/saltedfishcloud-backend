@@ -37,4 +37,9 @@ public class ClaimRecord extends AuditModel {
      * 认领时填写的保存路径(不含文件名本身)
      */
     private String savePath;
+
+    /**
+     * 是否已撤回
+     */
+    private Boolean isRevoked = false;
 }
