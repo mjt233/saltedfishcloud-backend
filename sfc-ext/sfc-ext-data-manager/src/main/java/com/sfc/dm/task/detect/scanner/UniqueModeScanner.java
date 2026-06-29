@@ -52,16 +52,15 @@ public class UniqueModeScanner extends AbstractInvalidDataScanner {
      * @param callback  发现失效数据记录时的回调
      */
     private void scanInvalidFileRecords(Storage storage, String storeRoot, Consumer<InvalidDataRecord> callback) {
-        String repoRoot = StringUtils.appendPath(storeRoot, "repo");
 
         // 扫描公共网盘的文件记录
         log("扫描公共网盘文件记录...");
-        scanFileRecordsByUid(0L, storage, repoRoot, callback);
+        scanFileRecordsByUid(0L, storage, storeRoot, callback);
 
         // 扫描用户网盘的文件记录
         forEachUser(user -> {
             log("扫描用户文件记录: uid=" + user.getId());
-            scanFileRecordsByUid(user.getId(), storage, repoRoot, callback);
+            scanFileRecordsByUid(user.getId(), storage, storeRoot, callback);
         });
     }
 
@@ -79,7 +78,7 @@ public class UniqueModeScanner extends AbstractInvalidDataScanner {
             if (interrupted.get()) {
                 break;
             }
-            String parentPath = node.getPath();
+            String parentPath = fileTree.getPath(node.getMd5());
             List<FileInfo> files = fileRecordService.findByUidAndNodeId(uid, node.getMd5());
             for (FileInfo file : files) {
                 if (interrupted.get()) {
