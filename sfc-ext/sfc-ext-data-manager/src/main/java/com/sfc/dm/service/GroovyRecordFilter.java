@@ -73,6 +73,40 @@ public class GroovyRecordFilter {
     }
 
     /**
+     * 对记录流执行脚本筛选，返回筛选后的记录流。
+     * <p>结果最多返回 {@value #MAX_RESULT_SIZE} 条，超出静默截断。
+     * 脚本执行超过 {@value #TIMEOUT_MILLIS} 毫秒将抛出 JsonException。</p>
+     * <p>与 {@link #filter(Stream, String)} 语义一致，区别在于返回值为记录对象流而非 ID 列表，
+     * 用于需要直接消费记录对象的场景（如批量认领）。</p>
+     *
+     * @param records 待筛选的记录流
+     * @param script  Groovy 脚本代码
+     * @return 筛选后的记录流（保持输入顺序）
+     * @throws JsonException 脚本编译失败或执行超时时抛出
+     */
+    public Stream<InvalidDataRecord> filterStream(Stream<InvalidDataRecord> records, String script) {
+        try (GroovyScriptExecutor executor = InvalidDataGroovyScriptHelper.createExecutor(script)) {
+            List<InvalidDataRecord> result = new ArrayList<>();
+            Iterator<InvalidDataRecord> iterator = records.iterator();
+            Map<String, Object> context = new HashMap<>();
+
+            while (iterator.hasNext()) {
+                if (result.size() >= MAX_RESULT_SIZE) {
+                    break;
+                }
+
+                InvalidDataRecord record = iterator.next();
+                assert executor != null;
+                Object value = executor.run(InvalidDataGroovyScriptHelper.createBinding(record, context), TIMEOUT_MILLIS);
+                if (GroovyUtils.isTruthy(value)) {
+                    result.add(record);
+                }
+            }
+            return result.stream();
+        }
+    }
+
+    /**
      * Groovy truthiness 判断工具
      */
     private static final class GroovyUtils {
