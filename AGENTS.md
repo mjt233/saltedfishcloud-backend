@@ -34,6 +34,7 @@
 - 文档化：所有新增方法和字段必须添加 JavaDoc 文档注释
 - 异常处理：优先抛出业务自定义异常（JsonException），由全局异常处理器拦截。
 - 实体类需要getter或setter时，尽可能使用 Lombok 注解（如 @Data、@Getter、@Setter）来简化代码。
+- 涉及批量操作数据的场景，尽可能避免循环处理单条数据和循环单条操作数据库。优先考虑使用 CollectionUtils.partition 对数据拆分批次后，使用 JPA 的批量操作方法。对于批量插入新增实体类，优先考虑使用 DBUtils.batchInsert。
 
 ### JPA 及其实体类规范
 
@@ -104,6 +105,7 @@
 - 是否已经通过 build_project 验证？
 - 是否已使用 get_file_problems 检查修改的文件，修复了新产生的警告问题？
 - JavaDoc 是否已补全？
+- 批量操作是否有使用 CollectionUtils.partition 拆分批次批量处理？
 
 - 是否确认本地/CI 的 JDK 版本满足项目要求（根 pom 指定 Java 25）？
 - 是否注意到这是多模块项目（必要时在模块级别运行编译或打包）？
