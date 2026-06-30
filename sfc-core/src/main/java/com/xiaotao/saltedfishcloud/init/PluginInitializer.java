@@ -86,6 +86,9 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
             // 开始注册
             startRegister(pluginManager, pluginResourceList);
 
+            // 更新 Jackson 类型工厂的类加载器，使所有 Mapper 能访问插件类
+            MapperHolder.setTypeFactoryClassLoader(pluginClassLoader);
+
             context.addBeanFactoryPostProcessor(beanFactory -> {
                 beanFactory.registerSingleton("pluginManager", pluginManager);
                 Thread.currentThread().setContextClassLoader(pluginClassLoader);
