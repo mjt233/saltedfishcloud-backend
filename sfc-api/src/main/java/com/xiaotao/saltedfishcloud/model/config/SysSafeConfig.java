@@ -31,4 +31,18 @@ public class SysSafeConfig {
             group = "comments"
     )
     private Boolean allowAnonymousComments;
+
+    @ConfigProperty(
+            inputType = "select",
+            title = "评论IP地址显示",
+            defaultValue = "full",
+            describe = "控制评论列表中IP地址的显示方式",
+            group = "comments",
+            options = {
+                    @ConfigSelectOption(title = "完整显示", value = "full"),
+                    @ConfigSelectOption(title = "部分显示", value = "partial"),
+                    @ConfigSelectOption(title = "隐藏", value = "hide")
+            }
+    )
+    private String commentIpDisplay;
 }
