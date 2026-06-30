@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.comment;
 import com.xiaotao.saltedfishcloud.dao.jpa.CommentRepo;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysSafeConfig;
+import com.xiaotao.saltedfishcloud.model.param.CommentListParam;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
@@ -15,9 +16,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import jakarta.validation.constraints.NotNull;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements CommentService {
@@ -26,6 +26,7 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
 
     /**
      * 对IP地址进行脱敏处理
+     *
      * @param ip 原始IP地址
      * @return 脱敏后的IP地址
      */
@@ -46,6 +47,29 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
         return ip;
     }
 
+    /**
+     * 根据IP显示策略处理评论列表的IP地址
+     *
+     * @param records 评论列表
+     */
+    private void applyIpDisplayPolicy(List<CommentVo> records) {
+        String ipDisplay = sysSafeConfig.getCommentIpDisplay();
+        if (ipDisplay == null) {
+            return;
+        }
+        for (CommentVo vo : records) {
+            switch (ipDisplay) {
+                case "partial":
+                    vo.setIp(maskIp(vo.getIp()));
+                    break;
+                case "hide":
+                    vo.setIp(null);
+                    break;
+                // case "full": 不做处理
+            }
+        }
+    }
+
     @Override
     public void sendComment(Comment comment) {
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
@@ -60,6 +84,8 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
             if (!Objects.equals(target.getTopicId(), comment.getTopicId())) {
                 throw new IllegalArgumentException("回复的评论不属于同一话题");
             }
+            // 记录被回复的用户ID
+            comment.setReplyUid(target.getUid());
             // 两层结构：如果目标也是回复，则解析到顶级父评论
             while (target.getReplyId() != null) {
                 target = repo.findById(target.getReplyId())
@@ -73,54 +99,28 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
     }
 
     @Override
-    public CommonPageInfo<CommentVo> listByTopicId(@NotNull Long topicId, PageableRequest pageableRequest) {
-        Page<CommentVo> rootPage = repo.findRootByTopicId(topicId, PageRequest.of(
-                pageableRequest.getPage(),
-                pageableRequest.getSize()
-        ));
+    public CommonPageInfo<CommentVo> listByTopicId(CommentListParam param) {
+        PageableRequest pageableRequest = param.getPageableRequest();
+        Page<CommentVo> rootPage = repo.findRootByTopicId(
+                param.getTopicId(),
+                PageRequest.of(pageableRequest.getPage(), pageableRequest.getSize())
+        );
         CommonPageInfo<CommentVo> result = CommonPageInfo.of(rootPage);
-
-        // 批量加载回复
-        if (!rootPage.getContent().isEmpty()) {
-            List<Long> rootIds = rootPage.getContent().stream()
-                    .map(CommentVo::getId)
-                    .collect(Collectors.toList());
-            List<CommentVo> replies = repo.findRepliesByTopicIdAndReplyIdIn(topicId, rootIds);
-
-            // 构建根评论ID -> 用户名映射（getUsername可能为null，避免Collectors.toMap抛出NPE）
-            Map<Long, String> idToUsername = new HashMap<>();
-            rootPage.getContent().forEach(vo -> idToUsername.put(vo.getId(), vo.getUsername()));
-
-            // 分组回复并设置replyUsername
-            Map<Long, List<CommentVo>> replyMap = new HashMap<>();
-            for (CommentVo reply : replies) {
-                replyMap.computeIfAbsent(reply.getReplyId(), k -> new ArrayList<>()).add(reply);
-                reply.setReplyUsername(idToUsername.get(reply.getReplyId()));
-            }
-
-            // 关联回复到根评论
-            for (CommentVo root : result.getContent()) {
-                root.setReplies(replyMap.get(root.getId()));
-            }
-        }
-
         // 根据IP显示策略处理IP地址
-        String ipDisplay = sysSafeConfig.getCommentIpDisplay();
-        if (ipDisplay != null) {
-            List<CommentVo> records = result.getContent();
-            for (CommentVo vo : records) {
-                switch (ipDisplay) {
-                    case "partial":
-                        vo.setIp(maskIp(vo.getIp()));
-                        break;
-                    case "hide":
-                        vo.setIp(null);
-                        break;
-                    // case "full": 不做处理
-                }
-            }
-        }
+        applyIpDisplayPolicy(result.getContent());
         return result;
     }
 
+    @Override
+    public CommonPageInfo<CommentVo> listByCommentId(CommentListParam param) {
+        PageableRequest pageableRequest = param.getPageableRequest();
+        Page<CommentVo> replyPage = repo.findRepliesByCommentId(
+                param.getCommentId(),
+                PageRequest.of(pageableRequest.getPage(), pageableRequest.getSize())
+        );
+        CommonPageInfo<CommentVo> result = CommonPageInfo.of(replyPage);
+        // 根据IP显示策略处理IP地址
+        applyIpDisplayPolicy(result.getContent());
+        return result;
+    }
 }

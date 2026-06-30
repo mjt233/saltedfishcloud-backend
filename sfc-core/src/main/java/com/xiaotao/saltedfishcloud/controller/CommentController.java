@@ -5,6 +5,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.xiaotao.saltedfishcloud.model.param.CommentListParam;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
 import com.xiaotao.saltedfishcloud.model.vo.CommentVo;
@@ -20,14 +21,41 @@ public class CommentController {
     @Autowired
     private CommentService commentService;
 
+    /**
+     * 按话题ID分页查询根评论（不包括回复），每条评论包含回复数量。
+     *
+     * @param topicId          话题ID
+     * @param pageableRequest  分页参数
+     * @return 根评论分页列表
+     */
     @GetMapping("/listByTopicId")
     @AllowAnonymous
     public JsonResult<CommonPageInfo<CommentVo>> listByTopicId(Long topicId, PageableRequest pageableRequest) {
-        return JsonResultImpl.getInstance(commentService.listByTopicId(topicId, pageableRequest));
+        CommentListParam param = new CommentListParam()
+                .setTopicId(topicId)
+                .setPageableRequest(pageableRequest);
+        return JsonResultImpl.getInstance(commentService.listByTopicId(param));
+    }
+
+    /**
+     * 按根评论ID分页查询该评论下的回复。
+     *
+     * @param commentId        根评论ID
+     * @param pageableRequest  分页参数
+     * @return 回复分页列表
+     */
+    @GetMapping("/listByCommentId")
+    @AllowAnonymous
+    public JsonResult<CommonPageInfo<CommentVo>> listByCommentId(Long commentId, PageableRequest pageableRequest) {
+        CommentListParam param = new CommentListParam()
+                .setCommentId(commentId)
+                .setPageableRequest(pageableRequest);
+        return JsonResultImpl.getInstance(commentService.listByCommentId(param));
     }
 
     /**
      * 发送/回复评论
+     *
      * @param comment   评论对象
      */
     @PostMapping("sendComment")
@@ -40,6 +68,11 @@ public class CommentController {
         return JsonResult.emptySuccess();
     }
 
+    /**
+     * 发送公共留言
+     *
+     * @param comment   评论对象
+     */
     @PostMapping("sendPublicComment")
     @AllowAnonymous
     public JsonResult<Object> sendPublicComment(@RequestBody Comment comment, HttpServletRequest request) {
