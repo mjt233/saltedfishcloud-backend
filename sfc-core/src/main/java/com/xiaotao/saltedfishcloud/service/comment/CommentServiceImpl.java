@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.service.comment;
 import com.xiaotao.saltedfishcloud.dao.jpa.CommentRepo;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysSafeConfig;
+import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.CommentVo;
@@ -72,10 +73,11 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
     }
 
     @Override
-    public CommonPageInfo<CommentVo> listByTopicId(@NotNull Long topicId, Integer page, Integer size) {
+    public CommonPageInfo<CommentVo> listByTopicId(@NotNull Long topicId, PageableRequest pageableRequest) {
         Page<CommentVo> rootPage = repo.findRootByTopicId(topicId, PageRequest.of(
-                page == null ? 0 : page,
-                size == null ? 20 : size));
+                pageableRequest.getPage(),
+                pageableRequest.getSize()
+        ));
         CommonPageInfo<CommentVo> result = CommonPageInfo.of(rootPage);
 
         // 批量加载回复

@@ -23,9 +23,7 @@ public class CommentController {
     @GetMapping("/listByTopicId")
     @AllowAnonymous
     public JsonResult<CommonPageInfo<CommentVo>> listByTopicId(Long topicId, PageableRequest pageableRequest) {
-        return JsonResultImpl.getInstance(
-                commentService.listByTopicId(topicId, pageableRequest.getPage(), pageableRequest.getSize())
-        );
+        return JsonResultImpl.getInstance(commentService.listByTopicId(topicId, pageableRequest));
     }
 
     /**
