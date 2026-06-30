@@ -137,7 +137,8 @@ public class InvalidDataService {
     /**
      * 流式查询可认领的失效数据记录（UNIQUE 模式下类型为失效物理存储）。
      * <p>在 {@link #list(InvalidDataQuery, PageableRequest)} 的筛选条件基础上，
-     * 强制限定 type = PHYSICAL_STORAGE 且 storeMode = UNIQUE。</p>
+     * 强制限定 type = PHYSICAL_STORAGE 且 storeMode = UNIQUE。
+     * 若 query 包含 {@code filterScript}，则在 DB 筛选后进一步应用 Groovy 脚本过滤。</p>
      *
      * @param query 失效数据筛选条件
      * @return 可认领记录的流，调用方负责关闭
@@ -148,7 +149,11 @@ public class InvalidDataService {
         wrapper.eq(InvalidDataRecord::getType, InvalidDataType.PHYSICAL_STORAGE)
                 .eq(InvalidDataRecord::getStoreMode, StoreMode.UNIQUE);
         applySort(wrapper, query);
-        return repo.streamAll(wrapper.build());
+        Stream<InvalidDataRecord> stream = repo.streamAll(wrapper.build());
+        if (query.getFilterScript() != null && !query.getFilterScript().isBlank()) {
+            return groovyRecordFilter.filterStream(stream, query.getFilterScript());
+        }
+        return stream;
     }
 
     /**

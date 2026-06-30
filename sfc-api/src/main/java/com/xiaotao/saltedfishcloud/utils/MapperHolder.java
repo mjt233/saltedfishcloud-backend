@@ -33,7 +33,7 @@ public class MapperHolder {
     private static void initMapperConfigure(ObjectMapper mapper) {
         // 忽略未知属性
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
 
         // 序列化时将Long转为字符串
         SimpleModule simpleModule = new SimpleModule();
@@ -144,5 +144,17 @@ public class MapperHolder {
 
     public static String toJsonWithType(Object val) throws JsonProcessingException {
         return withTypeMapper.writeValueAsString(val);
+    }
+
+    /**
+     * 更新所有 ObjectMapper 的 TypeFactory 类加载器，使其能访问指定 ClassLoader 中的类。
+     * 用于在插件系统初始化后，让 Jackson 能解析插件中的类。
+     *
+     * @param classLoader 目标类加载器
+     */
+    public static void setTypeFactoryClassLoader(ClassLoader classLoader) {
+        mapper.setTypeFactory(mapper.getTypeFactory().withClassLoader(classLoader));
+        snakeMapper.setTypeFactory(snakeMapper.getTypeFactory().withClassLoader(classLoader));
+        withTypeMapper.setTypeFactory(withTypeMapper.getTypeFactory().withClassLoader(classLoader));
     }
 }
