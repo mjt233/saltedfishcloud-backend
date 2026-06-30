@@ -1,8 +1,6 @@
 package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
-import com.xiaotao.saltedfishcloud.constant.SysConfigName;
-import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
@@ -45,9 +43,9 @@ public class SysCommonConfigConfiguration {
      * 监听存储类型变更事件，切换存储服务
      */
     private void listenStoreTypeChange() {
-        configService.addBeforeSetListener(SysConfigName.Store.SYS_STORE_TYPE, e -> {
+        configService.addBeforeSetListener(SysCommonConfig::getStoreMode, e -> {
             try {
-                configService.setStoreType(StoreMode.valueOf(e));
+                configService.setStoreType(e);
             } catch (IOException ex) {
                 log.error("存储类型切换出错", ex);
             }
@@ -59,14 +57,14 @@ public class SysCommonConfigConfiguration {
      */
     private void bindConfigToFeature() {
         // 是否默认黑暗主题
-        helloService.bindConfigAsFeature(SysConfigName.Theme.DARK, FeatureName.DARK_THEME, Boolean.class);
+        helloService.bindConfigAsFeature("sys.theme.dark", FeatureName.DARK_THEME, Boolean.class);
 
         // 默认背景图配置
-        helloService.bindConfigAsFeature(SysConfigName.Bg.SYS_BG_MAIN, FeatureName.BG_MAIN, Map.class);
+        helloService.bindConfigAsFeature("sys.bg.main", FeatureName.BG_MAIN, Map.class);
 
         // 是否允许邮箱/注册码注册
-        helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_EMAIL_REG, FeatureName.ENABLE_EMAIL_REG, Boolean.class, Boolean.FALSE);
-        helloService.bindConfigAsFeature(SysConfigName.Register.ENABLE_REG_CODE, FeatureName.ENABLE_REG_CODE, Boolean.class, Boolean.TRUE);
+        helloService.bindConfigAsFeature(SysCommonConfig::getEnableEmailReg, FeatureName.ENABLE_EMAIL_REG, Boolean.FALSE);
+        helloService.bindConfigAsFeature(SysCommonConfig::getEnableRegCode, FeatureName.ENABLE_REG_CODE, Boolean.TRUE);
 
         // 网盘文件上传是否使用通用资源请求接口
         helloService.bindConfigAsFeature(SysCommonConfig::getIsUseCommonUpload, FeatureName.IS_USE_COMMON_UPLOAD, Boolean.TRUE);

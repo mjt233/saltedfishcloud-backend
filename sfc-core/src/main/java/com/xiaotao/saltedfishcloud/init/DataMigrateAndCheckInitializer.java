@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.constant.SysConfigName;
+import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
+import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
 import com.xiaotao.saltedfishcloud.utils.DBUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -185,12 +186,12 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         String sql = buildConfigVersionQuerySql(dataSource, valueField, keyField);
-        List<String> res = jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString(1), SysConfigName.Common.VERSION);
+        List<String> res = jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString(1), PropertyUtils.parseLambdaConfigName(SysCommonConfig::getVersion));
         String version;
         if (!res.isEmpty()) {
             version = res.get(0);
         } else {
-            res = jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString(1), SysConfigName.OLD_VERSION);
+            res = jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString(1), "VERSION");
             if (!res.isEmpty()) {
                 version = res.get(0);
             } else {

@@ -6,9 +6,10 @@ import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
+import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -90,9 +91,9 @@ public class DatabaseUpdater implements ApplicationRunner {
     ) throws IOException {
         Version v;
         try {
-            String versionRecord = configDao.getConfigure(SysConfigName.Common.VERSION);
+            String versionRecord = configDao.getConfigure(PropertyUtils.parseLambdaConfigName(SysCommonConfig::getVersion));
             if (versionRecord == null) {
-                versionRecord = configDao.getConfigure(SysConfigName.OLD_VERSION);
+                versionRecord = configDao.getConfigure("VERSION");
             }
             if (versionRecord != null) {
                 v = Version.valueOf(versionRecord);
@@ -237,7 +238,7 @@ public class DatabaseUpdater implements ApplicationRunner {
             }
             throw e;
         }
-        configDao.setConfigure(SysConfigName.Common.VERSION, sysProperties.getVersion().toString());
+        configDao.setConfigure(PropertyUtils.parseLambdaConfigName(SysCommonConfig::getVersion), sysProperties.getVersion().toString());
     }
 
 }

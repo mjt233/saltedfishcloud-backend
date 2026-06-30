@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.constant.FeatureName;
-import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.model.config.SysSafeConfig;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
+import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ public class SysSafeConfigConfiguration {
         initJwtSecret();
 
         helloService.bindConfigAsFeature(
-                SysConfigName.Safe.ALLOW_ANONYMOUS_COMMENT,
+                PropertyUtils.parseLambdaConfigName(SysSafeConfig::getAllowAnonymousComments),
                 FeatureName.ALLOW_ANONYMOUS_COMMENT,
                 Boolean.class,
                 Boolean.FALSE
@@ -43,13 +43,13 @@ public class SysSafeConfigConfiguration {
      * 初始化jwt密钥
      */
     private void initJwtSecret() {
-        String secret = configService.getConfig(SysConfigName.Safe.TOKEN);
+        String secret = configService.getConfig(SysSafeConfig::getToken);
         if (secret == null) {
             secret = StringUtils.getRandomString(32, true);
             log.info("[初始化]生成token密钥");
-            configService.setConfig(SysConfigName.Safe.TOKEN, secret);
+            configService.setConfig(SysSafeConfig::getToken, secret);
         }
         JwtUtils.setSecret(secret);
-        configService.addAfterSetListener(SysConfigName.Safe.TOKEN, JwtUtils::setSecret);
+        configService.addAfterSetListener(SysSafeConfig::getToken, JwtUtils::setSecret);
     }
 }
