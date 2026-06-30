@@ -17,13 +17,14 @@ public interface CommentRepo extends JpaRepository<Comment, Long> {
      * @param pageable 分页参数
      * @return 根评论分页列表，每条评论包含 replyCount
      */
-    @Query("SELECT new com.xiaotao.saltedfishcloud.model.vo.CommentVo(" +
-            "c.id, c.uid, c.createAt, c.updateAt, c.topicId, c.replyId, c.replyUid, " +
-            "c.ip, c.content, c.isDelete, u.user, " +
-            "(SELECT COUNT(r.id) FROM Comment r WHERE r.replyId = c.id)) " +
-            "FROM Comment c LEFT JOIN user u ON c.uid = u.id " +
-            "WHERE c.topicId = :topicId AND c.replyId IS NULL " +
-            "ORDER BY c.id DESC")
+    @Query("""
+            SELECT new com.xiaotao.saltedfishcloud.model.vo.CommentVo(
+            c.id, c.uid, c.createAt, c.updateAt, c.topicId, c.replyId, c.replyUid,
+            c.ip, c.content, c.isDelete, u.user,
+            (SELECT COUNT(r.id) FROM Comment r WHERE r.replyId = c.id))
+            FROM Comment c LEFT JOIN user u ON c.uid = u.id
+            WHERE c.topicId = :topicId AND c.replyId IS NULL
+            ORDER BY c.id DESC""")
     Page<CommentVo> findRootByTopicId(@Param("topicId") Long topicId, Pageable pageable);
 
     /**
@@ -34,13 +35,14 @@ public interface CommentRepo extends JpaRepository<Comment, Long> {
      * @param pageable  分页参数
      * @return 回复分页列表，每条回复包含 replyUsername（被回复人用户名）
      */
-    @Query("SELECT new com.xiaotao.saltedfishcloud.model.vo.CommentVo(" +
-            "c.id, c.uid, c.createAt, c.updateAt, c.topicId, c.replyId, c.replyUid, " +
-            "c.ip, c.content, c.isDelete, u.user, " +
-            "(SELECT ru.user FROM user ru WHERE ru.id = c.replyUid)) " +
-            "FROM Comment c " +
-            "LEFT JOIN user u ON c.uid = u.id " +
-            "WHERE c.replyId = :commentId " +
-            "ORDER BY c.id ASC")
+    @Query("""
+            SELECT new com.xiaotao.saltedfishcloud.model.vo.CommentVo(
+            c.id, c.uid, c.createAt, c.updateAt, c.topicId, c.replyId, c.replyUid,
+            c.ip, c.content, c.isDelete, u.user,
+            (SELECT ru.user FROM user ru WHERE ru.id = c.replyUid))
+            FROM Comment c
+            LEFT JOIN user u ON c.uid = u.id
+            WHERE c.replyId = :commentId
+            ORDER BY c.id ASC""")
     Page<CommentVo> findRepliesByCommentId(@Param("commentId") Long commentId, Pageable pageable);
 }
