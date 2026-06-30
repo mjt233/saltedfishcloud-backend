@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
@@ -27,10 +28,25 @@ public class CommentController {
         );
     }
 
-    @PostMapping("sendAnonymousComment")
-    @AllowAnonymous
+    /**
+     * 发送/回复评论
+     * @param comment   评论对象
+     */
+    @PostMapping("sendComment")
     public JsonResult<Object> sendComment(@RequestBody Comment comment, HttpServletRequest request) {
+        if (comment.getTopicId() == null || comment.getTopicId() == 0L) {
+            throw new JsonException("未指定topicId 或 topicId不能为0");
+        }
         comment.setIp(request.getRemoteAddr());
+        commentService.sendComment(comment);
+        return JsonResult.emptySuccess();
+    }
+
+    @PostMapping("sendPublicComment")
+    @AllowAnonymous
+    public JsonResult<Object> sendPublicComment(@RequestBody Comment comment, HttpServletRequest request) {
+        comment.setIp(request.getRemoteAddr());
+        comment.setTopicId(0L);
         commentService.sendComment(comment);
         return JsonResult.emptySuccess();
     }
