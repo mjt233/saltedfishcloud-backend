@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.CommentListParam;
+import com.xiaotao.saltedfishcloud.model.param.CommentSendParam;
 import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
 import com.xiaotao.saltedfishcloud.model.vo.CommentVo;
@@ -56,13 +57,17 @@ public class CommentController {
     /**
      * 发送/回复评论
      *
-     * @param comment   评论对象
+     * @param param   评论发送参数
      */
     @PostMapping("sendComment")
-    public JsonResult<Object> sendComment(@RequestBody Comment comment, HttpServletRequest request) {
-        if (comment.getTopicId() == null || comment.getTopicId() == 0L) {
+    public JsonResult<Object> sendComment(@RequestBody CommentSendParam param, HttpServletRequest request) {
+        if (param.getTopicId() == null || param.getTopicId() == 0L) {
             throw new JsonException("未指定topicId 或 topicId不能为0");
         }
+        Comment comment = new Comment();
+        comment.setContent(param.getContent());
+        comment.setTopicId(param.getTopicId());
+        comment.setReplyId(param.getReplyId());
         comment.setIp(request.getRemoteAddr());
         commentService.sendComment(comment);
         return JsonResult.emptySuccess();
@@ -71,11 +76,14 @@ public class CommentController {
     /**
      * 发送公共留言
      *
-     * @param comment   评论对象
+     * @param param   评论发送参数
      */
     @PostMapping("sendPublicComment")
     @AllowAnonymous
-    public JsonResult<Object> sendPublicComment(@RequestBody Comment comment, HttpServletRequest request) {
+    public JsonResult<Object> sendPublicComment(@RequestBody CommentSendParam param, HttpServletRequest request) {
+        Comment comment = new Comment();
+        comment.setContent(param.getContent());
+        comment.setReplyId(param.getReplyId());
         comment.setIp(request.getRemoteAddr());
         comment.setTopicId(0L);
         commentService.sendComment(comment);

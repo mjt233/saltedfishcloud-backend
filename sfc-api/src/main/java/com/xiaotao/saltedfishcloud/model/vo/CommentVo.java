@@ -9,11 +9,34 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 public class CommentVo implements Serializable {
+    /**
+     * 评论ID
+     */
     private Long id;
+
+    /**
+     * 发送者用户ID
+     */
     private Long uid;
+
+    /**
+     * 创建时间
+     */
     private Date createAt;
+
+    /**
+     * 更新时间
+     */
     private Date updateAt;
+
+    /**
+     * 话题ID
+     */
     private Long topicId;
+
+    /**
+     * 根评论ID（为null则表示是根评论）
+     */
     private Long replyId;
 
     /**
@@ -21,9 +44,24 @@ public class CommentVo implements Serializable {
      */
     private Long replyUid;
 
+    /**
+     * 发送者IP地址
+     */
     private String ip;
+
+    /**
+     * 评论内容
+     */
     private String content;
+
+    /**
+     * 是否逻辑删除（0-未删除，1-已删除）
+     */
     private Integer isDelete;
+
+    /**
+     * 发送者用户名
+     */
     private String username;
 
     /**
