@@ -44,4 +44,9 @@ public class DesktopComponent {
      * 显示顺序
      */
     private Integer showOrder;
+
+    /**
+     * 组件生效范围，可选 "public"、"private"、["all" 或 null] 表示仅在公共桌面、我的桌面 和 两者均可
+     */
+    private String scope;
 }

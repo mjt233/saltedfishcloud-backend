@@ -35,6 +35,7 @@
     "name": "public-comment-board",
     "title": "公共留言板",
     "describe": "让大伙在公共桌面留言交流吧",
+    "scope": "public",
     "icon": "mdi-clipboard-outline",
     "showOrder": 0,
     "config": [
