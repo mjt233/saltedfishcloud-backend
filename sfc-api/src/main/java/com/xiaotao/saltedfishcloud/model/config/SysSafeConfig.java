@@ -45,4 +45,16 @@ public class SysSafeConfig {
             }
     )
     private String commentIpDisplay;
+
+    /**
+     * 评论内容安全过滤配置
+     */
+    @ConfigProperty(
+            title = "评论内容安全过滤",
+            defaultValue = "{}",
+            describe = "对评论内容进行敏感词过滤和安全检查，开启后含敏感词的评论将被拦截",
+            inputType = "form",
+            group = "comments"
+    )
+    private CommentSafeConfig commentSafeConfig;
 }

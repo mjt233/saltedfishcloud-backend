@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.comment;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.CommentRepo;
+import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysSafeConfig;
 import com.xiaotao.saltedfishcloud.model.param.CommentListParam;
@@ -23,6 +24,9 @@ import java.util.Objects;
 public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements CommentService {
     @Autowired
     private SysSafeConfig sysSafeConfig;
+
+    @Autowired
+    private CommentSensitiveWordProvider sensitiveWordProvider;
 
     /**
      * 对IP地址进行脱敏处理
@@ -93,6 +97,11 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
             }
             comment.setReplyId(target.getId());
         }
+        // 内容安全过滤：检测敏感词（未开启过滤时 contains 返回 false）
+        if (sensitiveWordProvider.contains(comment.getContent())) {
+            throw new JsonException("评论内容包含敏感词，请修改后重新提交");
+        }
+
         comment.setUid(user == null ? 0L : user.getId());
         comment.setId(null);
         repo.save(comment);
