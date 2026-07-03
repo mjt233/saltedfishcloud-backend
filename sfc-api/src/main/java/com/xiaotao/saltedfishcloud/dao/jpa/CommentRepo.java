@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 
 public interface CommentRepo extends JpaRepository<Comment, Long> {
     /**
@@ -45,4 +47,58 @@ public interface CommentRepo extends JpaRepository<Comment, Long> {
             WHERE c.replyId = :commentId
             ORDER BY c.id ASC""")
     Page<CommentVo> findRepliesByCommentId(@Param("commentId") Long commentId, Pageable pageable);
+
+    /**
+     * 统计指定用户在指定话题下的根评论数量
+     *
+     * @param topicId 话题id
+     * @param uid     用户id
+     * @return 根评论数量
+     */
+    long countByTopicIdAndUidAndReplyIdIsNull(Long topicId, Long uid);
+
+    /**
+     * 统计指定IP在指定话题下的根评论数量（用于匿名用户场景）
+     *
+     * @param topicId 话题id
+     * @param ip      IP地址
+     * @return 根评论数量
+     */
+    long countByTopicIdAndIpAndReplyIdIsNull(Long topicId, String ip);
+
+    /**
+     * 查询指定用户在指定话题下最近发布的一条评论
+     *
+     * @param topicId 话题id
+     * @param uid     用户id
+     * @return 最近的一条评论
+     */
+    Optional<Comment> findTopByTopicIdAndUidOrderByIdDesc(Long topicId, Long uid);
+
+    /**
+     * 查询指定IP在指定话题下最近发布的一条评论（用于匿名用户场景）
+     *
+     * @param topicId 话题id
+     * @param ip      IP地址
+     * @return 最近的一条评论
+     */
+    Optional<Comment> findTopByTopicIdAndIpOrderByIdDesc(Long topicId, String ip);
+
+    /**
+     * 统计指定用户在指定根评论下的回复数量
+     *
+     * @param replyId 根评论id
+     * @param uid     用户id
+     * @return 回复数量
+     */
+    long countByReplyIdAndUid(Long replyId, Long uid);
+
+    /**
+     * 统计指定IP在指定根评论下的回复数量（用于匿名用户场景）
+     *
+     * @param replyId 根评论id
+     * @param ip      IP地址
+     * @return 回复数量
+     */
+    long countByReplyIdAndIp(Long replyId, String ip);
 }

@@ -73,4 +73,5 @@ public class CommentSafeConfig {
             group = "feature"
     )
     private Boolean ignoreRepeat;
+
 }

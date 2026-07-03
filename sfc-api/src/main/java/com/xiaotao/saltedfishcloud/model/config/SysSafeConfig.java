@@ -12,7 +12,7 @@ import lombok.Data;
         defaultKeyNameStrategy = ConfigKeyNameStrategy.UNDER_SCORE_CASE,
         groups = {
                 @ConfigPropertiesGroup(id = "base", name = "常规"),
-                @ConfigPropertiesGroup(id = "comments", name = "留言功能")
+                @ConfigPropertiesGroup(id = "comments", name = "留言与评论")
         }
 )
 public class SysSafeConfig {
@@ -57,4 +57,16 @@ public class SysSafeConfig {
             group = "comments"
     )
     private CommentSafeConfig commentSafeConfig;
+
+    /**
+     * 评论速率限制配置
+     */
+    @ConfigProperty(
+            title = "评论速率限制",
+            defaultValue = "{}",
+            describe = "限制用户的评论频率和数量",
+            inputType = "form",
+            group = "comments"
+    )
+    private CommentRateLimitConfig commentRateLimitConfig;
 }
