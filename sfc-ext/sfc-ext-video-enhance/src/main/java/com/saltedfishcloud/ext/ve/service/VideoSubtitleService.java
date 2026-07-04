@@ -116,6 +116,7 @@ public class VideoSubtitleService {
         if (attachStorage.exist(cachePath)) {
             Resource cacheResource = attachStorage.getFile(cachePath).orElse(null);
             if (cacheResource != null) {
+                log.debug("字幕文件缓存命中: {} 请求参数: {}", cachePath, videoResourceRequest);
                 return ResponseResource.create(cacheResource)
                         .setResponseFilename(FileUtils.parseName(videoResourceRequest.getName())[0] + "." + format)
                         .setContentType(contentType);

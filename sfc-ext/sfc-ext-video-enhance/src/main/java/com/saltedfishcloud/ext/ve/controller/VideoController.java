@@ -7,6 +7,7 @@ import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTask;
 import com.saltedfishcloud.ext.ve.model.po.EncodeConvertTaskLog;
 import com.saltedfishcloud.ext.ve.service.VideoService;
+import com.saltedfishcloud.ext.ve.service.VideoSubtitleService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
@@ -14,11 +15,13 @@ import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
+import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.annotations.ApiOperation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +33,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class VideoController {
     private final VideoService videoService;
+    private final VideoSubtitleService videoSubtitleService;
     private final ResourceService resourceService;
     private final FFMpegHelper ffMpegHelper;
 
@@ -81,14 +85,13 @@ public class VideoController {
 
     @AllowAnonymous
     @GetMapping("getSubtitle")
-    public String getSubtitle(ResourceRequest resourceRequest,
-                              String stream,
-                              String type,
-                              HttpServletRequest request
+    public ResponseEntity<Resource> getSubtitle(ResourceRequest resourceRequest,
+                                      String stream,
+                                      HttpServletRequest request
     ) throws IOException, UnsupportedProtocolException {
-        Resource resource = resourceService.getResource(resourceRequest);
         resourceRequest.mergeParams(request);
-        return videoService.getSubtitleText(resource, stream, type);
+        Resource subtitleResource = videoSubtitleService.getSubtitleResource(resourceRequest, stream);
+        return ResourceUtils.wrapResource(subtitleResource);
     }
 
     /**

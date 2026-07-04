@@ -12,12 +12,11 @@ import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
-import com.xiaotao.saltedfishcloud.cache.CacheService;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -47,12 +44,6 @@ public class VideoService {
 
     @Autowired
     private EncodeConvertTaskRepo encodeConvertTaskRepo;
-
-    @Autowired
-    private ResourceService resourceService;
-
-    @Autowired
-    private DiskFileSystemManager diskFileSystemManager;
 
     @Autowired
     private AsyncTaskManager asyncTaskManager;
@@ -157,23 +148,6 @@ public class VideoService {
     public VideoInfo getVideoInfo(Resource resource) throws IOException {
         String localPath = VideoResourceUtils.toLocalPath(resource);
         return ffMpegHelper.getVideoInfo(localPath);
-    }
-
-    /**
-     * 获取字幕内容
-     * @param resource  视频文件资源
-     * @param streamNo  字幕流编号
-     * @param type      字幕类型
-     */
-    public String getSubtitleText(Resource resource, String streamNo, String type) throws IOException {
-        if (type == null) {
-            type = VEConstants.SubtitleType.WEBVTT;
-        }
-        if (streamNo == null) {
-            throw new IllegalArgumentException("流编号不能为空");
-        }
-        String localPath = VideoResourceUtils.toLocalPath(resource);
-        return ffMpegHelper.extractSubtitle(localPath, streamNo, type);
     }
 
     /**
