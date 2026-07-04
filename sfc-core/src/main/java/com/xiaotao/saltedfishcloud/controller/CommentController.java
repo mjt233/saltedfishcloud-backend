@@ -68,6 +68,7 @@ public class CommentController {
         comment.setContent(param.getContent());
         comment.setTopicId(param.getTopicId());
         comment.setReplyId(param.getReplyId());
+        comment.setAtUid(param.getAtUid());
         comment.setIp(request.getRemoteAddr());
         commentService.sendComment(comment);
         return JsonResult.emptySuccess();
@@ -84,6 +85,7 @@ public class CommentController {
         Comment comment = new Comment();
         comment.setContent(param.getContent());
         comment.setReplyId(param.getReplyId());
+        comment.setAtUid(param.getAtUid());
         comment.setIp(request.getRemoteAddr());
         comment.setTopicId(0L);
         commentService.sendComment(comment);

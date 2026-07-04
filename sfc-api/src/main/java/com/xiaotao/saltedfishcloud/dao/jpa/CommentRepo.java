@@ -21,7 +21,7 @@ public interface CommentRepo extends JpaRepository<Comment, Long> {
      */
     @Query("""
             SELECT new com.xiaotao.saltedfishcloud.model.vo.CommentVo(
-            c.id, c.uid, c.createAt, c.updateAt, c.topicId, c.replyId, c.replyUid,
+            c.id, c.uid, c.createAt, c.updateAt, c.topicId, c.replyId, c.replyUid, c.atUid,
             c.ip, c.content, c.isDelete, u.user,
             (SELECT COUNT(r.id) FROM Comment r WHERE r.replyId = c.id))
             FROM Comment c LEFT JOIN user u ON c.uid = u.id
@@ -31,7 +31,7 @@ public interface CommentRepo extends JpaRepository<Comment, Long> {
 
     /**
      * 根据根评论id分页查询该评论下的所有回复，并关联查询发送者用户名和被回复者用户名。
-     * 使用子查询获取被回复者用户名，避免对 user 实体进行双 JOIN 时实体名与字段名冲突。
+     * 使用子查询从 atUid 获取被回复者用户名。
      *
      * @param commentId 根评论id
      * @param pageable  分页参数
@@ -39,9 +39,9 @@ public interface CommentRepo extends JpaRepository<Comment, Long> {
      */
     @Query("""
             SELECT new com.xiaotao.saltedfishcloud.model.vo.CommentVo(
-            c.id, c.uid, c.createAt, c.updateAt, c.topicId, c.replyId, c.replyUid,
+            c.id, c.uid, c.createAt, c.updateAt, c.topicId, c.replyId, c.replyUid, c.atUid,
             c.ip, c.content, c.isDelete, u.user,
-            (SELECT ru.user FROM user ru WHERE ru.id = c.replyUid))
+            (SELECT ru.user FROM user ru WHERE ru.id = c.atUid))
             FROM Comment c
             LEFT JOIN user u ON c.uid = u.id
             WHERE c.replyId = :commentId

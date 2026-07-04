@@ -47,6 +47,12 @@ public class Comment extends AuditModel {
     private Long replyUid;
 
     /**
+     * 被@的用户ID（对回复进行回复时，直接回复的目标用户）。
+     * 由客户端传入，用于查询评论时解析被回复人用户名。
+     */
+    private Long atUid;
+
+    /**
      * 评论发送人ip地址
      */
     private String ip;
