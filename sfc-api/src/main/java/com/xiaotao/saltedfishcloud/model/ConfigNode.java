@@ -91,6 +91,7 @@ public class ConfigNode {
 
     /**
      * 输入类型
+     * @see ConfigInputType
      */
     private String inputType;
 

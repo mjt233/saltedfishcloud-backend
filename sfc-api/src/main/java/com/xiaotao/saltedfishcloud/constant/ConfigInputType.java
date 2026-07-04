@@ -11,6 +11,11 @@ public interface ConfigInputType {
     String TEXT = "text";
 
     /**
+     * 文本域
+     */
+    String TEXTAREA = "textarea";
+
+    /**
      * 开关
      */
     String SWITCH = "switch";

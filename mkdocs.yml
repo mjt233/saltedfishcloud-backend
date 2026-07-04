@@ -72,6 +72,7 @@ nav:
       - Spring Boot集成: develop/plugin/springboot-integration.md
       - 插件配置参数: develop/plugin/config-properties.md
       - 插件前端开发: develop/plugin/create-front-end.md
+      - 桌面组件注册: develop/plugin/desktop-component.md
   - OAuth开放平台:
     - 概述: oauth/index.md
     - OIDC 认证: oauth/oidc.md
