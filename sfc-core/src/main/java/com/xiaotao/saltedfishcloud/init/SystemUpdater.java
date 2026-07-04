@@ -61,6 +61,19 @@ public class SystemUpdater {
         }
     }
 
+    /**
+     * 迁移 3.1.2 版本调整后的临时数据目录。
+     */
+    @UpdateAction("3.1.2")
+    public void update3_1_2() throws IOException {
+        // 由于移除了 {@code TempStoreService}，原本位于临时目录中的第三方平台头像缓存需要迁移到附属存储目录中。
+        MigrateUtils.moveDirectory("temp/thirdPlatformAvatar", "attach/third_platform_avatar");
+        MigrateUtils.moveDirectory("temp/quick_share", "attach/quick_share");
+
+        // 桌面组件公共留言板 comment-board 组件名称调整为 public-comment-board，原 comment-board 组件作为通用评论/留言板实现。
+        jdbcTemplate.execute("UPDATE desktop_component_config SET name = 'public-comment-board' WHERE name = 'comment-board'");
+    }
+
     @UpdateAction("3.1.0")
     public void update3_1_0() throws IOException {
         // 迁移头像数据
@@ -101,17 +114,6 @@ public class SystemUpdater {
 
         // 迁移缩略图缓存
         MigrateUtils.moveDirectory("temp/thumbnail", "attach/thumbnail");
-    }
-
-    /**
-     * 迁移 3.1.2 版本调整后的临时数据目录。
-     * <p>
-     * 由于移除了 {@code TempStoreService}，原本位于临时目录中的第三方平台头像缓存需要迁移到附属存储目录中。
-     */
-    @UpdateAction("3.1.2")
-    public void update3_1_2() throws IOException {
-        MigrateUtils.moveDirectory("temp/thirdPlatformAvatar", "attach/third_platform_avatar");
-        MigrateUtils.moveDirectory("temp/quick_share", "attach/quick_share");
     }
 
 

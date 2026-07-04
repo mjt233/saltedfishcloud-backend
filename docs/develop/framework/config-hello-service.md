@@ -34,9 +34,9 @@ public WebDavProperty webDavProperty(ConfigService configService) {
 ### 2) 读取与写入配置
 
 ```java
-String token = configService.getConfig(SysConfigName.Safe.TOKEN);
+String token = configService.getConfig(SysSafeConfig::getToken);
 Integer port = configService.getConfig(WebDavProperty::getListenPort);
-Boolean ok = configService.setConfig(SysConfigName.Safe.TOKEN, "new-secret");
+Boolean ok = configService.setConfig(SysSafeConfig::getToken, "new-secret");
 ```
 
 要点：
@@ -47,11 +47,11 @@ Boolean ok = configService.setConfig(SysConfigName.Safe.TOKEN, "new-secret");
 ### 3) 配置变更监听
 
 ```java
-configService.addBeforeSetListener(SysConfigName.Store.SYS_STORE_TYPE, val -> {
+configService.addBeforeSetListener(SysCommonConfig::getStoreMode, val -> {
     // 写入前触发
 });
 
-configService.addAfterSetListener(SysConfigName.Safe.TOKEN, JwtUtils::setSecret);
+configService.addAfterSetListener(SysSafeConfig::getToken, JwtUtils::setSecret);
 ```
 
 要点：
@@ -96,7 +96,7 @@ helloService.appendFeatureDetail("fileSystem", "local");
 ### 4) 将配置直接绑定为特性
 
 ```java
-helloService.bindConfigAsFeature(SysConfigName.Theme.DARK, FeatureName.DARK_THEME, Boolean.class);
+helloService.bindConfigAsFeature("sys.theme.dark", FeatureName.DARK_THEME, Boolean.class);
 helloService.bindConfigAsFeature(SysCommonConfig::getIsUseCommonUpload, FeatureName.IS_USE_COMMON_UPLOAD, Boolean.TRUE);
 ```
 

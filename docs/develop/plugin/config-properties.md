@@ -110,6 +110,7 @@
 | 'select'   | string  | 下拉单选框，需要搭配`options`属性配置可选项                       |
 | 'radio'    | string  | 单选框，需要搭配`options`属性配置可选项                         |
 | 'text'     | string  | 任意文本输入                                           |
+| 'textarea' | string  | 多行文本输入                                           |
 | 'form'     | string  | 嵌套子表单，值类型为json字符串，需要搭配`nodes`属性继续嵌套定义子配置组以及组下配置项 |
 | 'template' | string  | 使用自定义vue组件或html标签，需要搭配`template`参数指定vue组件或html标签 |
 

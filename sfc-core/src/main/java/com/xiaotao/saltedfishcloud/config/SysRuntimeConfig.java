@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.config;
 
 import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
-import com.xiaotao.saltedfishcloud.constant.SysConfigName;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
+import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import lombok.Getter;
@@ -12,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 /**
  * 系统运行时配置信息
@@ -104,13 +102,11 @@ public class SysRuntimeConfig implements ApplicationRunner {
      * 从数据库中抓取数据更新配置
      */
     public void fetchConfig() {
-        Map<String, String> configCache = configService.getAllConfig();
-        String enableRegCode = configCache.get(SysConfigName.Register.ENABLE_REG_CODE);
-        String enableEmailReg = configCache.get(SysConfigName.Register.ENABLE_EMAIL_REG);
+        Boolean enableRegCode = configService.getConfig(SysCommonConfig::getEnableRegCode);
+        Boolean enableEmailReg = configService.getConfig(SysCommonConfig::getEnableEmailReg);
         if (enableRegCode == null && enableEmailReg == null) {
-            enableRegCode = "true";
-            configService.setConfig(SysConfigName.Register.ENABLE_REG_CODE, "true");
-            configService.setConfig(SysConfigName.Register.ENABLE_EMAIL_REG, "false");
+            configService.setConfig(SysCommonConfig::getEnableRegCode, Boolean.TRUE);
+            configService.setConfig(SysCommonConfig::getEnableEmailReg, Boolean.FALSE);
             log.info("[注册规则初始化]未检测到注册规则配置，默认开启邀请码注册");
         }
     }

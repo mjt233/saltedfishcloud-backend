@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.xiaotao.saltedfishcloud.constant.SysConfigName;
+import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 public class Config {
 
     /**
-     * @see SysConfigName
+     * @see SysCommonConfig
      */
     @Id
     private String itemKey;

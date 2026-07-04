@@ -53,6 +53,11 @@ public class RedirectableUrlHttpMessageConverter extends AbstractGenericHttpMess
     }
 
     @Override
+    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        return canWrite(null, clazz, mediaType);
+    }
+
+    @Override
     public boolean canRead(@NotNull Type type, Class<?> contextClass, MediaType mediaType) {
         return false;
     }
