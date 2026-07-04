@@ -164,12 +164,14 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
         Path templateFilePath = PathUtils.createTemplateFilePath();
         ProcessWrap processWrap = ffMpegHelper.executeFFMpeg(videoFilePath, templateFilePath.toString(), inputArgs, outputArgs);
         try {
+            // 先抽干进程输出流，再等待退出，避免输出管道缓冲区写满导致 ffmpeg 阻塞、waitFor 死锁
+            String output;
+            try (InputStream is = processWrap.getProcess().getInputStream()) {
+                output = org.springframework.util.StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+            }
             int exitCode = processWrap.getProcess().waitFor();
             if (exitCode != 0) {
-                try (InputStream errorStream = processWrap.getProcess().getInputStream()) {
-                    String errorOutput = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
-                    log.error("FFmpeg提取内置封面失败，退出码：{}，错误输出：{}", exitCode, errorOutput);
-                }
+                log.error("FFmpeg提取内置封面失败，退出码：{}，错误输出：{}", exitCode, output);
                 return false;
             }
             try (InputStream is = Files.newInputStream(templateFilePath)) {
@@ -229,12 +231,14 @@ public class VideoThumbnailHandler implements ThumbnailHandler {
 
             // 执行
             ProcessWrap processWrap = ffMpegHelper.executeFFMpeg(videoFilePath, tempFile.toString(), inputArgs, outputArgs);
+            // 先抽干进程输出流，再等待退出，避免输出管道缓冲区写满导致 ffmpeg 阻塞、waitFor 死锁
+            String output;
+            try (InputStream is = processWrap.getProcess().getInputStream()) {
+                output = org.springframework.util.StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+            }
             int exitCode = processWrap.getProcess().waitFor();
             if (exitCode != 0) {
-                try (InputStream errorStream = processWrap.getProcess().getInputStream()) {
-                    String errorOutput = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
-                    log.error("FFmpeg生成缩略图失败，退出码：{}，错误输出：{}", exitCode, errorOutput);
-                }
+                log.error("FFmpeg生成缩略图失败，退出码：{}，错误输出：{}", exitCode, output);
                 return false;
             }
 
