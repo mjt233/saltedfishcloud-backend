@@ -1,0 +1,3339 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../docker/docker-compose/">
+      
+      
+        <link rel="next" href="../front-end/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>配置参数 - 咸鱼云网盘</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="咸鱼云网盘" class="md-header__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            咸鱼云网盘
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              配置参数
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../.." class="md-tabs__link">
+          
+  
+  
+  用户手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../develop/" class="md-tabs__link">
+          
+  
+  
+  开发手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../oauth/" class="md-tabs__link">
+          
+  
+  
+  OAuth开放平台
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../release-notes/3.1.2/" class="md-tabs__link">
+          
+  
+  
+  版本更新日志
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="咸鱼云网盘" class="md-nav__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    咸鱼云网盘
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    快速开始
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1" id="__nav_1_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    运行部署
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    运行部署
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常规部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1_2" id="__nav_1_2_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker 与容器化
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_1_2_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Docker 与容器化
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dockerfile 构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/docker-compose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker Compose 部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参数
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置示例
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="配置示例">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.yml方式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        命令行方式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redismysql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        以不依赖Redis和MySQL的方式运行
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1configyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        附录1：config.yml默认内容
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2applicationyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        附录2：application.yml默认内容
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../front-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于前端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../other/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    衍生项目
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3" id="__nav_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件系统说明
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3_2" id="__nav_1_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/ftp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP服务 ftp-server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/oss-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OSS对象存储 oss-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/minio-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Minio对象存储 minio-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/music/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    音乐插件 music
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/onlyoffice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OnlyOffice在线文档 only-office
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/webrtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebRTC应用 webrtc
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/webdav/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebDAV文件共享 webdav
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/hadoop-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hadoop存储 hadoop-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/samba-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Samba文件共享 samba-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/sftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTP存储 sftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/ftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP存储 ftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/video-enhance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    视频功能增强 video-enhance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/quick-share/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快捷分享 quick-share
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/web-shell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebShell web-shell
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/network-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网络工具 network-tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/static-publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    静态资源站点 static-publish
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extension/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP服务 mcp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    项目构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/git-commit-convention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git 提交规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    系统功能架构
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    系统功能架构
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_1" id="__nav_2_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件系统
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    文件系统
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/filesystem/file-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件操作
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/filesystem/storage-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储架构与挂载扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/filesystem/attach-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    附属存储
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/config-hello-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置与特性服务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/archive-engine-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    压缩引擎扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    集群兼容
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/async-task/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    异步任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/schedule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    定时任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/framework/version-update-hook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新数据迁移钩子
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件开发指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/plugin/create-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建插件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/plugin/springboot-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/plugin/config-properties/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/plugin/create-front-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件前端开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/plugin/desktop-component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    桌面组件注册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth开放平台
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    OAuth开放平台
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDC 认证
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/impl-ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    实现参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开放接口列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开放接口列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述与统一规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_2" id="__nav_3_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/user/profile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取用户基本信息
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_3" id="__nav_3_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网盘存储相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    网盘存储相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/storage/file-list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取文件列表
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/storage/upload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    上传文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/storage/download/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/storage/download-link/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建下载链接
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/storage/mkdir/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/storage/copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    复制文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/storage/move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    移动文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/storage/rename/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    重命名文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../oauth/api/storage/delete/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    删除文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新日志
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    版本更新日志
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release-notes/3.1.2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release-notes/3.1.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release-notes/3.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置示例
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="配置示例">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.yml方式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        命令行方式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redismysql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        以不依赖Redis和MySQL的方式运行
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1configyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        附录1：config.yml默认内容
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2applicationyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        附录2：application.yml默认内容
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">参数配置</h1>
+<p>主要在config.yml中进行配置，也可以使用命令行进行配置。</p>
+<h2 id="_2">配置示例</h2>
+<p>大部分情况下，推荐使用修改config.yml的方式进行配置，下面将以修改服务端口为例展示两种初始配置方式</p>
+<h3 id="configyml">config.yml方式</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">server</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8087</span>
+</code></pre></div>
+<h3 id="_3">命令行方式</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="l l-Scalar l-Scalar-Plain">java -jar sfc-core.jar --spring.config.import=file:config.yml --server.port=8087</span>
+</code></pre></div>
+<h3 id="redismysql">以不依赖Redis和MySQL的方式运行</h3>
+<p>参考以下配置节点改为，停用redis，启用sqlite，启用本地缓存和消息队列:</p>
+<div class="admonition info">
+<p class="admonition-title">注意</p>
+<p>需要启用<code>sfc-ext-local-mq</code>插件，<code>sys.service.mq-provider</code>才能使用<code>local</code></p>
+</div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">datasource</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">driver-class-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">org.sqlite.JDBC</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;jdbc:sqlite:./xyy.db&quot;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">sys</span><span class="p">:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">redis</span><span class="p">:</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="c1"># Redis 是否启用，默认为 true。设置为 false 可以在不启动 Redis 的情况下运行系统</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="c1"># 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider设置为local）、RPC等功能</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="c1"># 缓存provider，默认 redis，可选 local（程序内缓存）</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="nt">cache-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">    </span><span class="c1"># 资源锁 provider，默认 redisson，可选 local（仅当前服务实例内生效，且不注入 Redisson）</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">    </span><span class="nt">lock-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">    </span><span class="c1"># MQ provider，默认 redis</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">    </span><span class="c1"># 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">    </span><span class="nt">mq-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">    </span><span class="c1"># RPC provider，默认 redis，可选 mq（基于 MQService 实现）</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">    </span><span class="nt">rpc-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mq</span>
+</code></pre></div>
+<p>完整配置见 <a href="#1configyml">附录1: config.yml</a></p>
+<h2 id="1configyml">附录1：config.yml默认内容</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># 用户自定义程序配置文件</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">server</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8087</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">spring</span><span class="p">:</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">jpa</span><span class="p">:</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mysql</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nt">datasource</span><span class="p">:</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">driver-class-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">com.mysql.cj.jdbc.Driver</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;jdbc:mysql://${DB_HOST:127.0.0.1}/${DB_NAME:xyy}?${JDBC_PARAMETER:-useSSL=false&amp;serverTimezone=UTC}&quot;</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DB_USER:root}</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DB_PASSWORD:test}</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span><span class="nt">data</span><span class="p">:</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">    </span><span class="nt">redis</span><span class="p">:</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${REDIS_HOST:127.0.0.1}</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${REDIS_PORT:6379}</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">      </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${REDIS_DB:0}</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="c1">#    password:</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="nt">sys</span><span class="p">:</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">  </span><span class="nt">redis</span><span class="p">:</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">    </span><span class="c1"># Redis 是否启用，默认为 true。设置为 false 可以在不启动 Redis 的情况下运行系统</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">    </span><span class="c1"># 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider需设置为local）、RPC等功能</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${REDIS_ENABLED:true}</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="w">    </span><span class="c1"># 缓存provider，默认 redis，可选 local（程序内缓存）</span>
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="w">    </span><span class="nt">cache-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${CACHE_PROVIDER:redis}</span>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="w">    </span><span class="c1"># 资源锁 provider，默认 redisson，可选 local（仅当前服务实例内生效，且不注入 Redisson）</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="w">    </span><span class="nt">lock-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${LOCK_PROVIDER:redisson}</span>
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="w">    </span><span class="c1"># MQ provider，默认 redis</span>
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a><span class="w">    </span><span class="c1"># 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义</span>
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="w">    </span><span class="nt">mq-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${MQ_PROVIDER:redis}</span>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="w">    </span><span class="c1"># RPC provider，默认 redis，可选 mq（基于 MQService 实现）</span>
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a><span class="w">    </span><span class="nt">rpc-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${RPC_PROVIDER:redis}</span>
+<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a><span class="w">    </span><span class="nt">local-cache</span><span class="p">:</span>
+<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a><span class="w">      </span><span class="c1"># 本地缓存默认过期时间（毫秒），默认 15 分钟</span>
+<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a><span class="w">      </span><span class="nt">default-expire-ms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${LOCAL_CACHE_DEFAULT_EXPIRE_MS:900000}</span>
+<a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a><span class="w">      </span><span class="c1"># 本地缓存最大数量，超过后按最旧写入顺序淘汰</span>
+<a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a><span class="w">      </span><span class="nt">max-cache-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${LOCAL_CACHE_MAX_CACHE_SIZE:4096}</span>
+<a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a><span class="w">      </span><span class="c1"># 是否启用本地缓存持久化，启用后会定时异步刷盘，并在系统关闭时再次落盘</span>
+<a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a><span class="w">      </span><span class="nt">persist-enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${LOCAL_CACHE_PERSIST_ENABLED:true}</span>
+<a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a><span class="w">      </span><span class="c1"># 本地缓存持久化文件路径，系统启动时会尝试从该文件恢复缓存内容</span>
+<a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a><span class="w">      </span><span class="nt">persist-file-path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${LOCAL_CACHE_PERSIST_FILE_PATH:./localcache.data}</span>
+<a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a><span class="w">    </span><span class="nt">local-mq</span><span class="p">:</span>
+<a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a><span class="w">      </span><span class="c1"># 本地消息队列的历史消息记录最长长度，默认为 4096。过大的值可能会导致OOM</span>
+<a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a><span class="w">      </span><span class="nt">max-queue-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
+<a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a><span class="w">      </span><span class="c1"># 淘汰目标比例，消息数超出 max-queue-size 时淘汰至 max-queue-size * evict-target-ratio，默认 0.85</span>
+<a id="__codelineno-3-48" name="__codelineno-3-48" href="#__codelineno-3-48"></a><span class="w">      </span><span class="nt">evict-target-ratio</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.85</span>
+<a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a><span class="w">  </span><span class="nt">store</span><span class="p">:</span>
+<a id="__codelineno-3-50" name="__codelineno-3-50" href="#__codelineno-3-50"></a><span class="w">    </span><span class="c1"># 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK</span>
+<a id="__codelineno-3-51" name="__codelineno-3-51" href="#__codelineno-3-51"></a><span class="w">    </span><span class="nt">archive-encoding</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${ARCHIVE_ENCODING:}</span>
+<a id="__codelineno-3-52" name="__codelineno-3-52" href="#__codelineno-3-52"></a>
+<a id="__codelineno-3-53" name="__codelineno-3-53" href="#__codelineno-3-53"></a><span class="w">    </span><span class="c1"># 存储服务类型，可选hdfs（需要hdfs拓展）或local</span>
+<a id="__codelineno-3-54" name="__codelineno-3-54" href="#__codelineno-3-54"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${STORE_TYPE:local}</span>
+<a id="__codelineno-3-55" name="__codelineno-3-55" href="#__codelineno-3-55"></a>
+<a id="__codelineno-3-56" name="__codelineno-3-56" href="#__codelineno-3-56"></a><span class="w">    </span><span class="c1"># 除公共网盘外，各类资源根目录存储路径（缩略图、缓存、临时文件、私人网盘数据、用户头像、按哈希组织的文件集合等数据）</span>
+<a id="__codelineno-3-57" name="__codelineno-3-57" href="#__codelineno-3-57"></a><span class="w">    </span><span class="nt">root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${STORE_ROOT:store}</span>
+<a id="__codelineno-3-58" name="__codelineno-3-58" href="#__codelineno-3-58"></a>
+<a id="__codelineno-3-59" name="__codelineno-3-59" href="#__codelineno-3-59"></a><span class="w">    </span><span class="c1"># 单独的公共网盘根目录路径</span>
+<a id="__codelineno-3-60" name="__codelineno-3-60" href="#__codelineno-3-60"></a><span class="w">    </span><span class="c1"># 仅在 管理员后台-系统-基础配置-存储模式 设置为 UNIQUE(默认) 时有效。（注：切换存储模式会触发全网盘数据重新组织，中途出错可能会导致数据丢失和损坏，请谨慎切换并做好数据备份）</span>
+<a id="__codelineno-3-61" name="__codelineno-3-61" href="#__codelineno-3-61"></a><span class="w">    </span><span class="nt">public-root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${PUBLIC_ROOT:public}</span>
+<a id="__codelineno-3-62" name="__codelineno-3-62" href="#__codelineno-3-62"></a>
+<a id="__codelineno-3-63" name="__codelineno-3-63" href="#__codelineno-3-63"></a><span class="w">    </span><span class="c1"># minio存储配置</span>
+<a id="__codelineno-3-64" name="__codelineno-3-64" href="#__codelineno-3-64"></a><span class="w">    </span><span class="c1"># 安装了 sfc-ext-minio-store 插件后，sys.store.type设置为minio后生效</span>
+<a id="__codelineno-3-65" name="__codelineno-3-65" href="#__codelineno-3-65"></a><span class="w">    </span><span class="nt">minio</span><span class="p">:</span>
+<a id="__codelineno-3-66" name="__codelineno-3-66" href="#__codelineno-3-66"></a><span class="w">      </span><span class="nt">access-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${MINIO_ACCESS_KEY:xyy}</span>
+<a id="__codelineno-3-67" name="__codelineno-3-67" href="#__codelineno-3-67"></a><span class="w">      </span><span class="nt">secret-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${MINIO_SECRET_KEY:xyy123456}</span>
+<a id="__codelineno-3-68" name="__codelineno-3-68" href="#__codelineno-3-68"></a><span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${MINIO_BUCKET:xyy}</span>
+<a id="__codelineno-3-69" name="__codelineno-3-69" href="#__codelineno-3-69"></a>
+<a id="__codelineno-3-70" name="__codelineno-3-70" href="#__codelineno-3-70"></a><span class="w">    </span><span class="c1"># hdfs存储配置</span>
+<a id="__codelineno-3-71" name="__codelineno-3-71" href="#__codelineno-3-71"></a><span class="w">    </span><span class="c1"># 安装了 sfc-ext-hadoop-store 插件后，sys.store.type设置为hdfs后生效</span>
+<a id="__codelineno-3-72" name="__codelineno-3-72" href="#__codelineno-3-72"></a><span class="w">    </span><span class="c1"># 注意：该插件未在jdk25中进行测试，使用时请确保hadoop版本和jdk版本兼容，且hadoop环境配置正确，否则可能会导致程序无法启动或运行时异常</span>
+<a id="__codelineno-3-73" name="__codelineno-3-73" href="#__codelineno-3-73"></a><span class="w">    </span><span class="nt">hdfs</span><span class="p">:</span>
+<a id="__codelineno-3-74" name="__codelineno-3-74" href="#__codelineno-3-74"></a><span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${HDFS_URL:hdfs://localhost:9000}</span>
+<a id="__codelineno-3-75" name="__codelineno-3-75" href="#__codelineno-3-75"></a><span class="w">      </span><span class="nt">root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${HDFS_ROOT:/xyy2}</span>
+<a id="__codelineno-3-76" name="__codelineno-3-76" href="#__codelineno-3-76"></a><span class="w">      </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${HDFS_USER:xiaotao}</span>
+</code></pre></div>
+<h2 id="2applicationyml">附录2：application.yml默认内容</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">server</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8087</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">servlet</span><span class="p">:</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">encoding</span><span class="p">:</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">charset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">utf-8</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="nt">force</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">tomcat</span><span class="p">:</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">remoteip</span><span class="p">:</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">      </span><span class="nt">remote-ip-header</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">X-Real-IP</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="nt">spring</span><span class="p">:</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="nt">jpa</span><span class="p">:</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mysql</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">    </span><span class="nt">open-in-view</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">    </span><span class="nt">hibernate</span><span class="p">:</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">      </span><span class="nt">ddl-auto</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">      </span><span class="nt">hibernate</span><span class="p">:</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">        </span><span class="nt">order_inserts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">        </span><span class="nt">enable_lazy_load_no_trans</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">        </span><span class="nt">jdbc</span><span class="p">:</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">          </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">  </span><span class="nt">datasource</span><span class="p">:</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">    </span><span class="nt">driver-class-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">com.mysql.cj.jdbc.Driver</span>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&amp;serverTimezone=UTC</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">    </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">    </span><span class="nt">hikari</span><span class="p">:</span>
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="w">      </span><span class="nt">transaction-isolation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TRANSACTION_READ_COMMITTED</span>
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">  </span><span class="nt">data</span><span class="p">:</span>
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">    </span><span class="nt">redis</span><span class="p">:</span>
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
+<a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6379</span>
+<a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="w">      </span><span class="nt">lettuce</span><span class="p">:</span>
+<a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a><span class="w">        </span><span class="nt">pool</span><span class="p">:</span>
+<a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a><span class="w">          </span><span class="nt">min-idle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a><span class="w">          </span><span class="nt">max-idle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a><span class="w">          </span><span class="nt">max-active</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a><span class="w">  </span><span class="nt">servlet</span><span class="p">:</span>
+<a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a><span class="w">    </span><span class="nt">multipart</span><span class="p">:</span>
+<a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a><span class="w">      </span><span class="nt">max-file-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8192MB</span>
+<a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a><span class="w">      </span><span class="nt">max-request-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8192MB</span>
+<a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a><span class="w">  </span><span class="nt">profiles</span><span class="p">:</span>
+<a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a><span class="w">    </span><span class="nt">active</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">^spring-profile^</span>
+<a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a><span class="w">  </span><span class="nt">web</span><span class="p">:</span>
+<a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+<a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a><span class="w">      </span><span class="nt">add-mappings</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a><span class="nt">logging</span><span class="p">:</span>
+<a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a><span class="w">  </span><span class="nt">file</span><span class="p">:</span>
+<a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./log/output.log</span>
+<a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a><span class="w">  </span><span class="nt">level</span><span class="p">:</span>
+<a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a><span class="w">    </span><span class="nt">org</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warn</span>
+<a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a><span class="w">    </span><span class="nt">com</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warn</span>
+<a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a><span class="w">    </span><span class="nt">com.sfc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">info</span>
+<a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a><span class="w">    </span><span class="nt">com.xiaotao</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">info</span>
+<a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a><span class="w">    </span><span class="nt">com.saltedfishcloud</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">info</span>
+<a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a><span class="c1">#    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn</span>
+<a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a>
+<a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a><span class="nt">management</span><span class="p">:</span>
+<a id="__codelineno-4-62" name="__codelineno-4-62" href="#__codelineno-4-62"></a><span class="w">  </span><span class="nt">health</span><span class="p">:</span>
+<a id="__codelineno-4-63" name="__codelineno-4-63" href="#__codelineno-4-63"></a><span class="w">    </span><span class="nt">mail</span><span class="p">:</span>
+<a id="__codelineno-4-64" name="__codelineno-4-64" href="#__codelineno-4-64"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-4-65" name="__codelineno-4-65" href="#__codelineno-4-65"></a><span class="nt">app</span><span class="p">:</span>
+<a id="__codelineno-4-66" name="__codelineno-4-66" href="#__codelineno-4-66"></a><span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">^project.version^</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.expand"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

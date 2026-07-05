@@ -1,0 +1,3873 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>OIDC 服务端支持设计 - 咸鱼云网盘</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#oidc" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="咸鱼云网盘" class="md-header__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            咸鱼云网盘
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              OIDC 服务端支持设计
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../.." class="md-tabs__link">
+          
+  
+  
+  用户手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../develop/" class="md-tabs__link">
+          
+  
+  
+  开发手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../oauth/" class="md-tabs__link">
+          
+  
+  
+  OAuth开放平台
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../release-notes/3.1.2/" class="md-tabs__link">
+          
+  
+  
+  版本更新日志
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="咸鱼云网盘" class="md-nav__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    咸鱼云网盘
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    快速开始
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1" id="__nav_1_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    运行部署
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    运行部署
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常规部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1_2" id="__nav_1_2_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker 与容器化
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_1_2_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Docker 与容器化
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dockerfile 构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/docker-compose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker Compose 部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/front-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于前端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/other/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    衍生项目
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3" id="__nav_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件系统说明
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3_2" id="__nav_1_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/ftp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP服务 ftp-server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/oss-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OSS对象存储 oss-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/minio-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Minio对象存储 minio-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/music/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    音乐插件 music
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/onlyoffice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OnlyOffice在线文档 only-office
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/webrtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebRTC应用 webrtc
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/webdav/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebDAV文件共享 webdav
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/hadoop-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hadoop存储 hadoop-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/samba-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Samba文件共享 samba-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/sftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTP存储 sftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/ftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP存储 ftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/video-enhance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    视频功能增强 video-enhance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/quick-share/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快捷分享 quick-share
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/web-shell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebShell web-shell
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/network-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网络工具 network-tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/static-publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    静态资源站点 static-publish
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP服务 mcp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    项目构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/git-commit-convention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git 提交规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    系统功能架构
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    系统功能架构
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_1" id="__nav_2_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件系统
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    文件系统
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/filesystem/file-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件操作
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/filesystem/storage-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储架构与挂载扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/filesystem/attach-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    附属存储
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/config-hello-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置与特性服务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/archive-engine-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    压缩引擎扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    集群兼容
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/async-task/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    异步任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/schedule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    定时任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/version-update-hook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新数据迁移钩子
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件开发指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/create-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建插件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/springboot-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/config-properties/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/create-front-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件前端开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/desktop-component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    桌面组件注册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth开放平台
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    OAuth开放平台
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDC 认证
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/impl-ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    实现参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开放接口列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开放接口列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述与统一规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_2" id="__nav_3_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/user/profile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取用户基本信息
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_3" id="__nav_3_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网盘存储相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    网盘存储相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/file-list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取文件列表
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/upload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    上传文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/download/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/download-link/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建下载链接
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/mkdir/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    复制文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    移动文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/rename/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    重命名文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/delete/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    删除文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新日志
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    版本更新日志
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 背景
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 目标与约束
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 目标与约束">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 目标
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 非目标
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 核心决策
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 核心决策">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 总体策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 令牌语义映射
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-spring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Spring 生态优先
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 架构设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 架构设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 总体结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 端点设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 现有接口兼容
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 客户端模型设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 客户端模型设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 复用现有模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 需要补充的客户端元数据
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-registeredclient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 RegisteredClient 适配
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 授权与同意设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. 授权与同意设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 授权端点输入
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 scope 规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 同意模型桥接
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-pkce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 PKCE 规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 令牌与密钥设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 令牌与密钥设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-id_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 id_token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-access_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 access_token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-refresh_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 refresh_token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Token 端点返回
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#75" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.5 令牌失效与撤销
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-claims-userinfo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Claims 与 UserInfo 设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Claims 与 UserInfo 设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-sub" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 sub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-id_token-claims" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 id_token claims
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-userinfo-claims" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 userinfo claims
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. 错误处理设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. 错误处理设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 新端点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 旧端点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 协议并行原则
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. 模块边界建议
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. 验收标准
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. 验收标准">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 协议验收
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 资源访问验收
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 一致性验收
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. 实施建议
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="oidc">OIDC 服务端支持设计</h1>
+<h2 id="1">1. 背景</h2>
+<p>当前系统已经具备开放平台 OAuth 能力，但令牌语义并非标准 OAuth2/OIDC：</p>
+<ol>
+<li>客户端先通过授权码 <code>code</code> 换取长期 <code>Access Token</code></li>
+<li>该 <code>Access Token</code> 在现有实现里更接近标准语义中的 <code>refresh_token</code></li>
+<li>客户端再使用该长期令牌换取短期 <code>ApiTicket</code></li>
+<li>开放平台接口最终使用 <code>ApiTicket</code> 作为 Bearer 凭证</li>
+</ol>
+<p>现阶段需要在<strong>不破坏现有开放平台客户端</strong>的前提下，为服务端补齐 OIDC Provider 能力，并尽可能复用 Spring Security 体系实现标准协议能力。</p>
+<h2 id="2">2. 目标与约束</h2>
+<h3 id="21">2.1 目标</h3>
+<ol>
+<li>为当前服务端新增标准 OIDC Provider 能力，至少覆盖 discovery、JWKS、authorize、token、userinfo。</li>
+<li>尽可能基于 Spring Security 与 Spring Authorization Server 实现协议层能力，而不是手写整套 OIDC 协议栈。</li>
+<li>保留现有双层令牌内核：OIDC <code>access_token</code> 映射现有短期 <code>ApiTicket</code>，OIDC <code>refresh_token</code> 映射现有长期 <code>Access Token</code>。</li>
+<li>同时支持 confidential client 与 public client，并对 public client 支持 PKCE。</li>
+<li>保持现有 <code>/api/oauth/**</code> 与 <code>/api/openApi/**</code> 旧接口继续可用。</li>
+</ol>
+<h3 id="22">2.2 非目标</h3>
+<ol>
+<li>本阶段不移除既有开放平台 OAuth 接口。</li>
+<li>本阶段不重写既有开放平台接口权限模型，仍延续 <code>profile</code>、<code>storage_read</code>、<code>storage_write</code> 等 scope 语义。</li>
+<li>本阶段不单独设计第二套完全独立的客户端、授权和票据体系。</li>
+</ol>
+<h2 id="3">3. 核心决策</h2>
+<h3 id="31">3.1 总体策略</h3>
+<p>采用<strong>协议映射层 + Spring Authorization Server 骨架</strong>方案：</p>
+<ol>
+<li>Spring Authorization Server 负责标准 OIDC/OAuth2 端点、过滤器链、客户端认证、PKCE、错误响应和 discovery/JWKS 能力。</li>
+<li>现有开放平台授权、长期令牌和 ApiTicket 服务继续保留，作为底层事实来源与令牌语义来源。</li>
+<li>通过 Spring Security 扩展点完成协议映射，而不是新写一套平行协议实现。</li>
+</ol>
+<h3 id="32">3.2 令牌语义映射</h3>
+<table>
+<thead>
+<tr>
+<th>OIDC/OAuth2 标准语义</th>
+<th>系统内部映射</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>authorization_code</code></td>
+<td>现有授权确认流程生成的授权上下文</td>
+</tr>
+<tr>
+<td><code>access_token</code></td>
+<td>现有短期 <code>ApiTicket</code></td>
+</tr>
+<tr>
+<td><code>refresh_token</code></td>
+<td>现有长期 <code>Access Token</code></td>
+</tr>
+<tr>
+<td><code>id_token</code></td>
+<td>新增 OIDC 身份令牌</td>
+</tr>
+</tbody>
+</table>
+<p>该决策保证：</p>
+<ol>
+<li>新 OIDC 客户端可以直接按标准协议接入。</li>
+<li>旧客户端仍可继续使用 <code>code -&gt; Access Token -&gt; ApiTicket</code> 旧流程。</li>
+<li>开放平台接口不需要改为接受另一套全新访问凭证。</li>
+</ol>
+<h3 id="33-spring">3.3 Spring 生态优先</h3>
+<p>实现时优先引入 <strong>Spring Authorization Server</strong>，并尽可能复用以下能力：</p>
+<ol>
+<li><code>AuthorizationServerSettings</code></li>
+<li><code>RegisteredClientRepository</code></li>
+<li><code>OAuth2AuthorizationService</code></li>
+<li><code>OAuth2AuthorizationConsentService</code></li>
+<li>OIDC discovery / UserInfo / JWK Source</li>
+<li>标准 token endpoint、client authentication、PKCE 校验</li>
+</ol>
+<p>自定义逻辑仅集中在：</p>
+<ol>
+<li>客户端元数据适配</li>
+<li>现有授权记录与 consent 桥接</li>
+<li><code>access_token</code> / <code>refresh_token</code> 与现有票据模型的映射</li>
+<li>claims 与 userinfo 数据映射</li>
+</ol>
+<h2 id="4">4. 架构设计</h2>
+<h3 id="41">4.1 总体结构</h3>
+<p>新增一组 OIDC 协议组件，挂在 Spring Security / Spring Authorization Server 过滤器链中：</p>
+<ol>
+<li><strong>OIDC Server Config</strong></li>
+<li>注册 Authorization Server 所需 Bean</li>
+<li>配置 issuer、端点路径、JWK Source、token 生成器、client authentication</li>
+<li><strong>OIDC Client Adapter</strong></li>
+<li>将现有 <code>ThirdPartyApp</code> / <code>ThirdPartyAppKey</code> 适配为 <code>RegisteredClient</code></li>
+<li><strong>OIDC Consent Adapter</strong></li>
+<li>将现有 <code>ThirdPartyAppAuthorization</code> 适配为 Authorization Consent 事实来源</li>
+<li><strong>OIDC Token Bridge</strong></li>
+<li>负责将标准 token issuance 结果桥接到现有长期 <code>Access Token</code> 与短期 <code>ApiTicket</code></li>
+<li><strong>OIDC Claims/UserInfo Mapper</strong></li>
+<li>统一生成 <code>id_token</code> claims 与 <code>userinfo</code> 响应内容</li>
+</ol>
+<h3 id="42">4.2 端点设计</h3>
+<p>建议提供以下端点：</p>
+<table>
+<thead>
+<tr>
+<th>端点</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/.well-known/openid-configuration</code></td>
+<td>暴露 OIDC 元数据</td>
+</tr>
+<tr>
+<td><code>/oauth2/jwks</code></td>
+<td>暴露 <code>id_token</code> 验签公钥</td>
+</tr>
+<tr>
+<td><code>/oauth2/authorize</code></td>
+<td>授权端点</td>
+</tr>
+<tr>
+<td><code>/oauth2/token</code></td>
+<td>令牌端点</td>
+</tr>
+<tr>
+<td><code>/oauth2/userinfo</code></td>
+<td>用户信息端点</td>
+</tr>
+<tr>
+<td><code>/oauth2/revoke</code></td>
+<td>令牌撤销端点</td>
+</tr>
+<tr>
+<td><code>/oauth2/introspect</code></td>
+<td>令牌自省端点</td>
+</tr>
+<tr>
+<td><code>/connect/logout</code></td>
+<td>RP 发起登出端点</td>
+</tr>
+</tbody>
+</table>
+<p>其中 discovery 仅声明系统真正实现的能力，不暴露未落地的协议字段。</p>
+<h3 id="43">4.3 现有接口兼容</h3>
+<p>以下接口继续保留：</p>
+<ol>
+<li><code>/api/oauth/authorize</code></li>
+<li><code>/api/openApi/auth/getAccessToken/v1</code></li>
+<li><code>/api/openApi/auth/getApiTicket/v1</code></li>
+</ol>
+<p>兼容策略如下：</p>
+<ol>
+<li>旧接口继续对旧客户端提供既有协议。</li>
+<li>新 OIDC 端点复用同一套授权、长期令牌、短期票据与撤销语义。</li>
+<li>无论客户端走新协议还是旧协议，授权撤销、应用停用、密钥失效后的行为必须一致。</li>
+</ol>
+<h2 id="5">5. 客户端模型设计</h2>
+<h3 id="51">5.1 复用现有模型</h3>
+<p>优先基于现有表扩展，而不是再创建一套平行客户端模型：</p>
+<ol>
+<li><code>ThirdPartyApp</code></li>
+<li><code>ThirdPartyAppKey</code></li>
+</ol>
+<h3 id="52">5.2 需要补充的客户端元数据</h3>
+<p>为支持 OIDC，需要补充以下能力：</p>
+<table>
+<thead>
+<tr>
+<th>元数据</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>client type</td>
+<td>public / confidential</td>
+</tr>
+<tr>
+<td>redirect URI 列表</td>
+<td>OIDC 更适合多个合法重定向地址</td>
+</tr>
+<tr>
+<td>token endpoint auth method</td>
+<td><code>client_secret_basic</code>、<code>client_secret_post</code>、<code>none</code></td>
+</tr>
+<tr>
+<td>PKCE 要求</td>
+<td>是否必须启用 PKCE</td>
+</tr>
+<tr>
+<td>scopes / capabilities</td>
+<td>允许的 scope 与附加能力开关</td>
+</tr>
+<tr>
+<td>post logout redirect URI 列表</td>
+<td>RP 发起登出回跳地址</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-registeredclient">5.3 RegisteredClient 适配</h3>
+<p>实现 <code>RegisteredClientRepository</code> 适配层：</p>
+<ol>
+<li>读取 <code>ThirdPartyApp</code> 与 <code>ThirdPartyAppKey</code></li>
+<li>生成 Spring Authorization Server 所需 <code>RegisteredClient</code></li>
+<li>将已有应用密钥映射为 <code>ClientAuthenticationMethod</code></li>
+<li>将 public client 映射为 <code>ClientAuthenticationMethod.NONE</code></li>
+<li>将 PKCE 要求映射到 <code>ClientSettings</code></li>
+</ol>
+<p>这样可以避免后台管理界面和现有应用管理逻辑被整体重写。</p>
+<h2 id="6">6. 授权与同意设计</h2>
+<h3 id="61">6.1 授权端点输入</h3>
+<p><code>/oauth2/authorize</code> 首期需要支持并正确处理：</p>
+<ol>
+<li><code>response_type=code</code></li>
+<li><code>client_id</code></li>
+<li><code>redirect_uri</code></li>
+<li><code>scope</code></li>
+<li><code>state</code></li>
+<li><code>nonce</code></li>
+<li><code>prompt</code></li>
+<li><code>max_age</code></li>
+<li><code>login_hint</code></li>
+<li><code>code_challenge</code></li>
+<li><code>code_challenge_method</code></li>
+</ol>
+<h3 id="62-scope">6.2 scope 规则</h3>
+<ol>
+<li>OIDC 请求必须包含 <code>openid</code></li>
+<li><code>profile</code>、<code>email</code> 等 OIDC scope 由 claims 能力决定</li>
+<li><code>storage_read</code>、<code>storage_write</code> 等开放平台业务 scope 保持既有语义</li>
+<li>最终授权结果是 OIDC scope 与开放平台业务 scope 的并集</li>
+</ol>
+<h3 id="63">6.3 同意模型桥接</h3>
+<p>用户同意结果优先复用 <code>ThirdPartyAppAuthorization</code> 作为事实来源：</p>
+<ol>
+<li>Spring Authorization Server 的 consent 结果需要映射回该记录</li>
+<li>旧接口授权和新 OIDC 授权应共享相同授权结果</li>
+<li>撤销授权时，应同时影响新旧两套入口</li>
+</ol>
+<h3 id="64-pkce">6.4 PKCE 规则</h3>
+<ol>
+<li>public client 必须启用 PKCE</li>
+<li>confidential client 默认允许使用 PKCE，建议后台支持配置为必需</li>
+<li>首期仅支持 <code>S256</code></li>
+<li>授权码交换时必须校验 <code>code_verifier</code></li>
+</ol>
+<h2 id="7">7. 令牌与密钥设计</h2>
+<h3 id="71-id_token">7.1 <code>id_token</code></h3>
+<p><code>id_token</code> 为新增标准身份令牌，使用 Spring Authorization Server OIDC 能力签发。</p>
+<p>建议：</p>
+<ol>
+<li>使用独立的非对称密钥对签名</li>
+<li>暴露对应 JWKS</li>
+<li>支持 <code>kid</code> 轮换</li>
+<li>不复用当前全局 HS256 <code>JwtUtils</code></li>
+</ol>
+<p>原因是当前 <code>JwtUtils</code> 仅适合服务端内部验证，不适合 OIDC 客户端通过 JWKS 做标准验签。</p>
+<h3 id="72-access_token">7.2 <code>access_token</code></h3>
+<p>OIDC <code>access_token</code> 直接映射现有短期 <code>ApiTicket</code>：</p>
+<ol>
+<li>仍保持 15 分钟有效期</li>
+<li>可直接访问现有开放平台接口</li>
+<li>在 Spring Authorization Server 看来它是标准 bearer token</li>
+<li>在系统内部仍由既有 <code>ThirdPartyAppApiTicketService</code> 负责签发与校验</li>
+</ol>
+<h3 id="73-refresh_token">7.3 <code>refresh_token</code></h3>
+<p>OIDC <code>refresh_token</code> 直接映射现有长期 <code>Access Token</code>：</p>
+<ol>
+<li>复用现有长期令牌持久化与校验逻辑</li>
+<li><code>refresh_token</code> grant 时据此重新签发新的 <code>access_token(ApiTicket)</code> 与 <code>id_token</code></li>
+<li>用户撤销授权后必须立即失效</li>
+</ol>
+<h3 id="74-token">7.4 Token 端点返回</h3>
+<p><code>/oauth2/token</code> 成功响应中应返回：</p>
+<ol>
+<li><code>access_token</code></li>
+<li><code>token_type</code></li>
+<li><code>expires_in</code></li>
+<li><code>refresh_token</code></li>
+<li><code>id_token</code></li>
+<li><code>scope</code></li>
+</ol>
+<h3 id="75">7.5 令牌失效与撤销</h3>
+<p>以下场景必须统一处理：</p>
+<ol>
+<li>用户主动撤销授权</li>
+<li>第三方应用被停用</li>
+<li>第三方应用密钥失效</li>
+<li>新的同类型令牌替换旧令牌</li>
+</ol>
+<p>统一要求：</p>
+<ol>
+<li>旧开放平台路径看到的令牌状态与新 OIDC 路径一致</li>
+<li>撤销一个授权应同时影响长期令牌、短期 ApiTicket、userinfo、自省结果</li>
+</ol>
+<h2 id="8-claims-userinfo">8. Claims 与 UserInfo 设计</h2>
+<h3 id="81-sub">8.1 <code>sub</code></h3>
+<p><code>sub</code> 使用系统用户 <code>uid</code> 的稳定字符串值。</p>
+<p>这样可以保证：</p>
+<ol>
+<li>同一用户在同一发行者下身份稳定</li>
+<li>现有开放平台接口与授权记录更容易做映射</li>
+</ol>
+<h3 id="82-id_token-claims">8.2 <code>id_token</code> claims</h3>
+<p>最少包含：</p>
+<ol>
+<li><code>iss</code></li>
+<li><code>sub</code></li>
+<li><code>aud</code></li>
+<li><code>exp</code></li>
+<li><code>iat</code></li>
+<li><code>auth_time</code></li>
+<li><code>nonce</code>（请求携带时写回）</li>
+</ol>
+<p>可选补充：</p>
+<ol>
+<li><code>azp</code></li>
+<li><code>sid</code></li>
+<li><code>at_hash</code></li>
+</ol>
+<h3 id="83-userinfo-claims">8.3 <code>userinfo</code> claims</h3>
+<p>按 scope 返回：</p>
+<table>
+<thead>
+<tr>
+<th>scope</th>
+<th>claims</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>openid</code></td>
+<td><code>sub</code></td>
+</tr>
+<tr>
+<td><code>profile</code></td>
+<td><code>preferred_username</code>、<code>name</code>、<code>picture</code></td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td><code>email</code>、<code>email_verified</code></td>
+</tr>
+</tbody>
+</table>
+<p>声明映射应集中在单独的 mapper/service 中，不应分散在 controller 内手工拼装。</p>
+<h2 id="9">9. 错误处理设计</h2>
+<h3 id="91">9.1 新端点</h3>
+<p>新 OIDC/OAuth2 端点统一返回标准错误语义，例如：</p>
+<ol>
+<li><code>invalid_request</code></li>
+<li><code>invalid_client</code></li>
+<li><code>invalid_grant</code></li>
+<li><code>unauthorized_client</code></li>
+<li><code>invalid_scope</code></li>
+<li><code>access_denied</code></li>
+<li><code>unsupported_grant_type</code></li>
+</ol>
+<h3 id="92">9.2 旧端点</h3>
+<p>旧开放平台接口继续保留当前 <code>businessCode</code> 语义，不强行改协议返回格式。</p>
+<h3 id="93">9.3 协议并行原则</h3>
+<p>协议并行时的原则是：</p>
+<ol>
+<li>标准端点对标准客户端友好</li>
+<li>旧端点对存量客户端无破坏</li>
+<li>两端共享同一套核心授权与票据失效事实来源</li>
+</ol>
+<h2 id="10">10. 模块边界建议</h2>
+<p>建议拆为以下实现单元：</p>
+<ol>
+<li><strong>Authorization Server 配置单元</strong></li>
+<li>Spring Security / Spring Authorization Server Bean 与过滤器链配置</li>
+<li><strong>Client Adapter 单元</strong></li>
+<li><code>ThirdPartyApp</code> / <code>ThirdPartyAppKey</code> 到 <code>RegisteredClient</code> 的映射</li>
+<li><strong>Consent / Authorization Bridge 单元</strong></li>
+<li>与 <code>ThirdPartyAppAuthorization</code>、现有授权码逻辑桥接</li>
+<li><strong>Token Bridge 单元</strong></li>
+<li><code>access_token</code> / <code>refresh_token</code> 与现有服务桥接</li>
+<li><strong>JWK / ID Token 单元</strong></li>
+<li>密钥管理、<code>id_token</code> 签发、JWKS 发布</li>
+<li><strong>Claims / UserInfo 单元</strong></li>
+<li>标准 claims 与用户信息响应映射</li>
+<li><strong>Legacy Compatibility 单元</strong></li>
+<li>旧开放平台接口复用新公共逻辑</li>
+</ol>
+<h2 id="11">11. 验收标准</h2>
+<h3 id="111">11.1 协议验收</h3>
+<ol>
+<li>标准 OIDC 客户端可以正确读取 discovery。</li>
+<li>客户端可以通过 JWKS 验证 <code>id_token</code>。</li>
+<li>confidential client 可完成 <code>authorize -&gt; token -&gt; userinfo -&gt; refresh_token</code> 全链路。</li>
+<li>public client 可完成 <code>authorize(PKCE) -&gt; token -&gt; userinfo -&gt; refresh_token</code> 全链路。</li>
+</ol>
+<h3 id="112">11.2 资源访问验收</h3>
+<ol>
+<li>OIDC <code>access_token</code> 可以直接访问现有开放平台接口。</li>
+<li>scope 与现有 <code>SCOPE_*</code> 权限映射保持一致。</li>
+<li>旧 <code>ApiTicket</code> 鉴权过滤器行为不被破坏。</li>
+</ol>
+<h3 id="113">11.3 一致性验收</h3>
+<ol>
+<li>用户撤销授权后，新旧协议下的令牌都立即失效。</li>
+<li>应用被停用后，既有令牌与新签发流程都被阻断。</li>
+<li>旧客户端继续可用。</li>
+</ol>
+<h2 id="12">12. 实施建议</h2>
+<p>实现阶段建议继续遵循以下顺序：</p>
+<ol>
+<li>先接入 Spring Authorization Server 与最小 OIDC Server 配置</li>
+<li>再完成 <code>RegisteredClient</code> 与 consent 适配</li>
+<li>然后实现令牌桥接，使 <code>access_token</code> / <code>refresh_token</code> 与现有体系打通</li>
+<li>最后补齐 userinfo、revocation、introspection、logout 与兼容回归</li>
+</ol>
+<p>该顺序可以在尽快建立协议骨架的同时，把风险最大的令牌语义映射放在可控范围内逐步收敛。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.expand"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

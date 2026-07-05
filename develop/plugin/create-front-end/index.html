@@ -1,0 +1,3778 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../config-properties/">
+      
+      
+        <link rel="next" href="../desktop-component/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>插件前端开发 - 咸鱼云网盘</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="咸鱼云网盘" class="md-header__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            咸鱼云网盘
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              插件前端开发
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../.." class="md-tabs__link">
+          
+  
+  
+  用户手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  开发手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../oauth/" class="md-tabs__link">
+          
+  
+  
+  OAuth开放平台
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../release-notes/3.1.2/" class="md-tabs__link">
+          
+  
+  
+  版本更新日志
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="咸鱼云网盘" class="md-nav__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    咸鱼云网盘
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    快速开始
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1" id="__nav_1_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    运行部署
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    运行部署
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常规部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1_2" id="__nav_1_2_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker 与容器化
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_1_2_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Docker 与容器化
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dockerfile 构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/docker-compose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker Compose 部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/front-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于前端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/other/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    衍生项目
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3" id="__nav_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件系统说明
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3_2" id="__nav_1_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/ftp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP服务 ftp-server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/oss-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OSS对象存储 oss-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/minio-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Minio对象存储 minio-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/music/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    音乐插件 music
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/onlyoffice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OnlyOffice在线文档 only-office
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/webrtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebRTC应用 webrtc
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/webdav/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebDAV文件共享 webdav
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/hadoop-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hadoop存储 hadoop-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/samba-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Samba文件共享 samba-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/sftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTP存储 sftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/ftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP存储 ftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/video-enhance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    视频功能增强 video-enhance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/quick-share/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快捷分享 quick-share
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/web-shell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebShell web-shell
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/network-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网络工具 network-tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/static-publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    静态资源站点 static-publish
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP服务 mcp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    项目构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/git-commit-convention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git 提交规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    系统功能架构
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    系统功能架构
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_1" id="__nav_2_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件系统
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    文件系统
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/filesystem/file-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件操作
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/filesystem/storage-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储架构与挂载扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/filesystem/attach-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    附属存储
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/config-hello-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置与特性服务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/archive-engine-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    压缩引擎扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    集群兼容
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/async-task/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    异步任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/schedule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    定时任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework/version-update-hook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新数据迁移钩子
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件开发指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../create-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建插件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../springboot-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config-properties/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件前端开发
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件前端开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 插件命名规范
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 创建插件代码目录
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 创建插件代码目录">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 推荐目录结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-maints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 编写 main.ts 入口文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-sfc-common" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 对宿主模块sfc-common的依赖导入
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-packagejson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 package.json（可选）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-vite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 开发模式：注册插件到 Vite 开发服务器
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 插件打包配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 插件打包配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 创建打包配置文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 执行打包
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 整合前端资源进插件
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.5 整合前端资源进插件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        复制资源到资源目录
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置自动加载资源
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        验证插件前端资源自动加载
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 插件 API 参考
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 插件 API 参考">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windowcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        window.context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windowsfcutils" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        window.SfcUtils
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windowapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        window.API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windowbootcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        window.bootContext
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sfc-common" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sfc-common 模块
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../desktop-component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    桌面组件注册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth开放平台
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    OAuth开放平台
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDC 认证
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/impl-ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    实现参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开放接口列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开放接口列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述与统一规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_2" id="__nav_3_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/user/profile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取用户基本信息
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_3" id="__nav_3_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网盘存储相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    网盘存储相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/file-list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取文件列表
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/upload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    上传文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/download/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/download-link/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建下载链接
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/mkdir/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    复制文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    移动文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/rename/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    重命名文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/delete/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    删除文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新日志
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    版本更新日志
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 插件命名规范
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 创建插件代码目录
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 创建插件代码目录">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 推荐目录结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-maints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 编写 main.ts 入口文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-sfc-common" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 对宿主模块sfc-common的依赖导入
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-packagejson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 package.json（可选）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-vite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 开发模式：注册插件到 Vite 开发服务器
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 插件打包配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 插件打包配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 创建打包配置文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 执行打包
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 整合前端资源进插件
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.5 整合前端资源进插件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        复制资源到资源目录
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置自动加载资源
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        验证插件前端资源自动加载
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 插件 API 参考
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 插件 API 参考">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windowcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        window.context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windowsfcutils" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        window.SfcUtils
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windowapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        window.API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windowbootcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        window.bootContext
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sfc-common" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sfc-common 模块
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">咸鱼云网盘前端插件开发指南</h1>
+<p>本文档以 <code>sfc-ext-video-enhance</code>（视频增强插件）为例，介绍如何为咸鱼云网盘前端项目开发插件。</p>
+<h2 id="1">1. 插件命名规范</h2>
+<ul>
+<li>插件 ID 由小写字母和连字符组成，如 <code>video-enhance</code>、<code>web-shell</code>。</li>
+<li>插件全名格式为 <code>sfc-ext-{插件id}</code>，如 <code>sfc-ext-video-enhance</code>。</li>
+<li>插件目录、打包配置文件、<code>package.json</code> 中的命令均使用全名。</li>
+</ul>
+<hr />
+<h2 id="2">2. 创建插件代码目录</h2>
+<p>在项目根目录的 <code>sfc-ext/</code> 下创建插件代码目录，目录名为 <code>sfc-ext-{插件id}</code>。</p>
+<h3 id="21">2.1 推荐目录结构</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sfc-ext/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>└── sfc-ext-{插件id}/
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    ├── main.ts           # 插件入口（必须）
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    ├── api.ts            # 后端接口定义（可选）
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    ├── model.ts          # TypeScript 类型/接口定义（可选）
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    ├── package.json      # 插件私有依赖（可选）
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    ├── core/             # 核心业务逻辑（可选）
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    └── components/       # Vue 组件（可选）
+</code></pre></div>
+<h3 id="22-maints">2.2 编写 <code>main.ts</code> 入口文件</h3>
+<p><code>main.ts</code> 是插件的初始化入口，在宿主应用加载插件时会执行此文件。插件通过全局变量 <code>window.context</code>、<code>window.SfcUtils</code>、
+<code>window.API</code> 等访问宿主应用提供的能力。</p>
+<p>以 <code>sfc-ext-video-enhance</code> 为例，入口文件完成以下工作：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="nx">FileOpenHandler</span><span class="p">,</span><span class="w"> </span><span class="nx">FileInfo</span><span class="p">,</span><span class="w"> </span><span class="nx">FileListContext</span><span class="p">,</span><span class="w"> </span><span class="nx">getContext</span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common&#39;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">import</span><span class="w"> </span><span class="nx">MyPlayerVue</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./components/MyPlayer.vue&#39;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">import</span><span class="w"> </span><span class="nx">MyComponent</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./components/MyComponent.vue&#39;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kd">const</span><span class="w"> </span><span class="nx">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">window</span><span class="p">.</span><span class="nx">context</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="kd">const</span><span class="w"> </span><span class="nx">SfcUtils</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">window</span><span class="p">.</span><span class="nx">SfcUtils</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1">// 注册文件打开处理器（&quot;打开方式&quot;）</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="kd">const</span><span class="w"> </span><span class="nx">myOpenHandler</span><span class="o">:</span><span class="w"> </span><span class="kt">FileOpenHandler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;my-handler&#39;</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="nx">icon</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;mdi-play-circle&#39;</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;用我的插件打开&#39;</span><span class="p">,</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nx">sort</span><span class="o">:</span><span class="w"> </span><span class="kt">0</span><span class="p">,</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="nx">matcher</span><span class="p">(</span><span class="nx">ctx</span><span class="o">:</span><span class="w"> </span><span class="kt">FileListContext</span><span class="p">,</span><span class="w"> </span><span class="nx">file</span><span class="o">:</span><span class="w"> </span><span class="kt">FileInfo</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">        </span><span class="c1">// 返回 true 表示该文件可以被本插件处理</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">file</span><span class="p">.</span><span class="nx">name</span><span class="p">.</span><span class="nx">endsWith</span><span class="p">(</span><span class="s1">&#39;.mp4&#39;</span><span class="p">)</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="k">async</span><span class="w"> </span><span class="nx">action</span><span class="p">(</span><span class="nx">ctx</span><span class="o">:</span><span class="w"> </span><span class="kt">FileListContext</span><span class="p">,</span><span class="w"> </span><span class="nx">file</span><span class="o">:</span><span class="w"> </span><span class="kt">FileInfo</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">        </span><span class="nx">SfcUtils</span><span class="p">.</span><span class="nx">openComponentDialog</span><span class="p">(</span><span class="nx">MyPlayerVue</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">            </span><span class="nx">props</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">file</span><span class="p">},</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">            </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;播放：&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">file</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">        </span><span class="p">})</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="p">}</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="c1">// 将处理器注册到全局上下文</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="nx">context</span><span class="p">.</span><span class="nx">fileOpenHandler</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">myOpenHandler</span><span class="p">)</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="c1">// 注册自定义全局Vue组件</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="nb">window</span><span class="p">.</span><span class="nx">bootContext</span><span class="p">.</span><span class="nx">addProcessor</span><span class="p">({</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">    </span><span class="nx">taskName</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;注册我的插件组件&#39;</span><span class="p">,</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">    </span><span class="nx">execute</span><span class="p">(</span><span class="nx">app</span><span class="p">,</span><span class="w"> </span><span class="nx">handler</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">        </span><span class="nx">app</span><span class="p">.</span><span class="nx">component</span><span class="p">(</span><span class="s1">&#39;MyComponent&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">MyComponent</span><span class="p">)</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="p">})</span>
+</code></pre></div>
+<h3 id="23-sfc-common">2.3 对宿主模块<code>sfc-common</code>的依赖导入</h3>
+<p>使用 <code>sfc-common</code> 中定义的类型和工具函数时，直接从模块导入即可，如</p>
+<p>宿主模块 <code>sfc-common</code> 已在打包配置中设置为外部依赖（external），因此无需担心导入路径问题，直接使用模块名导入即可。
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">getContext</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common&#39;</span>
+</code></pre></div></p>
+<blockquote>
+<p>注意：</p>
+<p>尽量避免通过<code>sfc-common/xxxx</code>这种形式导入<code>sfc-common</code>模块没有统一暴露的子模块，因为这会导致打包时无法正确外部化（externalize）依赖，进而引入冗余代码和潜在的版本冲突问题。
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">FileInfo</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/model&#39;</span><span class="w"> </span><span class="c1">// 不推荐，可能导致打包问题</span>
+</code></pre></div></p>
+</blockquote>
+<p>宿主模块使用的第三方依赖可以使用正常方式直接import，如：<code>import qs from 'qs'</code></p>
+<p>宿主模块一些比较复杂的工具或对象被挂载到了全局的<code>window</code>对象下，详见以下声明
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">import</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="nx">MethodInterceptor</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/utils/MethodInterceptor&#39;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">import</span><span class="w"> </span><span class="nx">DPlayer</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;dplayer&#39;</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">import</span><span class="w"> </span><span class="nx">router</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/plugins/router&#39;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">import</span><span class="w"> </span><span class="nx">SfcUtils</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/utils/SfcUtils&#39;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">getContext</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;../context&#39;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">import</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="nx">Vue</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">import</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="nx">FormUtils</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/utils/FormUtils&#39;</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="k">import</span><span class="w"> </span><span class="nx">API</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/api&#39;</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">bootContext</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./BootCore&#39;</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="k">import</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="nx">components</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/components&#39;</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="k">import</span><span class="w"> </span><span class="nx">DOMUtils</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/utils/DOMUtils&#39;</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">StringFormatter</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/utils/StringFormatter&#39;</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">StringUtils</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common/utils/StringUtils&#39;</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="k">import</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="nx">monaco</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;monaco-editor&#39;</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="k">import</span><span class="w"> </span><span class="nx">qs</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;qs&#39;</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="k">import</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="nx">echarts</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;echarts&#39;</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="nb">window</span><span class="p">.</span><span class="nx">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">getContext</span><span class="p">()</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="nb">window</span><span class="p">.</span><span class="nx">getContext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">getContext</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="nb">window</span><span class="p">.</span><span class="nx">Vue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">Vue</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="nb">window</span><span class="p">.</span><span class="nx">SfcUtils</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">SfcUtils</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="nb">window</span><span class="p">.</span><span class="nx">API</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">API</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="nb">window</span><span class="p">.</span><span class="nx">DPlayer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">DPlayer</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="nx">any</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="nb">window</span><span class="p">.</span><span class="nx">bootContext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">bootContext</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="nb">window</span><span class="p">.</span><span class="nx">FormUtils</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">FormUtils</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="nb">window</span><span class="p">.</span><span class="nx">components</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">components</span>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="nb">window</span><span class="p">.</span><span class="nx">DOMUtils</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">DOMUtils</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="nb">window</span><span class="p">.</span><span class="nx">MethodInterceptor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">MethodInterceptor</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="nb">window</span><span class="p">.</span><span class="nx">StringFormatter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">StringFormatter</span>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="nb">window</span><span class="p">.</span><span class="nx">StringUtils</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">StringUtils</span>
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="nb">window</span><span class="p">.</span><span class="nx">Components</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">components</span>
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="nb">window</span><span class="p">.</span><span class="nx">echarts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">echarts</span>
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="nb">window</span><span class="p">.</span><span class="nx">qs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">qs</span>
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="nb">window</span><span class="p">.</span><span class="nx">monaco</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">monaco</span>
+</code></pre></div></p>
+<p>模块<code>sfc-common</code>本身也被挂载到了<code>window.SfcCommon</code></p>
+<h3 id="24-packagejson">2.4 <code>package.json</code>（可选）</h3>
+<p>如果插件有私有 npm 依赖，需要在插件目录下创建 <code>package.json</code> 并执行 <code>npm install</code>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sfc-ext-{插件id}&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">&quot;private&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">&quot;dependencies&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">&quot;some-lib&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;^1.0.0&quot;</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="p">}</span>
+</code></pre></div>
+<hr />
+<h2 id="3-vite">3. 开发模式：注册插件到 Vite 开发服务器</h2>
+<p>在 Vite 开发服务运行期间，插件通过 <code>.env.development</code> 中的 <code>VITE_PLUGINS</code> 变量被加载。</p>
+<p>打开项目根目录的 <code>.env.development</code> 文件：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>VITE_PLUGIN_PREFIX=sfc-ext
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>VITE_PLUGINS=demo,jntm,quick-share,video-enhance,network-tools,web-shell,static-publish,only-office,rtc,webdav
+</code></pre></div>
+<p>将你的 <strong>插件 ID</strong>（不含 <code>sfc-ext-</code> 前缀）追加到 <code>VITE_PLUGINS</code> 列表中，以逗号分隔：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>VITE_PLUGIN_PREFIX=sfc-ext
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>VITE_PLUGINS=demo,jntm,quick-share,video-enhance,...,{插件id}
+</code></pre></div>
+<p>添加后，重启 Vite 开发服务（<code>npm run dev</code>），宿主应用会自动加载并执行 <code>sfc-ext/{插件id}/main.ts</code>。</p>
+<hr />
+<h2 id="4">4. 插件打包配置</h2>
+<h3 id="41">4.1 创建打包配置文件</h3>
+<p>打开项目根目录的 <code>package.json</code>，在 <code>scripts</code> 中添加：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p">{</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">&quot;scripts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="nt">&quot;build-ext-{插件id}&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;node scripts/build-ext.mjs {插件id}&quot;</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>例如，<code>video-enhance</code> 插件对应的命令为：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;scripts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="nt">&quot;build-ext-video-enhance&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;node scripts/build-ext.mjs video-enhance&quot;</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="43">4.3 执行打包</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>npm<span class="w"> </span>run<span class="w"> </span>build-ext-<span class="o">{</span>插件id<span class="o">}</span>
+</code></pre></div>
+<p>打包完成后，产物将输出到 <code>public/ext/sfc-ext-{插件id}/</code> 目录，主要文件为 <code>index.umd.js</code>。</p>
+<hr />
+<h3 id="45">4.5 整合前端资源进插件</h3>
+<h4 id="_2">复制资源到资源目录</h4>
+<ul>
+<li>方法1（推荐）：前端项目的<code>.env</code>或环境变量中配置<code>BACKEND_PATH</code>的值为后端项目的根目录路径后，执行<code>npm run build-ext-{插件id}</code>命令时，构建脚本会自动将插件前端构建产物资源（js、css等）复制到插件目录 <code>sfc-ext/sfc-ext-{插件id}/src/main/assert/static/</code> 下，无需手动操作。</li>
+<li>方法2：将插件的前端构建产物资源资源（js、css等）直接放在插件目录 <code>sfc-ext/sfc-ext-{插件id}/src/main/assert/static/</code> 下。</li>
+</ul>
+<h4 id="_3">配置自动加载资源</h4>
+<p>将打包产物<code>index.umd.js</code>和<code>style.css</code>（如果有）等资源路径添加到插件目录下的 <code>plugin.json</code> 的 <code>autoLoad</code> 字段：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sfc-ext-{插件id}&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">&quot;autoLoad&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="s2">&quot;index.umd.js&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="s2">&quot;style.css&quot;</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="p">}</span>
+</code></pre></div>
+<p>js和css代码将在页面加载完成后、前端应用完成初始化前自动加载。</p>
+<h4 id="_4">验证插件前端资源自动加载</h4>
+<div class="admonition warning">
+<p class="admonition-title">注意</p>
+<ol>
+<li>后端使用maven profile 为 <code>develop</code> 时，后端是不会自动加载插件的自动加载资源的，如果需要在开发阶段验证插件资源的自动加载效果，需要修改<code>application-develop.yml</code>，将<code>plugin.use-auto-load-resource</code>设置为<code>true</code><br />
+2<code>plugin.use-auto-load-resource</code>设置为<code>true</code>后，为避免和Vite开发服务自动加载的资源重复加载导致冲突，建议在开发阶段将插件的自动加载资源配置项注释掉或删除，或将主模块前端项目整个集成进<code>sfc-core/src/main/resources/webapp</code>中直接通过后端的Web服务访问。</li>
+</ol>
+</div>
+<h2 id="5-api">5. 插件 API 参考</h2>
+<p>插件运行时可访问宿主应用注入的以下全局变量：</p>
+<h3 id="windowcontext"><code>window.context</code></h3>
+<p>全局应用上下文，类型为 <code>ToRefs&lt;AppContext&gt;</code>，主要字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fileOpenHandler</code></td>
+<td><code>Ref&lt;FileOpenHandler[]&gt;</code></td>
+<td>文件打开方式列表，向其 <code>push</code> 即可注册新的打开方式</td>
+</tr>
+<tr>
+<td><code>menu.mainMenu</code></td>
+<td><code>AppMenu[]</code></td>
+<td>主导航菜单，可插入自定义菜单项</td>
+</tr>
+<tr>
+<td><code>menu.fileListMenu</code></td>
+<td><code>MenuGroup[]</code></td>
+<td>文件列表右键菜单，可插入自定义操作</td>
+</tr>
+<tr>
+<td><code>session</code></td>
+<td><code>Ref&lt;Session&gt;</code></td>
+<td>当前登录用户的会话信息</td>
+</tr>
+<tr>
+<td><code>feature</code></td>
+<td><code>Ref&lt;SystemFeature&gt;</code></td>
+<td>服务端功能特性开关</td>
+</tr>
+</tbody>
+</table>
+<h3 id="windowsfcutils"><code>window.SfcUtils</code></h3>
+<p>宿主应用工具方法集，常用方法：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SfcUtils.request(req)</code></td>
+<td>发起 API 请求，返回 <code>Promise&lt;AxiosResponse&gt;</code></td>
+</tr>
+<tr>
+<td><code>SfcUtils.openComponentDialog(component, options)</code></td>
+<td>在对话框中打开一个 Vue 组件</td>
+</tr>
+<tr>
+<td><code>SfcUtils.snackbar(msg)</code></td>
+<td>显示底部消息条</td>
+</tr>
+<tr>
+<td><code>SfcUtils.beginLoading()</code></td>
+<td>显示全屏加载遮罩</td>
+</tr>
+<tr>
+<td><code>SfcUtils.closeLoading()</code></td>
+<td>关闭全屏加载遮罩</td>
+</tr>
+<tr>
+<td><code>SfcUtils.sleep(ms)</code></td>
+<td>等待指定毫秒数</td>
+</tr>
+</tbody>
+</table>
+<h3 id="windowapi"><code>window.API</code></h3>
+<p>后端接口定义集合，包含 <code>API.resource</code>、<code>API.file</code>、<code>API.user</code> 等命名空间，与 <code>sfc-common/api</code> 中的定义一致。</p>
+<h3 id="windowbootcontext"><code>window.bootContext</code></h3>
+<p>应用启动上下文，类型为 <code>BootContext</code>，主要方法：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bootContext.addProcessor(processor)</code></td>
+<td>注册一个启动处理器，在 Vue 应用初始化时执行（用于全局注册组件等）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sfc-common"><code>sfc-common</code> 模块</h3>
+<p>插件可以从 <code>sfc-common</code> 导入类型和工具函数，该依赖在打包时会被外部化（不打包进产物）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="nx">FileOpenHandler</span><span class="p">,</span><span class="w"> </span><span class="nx">FileInfo</span><span class="p">,</span><span class="w"> </span><span class="nx">FileListContext</span><span class="p">,</span><span class="w"> </span><span class="nx">getContext</span><span class="p">,</span><span class="w"> </span><span class="nx">MenuHelper</span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;sfc-common&#39;</span>
+</code></pre></div>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.expand"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

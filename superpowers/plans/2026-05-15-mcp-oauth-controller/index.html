@@ -1,0 +1,3461 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>MCP OAuth Controller 实现计划 - 咸鱼云网盘</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#mcp-oauth-controller" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="咸鱼云网盘" class="md-header__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            咸鱼云网盘
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MCP OAuth Controller 实现计划
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../.." class="md-tabs__link">
+          
+  
+  
+  用户手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../develop/" class="md-tabs__link">
+          
+  
+  
+  开发手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../oauth/" class="md-tabs__link">
+          
+  
+  
+  OAuth开放平台
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../release-notes/3.1.2/" class="md-tabs__link">
+          
+  
+  
+  版本更新日志
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="咸鱼云网盘" class="md-nav__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    咸鱼云网盘
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    快速开始
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1" id="__nav_1_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    运行部署
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    运行部署
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常规部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1_2" id="__nav_1_2_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker 与容器化
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_1_2_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Docker 与容器化
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dockerfile 构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/docker-compose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker Compose 部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/front-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于前端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/other/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    衍生项目
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3" id="__nav_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件系统说明
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3_2" id="__nav_1_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/ftp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP服务 ftp-server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/oss-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OSS对象存储 oss-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/minio-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Minio对象存储 minio-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/music/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    音乐插件 music
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/onlyoffice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OnlyOffice在线文档 only-office
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/webrtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebRTC应用 webrtc
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/webdav/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebDAV文件共享 webdav
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/hadoop-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hadoop存储 hadoop-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/samba-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Samba文件共享 samba-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/sftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTP存储 sftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/ftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP存储 ftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/video-enhance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    视频功能增强 video-enhance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/quick-share/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快捷分享 quick-share
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/web-shell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebShell web-shell
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/network-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网络工具 network-tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/static-publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    静态资源站点 static-publish
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP服务 mcp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    项目构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/git-commit-convention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git 提交规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    系统功能架构
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    系统功能架构
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_1" id="__nav_2_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件系统
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    文件系统
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/filesystem/file-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件操作
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/filesystem/storage-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储架构与挂载扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/filesystem/attach-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    附属存储
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/config-hello-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置与特性服务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/archive-engine-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    压缩引擎扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    集群兼容
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/async-task/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    异步任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/schedule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    定时任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/version-update-hook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新数据迁移钩子
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件开发指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/create-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建插件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/springboot-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/config-properties/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/create-front-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件前端开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/desktop-component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    桌面组件注册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth开放平台
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    OAuth开放平台
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDC 认证
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/impl-ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    实现参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开放接口列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开放接口列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述与统一规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_2" id="__nav_3_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/user/profile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取用户基本信息
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_3" id="__nav_3_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网盘存储相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    网盘存储相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/file-list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取文件列表
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/upload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    上传文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/download/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/download-link/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建下载链接
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/mkdir/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    复制文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    移动文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/rename/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    重命名文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/delete/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    删除文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新日志
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    版本更新日志
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        文件结构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="文件结构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#task-1-mcpconstant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 1: 创建 McpConstant 常量类
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-2-mcpoauthappinitializer-clientsecret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 2: 修改 McpOAuthAppInitializer 管理 clientSecret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-3-mcpoauthcontroller" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 3: 创建 McpOAuthController
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 4: 完整构建验证
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自查清单
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="mcp-oauth-controller">MCP OAuth Controller 实现计划</h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> 为 sfc-ext-mcp 模块添加 OAuth 授权能力，允许 MCP 用户通过内部 OAuth 流程获取永久 ApiTicket，并查询已有的 ApiTicket。</p>
+<p><strong>Architecture:</strong> 在 McpOAuthAppInitializer 中增加 clientSecret 管理逻辑（分布式锁 + 缓存），新建 McpOAuthController 提供两个 REST 接口。所有改动限制在 sfc-ext-mcp 模块内。</p>
+<p><strong>Tech Stack:</strong> Spring Boot, Spring Security, JPA, CacheService (Redis), JWT</p>
+<hr />
+<h2 id="_1">文件结构</h2>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>操作</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sfc-ext/sfc-ext-mcp/src/main/java/com/sfc/mcp/constant/McpConstant.java</code></td>
+<td>新建</td>
+<td>MCP 模块常量定义</td>
+</tr>
+<tr>
+<td><code>sfc-ext/sfc-ext-mcp/src/main/java/com/sfc/mcp/McpOAuthAppInitializer.java</code></td>
+<td>修改</td>
+<td>启动时确保 MCP 应用存在并管理 clientSecret</td>
+</tr>
+<tr>
+<td><code>sfc-ext/sfc-ext-mcp/src/main/java/com/sfc/mcp/controller/McpOAuthController.java</code></td>
+<td>新建</td>
+<td>OAuth 接口：getApiTicket、getExistingApiTicket</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="task-1-mcpconstant">Task 1: 创建 McpConstant 常量类</h3>
+<p><strong>Files:</strong>
+- Create: <code>sfc-ext/sfc-ext-mcp/src/main/java/com/sfc/mcp/constant/McpConstant.java</code></p>
+<ul>
+<li>[ ] <strong>Step 1: 创建 McpConstant 类</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">package</span><span class="w"> </span><span class="nn">com.sfc.mcp.constant</span><span class="p">;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="cm">/**</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="cm"> * MCP 模块常量定义。</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="cm"> */</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kd">public</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">McpConstant</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="cm">     * MCP OAuth 应用名称，用于查找应用。</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="cm">     */</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">MCP_OAUTH_APP_NAME</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;咸鱼云网盘MCP服务&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="cm">     * MCP OAuth clientSecret 缓存 key 前缀。</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="cm">     */</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">MCP_OAUTH_CLIENT_SECRET_CACHE_PREFIX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;sfc:mcp:oauth:client_secret:&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="cm">     * MCP OAuth 初始化分布式锁缓存 key 前缀。</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="cm">     */</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">MCP_OAUTH_INIT_LOCK_CACHE_PREFIX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;sfc:mcp:oauth:init_lock:&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="nf">McpConstant</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="p">}</span>
+</code></pre></div>
+<ul>
+<li>[ ] <strong>Step 2: 验证编译</strong></li>
+</ul>
+<p>Run: 构建 sfc-ext-mcp 模块，确保编译通过。</p>
+<ul>
+<li>[ ] <strong>Step 3: 提交</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>add<span class="w"> </span>sfc-ext/sfc-ext-mcp/src/main/java/com/sfc/mcp/constant/McpConstant.java
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(mcp): 添加McpConstant常量类&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="task-2-mcpoauthappinitializer-clientsecret">Task 2: 修改 McpOAuthAppInitializer 管理 clientSecret</h3>
+<p><strong>Files:</strong>
+- Modify: <code>sfc-ext/sfc-ext-mcp/src/main/java/com/sfc/mcp/McpOAuthAppInitializer.java</code></p>
+<ul>
+<li>[ ] <strong>Step 1: 修改 McpOAuthAppInitializer，添加 clientSecret 管理逻辑</strong></li>
+</ul>
+<p>将 <code>McpOAuthAppInitializer.java</code> 完整替换为以下内容：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">package</span><span class="w"> </span><span class="nn">com.sfc.mcp</span><span class="p">;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.sfc.mcp.constant.McpConstant</span><span class="p">;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.cache.CacheService</span><span class="p">;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo</span><span class="p">;</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRepo</span><span class="p">;</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.exception.JsonException</span><span class="p">;</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp</span><span class="p">;</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey</span><span class="p">;</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppKeyService</span><span class="p">;</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService</span><span class="p">;</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.utils.SecureUtils</span><span class="p">;</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lombok.RequiredArgsConstructor</span><span class="p">;</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lombok.extern.slf4j.Slf4j</span><span class="p">;</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.boot.ApplicationArguments</span><span class="p">;</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.boot.ApplicationRunner</span><span class="p">;</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.core.annotation.Order</span><span class="p">;</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.dao.DataIntegrityViolationException</span><span class="p">;</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.stereotype.Component</span><span class="p">;</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.Optional</span><span class="p">;</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.concurrent.TimeUnit</span><span class="p">;</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="cm">/**</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="cm"> * MCP 插件启动时自动确保系统中存在默认的第三方 OAuth 应用，并管理 clientSecret。</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="cm"> */</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="nd">@Component</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="nd">@Order</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="nd">@Slf4j</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="nd">@RequiredArgsConstructor</span>
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">McpOAuthAppInitializer</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">ApplicationRunner</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="cm">     * 系统自动创建数据默认使用的 UID。</span>
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="cm">     */</span>
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">SYSTEM_UID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="n">L</span><span class="p">;</span>
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="cm">     * 分布式锁等待轮询间隔（毫秒）。</span>
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="cm">     */</span>
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">LOCK_POLL_INTERVAL_MS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000L</span><span class="p">;</span>
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a><span class="cm">     * 分布式锁等待最大次数（30秒 / 1秒 = 30次）。</span>
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="cm">     */</span>
+<a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">LOCK_POLL_MAX_ATTEMPTS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">30</span><span class="p">;</span>
+<a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>
+<a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ThirdPartyAppRepo</span><span class="w"> </span><span class="n">thirdPartyAppRepo</span><span class="p">;</span>
+<a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ThirdPartyAppService</span><span class="w"> </span><span class="n">thirdPartyAppService</span><span class="p">;</span>
+<a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ThirdPartyAppKeyService</span><span class="w"> </span><span class="n">thirdPartyAppKeyService</span><span class="p">;</span>
+<a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ThirdPartyAppKeyRepo</span><span class="w"> </span><span class="n">thirdPartyAppKeyRepo</span><span class="p">;</span>
+<a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">CacheService</span><span class="w"> </span><span class="n">cacheService</span><span class="p">;</span>
+<a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>
+<a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a><span class="w">    </span><span class="nd">@Override</span>
+<a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">ApplicationArguments</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a><span class="w">        </span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">findOrCreateMcpOauthApp</span><span class="p">();</span>
+<a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a><span class="w">        </span><span class="n">ensureClientSecret</span><span class="p">(</span><span class="n">app</span><span class="p">);</span>
+<a id="__codelineno-2-58" name="__codelineno-2-58" href="#__codelineno-2-58"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-59" name="__codelineno-2-59" href="#__codelineno-2-59"></a>
+<a id="__codelineno-2-60" name="__codelineno-2-60" href="#__codelineno-2-60"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-61" name="__codelineno-2-61" href="#__codelineno-2-61"></a><span class="cm">     * 查找或创建 MCP OAuth 应用。</span>
+<a id="__codelineno-2-62" name="__codelineno-2-62" href="#__codelineno-2-62"></a><span class="cm">     */</span>
+<a id="__codelineno-2-63" name="__codelineno-2-63" href="#__codelineno-2-63"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="nf">findOrCreateMcpOauthApp</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-64" name="__codelineno-2-64" href="#__codelineno-2-64"></a><span class="w">        </span><span class="n">Optional</span><span class="o">&lt;</span><span class="n">ThirdPartyApp</span><span class="o">&gt;</span><span class="w"> </span><span class="n">existApp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thirdPartyAppRepo</span><span class="p">.</span><span class="na">findByNameIgnoreCase</span><span class="p">(</span><span class="n">McpConstant</span><span class="p">.</span><span class="na">MCP_OAUTH_APP_NAME</span><span class="p">);</span>
+<a id="__codelineno-2-65" name="__codelineno-2-65" href="#__codelineno-2-65"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">existApp</span><span class="p">.</span><span class="na">isPresent</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-66" name="__codelineno-2-66" href="#__codelineno-2-66"></a><span class="w">            </span><span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">&quot;[MCP插件] 第三方OAuth应用已存在，跳过自动创建。应用ID：{}，应用名称：{}&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-67" name="__codelineno-2-67" href="#__codelineno-2-67"></a><span class="w">                    </span><span class="n">existApp</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">getId</span><span class="p">(),</span><span class="w"> </span><span class="n">existApp</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">getName</span><span class="p">());</span>
+<a id="__codelineno-2-68" name="__codelineno-2-68" href="#__codelineno-2-68"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">existApp</span><span class="p">.</span><span class="na">get</span><span class="p">();</span>
+<a id="__codelineno-2-69" name="__codelineno-2-69" href="#__codelineno-2-69"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-70" name="__codelineno-2-70" href="#__codelineno-2-70"></a>
+<a id="__codelineno-2-71" name="__codelineno-2-71" href="#__codelineno-2-71"></a><span class="w">        </span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buildDefaultMcpOauthApp</span><span class="p">();</span>
+<a id="__codelineno-2-72" name="__codelineno-2-72" href="#__codelineno-2-72"></a><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-73" name="__codelineno-2-73" href="#__codelineno-2-73"></a><span class="w">            </span><span class="n">thirdPartyAppService</span><span class="p">.</span><span class="na">save</span><span class="p">(</span><span class="n">app</span><span class="p">);</span>
+<a id="__codelineno-2-74" name="__codelineno-2-74" href="#__codelineno-2-74"></a><span class="w">            </span><span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">&quot;[MCP插件] 已自动创建第三方OAuth应用。应用ID：{}，应用名称：{}，允许永久ApiTicket：{}，回调URL：{}&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-75" name="__codelineno-2-75" href="#__codelineno-2-75"></a><span class="w">                    </span><span class="n">app</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span>
+<a id="__codelineno-2-76" name="__codelineno-2-76" href="#__codelineno-2-76"></a><span class="w">                    </span><span class="n">app</span><span class="p">.</span><span class="na">getName</span><span class="p">(),</span>
+<a id="__codelineno-2-77" name="__codelineno-2-77" href="#__codelineno-2-77"></a><span class="w">                    </span><span class="n">app</span><span class="p">.</span><span class="na">getAllowPermanentApiTicket</span><span class="p">(),</span>
+<a id="__codelineno-2-78" name="__codelineno-2-78" href="#__codelineno-2-78"></a><span class="w">                    </span><span class="n">app</span><span class="p">.</span><span class="na">getCallbackUrl</span><span class="p">());</span>
+<a id="__codelineno-2-79" name="__codelineno-2-79" href="#__codelineno-2-79"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">app</span><span class="p">;</span>
+<a id="__codelineno-2-80" name="__codelineno-2-80" href="#__codelineno-2-80"></a><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">JsonException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DataIntegrityViolationException</span><span class="w"> </span><span class="n">exception</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-81" name="__codelineno-2-81" href="#__codelineno-2-81"></a><span class="w">            </span><span class="n">Optional</span><span class="o">&lt;</span><span class="n">ThirdPartyApp</span><span class="o">&gt;</span><span class="w"> </span><span class="n">currentApp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thirdPartyAppRepo</span><span class="p">.</span><span class="na">findByNameIgnoreCase</span><span class="p">(</span><span class="n">McpConstant</span><span class="p">.</span><span class="na">MCP_OAUTH_APP_NAME</span><span class="p">);</span>
+<a id="__codelineno-2-82" name="__codelineno-2-82" href="#__codelineno-2-82"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">currentApp</span><span class="p">.</span><span class="na">isPresent</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-83" name="__codelineno-2-83" href="#__codelineno-2-83"></a><span class="w">                </span><span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">&quot;[MCP插件] 检测到第三方OAuth应用已由其他启动流程创建，使用已有应用。应用ID：{}，应用名称：{}&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-84" name="__codelineno-2-84" href="#__codelineno-2-84"></a><span class="w">                        </span><span class="n">currentApp</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">getId</span><span class="p">(),</span><span class="w"> </span><span class="n">currentApp</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">getName</span><span class="p">());</span>
+<a id="__codelineno-2-85" name="__codelineno-2-85" href="#__codelineno-2-85"></a><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">currentApp</span><span class="p">.</span><span class="na">get</span><span class="p">();</span>
+<a id="__codelineno-2-86" name="__codelineno-2-86" href="#__codelineno-2-86"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-2-87" name="__codelineno-2-87" href="#__codelineno-2-87"></a><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="n">exception</span><span class="p">;</span>
+<a id="__codelineno-2-88" name="__codelineno-2-88" href="#__codelineno-2-88"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-89" name="__codelineno-2-89" href="#__codelineno-2-89"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-90" name="__codelineno-2-90" href="#__codelineno-2-90"></a>
+<a id="__codelineno-2-91" name="__codelineno-2-91" href="#__codelineno-2-91"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-92" name="__codelineno-2-92" href="#__codelineno-2-92"></a><span class="cm">     * 构建 MCP 插件默认使用的第三方 OAuth 应用。</span>
+<a id="__codelineno-2-93" name="__codelineno-2-93" href="#__codelineno-2-93"></a><span class="cm">     */</span>
+<a id="__codelineno-2-94" name="__codelineno-2-94" href="#__codelineno-2-94"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="nf">buildDefaultMcpOauthApp</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-95" name="__codelineno-2-95" href="#__codelineno-2-95"></a><span class="w">        </span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ThirdPartyApp</span><span class="p">();</span>
+<a id="__codelineno-2-96" name="__codelineno-2-96" href="#__codelineno-2-96"></a><span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="na">setUid</span><span class="p">(</span><span class="n">SYSTEM_UID</span><span class="p">);</span>
+<a id="__codelineno-2-97" name="__codelineno-2-97" href="#__codelineno-2-97"></a><span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="na">setName</span><span class="p">(</span><span class="n">McpConstant</span><span class="p">.</span><span class="na">MCP_OAUTH_APP_NAME</span><span class="p">);</span>
+<a id="__codelineno-2-98" name="__codelineno-2-98" href="#__codelineno-2-98"></a><span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="na">setCallbackUrl</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
+<a id="__codelineno-2-99" name="__codelineno-2-99" href="#__codelineno-2-99"></a><span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="na">setIsEnabled</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<a id="__codelineno-2-100" name="__codelineno-2-100" href="#__codelineno-2-100"></a><span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="na">setAllowPermanentApiTicket</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<a id="__codelineno-2-101" name="__codelineno-2-101" href="#__codelineno-2-101"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">app</span><span class="p">;</span>
+<a id="__codelineno-2-102" name="__codelineno-2-102" href="#__codelineno-2-102"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-103" name="__codelineno-2-103" href="#__codelineno-2-103"></a>
+<a id="__codelineno-2-104" name="__codelineno-2-104" href="#__codelineno-2-104"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-105" name="__codelineno-2-105" href="#__codelineno-2-105"></a><span class="cm">     * 确保 MCP 应用拥有有效的 clientSecret，并缓存到 CacheService。</span>
+<a id="__codelineno-2-106" name="__codelineno-2-106" href="#__codelineno-2-106"></a><span class="cm">     * &lt;p&gt;</span>
+<a id="__codelineno-2-107" name="__codelineno-2-107" href="#__codelineno-2-107"></a><span class="cm">     * 流程：</span>
+<a id="__codelineno-2-108" name="__codelineno-2-108" href="#__codelineno-2-108"></a><span class="cm">     * 1. 检查缓存是否存在 clientSecret</span>
+<a id="__codelineno-2-109" name="__codelineno-2-109" href="#__codelineno-2-109"></a><span class="cm">     * 2. 不存在则通过分布式锁确保只有一个实例生成密钥</span>
+<a id="__codelineno-2-110" name="__codelineno-2-110" href="#__codelineno-2-110"></a><span class="cm">     * 3. 生成密钥后缓存 clientSecret 明文</span>
+<a id="__codelineno-2-111" name="__codelineno-2-111" href="#__codelineno-2-111"></a><span class="cm">     */</span>
+<a id="__codelineno-2-112" name="__codelineno-2-112" href="#__codelineno-2-112"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">ensureClientSecret</span><span class="p">(</span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="n">app</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-113" name="__codelineno-2-113" href="#__codelineno-2-113"></a><span class="w">        </span><span class="n">Long</span><span class="w"> </span><span class="n">appId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="na">getId</span><span class="p">();</span>
+<a id="__codelineno-2-114" name="__codelineno-2-114" href="#__codelineno-2-114"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">McpConstant</span><span class="p">.</span><span class="na">MCP_OAUTH_CLIENT_SECRET_CACHE_PREFIX</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">appId</span><span class="p">;</span>
+<a id="__codelineno-2-115" name="__codelineno-2-115" href="#__codelineno-2-115"></a>
+<a id="__codelineno-2-116" name="__codelineno-2-116" href="#__codelineno-2-116"></a><span class="w">        </span><span class="c1">// 1. 检查缓存</span>
+<a id="__codelineno-2-117" name="__codelineno-2-117" href="#__codelineno-2-117"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">cachedSecret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cacheService</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<a id="__codelineno-2-118" name="__codelineno-2-118" href="#__codelineno-2-118"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cachedSecret</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-119" name="__codelineno-2-119" href="#__codelineno-2-119"></a><span class="w">            </span><span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">&quot;[MCP插件] clientSecret 已从缓存加载。应用ID：{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">appId</span><span class="p">);</span>
+<a id="__codelineno-2-120" name="__codelineno-2-120" href="#__codelineno-2-120"></a><span class="w">            </span><span class="k">return</span><span class="p">;</span>
+<a id="__codelineno-2-121" name="__codelineno-2-121" href="#__codelineno-2-121"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-122" name="__codelineno-2-122" href="#__codelineno-2-122"></a>
+<a id="__codelineno-2-123" name="__codelineno-2-123" href="#__codelineno-2-123"></a><span class="w">        </span><span class="c1">// 2. 尝试获取分布式锁</span>
+<a id="__codelineno-2-124" name="__codelineno-2-124" href="#__codelineno-2-124"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">lockKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">McpConstant</span><span class="p">.</span><span class="na">MCP_OAUTH_INIT_LOCK_CACHE_PREFIX</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">appId</span><span class="p">;</span>
+<a id="__codelineno-2-125" name="__codelineno-2-125" href="#__codelineno-2-125"></a><span class="w">        </span><span class="kt">boolean</span><span class="w"> </span><span class="n">locked</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cacheService</span><span class="p">.</span><span class="na">setIfAbsent</span><span class="p">(</span><span class="n">lockKey</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">SECONDS</span><span class="p">);</span>
+<a id="__codelineno-2-126" name="__codelineno-2-126" href="#__codelineno-2-126"></a>
+<a id="__codelineno-2-127" name="__codelineno-2-127" href="#__codelineno-2-127"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">locked</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-128" name="__codelineno-2-128" href="#__codelineno-2-128"></a><span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-129" name="__codelineno-2-129" href="#__codelineno-2-129"></a><span class="w">                </span><span class="c1">// 双重检查</span>
+<a id="__codelineno-2-130" name="__codelineno-2-130" href="#__codelineno-2-130"></a><span class="w">                </span><span class="n">cachedSecret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cacheService</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<a id="__codelineno-2-131" name="__codelineno-2-131" href="#__codelineno-2-131"></a><span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cachedSecret</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-132" name="__codelineno-2-132" href="#__codelineno-2-132"></a><span class="w">                    </span><span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">&quot;[MCP插件] clientSecret 已由其他流程写入缓存。应用ID：{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">appId</span><span class="p">);</span>
+<a id="__codelineno-2-133" name="__codelineno-2-133" href="#__codelineno-2-133"></a><span class="w">                    </span><span class="k">return</span><span class="p">;</span>
+<a id="__codelineno-2-134" name="__codelineno-2-134" href="#__codelineno-2-134"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-2-135" name="__codelineno-2-135" href="#__codelineno-2-135"></a>
+<a id="__codelineno-2-136" name="__codelineno-2-136" href="#__codelineno-2-136"></a><span class="w">                </span><span class="c1">// 清理旧密钥并生成新密钥</span>
+<a id="__codelineno-2-137" name="__codelineno-2-137" href="#__codelineno-2-137"></a><span class="w">                </span><span class="n">thirdPartyAppKeyService</span><span class="p">.</span><span class="na">deleteByAppId</span><span class="p">(</span><span class="n">java</span><span class="p">.</span><span class="na">util</span><span class="p">.</span><span class="na">Collections</span><span class="p">.</span><span class="na">singletonList</span><span class="p">(</span><span class="n">appId</span><span class="p">));</span>
+<a id="__codelineno-2-138" name="__codelineno-2-138" href="#__codelineno-2-138"></a><span class="w">                </span><span class="n">String</span><span class="w"> </span><span class="n">rawKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createAndSaveKey</span><span class="p">(</span><span class="n">app</span><span class="p">);</span>
+<a id="__codelineno-2-139" name="__codelineno-2-139" href="#__codelineno-2-139"></a><span class="w">                </span><span class="n">cacheService</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">,</span><span class="w"> </span><span class="n">rawKey</span><span class="p">);</span>
+<a id="__codelineno-2-140" name="__codelineno-2-140" href="#__codelineno-2-140"></a><span class="w">                </span><span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">&quot;[MCP插件] 已生成并缓存 clientSecret。应用ID：{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">appId</span><span class="p">);</span>
+<a id="__codelineno-2-141" name="__codelineno-2-141" href="#__codelineno-2-141"></a><span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-142" name="__codelineno-2-142" href="#__codelineno-2-142"></a><span class="w">                </span><span class="n">cacheService</span><span class="p">.</span><span class="na">delete</span><span class="p">(</span><span class="n">lockKey</span><span class="p">);</span>
+<a id="__codelineno-2-143" name="__codelineno-2-143" href="#__codelineno-2-143"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-2-144" name="__codelineno-2-144" href="#__codelineno-2-144"></a><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-145" name="__codelineno-2-145" href="#__codelineno-2-145"></a><span class="w">            </span><span class="c1">// 3. 其他实例在处理，轮询等待</span>
+<a id="__codelineno-2-146" name="__codelineno-2-146" href="#__codelineno-2-146"></a><span class="w">            </span><span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">&quot;[MCP插件] 等待其他实例完成 clientSecret 初始化...应用ID：{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">appId</span><span class="p">);</span>
+<a id="__codelineno-2-147" name="__codelineno-2-147" href="#__codelineno-2-147"></a><span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">LOCK_POLL_MAX_ATTEMPTS</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-148" name="__codelineno-2-148" href="#__codelineno-2-148"></a><span class="w">                </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-149" name="__codelineno-2-149" href="#__codelineno-2-149"></a><span class="w">                    </span><span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">(</span><span class="n">LOCK_POLL_INTERVAL_MS</span><span class="p">);</span>
+<a id="__codelineno-2-150" name="__codelineno-2-150" href="#__codelineno-2-150"></a><span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">InterruptedException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-151" name="__codelineno-2-151" href="#__codelineno-2-151"></a><span class="w">                    </span><span class="n">Thread</span><span class="p">.</span><span class="na">currentThread</span><span class="p">().</span><span class="na">interrupt</span><span class="p">();</span>
+<a id="__codelineno-2-152" name="__codelineno-2-152" href="#__codelineno-2-152"></a><span class="w">                    </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JsonException</span><span class="p">(</span><span class="s">&quot;等待 clientSecret 初始化被中断&quot;</span><span class="p">);</span>
+<a id="__codelineno-2-153" name="__codelineno-2-153" href="#__codelineno-2-153"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-2-154" name="__codelineno-2-154" href="#__codelineno-2-154"></a><span class="w">                </span><span class="n">cachedSecret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cacheService</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<a id="__codelineno-2-155" name="__codelineno-2-155" href="#__codelineno-2-155"></a><span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cachedSecret</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-156" name="__codelineno-2-156" href="#__codelineno-2-156"></a><span class="w">                    </span><span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">&quot;[MCP插件] clientSecret 已从其他实例的初始化中获取。应用ID：{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">appId</span><span class="p">);</span>
+<a id="__codelineno-2-157" name="__codelineno-2-157" href="#__codelineno-2-157"></a><span class="w">                    </span><span class="k">return</span><span class="p">;</span>
+<a id="__codelineno-2-158" name="__codelineno-2-158" href="#__codelineno-2-158"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-2-159" name="__codelineno-2-159" href="#__codelineno-2-159"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-2-160" name="__codelineno-2-160" href="#__codelineno-2-160"></a><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JsonException</span><span class="p">(</span><span class="s">&quot;等待 clientSecret 初始化超时&quot;</span><span class="p">);</span>
+<a id="__codelineno-2-161" name="__codelineno-2-161" href="#__codelineno-2-161"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-162" name="__codelineno-2-162" href="#__codelineno-2-162"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-163" name="__codelineno-2-163" href="#__codelineno-2-163"></a>
+<a id="__codelineno-2-164" name="__codelineno-2-164" href="#__codelineno-2-164"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-165" name="__codelineno-2-165" href="#__codelineno-2-165"></a><span class="cm">     * 直接创建 ThirdPartyAppKey 实体并保存。</span>
+<a id="__codelineno-2-166" name="__codelineno-2-166" href="#__codelineno-2-166"></a><span class="cm">     * &lt;p&gt;</span>
+<a id="__codelineno-2-167" name="__codelineno-2-167" href="#__codelineno-2-167"></a><span class="cm">     * 不调用 ThirdPartyAppKeyService.generateNewKey()，因为该方法内部调用</span>
+<a id="__codelineno-2-168" name="__codelineno-2-168" href="#__codelineno-2-168"></a><span class="cm">     * SecureUtils.getCurrentUid()，启动时无安全上下文会返回 null。</span>
+<a id="__codelineno-2-169" name="__codelineno-2-169" href="#__codelineno-2-169"></a><span class="cm">     *</span>
+<a id="__codelineno-2-170" name="__codelineno-2-170" href="#__codelineno-2-170"></a><span class="cm">     * @param app MCP OAuth 应用</span>
+<a id="__codelineno-2-171" name="__codelineno-2-171" href="#__codelineno-2-171"></a><span class="cm">     * @return clientSecret 明文</span>
+<a id="__codelineno-2-172" name="__codelineno-2-172" href="#__codelineno-2-172"></a><span class="cm">     */</span>
+<a id="__codelineno-2-173" name="__codelineno-2-173" href="#__codelineno-2-173"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">createAndSaveKey</span><span class="p">(</span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="n">app</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-174" name="__codelineno-2-174" href="#__codelineno-2-174"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">rawKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SecureUtils</span><span class="p">.</span><span class="na">getUUID</span><span class="p">();</span>
+<a id="__codelineno-2-175" name="__codelineno-2-175" href="#__codelineno-2-175"></a><span class="w">        </span><span class="n">ThirdPartyAppKey</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ThirdPartyAppKey</span><span class="p">();</span>
+<a id="__codelineno-2-176" name="__codelineno-2-176" href="#__codelineno-2-176"></a><span class="w">        </span><span class="n">key</span><span class="p">.</span><span class="na">setName</span><span class="p">(</span><span class="s">&quot;MCP Internal&quot;</span><span class="p">);</span>
+<a id="__codelineno-2-177" name="__codelineno-2-177" href="#__codelineno-2-177"></a><span class="w">        </span><span class="n">key</span><span class="p">.</span><span class="na">setAppId</span><span class="p">(</span><span class="n">app</span><span class="p">.</span><span class="na">getId</span><span class="p">());</span>
+<a id="__codelineno-2-178" name="__codelineno-2-178" href="#__codelineno-2-178"></a><span class="w">        </span><span class="n">key</span><span class="p">.</span><span class="na">setUid</span><span class="p">(</span><span class="n">SYSTEM_UID</span><span class="p">);</span>
+<a id="__codelineno-2-179" name="__codelineno-2-179" href="#__codelineno-2-179"></a><span class="w">        </span><span class="n">key</span><span class="p">.</span><span class="na">setClientSecretHash</span><span class="p">(</span><span class="n">SecureUtils</span><span class="p">.</span><span class="na">getBCryptPasswordEncoder</span><span class="p">().</span><span class="na">encode</span><span class="p">(</span><span class="n">rawKey</span><span class="p">));</span>
+<a id="__codelineno-2-180" name="__codelineno-2-180" href="#__codelineno-2-180"></a><span class="w">        </span><span class="n">key</span><span class="p">.</span><span class="na">setClientSecretMaskValue</span><span class="p">(</span><span class="n">rawKey</span><span class="p">.</span><span class="na">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;******&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rawKey</span><span class="p">.</span><span class="na">substring</span><span class="p">(</span><span class="n">rawKey</span><span class="p">.</span><span class="na">length</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">6</span><span class="p">));</span>
+<a id="__codelineno-2-181" name="__codelineno-2-181" href="#__codelineno-2-181"></a><span class="w">        </span><span class="n">thirdPartyAppKeyRepo</span><span class="p">.</span><span class="na">save</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+<a id="__codelineno-2-182" name="__codelineno-2-182" href="#__codelineno-2-182"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">rawKey</span><span class="p">;</span>
+<a id="__codelineno-2-183" name="__codelineno-2-183" href="#__codelineno-2-183"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-184" name="__codelineno-2-184" href="#__codelineno-2-184"></a><span class="p">}</span>
+</code></pre></div>
+<ul>
+<li>[ ] <strong>Step 2: 验证编译</strong></li>
+</ul>
+<p>Run: 构建 sfc-ext-mcp 模块，确保编译通过。</p>
+<ul>
+<li>[ ] <strong>Step 3: 提交</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>git<span class="w"> </span>add<span class="w"> </span>sfc-ext/sfc-ext-mcp/src/main/java/com/sfc/mcp/McpOAuthAppInitializer.java
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(mcp): McpOAuthAppInitializer增加clientSecret管理逻辑&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="task-3-mcpoauthcontroller">Task 3: 创建 McpOAuthController</h3>
+<p><strong>Files:</strong>
+- Create: <code>sfc-ext/sfc-ext-mcp/src/main/java/com/sfc/mcp/controller/McpOAuthController.java</code></p>
+<ul>
+<li>[ ] <strong>Step 1: 创建 McpOAuthController 类</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">package</span><span class="w"> </span><span class="nn">com.sfc.mcp.controller</span><span class="p">;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.sfc.mcp.constant.McpConstant</span><span class="p">;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.cache.CacheService</span><span class="p">;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRepo</span><span class="p">;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppTokenRepo</span><span class="p">;</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.exception.JsonException</span><span class="p">;</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.model.json.JsonResult</span><span class="p">;</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.model.json.JsonResultImpl</span><span class="p">;</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp</span><span class="p">;</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppToken</span><span class="p">;</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppTokenService</span><span class="p">;</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.xiaotao.saltedfishcloud.utils.SecureUtils</span><span class="p">;</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.swagger.annotations.Api</span><span class="p">;</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.swagger.annotations.ApiOperation</span><span class="p">;</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lombok.RequiredArgsConstructor</span><span class="p">;</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.web.bind.annotation.GetMapping</span><span class="p">;</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.web.bind.annotation.RequestMapping</span><span class="p">;</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.web.bind.annotation.RequestParam</span><span class="p">;</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.web.bind.annotation.RestController</span><span class="p">;</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="cm">/**</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="cm"> * MCP OAuth 授权控制器。</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="cm"> * &lt;p&gt;</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="cm"> * 提供 MCP 专用的 OAuth 授权接口，支持通过授权码换取永久 ApiTicket，</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="cm"> * 以及查询当前用户已有的 ApiTicket。</span>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="cm"> */</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="nd">@RestController</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="nd">@RequestMapping</span><span class="p">(</span><span class="s">&quot;/api/mcp/oauth&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="nd">@Api</span><span class="p">(</span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;MCP OAuth 授权&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="nd">@RequiredArgsConstructor</span>
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">McpOAuthController</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a>
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ThirdPartyAppTokenService</span><span class="w"> </span><span class="n">thirdPartyAppTokenService</span><span class="p">;</span>
+<a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ThirdPartyAppRepo</span><span class="w"> </span><span class="n">thirdPartyAppRepo</span><span class="p">;</span>
+<a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ThirdPartyAppTokenRepo</span><span class="w"> </span><span class="n">thirdPartyAppTokenRepo</span><span class="p">;</span>
+<a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">CacheService</span><span class="w"> </span><span class="n">cacheService</span><span class="p">;</span>
+<a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a>
+<a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a><span class="cm">     * 通过授权码换取永久 ApiTicket。</span>
+<a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a><span class="cm">     * &lt;p&gt;</span>
+<a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a><span class="cm">     * 如果该用户已存在 MCP 应用的永久 ApiTicket，旧的会被自动作废。</span>
+<a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a><span class="cm">     *</span>
+<a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a><span class="cm">     * @param code OAuth authorize 重定向返回的授权码</span>
+<a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a><span class="cm">     * @return 完整的 ApiTicket JWT</span>
+<a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a><span class="cm">     */</span>
+<a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a><span class="w">    </span><span class="nd">@ApiOperation</span><span class="p">(</span><span class="s">&quot;通过授权码换取永久ApiTicket&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a><span class="w">    </span><span class="nd">@GetMapping</span><span class="p">(</span><span class="s">&quot;/getApiTicket&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">JsonResult</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getApiTicket</span><span class="p">(</span><span class="nd">@RequestParam</span><span class="p">(</span><span class="s">&quot;code&quot;</span><span class="p">)</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">code</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a><span class="w">        </span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getMcpApp</span><span class="p">();</span>
+<a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">clientSecret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getClientSecret</span><span class="p">(</span><span class="n">app</span><span class="p">.</span><span class="na">getId</span><span class="p">());</span>
+<a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a><span class="w">        </span><span class="n">Long</span><span class="w"> </span><span class="n">uid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SecureUtils</span><span class="p">.</span><span class="na">getCurrentUid</span><span class="p">();</span>
+<a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a>
+<a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">accessToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thirdPartyAppTokenService</span><span class="p">.</span><span class="na">getAccessToken</span><span class="p">(</span><span class="n">code</span><span class="p">,</span><span class="w"> </span><span class="n">clientSecret</span><span class="p">);</span>
+<a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">apiTicket</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thirdPartyAppTokenService</span><span class="p">.</span><span class="na">getApiTicket</span><span class="p">(</span><span class="n">app</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span><span class="w"> </span><span class="n">uid</span><span class="p">,</span><span class="w"> </span><span class="n">accessToken</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span>
+<a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">JsonResultImpl</span><span class="p">.</span><span class="na">getInstance</span><span class="p">(</span><span class="n">apiTicket</span><span class="p">);</span>
+<a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a>
+<a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a><span class="cm">     * 查询当前用户已有的 MCP 应用永久 ApiTicket。</span>
+<a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a><span class="cm">     * &lt;p&gt;</span>
+<a id="__codelineno-4-62" name="__codelineno-4-62" href="#__codelineno-4-62"></a><span class="cm">     * 返回遮掩后的 ApiTicket（前6位 + ****** + 后6位）。</span>
+<a id="__codelineno-4-63" name="__codelineno-4-63" href="#__codelineno-4-63"></a><span class="cm">     * 如果没有有效的 ApiTicket，返回 null。</span>
+<a id="__codelineno-4-64" name="__codelineno-4-64" href="#__codelineno-4-64"></a><span class="cm">     *</span>
+<a id="__codelineno-4-65" name="__codelineno-4-65" href="#__codelineno-4-65"></a><span class="cm">     * @return 遮掩后的 ApiTicket 或 null</span>
+<a id="__codelineno-4-66" name="__codelineno-4-66" href="#__codelineno-4-66"></a><span class="cm">     */</span>
+<a id="__codelineno-4-67" name="__codelineno-4-67" href="#__codelineno-4-67"></a><span class="w">    </span><span class="nd">@ApiOperation</span><span class="p">(</span><span class="s">&quot;查询已有的永久ApiTicket&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-68" name="__codelineno-4-68" href="#__codelineno-4-68"></a><span class="w">    </span><span class="nd">@GetMapping</span><span class="p">(</span><span class="s">&quot;/getExistingApiTicket&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-69" name="__codelineno-4-69" href="#__codelineno-4-69"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">JsonResult</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getExistingApiTicket</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-70" name="__codelineno-4-70" href="#__codelineno-4-70"></a><span class="w">        </span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getMcpApp</span><span class="p">();</span>
+<a id="__codelineno-4-71" name="__codelineno-4-71" href="#__codelineno-4-71"></a><span class="w">        </span><span class="n">Long</span><span class="w"> </span><span class="n">uid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SecureUtils</span><span class="p">.</span><span class="na">getCurrentUid</span><span class="p">();</span>
+<a id="__codelineno-4-72" name="__codelineno-4-72" href="#__codelineno-4-72"></a>
+<a id="__codelineno-4-73" name="__codelineno-4-73" href="#__codelineno-4-73"></a><span class="w">        </span><span class="n">ThirdPartyAppToken</span><span class="w"> </span><span class="n">tokenRecord</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thirdPartyAppTokenRepo</span><span class="p">.</span><span class="na">findByAppIdAndUid</span><span class="p">(</span><span class="n">app</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span><span class="w"> </span><span class="n">uid</span><span class="p">);</span>
+<a id="__codelineno-4-74" name="__codelineno-4-74" href="#__codelineno-4-74"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tokenRecord</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">tokenRecord</span><span class="p">.</span><span class="na">getApiTicket</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-75" name="__codelineno-4-75" href="#__codelineno-4-75"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">JsonResultImpl</span><span class="p">.</span><span class="na">getInstance</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
+<a id="__codelineno-4-76" name="__codelineno-4-76" href="#__codelineno-4-76"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-4-77" name="__codelineno-4-77" href="#__codelineno-4-77"></a>
+<a id="__codelineno-4-78" name="__codelineno-4-78" href="#__codelineno-4-78"></a><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-79" name="__codelineno-4-79" href="#__codelineno-4-79"></a><span class="w">            </span><span class="n">thirdPartyAppTokenService</span><span class="p">.</span><span class="na">parseAndValidateApiTicket</span><span class="p">(</span><span class="n">tokenRecord</span><span class="p">.</span><span class="na">getApiTicket</span><span class="p">());</span>
+<a id="__codelineno-4-80" name="__codelineno-4-80" href="#__codelineno-4-80"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">JsonResultImpl</span><span class="p">.</span><span class="na">getInstance</span><span class="p">(</span><span class="n">maskApiTicket</span><span class="p">(</span><span class="n">tokenRecord</span><span class="p">.</span><span class="na">getApiTicket</span><span class="p">()));</span>
+<a id="__codelineno-4-81" name="__codelineno-4-81" href="#__codelineno-4-81"></a><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">JsonException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-82" name="__codelineno-4-82" href="#__codelineno-4-82"></a><span class="w">            </span><span class="c1">// ApiTicket 无效或已撤销</span>
+<a id="__codelineno-4-83" name="__codelineno-4-83" href="#__codelineno-4-83"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">JsonResultImpl</span><span class="p">.</span><span class="na">getInstance</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
+<a id="__codelineno-4-84" name="__codelineno-4-84" href="#__codelineno-4-84"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-4-85" name="__codelineno-4-85" href="#__codelineno-4-85"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-86" name="__codelineno-4-86" href="#__codelineno-4-86"></a>
+<a id="__codelineno-4-87" name="__codelineno-4-87" href="#__codelineno-4-87"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-4-88" name="__codelineno-4-88" href="#__codelineno-4-88"></a><span class="cm">     * 获取 MCP OAuth 应用。</span>
+<a id="__codelineno-4-89" name="__codelineno-4-89" href="#__codelineno-4-89"></a><span class="cm">     */</span>
+<a id="__codelineno-4-90" name="__codelineno-4-90" href="#__codelineno-4-90"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">ThirdPartyApp</span><span class="w"> </span><span class="nf">getMcpApp</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-91" name="__codelineno-4-91" href="#__codelineno-4-91"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">thirdPartyAppRepo</span><span class="p">.</span><span class="na">findByNameIgnoreCase</span><span class="p">(</span><span class="n">McpConstant</span><span class="p">.</span><span class="na">MCP_OAUTH_APP_NAME</span><span class="p">)</span>
+<a id="__codelineno-4-92" name="__codelineno-4-92" href="#__codelineno-4-92"></a><span class="w">                </span><span class="p">.</span><span class="na">orElseThrow</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JsonException</span><span class="p">(</span><span class="s">&quot;MCP OAuth应用不存在，请检查系统初始化是否正常&quot;</span><span class="p">));</span>
+<a id="__codelineno-4-93" name="__codelineno-4-93" href="#__codelineno-4-93"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-94" name="__codelineno-4-94" href="#__codelineno-4-94"></a>
+<a id="__codelineno-4-95" name="__codelineno-4-95" href="#__codelineno-4-95"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-4-96" name="__codelineno-4-96" href="#__codelineno-4-96"></a><span class="cm">     * 从缓存获取 MCP 应用的 clientSecret。</span>
+<a id="__codelineno-4-97" name="__codelineno-4-97" href="#__codelineno-4-97"></a><span class="cm">     */</span>
+<a id="__codelineno-4-98" name="__codelineno-4-98" href="#__codelineno-4-98"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getClientSecret</span><span class="p">(</span><span class="n">Long</span><span class="w"> </span><span class="n">appId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-99" name="__codelineno-4-99" href="#__codelineno-4-99"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">McpConstant</span><span class="p">.</span><span class="na">MCP_OAUTH_CLIENT_SECRET_CACHE_PREFIX</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">appId</span><span class="p">;</span>
+<a id="__codelineno-4-100" name="__codelineno-4-100" href="#__codelineno-4-100"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">secret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cacheService</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<a id="__codelineno-4-101" name="__codelineno-4-101" href="#__codelineno-4-101"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">secret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-102" name="__codelineno-4-102" href="#__codelineno-4-102"></a><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JsonException</span><span class="p">(</span><span class="s">&quot;MCP应用clientSecret未初始化，请检查系统启动日志&quot;</span><span class="p">);</span>
+<a id="__codelineno-4-103" name="__codelineno-4-103" href="#__codelineno-4-103"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-4-104" name="__codelineno-4-104" href="#__codelineno-4-104"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">secret</span><span class="p">;</span>
+<a id="__codelineno-4-105" name="__codelineno-4-105" href="#__codelineno-4-105"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-106" name="__codelineno-4-106" href="#__codelineno-4-106"></a>
+<a id="__codelineno-4-107" name="__codelineno-4-107" href="#__codelineno-4-107"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-4-108" name="__codelineno-4-108" href="#__codelineno-4-108"></a><span class="cm">     * 遮掩 ApiTicket，只保留首尾各6位字符，中间使用6个*代替。</span>
+<a id="__codelineno-4-109" name="__codelineno-4-109" href="#__codelineno-4-109"></a><span class="cm">     */</span>
+<a id="__codelineno-4-110" name="__codelineno-4-110" href="#__codelineno-4-110"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">maskApiTicket</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">apiTicket</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-111" name="__codelineno-4-111" href="#__codelineno-4-111"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">apiTicket</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">apiTicket</span><span class="p">.</span><span class="na">length</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">12</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-112" name="__codelineno-4-112" href="#__codelineno-4-112"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;******&quot;</span><span class="p">;</span>
+<a id="__codelineno-4-113" name="__codelineno-4-113" href="#__codelineno-4-113"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-4-114" name="__codelineno-4-114" href="#__codelineno-4-114"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">apiTicket</span><span class="p">.</span><span class="na">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;******&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">apiTicket</span><span class="p">.</span><span class="na">substring</span><span class="p">(</span><span class="n">apiTicket</span><span class="p">.</span><span class="na">length</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">6</span><span class="p">);</span>
+<a id="__codelineno-4-115" name="__codelineno-4-115" href="#__codelineno-4-115"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-116" name="__codelineno-4-116" href="#__codelineno-4-116"></a><span class="p">}</span>
+</code></pre></div>
+<ul>
+<li>[ ] <strong>Step 2: 验证编译</strong></li>
+</ul>
+<p>Run: 构建 sfc-ext-mcp 模块，确保编译通过。</p>
+<ul>
+<li>[ ] <strong>Step 3: 提交</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>git<span class="w"> </span>add<span class="w"> </span>sfc-ext/sfc-ext-mcp/src/main/java/com/sfc/mcp/controller/McpOAuthController.java
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(mcp): 添加McpOAuthController实现getApiTicket和getExistingApiTicket接口&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="task-4">Task 4: 完整构建验证</h3>
+<ul>
+<li>[ ] <strong>Step 1: 构建整个项目</strong></li>
+</ul>
+<p>Run: 执行完整项目构建，确保所有模块编译通过。</p>
+<ul>
+<li>[ ] <strong>Step 2: 提交所有变更</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>git<span class="w"> </span>status
+</code></pre></div>
+<p>确认所有变更已提交，工作区干净。</p>
+<hr />
+<h2 id="_2">自查清单</h2>
+<ul>
+<li>[x] 设计文档中的所有需求都有对应任务</li>
+<li>[x] 没有 TBD、TODO 或占位符</li>
+<li>[x] 所有类型、方法签名、属性名称一致</li>
+<li>[x] 所有代码步骤包含完整实现</li>
+<li>[x] 所有文件路径精确</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.expand"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

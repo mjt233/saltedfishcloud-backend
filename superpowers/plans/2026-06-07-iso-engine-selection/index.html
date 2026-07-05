@@ -1,0 +1,3576 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>ISO 解析引擎选择功能实现计划 - 咸鱼云网盘</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#iso" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="咸鱼云网盘" class="md-header__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            咸鱼云网盘
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ISO 解析引擎选择功能实现计划
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../.." class="md-tabs__link">
+          
+  
+  
+  用户手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../develop/" class="md-tabs__link">
+          
+  
+  
+  开发手册
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../oauth/" class="md-tabs__link">
+          
+  
+  
+  OAuth开放平台
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../release-notes/3.1.2/" class="md-tabs__link">
+          
+  
+  
+  版本更新日志
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="咸鱼云网盘" class="md-nav__button md-logo" aria-label="咸鱼云网盘" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    咸鱼云网盘
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2" id="__nav_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    快速开始
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1" id="__nav_1_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    运行部署
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    运行部署
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常规部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_2_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_2_1_2" id="__nav_1_2_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker 与容器化
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_1_2_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_2_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Docker 与容器化
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dockerfile 构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/docker/docker-compose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker Compose 部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/front-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于前端
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/other/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    衍生项目
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3" id="__nav_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件系统说明
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_3_2" id="__nav_1_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/ftp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP服务 ftp-server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/oss-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OSS对象存储 oss-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/minio-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Minio对象存储 minio-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/music/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    音乐插件 music
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/onlyoffice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OnlyOffice在线文档 only-office
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/webrtc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebRTC应用 webrtc
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/webdav/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebDAV文件共享 webdav
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/hadoop-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hadoop存储 hadoop-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/samba-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Samba文件共享 samba-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/sftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTP存储 sftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/ftp-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FTP存储 ftp-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/video-enhance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    视频功能增强 video-enhance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/quick-share/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快捷分享 quick-share
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/web-shell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebShell web-shell
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/network-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网络工具 network-tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/static-publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    静态资源站点 static-publish
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extension/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP服务 mcp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发手册
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发手册
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    简介
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    项目构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/git-commit-convention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git 提交规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    系统功能架构
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    系统功能架构
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_1" id="__nav_2_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件系统
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    文件系统
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/filesystem/file-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文件操作
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/filesystem/storage-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    存储架构与挂载扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/filesystem/attach-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    附属存储
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/config-hello-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置与特性服务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/archive-engine-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    压缩引擎扩展
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    集群兼容
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/async-task/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    异步任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/schedule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    定时任务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/framework/version-update-hook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新数据迁移钩子
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件开发指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    插件开发指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/create-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建插件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/springboot-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spring Boot集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/config-properties/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件配置参数
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/create-front-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    插件前端开发
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../develop/plugin/desktop-component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    桌面组件注册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth开放平台
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    OAuth开放平台
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDC 认证
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/impl-ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    实现参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开放接口列表
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开放接口列表
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    概述与统一规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_2" id="__nav_3_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/user/profile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取用户基本信息
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4_3" id="__nav_3_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    网盘存储相关接口
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    网盘存储相关接口
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/file-list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    获取文件列表
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/upload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    上传文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/download/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    下载文件
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/download-link/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建下载链接
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/mkdir/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    创建目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    复制文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    移动文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/rename/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    重命名文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../oauth/api/storage/delete/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    删除文件或目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    版本更新日志
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    版本更新日志
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release-notes/3.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v3.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#file-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Structure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修改文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        不变文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-1-pxebootproperty-iso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 1: 修改 PxeBootProperty 新增 ISO 配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-2-sevenzipjbindingisofilesystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 2: 新增 SevenZipJBindingIsoFileSystem 实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-3-javaisohandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 3: 修改 JavaIsoHandler 支持动态选择
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 4: 整体编译验证
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="iso">ISO 解析引擎选择功能实现计划</h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> 提供基于 sevenzipjbinding 的 ISO 文件系统实现，管理员可通过后台配置选择使用 sevenzipjbinding 或 java-iso-tools 解析 ISO 文件。</p>
+<p><strong>Architecture:</strong> 在现有 <code>IsoFileSystem</code> 抽象接口下新增 <code>SevenZipJBindingIsoFileSystem</code> 实现，通过 <code>PxeBootProperty</code> 配置项控制 <code>JavaIsoHandler</code> 动态选择实现。上层 <code>IsoHandler</code> 接口和所有消费者代码无需修改。</p>
+<p><strong>Tech Stack:</strong> Java 25, Spring Boot, sevenzipjbinding 16.02-2.01, java-iso-tools 2.1.0</p>
+<hr />
+<h2 id="file-structure">File Structure</h2>
+<h3 id="_1">新增文件</h3>
+<ul>
+<li><code>sfc-ext/sfc-ext-pxe-boot/src/main/java/com/sfc/pxeboot/server/iso/SevenZipJBindingIsoFileSystem.java</code> — sevenzipjbinding ISO 文件系统实现</li>
+</ul>
+<h3 id="_2">修改文件</h3>
+<ul>
+<li><code>sfc-ext/sfc-ext-pxe-boot/src/main/java/com/sfc/pxeboot/PxeBootProperty.java</code> — 新增 iso 分组和 isoEngine 配置项</li>
+<li><code>sfc-ext/sfc-ext-pxe-boot/src/main/java/com/sfc/pxeboot/server/iso/JavaIsoHandler.java</code> — 注入配置，动态选择实现</li>
+</ul>
+<h3 id="_3">不变文件</h3>
+<ul>
+<li><code>IsoHandler.java</code> — 接口不变</li>
+<li><code>IsoFileSystem.java</code> — 接口不变</li>
+<li><code>IsoFileEntry.java</code> — 数据模型不变</li>
+<li><code>JavaIsoToolsIso9660FileSystem.java</code> — 现有实现不变</li>
+<li><code>PxeBootAutoConfiguration.java</code> — 无需修改（Spring 自动注入 <code>JavaIsoHandler</code>）</li>
+<li><code>IsoResourceExtractorService.java</code> — 依赖接口，无需修改</li>
+<li><code>PxeBootController.java</code> — 依赖接口，无需修改</li>
+</ul>
+<hr />
+<h3 id="task-1-pxebootproperty-iso">Task 1: 修改 PxeBootProperty 新增 ISO 配置</h3>
+<p><strong>Files:</strong>
+- Modify: <code>sfc-ext/sfc-ext-pxe-boot/src/main/java/com/sfc/pxeboot/PxeBootProperty.java</code></p>
+<ul>
+<li>[ ] <strong>Step 1: 添加 iso 分组和配置属性</strong></li>
+</ul>
+<p>在 <code>@ConfigPropertyEntity</code> 的 <code>groups</code> 数组中新增 <code>@ConfigPropertiesGroup(id = "iso", name = "ISO 配置")</code>。</p>
+<p>在 <code>PxeBootProperty</code> 类末尾（<code>defaultTimeout</code> 字段之后）新增字段：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="w">    </span><span class="c1">// ==================== ISO 配置 ====================</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="cm">     * ISO 文件解析引擎</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="cm">     */</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nd">@ConfigProperty</span><span class="p">(</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">            </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;iso-engine&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">            </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ISO 解析引擎&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">            </span><span class="n">describe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;选择 ISO 文件解析引擎，sevenzipjbinding 兼容性更好&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">            </span><span class="n">defaultValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;java-iso-tools&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">            </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;iso&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">            </span><span class="n">inputType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;select&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">            </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;java-iso-tools=java-iso-tools,sevenzipjbinding=sevenzipjbinding&quot;</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="p">)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">isoEngine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;java-iso-tools&quot;</span><span class="p">;</span>
+</code></pre></div>
+<ul>
+<li>[ ] <strong>Step 2: 验证编译</strong></li>
+</ul>
+<p>使用 MCP <code>build_project</code> 编译，确认无编译错误。使用 MCP <code>get_file_problems</code> 检查文件无警告。</p>
+<ul>
+<li>[ ] <strong>Step 3: 提交</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>add<span class="w"> </span>sfc-ext/sfc-ext-pxe-boot/src/main/java/com/sfc/pxeboot/PxeBootProperty.java
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(pxe-boot): PxeBootProperty 新增 ISO 解析引擎配置项&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="task-2-sevenzipjbindingisofilesystem">Task 2: 新增 SevenZipJBindingIsoFileSystem 实现</h3>
+<p><strong>Files:</strong>
+- Create: <code>sfc-ext/sfc-ext-pxe-boot/src/main/java/com/sfc/pxeboot/server/iso/SevenZipJBindingIsoFileSystem.java</code></p>
+<p>核心设计：
+- <code>traverse()</code>: 打开 <code>IInArchive</code> 遍历所有条目，转换为 <code>IsoFileEntry</code>。<code>InputStreamSupplier</code> 独立打开自己的 archive 实例，与 traverse 的 archive 生命周期无关。
+- <code>getResource()</code>: 返回 <code>LazySevenZipResource</code>，<code>getInputStream()</code> 时独立打开 archive 并提取文件内容。
+- 文件提取使用 <code>ByteArrayOutputStream</code> 缓冲（PXE 启动文件如 vmlinuz/initrd 通常 &lt; 500MB）。</p>
+<ul>
+<li>[ ] <strong>Step 1: 创建 SevenZipJBindingIsoFileSystem 完整实现</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">package</span><span class="w"> </span><span class="nn">com.sfc.pxeboot.server.iso</span><span class="p">;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lombok.extern.slf4j.Slf4j</span><span class="p">;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">net.sf.sevenzipjbinding.*</span><span class="p">;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">net.sf.sevenzipjbinding.impl.RandomAccessFileInStream</span><span class="p">;</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.jetbrains.annotations.NotNull</span><span class="p">;</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.core.io.AbstractResource</span><span class="p">;</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.core.io.Resource</span><span class="p">;</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.io.*</span><span class="p">;</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.nio.file.Path</span><span class="p">;</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.Date</span><span class="p">;</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.function.Predicate</span><span class="p">;</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="cm">/**</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="cm"> * 基于 SevenZipJBinding 的 ISO 文件系统实现。</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="cm"> * &lt;p&gt;封装所有 sevenzipjbinding 依赖，实现 {@link IsoFileSystem} 接口。</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="cm"> * 支持 ISO9660、UDF 等多种 ISO 格式。&lt;/p&gt;</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="cm"> */</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="nd">@Slf4j</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">SevenZipJBindingIsoFileSystem</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">IsoFileSystem</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">File</span><span class="w"> </span><span class="n">isoFile</span><span class="p">;</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="cm">     * 构造函数。</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="cm">     *</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="cm">     * @param isoFile ISO 文件</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="cm">     */</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">SevenZipJBindingIsoFileSystem</span><span class="p">(</span><span class="n">File</span><span class="w"> </span><span class="n">isoFile</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">isoFile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isoFile</span><span class="p">;</span>
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="w">    </span><span class="nd">@Override</span>
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">traverse</span><span class="p">(</span><span class="n">Predicate</span><span class="o">&lt;</span><span class="n">TraversalEntry</span><span class="o">&gt;</span><span class="w"> </span><span class="n">visitor</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="w">        </span><span class="n">log</span><span class="p">.</span><span class="na">debug</span><span class="p">(</span><span class="s">&quot;[PXE-ISO-7Z] 遍历 ISO 所有条目: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">isoFile</span><span class="p">);</span>
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">RandomAccessFileInStream</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RandomAccessFileInStream</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">RandomAccessFile</span><span class="p">(</span><span class="n">isoFile</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;r&quot;</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="w">            </span><span class="n">IInArchive</span><span class="w"> </span><span class="n">archive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SevenZip</span><span class="p">.</span><span class="na">openInArchive</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">itemCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">archive</span><span class="p">.</span><span class="na">getNumberOfItems</span><span class="p">();</span>
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a><span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">itemCount</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="w">                    </span><span class="n">IsoFileEntry</span><span class="w"> </span><span class="n">fileEntry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toFileEntry</span><span class="p">(</span><span class="n">archive</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="w">                    </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">;</span>
+<a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a><span class="w">                    </span><span class="n">InputStreamSupplier</span><span class="w"> </span><span class="n">supplier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fileEntry</span><span class="p">.</span><span class="na">isFile</span><span class="p">()</span>
+<a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a><span class="w">                        </span><span class="o">?</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">extractByIndex</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+<a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a><span class="w">                        </span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+<a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>
+<a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a><span class="w">                    </span><span class="n">TraversalEntry</span><span class="w"> </span><span class="n">traversalEntry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">TraversalEntry</span><span class="p">(</span><span class="n">fileEntry</span><span class="p">,</span><span class="w"> </span><span class="n">supplier</span><span class="p">);</span>
+<a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a><span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">visitor</span><span class="p">.</span><span class="na">test</span><span class="p">(</span><span class="n">traversalEntry</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a><span class="w">                        </span><span class="k">break</span><span class="p">;</span>
+<a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a><span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a><span class="w">                </span><span class="n">archive</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-2-58" name="__codelineno-2-58" href="#__codelineno-2-58"></a><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SevenZipException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-59" name="__codelineno-2-59" href="#__codelineno-2-59"></a><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IOException</span><span class="p">(</span><span class="s">&quot;遍历 ISO 失败: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">isoFile</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<a id="__codelineno-2-60" name="__codelineno-2-60" href="#__codelineno-2-60"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-61" name="__codelineno-2-61" href="#__codelineno-2-61"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-62" name="__codelineno-2-62" href="#__codelineno-2-62"></a>
+<a id="__codelineno-2-63" name="__codelineno-2-63" href="#__codelineno-2-63"></a><span class="w">    </span><span class="nd">@Override</span>
+<a id="__codelineno-2-64" name="__codelineno-2-64" href="#__codelineno-2-64"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Resource</span><span class="w"> </span><span class="nf">getResource</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">filePath</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-65" name="__codelineno-2-65" href="#__codelineno-2-65"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">exist</span><span class="p">(</span><span class="n">filePath</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-66" name="__codelineno-2-66" href="#__codelineno-2-66"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+<a id="__codelineno-2-67" name="__codelineno-2-67" href="#__codelineno-2-67"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-68" name="__codelineno-2-68" href="#__codelineno-2-68"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">normalizedPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">normalizePath</span><span class="p">(</span><span class="n">filePath</span><span class="p">);</span>
+<a id="__codelineno-2-69" name="__codelineno-2-69" href="#__codelineno-2-69"></a>
+<a id="__codelineno-2-70" name="__codelineno-2-70" href="#__codelineno-2-70"></a><span class="w">        </span><span class="n">log</span><span class="p">.</span><span class="na">debug</span><span class="p">(</span><span class="s">&quot;[PXE-ISO-7Z] 获取 ISO 文件资源: {}, 路径: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">isoFile</span><span class="p">,</span><span class="w"> </span><span class="n">normalizedPath</span><span class="p">);</span>
+<a id="__codelineno-2-71" name="__codelineno-2-71" href="#__codelineno-2-71"></a>
+<a id="__codelineno-2-72" name="__codelineno-2-72" href="#__codelineno-2-72"></a><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">RandomAccessFileInStream</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RandomAccessFileInStream</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">RandomAccessFile</span><span class="p">(</span><span class="n">isoFile</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;r&quot;</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-73" name="__codelineno-2-73" href="#__codelineno-2-73"></a><span class="w">            </span><span class="n">IInArchive</span><span class="w"> </span><span class="n">archive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SevenZip</span><span class="p">.</span><span class="na">openInArchive</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
+<a id="__codelineno-2-74" name="__codelineno-2-74" href="#__codelineno-2-74"></a><span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-75" name="__codelineno-2-75" href="#__codelineno-2-75"></a><span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">itemCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">archive</span><span class="p">.</span><span class="na">getNumberOfItems</span><span class="p">();</span>
+<a id="__codelineno-2-76" name="__codelineno-2-76" href="#__codelineno-2-76"></a><span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">itemCount</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-77" name="__codelineno-2-77" href="#__codelineno-2-77"></a><span class="w">                    </span><span class="n">IsoFileEntry</span><span class="w"> </span><span class="n">entry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toFileEntry</span><span class="p">(</span><span class="n">archive</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+<a id="__codelineno-2-78" name="__codelineno-2-78" href="#__codelineno-2-78"></a><span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">entry</span><span class="p">.</span><span class="na">isFile</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">entry</span><span class="p">.</span><span class="na">getPath</span><span class="p">().</span><span class="na">equalsIgnoreCase</span><span class="p">(</span><span class="n">normalizedPath</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-79" name="__codelineno-2-79" href="#__codelineno-2-79"></a><span class="w">                        </span><span class="n">String</span><span class="w"> </span><span class="n">fileName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Path</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">filePath</span><span class="p">).</span><span class="na">getFileName</span><span class="p">().</span><span class="na">toString</span><span class="p">();</span>
+<a id="__codelineno-2-80" name="__codelineno-2-80" href="#__codelineno-2-80"></a><span class="w">                        </span><span class="kt">long</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">entry</span><span class="p">.</span><span class="na">getSize</span><span class="p">();</span>
+<a id="__codelineno-2-81" name="__codelineno-2-81" href="#__codelineno-2-81"></a><span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LazySevenZipResource</span><span class="p">(</span><span class="n">isoFile</span><span class="p">,</span><span class="w"> </span><span class="n">normalizedPath</span><span class="p">,</span><span class="w"> </span><span class="n">fileName</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">);</span>
+<a id="__codelineno-2-82" name="__codelineno-2-82" href="#__codelineno-2-82"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-83" name="__codelineno-2-83" href="#__codelineno-2-83"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-2-84" name="__codelineno-2-84" href="#__codelineno-2-84"></a><span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-85" name="__codelineno-2-85" href="#__codelineno-2-85"></a><span class="w">                </span><span class="n">archive</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-86" name="__codelineno-2-86" href="#__codelineno-2-86"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-2-87" name="__codelineno-2-87" href="#__codelineno-2-87"></a><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SevenZipException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-88" name="__codelineno-2-88" href="#__codelineno-2-88"></a><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IOException</span><span class="p">(</span><span class="s">&quot;获取 ISO 资源失败: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">isoFile</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<a id="__codelineno-2-89" name="__codelineno-2-89" href="#__codelineno-2-89"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-90" name="__codelineno-2-90" href="#__codelineno-2-90"></a>
+<a id="__codelineno-2-91" name="__codelineno-2-91" href="#__codelineno-2-91"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+<a id="__codelineno-2-92" name="__codelineno-2-92" href="#__codelineno-2-92"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-93" name="__codelineno-2-93" href="#__codelineno-2-93"></a>
+<a id="__codelineno-2-94" name="__codelineno-2-94" href="#__codelineno-2-94"></a><span class="w">    </span><span class="c1">// ==================== Helper Methods ====================</span>
+<a id="__codelineno-2-95" name="__codelineno-2-95" href="#__codelineno-2-95"></a>
+<a id="__codelineno-2-96" name="__codelineno-2-96" href="#__codelineno-2-96"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">normalizePath</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">path</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-97" name="__codelineno-2-97" href="#__codelineno-2-97"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">path</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-98" name="__codelineno-2-98" href="#__codelineno-2-98"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;/&quot;</span><span class="p">;</span>
+<a id="__codelineno-2-99" name="__codelineno-2-99" href="#__codelineno-2-99"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-100" name="__codelineno-2-100" href="#__codelineno-2-100"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">normalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">.</span><span class="na">replace</span><span class="p">(</span><span class="s">&quot;\\&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/&quot;</span><span class="p">);</span>
+<a id="__codelineno-2-101" name="__codelineno-2-101" href="#__codelineno-2-101"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">normalized</span><span class="p">.</span><span class="na">startsWith</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-102" name="__codelineno-2-102" href="#__codelineno-2-102"></a><span class="w">            </span><span class="n">normalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;/&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">normalized</span><span class="p">;</span>
+<a id="__codelineno-2-103" name="__codelineno-2-103" href="#__codelineno-2-103"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-104" name="__codelineno-2-104" href="#__codelineno-2-104"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">normalized</span><span class="p">.</span><span class="na">endsWith</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">normalized</span><span class="p">.</span><span class="na">length</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-105" name="__codelineno-2-105" href="#__codelineno-2-105"></a><span class="w">            </span><span class="n">normalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">normalized</span><span class="p">.</span><span class="na">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">normalized</span><span class="p">.</span><span class="na">length</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<a id="__codelineno-2-106" name="__codelineno-2-106" href="#__codelineno-2-106"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-107" name="__codelineno-2-107" href="#__codelineno-2-107"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">normalized</span><span class="p">;</span>
+<a id="__codelineno-2-108" name="__codelineno-2-108" href="#__codelineno-2-108"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-109" name="__codelineno-2-109" href="#__codelineno-2-109"></a>
+<a id="__codelineno-2-110" name="__codelineno-2-110" href="#__codelineno-2-110"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">IsoFileEntry</span><span class="w"> </span><span class="nf">toFileEntry</span><span class="p">(</span><span class="n">IInArchive</span><span class="w"> </span><span class="n">archive</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">index</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">SevenZipException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-111" name="__codelineno-2-111" href="#__codelineno-2-111"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="n">archive</span><span class="p">.</span><span class="na">getProperty</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="w"> </span><span class="n">PropID</span><span class="p">.</span><span class="na">PATH</span><span class="p">);</span>
+<a id="__codelineno-2-112" name="__codelineno-2-112" href="#__codelineno-2-112"></a><span class="w">        </span><span class="n">Boolean</span><span class="w"> </span><span class="n">isFolder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Boolean</span><span class="p">)</span><span class="w"> </span><span class="n">archive</span><span class="p">.</span><span class="na">getProperty</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="w"> </span><span class="n">PropID</span><span class="p">.</span><span class="na">IS_FOLDER</span><span class="p">);</span>
+<a id="__codelineno-2-113" name="__codelineno-2-113" href="#__codelineno-2-113"></a><span class="w">        </span><span class="kt">long</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Long</span><span class="p">)</span><span class="w"> </span><span class="n">archive</span><span class="p">.</span><span class="na">getProperty</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="w"> </span><span class="n">PropID</span><span class="p">.</span><span class="na">SIZE</span><span class="p">);</span>
+<a id="__codelineno-2-114" name="__codelineno-2-114" href="#__codelineno-2-114"></a><span class="w">        </span><span class="n">Date</span><span class="w"> </span><span class="n">lastModified</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Date</span><span class="p">)</span><span class="w"> </span><span class="n">archive</span><span class="p">.</span><span class="na">getProperty</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="w"> </span><span class="n">PropID</span><span class="p">.</span><span class="na">LAST_MODIFICATION_TIME</span><span class="p">);</span>
+<a id="__codelineno-2-115" name="__codelineno-2-115" href="#__codelineno-2-115"></a>
+<a id="__codelineno-2-116" name="__codelineno-2-116" href="#__codelineno-2-116"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-117" name="__codelineno-2-117" href="#__codelineno-2-117"></a><span class="w">            </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">;</span>
+<a id="__codelineno-2-118" name="__codelineno-2-118" href="#__codelineno-2-118"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-119" name="__codelineno-2-119" href="#__codelineno-2-119"></a><span class="w">        </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">.</span><span class="na">replace</span><span class="p">(</span><span class="s">&quot;\\&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/&quot;</span><span class="p">);</span>
+<a id="__codelineno-2-120" name="__codelineno-2-120" href="#__codelineno-2-120"></a>
+<a id="__codelineno-2-121" name="__codelineno-2-121" href="#__codelineno-2-121"></a><span class="w">        </span><span class="kt">boolean</span><span class="w"> </span><span class="n">isDir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isFolder</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">isFolder</span><span class="p">;</span>
+<a id="__codelineno-2-122" name="__codelineno-2-122" href="#__codelineno-2-122"></a>
+<a id="__codelineno-2-123" name="__codelineno-2-123" href="#__codelineno-2-123"></a><span class="w">        </span><span class="c1">// 根目录特殊情况</span>
+<a id="__codelineno-2-124" name="__codelineno-2-124" href="#__codelineno-2-124"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">()</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">path</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-125" name="__codelineno-2-125" href="#__codelineno-2-125"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IsoFileEntry</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">isDir</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">size</span><span class="p">,</span>
+<a id="__codelineno-2-126" name="__codelineno-2-126" href="#__codelineno-2-126"></a><span class="w">                </span><span class="n">lastModified</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">lastModified</span><span class="p">.</span><span class="na">getTime</span><span class="p">()</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-2-127" name="__codelineno-2-127" href="#__codelineno-2-127"></a><span class="w">                </span><span class="n">IsoFileEntry</span><span class="p">.</span><span class="na">EntryType</span><span class="p">.</span><span class="na">DIRECTORY</span><span class="p">);</span>
+<a id="__codelineno-2-128" name="__codelineno-2-128" href="#__codelineno-2-128"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-129" name="__codelineno-2-129" href="#__codelineno-2-129"></a>
+<a id="__codelineno-2-130" name="__codelineno-2-130" href="#__codelineno-2-130"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">path</span><span class="p">.</span><span class="na">startsWith</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-131" name="__codelineno-2-131" href="#__codelineno-2-131"></a><span class="w">            </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;/&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">path</span><span class="p">;</span>
+<a id="__codelineno-2-132" name="__codelineno-2-132" href="#__codelineno-2-132"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-133" name="__codelineno-2-133" href="#__codelineno-2-133"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="p">.</span><span class="na">endsWith</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-134" name="__codelineno-2-134" href="#__codelineno-2-134"></a><span class="w">            </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">.</span><span class="na">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="p">.</span><span class="na">length</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<a id="__codelineno-2-135" name="__codelineno-2-135" href="#__codelineno-2-135"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-136" name="__codelineno-2-136" href="#__codelineno-2-136"></a>
+<a id="__codelineno-2-137" name="__codelineno-2-137" href="#__codelineno-2-137"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Path</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">path</span><span class="p">).</span><span class="na">getFileName</span><span class="p">().</span><span class="na">toString</span><span class="p">();</span>
+<a id="__codelineno-2-138" name="__codelineno-2-138" href="#__codelineno-2-138"></a><span class="w">        </span><span class="n">IsoFileEntry</span><span class="p">.</span><span class="na">EntryType</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isDir</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">IsoFileEntry</span><span class="p">.</span><span class="na">EntryType</span><span class="p">.</span><span class="na">DIRECTORY</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IsoFileEntry</span><span class="p">.</span><span class="na">EntryType</span><span class="p">.</span><span class="na">FILE</span><span class="p">;</span>
+<a id="__codelineno-2-139" name="__codelineno-2-139" href="#__codelineno-2-139"></a>
+<a id="__codelineno-2-140" name="__codelineno-2-140" href="#__codelineno-2-140"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IsoFileEntry</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">isDir</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">size</span><span class="p">,</span>
+<a id="__codelineno-2-141" name="__codelineno-2-141" href="#__codelineno-2-141"></a><span class="w">            </span><span class="n">lastModified</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">lastModified</span><span class="p">.</span><span class="na">getTime</span><span class="p">()</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="p">);</span>
+<a id="__codelineno-2-142" name="__codelineno-2-142" href="#__codelineno-2-142"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-143" name="__codelineno-2-143" href="#__codelineno-2-143"></a>
+<a id="__codelineno-2-144" name="__codelineno-2-144" href="#__codelineno-2-144"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-145" name="__codelineno-2-145" href="#__codelineno-2-145"></a><span class="cm">     * 按索引提取文件内容为 InputStream（独立打开 archive，线程安全）。</span>
+<a id="__codelineno-2-146" name="__codelineno-2-146" href="#__codelineno-2-146"></a><span class="cm">     */</span>
+<a id="__codelineno-2-147" name="__codelineno-2-147" href="#__codelineno-2-147"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">InputStream</span><span class="w"> </span><span class="nf">extractByIndex</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">index</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-148" name="__codelineno-2-148" href="#__codelineno-2-148"></a><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-149" name="__codelineno-2-149" href="#__codelineno-2-149"></a><span class="w">            </span><span class="n">RandomAccessFileInStream</span><span class="w"> </span><span class="n">rafStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RandomAccessFileInStream</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">RandomAccessFile</span><span class="p">(</span><span class="n">isoFile</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;r&quot;</span><span class="p">));</span>
+<a id="__codelineno-2-150" name="__codelineno-2-150" href="#__codelineno-2-150"></a><span class="w">            </span><span class="n">IInArchive</span><span class="w"> </span><span class="n">archive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SevenZip</span><span class="p">.</span><span class="na">openInArchive</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">rafStream</span><span class="p">);</span>
+<a id="__codelineno-2-151" name="__codelineno-2-151" href="#__codelineno-2-151"></a><span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-152" name="__codelineno-2-152" href="#__codelineno-2-152"></a><span class="w">                </span><span class="n">ByteArrayOutputStream</span><span class="w"> </span><span class="n">baos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ByteArrayOutputStream</span><span class="p">();</span>
+<a id="__codelineno-2-153" name="__codelineno-2-153" href="#__codelineno-2-153"></a><span class="w">                </span><span class="n">archive</span><span class="p">.</span><span class="na">extractItems</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="n">index</span><span class="p">},</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IArchiveExtractCallback</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-154" name="__codelineno-2-154" href="#__codelineno-2-154"></a><span class="w">                    </span><span class="nd">@Override</span>
+<a id="__codelineno-2-155" name="__codelineno-2-155" href="#__codelineno-2-155"></a><span class="w">                    </span><span class="kd">public</span><span class="w"> </span><span class="n">ISequentialOutStream</span><span class="w"> </span><span class="nf">getStream</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="n">ExtractAskMode</span><span class="w"> </span><span class="n">extractAskMode</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">SevenZipException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-156" name="__codelineno-2-156" href="#__codelineno-2-156"></a><span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">extractAskMode</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">ExtractAskMode</span><span class="p">.</span><span class="na">EXTRACT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-157" name="__codelineno-2-157" href="#__codelineno-2-157"></a><span class="w">                            </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+<a id="__codelineno-2-158" name="__codelineno-2-158" href="#__codelineno-2-158"></a><span class="w">                        </span><span class="p">}</span>
+<a id="__codelineno-2-159" name="__codelineno-2-159" href="#__codelineno-2-159"></a><span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-160" name="__codelineno-2-160" href="#__codelineno-2-160"></a><span class="w">                            </span><span class="n">baos</span><span class="p">.</span><span class="na">write</span><span class="p">(</span><span class="n">data</span><span class="p">);</span>
+<a id="__codelineno-2-161" name="__codelineno-2-161" href="#__codelineno-2-161"></a><span class="w">                            </span><span class="k">return</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="na">length</span><span class="p">;</span>
+<a id="__codelineno-2-162" name="__codelineno-2-162" href="#__codelineno-2-162"></a><span class="w">                        </span><span class="p">};</span>
+<a id="__codelineno-2-163" name="__codelineno-2-163" href="#__codelineno-2-163"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-164" name="__codelineno-2-164" href="#__codelineno-2-164"></a>
+<a id="__codelineno-2-165" name="__codelineno-2-165" href="#__codelineno-2-165"></a><span class="w">                    </span><span class="nd">@Override</span>
+<a id="__codelineno-2-166" name="__codelineno-2-166" href="#__codelineno-2-166"></a><span class="w">                    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">prepareOperation</span><span class="p">(</span><span class="n">ExtractAskMode</span><span class="w"> </span><span class="n">extractAskMode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-167" name="__codelineno-2-167" href="#__codelineno-2-167"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-168" name="__codelineno-2-168" href="#__codelineno-2-168"></a>
+<a id="__codelineno-2-169" name="__codelineno-2-169" href="#__codelineno-2-169"></a><span class="w">                    </span><span class="nd">@Override</span>
+<a id="__codelineno-2-170" name="__codelineno-2-170" href="#__codelineno-2-170"></a><span class="w">                    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setOperationResult</span><span class="p">(</span><span class="n">ExtractOperationResult</span><span class="w"> </span><span class="n">extractOperationResult</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">SevenZipException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-171" name="__codelineno-2-171" href="#__codelineno-2-171"></a><span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">extractOperationResult</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">ExtractOperationResult</span><span class="p">.</span><span class="na">OK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-172" name="__codelineno-2-172" href="#__codelineno-2-172"></a><span class="w">                            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SevenZipException</span><span class="p">(</span><span class="s">&quot;提取失败: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">extractOperationResult</span><span class="p">);</span>
+<a id="__codelineno-2-173" name="__codelineno-2-173" href="#__codelineno-2-173"></a><span class="w">                        </span><span class="p">}</span>
+<a id="__codelineno-2-174" name="__codelineno-2-174" href="#__codelineno-2-174"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-175" name="__codelineno-2-175" href="#__codelineno-2-175"></a>
+<a id="__codelineno-2-176" name="__codelineno-2-176" href="#__codelineno-2-176"></a><span class="w">                    </span><span class="nd">@Override</span>
+<a id="__codelineno-2-177" name="__codelineno-2-177" href="#__codelineno-2-177"></a><span class="w">                    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setCompleted</span><span class="p">(</span><span class="kt">long</span><span class="w"> </span><span class="n">completeValue</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-178" name="__codelineno-2-178" href="#__codelineno-2-178"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-179" name="__codelineno-2-179" href="#__codelineno-2-179"></a>
+<a id="__codelineno-2-180" name="__codelineno-2-180" href="#__codelineno-2-180"></a><span class="w">                    </span><span class="nd">@Override</span>
+<a id="__codelineno-2-181" name="__codelineno-2-181" href="#__codelineno-2-181"></a><span class="w">                    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setTotal</span><span class="p">(</span><span class="kt">long</span><span class="w"> </span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-182" name="__codelineno-2-182" href="#__codelineno-2-182"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-183" name="__codelineno-2-183" href="#__codelineno-2-183"></a><span class="w">                </span><span class="p">});</span>
+<a id="__codelineno-2-184" name="__codelineno-2-184" href="#__codelineno-2-184"></a><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ByteArrayInputStream</span><span class="p">(</span><span class="n">baos</span><span class="p">.</span><span class="na">toByteArray</span><span class="p">());</span>
+<a id="__codelineno-2-185" name="__codelineno-2-185" href="#__codelineno-2-185"></a><span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-186" name="__codelineno-2-186" href="#__codelineno-2-186"></a><span class="w">                </span><span class="n">archive</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-187" name="__codelineno-2-187" href="#__codelineno-2-187"></a><span class="w">                </span><span class="n">rafStream</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-188" name="__codelineno-2-188" href="#__codelineno-2-188"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-2-189" name="__codelineno-2-189" href="#__codelineno-2-189"></a><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SevenZipException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-190" name="__codelineno-2-190" href="#__codelineno-2-190"></a><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IOException</span><span class="p">(</span><span class="s">&quot;提取 ISO 文件失败, index=&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<a id="__codelineno-2-191" name="__codelineno-2-191" href="#__codelineno-2-191"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-192" name="__codelineno-2-192" href="#__codelineno-2-192"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-193" name="__codelineno-2-193" href="#__codelineno-2-193"></a>
+<a id="__codelineno-2-194" name="__codelineno-2-194" href="#__codelineno-2-194"></a><span class="w">    </span><span class="c1">// ==================== Inner Classes ====================</span>
+<a id="__codelineno-2-195" name="__codelineno-2-195" href="#__codelineno-2-195"></a>
+<a id="__codelineno-2-196" name="__codelineno-2-196" href="#__codelineno-2-196"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-2-197" name="__codelineno-2-197" href="#__codelineno-2-197"></a><span class="cm">     * 惰性 ISO 文件资源（SevenZipJBinding 版本）。</span>
+<a id="__codelineno-2-198" name="__codelineno-2-198" href="#__codelineno-2-198"></a><span class="cm">     * &lt;p&gt;getInputStream() 时才打开 ISO 并提取文件内容。&lt;/p&gt;</span>
+<a id="__codelineno-2-199" name="__codelineno-2-199" href="#__codelineno-2-199"></a><span class="cm">     */</span>
+<a id="__codelineno-2-200" name="__codelineno-2-200" href="#__codelineno-2-200"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LazySevenZipResource</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">AbstractResource</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-201" name="__codelineno-2-201" href="#__codelineno-2-201"></a><span class="w">        </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">File</span><span class="w"> </span><span class="n">isoFile</span><span class="p">;</span>
+<a id="__codelineno-2-202" name="__codelineno-2-202" href="#__codelineno-2-202"></a><span class="w">        </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">filePath</span><span class="p">;</span>
+<a id="__codelineno-2-203" name="__codelineno-2-203" href="#__codelineno-2-203"></a><span class="w">        </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">fileName</span><span class="p">;</span>
+<a id="__codelineno-2-204" name="__codelineno-2-204" href="#__codelineno-2-204"></a><span class="w">        </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">size</span><span class="p">;</span>
+<a id="__codelineno-2-205" name="__codelineno-2-205" href="#__codelineno-2-205"></a>
+<a id="__codelineno-2-206" name="__codelineno-2-206" href="#__codelineno-2-206"></a><span class="w">        </span><span class="n">LazySevenZipResource</span><span class="p">(</span><span class="n">File</span><span class="w"> </span><span class="n">isoFile</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">filePath</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">fileName</span><span class="p">,</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-207" name="__codelineno-2-207" href="#__codelineno-2-207"></a><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">isoFile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isoFile</span><span class="p">;</span>
+<a id="__codelineno-2-208" name="__codelineno-2-208" href="#__codelineno-2-208"></a><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">filePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">filePath</span><span class="p">;</span>
+<a id="__codelineno-2-209" name="__codelineno-2-209" href="#__codelineno-2-209"></a><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">fileName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fileName</span><span class="p">;</span>
+<a id="__codelineno-2-210" name="__codelineno-2-210" href="#__codelineno-2-210"></a><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">;</span>
+<a id="__codelineno-2-211" name="__codelineno-2-211" href="#__codelineno-2-211"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-212" name="__codelineno-2-212" href="#__codelineno-2-212"></a>
+<a id="__codelineno-2-213" name="__codelineno-2-213" href="#__codelineno-2-213"></a><span class="w">        </span><span class="nd">@Override</span>
+<a id="__codelineno-2-214" name="__codelineno-2-214" href="#__codelineno-2-214"></a><span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getFilename</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-215" name="__codelineno-2-215" href="#__codelineno-2-215"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">fileName</span><span class="p">;</span>
+<a id="__codelineno-2-216" name="__codelineno-2-216" href="#__codelineno-2-216"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-217" name="__codelineno-2-217" href="#__codelineno-2-217"></a>
+<a id="__codelineno-2-218" name="__codelineno-2-218" href="#__codelineno-2-218"></a><span class="w">        </span><span class="nd">@NotNull</span>
+<a id="__codelineno-2-219" name="__codelineno-2-219" href="#__codelineno-2-219"></a><span class="w">        </span><span class="nd">@Override</span>
+<a id="__codelineno-2-220" name="__codelineno-2-220" href="#__codelineno-2-220"></a><span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="n">InputStream</span><span class="w"> </span><span class="nf">getInputStream</span><span class="p">()</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-221" name="__codelineno-2-221" href="#__codelineno-2-221"></a><span class="w">            </span><span class="n">RandomAccessFileInStream</span><span class="w"> </span><span class="n">rafStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RandomAccessFileInStream</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">RandomAccessFile</span><span class="p">(</span><span class="n">isoFile</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;r&quot;</span><span class="p">));</span>
+<a id="__codelineno-2-222" name="__codelineno-2-222" href="#__codelineno-2-222"></a><span class="w">            </span><span class="n">IInArchive</span><span class="w"> </span><span class="n">archive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SevenZip</span><span class="p">.</span><span class="na">openInArchive</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">rafStream</span><span class="p">);</span>
+<a id="__codelineno-2-223" name="__codelineno-2-223" href="#__codelineno-2-223"></a><span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-224" name="__codelineno-2-224" href="#__codelineno-2-224"></a><span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">itemCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">archive</span><span class="p">.</span><span class="na">getNumberOfItems</span><span class="p">();</span>
+<a id="__codelineno-2-225" name="__codelineno-2-225" href="#__codelineno-2-225"></a><span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">itemCount</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-226" name="__codelineno-2-226" href="#__codelineno-2-226"></a><span class="w">                    </span><span class="n">String</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="n">archive</span><span class="p">.</span><span class="na">getProperty</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">PropID</span><span class="p">.</span><span class="na">PATH</span><span class="p">);</span>
+<a id="__codelineno-2-227" name="__codelineno-2-227" href="#__codelineno-2-227"></a><span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-228" name="__codelineno-2-228" href="#__codelineno-2-228"></a><span class="w">                        </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">;</span>
+<a id="__codelineno-2-229" name="__codelineno-2-229" href="#__codelineno-2-229"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-230" name="__codelineno-2-230" href="#__codelineno-2-230"></a><span class="w">                    </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">.</span><span class="na">replace</span><span class="p">(</span><span class="s">&quot;\\&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/&quot;</span><span class="p">);</span>
+<a id="__codelineno-2-231" name="__codelineno-2-231" href="#__codelineno-2-231"></a><span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">path</span><span class="p">.</span><span class="na">startsWith</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-232" name="__codelineno-2-232" href="#__codelineno-2-232"></a><span class="w">                        </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;/&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">path</span><span class="p">;</span>
+<a id="__codelineno-2-233" name="__codelineno-2-233" href="#__codelineno-2-233"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-234" name="__codelineno-2-234" href="#__codelineno-2-234"></a><span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="p">.</span><span class="na">endsWith</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-235" name="__codelineno-2-235" href="#__codelineno-2-235"></a><span class="w">                        </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">.</span><span class="na">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="p">.</span><span class="na">length</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<a id="__codelineno-2-236" name="__codelineno-2-236" href="#__codelineno-2-236"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-237" name="__codelineno-2-237" href="#__codelineno-2-237"></a>
+<a id="__codelineno-2-238" name="__codelineno-2-238" href="#__codelineno-2-238"></a><span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="p">.</span><span class="na">equalsIgnoreCase</span><span class="p">(</span><span class="n">filePath</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-239" name="__codelineno-2-239" href="#__codelineno-2-239"></a><span class="w">                        </span><span class="n">ByteArrayOutputStream</span><span class="w"> </span><span class="n">baos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ByteArrayOutputStream</span><span class="p">();</span>
+<a id="__codelineno-2-240" name="__codelineno-2-240" href="#__codelineno-2-240"></a><span class="w">                        </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">;</span>
+<a id="__codelineno-2-241" name="__codelineno-2-241" href="#__codelineno-2-241"></a><span class="w">                        </span><span class="n">archive</span><span class="p">.</span><span class="na">extractItems</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="n">index</span><span class="p">},</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IArchiveExtractCallback</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-242" name="__codelineno-2-242" href="#__codelineno-2-242"></a><span class="w">                            </span><span class="nd">@Override</span>
+<a id="__codelineno-2-243" name="__codelineno-2-243" href="#__codelineno-2-243"></a><span class="w">                            </span><span class="kd">public</span><span class="w"> </span><span class="n">ISequentialOutStream</span><span class="w"> </span><span class="nf">getStream</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="n">ExtractAskMode</span><span class="w"> </span><span class="n">extractAskMode</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">SevenZipException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-244" name="__codelineno-2-244" href="#__codelineno-2-244"></a><span class="w">                                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">extractAskMode</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">ExtractAskMode</span><span class="p">.</span><span class="na">EXTRACT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-245" name="__codelineno-2-245" href="#__codelineno-2-245"></a><span class="w">                                    </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+<a id="__codelineno-2-246" name="__codelineno-2-246" href="#__codelineno-2-246"></a><span class="w">                                </span><span class="p">}</span>
+<a id="__codelineno-2-247" name="__codelineno-2-247" href="#__codelineno-2-247"></a><span class="w">                                </span><span class="k">return</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-248" name="__codelineno-2-248" href="#__codelineno-2-248"></a><span class="w">                                    </span><span class="n">baos</span><span class="p">.</span><span class="na">write</span><span class="p">(</span><span class="n">data</span><span class="p">);</span>
+<a id="__codelineno-2-249" name="__codelineno-2-249" href="#__codelineno-2-249"></a><span class="w">                                    </span><span class="k">return</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="na">length</span><span class="p">;</span>
+<a id="__codelineno-2-250" name="__codelineno-2-250" href="#__codelineno-2-250"></a><span class="w">                                </span><span class="p">};</span>
+<a id="__codelineno-2-251" name="__codelineno-2-251" href="#__codelineno-2-251"></a><span class="w">                            </span><span class="p">}</span>
+<a id="__codelineno-2-252" name="__codelineno-2-252" href="#__codelineno-2-252"></a>
+<a id="__codelineno-2-253" name="__codelineno-2-253" href="#__codelineno-2-253"></a><span class="w">                            </span><span class="nd">@Override</span>
+<a id="__codelineno-2-254" name="__codelineno-2-254" href="#__codelineno-2-254"></a><span class="w">                            </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">prepareOperation</span><span class="p">(</span><span class="n">ExtractAskMode</span><span class="w"> </span><span class="n">extractAskMode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-255" name="__codelineno-2-255" href="#__codelineno-2-255"></a><span class="w">                            </span><span class="p">}</span>
+<a id="__codelineno-2-256" name="__codelineno-2-256" href="#__codelineno-2-256"></a>
+<a id="__codelineno-2-257" name="__codelineno-2-257" href="#__codelineno-2-257"></a><span class="w">                            </span><span class="nd">@Override</span>
+<a id="__codelineno-2-258" name="__codelineno-2-258" href="#__codelineno-2-258"></a><span class="w">                            </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setOperationResult</span><span class="p">(</span><span class="n">ExtractOperationResult</span><span class="w"> </span><span class="n">extractOperationResult</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">SevenZipException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-259" name="__codelineno-2-259" href="#__codelineno-2-259"></a><span class="w">                                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">extractOperationResult</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">ExtractOperationResult</span><span class="p">.</span><span class="na">OK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-260" name="__codelineno-2-260" href="#__codelineno-2-260"></a><span class="w">                                    </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SevenZipException</span><span class="p">(</span><span class="s">&quot;提取失败: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">extractOperationResult</span><span class="p">);</span>
+<a id="__codelineno-2-261" name="__codelineno-2-261" href="#__codelineno-2-261"></a><span class="w">                                </span><span class="p">}</span>
+<a id="__codelineno-2-262" name="__codelineno-2-262" href="#__codelineno-2-262"></a><span class="w">                            </span><span class="p">}</span>
+<a id="__codelineno-2-263" name="__codelineno-2-263" href="#__codelineno-2-263"></a>
+<a id="__codelineno-2-264" name="__codelineno-2-264" href="#__codelineno-2-264"></a><span class="w">                            </span><span class="nd">@Override</span>
+<a id="__codelineno-2-265" name="__codelineno-2-265" href="#__codelineno-2-265"></a><span class="w">                            </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setCompleted</span><span class="p">(</span><span class="kt">long</span><span class="w"> </span><span class="n">completeValue</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-266" name="__codelineno-2-266" href="#__codelineno-2-266"></a><span class="w">                            </span><span class="p">}</span>
+<a id="__codelineno-2-267" name="__codelineno-2-267" href="#__codelineno-2-267"></a>
+<a id="__codelineno-2-268" name="__codelineno-2-268" href="#__codelineno-2-268"></a><span class="w">                            </span><span class="nd">@Override</span>
+<a id="__codelineno-2-269" name="__codelineno-2-269" href="#__codelineno-2-269"></a><span class="w">                            </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setTotal</span><span class="p">(</span><span class="kt">long</span><span class="w"> </span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-270" name="__codelineno-2-270" href="#__codelineno-2-270"></a><span class="w">                            </span><span class="p">}</span>
+<a id="__codelineno-2-271" name="__codelineno-2-271" href="#__codelineno-2-271"></a><span class="w">                        </span><span class="p">});</span>
+<a id="__codelineno-2-272" name="__codelineno-2-272" href="#__codelineno-2-272"></a><span class="w">                        </span><span class="n">archive</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-273" name="__codelineno-2-273" href="#__codelineno-2-273"></a><span class="w">                        </span><span class="n">rafStream</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-274" name="__codelineno-2-274" href="#__codelineno-2-274"></a><span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ByteArrayInputStream</span><span class="p">(</span><span class="n">baos</span><span class="p">.</span><span class="na">toByteArray</span><span class="p">());</span>
+<a id="__codelineno-2-275" name="__codelineno-2-275" href="#__codelineno-2-275"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-2-276" name="__codelineno-2-276" href="#__codelineno-2-276"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-2-277" name="__codelineno-2-277" href="#__codelineno-2-277"></a><span class="w">                </span><span class="n">archive</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-278" name="__codelineno-2-278" href="#__codelineno-2-278"></a><span class="w">                </span><span class="n">rafStream</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-279" name="__codelineno-2-279" href="#__codelineno-2-279"></a><span class="w">                </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IOException</span><span class="p">(</span><span class="s">&quot;ISO 中未找到文件: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">filePath</span><span class="p">);</span>
+<a id="__codelineno-2-280" name="__codelineno-2-280" href="#__codelineno-2-280"></a><span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-281" name="__codelineno-2-281" href="#__codelineno-2-281"></a><span class="w">                </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-282" name="__codelineno-2-282" href="#__codelineno-2-282"></a><span class="w">                    </span><span class="n">archive</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-283" name="__codelineno-2-283" href="#__codelineno-2-283"></a><span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">ignored</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-284" name="__codelineno-2-284" href="#__codelineno-2-284"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-2-285" name="__codelineno-2-285" href="#__codelineno-2-285"></a><span class="w">                </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-286" name="__codelineno-2-286" href="#__codelineno-2-286"></a><span class="w">                    </span><span class="n">rafStream</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<a id="__codelineno-2-287" name="__codelineno-2-287" href="#__codelineno-2-287"></a><span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">ignored</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-288" name="__codelineno-2-288" href="#__codelineno-2-288"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-2-289" name="__codelineno-2-289" href="#__codelineno-2-289"></a><span class="w">                </span><span class="k">throw</span><span class="w"> </span><span class="n">e</span><span class="p">;</span>
+<a id="__codelineno-2-290" name="__codelineno-2-290" href="#__codelineno-2-290"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-2-291" name="__codelineno-2-291" href="#__codelineno-2-291"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-292" name="__codelineno-2-292" href="#__codelineno-2-292"></a>
+<a id="__codelineno-2-293" name="__codelineno-2-293" href="#__codelineno-2-293"></a><span class="w">        </span><span class="nd">@Override</span>
+<a id="__codelineno-2-294" name="__codelineno-2-294" href="#__codelineno-2-294"></a><span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">exists</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-295" name="__codelineno-2-295" href="#__codelineno-2-295"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span>
+<a id="__codelineno-2-296" name="__codelineno-2-296" href="#__codelineno-2-296"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-297" name="__codelineno-2-297" href="#__codelineno-2-297"></a>
+<a id="__codelineno-2-298" name="__codelineno-2-298" href="#__codelineno-2-298"></a><span class="w">        </span><span class="nd">@Override</span>
+<a id="__codelineno-2-299" name="__codelineno-2-299" href="#__codelineno-2-299"></a><span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="nf">contentLength</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-300" name="__codelineno-2-300" href="#__codelineno-2-300"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">size</span><span class="p">;</span>
+<a id="__codelineno-2-301" name="__codelineno-2-301" href="#__codelineno-2-301"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-302" name="__codelineno-2-302" href="#__codelineno-2-302"></a>
+<a id="__codelineno-2-303" name="__codelineno-2-303" href="#__codelineno-2-303"></a><span class="w">        </span><span class="nd">@NotNull</span>
+<a id="__codelineno-2-304" name="__codelineno-2-304" href="#__codelineno-2-304"></a><span class="w">        </span><span class="nd">@Override</span>
+<a id="__codelineno-2-305" name="__codelineno-2-305" href="#__codelineno-2-305"></a><span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getDescription</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-306" name="__codelineno-2-306" href="#__codelineno-2-306"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;ISO entry [&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">filePath</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;] (7z)&quot;</span><span class="p">;</span>
+<a id="__codelineno-2-307" name="__codelineno-2-307" href="#__codelineno-2-307"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-2-308" name="__codelineno-2-308" href="#__codelineno-2-308"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-309" name="__codelineno-2-309" href="#__codelineno-2-309"></a><span class="p">}</span>
+</code></pre></div>
+<ul>
+<li>[ ] <strong>Step 2: 验证编译</strong></li>
+</ul>
+<p>使用 MCP <code>build_project</code> 编译 sfc-ext-pxe-boot 模块，确认无编译错误。使用 MCP <code>get_file_problems</code> 检查文件无警告。</p>
+<ul>
+<li>[ ] <strong>Step 3: 提交</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>git<span class="w"> </span>add<span class="w"> </span>sfc-ext/sfc-ext-pxe-boot/src/main/java/com/sfc/pxeboot/server/iso/SevenZipJBindingIsoFileSystem.java
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(pxe-boot): 新增 SevenZipJBindingIsoFileSystem 实现&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="task-3-javaisohandler">Task 3: 修改 JavaIsoHandler 支持动态选择</h3>
+<p><strong>Files:</strong>
+- Modify: <code>sfc-ext/sfc-ext-pxe-boot/src/main/java/com/sfc/pxeboot/server/iso/JavaIsoHandler.java</code></p>
+<ul>
+<li>[ ] <strong>Step 1: 修改 JavaIsoHandler</strong></li>
+</ul>
+<p>完整替换文件内容。主要改动：添加 <code>PxeBootProperty</code> 构造注入，<code>createFileSystem()</code> 根据配置动态选择实现。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">package</span><span class="w"> </span><span class="nn">com.sfc.pxeboot.server.iso</span><span class="p">;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">com.sfc.pxeboot.PxeBootProperty</span><span class="p">;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lombok.extern.slf4j.Slf4j</span><span class="p">;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.core.io.PathResource</span><span class="p">;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.springframework.core.io.Resource</span><span class="p">;</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.io.File</span><span class="p">;</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.io.IOException</span><span class="p">;</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.nio.file.Path</span><span class="p">;</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.List</span><span class="p">;</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="cm">/**</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="cm"> * ISO 处理器。</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="cm"> * &lt;p&gt;将 Spring {@link Resource} 转换为本地文件后委托给 {@link IsoFileSystem}。</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="cm"> * 根据 {@link PxeBootProperty#getIsoEngine()} 配置动态选择 ISO 解析引擎。&lt;/p&gt;</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="cm"> */</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="nd">@Slf4j</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">JavaIsoHandler</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">IsoHandler</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">PxeBootProperty</span><span class="w"> </span><span class="n">pxeBootProperty</span><span class="p">;</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="cm">     * 构造函数。</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="cm">     *</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="cm">     * @param pxeBootProperty PXE 启动配置</span>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="cm">     */</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">JavaIsoHandler</span><span class="p">(</span><span class="n">PxeBootProperty</span><span class="w"> </span><span class="n">pxeBootProperty</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">pxeBootProperty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pxeBootProperty</span><span class="p">;</span>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">    </span><span class="nd">@Override</span>
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">listFiles</span><span class="p">(</span><span class="n">Resource</span><span class="w"> </span><span class="n">isoResource</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">pathWithinIso</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="w">        </span><span class="n">IsoFileSystem</span><span class="w"> </span><span class="n">fs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createFileSystem</span><span class="p">(</span><span class="n">isoResource</span><span class="p">);</span>
+<a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="na">listFiles</span><span class="p">(</span><span class="n">pathWithinIso</span><span class="p">).</span><span class="na">stream</span><span class="p">()</span>
+<a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="w">            </span><span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">IsoFileEntry</span><span class="p">::</span><span class="n">getName</span><span class="p">)</span>
+<a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a><span class="w">            </span><span class="p">.</span><span class="na">toList</span><span class="p">();</span>
+<a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>
+<a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a><span class="w">    </span><span class="nd">@Override</span>
+<a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Resource</span><span class="w"> </span><span class="nf">getResource</span><span class="p">(</span><span class="n">Resource</span><span class="w"> </span><span class="n">isoResource</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">pathWithinIso</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a><span class="w">        </span><span class="n">IsoFileSystem</span><span class="w"> </span><span class="n">fs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createFileSystem</span><span class="p">(</span><span class="n">isoResource</span><span class="p">);</span>
+<a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="na">getResource</span><span class="p">(</span><span class="n">pathWithinIso</span><span class="p">);</span>
+<a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a>
+<a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a><span class="w">    </span><span class="nd">@Override</span>
+<a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">IsoFileEntry</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">findFilesByPattern</span><span class="p">(</span><span class="n">Resource</span><span class="w"> </span><span class="n">isoResource</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">pattern</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">basePath</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a><span class="w">        </span><span class="n">IsoFileSystem</span><span class="w"> </span><span class="n">fs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createFileSystem</span><span class="p">(</span><span class="n">isoResource</span><span class="p">);</span>
+<a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="na">findFilesByPattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span><span class="w"> </span><span class="n">basePath</span><span class="p">);</span>
+<a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a>
+<a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a><span class="cm">     * 根据配置创建对应的 IsoFileSystem 实现。</span>
+<a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a><span class="cm">     *</span>
+<a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a><span class="cm">     * @param isoResource ISO 文件资源</span>
+<a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a><span class="cm">     * @return IsoFileSystem 实例</span>
+<a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a><span class="cm">     * @throws IOException 如果资源不存在或不是本地文件</span>
+<a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a><span class="cm">     */</span>
+<a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">IsoFileSystem</span><span class="w"> </span><span class="nf">createFileSystem</span><span class="p">(</span><span class="n">Resource</span><span class="w"> </span><span class="n">isoResource</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a><span class="w">        </span><span class="n">File</span><span class="w"> </span><span class="n">isoFile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getLocalIsoFile</span><span class="p">(</span><span class="n">isoResource</span><span class="p">);</span>
+<a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">engine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pxeBootProperty</span><span class="p">.</span><span class="na">getIsoEngine</span><span class="p">();</span>
+<a id="__codelineno-4-62" name="__codelineno-4-62" href="#__codelineno-4-62"></a>
+<a id="__codelineno-4-63" name="__codelineno-4-63" href="#__codelineno-4-63"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;sevenzipjbinding&quot;</span><span class="p">.</span><span class="na">equalsIgnoreCase</span><span class="p">(</span><span class="n">engine</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-64" name="__codelineno-4-64" href="#__codelineno-4-64"></a><span class="w">            </span><span class="n">log</span><span class="p">.</span><span class="na">debug</span><span class="p">(</span><span class="s">&quot;[PXE-ISO] 使用 SevenZipJBinding 引擎: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">isoFile</span><span class="p">);</span>
+<a id="__codelineno-4-65" name="__codelineno-4-65" href="#__codelineno-4-65"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SevenZipJBindingIsoFileSystem</span><span class="p">(</span><span class="n">isoFile</span><span class="p">);</span>
+<a id="__codelineno-4-66" name="__codelineno-4-66" href="#__codelineno-4-66"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-4-67" name="__codelineno-4-67" href="#__codelineno-4-67"></a>
+<a id="__codelineno-4-68" name="__codelineno-4-68" href="#__codelineno-4-68"></a><span class="w">        </span><span class="n">log</span><span class="p">.</span><span class="na">debug</span><span class="p">(</span><span class="s">&quot;[PXE-ISO] 使用 java-iso-tools 引擎: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">isoFile</span><span class="p">);</span>
+<a id="__codelineno-4-69" name="__codelineno-4-69" href="#__codelineno-4-69"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JavaIsoToolsIso9660FileSystem</span><span class="p">(</span><span class="n">isoFile</span><span class="p">);</span>
+<a id="__codelineno-4-70" name="__codelineno-4-70" href="#__codelineno-4-70"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-71" name="__codelineno-4-71" href="#__codelineno-4-71"></a>
+<a id="__codelineno-4-72" name="__codelineno-4-72" href="#__codelineno-4-72"></a><span class="w">    </span><span class="cm">/**</span>
+<a id="__codelineno-4-73" name="__codelineno-4-73" href="#__codelineno-4-73"></a><span class="cm">     * 从 Resource 获取 ISO 文件的本地 File 对象。</span>
+<a id="__codelineno-4-74" name="__codelineno-4-74" href="#__codelineno-4-74"></a><span class="cm">     *</span>
+<a id="__codelineno-4-75" name="__codelineno-4-75" href="#__codelineno-4-75"></a><span class="cm">     * @param isoResource ISO 文件资源</span>
+<a id="__codelineno-4-76" name="__codelineno-4-76" href="#__codelineno-4-76"></a><span class="cm">     * @return 本地文件</span>
+<a id="__codelineno-4-77" name="__codelineno-4-77" href="#__codelineno-4-77"></a><span class="cm">     * @throws IOException              如果资源不存在</span>
+<a id="__codelineno-4-78" name="__codelineno-4-78" href="#__codelineno-4-78"></a><span class="cm">     * @throws IllegalArgumentException 如果文件不是本地存储的</span>
+<a id="__codelineno-4-79" name="__codelineno-4-79" href="#__codelineno-4-79"></a><span class="cm">     */</span>
+<a id="__codelineno-4-80" name="__codelineno-4-80" href="#__codelineno-4-80"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">File</span><span class="w"> </span><span class="nf">getLocalIsoFile</span><span class="p">(</span><span class="n">Resource</span><span class="w"> </span><span class="n">isoResource</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-81" name="__codelineno-4-81" href="#__codelineno-4-81"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">isoResource</span><span class="p">.</span><span class="na">exists</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-82" name="__codelineno-4-82" href="#__codelineno-4-82"></a><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IOException</span><span class="p">(</span><span class="s">&quot;ISO 文件不存在: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">isoResource</span><span class="p">.</span><span class="na">getDescription</span><span class="p">());</span>
+<a id="__codelineno-4-83" name="__codelineno-4-83" href="#__codelineno-4-83"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-4-84" name="__codelineno-4-84" href="#__codelineno-4-84"></a>
+<a id="__codelineno-4-85" name="__codelineno-4-85" href="#__codelineno-4-85"></a><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-86" name="__codelineno-4-86" href="#__codelineno-4-86"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isoResource</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">PathResource</span><span class="w"> </span><span class="n">pathResource</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-87" name="__codelineno-4-87" href="#__codelineno-4-87"></a><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">Path</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">pathResource</span><span class="p">.</span><span class="na">getPath</span><span class="p">()).</span><span class="na">toFile</span><span class="p">();</span>
+<a id="__codelineno-4-88" name="__codelineno-4-88" href="#__codelineno-4-88"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-4-89" name="__codelineno-4-89" href="#__codelineno-4-89"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isoResource</span><span class="p">.</span><span class="na">isFile</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-90" name="__codelineno-4-90" href="#__codelineno-4-90"></a><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">Path</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">isoResource</span><span class="p">.</span><span class="na">getURI</span><span class="p">()).</span><span class="na">toFile</span><span class="p">();</span>
+<a id="__codelineno-4-91" name="__codelineno-4-91" href="#__codelineno-4-91"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-4-92" name="__codelineno-4-92" href="#__codelineno-4-92"></a><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-93" name="__codelineno-4-93" href="#__codelineno-4-93"></a><span class="w">            </span><span class="n">log</span><span class="p">.</span><span class="na">warn</span><span class="p">(</span><span class="s">&quot;[PXE-ISO] 获取本地路径失败: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<a id="__codelineno-4-94" name="__codelineno-4-94" href="#__codelineno-4-94"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-4-95" name="__codelineno-4-95" href="#__codelineno-4-95"></a>
+<a id="__codelineno-4-96" name="__codelineno-4-96" href="#__codelineno-4-96"></a><span class="w">        </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">&quot;ISO 文件必须存储在本地文件系统，当前存储不支持直接访问&quot;</span><span class="p">);</span>
+<a id="__codelineno-4-97" name="__codelineno-4-97" href="#__codelineno-4-97"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-98" name="__codelineno-4-98" href="#__codelineno-4-98"></a><span class="p">}</span>
+</code></pre></div>
+<ul>
+<li>[ ] <strong>Step 2: 验证编译</strong></li>
+</ul>
+<p>使用 MCP <code>build_project</code> 编译，确认无编译错误。使用 MCP <code>get_file_problems</code> 检查文件无警告。</p>
+<ul>
+<li>[ ] <strong>Step 3: 提交</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>git<span class="w"> </span>add<span class="w"> </span>sfc-ext/sfc-ext-pxe-boot/src/main/java/com/sfc/pxeboot/server/iso/JavaIsoHandler.java
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(pxe-boot): JavaIsoHandler 支持根据配置动态选择 ISO 引擎&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="task-4">Task 4: 整体编译验证</h3>
+<ul>
+<li>[ ] <strong>Step 1: 全量编译验证</strong></li>
+</ul>
+<p>使用 MCP <code>build_project</code>（rebuild=true）执行全量编译，确认所有模块无编译错误。</p>
+<ul>
+<li>[ ] <strong>Step 2: 检查所有修改文件</strong></li>
+</ul>
+<p>使用 MCP <code>get_file_problems</code> 检查以下文件：
+- <code>PxeBootProperty.java</code>
+- <code>SevenZipJBindingIsoFileSystem.java</code>
+- <code>JavaIsoHandler.java</code></p>
+<ul>
+<li>[ ] <strong>Step 3: 最终提交（如有修复）</strong></li>
+</ul>
+<p>如有警告修复，提交修复代码。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.expand"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
