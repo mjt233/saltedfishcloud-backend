@@ -93,5 +93,6 @@ nav:
         - 重命名文件或目录: oauth/api/storage/rename.md
         - 删除文件或目录: oauth/api/storage/delete.md
   - 版本更新日志:
+    - v3.1.2: release-notes/3.1.2.md
     - v3.1.1: release-notes/3.1.1.md
     - v3.1.0: release-notes/3.1.0.md
