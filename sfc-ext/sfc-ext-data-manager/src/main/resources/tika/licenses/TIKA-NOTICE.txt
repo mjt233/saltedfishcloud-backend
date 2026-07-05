@@ -1,0 +1,116 @@
+This product includes software from the Apache Tika project.
+The following notices apply to the bundled Apache Tika Server and its dependencies.
+
+================================================================================
+Apache Tika (https://tika.apache.org/)
+================================================================================
+
+Apache Tika standard server
+Copyright 2007-2025 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+================================================================================
+FastDoubleParser
+================================================================================
+
+FastDoubleParser
+
+This is a Java port of Daniel Lemire's fast_float project.
+This project provides parsers for double, float, BigDecimal and BigInteger values.
+
+Copyright © 2024 Werner Randelshofer, Switzerland.
+
+This code is licensed under MIT License.
+https://github.com/wrandelshofer/FastDoubleParser/blob/522be16e145f43308c43b23094e31d5efcaa580e/LICENSE
+
+Some portions of the code have been derived from other projects:
+
+fast_double_parser, Copyright (c) 2022 Daniel Lemire. BSL License.
+https://github.com/lemire/fast_double_parser
+
+fast_float, Copyright (c) 2021 The fast_float authors. MIT License.
+https://github.com/fastfloat/fast_float
+
+bigint, Copyright 2020 Tim Buktu. 2-clause BSD License.
+https://github.com/tbuktu/bigint/tree/floatfft
+(Only those portions of the bigint project that can be licensed under 2-clause BSD License are used.)
+
+================================================================================
+Jakarta WebSocket
+================================================================================
+
+Notices for Jakarta WebSocket
+
+This content is produced and maintained by the Jakarta WebSocket project.
+
+* Project home: https://projects.eclipse.org/projects/ee4j.websocket
+
+Jakarta WebSocket is a trademark of the Eclipse Foundation.
+
+All content is the property of the respective authors or their employers.
+
+This program and the accompanying materials are made available under the terms
+of the Eclipse Public License v. 2.0 which is available at
+http://www.eclipse.org/legal/epl-2.0. This Source Code may also be made
+available under the following Secondary Licenses when the conditions for such
+availability set forth in the Eclipse Public License v. 2.0 are satisfied: GNU
+General Public License, version 2 with the GNU Classpath Exception which is
+available at https://www.gnu.org/software/classpath/license.html.
+
+SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+
+Source Code: https://github.com/eclipse-ee4j/websocket-api
+
+================================================================================
+Third-party Licenses
+================================================================================
+
+--- fast_float (MIT License) ---
+
+Copyright (c) 2021 The fast_float authors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--- bigint (2-clause BSD License) ---
+
+Copyright 2022 Tim Buktu
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

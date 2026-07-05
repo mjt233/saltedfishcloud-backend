@@ -1,7 +1,7 @@
 package com.saltedfishcloud.ext.hadoop;
 
-import com.saltedfishcloud.ext.hadoop.filesystem.HDFSFileSystemFactory;
-import com.saltedfishcloud.ext.hadoop.store.HDFSStoreHandler;
+import com.saltedfishcloud.ext.hadoop.filesystem.HDFSStorageFactory;
+import com.saltedfishcloud.ext.hadoop.store.HDFSStorage;
 import com.saltedfishcloud.ext.hadoop.store.HDFSStoreService;
 import com.saltedfishcloud.ext.hadoop.store.HDFSStoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
@@ -28,8 +28,8 @@ public class HDFSAutoConfigure {
     private ThumbnailService thumbnailService;
 
     @Bean
-    public HDFSFileSystemFactory hdfsFileSystemFactory() {
-        HDFSFileSystemFactory fileSystemFactory = new HDFSFileSystemFactory();
+    public HDFSStorageFactory hdfsFileSystemFactory() {
+        HDFSStorageFactory fileSystemFactory = new HDFSStorageFactory();
         fileSystemFactory.setThumbnailService(thumbnailService);
         return fileSystemFactory;
     }
@@ -38,7 +38,7 @@ public class HDFSAutoConfigure {
     @ConditionalOnProperty(prefix = "sys.store", name = "type", havingValue = "hdfs")
     public HDFSStoreServiceFactory hdfsStoreServiceFactory() throws IOException, URISyntaxException, InterruptedException {
         return new HDFSStoreServiceFactory(
-                new HDFSStoreService(new HDFSStoreHandler(HDFSUtils.getFileSystem(properties)), properties, md5Resolver)
+                new HDFSStoreService(new HDFSStorage(HDFSUtils.getFileSystem(properties)), properties, md5Resolver)
         );
     }
 

@@ -9,6 +9,8 @@
 ## 核心技术栈
 
 - SpringBoot
+- spring-security
+- spring-security-oauth2-authorization-server
 - JPA
 - Redis
 - MySQL
@@ -27,13 +29,21 @@
 
 此外：项目根 `pom.xml` 指定的 Java 版本为 Java 25 — 请在本地构建或运行时确保 JDK 版本兼容（或使用工具链/容器）。
 
-## 代码规范
+## 编码规范**（重要）**
 
 - 文档化：所有新增方法和字段必须添加 JavaDoc 文档注释
-- 分页查询：controller 和 service 层涉及分页查询数据的，统一使用`CommonPageInfo`(com.xiaotao.saltedfishcloud.model.CommonPageInfo)封装。
-- JPA Repository层分页查询必须使用`Pageable`参数，返回值为`Page`(org.springframework.data.domain.Page)。
 - 异常处理：优先抛出业务自定义异常（JsonException），由全局异常处理器拦截。
 - 实体类需要getter或setter时，尽可能使用 Lombok 注解（如 @Data、@Getter、@Setter）来简化代码。
+- 涉及批量操作数据的场景，尽可能避免循环处理单条数据和循环单条操作数据库。优先考虑使用 CollectionUtils.partition 对数据拆分批次后，使用 JPA 的批量操作方法。对于批量插入新增实体类，优先考虑使用 DBUtils.batchInsert。
+
+### JPA 及其实体类规范
+
+- JPA Repository层分页查询必须使用`Pageable`参数，返回值为`Page`(org.springframework.data.domain.Page)。
+- 具体详细规范见[`generate-jpa-repository`技能](.claude/skills/generate-jpa-repository/SKILL.md)。
+
+### 分页查询
+
+分页查询：controller 和 service 层涉及分页查询数据的，统一使用`CommonPageInfo`(com.xiaotao.saltedfishcloud.model.CommonPageInfo)封装。
 
 示例参考：
 
@@ -66,26 +76,36 @@
     UIDValidator.validate(dto.getUid());
   ```
 
+#### PATH 安全校验
+
+- 同 `UID 安全校验`，对Controller的参数或封装对象进行校验，需要添加`@ValidPath`注解。
+- Controller中对于对象封装的path字段，则使用`ValidPathValidator.valid(java.lang.CharSequence)`
+
 ## 工作流与验证机制
 
 ### 行为约束
 
 - 禁止直接修复与用户要求无关的顺手发现的bug。发现与本次任务无关的bug应反馈给用户。
 
-### 编译验证
+### 编译与验证
 
-- 使用MCP的build_project对代码进行编译验证，避免使用命令行执行mvn
+- 使用MCP的 build_project 对代码进行编译验证，避免使用命令行执行mvn
+- 使用MCP的 get_file_problems 对修改的文件进行检查，修复新产生的警告问题
+- 如果修改了pom.xml的依赖信息，必须使用系统的`mvn`命令进行编译验证。
 
 ### 单元测试原则
 
 - 静默原则：除非用户明确要求（例如：“请为该功能编写测试”），否则严禁自动生成测试类。
+- 测试类禁止使用`@SpringBootTest`注解，使用 Mockito 等轻量级测试框架进行单元测试。
 
 ### 检查清单
 
 - 是否遗漏了 @UID 注解？
 - 公共资源（uid=0）的写入逻辑是否做了管理员校验？
 - 是否已经通过 build_project 验证？
+- 是否已使用 get_file_problems 检查修改的文件，修复了新产生的警告问题？
 - JavaDoc 是否已补全？
+- 批量操作是否有使用 CollectionUtils.partition 拆分批次批量处理？
 
 - 是否确认本地/CI 的 JDK 版本满足项目要求（根 pom 指定 Java 25）？
 - 是否注意到这是多模块项目（必要时在模块级别运行编译或打包）？

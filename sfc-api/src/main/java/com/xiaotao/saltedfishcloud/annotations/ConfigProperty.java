@@ -29,7 +29,7 @@ public @interface ConfigProperty {
     String describe() default "";
 
     /**
-     * 输入类型，可选text、select、checkbox、radio、switch
+     * 输入类型，可选text、textarea、select、checkbox、radio、switch
      */
     String inputType() default "text";
 

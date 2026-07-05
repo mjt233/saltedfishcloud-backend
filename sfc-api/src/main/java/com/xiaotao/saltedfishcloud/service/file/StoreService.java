@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DuplicateKeyException;
@@ -39,11 +39,6 @@ public interface StoreService {
      */
     boolean isUnique();
 
-    /**
-     * 获取一个在目标存储系统的临时目录上，用于以原始路径操作临时文件的文件操作器。
-     * @return  临时存储服务
-     */
-    TempStoreService getTempFileHandler();
 
     /**
      * 获取原始存储服务，提供相同文件仅存一份的能力。<br>
@@ -138,13 +133,14 @@ public interface StoreService {
 
     /**
      * 在网盘中移动文件，若目录名相同则合并目录
-     * @param uid     用户ID
+     * @param sourceUid 源用户ID
      * @param source  所在网盘路径
+     * @param targetUid 目标用户ID
      * @param target  目的地网盘路径
      * @param name    文件名
      * @param overwrite 是否覆盖原文件
      */
-    default void move(long uid, String source, String target, String name, boolean overwrite) throws IOException {
+    default void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException {
         throw new UnsupportedOperationException("不支持move操作");
     }
 
@@ -204,5 +200,5 @@ public interface StoreService {
     /**
      * 获取该存储服务的存储能力提供者
      */
-    DirectRawStoreHandler getStorageProvider();
+    Storage getStorageProvider();
 }

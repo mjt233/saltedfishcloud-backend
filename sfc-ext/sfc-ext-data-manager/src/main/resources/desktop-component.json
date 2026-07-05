@@ -1,0 +1,10 @@
+[
+  {
+    "name": "invalid-data-claim",
+    "title": "失效数据认领",
+    "describe": "普通用户可对已发布认领的失效数据进行认领操作，找回丢失的文件记录",
+    "icon": "mdi-package-variant",
+    "showOrder": 0,
+    "config": []
+  }
+]

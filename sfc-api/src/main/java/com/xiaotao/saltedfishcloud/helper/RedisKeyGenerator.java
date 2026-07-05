@@ -30,4 +30,14 @@ public class RedisKeyGenerator {
     public static String getUserEmailValidKey(long uid, String email, MailValidateType type) {
         return CacheKeyPrefixes.MAIL_VALIDATE + uid + ":" + type + ":" + email;
     }
+
+    /**
+     * 获取临时文件下载链接缓存 key。
+     *
+     * @param token 临时授权码
+     * @return Redis key
+     */
+    public static String getFileLinkKey(String token) {
+        return CacheKeyPrefixes.FILE_LINK + token;
+    }
 }

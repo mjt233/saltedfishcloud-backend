@@ -8,18 +8,13 @@ import com.xiaotao.saltedfishcloud.common.ResponseResource;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -27,7 +22,6 @@ import org.springframework.validation.annotation.Validated;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -41,23 +35,14 @@ import java.util.concurrent.TimeUnit;
 public class VideoSubtitleService {
     private final ResourceService resourceService;
     private final VideoService videoService;
-    private final StoreServiceFactory storeServiceFactory;
 
     private final Semaphore semaphore = new Semaphore(
             Math.max(1, Runtime.getRuntime().availableProcessors() - 1)
     );
     private final static Set<String> SUBTITLE_BIT_ENCODERS = Set.of("hdmv_pgs_subtitle", "dvb_subtitle", "dvd_subtitle");
 
+    @AttachStorageInject(value = "ve", name = "视频元数据")
     private AttachStorage attachStorage;
-
-    @Autowired
-    public void setAttachStorageManager(AttachStorageManager attachStorageManager) {
-        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
-                        .name("视频元数据")
-                        .id("ve")
-                .build());
-        attachStorage = attachStorageManager.getStorage("ve");
-    }
 
     @Validated
     public Resource getSubtitleResource(ResourceRequest videoResourceRequest, @NotBlank String streamIndex) throws UnsupportedProtocolException, IOException {
@@ -121,6 +106,7 @@ public class VideoSubtitleService {
         if (attachStorage.exist(cachePath)) {
             Resource cacheResource = attachStorage.getFile(cachePath).orElse(null);
             if (cacheResource != null) {
+                log.debug("字幕文件缓存命中: {} 请求参数: {}", cachePath, videoResourceRequest);
                 return ResponseResource.create(cacheResource)
                         .setResponseFilename(FileUtils.parseName(videoResourceRequest.getName())[0] + "." + format)
                         .setContentType(contentType);

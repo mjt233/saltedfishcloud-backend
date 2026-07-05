@@ -141,7 +141,11 @@ public class FileInfo extends AuditModel {
         fileInfo.setUid(uid);
         fileInfo.setCreateAt(now);
         fileInfo.setSize(type == FileInfo.TYPE_DIR ? -1 : resource.contentLength());
-        fileInfo.setMtime(now.getTime());
+        try {
+            fileInfo.setMtime(resource.lastModified());
+        } catch (IOException e) {
+            fileInfo.setMtime(now.getTime());
+        }
         fileInfo.setType(type);
         fileInfo.setStreamSource(resource);
         return fileInfo;

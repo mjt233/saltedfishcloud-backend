@@ -11,7 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.*;
 import org.springframework.http.server.ServletServerHttpResponse;
 
+import org.apache.catalina.connector.ClientAbortException;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -49,6 +53,11 @@ public class RedirectableUrlHttpMessageConverter extends AbstractGenericHttpMess
     }
 
     @Override
+    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        return canWrite(null, clazz, mediaType);
+    }
+
+    @Override
     public boolean canRead(@NotNull Type type, Class<?> contextClass, MediaType mediaType) {
         return false;
     }
@@ -73,6 +82,14 @@ public class RedirectableUrlHttpMessageConverter extends AbstractGenericHttpMess
                     writeInternalMethod.setAccessible(true);
                     writeInternalMethod.invoke(converter, body, type, outputMessage);
                 } catch (Throwable e) {
+                    Throwable cause = e;
+                    if (e instanceof InvocationTargetException) {
+                        cause = ((InvocationTargetException) e).getTargetException();
+                    }
+                    if (cause instanceof ClientAbortException
+                            || cause instanceof AsyncRequestNotUsableException) {
+                        throw new ClientAbortException("客户端连接中断", cause);
+                    }
                     throw new RuntimeException("数据传输转换异常", e);
                 }
                 return;

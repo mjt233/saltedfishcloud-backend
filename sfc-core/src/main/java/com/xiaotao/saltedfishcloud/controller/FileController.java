@@ -258,20 +258,23 @@ public class FileController {
     }
 
     /**
-     * 同网盘内的文件移动
-     * @param uid       源文件所在用户id
-     * @param info      复制参数
+     * 网盘内的文件移动（支持跨用户网盘）
+     * @param uid       源文件所在用户id，当FileTransferParam中sourceUid/targetUid未指定时用作默认值
+     * @param info      移动参数，支持通过sourceUid和targetUid指定跨用户移动
      */
     @ApiOperation("网盘文件移动")
     @PostMapping("move")
     public JsonResult<Object> move( @PathVariable("uid") @UID(true) long uid,
                             @RequestBody @Validated FileTransferParam info) throws IOException {
-        long sourceUid = uid;
+        long sourceUid = info.getSourceUid() != null ? info.getSourceUid() : uid;
+        long targetUid = info.getTargetUid() != null ? info.getTargetUid() : uid;
+        UIDValidator.validateWithException(sourceUid, false);
+        UIDValidator.validateWithException(targetUid, true);
         for (FileItemTransferParam item : info.getFiles()) {
             String source = PathUtils.getParentPath(item.getSource());
             String sourceName = PathUtils.getLastNode(item.getSource());
             String target = PathUtils.getParentPath(item.getTarget());
-            fileSystemManager.getMainFileSystem().move(sourceUid, source, target, sourceName,true);
+            fileSystemManager.getMainFileSystem().move(sourceUid, source, targetUid, target, sourceName, true);
         }
         return JsonResult.emptySuccess();
     }
@@ -289,7 +292,7 @@ public class FileController {
         String source = URLUtils.getRequestFilePath(PREFIX + uid + "/fromPath", request);
         String target = URLDecoder.decode(info.getTarget(), "UTF-8");
         for (NamePair file : info.getFiles()) {
-            fileSystemManager.getMainFileSystem().move(uid, source, target, file.getSource(), info.isOverwrite());
+            fileSystemManager.getMainFileSystem().move(uid, source, uid, target, file.getSource(), info.isOverwrite());
         }
         return JsonResult.emptySuccess();
     }
@@ -303,7 +306,7 @@ public class FileController {
                              @RequestParam("oldName") @Valid @FileName String oldName,
                              @RequestParam("newName") @Valid @FileName String newName) throws IOException {
         String from = URLUtils.getRequestFilePath(PREFIX + uid + "/name", request);
-        if (newName.length() < 1) {
+        if (newName.isEmpty()) {
             throw new JsonException(400, "文件名不能为空");
         }
         fileSystemManager.getMainFileSystem().rename(uid, from, oldName, newName);
@@ -322,11 +325,11 @@ public class FileController {
      * 删除文件或目录
      */
     @DeleteMapping("content/**")
-    public JsonResult<Long> delete(HttpServletRequest request,
+    public JsonResult<Object> delete(HttpServletRequest request,
                              @PathVariable @UID(true) long uid,
                              @RequestBody @Validated FileNameList fileName) throws IOException {
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/content", request);
-        long res = fileSystemManager.getMainFileSystem().deleteFile(uid, path, fileName.getFileName());
-        return JsonResultImpl.getInstance(res);
+        fileSystemManager.getMainFileSystem().deleteFile(uid, path, fileName.getFileName());
+        return JsonResult.emptySuccess();
     }
 }

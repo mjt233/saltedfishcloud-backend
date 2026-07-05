@@ -17,6 +17,8 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
+        validator:
+          apply_to_ddl: false
         order_inserts: true
         enable_lazy_load_no_trans: true
         jdbc:
@@ -29,6 +31,7 @@ spring:
     password: test
     hikari:
       transaction-isolation: TRANSACTION_READ_COMMITTED
+      initialization-fail-timeout: 180000
   data:
     redis:
       host: 127.0.0.1
@@ -64,3 +67,49 @@ management:
       enabled: false
 app:
   version: ^project.version^
+
+sys:
+  # OIDC/OAuth2 授权服务器配置
+  oidc:
+    # 是否启用内置 OIDC 授权服务器
+    enabled: true
+
+    # OAuth2 授权端点路径（第三方应用发起授权请求的入口，引导用户进入授权的页面）
+    authorization-endpoint: /oauth2/authorize
+
+    # OAuth2 令牌端点路径（用户授权确认后，第三方应用根据授权码换取access token和refresh token的端点）
+    token-endpoint: /oauth2/token
+
+    # OAuth2 设备授权端点路径（第三方客户端发起设备授权请求，拿到user_code、device_code、verification_uri_complete、verification_uri和expires_in）
+    device-authorization-endpoint: /oauth2/device_authorization
+
+    # OAuth2 设备核验端点路径（用户提交 user_code 并确认授权）
+    device-verification-endpoint: /oauth2/device_verification
+
+    # OAuth2 设备授权成功后重定向地址
+    device-verification-success-uri: /oauth?grant_type=user_code&success=true
+
+    # OAuth2 设备授权失败后重定向地址（如 user_code 无效）
+    device-verification-error-uri: /oauth?grant_type=user_code&error=invalid_user_code
+
+    # OIDC 用户信息端点路径
+    user-info-endpoint: /oauth2/userinfo
+
+    # JWK Set 端点路径（公钥发布）
+    jwk-set-endpoint: /oauth2/jwks
+
+    # 令牌吊销端点路径
+    revocation-endpoint: /oauth2/revoke
+
+    # 令牌内省端点路径
+    introspection-endpoint: /oauth2/introspect
+
+    # OIDC 退出端点路径
+    logout-endpoint: /connect/logout
+
+    # OAuth2 授权确认页面路径（授权码流程中用户确认 scope）
+    consent-page: /oauth
+
+    # 设备授权确认页面路径（用户输入 user_code 及确认授权的页面）
+    device-consent-page: /oauth?grant_type=user_code
+

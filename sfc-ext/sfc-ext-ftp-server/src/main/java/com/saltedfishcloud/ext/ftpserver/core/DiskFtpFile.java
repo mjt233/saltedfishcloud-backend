@@ -269,7 +269,7 @@ public class DiskFtpFile implements FtpFile {
                 fileService.getMainFileSystem().rename(resourceUid, pathInfo.getResourceParent(), this.pathInfo.getName(), destination.getName());
                 return true;
             } else {
-                fileService.getMainFileSystem().move(resourceUid, this.pathInfo.getResourceParent(), pathInfo.getResourceParent(), destination.getName(), true);
+                fileService.getMainFileSystem().move(resourceUid, this.pathInfo.getResourceParent(), resourceUid, pathInfo.getResourceParent(), destination.getName(), true);
                 return true;
             }
         } catch (IOException e) {

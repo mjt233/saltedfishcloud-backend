@@ -199,7 +199,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean setStoreType(StoreMode type) throws IOException {
-        String origin = configDao.getConfigure(StoreMode.getConfigKey());
+        String origin = this.getConfig(StoreMode.getConfigKey(), StoreMode.UNIQUE.toString());
         if (origin == null) {
             throw new IllegalStateException("数据配置表无信息，请重启服务器");
         }

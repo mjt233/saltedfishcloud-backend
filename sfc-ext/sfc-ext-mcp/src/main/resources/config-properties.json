@@ -1,0 +1,7 @@
+[
+  {
+    "name": "mcp-config",
+    "title": "MCP服务配置",
+    "typeRef": "com.sfc.mcp.model.McpProperty"
+  }
+]

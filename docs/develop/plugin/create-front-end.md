@@ -175,35 +175,12 @@ VITE_PLUGINS=demo,jntm,quick-share,video-enhance,...,{插件id}
 
 ### 4.1 创建打包配置文件
 
-在 `build/extension/` 目录下创建 `{插件id}.ts`，内容固定调用 `defineExtension`：
-
-```typescript
-// build/extension/{插件id}.ts
-import {defineExtension} from './build-template'
-
-export default defineExtension({
-    name: 'sfc-ext-{插件id}'
-})
-```
-
-`defineExtension` 会自动配置：
-
-| 配置项     | 说明                                                                   |
-|---------|----------------------------------------------------------------------|
-| 入口文件    | `sfc-ext/sfc-ext-{插件id}/main.ts`                                     |
-| 输出目录    | `public/ext/sfc-ext-{插件id}/`                                         |
-| 输出格式    | UMD，文件名为 `index.umd.js`                                              |
-| 外部依赖    | `vue`、`vuetify`、`sfc-common`、`dplayer`、`monaco-editor`、`qs` 等不会打包进产物 |
-| base 路径 | `/ext/sfc-ext-{插件id}/`                                               |
-
-### 4.2 在 `package.json` 中添加打包命令
-
 打开项目根目录的 `package.json`，在 `scripts` 中添加：
 
 ```json
 {
   "scripts": {
-    "build-ext-{插件id}": "vite build --config build/extension/{插件id}.ts"
+    "build-ext-{插件id}": "node scripts/build-ext.mjs {插件id}"
   }
 }
 ```
@@ -213,7 +190,7 @@ export default defineExtension({
 ```json
 {
   "scripts": {
-    "build-ext-video-enhance": "vite build --config build/extension/video-enhance.ts"
+    "build-ext-video-enhance": "node scripts/build-ext.mjs video-enhance"
   }
 }
 ```
@@ -227,6 +204,35 @@ npm run build-ext-{插件id}
 打包完成后，产物将输出到 `public/ext/sfc-ext-{插件id}/` 目录，主要文件为 `index.umd.js`。
 
 ---
+
+### 4.5 整合前端资源进插件
+
+#### 复制资源到资源目录
+
+- 方法1（推荐）：前端项目的`.env`或环境变量中配置`BACKEND_PATH`的值为后端项目的根目录路径后，执行`npm run build-ext-{插件id}`命令时，构建脚本会自动将插件前端构建产物资源（js、css等）复制到插件目录 `sfc-ext/sfc-ext-{插件id}/src/main/assert/static/` 下，无需手动操作。
+- 方法2：将插件的前端构建产物资源资源（js、css等）直接放在插件目录 `sfc-ext/sfc-ext-{插件id}/src/main/assert/static/` 下。
+
+#### 配置自动加载资源
+
+将打包产物`index.umd.js`和`style.css`（如果有）等资源路径添加到插件目录下的 `plugin.json` 的 `autoLoad` 字段：
+
+```json
+{
+  "name": "sfc-ext-{插件id}",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
+}
+```
+
+js和css代码将在页面加载完成后、前端应用完成初始化前自动加载。
+
+#### 验证插件前端资源自动加载
+
+!!! warning "注意"
+    1. 后端使用maven profile 为 `develop` 时，后端是不会自动加载插件的自动加载资源的，如果需要在开发阶段验证插件资源的自动加载效果，需要修改`application-develop.yml`，将`plugin.use-auto-load-resource`设置为`true`  
+    2`plugin.use-auto-load-resource`设置为`true`后，为避免和Vite开发服务自动加载的资源重复加载导致冲突，建议在开发阶段将插件的自动加载资源配置项注释掉或删除，或将主模块前端项目整个集成进`sfc-core/src/main/resources/webapp`中直接通过后端的Web服务访问。
 
 ## 5. 插件 API 参考
 

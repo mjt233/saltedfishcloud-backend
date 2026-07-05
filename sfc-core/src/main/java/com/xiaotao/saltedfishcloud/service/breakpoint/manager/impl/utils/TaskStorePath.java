@@ -10,7 +10,7 @@ public class TaskStorePath {
         if (id == null) {
             throw new NullPointerException();
         }
-        return "/breakpoint/" + id;
+        return "/" + id;
     }
 
     /**

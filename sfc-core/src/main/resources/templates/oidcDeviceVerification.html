@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>设备激活</title>
+    <link rel="icon" href="data:,">
+</head>
+<body>
+<h2>设备激活</h2>
+<p>请输入设备上展示的用户代码，然后继续完成登录与授权。</p>
+<form th:action="@{${verificationEndpoint}}" method="get">
+    <label for="userCode">用户代码</label>
+    <input id="userCode" name="user_code" type="text" th:value="${userCode}" autocomplete="off">
+    <button type="submit">继续</button>
+</form>
+</body>
+</html>

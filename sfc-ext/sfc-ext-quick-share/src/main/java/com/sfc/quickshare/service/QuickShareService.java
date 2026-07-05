@@ -3,26 +3,23 @@ package com.sfc.quickshare.service;
 import com.sfc.quickshare.model.QuickShare;
 import com.sfc.quickshare.model.QuickShareProperty;
 import com.sfc.quickshare.repo.QuickShareRepo;
+import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
+import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
-import com.xiaotao.saltedfishcloud.cache.CacheService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -33,14 +30,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class QuickShareService {
     private final static String LOG_PREFIX = "[快速分享]";
-    private final static String PREFIX_DIR = "quick_share";
 
     @Autowired
     @Getter
     private QuickShareRepo repo;
-
-    @Autowired
-    private StoreServiceFactory storeServiceFactory;
 
     @Autowired
     private CacheService cacheService;
@@ -48,7 +41,13 @@ public class QuickShareService {
     @Autowired
     private QuickShareProperty property;
 
-    private String getRedisKey(String code) {
+    /**
+     * 快速分享文件附属存储。
+     */
+    @AttachStorageInject(value = "quick_share", name = "快速分享", description = "快速分享临时文件")
+    private AttachStorage quickShareStorage;
+
+    private String getCacheKey(String code) {
         return CacheKeyPrefixes.QUICK_SHARE + code;
     }
 
@@ -61,7 +60,7 @@ public class QuickShareService {
     private String saveCode(String code, Long id) {
         String actualCode = code.toLowerCase();
         long effectiveDuration = property.getEffectiveDuration();
-        while (!cacheService.setIfAbsent(this.getRedisKey(actualCode), id, effectiveDuration, TimeUnit.MINUTES)) {
+        while (!cacheService.setIfAbsent(this.getCacheKey(actualCode), id, effectiveDuration, TimeUnit.MINUTES)) {
             actualCode = StringUtils.getRandomString(5, false);
         }
         return actualCode;
@@ -82,7 +81,7 @@ public class QuickShareService {
         this.checkSize(fileSize);
 
         // 设置基础数据
-        quickShare.setId(IdUtil.getId());
+        quickShare.setId(null);
         quickShare.setFileName(resource.getFilename());
         quickShare.setSize(fileSize);
 
@@ -91,17 +90,19 @@ public class QuickShareService {
         calendar.add(Calendar.MINUTE, property.getEffectiveDuration());
         quickShare.setExpiredAt(calendar.getTime());
 
+        // 先持久化新实体，确保由Hibernate生成主键，避免save时因非空id走merge逻辑
+        // 导致新记录被误判为更新，从而触发ObjectOptimisticLockingFailureException。
+        repo.saveAndFlush(quickShare);
+
         // 存储文件
-        try(InputStream is = resource.getInputStream()) {
-            storeServiceFactory.getTempStoreService().store(FileInfo.getFromResource(resource, quickShare.getUid(), FileInfo.TYPE_FILE), StringUtils.appendPath(PREFIX_DIR, quickShare.getId().toString()), fileSize, is);
-        }
+        quickShareStorage.saveFile(this.getFilePath(quickShare.getId()), resource);
 
         // 生成并记录提取码
         String actualCode = this.saveCode(quickShare.getCode(), quickShare.getId());
         quickShare.setCode(actualCode);
 
-        // 存库
-        repo.save(quickShare);
+        // 刷新最终提取码
+        repo.saveAndFlush(quickShare);
 
         return actualCode;
     }
@@ -113,7 +114,7 @@ public class QuickShareService {
      * @return      如果提取码不存在或失效，则为null，
      */
     private Long getIdByCode(String code) {
-        Object id = cacheService.get(getRedisKey(code));
+        Object id = cacheService.get(getCacheKey(code));
         if (id == null) {
             return null;
         } else {
@@ -126,14 +127,14 @@ public class QuickShareService {
      * @param id    分享id
      */
     private String getFilePath(Long id) {
-        return StringUtils.appendPath(PREFIX_DIR, id.toString());
+        return id.toString();
     }
 
     /**
      * 获取快速分享文件的文件存储服务
      */
-    private DirectRawStoreHandler getStoreService() {
-        return storeServiceFactory.getTempStoreService();
+    private AttachStorage getStoreService() {
+        return quickShareStorage;
     }
 
     /**
@@ -179,7 +180,7 @@ public class QuickShareService {
      */
     public Resource getFileById(Long id) throws IOException {
         this.checkIsEnable();
-        Resource resource = this.getStoreService().getResource(this.getFilePath(id));
+        Resource resource = this.getStoreService().getFile(this.getFilePath(id)).orElse(null);
         if (resource == null || !resource.exists()) {
             throw new JsonException(FileSystemError.FILE_NOT_FOUND);
         }

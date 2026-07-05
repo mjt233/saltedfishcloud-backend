@@ -1,0 +1,18 @@
+[
+  {
+    "name": "data-manager",
+    "title": "数据管理",
+    "nodes": [
+      {
+        "nodes": [
+          {
+            "name": "invalid-data-manager",
+            "title": "失效数据管理",
+            "inputType": "template",
+            "template": "invalid-data-manager"
+          }
+        ]
+      }
+    ]
+  }
+]

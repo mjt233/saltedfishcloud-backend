@@ -35,6 +35,10 @@ public final class CacheKeyPrefixes {
     public static final String QUICK_SHARE = "sfc:share:";
     /** 视频播放进度缓存前缀 */
     public static final String WATCH_PROGRESS = "sfc:video:progress:";
+    /** 文件临时下载链接缓存前缀 */
+    public static final String FILE_LINK = "sfc:fileLink:";
+    /** 评论频率间隔控制缓存前缀 */
+    public static final String COMMENT_INTERVAL = "sfc:comment:interval:";
 
     private CacheKeyPrefixes() {}
 }

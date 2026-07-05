@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
@@ -21,7 +21,7 @@ import java.util.List;
  * 唯一存储服务的抽象模板类，一般由{@link AbstractRawStoreService}内部进行实例化。<br>
  * 提供相同文件仅存一份的能力。原理是在特定目录下，利用文件md5组织文件结构来集中存储所有文件<br>
  * <br>
- * 因仅负责集中式的数据仓库的维护，不存在用户网盘文件组织结构的数据，所以不支持列出用户文件列表，判断文件是否存在，按路径删除，复制，移动，重命名等操作，也因此无法参与系统的文件记录同步机制。
+ * 因仅负责集中式的数据仓库的维护，不存在用户网盘文件组织结构的数据，所以不支持列出用户文件列表，判断文件是否存在，按路径删除，复制，移动，重命名等操作。
  * 但这些操作对于唯一存储服务而言这些是不必要的行为，用户网盘文件组织结构全权交由文件记录服务接口组
  * {@link FileRecordService},<br>
  * 提供。<br>
@@ -35,7 +35,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     private static final String LOG_TITLE = "Store-Unique";
 
     public AbstractUniqueStoreService(
-            DirectRawStoreHandler handler,
+            Storage handler,
             FileResourceMd5Resolver md5Resolver,
             StoreService rawStoreService
     ) {
@@ -226,7 +226,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     }
 
     @Override
-    public void move(long uid, String source, String target, String name, boolean overwrite) {
+    public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) {
         throw new UnsupportedOperationException();
     }
 

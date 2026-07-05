@@ -9,7 +9,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileInfoService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
-import com.xiaotao.saltedfishcloud.service.file.store.DirectRawStoreHandler;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.MigrateUtils;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
@@ -61,11 +61,24 @@ public class SystemUpdater {
         }
     }
 
+    /**
+     * 迁移 3.1.2 版本调整后的临时数据目录。
+     */
+    @UpdateAction("3.1.2")
+    public void update3_1_2() throws IOException {
+        // 由于移除了 {@code TempStoreService}，原本位于临时目录中的第三方平台头像缓存需要迁移到附属存储目录中。
+        MigrateUtils.moveDirectory("temp/thirdPlatformAvatar", "attach/third_platform_avatar");
+        MigrateUtils.moveDirectory("temp/quick_share", "attach/quick_share");
+
+        // 桌面组件公共留言板 comment-board 组件名称调整为 public-comment-board，原 comment-board 组件作为通用评论/留言板实现。
+        jdbcTemplate.execute("UPDATE desktop_component_config SET name = 'public-comment-board' WHERE name = 'comment-board'");
+    }
+
     @UpdateAction("3.1.0")
     public void update3_1_0() throws IOException {
         // 迁移头像数据
         // 升级到 3.1.0 由于头像存储采用了统一的 AttachStorage附属存储机制 和 单独的 UserCustomStore接口，需要将数据从旧的存储区中迁移到新的存储区
-        DirectRawStoreHandler storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
+        Storage storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
         SysProperties sysProperties = SpringContextUtils.getContext().getBean(SysProperties.class);
         UserCustomStoreService userCustomStoreService = SpringContextUtils.getContext().getBean(UserCustomStoreService.class);
 

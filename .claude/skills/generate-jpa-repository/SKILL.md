@@ -6,6 +6,9 @@ description: 实体类创建一个对应的JPA Repository接口
 
 Repository的数据实体类Entity需要满足以下条件：
 - 继承`com.xiaotao.saltedfishcloud.model.template.AuditModel`
+- JPA Entity如果字段用到Enum类型，必须添加`@Enumerated(EnumType.STRING)`注解
+- JPA Entity索引名称需要符合以下格式`idx_[表名]_[列1名]_[列2名]......`
+- JPA Entity实体类字段的`@Column`注解 与 `@Table`注解都避免配置`name`属性。
 
 
 生成的Repository接口规则如下:

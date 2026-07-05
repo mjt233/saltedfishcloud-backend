@@ -12,9 +12,12 @@ import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemFactory;
+import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
+import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
+import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.StorageDiskFileSystemAdapter;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
@@ -48,7 +51,11 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
 
     @Autowired
     @org.springframework.context.annotation.Lazy
-    private DiskFileSystemManager fileSystemManager;
+    private DiskFileSystemManager diskFileSystemManager;
+
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private StorageRegistry storageRegistry;
 
     @Autowired
     private FileRecordService fileRecordService;
@@ -140,7 +147,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
      */
     private void clearFileSystemFactoryCache(MountPoint mountPoint) {
         try {
-            fileSystemManager.getFileSystemFactory(mountPoint.getProtocol()).clearCache(MapperHolder.parseJsonToMap(mountPoint.getParams()));
+            storageRegistry.getStorageFactory(mountPoint.getProtocol()).clearCache(MapperHolder.parseJsonToMap(mountPoint.getParams()));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -150,7 +157,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
     @Transactional(rollbackFor = Exception.class)
     public void saveMountPoint(@Validated MountPoint mountPoint) throws IOException, FileSystemParameterException {
         String protocol = mountPoint.getProtocol();
-        if(!fileSystemManager.isSupportedProtocol(protocol)) {
+        if(!storageRegistry.isSupportedProtocol(protocol)) {
             throw new UnsupportedFileSystemProtocolException(protocol);
         }
         if (mountPoint.getId() == null) {
@@ -180,7 +187,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         if (!Objects.equals(mountPoint.getNid(), dbObj.getNid())) {
             String originNodePath = fileRecordService.getPathByNodeId(uid, dbObj.getNid())
                     .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "原节点丢失"));
-            fileRecordService.move(uid, originNodePath, newNodePath.get().orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "移动失败，节点丢失")), dbObj.getName(), true);
+            fileRecordService.move(uid, originNodePath, uid, newNodePath.get().orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "移动失败，节点丢失")), dbObj.getName(), true);
         }
         // 清理该挂载点的缓存
         clearFileSystemFactoryCache(dbObj);
@@ -219,24 +226,24 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
             mountPoint.setNid(mountPoint.getUid().toString());
         }
         log.debug("{}创建挂载点:{}", LOG_PREFIX, path);
-        if(fileSystemManager.getMainFileSystem().exist(mountPoint.getUid(), path)) {
+        if(diskFileSystemManager.getMainFileSystem().exist(mountPoint.getUid(), path)) {
             throw new JsonException(FileSystemError.FILE_EXIST);
         }
-        boolean protocolIsAvailable = fileSystemManager.listPublicFileSystem().stream().anyMatch(e -> e.getDescribe().getProtocol().equals(mountPoint.getProtocol()));
+        boolean protocolIsAvailable = storageRegistry.listPublicStorageFactory().stream().anyMatch(e -> e.getMetadata().getProtocol().equals(mountPoint.getProtocol()));
         if (!protocolIsAvailable) {
             throw new JsonException("找不到或无权创建对应的文件系统协议");
         }
 
         // 测试挂载点参数
         Map<String, Object> paramMap = MapperHolder.parseJsonToMap(mountPoint.getParams());
-        DiskFileSystemFactory factory = fileSystemManager.getFileSystemFactory(mountPoint.getProtocol());
+        StorageFactory factory = storageRegistry.getStorageFactory(mountPoint.getProtocol());
         if (factory == null) {
             throw new JsonException("不支持的协议" + mountPoint.getProtocol());
         }
-        DiskFileSystem fileSystem = factory.getFileSystem(paramMap);
-        factory.testFileSystem(fileSystem);
+        Storage storage = factory.getStorage(paramMap);
+        factory.testStorage(storage);
         try {
-            fileSystem.getUserFileList(0, "/");
+            storage.listFiles("/");
         } catch (IOException e) {
             log.error("{}挂载测试失败：", LOG_PREFIX, e);
             throw new JsonException("挂载测试失败:" + e);
@@ -350,7 +357,8 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
 
         // 重建记录
         Map<String, Object> params = MapperHolder.parseJsonToMap(mountPoint.getParams());
-        DiskFileSystem fileSystem = fileSystemManager.getFileSystem(mountPoint.getProtocol(), params);
+        Storage storage = storageRegistry.getStorage(mountPoint.getProtocol(), params);
+        DiskFileSystem fileSystem = new StorageDiskFileSystemAdapter(storage);
         DiskFileSystemUtils.walk(fileSystem, uid, "/", (path, fileList) -> {
             try {
                 for (FileInfo fileInfo : fileList) {

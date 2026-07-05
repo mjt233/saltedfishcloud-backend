@@ -1,10 +1,9 @@
 package com.saltedfishcloud.ext.minio.config;
 
-import com.saltedfishcloud.ext.minio.MinioDirectRawHandler;
+import com.saltedfishcloud.ext.minio.MinioStorage;
 import com.saltedfishcloud.ext.minio.MinioProperties;
 import com.saltedfishcloud.ext.minio.MinioStoreService;
 import com.saltedfishcloud.ext.minio.utils.MinioUtils;
-import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
@@ -35,7 +34,7 @@ public class MinioStoreAutoConfiguration {
 
     @Bean
     public MinioStoreService minioStoreService() {
-        return new MinioStoreService(new MinioDirectRawHandler(minioClient(), minioProperties), md5Resolver);
+        return new MinioStoreService(new MinioStorage(minioClient(), minioProperties), md5Resolver);
     }
 
     @Bean

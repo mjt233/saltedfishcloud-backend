@@ -14,12 +14,13 @@ disable-model-invocation: true
 
 1. 获取当前版本号：从项目根目录的`pom.xml`文件中读取当前maven项目的版本号作为发布版本号（取当前maven项目模块的版本，禁止取父模块版本号，禁止使用字符串搜索，必须读取整个完整的pom.xml文件）
 2. 从`master`分支中的`pom.xml`获取上次发布的版本号，展示版本号变化让用户确认，用户确认后执行下一步操作
-3. 对比从`master`分支到当前的`develop`分支提交记录，生成markdown格式的release发布日志草稿到`docs/release-notes/{版本号}.md`。
+3. 对比从`master`分支到当前的`develop`分支提交记录，生成markdown格式的release发布日志草稿到`docs/release-notes/{版本号}.md`
     release发布日志草稿采用以下格式:
    ```markdown
    ## 变更概况
    
    - 发布版本: {版本号}
+   - 发布日期: yyyy-MM-dd
    - 变更日期范围：{上一个git记录中的v*标签日期} ~ {当前版本的提交日期}
    
    ## 主要更新内容
@@ -52,7 +53,7 @@ disable-model-invocation: true
 
 用户确认后，创建发布提交，步骤如下：
 
-1. 将生成的release发布日志草稿添加到`mkdocs`文档的`发布日志`中，并将本次修改的`mkdocs.yml`和`{版本号}.md`2个文件提交到当前`develop`分支。
+1. 将生成的release发布日志草稿添加到`mkdocs`文档的`发布日志`中（排在最前面，格式为`v{版本号}`，如: `v3.1.1`），并将本次修改的`mkdocs.yml`和`{版本号}.md`2个文件提交到当前`develop`分支。
     本次提交git消息格式为: 
     ```
     release: {版本号} - 发布日志更新

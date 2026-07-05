@@ -30,7 +30,7 @@ public class ClassUtils {
      */
     public static String getEntityTableName(Class<?> clazz) {
         Table tableAnnotation = clazz.getAnnotation(Table.class);
-        if (tableAnnotation != null) {
+        if (tableAnnotation != null && StringUtils.hasText(tableAnnotation.name())) {
             return tableAnnotation.name();
         }
         String simpleName = clazz.getSimpleName();
@@ -146,7 +146,7 @@ public class ClassUtils {
      */
     public static void visitExtendsPath(Class<?> clazz, Function<Class<?>, Boolean> consumer) {
         Class<?> curClass = clazz;
-        while (curClass != Object.class) {
+        while (curClass != null && curClass != Object.class) {
             boolean isContinue = Boolean.TRUE.equals(consumer.apply(curClass));
             if (!isContinue) {
                 return;

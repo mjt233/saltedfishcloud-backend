@@ -17,7 +17,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = ValidPathValidator.class)
 public @interface ValidPath {
-    String message() default "非法的路径，不得包含/../或使用/..结尾";
+    String message() default "非法的路径，不得包含'?<>:*'、回车/换行符、'/../' 或使用 '/..' 结尾";
 
     Class<?>[] groups() default {};
 

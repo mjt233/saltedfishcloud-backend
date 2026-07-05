@@ -5,14 +5,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.xiaotao</groupId>
-    <version>3.1.1</version>
+    <version>${revision}</version>
     <artifactId>sfc-ext</artifactId>
     <packaging>pom</packaging>
 
     <properties>
         <java.version>25</java.version>
         <lombok.version>1.18.42</lombok.version>
-        <api.version>3.1.1</api.version>
+        <revision>3.1.2</revision>
+        <api.version>${revision}</api.version>
         <rpc.version>1.0.0</rpc.version>
         <task.version>1.0.0</task.version>
         <skipTests>true</skipTests>
@@ -43,6 +44,9 @@
         <module>sfc-ext-webrtc</module>
         <module>sfc-ext-webdav</module>
         <module>sfc-ext-webdav-store</module>
+        <module>sfc-ext-mcp</module>
+        <module>sfc-ext-pxe-boot</module>
+        <module>sfc-ext-data-manager</module>
     </modules>
 
 
@@ -50,7 +54,7 @@
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
-            <version>${api.version}</version>
+            <version>${revision}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -98,9 +102,37 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
+            <resource>
+                <directory>src/main/assert</directory>
+            </resource>
         </resources>
         <plugins>
 
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <configuration>
+                    <updatePomFile>true</updatePomFile>
+                    <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

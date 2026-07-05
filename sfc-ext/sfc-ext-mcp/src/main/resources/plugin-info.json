@@ -1,0 +1,17 @@
+{
+  "name": "sfc-ext-mcp",
+  "alias": "MCP服务",
+  "describe": "为外部AI Agent提供基于HTTP的MCP（Model Context Protocol）能力接入，支持网盘文件的获取列表、删除、复制、移动、上传、重命名等操作，基于系统OAuth授权机制实现身份验证",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-robot",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
+}
+

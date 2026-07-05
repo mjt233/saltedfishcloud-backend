@@ -4,7 +4,6 @@ import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.third.handler.AbstractThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
@@ -35,8 +34,8 @@ public class GoogleThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
     });
 
     @Autowired
-    public GoogleThirdPartyPlatformHandler(ProxyInfoService proxyInfoService, StoreServiceFactory storeServiceFactory) {
-        super(proxyInfoService, storeServiceFactory);
+    public GoogleThirdPartyPlatformHandler(ProxyInfoService proxyInfoService) {
+        super(proxyInfoService);
     }
 
     @Override

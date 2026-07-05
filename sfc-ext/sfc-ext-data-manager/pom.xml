@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>sfc-ext</artifactId>
+        <groupId>com.xiaotao</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>sfc-ext-data-manager</artifactId>
+    <version>${revision}</version>
+
+    <properties>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <ve.version>${revision}</ve.version>
+        <tika.version>3.2.3</tika.version>
+        <music.version>1.0.0</music.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-api</artifactId>
+            <version>${api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-task-api</artifactId>
+            <version>${task.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-archive-core</artifactId>
+            <version>${revision}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- 复用其他插件的依赖，系统加载其他插件时获得相关资源的识别能力 -->
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-ext-video-enhance</artifactId>
+            <version>${version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>4.0.29</version>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-ext-music</artifactId>
+            <version>${music.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-tika-server</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache.tika</groupId>
+                                    <artifactId>tika-server-standard</artifactId>
+                                    <version>${tika.version}</version>
+                                    <outputDirectory>${project.build.outputDirectory}/tika</outputDirectory>
+                                    <destFileName>tika-server.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

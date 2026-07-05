@@ -18,7 +18,12 @@ import com.xiaotao.saltedfishcloud.model.po.*;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppKeyVo;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
-import com.xiaotao.saltedfishcloud.service.third.*;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppKeyService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
+import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformUserService;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -35,11 +40,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.util.UriBuilder;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -80,9 +81,6 @@ public class OAuthController {
 
     @Autowired
     private ThirdPartyAppAuthorizationService thirdPartyAppAuthorizationService;
-
-    @Autowired
-    private ThirdPartyAppTokenService thirdPartyAppTokenService;
 
 
     @ApiOperation("使用第三方登录创建新账号")
@@ -277,33 +275,6 @@ public class OAuthController {
     @ResponseBody
     public JsonResult<ThirdPartyAppUserAuthorizationVo> getUserAuthorization(@RequestParam("appId") Long appId) {
         return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.getUserAppAuthorization(appId, SecureUtils.getCurrentUid()));
-    }
-
-    @ApiOperation("当前用户确认授权第三方应用")
-    @GetMapping("authorize")
-    @ResponseBody
-    public JsonResult<Map<String, String>> authorize(@RequestParam("appId") Long appId,
-                                        @RequestParam("scope") String scope) {
-        String authorizeCode = thirdPartyAppTokenService.authorize(appId, SecureUtils.getCurrentUid(), scope);
-        ThirdPartyApp app = thirdPartyAppService.checkAndGetById(appId);
-        String redirectUrl = UriComponentsBuilder.fromHttpUrl(app.getCallbackUrl())
-                .queryParam("code", authorizeCode)
-                .encode(StandardCharsets.UTF_8)
-                .toUriString();
-
-        Map<String, String> data = new HashMap<>();
-        data.put("code", authorizeCode);
-        data.put("redirectUrl", redirectUrl);
-        return JsonResultImpl.getInstance(data);
-    }
-
-    @ApiOperation("撤销第三方OAuth应用授权")
-    @PostMapping("revoke")
-    @ResponseBody
-    public JsonResult<Object> revoke(@UID @RequestParam("uid") Long uid,
-                                     @RequestParam("appId") Long appId) {
-        thirdPartyAppTokenService.revoke(appId, uid);
-        return JsonResult.emptySuccess();
     }
 
     @ApiOperation("列出用户所有已关联的第三方OAuth应用授权")

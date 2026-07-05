@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.vo;
 
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
@@ -19,6 +20,13 @@ public class UserVO {
      * @see com.xiaotao.saltedfishcloud.constant.UserConstants#TYPE_COMMON
      */
     private Integer type;
+
+    /**
+     * 是否为管理员权限账号
+     */
+    public boolean isAdmin() {
+        return type == UserConstants.TYPE_ADMIN;
+    }
 
     public static UserVO from(User user, boolean ignoreToken) {
         if (user == null) {

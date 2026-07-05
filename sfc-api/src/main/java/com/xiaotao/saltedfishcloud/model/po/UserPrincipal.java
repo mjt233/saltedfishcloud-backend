@@ -2,6 +2,8 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,31 +20,43 @@ import java.util.List;
  * Spring Security 认证主体 + JWT 载荷 DTO。
  * 从 {@link User} 构建，不依赖 JPA，专用于安全上下文和 token 序列化。
  */
+@JsonTypeName("UserPrincipal")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 @Data
 @NoArgsConstructor
 public class UserPrincipal implements UserDetails {
 
+    /** 用户唯一标识 */
     private Long id;
 
+    /** 用户登录名，JSON 序列化时映射为 {@code "user"} */
     @JsonProperty("user")
     private String username;
 
+    /** 用户密码，仅内部使用，不参与 JSON 序列化 */
     @JsonIgnore
     private String password;
 
+    /** 用户类型，参见 {@link UserConstants}，决定角色分配 */
     private Integer type = UserConstants.TYPE_COMMON;
 
+    /** 用户邮箱 */
     private String email;
 
+    /** 用户配额（字节） */
     private Long quota;
 
+    /** 最后登录时间戳（秒） */
     private Integer lastLogin;
 
+    /** 账号创建时间 */
     private Date createAt;
 
+    /** 临时令牌（如 JWT），不参与 JSON 序列化 */
     @JsonIgnore
     private String token;
 
+    /** 用户角色列表，由 {@link #setType(Integer)} 根据 type 自动维护 */
     private List<SimpleGrantedAuthority> authorities = new LinkedList<>();
 
     public void setType(Integer type) {

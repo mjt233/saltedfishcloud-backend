@@ -1,0 +1,88 @@
+package com.saltedfishcloud.ext.minio.filesystem;
+
+import com.saltedfishcloud.ext.minio.MinioStorage;
+import com.saltedfishcloud.ext.minio.MinioProperties;
+import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
+import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.xiaotao.saltedfishcloud.service.file.*;
+import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.Storage;
+import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
+import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
+import io.minio.MinioClient;
+import lombok.Setter;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+
+public class MinioStorageFactory extends AbstractStorageFactory<MinioProperties, Storage> {
+
+    /**
+     * 兼容现有自动配置注入的缩略图服务。
+     */
+    @Setter
+    private ThumbnailService thumbnailService;
+
+    private static final StorageMetadata DESCRIBE = StorageMetadata.builder()
+            .isPublic(true)
+            .protocol("minio")
+            .name("Minio对象存储")
+            .describe("Minio对象存储")
+            .configNode(Collections.singletonList(ConfigNode.builder()
+                            .title("基本信息")
+                            .name("base")
+                            .nodes(Arrays.asList(
+                                    ConfigNode.builder().name("endpoint").inputType("text").required(true).build(),
+                                    ConfigNode.builder().name("accessKey").inputType("text").required(true).build(),
+                                    ConfigNode.builder().name("secretKey").inputType("text").required(true).build(),
+                                    ConfigNode.builder().name("bucket").inputType("text").required(true).build()
+                            ))
+                    .build()))
+            .build();
+
+
+    @Override
+    public MinioProperties parseProperty(Map<String, Object> params) {
+
+        CollectionUtils.validMap(params)
+                .addField("endpoint")
+                .addField("accessKey")
+                .addField("secretKey")
+                .addField("bucket")
+                .valid();
+        return MinioProperties.builder()
+                .endpoint(params.get("endpoint").toString())
+                .accessKey(params.get("accessKey").toString())
+                .secretKey(params.get("secretKey").toString())
+                .bucket(params.get("bucket").toString())
+                .build();
+    }
+
+    @Override
+    public Storage generateStorage(MinioProperties property) throws IOException {
+        MinioClient client = MinioClient.builder()
+                .endpoint(property.getEndpoint())
+                .credentials(property.getAccessKey(), property.getSecretKey())
+                .build();
+        MinioStorage rawHandler = new MinioStorage(client, property);
+        return new ScopedStorage(rawHandler, "/");
+    }
+
+    @Override
+    public void testStorage(Storage storage) throws FileSystemParameterException {
+        try {
+            storage.listFiles("/");
+        } catch (IOException e) {
+            throw new FileSystemParameterException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public StorageMetadata getMetadata() {
+        return DESCRIBE;
+    }
+
+
+}

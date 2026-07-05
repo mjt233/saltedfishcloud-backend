@@ -13,7 +13,8 @@ public enum OAuthError implements ErrorInfo {
     INVALID_APP_ID(60002, 400, "无效的appId"),
     APP_DISABLED(60003, 400, "应用已被停用"),
     PERMISSION_DENIED(60004, 403, "未授权的操作"),
-    CLIENT_SECRET_INVALID(60005, 400, "Client Secret验证失败");
+    CLIENT_SECRET_INVALID(60005, 400, "Client Secret验证失败"),
+    PERMANENT_API_TICKET_NOT_ALLOWED(60006, 400, "当前应用不允许申请永久ApiTicket");
 
     private final int code;
     private final int status;

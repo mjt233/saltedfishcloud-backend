@@ -2,27 +2,23 @@ package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyPlatformUserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.po.LogRecord;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
-import com.xiaotao.saltedfishcloud.model.po.User;
-import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
-import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
+import com.xiaotao.saltedfishcloud.model.po.*;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.service.file.TempStoreService;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+import com.xiaotao.saltedfishcloud.utils.StreamCopyResult;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,24 +27,17 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamSource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.util.Lazy;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
-import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Component
@@ -75,9 +64,6 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
     private LogRecordManager logRecordManager;
 
     @Autowired
-    private StoreServiceFactory storeServiceFactory;
-
-    @Autowired
     private RestTemplate restTemplate;
 
     @Autowired
@@ -85,6 +71,12 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
 
     @Autowired
     private CacheService cacheService;
+
+    /**
+     * 第三方平台头像缓存附属存储。
+     */
+    @AttachStorageInject(value = "third_platform_avatar", name = "第三方平台头像缓存", description = "第三方登录头像缓存")
+    private AttachStorage thirdPlatformAvatarStorage;
 
     private final Map<String, ThirdPartyPlatformHandler> handlerMap = new ConcurrentHashMap<>();
 
@@ -260,23 +252,23 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         }
 
         try {
-            TempStoreService storeService = storeServiceFactory.getTempStoreService();
-            String cacheFileName = SecureUtils.getMd5(user.getAvatarUrl());
-            String cacheFilePath = "thirdPlatformAvatar/" + cacheFileName;
+            String cacheFilePath = SecureUtils.getMd5(user.getAvatarUrl());
             InputStreamSource inputStreamSource;
-            if (!storeService.exist(cacheFilePath)) {
+            if (!thirdPlatformAvatarStorage.exist(cacheFilePath)) {
                 // 未缓存头像，从原始URL读取数据后存入
                 restTemplate.execute(user.getAvatarUrl(), HttpMethod.GET, null, response -> {
-                    FileInfo fileInfo = new FileInfo();
-                    fileInfo.setName(cacheFileName);
-                    fileInfo.setPath(cacheFilePath);
-                    try (InputStream is = response.getBody()) {
-                        storeService.store(fileInfo, cacheFilePath, -1, is);
-                    }
+                    thirdPlatformAvatarStorage.saveFile(cacheFilePath, out -> {
+                        try (InputStream is = response.getBody()) {
+                            return new StreamCopyResult(StreamUtils.copy(is, out), null);
+                        }
+                    });
                     return null;
                 });
             }
-            inputStreamSource = storeService.getResource(cacheFilePath);
+            inputStreamSource = thirdPlatformAvatarStorage.getFile(cacheFilePath).orElse(null);
+            if (inputStreamSource == null) {
+                return;
+            }
             try (InputStream is = inputStreamSource.getInputStream()) {
                 user.setAvatarUrl("data:image/jpeg;base64," + Base64.getEncoder().encodeToString(StreamUtils.copyToByteArray(is)));
             }

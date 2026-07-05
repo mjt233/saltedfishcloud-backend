@@ -92,18 +92,18 @@ git clone git@github.com:mjt233/saltedfishcloud-backend.git
 
 **字段说明：**
 
-| 字段           | 必填 | 说明                                                                                                                                                                         |
-|--------------|----|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| name         | 是  | 插件唯一标识，应与 artifactId 保持一致                                                                                                                                                  |
-| loadType     | 是  | 加载方式，`merge` 表示合并到主上下文类加载器                                                                                                                                                 |
-| author       | 是  | 作者名称                                                                                                                                                                       |
-| email        | 否  | 作者邮箱                                                                                                                                                                       |
-| describe     | 否  | 插件描述                                                                                                                                                                       |
-| alias        | 否  | 插件显示名称                                                                                                                                                                     |
-| apiVersion   | 是  | 兼容的 API 版本，使用 `^api.version^` 占位符                                                                                                                                          |
-| version      | 是  | 插件版本，使用 `^project.version^` 占位符                                                                                                                                            |
-| autoLoad     | 否  | 需要自动加载的前端资源，目前只支持js和css文件。当配置为`[ "index.umd.js", "style.css" ]`时，在打开前端页面时就会自动加载 src/main/assert 下的 `index.umd.js`和`style.css` <br> 插件需要新增前端行为和Vue组件时，通常采用该方式作为插件前端资源的加载入口。 |
-| delayLoadLib | 否  | json字符串数组，定义需要延迟加载的第三方库，将在所有插件的第三方库加载完成后，最后加载。案例：\["httpclient-4.5.13.jar"\]                                                                                               |
+| 字段           | 必填 | 说明                                                                                                                                                                                |
+|--------------|----|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name         | 是  | 插件唯一标识，应与 artifactId 保持一致                                                                                                                                                         |
+| loadType     | 是  | 加载方式，`merge` 表示合并到主上下文类加载器                                                                                                                                                        |
+| author       | 是  | 作者名称                                                                                                                                                                              |
+| email        | 否  | 作者邮箱                                                                                                                                                                              |
+| describe     | 否  | 插件描述                                                                                                                                                                              |
+| alias        | 否  | 插件显示名称                                                                                                                                                                            |
+| apiVersion   | 是  | 兼容的 API 版本，使用 `^api.version^` 占位符                                                                                                                                                 |
+| version      | 是  | 插件版本，使用 `^project.version^` 占位符                                                                                                                                                   |
+| autoLoad     | 否  | 需要自动加载的前端资源，目前只支持js和css文件。当配置为`[ "index.umd.js", "style.css" ]`时，在打开前端页面时就会自动加载 src/main/assert/static 下的 `index.umd.js`和`style.css` <br> 插件需要新增前端行为和Vue组件时，通常采用该方式作为插件前端资源的加载入口。 |
+| delayLoadLib | 否  | json字符串数组，定义需要延迟加载的第三方库，将在所有插件的第三方库加载完成后，最后加载。案例：\["httpclient-4.5.13.jar"\]                                                                                                      |
 
 ## 3. 插件配置参数
 
@@ -120,7 +120,7 @@ git clone git@github.com:mjt233/saltedfishcloud-backend.git
 1. maven的profile设置为`develop`，或指定SpringBoot配置文件为`sfc-core/src/main/config/application-develop.yml`（下面简称为
    `application-develop.yml`）
 2. 修改`application-develop.yml`，为`plugin.extra-resource`添加一项: `sfc-ext/你的插件项目目录`
-3. 如果插件有配置第三方依赖，请务必对插件的maven模块执行`mvn compile`确保依赖库能得到加载
+3. 如果插件有配置第三方依赖，请务必对插件的maven模块执行`mvn compile`确保依赖库能得到加载，并提示用户在IDE中刷新依赖信息以便后续能使用`build_project`进行验证。
 
 ## 6. 构建插件
 

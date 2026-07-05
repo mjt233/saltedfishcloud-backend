@@ -5,9 +5,9 @@
     <parent>
         <artifactId>sfc-ext</artifactId>
         <groupId>com.xiaotao</groupId>
-        <version>3.1.1</version>
+        <version>${revision}</version>
     </parent>
-    <version>3.1.1</version>
+    <version>${revision}</version>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sfc-ext-ftp-store</artifactId>
@@ -21,7 +21,7 @@
         <dependency>
             <groupId>commons-net</groupId>
             <artifactId>commons-net</artifactId>
-            <version>3.8.0</version>
+            <version>3.12.0</version>
         </dependency>
     </dependencies>
 
