@@ -21,6 +21,13 @@ public class SysProperties implements InitializingBean {
 
     @Value("${app.version}")
     private Version version;
+
+    /**
+     * 构建日期（格式：yyyyMMddHHmmss），由 Maven 在打包时通过资源过滤注入
+     */
+    @Value("${app.build-date}")
+    private String buildDate;
+
     private Store store;
     /**
      * 系统服务相关配置。
