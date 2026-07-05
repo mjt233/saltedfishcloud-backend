@@ -20,7 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * 使用 {@link OidcAccessTokenFilter} 校验 OIDC access token，
  * 授予 {@code ROLE_OAUTH_USER} 和 {@code SCOPE_*} 权限，
  * 使 OpenAPI 控制器的 {@code @RolesAllowed(OAUTH_USER)} 和
- * {@code @PreAuthorize("hasAuthority('SCOPE_*')")} 校验通过。
+ * {@code @RequireScope("storage_read")} 校验通过。
  * </p>
  * <p>
  * 仅在 {@code sys.oidc.enabled=true} 时生效。过滤器链优先级为 {@code @Order(1)}，

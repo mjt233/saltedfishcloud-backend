@@ -36,7 +36,7 @@ import java.util.Set;
  * <p>
  * 认证成功后授予 {@code ROLE_OAUTH_USER} 角色以及与已授权 scope 对应的 {@code SCOPE_*} 权限，
  * 使 {@code /api/openApi/**} 端点的 {@code @RolesAllowed(OAUTH_USER)} 和
- * {@code @PreAuthorize("hasAuthority('SCOPE_*')")} 校验通过。
+ * {@code @RequireScope("storage_read")} 校验通过。
  * </p>
  * <p>
  * 该过滤器将 JWT access token 当作 opaque token 处理（通过 DB 查找校验），
