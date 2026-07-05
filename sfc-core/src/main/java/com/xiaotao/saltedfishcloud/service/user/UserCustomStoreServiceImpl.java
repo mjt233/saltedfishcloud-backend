@@ -3,8 +3,7 @@ package com.xiaotao.saltedfishcloud.service.user;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -23,17 +22,10 @@ import java.util.Set;
 public class UserCustomStoreServiceImpl implements UserCustomStoreService {
     private final static String LOG_PREFIX = "[UserCustomStore]";
     private final static Set<String> ACCEPT_TYPE = Set.of("jpg", "jpeg", "png", "gif");
-    private final AttachStorage avatarStorage;
     private final static Resource DEFAULT_AVATAR = new ClassPathResource("/static/defaultAvatar.png");
 
-    public UserCustomStoreServiceImpl(AttachStorageManager attachStorageManager) {
-        String userAvatarDomainId = "user_avatar";
-        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
-                .id(userAvatarDomainId)
-                .name("用户头像")
-                .build());
-        avatarStorage = attachStorageManager.getStorage(userAvatarDomainId);
-    }
+    @AttachStorageInject(value = "user_avatar", name = "用户头像")
+    private AttachStorage avatarStorage;
 
     /**
      * 获取用户的统一资源前缀目录路径

@@ -7,8 +7,7 @@ import com.xiaotao.saltedfishcloud.cache.LockFactory;
 import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.AbstractResource;
@@ -56,6 +55,7 @@ public class IsoResourceExtractorService {
         "initrd", "^initrd|^initramfs"
     );
 
+    @AttachStorageInject(value = "pxe-boot", name = "PXE启动缓存", description = "PXE启动项ISO资源提取缓存")
     private AttachStorage cacheStorage;
 
     @Autowired
@@ -69,23 +69,6 @@ public class IsoResourceExtractorService {
 
     @Autowired
     private LockFactory lockFactory;
-
-    /**
-     * 注册 PXE 启动缓存存储域。
-     *
-     * @param attachStorageManager 附属存储管理器
-     */
-    @Autowired
-    public void setAttachStorageManager(AttachStorageManager attachStorageManager) {
-        attachStorageManager.registerStorageDomain(
-            AttachStorageDomainDefinition.builder()
-                .id(STORAGE_DOMAIN_ID)
-                .name("PXE启动缓存")
-                .description("PXE启动项ISO资源提取缓存")
-                .build()
-        );
-        this.cacheStorage = attachStorageManager.getStorage(STORAGE_DOMAIN_ID);
-    }
 
     /**
      * 从 ISO 启动项中按指定路径提取资源（带缓存）。

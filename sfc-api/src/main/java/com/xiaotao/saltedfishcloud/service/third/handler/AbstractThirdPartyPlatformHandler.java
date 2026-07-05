@@ -5,8 +5,7 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
@@ -34,19 +33,15 @@ import java.util.Optional;
 @Slf4j
 public abstract class AbstractThirdPartyPlatformHandler<T> implements ThirdPartyPlatformHandler {
     private final ProxyInfoService proxyInfoService;
+
     /**
      * 第三方平台头像缓存附属存储。
      */
-    private final AttachStorage thirdPlatformAvatarStorage;
+    @AttachStorageInject(value = "third_platform_avatar", name = "第三方平台头像缓存", description = "第三方登录头像缓存")
+    private AttachStorage thirdPlatformAvatarStorage;
 
-    protected AbstractThirdPartyPlatformHandler(ProxyInfoService proxyInfoService, AttachStorageManager attachStorageManager) {
+    protected AbstractThirdPartyPlatformHandler(ProxyInfoService proxyInfoService) {
         this.proxyInfoService = proxyInfoService;
-        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
-                .id("third_platform_avatar")
-                .name("第三方平台头像缓存")
-                .description("第三方登录头像缓存")
-                .build());
-        this.thirdPlatformAvatarStorage = attachStorageManager.getStorage("third_platform_avatar");
     }
 
     private final static RestClient defaultRestClient = RestClient.builder()
