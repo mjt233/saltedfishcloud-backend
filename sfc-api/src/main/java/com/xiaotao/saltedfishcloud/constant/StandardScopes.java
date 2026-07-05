@@ -16,6 +16,11 @@ public final class StandardScopes {
     }
 
     /**
+     * OIDC 标准 scope，表示请求 OpenID Connect 身份验证。
+     */
+    public static final String OPENID = "openid";
+
+    /**
      * 个人信息读取
      */
     public static final String PROFILE = "profile";

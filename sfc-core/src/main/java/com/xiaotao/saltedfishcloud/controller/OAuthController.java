@@ -8,6 +8,8 @@ import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
+import com.xiaotao.saltedfishcloud.ext.oidc.OidcScopeInfo;
+import com.xiaotao.saltedfishcloud.ext.oidc.OidcScopeModule;
 import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
@@ -82,6 +84,40 @@ public class OAuthController {
     @Autowired
     private ThirdPartyAppAuthorizationService thirdPartyAppAuthorizationService;
 
+    @Autowired
+    private List<OidcScopeModule> scopeModules;
+
+    /**
+     * 获取系统中所有已注册的 OIDC scope 模块及其 scope 列表。
+     *
+     * @return 模块列表，每个模块包含模块信息及其下属的所有 scope
+     */
+    @GetMapping("listModules")
+    @ResponseBody
+    public JsonResult<List<OidcScopeModuleVO>> listModules() {
+        List<OidcScopeModuleVO> modules = scopeModules.stream()
+                .map(m -> new OidcScopeModuleVO(
+                        m.getModuleId(),
+                        m.getModuleName(),
+                        m.getDescription(),
+                        m.getIcon(),
+                        m.getScopes()))
+                .toList();
+        return JsonResultImpl.getInstance(modules);
+    }
+
+    /**
+     * OIDC scope 模块视图对象
+     *
+     * @param moduleId    模块唯一标识
+     * @param moduleName  模块显示名称
+     * @param description 模块描述
+     * @param icon        模块图标
+     * @param scopes      该模块提供的所有 scope
+     */
+    public record OidcScopeModuleVO(String moduleId, String moduleName, String description, String icon,
+                                    List<OidcScopeInfo> scopes) {
+    }
 
     @ApiOperation("使用第三方登录创建新账号")
     @AllowAnonymous

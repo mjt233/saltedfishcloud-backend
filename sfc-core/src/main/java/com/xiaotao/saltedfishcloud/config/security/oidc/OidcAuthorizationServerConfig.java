@@ -10,9 +10,15 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.xiaotao.saltedfishcloud.cache.LockFactory;
 import com.xiaotao.saltedfishcloud.config.oidc.OidcServerProperty;
 import com.xiaotao.saltedfishcloud.config.security.JwtAuthenticationFilter;
+import com.xiaotao.saltedfishcloud.constant.StandardScopes;
 import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
+import com.xiaotao.saltedfishcloud.ext.oidc.OidcScopeInfo;
+import com.xiaotao.saltedfishcloud.ext.oidc.OidcScopeModule;
 
 import java.text.ParseException;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import com.xiaotao.saltedfishcloud.dao.jpa.Oauth2AuthorizationRepo;
@@ -37,6 +43,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
@@ -105,14 +112,29 @@ public class OidcAuthorizationServerConfig {
                                                        OidcUserClaimsMapper claimsMapper,
                                                        AuthorizationServerSettings settings,
                                                        JwtAuthenticationFilter jwtAuthenticationFilter,
-                                                       AuthenticationProvider authenticationProvider) throws Exception {
+                                                       AuthenticationProvider authenticationProvider,
+                                                       List<OidcScopeModule> scopeModules) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer =
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
         http.with(authorizationServer, server -> server
                         .authorizationServerSettings(settings)
                         .authorizationEndpoint(authorizationEndpoint ->
                                 authorizationEndpoint.consentPage(property.getConsentPage()))
-                        .oidc(oidc -> oidc.userInfoEndpoint(e -> e.userInfoMapper(claimsMapper::toOidcUserInfo)))
+                        .oidc(oidc -> oidc
+                                .userInfoEndpoint(e -> e.userInfoMapper(claimsMapper::toOidcUserInfo))
+                                .providerConfigurationEndpoint(config ->
+                                        config.providerConfigurationCustomizer(builder -> {
+                                            for (OidcScopeModule module : scopeModules) {
+                                                for (OidcScopeInfo scope : module.getScopes()) {
+                                                    if (StandardScopes.OPENID.equals(scope.getId())) {
+                                                        continue;
+                                                    }
+                                                    builder.scope(scope.getId());
+                                                }
+                                            }
+                                        })
+                                )
+                        )
                         .deviceAuthorizationEndpoint(deviceAuthorization ->
                                 deviceAuthorization.verificationUri(property.getDeviceConsentPage()))
                         .deviceVerificationEndpoint(deviceVerification -> {
@@ -221,8 +243,16 @@ public class OidcAuthorizationServerConfig {
     @Bean
     public RegisteredClientRepository registeredClientRepository(
             ThirdPartyAppService appService,
-            ThirdPartyAppKeyRepo keyRepo) {
-        return new OidcRegisteredClientRepository(appService, keyRepo);
+            ThirdPartyAppKeyRepo keyRepo,
+            List<OidcScopeModule> scopeModules) {
+        Set<String> allScopes = new LinkedHashSet<>();
+        allScopes.add(OidcScopes.OPENID);
+        for (OidcScopeModule module : scopeModules) {
+            for (OidcScopeInfo scope : module.getScopes()) {
+                allScopes.add(scope.getId());
+            }
+        }
+        return new OidcRegisteredClientRepository(appService, keyRepo, allScopes);
     }
 
     /**
