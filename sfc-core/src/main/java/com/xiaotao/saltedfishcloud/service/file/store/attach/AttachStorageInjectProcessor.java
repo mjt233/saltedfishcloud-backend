@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.store.attach;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -10,14 +11,17 @@ import org.springframework.util.ReflectionUtils;
  * {@link AttachStorageInject} 注解处理器，负责自动注入 {@link AttachStorage} 实例。
  * <p>
  * 扫描所有 Bean 中被 {@code @AttachStorageInject} 标注的字段，自动完成存储域注册和存储实例注入。
+ * <p>
+ * 注：{@link AttachStorageManager} 采用懒加载注入，避免在 BeanPostProcessor 初始化阶段过早触发
+ * JPA/Hibernate 依赖链的初始化（否则会导致经 Hibernate 创建的 Bean 无法被所有 BeanPostProcessor 处理）。
  */
 @Component
 public class AttachStorageInjectProcessor implements BeanPostProcessor {
 
-    private final AttachStorageManager attachStorageManager;
+    private final ObjectProvider<AttachStorageManager> attachStorageManagerProvider;
 
-    public AttachStorageInjectProcessor(AttachStorageManager attachStorageManager) {
-        this.attachStorageManager = attachStorageManager;
+    public AttachStorageInjectProcessor(ObjectProvider<AttachStorageManager> attachStorageManagerProvider) {
+        this.attachStorageManagerProvider = attachStorageManagerProvider;
     }
 
     @Override
@@ -31,7 +35,8 @@ public class AttachStorageInjectProcessor implements BeanPostProcessor {
             String name = annotation.name().isEmpty() ? id : annotation.name();
             String description = annotation.description();
 
-            attachStorageManager.registerStorageDomain(
+            AttachStorageManager manager = attachStorageManagerProvider.getObject();
+            manager.registerStorageDomain(
                     AttachStorageDomainDefinition.builder()
                             .id(id)
                             .name(name)
@@ -40,7 +45,7 @@ public class AttachStorageInjectProcessor implements BeanPostProcessor {
             );
 
             field.setAccessible(true);
-            field.set(bean, attachStorageManager.getStorage(id));
+            field.set(bean, manager.getStorage(id));
         }, field -> field.getAnnotation(AttachStorageInject.class) != null);
         return bean;
     }
