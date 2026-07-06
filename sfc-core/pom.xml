@@ -106,16 +106,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-download-api</artifactId>
-            <version>${download.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-download-core</artifactId>
-            <version>${download.version}</version>
-        </dependency>
+
 
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
