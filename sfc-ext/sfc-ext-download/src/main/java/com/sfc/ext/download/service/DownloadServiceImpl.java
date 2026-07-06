@@ -22,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
+import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -105,6 +106,7 @@ public class DownloadServiceImpl implements DownloadService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String createTask(DownloadTaskParams params, long creator) throws IOException {
 
         // 初始化下载任务信息和录入数据库
