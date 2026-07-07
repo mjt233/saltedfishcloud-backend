@@ -39,6 +39,7 @@ nav:
         - FTP服务 ftp-server: extension/ftp-server.md
         - OSS对象存储 oss-store: extension/oss-store.md
         - Minio对象存储 minio-store: extension/minio-store.md
+        - 离线下载 download: extension/download.md
         - 音乐插件 music: extension/music.md
         - OnlyOffice在线文档 only-office: extension/onlyoffice.md
         - WebRTC应用 webrtc: extension/webrtc.md
