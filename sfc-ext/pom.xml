@@ -47,6 +47,7 @@
         <module>sfc-ext-mcp</module>
         <module>sfc-ext-pxe-boot</module>
         <module>sfc-ext-data-manager</module>
+        <module>sfc-ext-download</module>
     </modules>
 
 

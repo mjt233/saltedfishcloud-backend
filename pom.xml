@@ -14,7 +14,6 @@
         <module>sfc-api</module>
         <module>sfc-task</module>
         <module>sfc-rpc</module>
-        <module>sfc-download</module>
         <module>sfc-ext</module>
         <module>sfc-core</module>
     </modules>
@@ -44,7 +43,6 @@
         <task.version>1.0.0</task.version>
         <rpc.version>1.0.0</rpc.version>
         <oshi.version>6.4.0</oshi.version>
-        <download.version>1.1.0</download.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
