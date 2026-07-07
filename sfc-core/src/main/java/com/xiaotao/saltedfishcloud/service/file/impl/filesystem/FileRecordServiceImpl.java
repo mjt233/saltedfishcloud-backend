@@ -359,9 +359,16 @@ public class FileRecordServiceImpl implements FileRecordService {
             if (targetFileInfo != null) {
                 if (targetFileInfo.isFile()) {
                     if (overwrite) {
-                        targetFileInfo.setNode(sourceFileInfo.getNode());
-                        fileInfoRepo.save(targetFileInfo);
-                        fileInfoRepo.delete(sourceFileInfo);
+                        // 移动文件覆盖，删掉目标位置同名文件后，修改源文件的所属用户和节点即可
+                        fileInfoRepo.delete(targetFileInfo);
+                        fileInfoRepo.flush();
+                        if (sourceUid != targetUid) {
+                            sourceFileInfo.setUid(targetUid);
+                        }
+                        sourceFileInfo.setNode(targetNode);
+                        fileInfoRepo.save(sourceFileInfo);
+                    } else {
+                        throw new JsonException(409, "目标位置已存在同名文件\"" + name + "\"，未启用覆盖");
                     }
                 } else if (targetFileInfo.isDir()) {
                     throw new JsonException("目标位置存在同名目录\"" + name + "\"，无法移动");
