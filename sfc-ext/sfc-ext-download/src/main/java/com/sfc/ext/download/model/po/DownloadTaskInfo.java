@@ -21,9 +21,6 @@ import java.util.Date;
 })
 @EntityListeners(AuditingEntityListener.class)
 public class DownloadTaskInfo {
-    public enum State {
-        WAITING, DOWNLOADING, FAILED, FINISH, CANCEL
-    }
 
     @Id
     @SystemUuidGenerator
@@ -36,9 +33,6 @@ public class DownloadTaskInfo {
     private String url;
 
     private String proxy;
-
-    @Enumerated(EnumType.STRING)
-    private State state = State.WAITING;
 
     @Lob
     private String message;
