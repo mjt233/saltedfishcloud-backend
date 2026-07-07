@@ -29,6 +29,27 @@ public class ProgressDetectorImpl implements ProgressDetector {
         return CacheKeyPrefixes.TASK_PROGRESS + id;
     }
 
+    /**
+     * 创建 {@link ProgressRecord} 的副本，避免缓存中与原始对象引用相同导致速度计算偏差。
+     * 当复制失败时（如子类缺少无参构造器等场景），退而使用原始对象。
+     */
+    private ProgressRecord copyRecord(ProgressRecord record) {
+        if (record == null) {
+            return null;
+        }
+        try {
+            ProgressRecord copy = record.getClass().getDeclaredConstructor().newInstance();
+            copy.setLoaded(record.getLoaded());
+            copy.setTotal(record.getTotal());
+            copy.setLastUpdateTime(record.getLastUpdateTime());
+            copy.setSpeed(record.getSpeed());
+            return copy;
+        } catch (ReflectiveOperationException e) {
+            log.warn("{}创建ProgressRecord副本失败，使用原始对象", LOG_TITLE, e);
+            return record;
+        }
+    }
+
     @Override
     public ProgressRecord getRecord(String id) {
         final Object o = cacheService.get(getRecordKey(id));
@@ -84,7 +105,7 @@ public class ProgressDetectorImpl implements ProgressDetector {
                     );
                 }
             }
-            cacheService.set(getRecordKey(id), provider.getProgressRecord(), 10, TimeUnit.SECONDS);
+            cacheService.set(getRecordKey(id), copyRecord(record), 10, TimeUnit.SECONDS);
         }
     }
 }
