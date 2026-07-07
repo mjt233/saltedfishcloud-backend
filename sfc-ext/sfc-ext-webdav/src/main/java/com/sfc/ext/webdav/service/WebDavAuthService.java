@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.LockUtils;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
+
 import io.milton.http.http11.auth.DigestGenerator;
 import io.milton.http.http11.auth.DigestResponse;
 import io.milton.servlet.MiltonServlet;
@@ -31,9 +31,12 @@ public class WebDavAuthService {
 
 
     public UserPrincipal authenticate(String username, String password) {
-        UserPrincipal user = Optional.ofNullable(userService.getUserByUser(username))
+        UserPrincipal user = Optional.ofNullable(webDavAuthRepo.findOneByUsername(username))
+                .filter(auth -> Objects.equals(
+                        digestGenerator.encodePasswordInA1Format(username, Constants.REALM, password),
+                        auth.getA1Md5()))
+                .map(auth -> userService.getUserById(auth.getUid()))
                 .map(UserPrincipal::from)
-                .filter(u -> Objects.equals(u.getPassword(), SecureUtils.getPassswd(password)))
                 .orElse(null);
         Optional.ofNullable(MiltonServlet.request())
                 .ifPresent(req -> {
