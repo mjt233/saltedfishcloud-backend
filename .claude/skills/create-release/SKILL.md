@@ -4,17 +4,24 @@ description: 在Github上创建一个新的release
 disable-model-invocation: true
 ---
 
-## 前提要求
+## 脚本调用说明
 
-要求当前分支在`develop`，如果不是`develop`分支，则停止执行后续流程，并提示用户切换到develop分支后再执行该命令。
+- 使用java命令直接执行该skill目录下的 `scripts/getCurVersion.java [项目根目录]` 获取当前版本号
+- 使用java命令直接执行该skill目录下的 `scripts/getPrevVersion.java [项目根目录]` 获取上次发布的版本号
+
+## 流程开始前检查
+
+- 检查当前分支，要求在`develop`，如果不是`develop`分支，则停止执行后续流程，并提示用户切换到develop分支后再执行该命令。
+- 检查当前分支是否有未提交的修改，如果有，则停止执行后续流程，并提示用户提交或暂存修改后再执行该命令。
+- 检查前端项目的git仓库是否已有tag`v{当前版本号}`。如果没有，则停止执行后续流程，并提示用户先为前端项目创建当前版本的tag并推送到远程master。
+    > 除非用户明确指定了前端git仓库地址或本地路径，否则一律通过网络读取 `https://github.com/mjt233/saltedfishcloud-frontend` 是否存在对应的tag，并向用户告知使用了该仓库地址。
 
 ## 执行步骤
 
 ### 1. 生成发布日志
 
-1. 获取当前版本号：从项目根目录的`pom.xml`文件中读取当前maven项目的版本号作为发布版本号（取当前maven项目模块的版本，禁止取父模块版本号，禁止使用字符串搜索，必须读取整个完整的pom.xml文件）
-2. 从`master`分支中的`pom.xml`获取上次发布的版本号，展示版本号变化让用户确认，用户确认后执行下一步操作
-3. 对比从`master`分支到当前的`develop`分支提交记录，生成markdown格式的release发布日志草稿到`docs/release-notes/{版本号}.md`
+1. 调用 `scripts` 下展示脚本获取当前版本号和上次发布的版本号，变化让用户确认，用户确认后执行下一步操作
+2. 对比从`master`分支到当前的`develop`分支提交记录，生成markdown格式的release发布日志草稿到`docs/release-notes/{版本号}.md`
     release发布日志草稿采用以下格式:
    ```markdown
    ## 变更概况

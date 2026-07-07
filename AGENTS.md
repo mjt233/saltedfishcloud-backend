@@ -4,7 +4,7 @@
 
 这是一个基于 SpringBoot 的网盘项目。
 
-注意：这是一个多模块 Maven 项目（见根 `pom.xml` 的 <modules>），主要模块包括 `sfc-core`、`sfc-api`、`sfc-ext`、`sfc-task`、`sfc-download`、`sfc-rpc`、`sfc-archive`。扩展插件位于 `sfc-ext` 目录（例如 `sfc-ext-webdav`、`sfc-ext-minio-store` 等）。
+注意：这是一个多模块 Maven 项目（见根 `pom.xml` 的 <modules>），主要模块包括 `sfc-core`、`sfc-api`、`sfc-ext`、`sfc-task`、`sfc-rpc`、`sfc-archive`。扩展插件位于 `sfc-ext` 目录（例如 `sfc-ext-webdav`、`sfc-ext-minio-store` 等）。
 
 ## 核心技术栈
 

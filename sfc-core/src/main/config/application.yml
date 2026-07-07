@@ -67,6 +67,7 @@ management:
       enabled: false
 app:
   version: ^project.version^
+  build-date: ^maven.build.timestamp^
 
 sys:
   # OIDC/OAuth2 授权服务器配置

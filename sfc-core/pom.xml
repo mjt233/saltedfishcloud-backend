@@ -10,6 +10,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sfc-core</artifactId>
+    <properties>
+        <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
+    </properties>
 
     <profiles>
         <profile>
@@ -103,16 +106,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-download-api</artifactId>
-            <version>${download.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-download-core</artifactId>
-            <version>${download.version}</version>
-        </dependency>
+
 
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>

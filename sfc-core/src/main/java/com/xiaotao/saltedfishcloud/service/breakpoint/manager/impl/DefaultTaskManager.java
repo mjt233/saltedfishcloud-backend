@@ -10,8 +10,7 @@ import com.xiaotao.saltedfishcloud.service.breakpoint.manager.impl.utils.TaskSto
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MergeInputStream;
 import com.xiaotao.saltedfishcloud.service.breakpoint.merge.MultipleFileMergeInputStreamGenerator;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.utils.StreamCopyResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,22 +35,8 @@ public class DefaultTaskManager implements TaskManager {
     /**
      * 断点续传任务分片附属存储。
      */
+    @AttachStorageInject(value = "breakpoint", name = "断点续传", description = "断点续传任务分片缓存")
     private AttachStorage breakpointStorage;
-
-    /**
-     * 注册断点续传附属存储域。
-     *
-     * @param attachStorageManager 附属存储管理器
-     */
-    @Autowired
-    public void setAttachStorageManager(AttachStorageManager attachStorageManager) {
-        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
-                .id("breakpoint")
-                .name("断点续传")
-                .description("断点续传任务分片缓存")
-                .build());
-        breakpointStorage = attachStorageManager.getStorage("breakpoint");
-    }
 
     private String getMetaRedisKey(String id) {
         return CacheKeyPrefixes.BREAKPOINT_META + id;

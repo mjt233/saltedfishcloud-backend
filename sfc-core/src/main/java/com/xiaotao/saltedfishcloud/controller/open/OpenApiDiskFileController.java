@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller.open;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
+import com.xiaotao.saltedfishcloud.constant.StandardScopes;
 import com.xiaotao.saltedfishcloud.constant.SysRole;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
@@ -21,6 +22,7 @@ import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
+import com.xiaotao.saltedfishcloud.annotations.RequireScope;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -31,7 +33,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -75,7 +76,7 @@ public class OpenApiDiskFileController {
      */
     @ApiOperation("获取网盘文件列表")
     @GetMapping("/fileList/v1")
-    @PreAuthorize("hasAuthority('SCOPE_storage_read')")
+    @RequireScope(StandardScopes.STORAGE_READ)
     public JsonResult<List<FileInfo>> getFileList(
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
@@ -105,7 +106,7 @@ public class OpenApiDiskFileController {
      */
     @ApiOperation("下载网盘文件")
     @GetMapping("/download/v1")
-    @PreAuthorize("hasAuthority('SCOPE_storage_read')")
+    @RequireScope(StandardScopes.STORAGE_READ)
     public ResponseEntity<Resource> download(
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
@@ -136,7 +137,7 @@ public class OpenApiDiskFileController {
      */
     @ApiOperation("创建网盘文件下载链接")
     @GetMapping("/downloadLink/v1")
-    @PreAuthorize("hasAuthority('SCOPE_storage_read')")
+    @RequireScope(StandardScopes.STORAGE_READ)
     public JsonResult<String> createDownloadLink(
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
@@ -171,7 +172,7 @@ public class OpenApiDiskFileController {
      */
     @ApiOperation("上传文件到网盘")
     @PostMapping("/upload/v1")
-    @PreAuthorize("hasAuthority('SCOPE_storage_write')")
+    @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Long> upload(
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
@@ -205,7 +206,7 @@ public class OpenApiDiskFileController {
      */
     @ApiOperation("创建目录")
     @PostMapping("/mkdir/v1")
-    @PreAuthorize("hasAuthority('SCOPE_storage_write')")
+    @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> mkdir(
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
@@ -231,7 +232,7 @@ public class OpenApiDiskFileController {
      */
     @ApiOperation("复制文件或目录（支持跨用户网盘）")
     @PostMapping("/copy/v1")
-    @PreAuthorize("hasAuthority('SCOPE_storage_write')")
+    @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> copy(
             @ApiParam("用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
             @RequestParam("uid") Long uid,
@@ -265,7 +266,7 @@ public class OpenApiDiskFileController {
      */
     @ApiOperation("移动文件或目录（支持跨用户网盘）")
     @PostMapping("/move/v1")
-    @PreAuthorize("hasAuthority('SCOPE_storage_write')")
+    @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> move(
             @ApiParam("用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
             @RequestParam("uid") Long uid,
@@ -293,7 +294,7 @@ public class OpenApiDiskFileController {
      */
     @ApiOperation("重命名文件或目录")
     @PostMapping("/rename/v1")
-    @PreAuthorize("hasAuthority('SCOPE_storage_write')")
+    @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> rename(
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
@@ -321,7 +322,7 @@ public class OpenApiDiskFileController {
      */
     @ApiOperation("删除文件或目录")
     @DeleteMapping("/delete/v1")
-    @PreAuthorize("hasAuthority('SCOPE_storage_write')")
+    @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> delete(
             @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,

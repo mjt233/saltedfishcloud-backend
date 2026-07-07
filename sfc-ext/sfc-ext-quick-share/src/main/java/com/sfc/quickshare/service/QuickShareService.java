@@ -9,8 +9,7 @@ import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import lombok.Getter;
@@ -45,22 +44,8 @@ public class QuickShareService {
     /**
      * 快速分享文件附属存储。
      */
+    @AttachStorageInject(value = "quick_share", name = "快速分享", description = "快速分享临时文件")
     private AttachStorage quickShareStorage;
-
-    /**
-     * 注册快速分享附属存储域。
-     *
-     * @param attachStorageManager 附属存储管理器
-     */
-    @Autowired
-    public void setAttachStorageManager(AttachStorageManager attachStorageManager) {
-        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
-                .id("quick_share")
-                .name("快速分享")
-                .description("快速分享临时文件")
-                .build());
-        quickShareStorage = attachStorageManager.getStorage("quick_share");
-    }
 
     private String getCacheKey(String code) {
         return CacheKeyPrefixes.QUICK_SHARE + code;

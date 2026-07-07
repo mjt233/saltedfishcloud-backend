@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service;
 
 import com.xiaotao.saltedfishcloud.constant.CacheNames;
 import com.xiaotao.saltedfishcloud.dao.jpa.ProxyInfoRepo;
-import com.xiaotao.saltedfishcloud.download.IgnoreSSLHttpRequestFactory;
+import com.xiaotao.saltedfishcloud.utils.http.IgnoreSSLHttpRequestFactory;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;

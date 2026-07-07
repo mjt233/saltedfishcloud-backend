@@ -6,10 +6,8 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
@@ -31,11 +29,26 @@ import java.util.Set;
  * </ul>
  * </p>
  */
-@RequiredArgsConstructor
 public class OidcRegisteredClientRepository implements RegisteredClientRepository {
 
     private final ThirdPartyAppService appService;
     private final ThirdPartyAppKeyRepo keyRepo;
+    private final Set<String> availableScopes;
+
+    /**
+     * 创建 OIDC 注册客户端仓库。
+     *
+     * @param appService      第三方应用服务
+     * @param keyRepo         第三方应用密钥仓库
+     * @param availableScopes 系统可用的所有 OAuth2 scope 集合（含 openid）
+     */
+    public OidcRegisteredClientRepository(ThirdPartyAppService appService,
+                                          ThirdPartyAppKeyRepo keyRepo,
+                                          Set<String> availableScopes) {
+        this.appService = appService;
+        this.keyRepo = keyRepo;
+        this.availableScopes = availableScopes;
+    }
 
     /**
      * {@inheritDoc}
@@ -92,10 +105,7 @@ public class OidcRegisteredClientRepository implements RegisteredClientRepositor
                 .authorizationGrantType(AuthorizationGrantType.DEVICE_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .redirectUris(uris -> uris.addAll(redirectUris))
-                .scope(OidcScopes.OPENID)
-                .scope("profile")
-                .scope("storage_read")
-                .scope("storage_write")
+                .scopes(scopes -> scopes.addAll(availableScopes))
                 .clientSettings(ClientSettings.builder()
                         .requireProofKey(Boolean.TRUE.equals(app.getRequirePkce()))
                         .requireAuthorizationConsent(true)

@@ -8,8 +8,7 @@ import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
@@ -51,8 +50,8 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     private final LockFactory lockFactory;
     private final SysCommonConfig sysCommonConfig;
 
+    @AttachStorageInject(value = "thumbnail", name = "缩略图缓存")
     private AttachStorage thumbnailStorage;
-
 
     @Autowired(required = false)
     @Lazy
@@ -63,15 +62,6 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
     private ConfigService configService;
 
     private final Map<String, Long> sourceFileMaxSizeCache = new ConcurrentHashMap<>();
-
-    @Autowired
-    public void setAttachStorageManager(AttachStorageManager attachStorageManager) {
-        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
-                .id("thumbnail")
-                .name("缩略图缓存")
-                .build());
-        thumbnailStorage = attachStorageManager.getStorage("thumbnail");
-    }
 
     /**
      * 获取主存储服务中的缩略图文件缓存路径
@@ -145,7 +135,7 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
         final String thumbnailPath = getThumbnailTempPath(fileIdentify);
         final Resource resource = thumbnailStorage.getFile(thumbnailPath).orElse(null);
         if (resource != null) {
-            log.debug("{}已有缩略图：{}", LOG_TITLE, fileIdentify);
+            log.debug("{}缩略图缓存命中：{}", LOG_TITLE, fileIdentify);
             return resource;
         } else {
             return null;

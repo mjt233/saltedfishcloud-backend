@@ -11,8 +11,7 @@ import com.xiaotao.saltedfishcloud.model.po.*;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageDomainDefinition;
-import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageManager;
+import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
@@ -76,22 +75,8 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
     /**
      * 第三方平台头像缓存附属存储。
      */
+    @AttachStorageInject(value = "third_platform_avatar", name = "第三方平台头像缓存", description = "第三方登录头像缓存")
     private AttachStorage thirdPlatformAvatarStorage;
-
-    /**
-     * 注册第三方平台头像缓存附属存储域。
-     *
-     * @param attachStorageManager 附属存储管理器
-     */
-    @Autowired
-    public void setAttachStorageManager(AttachStorageManager attachStorageManager) {
-        attachStorageManager.registerStorageDomain(AttachStorageDomainDefinition.builder()
-                .id("third_platform_avatar")
-                .name("第三方平台头像缓存")
-                .description("第三方登录头像缓存")
-                .build());
-        thirdPlatformAvatarStorage = attachStorageManager.getStorage("third_platform_avatar");
-    }
 
     private final Map<String, ThirdPartyPlatformHandler> handlerMap = new ConcurrentHashMap<>();
 

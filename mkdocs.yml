@@ -39,6 +39,7 @@ nav:
         - FTP服务 ftp-server: extension/ftp-server.md
         - OSS对象存储 oss-store: extension/oss-store.md
         - Minio对象存储 minio-store: extension/minio-store.md
+        - 离线下载 download: extension/download.md
         - 音乐插件 music: extension/music.md
         - OnlyOffice在线文档 only-office: extension/onlyoffice.md
         - WebRTC应用 webrtc: extension/webrtc.md
@@ -61,6 +62,7 @@ nav:
       - 文件系统:
         - 文件操作: develop/framework/filesystem/file-operations.md
         - 存储架构与挂载扩展: develop/framework/filesystem/storage-architecture.md
+        - 附属存储: develop/framework/filesystem/attach-storage.md
       - 配置与特性服务: develop/framework/config-hello-service.md
       - 压缩引擎扩展: develop/framework/archive-engine-extension.md
       - 集群兼容: develop/framework/cluster.md
@@ -92,5 +94,6 @@ nav:
         - 重命名文件或目录: oauth/api/storage/rename.md
         - 删除文件或目录: oauth/api/storage/delete.md
   - 版本更新日志:
+    - v3.1.2: release-notes/3.1.2.md
     - v3.1.1: release-notes/3.1.1.md
     - v3.1.0: release-notes/3.1.0.md

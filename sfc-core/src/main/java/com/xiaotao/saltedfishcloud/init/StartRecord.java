@@ -14,6 +14,7 @@ public class StartRecord implements FeatureProvider {
     @Override
     public void registerFeature(HelloService helloService) {
         helloService.setFeature("version", sysProperties.getVersion().toString());
+        helloService.setFeature("buildDate", sysProperties.getBuildDate());
         helloService.setFeature("archiveEncoding", sysProperties.getStore().getArchiveEncoding());
     }
 }
