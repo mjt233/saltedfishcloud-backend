@@ -22,6 +22,12 @@
             </properties>
         </profile>
         <profile>
+            <id>develop-mysql</id>
+            <properties>
+                <spring-profile>develop-mysql</spring-profile>
+            </properties>
+        </profile>
+        <profile>
             <id>frontend-resource</id>
             <activation>
                 <property>
