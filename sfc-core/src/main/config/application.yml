@@ -1,10 +1,5 @@
 server:
   port: 8087
-  servlet:
-    encoding:
-      charset: utf-8
-      enabled: true
-      force: false
   tomcat:
     remoteip:
       remote-ip-header: X-Real-IP
@@ -42,6 +37,10 @@ spring:
           max-idle: 8
           max-active: 8
   servlet:
+    encoding:
+      charset: utf-8
+      enabled: true
+      force: false
     multipart:
       max-file-size: 8192MB
       max-request-size: 8192MB
