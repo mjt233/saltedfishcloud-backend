@@ -1,8 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.param;
 
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.Date;
@@ -12,26 +11,26 @@ import java.util.List;
  * 日志记录查询参数
  */
 @Data
-@ApiModel("日志记录查询参数")
+@Schema(name = "日志记录查询参数")
 public class LogRecordQueryParam {
-    @ApiModelProperty("日志类型")
+    @Schema(description = "日志类型")
     private List<String> type;
 
-    @ApiModelProperty("指定主机")
+    @Schema(description = "指定主机")
     private String host;
 
-    @ApiModelProperty("指定进程id")
+    @Schema(description = "指定进程id")
     private Long pid;
 
-    @ApiModelProperty("日志级别")
+    @Schema(description = "日志级别")
     private List<LogLevel> level;
 
-    @ApiModelProperty("产生该日志的操作用户id")
+    @Schema(description = "产生该日志的操作用户id")
     private Long uid;
 
-    @ApiModelProperty("数据日期请求")
+    @Schema(description = "数据日期请求")
     private RangeRequest<Date> dateRange;
 
-    @ApiModelProperty("分页参数")
+    @Schema(description = "分页参数")
     private PageableRequest pageableRequest;
 }

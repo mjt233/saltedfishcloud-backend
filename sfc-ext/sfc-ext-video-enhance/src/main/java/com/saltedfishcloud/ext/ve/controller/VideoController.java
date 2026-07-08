@@ -17,7 +17,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -52,7 +52,7 @@ public class VideoController {
     }
 
     @GetMapping("check")
-    @ApiOperation("检查插件是否配置正确")
+    @Operation(summary = "检查插件是否配置正确")
     public JsonResult<Object> check() {
         videoService.check();
         return JsonResult.emptySuccess();
