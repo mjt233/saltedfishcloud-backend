@@ -60,6 +60,7 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
         pluginManager.init();
         ClassLoader pluginClassLoader = pluginManager.getMergeClassLoader();
         context.setClassLoader(pluginClassLoader);
+        Thread.currentThread().setContextClassLoader(pluginClassLoader);
         PluginProperty pluginProperty = PluginProperty.loadFromPropertyResolver(context.getEnvironment());
 
         // 删除被标记的插件
@@ -91,7 +92,6 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
 
             context.addBeanFactoryPostProcessor(beanFactory -> {
                 beanFactory.registerSingleton("pluginManager", pluginManager);
-                Thread.currentThread().setContextClassLoader(pluginClassLoader);
             });
             String pluginLists = "[" + String.join(",", pluginManager.getAllPlugin().keySet()) + "]";
             log.info("{}启动时加载的插件清单：{}",LOG_PREFIX, pluginLists);
