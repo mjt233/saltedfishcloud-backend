@@ -1,16 +1,22 @@
 package com.xiaotao.saltedfishcloud.service.websocket;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sfc.task.AsyncTaskManager;
+import com.xiaotao.saltedfishcloud.constant.WebSocketConstant;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketRequest;
+import com.xiaotao.saltedfishcloud.model.websocket.WebSocketResponse;
+import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
+import com.xiaotao.saltedfishcloud.utils.TypeUtils;
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.security.Principal;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,11 +24,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_LOG;
+
 // todo 使用Spring提供的Websocket框架重构
 @Slf4j
 @Component
 @ServerEndpoint("/api/ws")
 public class WebSocketHandler {
+    @Autowired
+    private AsyncTaskManager asyncTaskManager;
+
     private static final String LOG_PREFIX = "[WebSocket]";
 
     /**
@@ -30,16 +41,10 @@ public class WebSocketHandler {
      */
     private static final int MAX_PENDING_MESSAGE = 1000;
 
-    @Autowired
-    private WebSocketSubscriptionManager subscriptionManager;
-
-    @Autowired(required = false)
-    private List<WebSocketActionHandler> actionHandlerList;
-
     /**
-     * 动作处理器映射：action -> handler
+     * 已订阅的主题
      */
-    private final Map<String, WebSocketActionHandler> actionHandlers = new ConcurrentHashMap<>();
+    private final Map<String, Long> subscribedTopic = new ConcurrentHashMap<>();
 
     /**
      * WebSocket 会话发送状态。Tomcat 同一会话不允许并发 sendText，需串行化发送。
@@ -53,6 +58,13 @@ public class WebSocketHandler {
         private final Queue<String> queue = new ConcurrentLinkedQueue<>();
         private final AtomicInteger queueSize = new AtomicInteger(0);
         private final AtomicBoolean sending = new AtomicBoolean(false);
+    }
+
+    private AsyncTaskManager getAsyncTaskManager() {
+        if (asyncTaskManager == null) {
+            asyncTaskManager = SpringContextUtils.getContext().getBean(AsyncTaskManager.class);
+        }
+        return asyncTaskManager;
     }
 
     /**
@@ -156,44 +168,43 @@ public class WebSocketHandler {
     }
 
     /**
-     * 注册一个 WebSocket 动作处理器。
-     *
-     * @param action  动作标识
-     * @param handler 处理器
-     */
-    public void registerHandler(String action, WebSocketActionHandler handler) {
-        actionHandlers.put(action, handler);
-    }
-
-    @PostConstruct
-    public void init() {
-        if (actionHandlerList != null) {
-            for (WebSocketActionHandler handler : actionHandlerList) {
-                registerHandler(handler.getAction(), handler);
-            }
-        }
-    }
-
-    /**
      * 收到客户端消息后调用的方法
      * @param message 客户端发送过来的消息
      */
     @OnMessage
-    public void onMessage(String message, Session session) {
-        WebSocketRequest request;
-        try {
-            request = MapperHolder.parseAsJson(message, WebSocketRequest.class);
-        } catch (Exception e) {
-            log.error("{}解析WebSocket消息失败: {}", LOG_PREFIX, message, e);
-            return;
+    public void onMessage(String message, Session session) throws IOException {
+        WebSocketRequest request = MapperHolder.parseAsJson(message, WebSocketRequest.class);
+        Long taskId = TypeUtils.toLong(request.getData());
+        MQTopic<String> mqTopic = ASYNC_TASK_LOG(taskId);
+        String topic = mqTopic.getTopic();
+
+        if(WebSocketConstant.Action.SUBSCRIBE_TASK_LOG.equals(request.getAction())) {
+            // 订阅异步任务日志动作
+            if(subscribedTopic.containsKey(topic)) {
+                return;
+            }
+            long listenId = getAsyncTaskManager().listenLog(taskId, logMessage -> {
+                try {
+                    String response = MapperHolder.toJson(WebSocketResponse.builder()
+                            .id(taskId)
+                            .type(WebSocketConstant.Type.ASYNC_TASK_LOG)
+                            .data(logMessage)
+                            .build()
+                    );
+                    enqueueMessage(session, response);
+                } catch (JsonProcessingException e) {
+                    log.error("{}向用户{}的连接发送消息失败，消息:{}...", LOG_PREFIX, getUserName(session), logMessage, e);
+                }
+            });
+            subscribedTopic.put(topic, listenId);
+        } else if (WebSocketConstant.Action.UNSUBSCRIBE_TASK_LOG.equals(request.getAction())) {
+            // 取消任务日志订阅
+            if(!subscribedTopic.containsKey(topic)) {
+                return;
+            }
+            Long id = subscribedTopic.remove(topic);
+            getAsyncTaskManager().removeLogListen(id);
         }
-        WebSocketActionHandler handler = actionHandlers.get(request.getAction());
-        if (handler == null) {
-            log.warn("{}未知的WebSocket动作: {}", LOG_PREFIX, request.getAction());
-            return;
-        }
-        WebSocketMessageSender sender = msg -> enqueueMessage(session, msg);
-        handler.handle(request, session, sender);
     }
 
     @OnOpen
@@ -205,7 +216,13 @@ public class WebSocketHandler {
     @OnClose
     public void onClose(Session session) {
         log.debug("{}用户{}断开WebSocket连接", LOG_PREFIX, getUserName(session));
-        subscriptionManager.clearAll();
+        subscribedTopic.values().forEach(topic -> {
+            try {
+                getAsyncTaskManager().removeLogListen(topic);
+            } catch (Throwable e) {
+                log.error("{}主题{}取消订阅异常：", LOG_PREFIX, topic, e);
+            }
+        });
         clearSessionSendState(session);
     }
 }
