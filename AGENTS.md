@@ -44,6 +44,13 @@
 - UID 注解示例（Controller 参数）：`sfc-core/src/main/java/com/xiaotao/saltedfishcloud/controller/ResourceController.java` 的多处方法使用 `@UID` 注解来保证 uid 校验。
 - 涉及SpringBoot应用参数配置的修改，如果是在`sys.`节点下，需要同步修改`application-develop.yml`、`application-product.yml`和`pre-release/config.yml`中的对应项，不需要修改`application.yml`，`application.yml`下不需要有`sys.`节点。
 
+### Controller 接口规范
+
+Controller 接口遵循以下约束：
+
+- 请求方法尽可能只允许使用 `GET` 和 `POST`。
+- 避免在 `@RequestMapping`、`@GetMapping`、`@PostMapping` 等注解中使用路径参数（即 `{param}` 形式的占位符），统一使用 `@RequestParam` 或 `@RequestBody` 接收参数。
+
 ## 权限与安全
 
 ### 网盘数据安全
