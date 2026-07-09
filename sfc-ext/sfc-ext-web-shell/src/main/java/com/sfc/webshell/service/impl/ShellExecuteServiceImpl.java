@@ -121,8 +121,8 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
             PtyProcessBuilder ptyProcessBuilder = new PtyProcessBuilder()
                     .setCommand(args.toArray(new String[0]))
                     .setRedirectErrorStream(true)
-                    .setInitialRows(parameter.getInitRows())
-                    .setInitialColumns(parameter.getInitCols())
+                    .setInitialRows(Math.max(parameter.getInitRows(), 80))
+                    .setInitialColumns(Math.max(parameter.getInitCols(), 24))
                     .setWindowsAnsiColorEnabled(true)
                     .setDirectory(workDir);
             processEnv.putAll(System.getenv());
@@ -152,8 +152,8 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
      * @param timeout   等待时间，若小于等于0表示不监控，单位: 秒
      * @param onTimeoutCallback 超时回调
      */
-    private void watchTimeout(Process process, long timeout, Consumer<Process> onTimeoutCallback) {
-        if (timeout <= 0) {
+    private void watchTimeout(Process process, Long timeout, Consumer<Process> onTimeoutCallback) {
+        if (timeout == null || timeout <= 0) {
             return;
         }
         new Thread(() -> {
@@ -448,7 +448,7 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
             if (process == null) {
                 throw new JsonException("会话进程已结束");
             }
-            ((PtyProcess) process).setWinSize(new WinSize(cols, rows));
+            ((PtyProcess) process).setWinSize(new WinSize(Math.max(cols, 24), Math.max(rows, 80)));
             WinSize winSize = ((PtyProcess) process).getWinSize();
             session.setRows(winSize.getRows());
             session.setCols(winSize.getColumns());

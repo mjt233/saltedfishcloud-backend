@@ -3,6 +3,7 @@ package com.xiaotao.saltedfishcloud.config;
 import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.ser.std.ToStringSerializer;
@@ -27,6 +28,7 @@ public class JacksonConfig {
         longToStringModule.addSerializer(Long.class, ToStringSerializer.instance);
         return builder -> builder
                 .addModule(longToStringModule)
+                .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
                 .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
     }
 }
