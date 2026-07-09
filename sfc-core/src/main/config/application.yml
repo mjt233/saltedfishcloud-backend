@@ -4,6 +4,8 @@ server:
     remoteip:
       remote-ip-header: X-Real-IP
 
+springdoc:
+  enable-kotlin: false
 spring:
   jpa:
     database: mysql
