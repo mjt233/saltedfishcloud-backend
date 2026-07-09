@@ -122,7 +122,7 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
                     .setCommand(args.toArray(new String[0]))
                     .setRedirectErrorStream(true)
                     .setInitialRows(Math.max(parameter.getInitRows(), 80))
-                    .setInitialColumns(Math.max(parameter.getInitCols(), 24))
+                    .setInitialColumns(Math.max(parameter.getInitCols(), 160))
                     .setWindowsAnsiColorEnabled(true)
                     .setDirectory(workDir);
             processEnv.putAll(System.getenv());
