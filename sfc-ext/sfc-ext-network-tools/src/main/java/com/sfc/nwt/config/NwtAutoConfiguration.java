@@ -8,7 +8,7 @@ import com.sfc.nwt.service.WolDeviceService;
 import com.sfc.nwt.upnp.SSDPService;
 import com.sfc.nwt.upnp.UpnpDevicesManager;
 import com.sfc.nwt.upnp.impl.SSDPServiceImpl;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 

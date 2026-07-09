@@ -12,8 +12,7 @@ import emergency.EmergencyApplication;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
@@ -33,7 +32,6 @@ import java.util.Date;
 import java.util.function.Supplier;
 
 @SpringBootApplication(
-        exclude= {GsonAutoConfiguration.class},
         scanBasePackages = {
                 "com.xiaotao.saltedfishcloud"
         }

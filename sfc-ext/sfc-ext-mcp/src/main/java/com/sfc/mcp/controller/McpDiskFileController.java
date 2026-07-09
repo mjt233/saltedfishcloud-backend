@@ -19,8 +19,8 @@ import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -64,12 +64,12 @@ public class McpDiskFileController {
      * @return HTTP 响应，包含文件内容和相应响应头
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("MCP 下载网盘文件")
+    @Operation(summary = "MCP 下载网盘文件")
     @GetMapping("/download")
     public ResponseEntity<Resource> download(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
-            @ApiParam(value = "文件完整路径（包含文件名）", required = true)
+            @Parameter(description = "文件完整路径（包含文件名）", required = true)
             @RequestParam("path") @ValidPath String path) throws IOException {
         String parentPath = PathUtils.getParentPath(path);
         String fileName = PathUtils.getLastNode(path);
@@ -92,12 +92,12 @@ public class McpDiskFileController {
      * @param request HTTP 请求对象
      * @return 临时下载链接
      */
-    @ApiOperation("MCP 创建网盘文件下载链接")
+    @Operation(summary = "MCP 创建网盘文件下载链接")
     @GetMapping("/downloadLink")
     public JsonResult<String> createDownloadLink(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
-            @ApiParam(value = "文件完整路径（包含文件名）", required = true)
+            @Parameter(description = "文件完整路径（包含文件名）", required = true)
             @RequestParam("path") @ValidPath String path,
             HttpServletRequest request) {
         String parentPath = PathUtils.getParentPath(path);
@@ -126,14 +126,14 @@ public class McpDiskFileController {
      * @return 操作结果码（0-覆盖，1-新文件，2-无变化）
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("MCP 上传文件到网盘")
+    @Operation(summary = "MCP 上传文件到网盘")
     @PostMapping("/upload")
     public JsonResult<Long> upload(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
-            @ApiParam(value = "目标目录路径", required = true)
+            @Parameter(description = "目标目录路径", required = true)
             @RequestParam("path") String path,
-            @ApiParam(value = "上传的文件", required = true)
+            @Parameter(description = "上传的文件", required = true)
             @RequestParam("file") MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new JsonException(400, "文件为空");

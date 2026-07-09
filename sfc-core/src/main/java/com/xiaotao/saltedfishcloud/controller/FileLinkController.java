@@ -10,7 +10,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +47,7 @@ public class FileLinkController {
      * @return 完整临时下载链接
      * @throws IOException 读取资源异常
      */
-    @ApiOperation("创建临时下载链接")
+    @Operation(summary = "创建临时下载链接")
     @PostMapping("/create")
     public JsonResult<String> createLink(@RequestParam("baseUrl") String baseUrl,@RequestBody @Valid ResourceRequest resourceRequest) throws IOException {
         return JsonResultImpl.getInstance(fileLinkService.createLink(baseUrl, resourceRequest));
@@ -60,7 +60,7 @@ public class FileLinkController {
      * @return 文件响应
      * @throws IOException 读取资源异常
      */
-    @ApiOperation("通过临时链接下载文件")
+    @Operation(summary = "通过临时链接下载文件")
     @GetMapping("/download")
     @AllowAnonymous
     public ResponseEntity<Resource> download(HttpServletRequest request) throws IOException {

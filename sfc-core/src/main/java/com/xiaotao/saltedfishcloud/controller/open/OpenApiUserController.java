@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.OpenUserVo;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import com.xiaotao.saltedfishcloud.annotations.RequireScope;
@@ -21,12 +21,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequestMapping("/api/openApi/user")
 public class OpenApiUserController {
 
-    @ApiOperation("获取授权的用户信息")
+    @Operation(summary = "获取授权的用户信息")
     @GetMapping("/profile/v1")
     @RequireScope(StandardScopes.PROFILE)
     public JsonResult<OpenUserVo> getUserProfile(@AuthenticationPrincipal UserPrincipal user, HttpServletRequest request) {
         OpenUserVo vo = OpenUserVo.of(user);
-        vo.setAvatar(UriComponentsBuilder.fromHttpUrl(request.getRequestURL().toString())
+        vo.setAvatar(UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
                         .replacePath("/api/user/avatar/" + user.getUsername())
                         .replaceQueryParam("uid", user.getId())
                         .build()

@@ -6,26 +6,19 @@
 
 注意：这是一个多模块 Maven 项目（见根 `pom.xml` 的 <modules>），主要模块包括 `sfc-core`、`sfc-api`、`sfc-ext`、`sfc-task`、`sfc-rpc`、`sfc-archive`。扩展插件位于 `sfc-ext` 目录（例如 `sfc-ext-webdav`、`sfc-ext-minio-store` 等）。
 
-## 核心技术栈
+## 模块架构
 
-- SpringBoot
-- spring-security
-- spring-security-oauth2-authorization-server
-- JPA
-- Redis
-- MySQL
+模块构建顺序（也是依赖流向）：
 
-附加/常用库（本仓库可见）：
+`sfc-api`（基础库，无内部依赖，含模型/异常/校验/常量/BaseRepo） → `sfc-archive/`（压缩引擎） → `sfc-task/`（异步任务框架） → `sfc-rpc/`（RPC 框架） → `sfc-core`（Spring Boot 主应用） → `sfc-ext/`（扩展插件）
 
-- Spring Security（认证/鉴权）
-- WebSocket（实时通知 / websocket endpoints）
-- Redisson / redisson-spring-boot-starter（分布式锁 / Redis 客户端）
-- Springfox (Swagger) 用于接口文档
-- Lombok（实体/DTO 代码简化）
-- okhttp（HTTP 客户端）
-- jjwt（JWT 处理）
-- Thymeleaf（部分页面模板）
-- OSHI（系统硬件信息收集）
+- **sfc-api**: 共享模型、`BaseModel`→`AuditModel` 实体基类、`BaseRepo`（`JpaRepository`+`JpaSpecificationExecutor`）、`JsonException`、校验器、注解
+- **sfc-core**: 主应用入口 `SaltedfishcloudApplication`，聚合 security/config/controller/service
+- **sfc-ext/**: 每个子目录是一个独立 Maven 模块插件，依赖 `sfc-api` 和可选 `sfc-core` API
+- **sfc-task**: 内部分 `sfc-task-api` + `sfc-task-core`
+- **sfc-archive**: 内部分 `sfc-archive-api` + `sfc-archive-core`
+- **sfc-rpc**: 内部分 `sfc-rpc-api` + `sfc-rpc-core`
+
 
 此外：项目根 `pom.xml` 指定的 Java 版本为 Java 25 — 请在本地构建或运行时确保 JDK 版本兼容（或使用工具链/容器）。
 

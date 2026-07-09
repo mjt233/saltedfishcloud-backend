@@ -25,8 +25,8 @@ import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -49,7 +49,7 @@ import java.util.Optional;
 @RequestMapping("/api/archive")
 @Validated
 @RequiredArgsConstructor
-@Api(tags = "压缩包操作")
+@Tag(name = "压缩包操作")
 public class ArchiveController {
 
     private final AsyncTaskManager asyncTaskManager;
@@ -81,7 +81,7 @@ public class ArchiveController {
      * @throws IOException 构建任务参数时发生 IO 异常
      */
     @PostMapping("asyncExtract")
-    @ApiOperation("创建文件在线解压异步任务")
+    @Operation(summary = "创建文件在线解压异步任务")
     public JsonResult<Long> asyncExtract(@RequestBody AsyncArchiveExtractParam param) throws IOException {
         // UID 安全校验：公共资源（uid=0）的写入仅允许管理员
         UIDValidator.validateWithException(param.getUid(), true);
@@ -120,7 +120,7 @@ public class ArchiveController {
      * @throws IOException 读取压缩包或获取资源列表时발生 IO 异常
      */
     @PostMapping("listResources")
-    @ApiOperation("读取压缩包内所有文件列表")
+    @Operation(summary = "读取压缩包内所有文件列表")
     public JsonResult<List<ArchiveResource>> listResources(@RequestBody ListArchiveResourcesRequest request) throws IOException, UnsupportedProtocolException {
 
         // 允许返回的压缩包资源列表最大条目数，超过后直接拒绝，防止内存占用过高。

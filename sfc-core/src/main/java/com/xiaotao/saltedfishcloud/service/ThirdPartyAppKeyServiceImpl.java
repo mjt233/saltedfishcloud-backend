@@ -51,10 +51,10 @@ public class ThirdPartyAppKeyServiceImpl extends CrudServiceImpl<ThirdPartyAppKe
 
     @Override
     public void deleteByAppId(Collection<Long> appIds) {
-        repository.delete(JpaLambdaQueryWrapper.get(ThirdPartyAppKey.class)
+        repository.deleteAll(repository.findAll(JpaLambdaQueryWrapper.get(ThirdPartyAppKey.class)
                         .in(ThirdPartyAppKey::getAppId, appIds)
                 .build()
-        );
+        ));
     }
 
     @EventListener(ThirdPartyAppDeleteEvent.class)

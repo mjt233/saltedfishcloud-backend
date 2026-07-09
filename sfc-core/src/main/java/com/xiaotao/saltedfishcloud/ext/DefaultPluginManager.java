@@ -146,7 +146,6 @@ public class DefaultPluginManager implements PluginManager {
 
                     Set<String> delayLoadLibSet = new HashSet<>(pluginInfo.getDelayLoadLib());
                     try {
-                        log.warn("{} 延迟加载插件 {} 的库。注意：延迟加载插件外部库功能即将弃用，该功能不再是必要的。", pluginInfo.getName(), LOG_PREFIX);
                         List<URL> delayLoadLibUrlList = getPluginDependencies(pluginRawLoaderMap.get(pluginInfo.getName()))
                                 .stream()
                                 .filter(url -> delayLoadLibSet.contains(PathUtils.getLastNode(url.toString())))

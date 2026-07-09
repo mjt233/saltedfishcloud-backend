@@ -30,8 +30,8 @@ import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -54,7 +54,7 @@ import java.util.*;
 @Validated
 @ProtectBlock
 @RequiredArgsConstructor
-@Api(tags = "网盘文件基本操作")
+@Tag(name = "网盘文件基本操作")
 public class FileController {
     public static final String PREFIX = "/api/diskFile/";
 
@@ -173,7 +173,7 @@ public class FileController {
 
     }
 
-    @ApiOperation("获取指定文件的信息")
+    @Operation(summary = "获取指定文件的信息")
     @GetMapping("getFileInfo")
     @AllowAnonymous
     public JsonResult<FileInfo> getFileInfo(@PathVariable @UID long uid, @RequestParam("path") String path, @RequestParam("name") String name) throws IOException {
@@ -229,7 +229,7 @@ public class FileController {
     /**
      * 支持跨用户网盘的文件复制
      */
-    @ApiOperation("网盘文件复制（支持跨用户网盘）")
+    @Operation(summary = "网盘文件复制（支持跨用户网盘）")
     @PostMapping("copy")
     public JsonResult<Object> copy(@RequestBody @Validated SimpleFileTransferParam param) throws IOException {
         UIDValidator.validateWithException(param.getSourceUid(), false);
@@ -241,7 +241,7 @@ public class FileController {
     /**
      * 支持跨用户网盘的文件复制
      */
-    @ApiOperation("异步执行网盘文件复制（支持跨用户网盘）")
+    @Operation(summary = "异步执行网盘文件复制（支持跨用户网盘）")
     @PostMapping("asyncCopy")
     public JsonResult<AsyncTaskRecord> asyncCopy(@RequestBody @Validated SimpleFileTransferParam param) throws IOException {
         UIDValidator.validateWithException(param.getSourceUid(), false);
@@ -262,7 +262,7 @@ public class FileController {
      * @param uid       源文件所在用户id，当FileTransferParam中sourceUid/targetUid未指定时用作默认值
      * @param info      移动参数，支持通过sourceUid和targetUid指定跨用户移动
      */
-    @ApiOperation("网盘文件移动")
+    @Operation(summary = "网盘文件移动")
     @PostMapping("move")
     public JsonResult<Object> move( @PathVariable("uid") @UID(true) long uid,
                             @RequestBody @Validated FileTransferParam info) throws IOException {

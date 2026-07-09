@@ -6,7 +6,7 @@ import com.sfc.ext.download.model.po.DownloadTaskInfo;
 import com.sfc.ext.download.repo.DownloadTaskRepo;
 import com.sfc.ext.download.service.DownloadServiceImpl;
 import com.sfc.ext.download.task.DownloadAsyncTaskFactory;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;

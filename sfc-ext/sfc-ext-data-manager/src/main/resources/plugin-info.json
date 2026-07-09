@@ -9,6 +9,9 @@
   "email": "mjt233@qq.com",
   "apiVersion": "^api.version^",
   "version": "^project.version^",
+  "delayLoadLib": [
+    "groovy-4.0.29.jar"
+  ],
   "autoLoad": [
     "index.umd.js",
     "style.css"

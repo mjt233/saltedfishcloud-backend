@@ -1,20 +1,19 @@
 package com.xiaotao.saltedfishcloud.model.param;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import jakarta.validation.constraints.NotEmpty;
 
-@ApiModel(description = "文件转移传输操作")
+@Schema(description = "文件转移传输操作")
 @Data
 public class FileItemTransferParam {
 
-    @ApiModelProperty("源文件/文件夹完整位置路径")
+    @Schema(description = "源文件/文件夹完整位置路径")
     @NotEmpty
     private String source;
 
-    @ApiModelProperty("目标文件/文件夹完整位置路径")
+    @Schema(description = "目标文件/文件夹完整位置路径")
     @NotEmpty
     private String target;
 }

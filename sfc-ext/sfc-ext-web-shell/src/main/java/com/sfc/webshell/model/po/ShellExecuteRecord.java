@@ -1,7 +1,6 @@
 package com.sfc.webshell.model.po;
 
 import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.validator.constraints.Length;

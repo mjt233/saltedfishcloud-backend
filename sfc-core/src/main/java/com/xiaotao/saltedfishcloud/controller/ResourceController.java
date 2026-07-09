@@ -21,7 +21,7 @@ import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -54,7 +54,7 @@ public class ResourceController {
     private final ResourceService resourceService;
     private final ThumbnailService thumbnailService;
 
-    @ApiOperation("上传文件到目标资源")
+    @Operation(summary = "上传文件到目标资源")
     @PutMapping("upload")
     @AllowAnonymous
     public JsonResult<Object> uploadResource(@Validated ResourceRequest resourceRequest,

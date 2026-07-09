@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.connector.Connector;
-import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.servlets.DefaultServlet;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.catalina.webresources.StandardRoot;
@@ -59,11 +58,6 @@ public class WebDavManagerService {
         Path tomcatTmpPath = PathUtils.getAndCreateTempDirPath("webdav");
         Context ctx = tomcat.addWebapp("", tomcatTmpPath.toAbsolutePath().toString());
         Tomcat.addServlet(ctx, "default", new DefaultServlet());
-        if (ctx instanceof StandardContext c) {
-            c.setClearReferencesObjectStreamClassCaches(false);
-            c.setClearReferencesRmiTargets(false);
-            c.setClearReferencesThreadLocals(false);
-        }
         ctx.addServletMappingDecoded("/", "default");
         ctx.setReloadable(false);
         // 不需要扫描任何 jar
