@@ -229,6 +229,33 @@
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
         </dependency>
+
+        <!--
+            sfc-ext-ai 插件兼容依赖。
+
+            由于 sfc-ext-ai 使用 MERGE 加载模式，其依赖 kotlin-reflect 和 jackson-module-kotlin
+            必须与宿主（AppClassLoader）中的 kotlin-stdlib、jackson-databind 在同一类加载器，
+            否则跨类加载器引用会导致 KotlinReflectionNotSupportedError /
+            NoClassDefFoundError。
+
+            TODO: 后续需设计新的插件加载机制，确保各插件依赖能独立加载（如 child-first 类加载器），
+            无需将插件依赖提升至宿主 POM。
+        -->
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-reflect</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-kotlin</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>
