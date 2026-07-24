@@ -46,7 +46,9 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
@@ -89,6 +91,17 @@ public class OidcAuthorizationServerConfig {
     }
 
     /**
+     * 提供 JwtDecoder，由 {@link JWKSource} 构建。
+     *
+     * @param jwkSource JWT 密钥源
+     * @return JwtDecoder 实例
+     */
+    @Bean
+    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
+        return NimbusJwtDecoder.withJwkSource(jwkSource).build();
+    }
+
+    /**
      * 配置 OIDC 授权服务器安全过滤器链。
      * <p>
      * 仅匹配授权服务器标准端点（{@code /oauth2/**}、{@code /.well-known/**} 等），
@@ -115,7 +128,7 @@ public class OidcAuthorizationServerConfig {
                                                        AuthenticationProvider authenticationProvider,
                                                        List<OidcScopeModule> scopeModules) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer =
-                OAuth2AuthorizationServerConfigurer.authorizationServer();
+                new OAuth2AuthorizationServerConfigurer();
         http.with(authorizationServer, server -> server
                         .authorizationServerSettings(settings)
                         .authorizationEndpoint(authorizationEndpoint ->

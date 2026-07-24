@@ -3,7 +3,7 @@ package com.sfc.quickshare;
 import com.sfc.quickshare.model.QuickShareProperty;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;

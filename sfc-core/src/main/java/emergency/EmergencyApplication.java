@@ -1,12 +1,11 @@
 package emergency;
 
-import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration;
 
 import java.util.Date;
 
@@ -18,10 +17,9 @@ import java.util.Date;
     exclude= {
         DataSourceAutoConfiguration.class,
         HibernateJpaAutoConfiguration.class,
-        GsonAutoConfiguration.class,
-        SecurityAutoConfiguration.class,
+        ServletWebSecurityAutoConfiguration.class,
         ManagementWebSecurityAutoConfiguration.class,
-        RedisAutoConfiguration.class
+        DataRedisAutoConfiguration.class
     },
     scanBasePackages = {
         "emergency"

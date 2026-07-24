@@ -31,8 +31,8 @@ import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/api/oauth")
 @Slf4j
-@Api(value = "OAuth相关控制器")
+@Tag(name = "OAuth相关控制器")
 public class OAuthController {
     @Autowired
     private ThirdPartyPlatformManager thirdPartyPlatformManager;
@@ -119,7 +119,7 @@ public class OAuthController {
                                     List<OidcScopeInfo> scopes) {
     }
 
-    @ApiOperation("使用第三方登录创建新账号")
+    @Operation(summary = "使用第三方登录创建新账号")
     @AllowAnonymous
     @GetMapping("createUser")
     @ResponseBody
@@ -131,7 +131,7 @@ public class OAuthController {
                 .build());
     }
 
-    @ApiOperation("第三方平台回调接口")
+    @Operation(summary = "第三方平台回调接口")
     @GetMapping("/callback/{platformType}")
     @AllowAnonymous
     public ModelAndView callback(@PathVariable("platformType") String platformType, HttpServletRequest request) {
@@ -154,7 +154,7 @@ public class OAuthController {
         }
     }
 
-    @ApiOperation("管理员接口-获取第三方平台配置节点，用于构建表单视图")
+    @Operation(summary = "管理员接口-获取第三方平台配置节点，用于构建表单视图")
     @GetMapping("getThirdPartyPlatformConfig")
     @ResponseBody
     @RolesAllowed("ADMIN")
@@ -167,7 +167,7 @@ public class OAuthController {
         );
     }
 
-    @ApiOperation("管理员接口-获取第三方平台配置参数值")
+    @Operation(summary = "管理员接口-获取第三方平台配置参数值")
     @GetMapping("getThirdPartyPlatformConfigValue")
     @ResponseBody
     @RolesAllowed("ADMIN")
@@ -179,7 +179,7 @@ public class OAuthController {
         );
     }
 
-    @ApiOperation("管理员接口-保存第三方平台配置参数值")
+    @Operation(summary = "管理员接口-保存第三方平台配置参数值")
     @PostMapping("saveThirdPartyPlatformConfigValue")
     @ResponseBody
     @RolesAllowed("ADMIN")
@@ -236,13 +236,13 @@ public class OAuthController {
     }
 
     @GetMapping("listAssocPlatformUser")
-    @ApiOperation("列出已关联的第三方平台用户信息")
+    @Operation(summary = "列出已关联的第三方平台用户信息")
     @ResponseBody
     public JsonResult<List<ThirdPartyPlatformUser>> listAssocPlatformUser(@RequestParam("uid") @UID Long uid) {
         return JsonResultImpl.getInstance(thirdPartyPlatformUserService.findByUid(uid));
     }
 
-    @ApiOperation("保存/新增一个第三方OAuth应用")
+    @Operation(summary = "保存/新增一个第三方OAuth应用")
     @PostMapping("saveThirdPartyApp")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
@@ -254,7 +254,7 @@ public class OAuthController {
         return JsonResultImpl.getInstance(app);
     }
 
-    @ApiOperation("列出系统中的第三方OAuth应用")
+    @Operation(summary = "列出系统中的第三方OAuth应用")
     @GetMapping("listThirdPartyApp")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
@@ -263,7 +263,7 @@ public class OAuthController {
     }
 
 
-    @ApiOperation("删除系统中的第三方OAuth应用")
+    @Operation(summary = "删除系统中的第三方OAuth应用")
     @PostMapping("deleteThirdPartyApp")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
@@ -272,7 +272,7 @@ public class OAuthController {
         return JsonResult.emptySuccess();
     }
 
-    @ApiOperation("新生成一个第三方OAuth应用密钥")
+    @Operation(summary = "新生成一个第三方OAuth应用密钥")
     @GetMapping("generateNewOauthAppKey")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
@@ -280,7 +280,7 @@ public class OAuthController {
         return JsonResultImpl.getInstance(thirdPartyAppKeyService.generateNewKey(appId, name));
     }
 
-    @ApiOperation("列出第三方OAuth应用的密钥")
+    @Operation(summary = "列出第三方OAuth应用的密钥")
     @GetMapping("listOAuthAppKey")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
@@ -288,7 +288,7 @@ public class OAuthController {
         return JsonResultImpl.getInstance(thirdPartyAppKeyService.listKeyByAppId(appId));
     }
 
-    @ApiOperation("删除第三方OAuth应用密钥")
+    @Operation(summary = "删除第三方OAuth应用密钥")
     @PostMapping("deleteOAuthAppKey")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
@@ -297,7 +297,7 @@ public class OAuthController {
         return JsonResult.emptySuccess();
     }
 
-    @ApiOperation("修改第三方OAuth应用密钥信息")
+    @Operation(summary = "修改第三方OAuth应用密钥信息")
     @PostMapping("changeOAuthAppKey")
     @RolesAllowed(SysRole.ADMIN)
     @ResponseBody
@@ -306,17 +306,25 @@ public class OAuthController {
         return JsonResult.emptySuccess();
     }
 
-    @ApiOperation("获取当前用户在第三方OAuth应用的授权信息")
+    @Operation(summary = "获取当前用户在第三方OAuth应用的授权信息")
     @GetMapping("getUserAuthorization")
     @ResponseBody
     public JsonResult<ThirdPartyAppUserAuthorizationVo> getUserAuthorization(@RequestParam("appId") Long appId) {
         return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.getUserAppAuthorization(appId, SecureUtils.getCurrentUid()));
     }
 
-    @ApiOperation("列出用户所有已关联的第三方OAuth应用授权")
+    @Operation(summary = "列出用户所有已关联的第三方OAuth应用授权")
     @GetMapping("listUserAuthentication")
     @ResponseBody
     public JsonResult<List<ThirdPartyAppAuthorization>> listUserAuthentication(@RequestParam("uid") @UID Long uid) {
         return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.findByUid(uid));
+    }
+
+    @Operation(summary = "撤销第三方OAuth应用授权")
+    @PostMapping("revoke")
+    @ResponseBody
+    public JsonResult<Object> revoke(@RequestParam("appId") Long appId, @RequestParam("uid") @UID Long uid) {
+        thirdPartyAppAuthorizationService.revoke(appId, uid);
+        return JsonResult.emptySuccess();
     }
 }

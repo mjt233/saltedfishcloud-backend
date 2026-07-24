@@ -23,9 +23,9 @@ import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 import com.xiaotao.saltedfishcloud.annotations.RequireScope;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
@@ -56,7 +56,7 @@ import java.util.List;
 @RequestMapping("/api/openApi/diskFile")
 @RequiredArgsConstructor
 @Validated
-@Api(tags = "开放平台 - 网盘文件操作")
+@Tag(name = "开放平台 - 网盘文件操作")
 public class OpenApiDiskFileController {
 
     private final DiskFileSystemManager diskFileSystemManager;
@@ -74,13 +74,13 @@ public class OpenApiDiskFileController {
      * @return 目录与文件的合并列表（目录项在前，文件项在后）
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("获取网盘文件列表")
+    @Operation(summary = "获取网盘文件列表")
     @GetMapping("/fileList/v1")
     @RequireScope(StandardScopes.STORAGE_READ)
     public JsonResult<List<FileInfo>> getFileList(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
-            @ApiParam(value = "目录路径，默认为根目录 /", defaultValue = "/")
+            @Parameter(description = "目录路径，默认为根目录 /", example = "/")
             @RequestParam(value = "path", defaultValue = "/") @ValidPath String path) throws IOException {
         DiskFileSystem fs = diskFileSystemManager.getMainFileSystem();
         Collection<? extends FileInfo>[] fileList = fs.getUserFileList(uid, path);
@@ -104,13 +104,13 @@ public class OpenApiDiskFileController {
      * @throws IOException              文件系统访问异常
      * @throws UnsupportedEncodingException 文件名编码异常
      */
-    @ApiOperation("下载网盘文件")
+    @Operation(summary = "下载网盘文件")
     @GetMapping("/download/v1")
     @RequireScope(StandardScopes.STORAGE_READ)
     public ResponseEntity<Resource> download(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
-            @ApiParam(value = "文件完整路径（包含文件名）", required = true)
+            @Parameter(description = "文件完整路径（包含文件名）", required = true)
             @RequestParam("path") @ValidPath String path) throws IOException, UnsupportedEncodingException {
         // 从完整路径中提取目录路径和文件名
         String parentPath = PathUtils.getParentPath(path);
@@ -135,13 +135,13 @@ public class OpenApiDiskFileController {
      * @param request HTTP 请求对象
      * @return 临时下载链接
      */
-    @ApiOperation("创建网盘文件下载链接")
+    @Operation(summary = "创建网盘文件下载链接")
     @GetMapping("/downloadLink/v1")
     @RequireScope(StandardScopes.STORAGE_READ)
     public JsonResult<String> createDownloadLink(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID long uid,
-            @ApiParam(value = "文件完整路径（包含文件名）", required = true)
+            @Parameter(description = "文件完整路径（包含文件名）", required = true)
             @RequestParam("path") @ValidPath String path,
             HttpServletRequest request) {
         String parentPath = PathUtils.getParentPath(path);
@@ -170,15 +170,15 @@ public class OpenApiDiskFileController {
      * @return 操作结果码（0-覆盖，1-新文件，2-无变化）
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("上传文件到网盘")
+    @Operation(summary = "上传文件到网盘")
     @PostMapping("/upload/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Long> upload(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
-            @ApiParam(value = "目标目录路径", required = true)
+            @Parameter(description = "目标目录路径", required = true)
             @RequestParam("path") String path,
-            @ApiParam(value = "上传的文件", required = true)
+            @Parameter(description = "上传的文件", required = true)
             @RequestParam("file") MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new JsonException(400, "文件为空");
@@ -204,15 +204,15 @@ public class OpenApiDiskFileController {
      * @return 空成功响应
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("创建目录")
+    @Operation(summary = "创建目录")
     @PostMapping("/mkdir/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> mkdir(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
-            @ApiParam(value = "父目录路径", required = true)
+            @Parameter(description = "父目录路径", required = true)
             @RequestParam("path") @ValidPath String path,
-            @ApiParam(value = "新目录名称", required = true)
+            @Parameter(description = "新目录名称", required = true)
             @RequestParam("name") String name) throws IOException {
         diskFileSystemManager.getMainFileSystem().mkdir(uid, path, name);
         return JsonResult.emptySuccess();
@@ -230,11 +230,11 @@ public class OpenApiDiskFileController {
      * @return 空成功响应
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("复制文件或目录（支持跨用户网盘）")
+    @Operation(summary = "复制文件或目录（支持跨用户网盘）")
     @PostMapping("/copy/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> copy(
-            @ApiParam("用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
+            @Parameter(description = "用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
             @RequestParam("uid") Long uid,
             @RequestBody @Validated OpenApiFileTransferParam param) throws IOException {
         ResolvedTransferUid resolved = resolveTransferUids(uid, param);
@@ -264,11 +264,11 @@ public class OpenApiDiskFileController {
      * @return 空成功响应
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("移动文件或目录（支持跨用户网盘）")
+    @Operation(summary = "移动文件或目录（支持跨用户网盘）")
     @PostMapping("/move/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> move(
-            @ApiParam("用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
+            @Parameter(description = "用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
             @RequestParam("uid") Long uid,
             @RequestBody @Validated OpenApiFileTransferParam param) throws IOException {
         ResolvedTransferUid resolved = resolveTransferUids(uid, param);
@@ -292,17 +292,17 @@ public class OpenApiDiskFileController {
      * @return 空成功响应
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("重命名文件或目录")
+    @Operation(summary = "重命名文件或目录")
     @PostMapping("/rename/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> rename(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
-            @ApiParam(value = "文件所在目录路径", required = true)
+            @Parameter(description = "文件所在目录路径", required = true)
             @RequestParam("path") @ValidPath String path,
-            @ApiParam(value = "原文件名", required = true)
+            @Parameter(description = "原文件名", required = true)
             @RequestParam("oldName") String oldName,
-            @ApiParam(value = "新文件名", required = true)
+            @Parameter(description = "新文件名", required = true)
             @RequestParam("newName") String newName) throws IOException {
         if (newName == null || newName.trim().isEmpty()) {
             throw new JsonException(400, "文件名不能为空");
@@ -320,13 +320,13 @@ public class OpenApiDiskFileController {
      * @return 实际删除的数量
      * @throws IOException 文件系统访问异常
      */
-    @ApiOperation("删除文件或目录")
+    @Operation(summary = "删除文件或目录")
     @DeleteMapping("/delete/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
     public JsonResult<Object> delete(
-            @ApiParam(value = "用户ID，0 表示公共网盘", required = true)
+            @Parameter(description = "用户ID，0 表示公共网盘", required = true)
             @RequestParam("uid") @UID(true) long uid,
-            @ApiParam(value = "文件所在目录路径", required = true)
+            @Parameter(description = "文件所在目录路径", required = true)
             @RequestParam("path") @ValidPath String path,
             @RequestBody @Validated FileNameList param) throws IOException {
         diskFileSystemManager.getMainFileSystem().deleteFile(uid, path, param.getFileName());

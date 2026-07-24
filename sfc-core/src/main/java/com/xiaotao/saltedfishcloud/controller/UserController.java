@@ -20,7 +20,7 @@ import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.Cookie;
@@ -63,7 +63,7 @@ public class UserController {
     private final TokenServiceImpl tokenDao;
     private final SysCommonConfig sysCommonConfig;
 
-    @ApiOperation("验证用户重置密码时输入的验证码是否正确")
+    @Operation(summary = "验证用户重置密码时输入的验证码是否正确")
     @PostMapping("/validResetPasswordEmailCode")
     @AllowAnonymous
     public JsonResult<Boolean> validResetPasswordEmailCode(@RequestParam("account") String account,

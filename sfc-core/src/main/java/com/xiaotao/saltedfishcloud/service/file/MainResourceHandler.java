@@ -51,7 +51,7 @@ public class MainResourceHandler extends AbstractWritableResourceProtocolHandler
         if(!UIDValidator.validate(Long.parseLong(resourceRequest.getTargetId()), false)) {
             throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
         }
-        if (resourceRequest.getIsThumbnail()) {
+        if (Boolean.TRUE.equals(resourceRequest.getIsThumbnail())) {
             return fileSystemManager.getMainFileSystem().getThumbnail(Long.parseLong(resourceRequest.getTargetId()), resourceRequest.getPath(), resourceRequest.getName());
         } else {
             return fileSystemManager.getMainFileSystem().getResource(Long.parseLong(resourceRequest.getTargetId()), resourceRequest.getPath(), resourceRequest.getName());

@@ -7,8 +7,8 @@ import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +23,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/mcp/apiKey")
-@Api(tags = "MCP API Key 管理")
+@Tag(name = "MCP API Key 管理")
 @RequiredArgsConstructor
 public class McpApiKeyController {
 
@@ -37,7 +37,7 @@ public class McpApiKeyController {
      * @param userPrincipal 当前登录用户
      * @return 当前用户的 API Key 列表
      */
-    @ApiOperation("查询当前用户的MCP API Key列表")
+    @Operation(summary = "查询当前用户的MCP API Key列表")
     @GetMapping("/list")
     public JsonResult<List<McpApiKeyVO>> list(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         return JsonResultImpl.getInstance(McpApiKeyVO.from(mcpApiKeyService.listByUid(userPrincipal.getId())));
@@ -49,7 +49,7 @@ public class McpApiKeyController {
      * @param name Key 名称（可选，默认 "default"）
      * @return 生成的原始API Key
      */
-    @ApiOperation("生成MCP API Key")
+    @Operation(summary = "生成MCP API Key")
     @PostMapping("/generate")
     public JsonResult<String> generate(
             @RequestParam(value = "name", defaultValue = "default") String name,
@@ -64,7 +64,7 @@ public class McpApiKeyController {
      * @param id  API Key 主键 ID
      * @return 操作结果
      */
-    @ApiOperation("撤销MCP API Key")
+    @Operation(summary = "撤销MCP API Key")
     @PostMapping("/delete")
     public JsonResult<Object> delete(@RequestParam("id") Long id,@AuthenticationPrincipal UserPrincipal userPrincipal) {
         validateOwnership(id, userPrincipal.getId());
@@ -79,7 +79,7 @@ public class McpApiKeyController {
      * @param name 新名称
      * @return 操作结果
      */
-    @ApiOperation("重命名MCP API Key")
+    @Operation(summary = "重命名MCP API Key")
     @PostMapping("/rename")
     public JsonResult<Object> rename(
             @RequestParam("id") Long id,

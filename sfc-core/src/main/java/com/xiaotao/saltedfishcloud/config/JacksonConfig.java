@@ -1,28 +1,34 @@
 package com.xiaotao.saltedfishcloud.config;
 
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.ToStringSerializer;
+
 /**
- * Jackson配置
- * @author William
- *
+ * Jackson 3 序列化器配置。
  */
 @Configuration
 public class JacksonConfig {
 
     /**
-     * Jackson全局转化long类型为String，解决jackson序列化时long类型缺失精度问题
-     * @return Jackson2ObjectMapperBuilderCustomizer 注入的对象
+     * 注册 JsonMapperBuilderCustomizer，将 Long/long 序列化为 String 避免前端 JS 精度丢失，并禁用空 Bean 序列化失败。
+     *
+     * @return JsonMapperBuilderCustomizer 实例
      */
     @Bean
-    public Jackson2ObjectMapperBuilderCustomizer jackson2ObjectMapperBuilderCustomizer() {
-
-        return jacksonObjectMapperBuilder -> jacksonObjectMapperBuilder
-                .serializerByType(Long.TYPE, ToStringSerializer.instance)
-                .serializerByType(Long.class, ToStringSerializer.instance)
-                .featuresToDisable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+    public JsonMapperBuilderCustomizer jsonMapperBuilderCustomizer() {
+        SimpleModule longToStringModule = new SimpleModule();
+        // long -> String
+        longToStringModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+        // Long -> String
+        longToStringModule.addSerializer(Long.class, ToStringSerializer.instance);
+        return builder -> builder
+                .addModule(longToStringModule)
+                .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
     }
 }

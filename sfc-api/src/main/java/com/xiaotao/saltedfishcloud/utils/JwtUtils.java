@@ -1,8 +1,13 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.exception.JsonException;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -13,8 +18,25 @@ public class JwtUtils {
     private static String SECRET = "1145141919810";
     public static final String AUTHORIZATION = "Token";
 
+    /**
+     * 设置JWT签名密钥。
+     * <p>jjwt 0.12+ 要求 HS256 密钥至少为 32 字节（256 bit）。
+     * 默认值 "1145141919810"（14 字节）不足以满足该要求，
+     * 必须在运行时通过本方法设置一个长度不少于 32 字节的密钥。</p>
+     * @param secret 用于JWT签名的密钥字符串
+     */
     public static void setSecret(String secret) {
         JwtUtils.SECRET = secret;
+    }
+
+    /**
+     * 将当前 {@link #SECRET} 转换为符合 jjwt 0.12+ 要求的 {@link SecretKey}。
+     * <p>使用 {@link Keys#hmacShaKeyFor(byte[])} 根据密钥字节长度自动选择 HMAC-SHA 算法；
+     * 当 {@code SECRET} 的 UTF-8 字节数不少于 32 时采用 HS256。</p>
+     * @return 由当前 SECRET 派生的 HMAC-SHA 密钥
+     */
+    private static SecretKey getKey() {
+        return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -35,11 +57,11 @@ public class JwtUtils {
 
         Map<String, Object> map = new HashMap<>();
         map.put("data", data);
-        return Jwts.builder().
-                setClaims(map)
-                .setIssuedAt(now)
-                .setExpiration(expiration)
-                .signWith(SignatureAlgorithm.HS256, SECRET)
+        return Jwts.builder()
+                .claims(map)
+                .issuedAt(now)
+                .expiration(expiration)
+                .signWith(getKey())
                 .compact();
     }
 
@@ -60,9 +82,10 @@ public class JwtUtils {
     public static boolean checkIsExpired(String token) {
         try {
             Jwts.parser()
-                    .setSigningKey(SECRET)
-                    .parseClaimsJws(token)
-                    .getBody();
+                    .verifyWith(getKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
             return false;
         } catch (ExpiredJwtException e) {
             return true;
@@ -77,9 +100,10 @@ public class JwtUtils {
     public static String parse(String token) {
         try {
             Claims body = Jwts.parser()
-                    .setSigningKey(SECRET)
-                    .parseClaimsJws(token)
-                    .getBody();
+                    .verifyWith(getKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
             return (String)body.get("data");
         } catch (ExpiredJwtException e) {
             throw new JsonException("token已过期");
