@@ -319,4 +319,12 @@ public class OAuthController {
     public JsonResult<List<ThirdPartyAppAuthorization>> listUserAuthentication(@RequestParam("uid") @UID Long uid) {
         return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.findByUid(uid));
     }
+
+    @Operation(summary = "撤销第三方OAuth应用授权")
+    @PostMapping("revoke")
+    @ResponseBody
+    public JsonResult<Object> revoke(@RequestParam("appId") Long appId, @RequestParam("uid") @UID Long uid) {
+        thirdPartyAppAuthorizationService.revoke(appId, uid);
+        return JsonResult.emptySuccess();
+    }
 }
