@@ -167,12 +167,12 @@ public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService
             entity.setState(state);
         }
 
-        writeToken(entity, authorization.getToken(OAuth2AuthorizationCode.class));
+        writeAuthorizationCode(entity, authorization.getToken(OAuth2AuthorizationCode.class));
         writeAccessToken(entity, authorization.getToken(OAuth2AccessToken.class));
         writeOidcIdToken(entity, authorization.getToken(OidcIdToken.class));
         writeRefreshToken(entity, authorization.getRefreshToken());
-        writeToken(entity, authorization.getToken(OAuth2UserCode.class));
-        writeToken(entity, authorization.getToken(OAuth2DeviceCode.class));
+        writeUserCode(entity, authorization.getToken(OAuth2UserCode.class));
+        writeDeviceCode(entity, authorization.getToken(OAuth2DeviceCode.class));
 
         return entity;
     }
@@ -219,16 +219,40 @@ public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService
         return builder.build();
     }
 
-    private void writeToken(OAuth2AuthorizationEntity entity,
-                            OAuth2Authorization.Token<?> token) {
+    private void writeAuthorizationCode(OAuth2AuthorizationEntity entity,
+                                        OAuth2Authorization.Token<OAuth2AuthorizationCode> token) {
         if (token == null) {
             return;
         }
-        OAuth2AuthorizationCode code = (OAuth2AuthorizationCode) token.getToken();
+        OAuth2AuthorizationCode code = token.getToken();
         entity.setAuthorizationCodeValue(code.getTokenValue());
         entity.setAuthorizationCodeIssuedAt(code.getIssuedAt());
         entity.setAuthorizationCodeExpiresAt(code.getExpiresAt());
         entity.setAuthorizationCodeMetadata(writeMap(token.getMetadata()));
+    }
+
+    private void writeUserCode(OAuth2AuthorizationEntity entity,
+                               OAuth2Authorization.Token<OAuth2UserCode> token) {
+        if (token == null) {
+            return;
+        }
+        OAuth2UserCode code = token.getToken();
+        entity.setUserCodeValue(code.getTokenValue());
+        entity.setUserCodeIssuedAt(code.getIssuedAt());
+        entity.setUserCodeExpiresAt(code.getExpiresAt());
+        entity.setUserCodeMetadata(writeMap(token.getMetadata()));
+    }
+
+    private void writeDeviceCode(OAuth2AuthorizationEntity entity,
+                                 OAuth2Authorization.Token<OAuth2DeviceCode> token) {
+        if (token == null) {
+            return;
+        }
+        OAuth2DeviceCode code = token.getToken();
+        entity.setDeviceCodeValue(code.getTokenValue());
+        entity.setDeviceCodeIssuedAt(code.getIssuedAt());
+        entity.setDeviceCodeExpiresAt(code.getExpiresAt());
+        entity.setDeviceCodeMetadata(writeMap(token.getMetadata()));
     }
 
     private void writeAccessToken(OAuth2AuthorizationEntity entity,

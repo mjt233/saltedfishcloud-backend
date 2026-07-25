@@ -44,7 +44,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
-import org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -82,12 +81,11 @@ public class OidcAuthorizationServerConfig {
     private static final String LOCK_KEY = "oidc:jwk:init";
 
     @Bean
-    public ClientSecretAuthenticationProvider authenticationProvider(
+    public AuthenticationProvider authenticationProvider(
             RegisteredClientRepository registeredClientRepository,
-            OAuth2AuthorizationService oAuth2AuthorizationService) {
-        ClientSecretAuthenticationProvider authenticationProvider = new ClientSecretAuthenticationProvider(registeredClientRepository, oAuth2AuthorizationService);
-        authenticationProvider.setPasswordEncoder(SecureUtils.getBCryptPasswordEncoder());
-        return authenticationProvider;
+            ThirdPartyAppKeyRepo keyRepo) {
+        return new MultiKeyClientSecretAuthenticationProvider(
+                registeredClientRepository, keyRepo, SecureUtils.getBCryptPasswordEncoder());
     }
 
     /**

@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.oidc;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.enums.OidcTokenEndpointAuthMethod;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
-import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -90,16 +89,10 @@ public class OidcRegisteredClientRepository implements RegisteredClientRepositor
             redirectUris.add(app.getCallbackUrl());
         }
 
-        String clientSecret = keyRepo.findByAppId(app.getId()).stream()
-                .findFirst()
-                .map(ThirdPartyAppKey::getClientSecretHash)
-                .orElse(null);
-
         ClientAuthenticationMethod authMethod = mapAuthMethod(app.getOidcTokenEndpointAuthMethod());
 
         return RegisteredClient.withId(app.getId().toString())
                 .clientId(app.getId().toString())
-                .clientSecret(clientSecret)
                 .clientAuthenticationMethod(authMethod)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.DEVICE_CODE)
