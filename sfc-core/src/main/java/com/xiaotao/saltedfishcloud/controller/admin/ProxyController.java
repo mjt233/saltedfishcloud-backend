@@ -70,6 +70,15 @@ public class ProxyController {
     }
 
     /**
+     * 获取当前用户可用的代理列表
+     * @return 可用代理列表
+     */
+    @GetMapping("available")
+    public JsonResult<List<ProxyInfo>> getAvailableProxy() {
+        return JsonResultImpl.getInstance(proxyInfoService.listAvailableProxy());
+    }
+
+    /**
      * 测试代理连通性
      * @param proxyId   代理id
      * @param timeout   超时（ms）

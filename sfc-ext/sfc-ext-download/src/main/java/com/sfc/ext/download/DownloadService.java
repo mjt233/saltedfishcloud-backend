@@ -3,11 +3,9 @@ package com.sfc.ext.download;
 import com.sfc.ext.download.model.po.DownloadTaskInfo;
 import com.sfc.ext.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
-import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import org.springframework.data.domain.Page;
 
 import java.io.IOException;
-import java.util.List;
 
 public interface DownloadService {
 
@@ -30,8 +28,4 @@ public interface DownloadService {
      */
     String createTask(DownloadTaskParams params, long creator) throws IOException;
 
-    /**
-     * 获取可用的代理
-     */
-    List<ProxyInfo> listAvailableProxy();
 }

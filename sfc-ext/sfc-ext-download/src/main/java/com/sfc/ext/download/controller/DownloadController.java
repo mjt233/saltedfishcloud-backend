@@ -6,7 +6,6 @@ import com.sfc.ext.download.model.DownloadTaskParams;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
-import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.io.IOException;
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,11 +23,6 @@ import java.util.List;
 @Validated
 public class DownloadController {
     private final DownloadService downloadService;
-
-    @GetMapping("proxy")
-    public JsonResult<List<ProxyInfo>> getProxy() {
-        return JsonResultImpl.getInstance(downloadService.listAvailableProxy());
-    }
 
     @DeleteMapping
     public JsonResult<Object> interrupt(@RequestParam String taskId) throws IOException {

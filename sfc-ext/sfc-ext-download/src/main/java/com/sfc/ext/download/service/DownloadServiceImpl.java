@@ -8,13 +8,8 @@ import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
-import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,7 +19,6 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -48,9 +42,6 @@ public class DownloadServiceImpl implements DownloadService {
             AsyncTaskConstants.Status.RUNNING,
             AsyncTaskConstants.Status.WAITING
     );
-
-    @Autowired
-    private ProxyInfoService proxyInfoService;
 
     public static final String LOG_TITLE = "[Download]";
 
@@ -137,16 +128,5 @@ public class DownloadServiceImpl implements DownloadService {
         return params.downloadId;
     }
 
-    @Override
-    public List<ProxyInfo> listAvailableProxy() {
-        List<ProxyInfo> res = new ArrayList<>(proxyInfoService.findByUid(UserConstants.PUBLIC_USER_ID));
-        Long currentUid = SecureUtils.getCurrentUid();
-        if (currentUid != null) {
-            res.addAll(proxyInfoService.findByUid(currentUid));
-        }
-        if (!UIDValidator.validate(UserConstants.PUBLIC_USER_ID, true)) {
-            return res.stream().filter(proxy -> proxy.getUid().equals(UserConstants.PUBLIC_USER_ID) && !Boolean.TRUE.equals(proxy.getIsProtect())).toList();
-        }
-        return res;
-    }
+
 }

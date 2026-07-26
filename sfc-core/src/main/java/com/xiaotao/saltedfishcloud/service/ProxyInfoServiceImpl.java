@@ -1,10 +1,13 @@
 package com.xiaotao.saltedfishcloud.service;
 
 import com.xiaotao.saltedfishcloud.constant.CacheNames;
+import com.xiaotao.saltedfishcloud.constant.UserConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.ProxyInfoRepo;
+import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.http.IgnoreSSLHttpRequestFactory;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -14,6 +17,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -54,5 +59,20 @@ public class ProxyInfoServiceImpl extends CrudServiceImpl<ProxyInfo, ProxyInfoRe
     @CacheEvict(cacheNames = CacheNames.PROXY_TEST_RESULT, key = "#entity.id", condition = "true")
     public void saveWithOwnerPermissions(ProxyInfo entity) {
         super.saveWithOwnerPermissions(entity);
+    }
+
+    @Override
+    public List<ProxyInfo> listAvailableProxy() {
+        List<ProxyInfo> res = new ArrayList<>(findByUid(UserConstants.PUBLIC_USER_ID));
+        Long currentUid = SecureUtils.getCurrentUid();
+        if (currentUid != null) {
+            res.addAll(findByUid(currentUid));
+        }
+        if (!UIDValidator.validate(UserConstants.PUBLIC_USER_ID, true)) {
+            return res.stream()
+                    .filter(proxy -> proxy.getUid().equals(UserConstants.PUBLIC_USER_ID) && !Boolean.TRUE.equals(proxy.getIsProtect()))
+                    .toList();
+        }
+        return res;
     }
 }
