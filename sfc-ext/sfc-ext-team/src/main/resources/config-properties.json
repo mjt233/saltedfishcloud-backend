@@ -1,0 +1,9 @@
+[
+  {
+    "name": "team",
+    "title": "团队空间配置",
+    "describe": "团队空间插件基础配置",
+    "defaultValue": "{}",
+    "typeRef": "com.sfc.team.model.TeamProperty"
+  }
+]

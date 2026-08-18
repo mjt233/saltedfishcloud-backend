@@ -1,0 +1,15 @@
+{
+  "name": "sfc-ext-team",
+  "alias": "团队空间",
+  "describe": "团队协作空间：创建团队、管理成员与角色权限（读/写/团队管理），支持邀请链接注册新用户",
+  "loadType": "merge",
+  "type": "jar",
+  "icon": "mdi-account-group",
+  "author": "xiaotao233",
+  "email": "mjt233@qq.com",
+  "apiVersion": "^api.version^",
+  "version": "^project.version^",
+  "autoLoad": [
+    "index.umd.js"
+  ]
+}

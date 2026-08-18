@@ -33,6 +33,7 @@
         <module>sfc-ext-video-enhance</module>
         <module>sfc-ext-jntm</module>
         <module>sfc-ext-quick-share</module>
+        <module>sfc-ext-team</module>
         <module>sfc-ext-network-tools</module>
         <module>sfc-ext-web-shell</module>
         <module>sfc-ext-static-publish</module>
@@ -44,7 +45,7 @@
         <module>sfc-ext-webdav</module>
         <module>sfc-ext-webdav-store</module>
         <module>sfc-ext-mcp</module>
-<!--        <module>sfc-ext-ai</module>-->
+        <module>sfc-ext-ai</module>
         <module>sfc-ext-pxe-boot</module>
         <module>sfc-ext-data-manager</module>
         <module>sfc-ext-download</module>

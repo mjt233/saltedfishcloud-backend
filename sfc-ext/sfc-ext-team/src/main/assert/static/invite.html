@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>接受团队邀请 - 咸鱼云</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: #f0f2f5;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 16px;
+    }
+    .card {
+      background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.08);
+      width: 100%; max-width: 420px; padding: 32px;
+    }
+    .card h1 { font-size: 20px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .card .tip { color: #666; font-size: 13px; margin-bottom: 20px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; color: #333; margin-bottom: 6px; }
+    .field input {
+      width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px;
+      font-size: 14px; outline: none; transition: border-color .2s;
+    }
+    .field input:focus { border-color: #4096ff; }
+    .btn {
+      width: 100%; padding: 11px; border: none; border-radius: 8px; cursor: pointer;
+      background: #4096ff; color: #fff; font-size: 15px; transition: opacity .2s;
+    }
+    .btn:hover { opacity: .9; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .msg { margin-top: 14px; font-size: 13px; text-align: center; min-height: 18px; }
+    .msg.error { color: #ff4d4f; }
+    .msg.success { color: #52c41a; }
+    .desc { background: #f6f8fa; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #444; line-height: 1.7; }
+    .desc b { color: #222; }
+    a { color: #4096ff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🏠 接受团队邀请</h1>
+    <div class="tip">您受邀加入咸鱼云团队空间，设置账号密码后即可加入</div>
+    <div class="msg error" id="loadMsg">正在加载邀请信息…</div>
+    <div id="content" style="display:none">
+      <div class="desc" id="desc"></div>
+      <div class="field" id="usernameField" style="display:none">
+        <label>用户名</label>
+        <input id="username" placeholder="设置您的登录用户名" maxlength="64" />
+      </div>
+      <div class="field" id="emailField" style="display:none">
+        <label>邮箱</label>
+        <input id="email" type="email" disabled />
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input id="password" type="password" placeholder="设置登录密码（至少6位）" />
+      </div>
+      <button class="btn" id="submitBtn" onclick="accept()">接受邀请并加入团队</button>
+      <div class="msg" id="opMsg"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search)
+      var token = params.get('token')
+      if (!token) {
+        document.getElementById('loadMsg').textContent = '邀请链接缺少令牌参数'
+        return
+      }
+      fetch('/api/team/inviteInfo?token=' + encodeURIComponent(token), { credentials: 'same-origin' })
+        .then(function (res) { return res.json() })
+        .then(function (json) {
+          var data = json.data
+          if (!data || !data.valid) {
+            document.getElementById('loadMsg').textContent = '邀请链接无效或已过期，请联系团队管理员重新发送'
+            return
+          }
+          document.getElementById('loadMsg').style.display = 'none'
+          document.getElementById('content').style.display = 'block'
+          var desc = document.getElementById('desc')
+          desc.innerHTML = '您被 <b>' + (data.inviterName || '团队管理员') + '</b> 邀请加入团队 <b>' +
+            (data.teamName || '未知团队') + '</b>'
+          if (data.username) {
+            document.getElementById('usernameField').style.display = 'none'
+            document.getElementById('username').value = data.username
+          } else {
+            document.getElementById('usernameField').style.display = 'block'
+          }
+          if (data.email) {
+            document.getElementById('emailField').style.display = 'block'
+            document.getElementById('email').value = data.email
+          }
+          window.__token = token
+        })
+        .catch(function () {
+          document.getElementById('loadMsg').textContent = '加载邀请信息失败，请稍后重试'
+        })
+    })()
+
+    function accept() {
+      var username = document.getElementById('username').value.trim()
+      var password = document.getElementById('password').value
+      var msg = document.getElementById('opMsg')
+      msg.className = 'msg'
+      msg.textContent = ''
+      if (!username) { msg.className = 'msg error'; msg.textContent = '请填写用户名'; return }
+      if (!password || password.length < 6) { msg.className = 'msg error'; msg.textContent = '密码长度至少6位'; return }
+      document.getElementById('submitBtn').disabled = true
+      fetch('/api/team/acceptInvite', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: window.__token, username: username, password: password })
+      })
+        .then(function (res) { return res.json() })
+        .then(function (json) {
+          if (json.data != null && json.code == 200) {
+            msg.className = 'msg success'
+            msg.innerHTML = '注册成功，已加入团队！<a href="/">前往登录</a>'
+            document.getElementById('submitBtn').style.display = 'none'
+          } else {
+            msg.className = 'msg error'
+            msg.textContent = (json.msg || '接受邀请失败') + (json.appendMessage ? '：' + json.appendMessage : '')
+            document.getElementById('submitBtn').disabled = false
+          }
+        })
+        .catch(function (e) {
+          msg.className = 'msg error'
+          msg.textContent = '网络异常，请稍后重试'
+          document.getElementById('submitBtn').disabled = false
+        })
+    }
+  </script>
+</body>
+</html>

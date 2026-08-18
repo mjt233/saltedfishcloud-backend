@@ -27,6 +27,7 @@ import com.xiaotao.saltedfishcloud.utils.MapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
+import com.xiaotao.saltedfishcloud.service.permission.UidAccessValidator;
 import com.xiaotao.saltedfishcloud.validator.UIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.xiaotao.saltedfishcloud.validator.annotations.UID;
@@ -270,6 +271,8 @@ public class FileController {
         long targetUid = info.getTargetUid() != null ? info.getTargetUid() : uid;
         UIDValidator.validateWithException(sourceUid, false);
         UIDValidator.validateWithException(targetUid, true);
+        // 团队空间等提供者管理的源空间：仅读角色禁止移出文件（移动会改变源空间内容）
+        UidAccessValidator.validateTeamModifyIfProviderManaged(sourceUid);
         for (FileItemTransferParam item : info.getFiles()) {
             String source = PathUtils.getParentPath(item.getSource());
             String sourceName = PathUtils.getLastNode(item.getSource());
