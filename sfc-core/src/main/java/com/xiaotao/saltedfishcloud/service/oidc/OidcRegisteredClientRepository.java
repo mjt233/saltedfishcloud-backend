@@ -91,19 +91,23 @@ public class OidcRegisteredClientRepository implements RegisteredClientRepositor
 
         ClientAuthenticationMethod authMethod = mapAuthMethod(app.getOidcTokenEndpointAuthMethod());
 
-        return RegisteredClient.withId(app.getId().toString())
+        // 授权码模式要求非空 redirect_uri；设备授权/刷新令牌不需要。
+        // 未配置回调地址时不注册 AUTHORIZATION_CODE，避免 RegisteredClient 构建失败。
+        RegisteredClient.Builder builder = RegisteredClient.withId(app.getId().toString())
                 .clientId(app.getId().toString())
                 .clientAuthenticationMethod(authMethod)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.DEVICE_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUris(uris -> uris.addAll(redirectUris))
                 .scopes(scopes -> scopes.addAll(availableScopes))
                 .clientSettings(ClientSettings.builder()
                         .requireProofKey(Boolean.TRUE.equals(app.getRequirePkce()))
                         .requireAuthorizationConsent(true)
-                        .build())
-                .build();
+                        .build());
+        if (!redirectUris.isEmpty()) {
+            builder.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .redirectUris(uris -> uris.addAll(redirectUris));
+        }
+        return builder.build();
     }
 
     /**
