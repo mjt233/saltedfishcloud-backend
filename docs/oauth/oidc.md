@@ -94,19 +94,21 @@ POST /oauth2/token(grant_type=refresh_token)
 ### device authorization grant
 
 ```text
-POST /oauth2/device_authorization
+POST /oauth2/device_authorization     -> public client 仅需 client_id（auth method: none）；可选 PKCE challenge
 GET  /oauth/device                    -> 用户输入或确认 user_code
 GET  /oauth2/device_verification      -> 未登录时跳转 /oauth
 GET  /oauth2/device-consent           -> 已登录后确认 scope
 POST /oauth2/device_verification      -> 完成授权
 POST /oauth2/token(grant_type=urn:ietf:params:oauth:grant-type:device_code)
+                                      -> public client 携带 client_id（及可选 code_verifier）
 ```
 
 说明：
 
 1. `verification_uri` 会返回系统自带的 `/oauth/device` 页面，而不是要求依赖外部前端资源。
 2. 设备授权完成后的 `access_token` / `refresh_token` 语义与授权码模式完全一致。
-3. 若客户端是 public client，后续 refresh_token 使用方式与标准 OIDC 流程一致。
+3. 若客户端是 public client，后续 refresh_token 使用方式与标准 OIDC 流程一致（表单 `client_id`，无 secret）。
+4. Spring Authorization Server 默认 public client 认证只覆盖授权码 + PKCE；本系统扩展了设备码申请、设备码换票与 refresh 的 `none` 客户端认证，避免空 body 的 HTTP 401。
 
 ## 配置项
 

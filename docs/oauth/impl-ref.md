@@ -63,11 +63,13 @@ OAuth2AuthorizationServerConfigurer authorizationServer =
 
 http.with(authorizationServer, server -> server
                 .authorizationServerSettings(settings)      // 端点路径
+                .clientAuthentication(...)                  // public 设备流 + 多密钥 secret
                 .oidc(oidc -> oidc.userInfoEndpoint(...))   // UserInfo 映射
                 .deviceAuthorizationEndpoint(...)           // 设备授权
                 .deviceVerificationEndpoint(...))           // 设备核验
         .addFilterBefore(jwtAuthenticationFilter, AbstractPreAuthenticatedProcessingFilter.class)
-        .authenticationProvider(authenticationProvider)      // 自定义 BCrypt PasswordEncoder
+        .authenticationProvider(multiKeyClientSecretAuthenticationProvider)
+        .authenticationProvider(publicClientDeviceAuthenticationProvider)
         .securityMatcher(authorizationServer.getEndpointsMatcher())
         .authorizeHttpRequests(anyRequest().authenticated())
         .csrf(csrf -> csrf.ignoringRequestMatchers(...))
@@ -80,18 +82,17 @@ http.with(authorizationServer, server -> server
 
 ### 客户端认证
 
-`ClientSecretAuthenticationProvider` 使用 `SecureUtils.getBCryptPasswordEncoder()`（`BCryptPasswordEncoder`）验证 client secret，而非 Spring Authorization Server 默认的 `DelegatingPasswordEncoder`。数据库中存储的是 BCrypt 哈希，直接传入 `RegisteredClient.clientSecret()` 即可：
+1. **confidential client**：`MultiKeyClientSecretAuthenticationProvider` 使用 `SecureUtils.getBCryptPasswordEncoder()`（`BCryptPasswordEncoder`）逐一校验应用下多个 `ThirdPartyAppKey` 的 secret 哈希，支持 `client_secret_basic` / `client_secret_post`。
+2. **public client（设备流）**：Spring Authorization Server 内置 `PublicClientAuthenticationConverter/Provider` **仅**覆盖授权码 + PKCE 换票。设备码申请（`POST /oauth2/device_authorization`）、设备码换票与 public client 的 `refresh_token` 若无自定义扩展，会得到空 body 的 HTTP 401。  
+   本系统通过 `PublicClientDeviceAuthenticationConverter` + `PublicClientDeviceAuthenticationProvider` 补齐：在无 `client_secret`、无 Basic 时将表单 `client_id` 识别为 `ClientAuthenticationMethod.NONE`，并校验 `RegisteredClient` 已登记 `none`。
+3. 上述 converter/provider 经 `OAuth2AuthorizationServerConfigurer.clientAuthentication(...)` 插入默认链之前；授权码 + PKCE 仍走框架内置实现。
 
 ```java
-// OidcAuthorizationServerConfig.authenticationProvider()
-ClientSecretAuthenticationProvider provider = new ClientSecretAuthenticationProvider(...);
-provider.setPasswordEncoder(SecureUtils.getBCryptPasswordEncoder());  // 直接使用 BCryptPasswordEncoder
-
-// OidcRegisteredClientRepository.findByClientId()
-String clientSecret = keyRepo.findByAppId(app.getId()).stream()
-        .findFirst()
-        .map(ThirdPartyAppKey::getClientSecretHash)   // BCrypt 哈希，无需 {bcrypt} 前缀
-        .orElse(null);
+// OidcAuthorizationServerConfig
+.clientAuthentication(clientAuthentication -> clientAuthentication
+        .authenticationConverter(new PublicClientDeviceAuthenticationConverter())
+        .authenticationProvider(publicClientDeviceAuthenticationProvider)
+        .authenticationProvider(multiKeyClientSecretAuthenticationProvider))
 ```
 
 ## 授权流程
@@ -129,8 +130,10 @@ String clientSecret = keyRepo.findByAppId(app.getId()).stream()
 
 ```
 1. POST /oauth2/device_authorization
+   client_id=...（public client 无需 secret）
    │
-   └─ 返回 { device_code, user_code, verification_uri, interval, expires_in }
+   └─ PublicClientDeviceAuthenticationConverter/Provider 完成 NONE 客户端认证
+      返回 { device_code, user_code, verification_uri, interval, expires_in }
 
 2. 用户访问 verification_uri (/oauth/device)
    输入 user_code → 重定向到 /oauth2/device_verification

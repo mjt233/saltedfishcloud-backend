@@ -80,12 +80,32 @@ public class OidcAuthorizationServerConfig {
     private static final String JWK_CONFIG_KEY = "sys.oidc.jwk";
     private static final String LOCK_KEY = "oidc:jwk:init";
 
+    /**
+     * 多密钥 confidential client 认证（client_secret_basic / client_secret_post）。
+     * <p>
+     * 同时通过 {@code HttpSecurity.authenticationProvider} 与
+     * {@code clientAuthentication.authenticationProvider} 注册，确保令牌/设备端点
+     * 的客户端认证过滤器能命中该 Provider。
+     * </p>
+     */
     @Bean
-    public AuthenticationProvider authenticationProvider(
+    public AuthenticationProvider multiKeyClientSecretAuthenticationProvider(
             RegisteredClientRepository registeredClientRepository,
             ThirdPartyAppKeyRepo keyRepo) {
         return new MultiKeyClientSecretAuthenticationProvider(
                 registeredClientRepository, keyRepo, SecureUtils.getBCryptPasswordEncoder());
+    }
+
+    /**
+     * public client（NONE）在设备授权申请、设备码换票与 refresh_token 场景下的客户端认证。
+     * <p>
+     * 补充 Spring Authorization Server 内置 PublicClient* 仅覆盖授权码 + PKCE 的缺口。
+     * </p>
+     */
+    @Bean
+    public AuthenticationProvider publicClientDeviceAuthenticationProvider(
+            RegisteredClientRepository registeredClientRepository) {
+        return new PublicClientDeviceAuthenticationProvider(registeredClientRepository);
     }
 
     /**
@@ -123,12 +143,22 @@ public class OidcAuthorizationServerConfig {
                                                        OidcUserClaimsMapper claimsMapper,
                                                        AuthorizationServerSettings settings,
                                                        JwtAuthenticationFilter jwtAuthenticationFilter,
-                                                       AuthenticationProvider authenticationProvider,
+                                                       AuthenticationProvider multiKeyClientSecretAuthenticationProvider,
+                                                       AuthenticationProvider publicClientDeviceAuthenticationProvider,
                                                        List<OidcScopeModule> scopeModules) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer =
                 new OAuth2AuthorizationServerConfigurer();
+        // 设备流 public client 转换器：在默认链前插入，覆盖 device_authorization / device_code / refresh
+        PublicClientDeviceAuthenticationConverter publicClientDeviceAuthenticationConverter =
+                new PublicClientDeviceAuthenticationConverter();
         http.with(authorizationServer, server -> server
                         .authorizationServerSettings(settings)
+                        // 自定义客户端认证：补齐 public client 设备流，并优先使用多密钥 secret 校验
+                        .clientAuthentication(clientAuthentication -> clientAuthentication
+                                .authenticationConverter(publicClientDeviceAuthenticationConverter)
+                                .authenticationProvider(publicClientDeviceAuthenticationProvider)
+                                .authenticationProvider(multiKeyClientSecretAuthenticationProvider)
+                        )
                         .authorizationEndpoint(authorizationEndpoint ->
                                 authorizationEndpoint.consentPage(property.getConsentPage()))
                         .oidc(oidc -> oidc
@@ -156,7 +186,8 @@ public class OidcAuthorizationServerConfig {
                                     new SimpleUrlAuthenticationFailureHandler(property.getDeviceVerificationErrorUri()));
                         }))
                 .addFilterBefore(jwtAuthenticationFilter, AbstractPreAuthenticatedProcessingFilter.class)
-                .authenticationProvider(authenticationProvider)
+                .authenticationProvider(multiKeyClientSecretAuthenticationProvider)
+                .authenticationProvider(publicClientDeviceAuthenticationProvider)
                 .securityMatcher(authorizationServer.getEndpointsMatcher())
                 .oauth2ResourceServer(Customizer.withDefaults())
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
@@ -164,7 +195,7 @@ public class OidcAuthorizationServerConfig {
                 .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
                         new OidcLoginRedirectEntryPoint(property.getConsentPage()),
                         new MediaTypeRequestMatcher(MediaType.TEXT_HTML, MediaType.APPLICATION_XHTML_XML)
-                ));;
+                ));
         return http.build();
     }
 
