@@ -90,10 +90,10 @@
 
 ## 阶段 1：契约层 `sfc-cloud-api`
 
-- [ ] **1.1** 新建 `sfc-cloud-api` 模块：`pom.xml` + 2 个 POJO（`ServiceInstance` / `ServiceDefinition`）+ 2 个 SPI（`ServiceRegistry` / `ServiceDiscovery`）
-- [ ] **1.2** root `pom.xml` 的 `<modules>` 注册新模块
+- [x] **1.1** 新建 `sfc-cloud-api` 模块：`pom.xml` + 2 个 POJO（`ServiceInstance` / `ServiceDefinition`）+ 2 个 SPI（`ServiceRegistry` / `ServiceDiscovery`）
+- [x] **1.2** root `pom.xml` 的 `<modules>` 注册新模块
 - [ ] **1.3** `sfc-api` 的 `SysProperties.Service` 新增 `registryProvider`、`serviceName`、`registryGroup`
-- [ ] **1.4** 编译验证：`mvn -pl sfc-cloud-api -am install`
+- [x] **1.4** 编译验证：`mvn -pl sfc-cloud-api -am install`
 
 **为什么排第一**：它是后续所有实现的前置。**纯新增，不碰任何现有代码路径，零风险，且不需要 Nacos。**
 

@@ -10,6 +10,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <modules>
+        <module>sfc-cloud-api</module>
         <module>sfc-archive</module>
         <module>sfc-api</module>
         <module>sfc-task</module>
@@ -41,6 +42,8 @@
         <api.version>${revision}</api.version>
         <task.version>1.0.0</task.version>
         <rpc.version>1.0.0</rpc.version>
+        <!--   微服务契约模块版本。sfc-cloud-api 未继承本 pom，其 <version> 需与此处保持一致     -->
+        <cloud.version>1.0.0</cloud.version>
         <oshi.version>6.4.0</oshi.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>

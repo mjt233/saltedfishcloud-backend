@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    微服务契约模块。
+
+    刻意【不继承】仓库根 pom：根 pom 在 <dependencies>（而非 <dependencyManagement>）中声明了
+    JPA / Security / Redis / Netty 等整套技术栈，会被所有子模块无条件继承（实测 208 个 jar）。
+    若本模块继承根 pom，"零内部依赖、零 Spring 运行期依赖"的契约定位便不复存在，
+    微服务侧引入本模块时也会被拖入同一套技术栈。
+
+    因此本模块自带全部构建配置（编译目标、源码编码、注解处理），依赖只有一个 provided 作用域的 lombok。
+    同类写法可参考 sfc-ext/pom.xml（同样未声明 parent）。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.xiaotao</groupId>
+    <artifactId>sfc-cloud-api</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>sfc-cloud-api</name>
+    <description>微服务契约模块：服务注册与发现 SPI 及跨进程传输模型</description>
+
+    <properties>
+        <java.version>25</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!--
+                仅导入 SpringBoot BOM 用于管理 lombok 版本，不引入任何实际依赖。
+                dependencyManagement 不具备传递性，因此不影响本模块的消费者。
+            -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>4.1.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                因不继承 parent，编译相关配置需全部显式声明：
+                proc=full 用于在 JDK 23+ 下启用 classpath 中的注解处理器，否则 lombok 不生效；
+                release / encoding 用于确定编译目标版本与源码编码（本模块含中文注释）。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <proc>full</proc>
+                    <release>${java.version}</release>
+                    <encoding>UTF-8</encoding>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
