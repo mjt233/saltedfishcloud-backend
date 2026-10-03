@@ -4,6 +4,20 @@
 > **评估视角**：收益仅按"开发者能力提升与学习价值"衡量，同时平衡改造难度与学习难度（用户确认）
 > **评估对象**：[路线图](../microservice-roadmap.md) · [档位 1 设计](../microservice-phase1-design.md) · [依赖冲突调试手册](../microservice-nacos-dependency-debugging.md) · [档位 3 设计](../microservice-phase3-frontend-integration.md)
 > **创建日期**：2026-10-03
+>
+> **修订影响说明（2026-10-03 补记）**：档位 1 设计已修订——阶段 2 的 provider 由"包装 `ClusterService`"改为"**完全独立新增实现**"（见[档位 1 设计 §5 决策 5](../microservice-phase1-design.md)）。本报告以下条目据此**失效或已闭环**，阅读时请以修订后的原文档为准：
+>
+> | 本报告条目 | 状态 |
+> |---|---|
+> | §3.2 亮点 3「已知局限如实记录（cluster provider 只能服务单一服务名）」 | ❌ **已失效**——该局限随方案变更不再存在，独立实现天然支持多服务名 |
+> | §3.2 存疑 1（namespace / group 收敛约定是隐式的） | ✅ **已闭环**：被确认为 **SPI 契约的固有属性**（发现侧无 group 参数），而非部署约定 |
+> | §3.2 存疑 3（Step 4 的 YAML 把 nacos 参数放得过早） | ✅ 已补权衡说明（档位 1 设计 Step 4） |
+> | §5.1 阶段 2「用已有 `ClusterService` 做对照组」 | ⚠️ **已变更**：改为自研独立实现；对照组性质与四项代价见决策 5 |
+> | §6 🟡-4（`ServiceRegistryInitializer` 生命周期时机未指定） | ✅ **已定**：`ApplicationReadyEvent` + 配置优先的地址解析（决策 6） |
+> | §6 🟡-1（namespace / group 约定需成文） | ✅ 已写入决策 5 末段 |
+> | §7 承重假设 1（root pom 依赖污染） | ✅ **已实测确认**：`sfc-api` 解析出 **208 个 jar**；并据此得出"新模块必须**不继承 root pom**"这一必要条件（决策 1 实施记录） |
+> | §7 承重假设 4（5s 心跳 + 10s TTL、`getSelf()` 可复用） | ✅ 已确认；但"复用 `getSelf()`"**降级**为仅复用 host / port 解析思路（决策 6） |
+> | §4.2「档位 1 已知局限 → 档位 3 验证」（`registry-provider: cluster` 下 manifest 返回 `[]`） | ⚠️ **结论仍成立、理由已变**：`cache` provider 下 manifest 仍返回 `[]`，但原因不再是"能力边界"，而是"只注册了 `sfc-core` 自身、而 core 没有扩展清单" |
 
 ---
 

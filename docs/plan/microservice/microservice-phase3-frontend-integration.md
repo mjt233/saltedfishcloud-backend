@@ -510,7 +510,7 @@ public class ServiceProxyController {
 ## 12. 分步实施与验证
 
 **Step 1（后端，可独立验证）**：`ExtensionInfo` DTO + `ServiceExtensionRegistry` + `GET /api/ext/manifest`
-- 验证：`registry-provider: cluster` 下返回空数组 `[]`（不破坏现状）
+- 验证：`registry-provider: cache` 下返回空数组 `[]`（不破坏现状——自研 provider 只会返回 `sfc-core` 自身，而 core 没有扩展清单）
 
 **Step 2（后端）**：`ServiceProxyController` 静态资源代理 + Nacos metadata 解析
 - 验证：起一个只提供 `GET /static/hello.js` 的假微服务，确认经代理可获取
