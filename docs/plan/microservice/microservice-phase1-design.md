@@ -1,12 +1,13 @@
 # 微服务改造 · 档位 1 设计方案（定稿）
 
-> **状态**：Step 1（`sfc-cloud-api` 契约模块）**已实施**；Step 2 起待实施。**Step 3 的 provider 方案已变更**——由"包装 `ClusterService`"改为"完全独立新增实现"，见 §5 决策 5。
+> **状态**：Step 1（`sfc-cloud-api` 契约模块）**已实施**；Step 2 起待实施。**阶段 2 的 provider 已二次修订**——"包装 `ClusterService`" → "独立 `cache` 实现" → "**纯内存实现**"，见 §5 决策 5。
 > **范围**：仅做服务注册与发现闭环。**不做**跨进程调用（档位 2）、**不做**网关聚合（档位 3）
 > **拓扑**：双向注册（咸鱼云与 demo 微服务均注册到注册中心）
 > **注册中心**：Nacos 2.x（Docker 部署）
-> **配套文档**：[依赖冲突调试手册](microservice-nacos-dependency-debugging.md)（档位 1 的核心练习）
+> **核心规则**：**未使用 Nacos ⇒ 未启用微服务模式 ⇒ 完整单体 / 集群状态**，服务注册只在进程内维护、不考虑跨进程（见决策 5）
+> **配套文档**：[依赖冲突调试手册](microservice-nacos-dependency-debugging.md)（档位 1 的核心练习） · [阶段 2 provider 修订说明](microservice-stage2-provider-revision-note.md)（决策 5 的完整修订理由与历史）
 > **创建日期**：2026-02-12
-> **修订日期**：2026-10-03（Step 1 落地；阶段 2 的 provider 由"包装存量"改为"独立新增"，见决策 5、决策 6）
+> **修订日期**：2026-10-03（Step 1 落地；阶段 2 provider 二次修订，见决策 5）
 
 ---
 
@@ -31,7 +32,7 @@
 
 1. 咸鱼云与一个**独立开发的** Spring Boot 微服务，通过 Nacos 完成双向注册与发现
 2. 咸鱼云管理端可查看注册中心中的服务实例列表
-3. 建立 `ServiceRegistry` / `ServiceDiscovery` SPI 契约，使**自研 provider（基于 `CacheService`）**与 **Nacos** 成为可互换的 provider
+3. 建立 `ServiceRegistry` / `ServiceDiscovery` SPI 契约，使 `sfc-core` **不依赖 `nacos-client`**（依赖隔离）；standalone 下由进程内 provider 兜底
 
 ### 明确不做
 
@@ -42,6 +43,7 @@
 | 微服务前端资源动态加载 | 属档位 3 |
 | 熔断、限流、链路追踪 | 治理能力，档位 1 引入过早 |
 | 拆分现有 `sfc-core` | 非目标。`sfc-core` 保持单体 |
+| 未启用 Nacos 时的跨进程服务发现 | 未启用微服务模式即完整单体 / 集群状态，不存在异构服务（见决策 5） |
 
 ---
 
@@ -62,9 +64,8 @@
       │  Spring Boot 4.1.0 单体 │  │  独立 Spring Boot 工程 │
       │                        │  │  （仓库外，独立 git）   │
       │  ServiceRegistry SPI   │  │                      │
-      │   ├ CacheServiceXxx    │  │  仅依赖 nacos-client   │
-      │   │  (自研 provider)    │  │  不依赖咸鱼云任何模块   │
-      │   └ NacosXxx (插件)     │  │                      │
+      │   ├ LocalXxx (进程内)   │  │  仅依赖 nacos-client   │
+      │   └ NacosXxx (插件)     │  │  不依赖咸鱼云任何模块   │
       └────────────────────────┘  └──────────────────────┘
 ```
 
@@ -76,20 +77,18 @@
 
 ## 3. 概念对照：微服务概念 ↔ 本项目已有实现
 
-这张表帮你在审阅时建立参照系。**你其实已经有一套自研的"微服务"了**（`ClusterService`）；档位 1 最初的设想是把它"从同构集群节点推广到异构服务"，但源码核对发现它**连服务名的位置都没有**（键结构所限，见决策 5），于是改为**另建一套独立的服务注册**。
+`ClusterService` 已是一套自研的"微服务"设施，但它只服务**同构**节点，且**键结构里没有服务名的位置**（见决策 5），故档位 1 另建一套注册，与它**职责分离、不合并**：
 
-因此下表第一列是**保持不动**的存量实现，第三列才是档位 1 新增的自研 provider（Nacos provider 并列其后）：
-
-| 微服务概念 | 存量实现（`ClusterService`，**保持不动**） | 档位 1 新增（自研 `cache` / `nacos`） |
+| 微服务概念 | 存量 `ClusterService`（**保持不动**） | 档位 1 新增（`local` / `nacos`） |
 |---|---|---|
-| 服务注册 | `ClusterServiceImpl.registerSelf()` 写 `sfc:cluster:{selfId}` | 自研：写 `sfc:cloud:instance:{group}:{serviceName}:{instanceId}`；Nacos：`registerInstance` |
-| 心跳 / 续约 | `ClusterHoldSchedule`（5s 定时）+ 10s TTL 自动过期 | 自研：provider **内部**续约调度（5s）+ 10s TTL；Nacos：客户端**内置**心跳（见 §5 决策 4） |
-| 服务发现 | `ClusterServiceImpl.listNodes()`（`scanKeys("sfc:cluster:*")`） | 自研：读两级 Set 索引（**不用 `scanKeys`**）；Nacos：`selectInstances` |
-| 注销 | ❌ 无（只能等 TTL 过期） | 自研：`delete` + `sRemove`，**真实注销**；Nacos：`deregisterInstance` |
-| **服务名** | ❌ **无此概念**，只有节点 ID | ✅ `ServiceDefinition.serviceName`（自研与 Nacos **都有**） |
-| **命名空间 / 分组** | ❌ 无 | `group` 参与自研的键结构、也是 Nacos 的调用级参数；但**发现侧两者都只能用配置值**——这是 SPI 契约的固有属性，见决策 5 |
+| 服务注册 | `registerSelf()` 写 `sfc:cluster:{selfId}` | `local`：写进程内 Map；`nacos`：`registerInstance` |
+| 心跳 / 续约 | `ClusterHoldSchedule`（5s）+ 10s TTL | `local`：**无**（进程即生命周期）；`nacos`：客户端内置心跳（见决策 4） |
+| 服务发现 | `listNodes()`（`scanKeys`） | `local`：读本进程 Map（**只可能看到自己**）；`nacos`：`selectInstances` |
+| 注销 | ❌ 无（等 TTL 过期） | `local`：清 Map；`nacos`：`deregisterInstance` |
+| **服务名** | ❌ 无此概念，只有节点 ID | ✅ `ServiceDefinition.serviceName` |
+| **命名空间 / 分组** | ❌ 无 | `group` 参与 `local` 的键结构、也是 Nacos 的调用级参数；但**发现侧两者都只能用配置值**——这是 SPI 契约的固有属性（见决策 5） |
 | 实例元数据 | `ClusterNodeInfo`（cpu / memory / pid / tempSpace） | `ServiceInstance.metadata`（自由 KV） |
-| 健康检查 | 靠 TTL 被动过期 | 自研：**仍靠 TTL 被动过期**；Nacos：`ephemeral` 实例主动心跳 |
+| 健康检查 | 靠 TTL 被动过期 | `local`：无（进程内必然健康）；`nacos`：`ephemeral` 主动心跳 |
 | 负载均衡 / 网关 / 熔断 | ❌ 无 | **不在档位 1 范围** |
 
 ---
@@ -155,7 +154,7 @@ public interface ServiceRegistry extends Closeable {
 }
 ```
 
-> **为什么 SPI 里没有 `renew()`**：续约语义属于 provider 内部实现细节。自研 `cache` provider 由**它自己的内部调度**续约（见决策 4）；`nacos` provider 由客户端内置心跳续约。把它暴露到 SPI 会导致调用方必须知道"什么时候该续约"，是错误的分层。**SPI 中保留但无人调用的方法是坏设计**，故不设。
+> **为什么 SPI 里没有 `renew()`**：续约语义属于 provider 内部实现细节 —— `local` provider 根本没有续约（进程即生命周期），`nacos` provider 由客户端内置心跳续约。把它暴露到 SPI 会导致调用方必须知道"什么时候该续约"，是错误的分层。**SPI 中保留但无人调用的方法是坏设计**，故不设。
 
 ### 4.4 `ServiceDiscovery`
 
@@ -174,16 +173,18 @@ public interface ServiceDiscovery {
 
 ### 4.5 Provider 选择机制
 
-**完全对齐项目既有的 `sys.service.*-provider` 模式**（参见 `RedisRPCInvoker` / `MQRPCInvoker` 的 `@ConditionalOnProperty` 写法）：
+**对齐项目既有的 `sys.service.*-provider` 模式**（参见 `RedisRPCInvoker` / `MQRPCInvoker` 的 `@ConditionalOnProperty` 写法）：
 
 | Bean | 生效条件 |
 |---|---|
-| `CacheServiceRegistry` / `CacheServiceDiscovery` | `sys.service.registry-provider` = `cache`（**`matchIfMissing = true`**） |
+| `LocalServiceRegistry`（单类实现两个 SPI） | `sys.service.registry-provider` = `local`（**`matchIfMissing = true`**） |
 | `NacosServiceRegistry` / `NacosServiceDiscovery`（插件内） | `sys.service.registry-provider` = `nacos` |
 
-> **取值为什么从 `cluster` 改名为 `cache`**：原取值 `cluster` 的语义是"包装 `ClusterService`"。改为独立实现后沿用旧名会误导（它已不依赖 `ClusterService`），故按**存储机制**命名，与既有 `mq-provider: redis|local`、`rpc-provider: redis|mq` 的风格一致。
+> **取值按"进程内 / 注册中心"命名**：`local` 与既有 `cache-provider: local`、`lock-provider: local`、`mq-provider: local` 同一家族，语义为"仅当前实例内生效"。
 >
-> **`matchIfMissing = true` 只能出现在 `cache` 一侧**：Nacos 侧若也带，两个 Bean 会同时命中 → `NoUniqueBeanDefinitionException`。
+> **`matchIfMissing = true` 只能出现在 `local` 一侧**：Nacos 侧若也带，两个 Bean 会同时命中 → `NoUniqueBeanDefinitionException`。
+>
+> ⚠️ **插件的 Bean 由 `AutoConfiguration.imports` 注册，晚于 `@Component` 扫描**：因此 `@Autowired ServiceRegistry` 注入没有问题，但 `@ConditionalOnBean` 之类的**条件评估看不到它**。这正是"core 常驻一个 `local` provider"优于"core 完全没有 provider"的原因——后者会迫使所有消费者改成 `ObjectProvider` 运行时判空。
 
 调用方直接注入 SPI 接口（单 Bean），与 `RpcAutoConfiguration` 注入单个 `RPCInvoker` 的做法一致。
 
@@ -265,65 +266,49 @@ public interface ServiceDiscovery {
 
 **替代路径（未采用）**：走插件自身的 `config-properties.json` + `ConfigService.bindPropertyEntity()`（参见 `McpAutoConfiguration`）。优点是可在后台动态修改；缺点是配置存于数据库，**启动早期不可用**——而注册中心连接参数必须在启动时立即生效。
 
-### 决策 4：续约机制放在哪里 → **已修订**（原表述：「不新增心跳续约定时任务」）
+### 决策 4：续约机制放在哪里 → **已收敛为：档位 1 没有任何续约**
 
 | Provider | 续约机制 | 是否新增 Spring 定时任务 |
 |---|---|---|
-| 自研 `cache` | **provider 内部**自持调度（5s），与 10s TTL 配对 | ❌ 不新增 `@Scheduled` Bean——续约是 provider 内部实现细节（§4.3 已如此声明） |
+| `local` | **无** —— 进程即生命周期，无 TTL、无调度 | ❌ |
 | `nacos` | nacos-client 对 `ephemeral` 实例**内置**心跳 | ❌ 客户端自管 |
 
-**修订原因**：原决策建立在"包装 `ClusterService`、复用既有 `ClusterHoldSchedule`"这个前提上。改为独立实现后该前提消失——**自建注册表必然需要自己的续约**。修订后的原则不是"不许有续约"，而是**"续约不许泄漏到 SPI 之外"**：它内聚在 provider 内部，`ServiceRegistryInitializer` 与任何调用方都不需要关心"什么时候该续约"——这正是 §4.3 拒绝在 SPI 中设 `renew()` 的同一条理由。
+**原则**：**续约不许泄漏到 SPI 之外**（这正是 §4.3 拒绝在 SPI 中设 `renew()` 的同一条理由）。
 
-**结论**：档位 1 **不新增 Spring `@Scheduled` 定时任务 Bean**。`ClusterHoldSchedule` 保持原样运行——它服务于 `ClusterService.listNodes()`（集群内 RPC / 异步任务仍需），与 SPI 的职责不同。
+**结论**：档位 1 **不新增任何定时任务**。`ClusterHoldSchedule` 保持原样运行——它服务于 `ClusterService.listNodes()`（集群内 RPC / 异步任务仍需），与 SPI 的职责不同。
 
-### 决策 5：自研 provider —— 包装 `ClusterService` 还是完全独立新增？ → **已确认：完全独立新增**（2026-10-03 修订）
+### 决策 5：自研 provider 怎么写？ → **已确认：纯内存实现，不依赖任何系统既有组件**（2026-10-03 二次修订）
 
-初版方案是"包装 `ClusterService`，不改变其现有行为"。实施前核对源码后发现该路线有**三个无法兑现契约的缺口**：
+**规则**：
 
-| # | 缺口 | 源码依据 |
-|---|---|---|
-| 1 | `register(definition, instance)` 的实例参数**只能被静默忽略** | `ClusterServiceImpl.registerSelf()` 内部调 `getSelf()` 自行解析 host / 端口，不接受外部传入的地址 |
-| 2 | `deregister()` **无法实现** | `ClusterService` 接口没有注销方法；缓存键依赖 `private final selfId`，外部拿不到 |
-| 3 | **服务名概念根本不存在** | 键为 `sfc:cluster:{selfId}`，**结构里没有服务名的位置** |
+> **未使用 Nacos ⇒ 未启用微服务模式 ⇒ 系统处于完整单体 / 集群状态。此状态下的服务注册关系只在进程内维护，完全不考虑跨进程。**
 
-**决策依据（第 3 条是决定性的）**：**服务名不是"要不要支持"的开关，而是键结构里有没有它的位置**。不改 `ClusterService` 的键结构，`listInstances(svc)` / `listServiceNames()` 就永远说不出真话；而一个"参数被忽略、注销是空实现、服务名只有自己"的 provider，会让 §4 的 SPI 契约**从第一刻起就是假的**——这恰恰摧毁了档位 1 想练的东西。
+**决策依据**：未启用微服务模式时不存在异构服务，"发现"没有对象；跨进程可见性、TTL、续约、死实例清理都是 **Nacos 存在的意义**，不是内存实现的缺陷。
 
 **替代方案对比**：
 
 | 方案 | 结论 |
 |---|---|
-| A. 包装 `ClusterService` | ❌ 三个缺口无法兑现契约；`ServiceInstance` 的多数字段会沦为摆设 |
-| B. **完全独立新增（采用）** | ✅ 契约可完整兑现：键结构含服务名、注销真实生效、多服务名天然支持 |
-| C. 独立实现但不落共享存储（纯内存） | ❌ 无法跨进程发现，"发现"这件事根本没被验证 |
+| A. 包装 `ClusterService` | ❌ 违反"不依赖既有组件"；且 `register()` 的实例参数只能被静默忽略、无注销方法、键结构里没有服务名的位置 |
+| B. 基于 `CacheService` 独立实现 | ❌ 两级 Set 索引 + 5s 续约 + 10s TTL 是常驻成本，却**没有真实消费者**——能写 `sfc:cloud:*` 的只有另一个 `sfc-core` 节点，而它已由 `ClusterService` 覆盖。详见[修订说明](microservice-stage2-provider-revision-note.md) |
+| C. **纯内存实现（采用）** | ✅ 约 60 行、零既有依赖、零跨进程语义；standalone 下行为与 `cache-provider` 取值完全解耦 |
 
-**新 provider 的键结构**（新增 `CacheKeyPrefixes.CLOUD = "sfc:cloud:"`，与 `sfc:cluster:*` 物理隔离）：
+**硬约束**：
+
+- 不注入 `CacheService` / `MQService`、不包装 `ClusterService`，只用一个自持 `Map`
+- **质量底线**：`register(definition, instance)` 的参数必须真实入库、`deregister()` 只删自己 —— 不得重演方案 A "接口是假的"的问题
+
+**键结构**：
 
 ```text
-sfc:cloud:instance:{group}:{serviceName}:{instanceId}   value = JSON(ServiceInstance)   TTL 10s
-sfc:cloud:svc:{group}:{serviceName}                     Set<instanceId>      ← 服务→实例索引
-sfc:cloud:services:{group}                              Set<serviceName>     ← 服务名总索引
+{group}:{serviceName}   →   Map<instanceId, ServiceInstance>
 ```
 
-- `register()`：写实例键（10s TTL）+ `sAdd` 两级索引 → **参数被真实使用**
-- `deregister()`：`delete` 实例键 + `sRemove` 两级索引 → **真实注销**
-- `listInstances(svc)`：`sMembers(服务索引)` → 逐个 `get` → **过滤已过期成员并顺手 `sRemove`**（惰性清理）
-- `listServiceNames()`：`sMembers(服务名总索引)` —— **一次调用，不用 `scanKeys`**
-- `isAvailable()`：探测 `CacheService`，异常即 `false`
+`namespace` **不参与**键结构（内存 Map 即单一命名空间）—— 这是**刻意**的，不是遗漏。保留 `group` 是为了让"**发现侧没有 group 参数**（`ServiceDiscovery` 只收服务名）"这条契约的固有属性在代码里可见。
 
-> **必须记住的坑**：**Redis Set 的成员不会随实例键的 TTL 过期而消失**。`sMembers` 拿到的 instanceId 可能已指向不存在的键。因此 `listInstances()` **必须**过滤空值并惰性清理，否则"死实例"会永久留在索引里。这是自建注册表必然要面对的第一个真实问题——包装 `ClusterService` 时它已被现成实现解决过了（纯 TTL 键、无二级索引）。
+**能力边界（如实记录）**：`local` **无主动健康检查、无命名空间、无变更通知、无跨进程可见性** —— "服务列表"只是进程内视图，集群节点仍看 `GET /api/cluster/listNodes`。
 
-**代价之一：Redis 中出现两套注册表。**
-
-| 键空间 | 归属 | 服务对象 |
-|---|---|---|
-| `sfc:cluster:*` | `ClusterService`（**保持不动**） | 集群内**同构**节点：RPC、异步任务分发 |
-| `sfc:cloud:*` | 自研 provider（新增） | 服务发现：**异构**服务 |
-
-同一个 `sfc-core` 节点会在两处各注册一遍。⚠️ **不要试图"统一"它们**：两边的心跳、TTL、用途都不同，而 `ClusterService.request()` 与 `ClusterScheduleJobDispatch` 仍依赖前者。
-
-**代价之二：排查面不再严格收敛到 1。** 阶段 3 出问题时，需先自证"自研 provider 的语义假设没错"。作为交换，自研 provider 与 Nacos 的能力差距**只剩真正的注册中心能力**（主动健康检查、命名空间、变更通知），差异归因反而比"包装一个能力残缺的 provider"更干净。
-
-**顺带得到的认识**：`ServiceDiscovery` 只有 `serviceName`，**没有** `group` / `namespace` 参数。因此**发现侧两个 provider 都只能用各自配置里的 group**——这不是自研 provider 的缺陷，而是 **SPI 契约的固有属性**。这一层在包装 `ClusterService` 时根本到不了（它连服务名都没有）。
+> **完整的历史修订理由**（原 `cache` 方案为何被否、哪些旧论据被推翻）见[阶段 2 provider 修订说明](microservice-stage2-provider-revision-note.md)。
 
 ### 决策 6：身份解析与注册时机 → **已确认**
 
@@ -343,9 +328,9 @@ sfc:cloud:services:{group}                              Set<serviceName>     ←
 - 一旦要支持 `server.port=0` 随机端口，就必须等 web 容器起来才能拿到真实端口 → 时机只能推到 `ApplicationReadyEvent`
 - 代价：启动完成到注册之间有一个极短窗口，可接受
 
-**注销时机**：provider 实现 `DisposableBean`（或 `@PreDestroy`）→ 关闭时 `deregister()` + 停掉内部续约调度。
+**注销时机**：仅 `nacos` provider 需要 —— 实现 `DisposableBean`（或 `@PreDestroy`）→ 关闭时 `deregister()`。
 
-> ⚠️ **不要把注销只寄托在 `Closeable.close()` 上**：`@Component` 扫描的 Bean，Spring 不保证推断并调用 `close()`。显式生命周期回调才是可靠出口，TTL 过期则是最后的兜底。
+> ⚠️ **不要把注销只寄托在 `Closeable.close()` 上**：`@Component` 扫描的 Bean，Spring 不保证推断并调用 `close()`。显式生命周期回调才是可靠出口。（`local` provider 无需注销：进程退出即清空。）
 
 ---
 
@@ -384,27 +369,23 @@ sfc:cloud:services:{group}                              Set<serviceName>     ←
 
 **验证**：`mvn -pl sfc-api install` 成功。
 
-### Step 3：`sfc-core` 自研 provider + 管理端 API
+### Step 3：`sfc-core` 进程内 provider + 管理端 API
 
 | 文件 | 动作 | 职责 |
 |---|---|---|
 | `sfc-core/pom.xml` | 引入 `sfc-cloud-api`（`${cloud.version}`） | — |
-| `sfc-api/.../cache/CacheKeyPrefixes.java` | 修改 | 新增 `CLOUD = "sfc:cloud:"` 键前缀 |
+| `.../service/registry/LocalServiceRegistry.java` | 新增 | **单类**实现两个 SPI：一个自持 `ConcurrentHashMap`（键 `{group}:{serviceName}`），`register()` 参数真实入库、`deregister()` 只删自己，`isAvailable()` 恒 `true`；**不注入任何既有组件** |
 | `.../service/registry/ServiceIdentityResolver.java` | 新增 | 解析本机对外地址 + 端口，生成 `ServiceInstance`（见决策 6） |
-| `.../service/registry/CacheServiceRegistry.java` | 新增 | **独立实现** `ServiceRegistry`：写 `sfc:cloud:*` + 两级 Set 索引 + provider 内部续约 + 真实注销 |
-| `.../service/registry/CacheServiceDiscovery.java` | 新增 | **独立实现** `ServiceDiscovery`：读 Set 索引，支持多服务名，含死成员惰性清理 |
 | `.../service/registry/ServiceRegistryInitializer.java` | 新增 | 监听 `ApplicationReadyEvent`，调用 `register(definition, instance)` |
 | `.../controller/admin/ServiceRegistryController.java` | 新增 | `PREFIX = "/api/admin/sys/service"`，类级 `@RolesAllowed({"ADMIN"})`，`GET /list`，参数用 `@RequestParam` |
 
-**能力边界（如实记录）**：自研 provider 的跨进程可见性依赖 `CacheService` 的后端；**无主动健康检查**（靠 TTL 被动过期，实例崩溃到从列表消失之间最长有一个 TTL 窗口）；**无命名空间**（当前 `CacheService` 后端即一个命名空间，故 `ServiceDefinition.namespace` 不参与键结构）；**无变更通知**。**这些正是 Nacos 存在的意义**——而不是自研 provider 的实现缺陷。
-
-> **为什么不给 SPI 加订阅/通知方法**：自研 provider 其实有能力借 `MQService.sendBroadcast`（`ClusterServiceImpl.registerSelf()` 就是这么广播节点上线事件的）做推送，但契约没有出口。现在不设计是对的——与 §4.3 砍掉 `renew()` 同一条理由：**SPI 中保留但无人调用的方法是坏设计**。
-
 **验证**：
 - `mvn -pl sfc-core -am install` 成功
-- 以 `registry-provider: cache` 启动 → **现有功能零回归**（`GET /api/cluster/listNodes` 照常返回集群节点）
-- `GET /api/admin/sys/service/list` 返回咸鱼云自身节点
-- 手工向 `sfc:cloud:*` 写入第二服务名的实例键 + 索引 → 该 API 返回**两个**服务（**这一条让"异构服务可见"在阶段 2 就能被验证，不必等阶段 4**）
+- 以 `registry-provider: local` 启动 → **现有功能零回归**（`GET /api/cluster/listNodes` 照常返回集群节点）
+- `GET /api/admin/sys/service/list` 返回**自身 1 条**，host / port 与预期一致
+- `server.port: 0` 时管理端显示**真实**绑定端口（身份解析的证明，也是阶段 3 风险 3 的预检）
+
+> ⚠️ 原"手工向 `sfc:cloud:*` 塞入第二服务名 → 见两个服务"的验证**已废弃**：进程内实现看不到第二个进程。SPI 的多服务名路径由阶段 4 的 demo 微服务首次真正走通。
 
 ### Step 4：三个配置文件同步（AGENTS.md 强制要求）
 
@@ -416,13 +397,13 @@ sfc:cloud:services:{group}                              Set<serviceName>     ←
 | `sfc-core/src/main/config/application-product.yml` | 同上 |
 | `pre-release/config.yml` | 同上 |
 
-配置内容（默认值保持 `cache`，**保证不装插件时项目照常可用**）：
+配置内容（默认值保持 `local`，**保证不装插件时项目照常可用**）：
 
 ```yaml
 sys:
   service:
-    # 服务注册中心 provider，可选 cache（自研，基于 CacheService）或 nacos（需 sfc-ext-nacos 插件）
-    registry-provider: cache
+    # 服务注册 provider：local（进程内，默认，未启用微服务模式）或 nacos（需 sfc-ext-nacos 插件）
+    registry-provider: local
     # 注册到注册中心的自身服务名
     service-name: sfc-core
     # 注册中心分组
@@ -467,7 +448,7 @@ docker run -d --name sfc-nacos -p 8848:8848 -p 9848:9848 -e MODE=standalone naco
 
 **⚠️ 两个必须知道的操作要点**：
 
-1. **在 `exclusions` 调通之前，不要把 `sfc-ext-nacos` 加进 `application-develop.yml` 的 `plugin.extra-resource`**。原因：插件一旦被加载，其 `plugin-lib/` 依赖会**无条件**进入冲突校验，**即使 `registry-provider` 仍是 `cache`**，启动照样失败。
+1. **在 `exclusions` 调通之前，不要把 `sfc-ext-nacos` 加进 `application-develop.yml` 的 `plugin.extra-resource`**。原因：插件一旦被加载，其 `plugin-lib/` 依赖会**无条件**进入冲突校验，**即使 `registry-provider` 仍是 `local`**，启动照样失败。
 2. **开发模式下必须对插件模块执行 `mvn compile`**。`plugin-lib/` 目录由 `maven-dependency-plugin:copy-dependencies` 在 `compile` 阶段生成到 `target/classes/plugin-lib`，而开发模式正是从 `target/classes` 加载插件的。不编译就没有 `plugin-lib`，依赖不会被加载。
 
 **验证（Step 6 的完整迭代循环）**：
@@ -527,11 +508,9 @@ docker run -d --name sfc-nacos -p 8848:8848 -p 9848:9848 -e MODE=standalone naco
 |---|---|---|---|
 | 1 | `nacos-client` 传递依赖与宿主重叠 | **两类后果**：类级重复→启动失败；jar 被静默跳过后宿主版本 API 不兼容→运行期 `NoSuchMethodError` | 决策 2 方案 A；配套调试手册 |
 | 2 | Nacos 2.x gRPC 端口 9848 未暴露 | 客户端反复重连失败 | Docker 命令显式 `-p 9848:9848` |
-| 3 | 咸鱼云注册自身时的地址解析 | 注册到注册中心的地址不可达 | `sys.service.advertise-address` **配置优先**、自动解析兜底（见决策 6）。注意 `ClusterNodeInfo` 的 `ip` 字段是把所有网卡地址用 `;` 拼接的，**不能直接用于注册**，必须单独取单一可达地址 |
-| 4 | `registry-provider: nacos` 但插件未安装 | 无 `ServiceRegistry` Bean → 启动失败 | 与既有 `mq-provider: local` 需要 `sfc-ext-local-mq` 的行为一致，属预期；默认值保持 `cache` |
-| 5 | Redis 中出现**两套注册表**（`sfc:cluster:*` 与 `sfc:cloud:*`） | 概念混淆；可能被误认为冗余而"统一"掉 | 职责分离：`sfc:cluster:*` = 集群内同构节点（RPC / 异步任务，`ClusterService` 保持不动）；`sfc:cloud:*` = 异构服务发现。⚠️ 不要"统一"它们（见决策 5） |
-| 6 | **排除过度** 与 **排除不足** 是双向风险 | 排除过度 → 宿主无此类 → `ClassNotFoundException`；排除不足 → 类级冲突启动失败 | 两者都只能通过**启动 + 实际调用**验证发现，**不能只看编译结果**。见调试手册 |
-| 7 | Set 索引成员**不随**实例键的 TTL 过期而消失 | "死实例"永久留在索引里，管理端显示已下线的节点 | `listInstances()` 过滤空值并惰性 `sRemove`（见决策 5） |
+| 3 | 咸鱼云注册自身时的地址解析 | 注册到注册中心的地址不可达 | `sys.service.advertise-address` **配置优先**、自动解析兜底（见决策 6）。注意 `ClusterNodeInfo` 的 `ip` 字段是把所有网卡地址用 `;` 拼接的，**不能直接用于注册**，必须单独取单一可达地址。**standalone 下可用管理端 API 提前预检** |
+| 4 | `registry-provider: nacos` 但插件未安装 | 无 `ServiceRegistry` Bean → 启动失败 | 与既有 `mq-provider: local` 需要 `sfc-ext-local-mq` 的行为一致，属预期；默认值保持 `local`。可选改进：由 initializer 抛带明确提示的异常 |
+| 5 | **排除过度** 与 **排除不足** 是双向风险 | 排除过度 → 宿主无此类 → `ClassNotFoundException`；排除不足 → 类级冲突启动失败 | 两者都只能通过**启动 + 实际调用**验证发现，**不能只看编译结果**。见调试手册 |
 
 ---
 
@@ -539,8 +518,8 @@ docker run -d --name sfc-nacos -p 8848:8848 -p 9848:9848 -e MODE=standalone naco
 
 1. **§4 SPI 契约**——这是档位 1 唯一需要长期维护的东西。接口一旦定错，档位 2、3 都要跟着改。特别看 `register()` 为何同时要 `ServiceDefinition` 和 `ServiceInstance`，以及为何**故意不提供 `renew()`**。
 2. **§5 决策 1 与其实施记录**——`sfc-api` 的依赖污染是本项目一个不太显眼但影响深远的事实（实测 **208 个 jar**）。它会反复影响后续所有"微服务要不要引这个模块"的判断；实施记录给出了本题目前唯一的解（**不继承 root pom**）。
-3. **§5 决策 5 的"代价"**——独立实现意味着 Redis 里出现两套注册表，且排查面不再严格收敛到 1。请确认你接受这个代价（换来的是 SPI 契约**从第一刻起就是真的**）。
-4. **§6 Step 6 的两个操作要点**——尤其是"插件放进 `extra-resource` 后，即使 provider 是 `cache` 也会触发冲突校验"。这一点若不提前知道，会浪费很多时间在"我明明没启用 Nacos 为什么启动失败"上。
+3. **§5 决策 5 的规则**——"未使用 Nacos ⇒ 未启用微服务模式"意味着 standalone 下的注册表**看不到第二个进程**。请确认你接受这一能力边界（换来的是约 60 行零依赖的 provider，与一个常驻成本为零的默认状态）。
+4. **§6 Step 6 的两个操作要点**——尤其是"插件放进 `extra-resource` 后，即使 provider 是 `local` 也会触发冲突校验"。这一点若不提前知道，会浪费很多时间在"我明明没启用 Nacos 为什么启动失败"上。
 
 ---
 
@@ -549,10 +528,10 @@ docker run -d --name sfc-nacos -p 8848:8848 -p 9848:9848 -e MODE=standalone naco
 | 学习点 | 在哪个 Step 被逼出来 |
 |---|---|
 | **类加载器与依赖隔离** | Step 6：parent-first 委派 + `checkLibDependence()` 硬校验，必须手工设计 `exclusions` |
-| **SPI 抽象设计** | Step 1 + §4：自己定义契约而非用框架给定接口；让两个能力不对等的 provider 共同实现 |
-| **契约保真度 vs 复用存量** | Step 3 + 决策 5：包装 `ClusterService` 可以让代码编译通过，却会让 SPI 参数沦为摆设——"接口是假的"的典型样本 |
-| **Nacos 服务模型** | Step 5~7：namespace / group / serviceName / instance / ephemeral / metadata；并与自研 provider 的 **5s 内部续约 + 10s TTL** 做对照 |
-| **两套注册表的共存决策** | Step 3：`sfc:cluster:*`（同构节点、RPC / 任务）vs `sfc:cloud:*`（异构服务发现），需明确职责边界而非简单替换 |
-| **TTL 与二级索引的一致性** | 决策 5：Set 成员不随键的 TTL 过期而消失，必须惰性清理——自建注册表的第一个真实问题 |
+| **SPI 抽象设计** | Step 1 + §4：自己定义契约而非用框架给定接口；契约的价值是**依赖隔离**（core 不依赖 `nacos-client`），而非 provider 互换 |
+| **契约保真度 vs 复用存量** | Step 3 + 决策 5：包装 `ClusterService` 可以让代码编译通过，却会让 SPI 参数沦为摆设——"接口是假的"的典型样本。简化成内存实现后，这条底线依然要守 |
+| **Nacos 服务模型** | Step 5~7：namespace / group / serviceName / instance / ephemeral / metadata |
+| **何时"不"引入注册中心** | 决策 5：未启用微服务模式时不引入注册中心——把"能力边界"识别成"职责边界" |
+| **缓存型注册表的一致性**（源码研读项，非本档位实现） | 教材：`ClusterServiceImpl` + `ClusterHoldSchedule`——TTL 键、5s 续约、无二级索引；以及"Set 成员不随键的 TTL 过期而消失"这一经典陷阱。原 `cache` 方案曾以它为实现目标，现已改为源码研读 |
 | **契约与实现分离** | §5 决策 3：契约层只放抽象概念，实现相关配置留在实现方 |
 | **存量系统演进的取舍** | 全程：每一步都在"复用既有机制"与"引入新机制"之间做选择 |

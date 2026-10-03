@@ -1,7 +1,7 @@
 # 微服务改造推进路线图
 
 > **性质**：有序执行清单 + 排序理由。细节见各阶段对应的设计文档。
-> **配套**：[档位 1 设计](microservice-phase1-design.md) · [依赖冲突调试手册](microservice-nacos-dependency-debugging.md) · [档位 3 设计](microservice-phase3-frontend-integration.md)
+> **配套**：[档位 1 设计](microservice-phase1-design.md) · [依赖冲突调试手册](microservice-nacos-dependency-debugging.md) · [档位 3 设计](microservice-phase3-frontend-integration.md) · [阶段 2 provider 修订说明](microservice-stage2-provider-revision-note.md)
 > **创建日期**：2026-02-12
 
 ---
@@ -36,12 +36,12 @@
 | # | 问题 | 说明 |
 |---|---|---|
 | 1 | **依赖方向反了** | `sfc-ext-nacos` 要实现 `sfc-cloud-api` 里的 `ServiceRegistry` SPI。**SPI 必须先存在**，否则插件无从实现 |
-| 2 | **一上来就撞最硬的骨头** | Nacos 插件是**唯一的高风险步骤**（依赖冲突）。放第一步意味着：还没有管理端 API 可验证"发现"是否成功、Nacos 服务端可能还没起、没有自研 provider 作为对照组——报错时无法区分"是我的问题"还是"是依赖的问题" |
+| 2 | **一上来就撞最硬的骨头** | Nacos 插件是**唯一的高风险步骤**（依赖冲突）。放第一步意味着：还没有管理端 API、接线与身份解析都没验证过、Nacos 服务端可能还没起——报错时无法区分"是我的接线问题"还是"是依赖的问题" |
 
 **修正后的核心顺序**：
 
 ```
-契约层 → 自研 provider（可验证的对照组） → Nacos 插件 → 微服务接入
+契约层 → 进程内 provider（接线与身份解析已验证） → Nacos 插件 → 微服务接入
 ```
 
 **关键收益**：等做到 Nacos 插件时，除了"Nacos 依赖"这一个变量，**其他全都是已验证过的**。这时任何报错都指向依赖冲突——排查面收敛到 1。
@@ -54,7 +54,7 @@
 |---|---|---|---|---|---|
 | 0 | 环境准备（Nacos 容器） | 低 | 小 | — | |
 | 1 | 契约层 `sfc-cloud-api` | **无** | 小 | — | |
-| 2 | 自研 provider 闭环（独立实现，基于 `CacheService`） | **无** | 中 | 阶段 1 | 管理端可见自身节点 + 手工塞入的第二服务 |
+| 2 | 进程内 provider 闭环（纯内存，不依赖任何既有组件） | **无** | 小 | 阶段 1 | 管理端可见自身节点 |
 | 3 | **Nacos 适配插件** | ⚠️ **高** | 中 | 阶段 1、2、0 | |
 | 4 | demo 微服务双向注册 | 低 | 小 | 阶段 3 | 🏁 **档位 1 完成** |
 | 5 | 内部服务令牌（共享设施） | 中 | 中 | 阶段 4 | |
@@ -92,7 +92,7 @@
 
 - [x] **1.1** 新建 `sfc-cloud-api` 模块：`pom.xml` + 2 个 POJO（`ServiceInstance` / `ServiceDefinition`）+ 2 个 SPI（`ServiceRegistry` / `ServiceDiscovery`）
 - [x] **1.2** root `pom.xml` 的 `<modules>` 注册新模块
-- [ ] **1.3** `sfc-api` 的 `SysProperties.Service` 新增 `registryProvider`、`serviceName`、`registryGroup`、`advertiseAddress`；`CacheKeyPrefixes` 新增 `CLOUD = "sfc:cloud:"`（阶段 2 的自研 provider 需要独立键空间，避免与 `sfc:cluster:*` 混淆）
+- [ ] **1.3** `sfc-api` 的 `SysProperties.Service` 新增 `registryProvider`、`serviceName`、`registryGroup`、`advertiseAddress`
 - [x] **1.4** 编译验证：`mvn -pl sfc-cloud-api -am install`
 
 **为什么排第一**：它是后续所有实现的前置。**纯新增，不碰任何现有代码路径，零风险，且不需要 Nacos。**
@@ -103,49 +103,35 @@
 
 ---
 
-## 阶段 2：自研 provider 闭环
+## 阶段 2：进程内 provider 闭环
 
 - [ ] **2.1** `sfc-core` 引入 `sfc-cloud-api` 依赖（版本用 `${cloud.version}`）
 - [ ] **2.2** `ServiceIdentityResolver` —— 解析本机对外地址与端口（`advertise-address` 配置优先，自动解析兜底）
-- [ ] **2.3** `CacheServiceRegistry` —— **完全独立实现**：以 `sfc:cloud:instance:{group}:{serviceName}:{instanceId}` 为键写入 `CacheService`，维护两级 Set 索引，provider **内部**自持续约调度，`deregister()` 真实删除
-- [ ] **2.4** `CacheServiceDiscovery` —— **完全独立实现**：读 Set 索引按服务名查询，**天然支持多服务名**（`listServiceNames()` 一次 `sMembers`，无 `scanKeys`），含死成员惰性清理
-- [ ] **2.5** `ServiceRegistryInitializer` —— 监听 `ApplicationReadyEvent` 注册（web 容器已启动、端口已确定）
-- [ ] **2.6** `GET /api/admin/sys/service/list` —— `controller/admin/` 包，`PREFIX = "/api/admin/sys/service"`，类级 `@RolesAllowed({"ADMIN"})`，参数用 `@RequestParam`
-- [ ] **2.7** 三个配置文件同步 `sys.service.registry-*`（**默认 `registry-provider: cache`**）：`application-develop.yml`、`application-product.yml`、`pre-release/config.yml`
-- [ ] **2.8** 启动验证：**现有功能零回归** + 管理端 API 返回自身节点 + 手工塞入第二服务名后可见两个服务
+- [ ] **2.3** `LocalServiceRegistry` —— **单类**实现两个 SPI：一个自持 `ConcurrentHashMap`（键 `{group}:{serviceName}`），`register()` 参数真实入库、`deregister()` 只删自己；**不注入任何既有组件**（无 `CacheService` / `MQService` / `ClusterService`），无 TTL、无续约、无索引
+- [ ] **2.4** `ServiceRegistryInitializer` —— 监听 `ApplicationReadyEvent` 注册（web 容器已启动、端口已确定）
+- [ ] **2.5** `GET /api/admin/sys/service/list` —— `controller/admin/` 包，`PREFIX = "/api/admin/sys/service"`，类级 `@RolesAllowed({"ADMIN"})`，参数用 `@RequestParam`
+- [ ] **2.6** 三个配置文件同步 `sys.service.registry-*`（**默认 `registry-provider: local`**）：`application-develop.yml`、`application-product.yml`、`pre-release/config.yml`
+- [ ] **2.7** 启动验证：**现有功能零回归** + 管理端 API 返回自身节点（含解析出的 host / port）
 
 **为什么排第二**：
 
-1. **建立可验证的"发现"能力**——后续 Nacos 插件要用同一套 API 验证，形成**对照组**
-2. **不引入任何新依赖**——只用项目已有的 `CacheService`
-3. 此时若出问题，**必然是自己的代码**，与外部依赖无关
+1. **给 standalone 一个合法 provider**——否则 `registry-provider: nacos` 而未装插件时没有任何 Bean
+2. **不引入任何新依赖，也不依赖任何既有组件**；此时若出问题，**必然是自己的代码**
+3. **提前验证接线、身份解析与消费者注入路径**，使阶段 3 只需面对"依赖冲突"这一个新变量
 
-**为什么从"包装 `ClusterService`"改为"完全独立新增"**（实施前核对源码后的修正）：
+**核心规则**：
 
-初版方案是包装 `ClusterService`，但源码核对发现它有**三个无法兑现契约的缺口**：
+> **未使用 Nacos ⇒ 未启用微服务模式 ⇒ 完整单体 / 集群状态。** 服务注册关系只在进程内维护，不考虑跨进程：无 TTL、无续约、无死实例清理——这些都是 **Nacos 存在的意义**，不是内存实现的缺陷。
 
-| # | 缺口 | 源码依据 |
-|---|---|---|
-| 1 | `register()` 的实例参数**只能被静默忽略** | `registerSelf()` 内部调 `getSelf()` 自行解析身份，不接受外部传入的地址 |
-| 2 | `deregister()` **无法实现** | `ClusterService` 接口没有注销方法；缓存键依赖 `private final selfId`，外部拿不到 |
-| 3 | **服务名概念根本不存在** | 键为 `sfc:cluster:{selfId}`，**结构里没有服务名的位置** |
+**取舍记录（2026-10-03 二次修订）**：原方案是基于 `CacheService` 的独立实现（两级 Set 索引 + 5s 续约 + 10s TTL + 真实注销），现改为**纯内存、不依赖任何既有组件**。完整理由与失效的旧论据见[修订说明](microservice-stage2-provider-revision-note.md)。
 
-第 3 条是决定性的：**服务名不是"要不要支持"的开关，而是键结构里有没有它的位置**。不改 `ClusterService` 的键结构，`listInstances(svc)` / `listServiceNames()` 就永远说不出真话。详见[档位 1 设计 §5 决策 5](microservice-phase1-design.md)。
+`ClusterService` **原样保留**，继续服务集群内 RPC（`ClusterService.request()`）与异步任务分发（`ClusterScheduleJobDispatch`）——两者**职责分离，不合并**。
 
-**两套注册表并存（必须记住的代价）**：
+> **如实记录的能力边界**：`local` 无主动健康检查、无命名空间（内存 Map 即一个命名空间）、无变更通知、**无跨进程可见性**（"服务列表"只是进程内视图，集群节点仍看 `GET /api/cluster/listNodes`）。
 
-`ClusterService` **原样保留**，继续服务集群内 RPC（`ClusterService.request()`）与异步任务分发（`ClusterScheduleJobDispatch`）。因此 Redis 中会同时存在两套结构：
+**⚠️ 已废弃的验证项**：~~手工向 `sfc:cloud:*` 塞入第二服务名 → 见两个服务~~ —— 进程内实现看不到第二个进程；SPI 的多服务名路径由阶段 4 首次真正走通。
 
-| 键空间 | 归属 | 服务对象 |
-|---|---|---|
-| `sfc:cluster:*` | `ClusterService`（**不动**） | 集群内**同构**节点：RPC、异步任务分发 |
-| `sfc:cloud:*` | 自研 provider（新增） | 服务发现：**异构**服务 |
-
-同一个 `sfc-core` 节点会在两处各注册一遍。⚠️ **不要把两者"统一"**——两边的心跳、TTL、用途都不同，那会打断集群 RPC 与异步任务。
-
-> **如实记录的能力边界**：自研 provider 的跨进程可见性依赖 `CacheService` 的后端（Redis）；**无主动健康检查**（靠 TTL 被动过期，实例崩溃到从列表消失之间最长有一个 TTL 窗口）；**无命名空间**（当前 `CacheService` 后端即一个命名空间）；**无变更通知**（SPI 是纯拉模型）。这些正是 Nacos 存在的意义——而不是自研 provider 的实现缺陷。
-
-**验证标准**：`registry-provider: cache` 下启动正常 + 管理端 API 可见自身节点 + 手工塞入第二服务名后可见两个服务。
+**验证标准**：`registry-provider: local` 下启动正常 + 管理端 API 可见自身节点 + `server.port: 0` 时显示真实端口。
 
 ---
 
@@ -164,7 +150,7 @@
 
 **为什么排第三**：
 
-1. **前置全部就绪**——SPI 已存在、自研 `cache` provider 已可作对照、Nacos 服务端已起
+1. **前置全部就绪**——SPI 已存在、`local` provider 的接线与身份解析已跑通、Nacos 服务端已起
 2. 因此排查面**收敛到依赖冲突这一个变量**
 3. 避免了"代码问题 / 配置问题 / 依赖问题"三者混淆
 
@@ -305,10 +291,10 @@
 
 | # | 错误 | 后果 | 正确做法 |
 |---|---|---|---|
-| 1 | 把 Nacos 插件放第一步 | 同时面对"代码 / 配置 / 依赖"三个未知，排查量乘算 | 先在阶段 2 建立自研 `cache` 对照组 |
+| 1 | 把 Nacos 插件放第一步 | 同时面对"代码 / 配置 / 依赖"三个未知，排查量乘算 | 先在阶段 2 把接线、身份解析与消费者注入路径验证掉（`registry-provider: local`） |
 | 2 | 依赖冲突调试期间把插件留在 `extra-resource` | 误以为"没启用 Nacos 就不会受影响" | 调通前不加入；且记得改 `<exclusions>` 后重新 `mvn compile` |
 | 3 | 代理层跳过 UID / PATH 校验 | **越权访问他人网盘数据** | 信任边界收敛到内部令牌（阶段 8.5） |
-| 4 | 把自研 provider 当成 `ClusterService` 的替代品，或试图"统一"两套注册表 | **集群内 RPC 与异步任务分发失效**（`ClusterService.request()`、`ClusterScheduleJobDispatch` 仍依赖 `sfc:cluster:*`） | 职责分离而非替换：`sfc:cluster:*` = 集群内同构节点（RPC / 任务）；`sfc:cloud:*` = 异构服务发现 |
+| 4 | 把 `local` provider 当成 `ClusterService` 的替代品，或试图"统一"两者 | **集群内 RPC 与异步任务分发失效**（`ClusterService.request()`、`ClusterScheduleJobDispatch` 仍依赖 `sfc:cluster:*`） | 职责分离而非替换：`ClusterService` 服务集群内**同构**节点（RPC / 任务），`local` provider 只服务进程内 SPI 调用 |
 
 ---
 
@@ -318,7 +304,7 @@
 |---|---|---|---|
 | 0 | — | 小 | 环境操作 |
 | 1 | 小 | **无** | 纯新增 |
-| 2 | 中 | 小 | 独立实现：键结构 + 两级 Set 索引 + provider 内部续约 |
+| 2 | 小 | 无 | 纯内存 Map + 身份解析 + 管理端 API，零既有依赖 |
 | 3 | 中 | ⚠️ **可能最大** | 依赖冲突迭代，**预留充足时间** |
 | 4 | 小 | 小 | 独立小工程 |
 | 5 | 中 | 中 | 安全设施 |

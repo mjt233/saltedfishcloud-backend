@@ -263,6 +263,8 @@ GET /api/ext/manifest        @AllowAnonymous
 
 > Nacos 实例的 `metadata` 是**独立于注册信息的自由 KV 字段**，正是为这类"自描述"设计的。
 
+⚠️ **未启用微服务模式（未用 Nacos）时清单必然为空**：`local` provider 只有进程内视图，注册的只有 `sfc-core` 自身，而 core 不声明任何 `sfc.frontend.*`。这是刻意的，不是缺陷。
+
 `ServiceExtensionRegistry` 的职责：遍历 `ServiceDiscovery.listServiceNames()` → 取每个服务的实例 metadata → 筛出声明了 `sfc.frontend.*` 的 → 组装成清单。
 
 **多实例时取任一健康实例的 metadata**（要求同一服务的所有实例 metadata 一致，这是部署约定）。
@@ -510,7 +512,7 @@ public class ServiceProxyController {
 ## 12. 分步实施与验证
 
 **Step 1（后端，可独立验证）**：`ExtensionInfo` DTO + `ServiceExtensionRegistry` + `GET /api/ext/manifest`
-- 验证：`registry-provider: cache` 下返回空数组 `[]`（不破坏现状——自研 provider 只会返回 `sfc-core` 自身，而 core 没有扩展清单）
+- 验证：`registry-provider: local` 下返回空数组 `[]`（不破坏现状——`local` provider 只会返回 `sfc-core` 自身，而 core 没有扩展清单）
 
 **Step 2（后端）**：`ServiceProxyController` 静态资源代理 + Nacos metadata 解析
 - 验证：起一个只提供 `GET /static/hello.js` 的假微服务，确认经代理可获取

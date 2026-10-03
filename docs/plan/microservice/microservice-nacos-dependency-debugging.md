@@ -291,7 +291,7 @@ $pluginJars | Where-Object { -not $hostMap.ContainsKey($_.Name) } |
 **原因**：插件一旦被加载，其 `plugin-lib/` 依赖就**无条件**进入两级校验流程，
 **与 `sys.service.registry-provider` 的取值无关**。
 
-即：即使 `registry-provider` 仍是 `cache`（Nacos 完全没启用），
+即：即使 `registry-provider` 仍是 `local`（Nacos 完全没启用），
 只要 `plugin.extra-resource` 里出现了 `sfc-ext-nacos`，类级冲突照样让应用起不来。
 
 > 如果你不知道这一点，会陷入"我明明没启用 Nacos，为什么启动失败"的困惑。
@@ -299,7 +299,7 @@ $pluginJars | Where-Object { -not $hostMap.ContainsKey($_.Name) } |
 **正确的迭代顺序**：
 
 ```
-1. 先让项目在 registry-provider: cache 下正常运行     ← Step 1~4 的成果，零风险
+1. 先让项目在 registry-provider: local 下正常运行     ← Step 1~4 的成果，零风险
 2. mvn -pl sfc-ext/sfc-ext-nacos -am compile          ← 生成 plugin-lib
 3. 跑 §4.3 脚本，为「版本冲突」条目补 <exclusion>
 4. 把 sfc-ext-nacos 加入 plugin.extra-resource，启动
@@ -332,7 +332,7 @@ mvn -q -pl sfc-ext/sfc-ext-nacos -am compile
 不要以"编译通过"或"进程起来了"作为完成标准。逐条确认：
 
 - [ ] `mvn -pl sfc-ext/sfc-ext-nacos -am compile` 成功，`plugin-lib/` 中存在预期 jar
-- [ ] 咸鱼云以 `registry-provider: cache` 启动**正常**（证明插件加入后未破坏既有功能）
+- [ ] 咸鱼云以 `registry-provider: local` 启动**正常**（证明插件加入后未破坏既有功能）
 - [ ] 日志中**无** `存在以下冲突class`、**无** `以下插件依赖无法被加载`
 - [ ] 日志中每条「依赖包版本出现冲突」**都已评估**，并记录"为什么可以退回宿主版本"
 - [ ] 切换到 `registry-provider: nacos` 后启动成功
