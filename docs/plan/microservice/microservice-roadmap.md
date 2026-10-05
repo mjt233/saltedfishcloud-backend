@@ -3,6 +3,7 @@
 > **性质**：有序执行清单 + 排序理由。细节见各阶段对应的设计文档。
 > **配套**：[档位 1 设计](microservice-phase1-design.md) · [依赖冲突调试手册](microservice-nacos-dependency-debugging.md) · [档位 3 设计](microservice-phase3-frontend-integration.md) · [阶段 2 provider 修订说明](microservice-stage2-provider-revision-note.md)
 > **创建日期**：2026-02-12
+> **修订日期**：2026-10-05（**阶段 4 方案调整**：由"仓库外独立 git 仓库 + 裸 `nacos-client`"改为"仓库内 `microservices/` 子目录 + Spring Cloud Alibaba 声明式注册"，见阶段 4 的"修订说明"与"版本矩阵"）
 
 ---
 
@@ -56,7 +57,7 @@
 | 1 | 契约层 `sfc-cloud-api` | **无** | 小 | — | |
 | 2 | 进程内 provider 闭环（纯内存，不依赖任何既有组件） | **无** | 小 | 阶段 1 | 管理端可见自身节点 |
 | 3 | **Nacos 适配插件** | ⚠️ **高** | 中 | 阶段 1、2、0 | |
-| 4 | demo 微服务双向注册 | 低 | 小 | 阶段 3 | 🏁 **档位 1 完成** |
+| 4 | demo 微服务双向注册（SCA 声明式） | 低 | 小 | 阶段 3 | 🏁 **档位 1 完成** |
 | 5 | 内部服务令牌（共享设施） | 中 | 中 | 阶段 4 | |
 | 6 | **档位 2**：远程核心能力 | 中高 | **大** | 阶段 5 | 🏁 微服务可读写网盘 |
 | 7 | **档位 3**：前端发现 + 资源代理 | 中 | 中 | 阶段 4 | 🏁 前端能加载微服务扩展 |
@@ -229,15 +230,77 @@
 
 ## 阶段 4：demo 微服务双向注册 🏁 档位 1 完成
 
-- [ ] **4.1** 新建**独立 git 仓库**的 demo 微服务工程（如 `C:\Users\xiaotao\code\sfc-demo-service`），**仅依赖 `nacos-client` + `spring-boot-starter-web`，不依赖咸鱼云任何模块**
-- [ ] **4.2** 配置服务名、分组、Nacos 地址，启动
-- [ ] **4.3** 验证 Nacos 控制台出现**两个**实例
-- [ ] **4.4** 验证 `GET /api/admin/sys/service/list` 返回两个服务
-- [ ] **4.5** 停掉 demo 服务，等待心跳超时后确认实例从列表消失
+> **方案修订（2026-10-05）**：本节原方案是「**独立 git 仓库** + 仅依赖**裸 `nacos-client`**」，现按实际讨论改为
+> 「**仓库内 `microservices/` 子目录** + **Spring Cloud Alibaba 声明式注册**」，并以该方案为准。
+> 两处改动的理由见下方"修订说明"，本次实际执行的版本矩阵见"版本矩阵"。
+
+- [x] **4.1** 新建 demo 微服务工程 `microservices/sfc-demo-service`：**独立 POM 边界**（不继承 root pom、不加入 root `<modules>`）、**零咸鱼云依赖**
+- [x] **4.2** `application.yml` 配置服务名 `sfc-demo-service`、分组 `SFC`、命名空间 public（空串）、Nacos 地址 `127.0.0.1:8848`、端口 `8090`，启动
+- [x] **4.3** 验证 Nacos 中出现**两个**实例（`sfc-core` 与 `sfc-demo-service`）
+- [x] **4.4** 验证 `GET /api/admin/sys/service/list` 返回两个服务
+- [x] **4.5** 停掉 demo 服务，确认实例从列表消失（**实测 ≤5s**，无需等心跳超时，见实施记录）
+
+> **实施记录（2026-10-05）：4.1~4.5 全部完成并实测通过。** 本阶段唯一的新变量是"**第二个进程 / 第二个服务名**"，
+> 排查面收敛到 1，实际也**没有出现任何意外**——与阶段 3 的三轮启动失败形成鲜明对照，这正是"每步只引入一个新变量"要换来的结果。
+>
+> **一、落地细节**
+> 1. **工程位置**：`microservices/sfc-demo-service`（本仓库内）。pom 里 **`<relativePath/>` 必须显式留空**——工程位于仓库内，
+>    Maven 默认会按 `../pom.xml` 向上找到**咸鱼云的 root pom**，这是"把工程放进仓库"新引入的一个坑。
+> 2. **依赖规模对照**：本工程解析出 **62 个 jar**（`spring-boot 4.0.8` / `spring-cloud-commons 5.0.0` / `nacos-client 3.1.1`）；
+>    对照 `sfc-api` 的 **208 个**、`sfc-cloud-api` 的 **1 个**。
+>    **零咸鱼云依赖**——`mvn dependency:list | Select-String 'com.xiaotao|sfc-*'` 命中 **0 条**。这条即"新微服务可独立开发"的硬证据。
+> 3. **注册完全声明式**：工程内**没有任何一行注册代码**，日志 `nacos registry, SFC sfc-demo-service 192.168.5.105:8090 register finished` 由 starter 打出。
+> 4. **环境坑（值得记下）**：Maven 首次下载新依赖需要写 `~/.m2/repository`（在**工作区之外**），受限于文件策略会被拒；
+>    完整构建用时 2 分 41 秒（依赖走本机 Nexus 镜像 `nexus.xiaotao2333.top:344`）。
+>
+> **二、验证证据**
+> - **4.3** Nacos 服务端 `GET /nacos/v3/client/ns/instance/list` 同时返回两个实例：
+>   `XIAOTAO-AMD-YES#8087#DEFAULT#SFC@@sfc-core` 与 `192.168.5.105#8090##SFC@@sfc-demo-service`，两者均 `healthy=true`、`ephemeral=true`。
+>   **两边地址形态不同是预期的**：core 用主机名（`ServiceIdentityResolver` 的行为），SCA 用网卡 IP。
+> - **4.4** `GET /api/admin/sys/service/list` 返回**两个服务**——本档位**首次真正走通 SPI 的多服务名路径**
+>   （`listServiceNames()` + `listInstances()`），并证明**手写的 `getAllInstances` 查询能看见 SCA 声明式注册的实例**（双向互认成立）。
+> - **4.5** 强制结束 demo 进程（模拟崩溃、**不做优雅注销**）后，实例在 **≤5s 内**从服务端消失，管理端随即只剩 `sfc-core` 一个服务。
+>   ⚠️ **比预期快得多**：临时实例走客户端 gRPC 长连接，**连接断开本身就是下线信号**，不必等 15s 心跳超时 / 30s `ipDeleteTimeout`。
+>   本节标题里"等待心跳超时"的表述据此修正。
+>
+> **三、一处留给阶段 7 的对照发现**
+> 两边的实例 metadata **形态不同**：core 是**空 `{}`**（`ServiceRegistryInitializer` 传 `metadata = null`）；
+> SCA 注册的实例自带 `preserved.register.source: SPRING_CLOUD` 与 `IPv6: [...]`。
+> 因此阶段 7 从 metadata 聚合扩展清单时，**不能假设 metadata 里只有自己写的键**，必须按 `sfc.` 前缀过滤。
 
 **为什么在这里**：这是档位 1 的收口，也是**第一个自然停下来喘息的检查点**。
 
-- [ ] 🚩 **暂停检查点 1**：此时你已完整走通"服务注册 → 服务发现 → 服务治理基础设施"，并且**验证了原问题的核心答案**——"后续新微服务单独开发可以吗"→ 可以，demo 服务一行咸鱼云代码都没引。
+### 修订说明：与原方案的两处偏差
+
+| # | 原方案                                             | 现方案                                                                            | 理由                                                                                                                   |
+|---|-------------------------------------------------|--------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| 1 | 本仓库工作区外的**独立 git 仓库**                           | 本仓库内 `microservices/sfc-demo-service`                                          | 微服务工程统一在仓库内维护，便于与本套文档同步演进。**"独立开发"的验证意图不变**，改由**独立的 POM 边界**证明：不继承 root pom、不进 root `<modules>`、零咸鱼云依赖               |
+| 2 | 仅依赖裸 `nacos-client` + `spring-boot-starter-web` | Spring Cloud Alibaba **声明式注册**（`spring-cloud-starter-alibaba-nacos-discovery`） | 覆盖"框架托管"这条**主流接入路径**，并与咸鱼云侧"手写 SPI provider + 裸 `nacos-client`"形成**对照**：同一个注册中心、两种接入方式，**双向互认**即同时证明了 SPI 抽象与协议实现都正确 |
+
+> **第 2 条的顺带收益**：原方案下 demo 与 core 用的是同一个客户端库，验证的是"配置对不对"；
+> 现方案下两边是**两套不同的实现**（SCA 托管 vs 手写），能发现的问题面更大——例如 group 大小写、心跳续约方式、实例元数据形态的差异。
+
+### 版本矩阵（2026-10-05 实测 · Maven Central 元数据 + SCA 官方 Release Notes）
+
+| 组件 | 取值 | 依据 |
+|---|---|---|
+| Spring Cloud Alibaba | **2025.1.0.0** | Maven Central 上的 `latest`（2026-02-06 发布） |
+| Spring Cloud | **2025.1.0** | SCA 官方矩阵声明的配对版本（starter 实测依赖 `spring-cloud-commons:5.0.0`） |
+| Spring Boot（**demo 自用**） | **4.0.8** | SCA 2025.1.0.0 的官方矩阵是 **Boot 4.0.x** |
+| nacos-client | **3.1.1**（由 SCA 管理，不覆盖） | starter 的 pom 实测；3.x 客户端与服务端 3.2.4 同代兼容 |
+
+⚠️ **一个必须知道的错位**：咸鱼云宿主用的是 **Spring Boot 4.1.0**，**不在 SCA 的支持矩阵内**。
+demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵内的 Boot 4.0.x——这本身就是"微服务可以独立演进"的一个具体体现。
+
+### 必须遵守的收敛约定（对应评审报告 🟡-1）
+
+> **`group` 与 `namespace` 必须在所有参与者之间保持一致**：本阶段取 `group: SFC`、命名空间 public（**它的 ID 是空串**）。
+
+原因是**发现侧只能用它自己的配置去查询**（`NacosServiceDiscovery.configuredGroup()` 读 `sys.service.registry-group`），
+而 **SCA 的注册侧用 `spring.cloud.nacos.discovery.group`**。两侧取值不一致时，现象是"**注册成功但互相看不见**"
+——先查 Nacos 服务端 API、再查 core 的管理端 API，就能把"没注册上"与"查不到"区分开（本阶段的验证顺序即按此设计）。
+
+- [x] 🚩 **暂停检查点 1（2026-10-05 达成）**：此时你已完整走通"服务注册 → 服务发现 → 服务治理基础设施"，并且**验证了原问题的核心答案**——"后续新微服务单独开发可以吗"→ 可以，demo 服务一行咸鱼云代码都没引（实测**零咸鱼云依赖**、独立 POM 边界、独立 Spring Boot 版本）。
 
 ---
 
@@ -338,7 +401,7 @@
 
 | 检查点 | 完成后你掌握了什么 | 对应阶段 |
 |---|---|---|
-| 🚩 **1** | 服务注册发现全链路、SPI 抽象设计、类加载器与依赖冲突、**新微服务完全独立开发** | 阶段 4 |
+| 🚩 **1** ✅ 2026-10-05 | 服务注册发现全链路、SPI 抽象设计、类加载器与依赖冲突、**新微服务完全独立开发** | 阶段 4 |
 | 🚩 **2** | 跨进程调用存量能力、内部 API 契约设计、SDK 代理模式、**流式语义的代价** | 阶段 6 |
 | 🚩 **3** | 网关模式、信任边界与鉴权传递、控制面/数据面分离、前端模块化扩展 | 阶段 9 |
 
@@ -354,6 +417,7 @@
 | 2 | 依赖冲突调试期间把插件留在 `extra-resource` | 误以为"没启用 Nacos 就不会受影响" | 调通前不加入；且记得改 `<exclusions>` 后重新 `mvn compile` |
 | 3 | 代理层跳过 UID / PATH 校验 | **越权访问他人网盘数据** | 信任边界收敛到内部令牌（阶段 8.5） |
 | 4 | 把 `local` provider 当成 `ClusterService` 的替代品，或试图"统一"两者 | **集群内 RPC 与异步任务分发失效**（`ClusterService.request()`、`ClusterScheduleJobDispatch` 仍依赖 `sfc:cluster:*`） | 职责分离而非替换：`ClusterService` 服务集群内**同构**节点（RPC / 任务），`local` provider 只服务进程内 SPI 调用 |
+| 5 | 只顾注册侧配置，忘了**发现侧只能用它自己的配置查询** | "注册成功但互相看不见"，会误判成插件或注册中心的 bug | 所有参与者收敛到同一 `group` / `namespace`（本档位：`SFC` / public）；排查顺序**先 Nacos 服务端、再 core 管理端** |
 
 ---
 

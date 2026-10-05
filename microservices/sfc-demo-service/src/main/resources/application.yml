@@ -1,0 +1,24 @@
+# demo 微服务配置（阶段 4：双向注册验证）
+#
+# 全部注册参数都走 Spring Cloud Alibaba 的声明式配置：本工程没有任何一行手写注册代码。
+server:
+  # 避开咸鱼云宿主的 8087、Nacos 控制台的 8080 与控制台 API 的 8848/9848
+  port: 8090
+
+spring:
+  application:
+    # 注册到 Nacos 的服务名。咸鱼云侧是 sfc-core，本服务是 sfc-demo-service
+    name: sfc-demo-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        # ⚠️ 收敛约定：必须与咸鱼云侧 sys.service.registry-group 一致（同为 SFC）。
+        # 咸鱼云的发现侧只按它自己的配置查询（NacosServiceDiscovery.configuredGroup()），
+        # 两侧不一致的现象是"注册成功但互相看不见"。
+        group: SFC
+        # 命名空间 public 的 ID 是【空串】，不要写 public
+        namespace: ""
+        # 临时实例：由客户端内置心跳续约，也是"停服后实例自动消失"（4.5）的前提。
+        # 与咸鱼云侧 NacosServiceRegistry 的 ephemeral=true 对齐
+        ephemeral: true

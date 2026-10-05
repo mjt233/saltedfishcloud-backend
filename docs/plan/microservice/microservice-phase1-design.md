@@ -62,16 +62,21 @@
       ┌────────────▼───────────┐  ┌───▼──────────────────┐
       │  sfc-core              │  │  sfc-demo-service    │
       │  Spring Boot 4.1.0 单体 │  │  独立 Spring Boot 工程 │
-      │                        │  │  （仓库外，独立 git）   │
+      │                        │  │  （仓库内 microservices）│
       │  ServiceRegistry SPI   │  │                      │
-      │   ├ LocalXxx (进程内)   │  │  仅依赖 nacos-client   │
+      │   ├ LocalXxx (进程内)   │  │  SCA 声明式注册        │
       │   └ NacosXxx (插件)     │  │  不依赖咸鱼云任何模块   │
       └────────────────────────┘  └──────────────────────┘
 ```
 
-**关键设计意图**：`sfc-demo-service` **不依赖咸鱼云任何模块**，仅依赖 `nacos-client`。
+**关键设计意图**：`sfc-demo-service` **不依赖咸鱼云任何模块**，仅依赖 Spring Cloud Alibaba 的 nacos-discovery starter（其内部使用 `nacos-client`）。
 
 这直接回答最初的问题——**"后续的其他新的微服务项目单独开发可以吗"**——档位 1 会用实际行动验证：**可以**。
+
+> **2026-10-05 方案调整**：demo 的位置由"仓库外的独立 git 仓库"改为"本仓库内 `microservices/sfc-demo-service`"，
+> 接入方式由"裸 `nacos-client`"改为"**SCA 声明式注册**"。两处改动的理由、版本矩阵与 group/namespace 收敛约定
+> 见[路线图阶段 4](microservice-roadmap.md)。**"独立开发"的验证意图不变**，改由独立的 POM 边界证明
+> （不继承 root pom、不进 root `<modules>`、零咸鱼云依赖）。
 
 ---
 
@@ -496,18 +501,27 @@ docker run -d --name sfc-nacos -p 8080:8080 -p 8848:8848 -p 9848:9848 -e MODE=st
 - [ ] 日志中的「依赖包版本出现冲突」警告**逐条评估过**——每条都确认"退回宿主版本后 API 兼容"。这条是警告而非失败，但却是运行期崩溃的预警信号
 - [ ] 在 Nacos 中能看到并查询到 `sfc-core` 实例（证明 nacos-client 在运行期确实工作，而非只是启动没报错）
 
-### Step 7：独立 demo 微服务
+### Step 7：独立 demo 微服务（**2026-10-05 方案调整**）
 
 | 位置 | 动作 |
 |---|---|
-| `C:\Users\xiaotao\code\sfc-demo-service` | 新建**独立 git 仓库**的 Spring Boot 工程 |
+| `microservices/sfc-demo-service`（本仓库内） | 新建**独立 POM 边界**的 Spring Boot 工程：不继承 root pom、不加入 root `<modules>` |
 
-仅依赖 `nacos-client` + `spring-boot-starter-web`，**不依赖咸鱼云任何模块**。以独立仓库形态存在，真实模拟"后续新微服务单独开发"。
+依赖 **Spring Cloud Alibaba `spring-cloud-starter-alibaba-nacos-discovery`（声明式注册）** + `spring-boot-starter-webmvc`，**不依赖咸鱼云任何模块**。
+
+- **版本**：SCA `2025.1.0.0` / Spring Cloud `2025.1.0` / Spring Boot `4.0.8`。SCA 的官方矩阵是 **Boot 4.0.x**，与宿主的 4.1.0 **刻意不对齐**——微服务独立演进，本就不必跟随宿主版本。
+- **收敛约定**：`group: SFC`、命名空间 public（空串），与 `sys.service.registry-group` 一致；否则现象是"注册成功但互相看不见"。
+- **形态**：**极简探针**——注册完全由 starter 自动完成，工程内没有任何业务端点，也没有一行手写注册代码。
+
+> 原方案（仓库外独立 git 仓库 + 裸 `nacos-client`）已由 2026-10-05 的讨论取代，改动理由与替代证据见[路线图阶段 4](microservice-roadmap.md)。
 
 **验证**：
-- [ ] 启动后 Nacos 控制台出现 `sfc-demo-service` 实例
-- [ ] `GET /api/admin/sys/service/list` 返回**两个**服务
-- [ ] 停掉 demo 服务，等待心跳超时后该实例从列表消失
+- [x] 启动后 Nacos 出现 `sfc-demo-service` 实例（与 `sfc-core` 共**两个**）
+- [x] `GET /api/admin/sys/service/list` 返回**两个**服务
+- [x] 停掉 demo 服务后该实例从列表消失（**实测 ≤5s**，见下方实施记录）
+
+> **实施记录（2026-10-05）**：三项均已实测通过。完整证据（Nacos 实例报文、管理端返回、停服后消失耗时、依赖规模对照）见
+> [路线图阶段 4 实施记录](microservice-roadmap.md)。
 
 ### Step 8：编译验证（全程遵守 AGENTS.md）
 

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        独立微服务工程：刻意【不继承】咸鱼云的 root pom，也【不】被 root pom 的 <modules> 聚合。
+        理由与 sfc-cloud-api 同源——咸鱼云 root pom 在 <dependencies>（而非 <dependencyManagement>）中声明了
+        JPA / Security / Redis / Redisson / okhttp 等整套技术栈，任何继承它的模块都会被无条件拖入 208 个 jar。
+        微服务若继承它，"独立开发"就不再成立。
+
+        <relativePath/> 留空是必须的：本工程位于咸鱼云仓库的 microservices/ 子目录内，
+        若让 Maven 按默认的 ../pom.xml 向上找父 POM，会找到咸鱼云的 root pom（groupId/artifactId 不匹配）。
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.8</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.sfc.demo</groupId>
+    <artifactId>sfc-demo-service</artifactId>
+    <version>1.0.0</version>
+    <name>sfc-demo-service</name>
+    <description>咸鱼云微服务改造 · 档位 1 阶段 4 的独立 demo 微服务（Spring Cloud Alibaba 声明式注册）</description>
+
+    <properties>
+        <!-- 与本地 JDK 一致（咸鱼云 root pom 同样要求 Java 25） -->
+        <java.version>25</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!--
+            版本组合依据 Spring Cloud Alibaba 官方 Release Notes（2025.x 分支）：
+            SCA 2025.1.0.0 适配 Spring Boot 4.0.x + Spring Cloud 2025.1.x，内置 nacos-client 3.1.1。
+            注意：咸鱼云宿主用的是 Spring Boot 4.1.0，【不在】SCA 的支持矩阵内——
+            但本工程是独立微服务，本就不需要对宿主的 Spring Boot 版本，故此处取 SCA 矩阵内的 Boot 4.0.x。
+        -->
+        <spring-cloud.version>2025.1.0</spring-cloud.version>
+        <spring-cloud-alibaba.version>2025.1.0.0</spring-cloud-alibaba.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud 版本列车：提供 spring-cloud-commons / context 等（5.0.0） -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud Alibaba 版本管理：提供 nacos-discovery starter 及其 nacos-client 版本 -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!--
+            Nacos 声明式服务注册与发现：只要 spring.cloud.nacos.discovery.server-addr 配上，
+            starter 会在启动时自动把本实例注册到 Nacos，并在关闭时自动注销。
+            与咸鱼云侧"手写 SPI provider + 裸 nacos-client"形成对照：同一注册中心，两种接入方式。
+        -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <!--
+            Web 容器：本 demo 刻意不提供任何业务端点（极简探针），
+            Web starter 在这里的作用是提供常驻线程，使进程注册后不会立即退出。
+            Boot 4 的规范名是 spring-boot-starter-webmvc（spring-boot-starter-web 仍然存在但已属过渡名）。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 打出可执行 jar，便于以 java -jar 形态运行（本项目受支持的运行形态之一） -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
