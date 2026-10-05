@@ -114,7 +114,7 @@
 - [x] **2.4** `ServiceRegistryInitializer` —— 监听 `ApplicationReadyEvent` 注册（web 容器已启动、端口已确定）
 - [x] **2.5** `GET /api/admin/sys/service/list` —— `controller/admin/` 包，`PREFIX = "/api/admin/sys/service"`，类级 `@RolesAllowed({"ADMIN"})`，参数用 `@RequestParam`
 - [x] **2.6** 三个配置文件同步 `sys.service.registry-*`（**默认 `registry-provider: local`**）：`application-develop.yml`、`application-product.yml`、`pre-release/config.yml`
-- [ ] **2.7** 启动验证：**现有功能零回归** + 管理端 API 返回自身节点（含解析出的 host / port）
+- [X] **2.7** 启动验证：**现有功能零回归** + 管理端 API 返回自身节点（含解析出的 host / port）
 
 > **实施记录（2026-10-05）**：2.1~2.6 已落地并通过编译验证——系统 `mvn -pl sfc-core -am -DskipTests compile`（15 个模块 BUILD SUCCESS，`sfc-core` 174 个源文件）与 IDEA 检查均无新增错误/警告；**2.7 的启动验证待使用者在本地执行**（含 `server.port: 0` 真实端口与 `advertise-address` 配置优先两项预检）。
 >
