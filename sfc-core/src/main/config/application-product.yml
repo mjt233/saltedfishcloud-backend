@@ -23,6 +23,12 @@ sys:
     rpc-provider: redis
     # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。可选 nacos（需 sfc-ext-nacos 插件）
     registry-provider: local
+    # 注册到注册中心的自身服务名
+    service-name: sfc-core
+    # 注册中心分组，对应 Nacos 的 group。跨服务的互相可见依赖"所有服务注册到同一分组"这一部署约定
+    registry-group: SFC
+    # 本机对外可达地址（host 或 IP，不含端口）。多网卡 / 容器 / NAS 环境下自动解析出的地址可能不可达，此时显式指定；留空表示自动解析
+    advertise-address: ""
     local-cache:
       # 本地缓存默认过期时间（毫秒），默认 15 分钟
       default-expire-ms: 900000

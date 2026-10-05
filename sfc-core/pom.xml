@@ -91,6 +91,12 @@
             <artifactId>sfc-api</artifactId>
             <version>${api.version}</version>
         </dependency>
+        <!--  微服务契约模块（服务注册与发现 SPI）。瘦契约：自身只依赖 provided 的 lombok，不引入额外技术栈  -->
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-cloud-api</artifactId>
+            <version>${cloud.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-task-api</artifactId>

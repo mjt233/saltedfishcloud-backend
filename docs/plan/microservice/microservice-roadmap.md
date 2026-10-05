@@ -108,13 +108,23 @@
 
 ## 阶段 2：进程内 provider 闭环
 
-- [ ] **2.1** `sfc-core` 引入 `sfc-cloud-api` 依赖（版本用 `${cloud.version}`）
-- [ ] **2.2** `ServiceIdentityResolver` —— 解析本机对外地址与端口（`advertise-address` 配置优先，自动解析兜底）
-- [ ] **2.3** `LocalServiceRegistry` —— **单类**实现两个 SPI：一个自持 `ConcurrentHashMap`（键 `{group}:{serviceName}`），`register()` 参数真实入库、`deregister()` 只删自己；**不注入任何既有组件**（无 `CacheService` / `MQService` / `ClusterService`），无 TTL、无续约、无索引
-- [ ] **2.4** `ServiceRegistryInitializer` —— 监听 `ApplicationReadyEvent` 注册（web 容器已启动、端口已确定）
-- [ ] **2.5** `GET /api/admin/sys/service/list` —— `controller/admin/` 包，`PREFIX = "/api/admin/sys/service"`，类级 `@RolesAllowed({"ADMIN"})`，参数用 `@RequestParam`
-- [ ] **2.6** 三个配置文件同步 `sys.service.registry-*`（**默认 `registry-provider: local`**）：`application-develop.yml`、`application-product.yml`、`pre-release/config.yml`
+- [x] **2.1** `sfc-core` 引入 `sfc-cloud-api` 依赖（版本用 `${cloud.version}`）
+- [x] **2.2** `ServiceIdentityResolver` —— 解析本机对外地址与端口（`advertise-address` 配置优先，自动解析兜底）
+- [x] **2.3** `LocalServiceRegistry` —— **单类**实现两个 SPI：一个自持 `ConcurrentHashMap`（键 `{group}:{serviceName}`），`register()` 参数真实入库、`deregister()` 只删自己；**不注入任何既有组件**（无 `CacheService` / `MQService` / `ClusterService`），无 TTL、无续约、无索引
+- [x] **2.4** `ServiceRegistryInitializer` —— 监听 `ApplicationReadyEvent` 注册（web 容器已启动、端口已确定）
+- [x] **2.5** `GET /api/admin/sys/service/list` —— `controller/admin/` 包，`PREFIX = "/api/admin/sys/service"`，类级 `@RolesAllowed({"ADMIN"})`，参数用 `@RequestParam`
+- [x] **2.6** 三个配置文件同步 `sys.service.registry-*`（**默认 `registry-provider: local`**）：`application-develop.yml`、`application-product.yml`、`pre-release/config.yml`
 - [ ] **2.7** 启动验证：**现有功能零回归** + 管理端 API 返回自身节点（含解析出的 host / port）
+
+> **实施记录（2026-10-05）**：2.1~2.6 已落地并通过编译验证——系统 `mvn -pl sfc-core -am -DskipTests compile`（15 个模块 BUILD SUCCESS，`sfc-core` 174 个源文件）与 IDEA 检查均无新增错误/警告；**2.7 的启动验证待使用者在本地执行**（含 `server.port: 0` 真实端口与 `advertise-address` 配置优先两项预检）。
+>
+> 六处落地细节：
+> 1. **`LocalServiceRegistry` 唯一的注入项是配置类 `SysProperties`**（仅为读取 `registry-group`）："发现侧没有 group 参数"是 SPI 契约的固有属性，发现时必须从配置拼键；**未注入任何功能组件**（无 `CacheService` / `MQService`，也不包装 `ClusterService`）。注册侧取 `ServiceDefinition.group`、发现侧取配置——两者不一致时会查不到实例，与 Nacos `DEFAULT_GROUP` 错配同构，已在类 JavaDoc 中写明。
+> 2. **端口解析用 `local.server.port`**：该属性由 SpringBoot 的 `ServerPortInfoApplicationContextInitializer`（注册于 `spring-boot-web-server` 的 `spring.factories`，已解包核实）在 web 容器初始化后写入，因此 `server.port: 0` 能取到真实端口，且无需强转 web 容器类型；取不到时依次退回 `server.port` 配置、`0`。
+> 3. **fail-fast 已实现**（设计 §7 风险 4 的"可选改进"）：`ServiceRegistryInitializer` 注入 `ObjectProvider<ServiceRegistry>`，当 `registry-provider: nacos` 却没有任何实现时抛出带明确提示的 `JsonException`，替代晦涩的 `NoSuchBeanDefinitionException`。
+> 4. **监听写法采用 `@EventListener(ApplicationReadyEvent.class)`**（与本项目既有写法一致），未实现 `ApplicationListener`：后者在 Spring 7 的 `@NullMarked` 语义下会产生"未标注参数覆盖 @NullMarked 参数"警告，而项目尚无使用 jspecify 注解的先例。
+> 5. **接口形态**：`GET /list` 单端点，`serviceName` 为可选 `@RequestParam`；不传参时展平所有服务名的实例返回 `List<ServiceInstance>`（实例自带 `serviceName`），阶段 4 的 demo 微服务接入后同一端点即可看到多个服务。
+> 6. **配置同步共 5 处**（AGENTS.md 明列 3 处之外）：`application-develop.yml`、`application-develop-mysql.yml`、`application-product.yml`、`pre-release/config.yml`（沿用 `${ENV:default}` 占位符风格）、`docs/quick-start/config.md` 两处示例。本次写入 `service-name` / `registry-group` / `advertise-address`——1.3 时它们无人绑定故未写，现在已有真实消费者；**未写** `sys.service.nacos.*`，留待阶段 3 由插件引入（符合决策 3）。
 
 **为什么排第二**：
 
