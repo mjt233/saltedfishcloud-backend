@@ -410,35 +410,39 @@ sys:
     registry-group: SFC
     # 本机对外可达地址（host/IP，不含端口）。多网卡/容器/NAS 环境下自动解析可能不可达，此时显式指定（见决策 6）
     advertise-address: ""
-    # Nacos provider 专属配置，由 sfc-ext-nacos 插件定义
+    # Nacos provider 专属配置，由 sfc-ext-nacos 插件定义，仅在 registry-provider 为 nacos 时生效
     nacos:
       server-addr: 127.0.0.1:8848
-      namespace: public
-      username: nacos
-      password: nacos
+      # 命名空间 ID。留空表示 public 命名空间（它的 ID 是空串，不要写 public）
+      namespace: ""
+      # 鉴权用户名与密码，服务端未开启鉴权时留空
+      username: ""
+      password: ""
+      # 集群名，用于同一服务内实例的再分组
+      cluster-name: DEFAULT
 ```
 
-> **关于 `sys.service.nacos.*` 出现得早**：按决策 3 的精神，Nacos 参数归属插件、本应在阶段 3 才出现。此处提前给出是为了三个配置文件一次改完、避免分散改动；键无人绑定时惰性存在，无实际危害。
+> **关于 `sys.service.nacos.*` 的出现时机（实施修正）**：按决策 3 的精神，Nacos 参数归属插件，故阶段 1 与阶段 2 **都没有**写入这些键——它们由阶段 3 随插件一起引入，实际写入 4 个配置文件 + `docs/quick-start/config.md` 两处示例。实测的 Nacos 3.2.4 **未开启鉴权**，因此账号密码默认留空；`namespace` 默认**留空**而非 `public`（public 命名空间的 ID 是空串）。
 
 ### Step 5：准备 Nacos 服务端
 
 ```powershell
-docker run -d --name sfc-nacos -p 8848:8848 -p 9848:9848 -e MODE=standalone nacos/nacos-server:v2.4.3
+docker run -d --name sfc-nacos -p 8080:8080 -p 8848:8848 -p 9848:9848 -e MODE=standalone nacos/nacos-server:latest
 ```
 
-> ⚠️ **Nacos 2.x 必须同时暴露 9848 端口**（= 8848 + 1000，gRPC 通信端口）。只映射 8848 会导致客户端反复重连失败——这是 Nacos 2.x 最高频的部署坑。
+> ⚠️ **必须同时暴露 9848 端口**（= 8848 + 1000，gRPC 通信端口）。只映射 8848 会导致客户端反复重连失败——这是最高频的部署坑，Nacos 2.x / 3.x 都一样。
 >
-> 控制台：`http://127.0.0.1:8848/nacos`（默认 `nacos` / `nacos`）
-> 镜像 tag 以 Docker Hub 实际可用为准；若无 `v2.4.3` 取 2.4.x 最新。
+> **Nacos 3.x 的控制台已迁到 8080**（不再是 `8848/nacos`）：控制台 `http://127.0.0.1:8080/`，服务端 API 仍在 8848。
+> 版本以 Docker Hub 实际可用为准；本次实测 `latest` = **3.2.4**，客户端相应使用 `nacos-client:3.2.4`。
 
-**验证**：控制台可访问、可登录。
+**验证**：控制台可访问。
 
 ### Step 6：新建 `sfc-ext-nacos` 插件 ⚠️ **本档位的挑战所在**
 
 | 文件 | 动作 |
 |---|---|
 | `sfc-ext/pom.xml` | `<modules>` 中注册；`<dependencies>` 加 `sfc-cloud-api`（`provided`，版本 `${cloud.version}`）；⚠️ 该 pom **自带一套属性**（不继承 root），需在其 `<properties>` 中一并补 `cloud.version` |
-| `sfc-ext-nacos/pom.xml` | 新增；`nacos-client` 依赖 + **`<exclusions>` 留空，由你逐个补齐** |
+| `sfc-ext-nacos/pom.xml` | 新增；`nacos-client` 依赖 + `<exclusions>`（**实测无需逐条试错**：BOM 已把版本对齐到与宿主一致，条目与依据见路线图阶段 3 实施记录） |
 | `.../config/SysNacosProperties.java` | 新增，`@ConfigurationProperties(prefix = "sys.service.nacos")` |
 | `.../NacosServiceRegistry.java` | 新增，实现 SPI |
 | `.../NacosServiceDiscovery.java` | 新增，实现 SPI |

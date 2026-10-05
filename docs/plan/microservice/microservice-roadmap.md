@@ -70,21 +70,24 @@
 
 ## 阶段 0：环境准备（可与阶段 1/2 并行）
 
-- [ ] **0.1** 启动 Nacos 2.x 容器
+- [x] **0.1** 启动 Nacos 容器（**2026-10-05 实测：采用 `latest` = 3.2.4**，与初稿假设的 2.4.3 不同）
 
   ```powershell
-  docker run -d --name sfc-nacos -p 8848:8848 -p 9848:9848 -e MODE=standalone nacos/nacos-server:v2.4.3
+  docker run -d --name sfc-nacos -p 8080:8080 -p 8848:8848 -p 9848:9848 -e MODE=standalone nacos/nacos-server:latest
   ```
 
-- [ ] **0.2** 确认控制台可访问可登录：`http://127.0.0.1:8848/nacos`（`nacos` / `nacos`）
+- [x] **0.2** 确认控制台可访问：`http://127.0.0.1:8080/`
 
 **为什么提前做**：
 
 1. 镜像拉取可能耗时，早点开始
-2. **尽早暴露 9848 端口这个坑**——Nacos 2.x 客户端走 gRPC，端口是 8848 + 1000。只映射 8848 会导致客户端反复重连失败，而那时你很可能误判成"依赖问题"
+2. **尽早暴露 9848 端口这个坑**——Nacos 2.x/3.x 客户端都走 gRPC，端口是 8848 + 1000。只映射 8848 会导致客户端反复重连失败，而那时你很可能误判成"依赖问题"
 3. 纯环境操作，零代码风险，随时可弃
 
-> 镜像 tag 以 Docker Hub 实际可用为准；若无 `v2.4.3` 取 2.4.x 最新。
+> **Nacos 3.x 的三个实测事实**（2026-10-05 核实，直接影响阶段 3 的配置与验证路径）：
+> 1. **控制台已独立到 8080**（3.0 起从 `8848/nacos` 迁出），返回 `Nacos Console` SPA；8848 仍是服务端 API（`GET /nacos/v1/ns/operator/metrics` → `{"status":"UP"}`）；9848 仍是客户端 gRPC 端口
+> 2. 当前容器**未开启鉴权**（8848 的管理端点在无 token 时返回 200），因此 `sys.service.nacos.username/password` 默认留空即可
+> 3. 客户端版本与镜像对齐为 **`nacos-client:3.2.4`**（3.x 客户端已改为自包含 fat jar，见阶段 3 实施记录）
 
 ---
 
@@ -150,16 +153,29 @@
 
 ## 阶段 3：Nacos 适配插件 ⚠️ 唯一高风险步骤
 
-- [ ] **3.1** `sfc-ext/pom.xml` 注册模块；`<dependencies>` 加 `sfc-cloud-api`（`provided`，版本 `${cloud.version}`）；⚠️ 该 pom **自带一套属性**（不继承 root），需在其 `<properties>` 中一并补 `cloud.version`
-- [ ] **3.2** `sfc-ext-nacos/pom.xml` —— `nacos-client` 依赖，**`<exclusions>` 先留空**
-- [ ] **3.3** `SysNacosProperties`（`@ConfigurationProperties("sys.service.nacos")`）
-- [ ] **3.4** `NacosServiceRegistry` + `NacosServiceDiscovery`
-- [ ] **3.5** `NacosAutoConfiguration`（`@ConditionalOnProperty`，`havingValue = "nacos"`）
-- [ ] **3.6** `plugin-info.json`（`loadType: merge`）+ `AutoConfiguration.imports`
-- [ ] **3.7** `mvn -pl sfc-ext/sfc-ext-nacos -am compile` 生成 `plugin-lib`
-- [ ] **3.8** 跑依赖对比脚本，为「版本冲突」条目补 `<exclusion>`
-- [ ] **3.9** 加入 `plugin.extra-resource`，启动；报「存在以下冲突class」则继续补 `<exclusion>`，**循环直到启动成功**
-- [ ] **3.10** 切 `sys.service.registry-provider: nacos`，**确认 Nacos 控制台出现 `sfc-core` 实例**
+- [x] **3.1** `sfc-ext/pom.xml` 注册模块；`<dependencies>` 加 `sfc-cloud-api`（`provided`，版本 `${cloud.version}`）；⚠️ 该 pom **自带一套属性**（不继承 root），需在其 `<properties>` 中一并补 `cloud.version`
+- [x] **3.2** `sfc-ext-nacos/pom.xml` —— `nacos-client` 依赖，**`<exclusions>` 先留空**
+- [x] **3.3** `SysNacosProperties`（`@ConfigurationProperties("sys.service.nacos")`）
+- [x] **3.4** `NacosServiceRegistry` + `NacosServiceDiscovery`
+- [x] **3.5** `NacosAutoConfiguration`（`@ConditionalOnProperty`，`havingValue = "nacos"`）
+- [x] **3.6** `plugin-info.json`（`loadType: merge`）+ `AutoConfiguration.imports`
+- [x] **3.7** `mvn -pl sfc-ext/sfc-ext-nacos -am compile` 生成 `plugin-lib`
+- [x] **3.8** 跑依赖对比脚本，为「版本冲突」条目补 `<exclusion>`
+- [ ] **3.9** 加入 `plugin.extra-resource`，启动；报「存在以下冲突class」则继续补 `<exclusion>`，**循环直到启动成功** ← *代码侧已就位，启动验证待执行*
+- [ ] **3.10** 切 `sys.service.registry-provider: nacos`，**确认 Nacos 控制台出现 `sfc-core` 实例** ← *待执行*
+- [x] **3.11**（清单补漏）`sys.service.nacos.*` 配置同步 —— 4 个配置文件 + `docs/quick-start/config.md` 两处示例；阶段 2 实施记录第 6 条已明确"留待阶段 3 由插件引入"
+
+> **实施记录（2026-10-05）**：3.1~3.8、3.11 已落地。编译验证 `mvn -pl sfc-ext/sfc-ext-nacos -am -DskipTests compile` → BUILD SUCCESS，IDEA `build_project` 无新增错误/警告；**3.9 与 3.10 的启动验证待使用者在本地执行**（这也是唯一能发现"模式 B：运行期 NoSuchMethodError"的步骤）。
+>
+> 八处落地细节：
+> 1. **冲突结论是"零冲突"，而原因比结论更值得记住**：`nacos-client-3.2.4.jar` 是一个 14.27MB / 5311 类的**自包含 fat jar**（grpc / protobuf / netty / jackson 等已 relocate 到 `com.alibaba.nacos` 之下，`nacos-api` / `nacos-common` **不再作为独立 artifact 出现**）。因此 grpc、protobuf、guava、netty 这些"教科书级冲突源"**根本不在比对范围内**——冲突面只剩通用基础设施。
+> 2. **父模块导入的 SpringBoot BOM 会把 nacos 声明的版本对齐到宿主版本**：Central 上 `nacos-client:3.2.4` 的 pom 写的是 jackson 2.21.2 / snakeyaml 2.0 / micrometer-core 1.15.11，但 `sfc-ext` 导入的 `spring-boot-dependencies:4.1.0` 把它们统一成 jackson 2.21.4 / snakeyaml 2.6 / micrometer 1.17.0 ——**与宿主完全相同**。所以这些 jar 若不排除，只会被判为「完全重复(无害)」并静默跳过；排除与否运行期类路径完全等价，排除换来的是零告警日志，并消除"宿主版本变化后退化为类级冲突"的隐患。
+> 3. **静态预检方法**（复刻 `checkLibDependence` + `ClassUtils.validUrl` 语义，**启动前**即可得到两级结论）：宿主 202 个 jar × 插件 `plugin-lib` 16 个 jar × 已加载的另外 6 个插件的类集，做**精确类名交集**。终态结果：第一级零命中、第二级（宿主）零命中、第二级（其它插件）零命中。
+> 4. **手册未覆盖的坑（已补进调试手册 §7.3）**：`maven-dependency-plugin:copy-dependencies` **不清理 `outputDirectory`**。改完 `<exclusions>` 只 `mvn compile` 的话，被排除的 jar 仍留在 `plugin-lib` 继续参与校验（本次实测：新加的 jspecify / micrometer-observation 排除项"看起来完全没生效"）。
+> 5. **环境坑（已补进调试手册 §7.4）**：不带 `-am` 单独构建插件时，`sfc-api` 从 `~/.m2` 解析，而本地仓库里的 `sfc-api-3.1.2.jar` 是阶段 2 之前安装的旧版本（没有 `registryGroup` 字段），报"找不到符号 `getRegistryGroup`"——**看起来像自己的代码错了**。插件构建一律带 `-am`。
+> 6. **发现侧查询用 `subscribe=false`**：SPI 语义是"查询一次"（无变更通知），而 `selectInstances(..., subscribe=true, ...)` 依赖订阅缓存、由服务端推送异步填充，**首次查询可能返回空列表**；直连查询语义准确且无隐藏状态。
+> 7. **namespace 只能来自插件配置**：`NamingService` 没有任何 per-call 的 namespace 参数，故 `ServiceDefinition.namespace` 在 nacos provider 中**被忽略**（`group` 反之取 `definition.group`，与 `local` provider 的不对称一致）。默认值**留空**而非 `public`——public 命名空间的 ID 是空串。实例以 `ephemeral=true` 注册，续约由客户端内置心跳完成（对应 SPI 不提供 `renew()`）；`isAvailable()` 以 `getServerStatus()` 是否 `UP` 判定，`close()` 先注销再关客户端，`destroy()` 委托 `close()`。
+> 8. **配置同步共 5 处**：`application-develop.yml`、`application-develop-mysql.yml`、`application-product.yml`、`pre-release/config.yml`（`${NACOS_*:默认}` 占位符风格）、`docs/quick-start/config.md` 两处示例。`plugin.extra-resource` 只在两个 develop 配置中加入（product / pre-release 无该节点）。
 
 **为什么排第三**：
 
@@ -167,12 +183,14 @@
 2. 因此排查面**收敛到依赖冲突这一个变量**
 3. 避免了"代码问题 / 配置问题 / 依赖问题"三者混淆
 
-**⚠️ 三个必须知道的操作要点**（详见 [调试手册 §7](microservice-nacos-dependency-debugging.md)）：
+**⚠️ 五个必须知道的操作要点**（详见 [调试手册 §7](microservice-nacos-dependency-debugging.md)）：
 
 | 要点 | 后果 |
 |---|---|
 | 插件一旦进 `plugin.extra-resource`，依赖校验**无条件执行**，与 `registry-provider` 取值无关 | 会困惑于"我明明没启用 Nacos 为什么启动失败" |
 | 改了 `<exclusions>` **必须重新 `mvn compile`** | IDE 的 Build 不触发 `copy-dependencies`，会以为改动无效 |
+| 而且**必须 `clean`**：`copy-dependencies` 不清理 `outputDirectory` | 被排除的 jar 仍留在 `plugin-lib` 参与校验，会以为"排除项根本没生效" |
+| 单独构建插件**必须带 `-am`**：否则 `sfc-api` 取 `~/.m2` 里的旧 jar | 报"找不到符号 `getRegistryGroup`"这类错，**看起来像自己的代码错了** |
 | **"启动成功"不是通过标准** | 粗粒度版本冲突只产生 warn 并静默跳过 jar，问题会在运行期才暴露 |
 
 **规模**：代码量不大（中），但**调试迭代可能占整个项目最多的时间**。

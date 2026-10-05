@@ -134,15 +134,19 @@ Select-String -Path .\log\output.log -Pattern '插件系统.*(依赖|冲突class
 ### 4.1 生成宿主的依赖清单
 
 ```powershell
-mvn -q -pl sfc-core dependency:list -DincludeScope=runtime -DoutputFile=host-deps.txt
+mvn -q -pl sfc-core dependency:list "-DincludeScope=runtime" "-DoutputFile=target/host-deps.txt"
 ```
 
 > `sfc-core` 是主应用，其 runtime 依赖即宿主 classpath 的近似。用 `dependency:list` 而非 `dependency:tree`，因为我们要的是**扁平的 artifact 列表**，正好对应"宿主有哪些 jar"。
+>
+> 输出建议落在 `target/`（已被 `.gitignore` 覆盖），避免把 200 行的清单提交进仓库。
+>
+> PowerShell 下给 `-D` 参数**加引号**：不加时偶发被拆成两个参数，报 `Unknown lifecycle phase ".txt"`，看起来像命令写错了。
 
 ### 4.2 生成插件的 `plugin-lib`
 
 ```powershell
-mvn -q -pl sfc-ext/sfc-ext-nacos -am compile
+mvn -q -pl sfc-ext/sfc-ext-nacos -am clean compile
 ```
 
 > **必须用 `mvn compile`，不能用 IDE 的 Build。**
@@ -150,7 +154,10 @@ mvn -q -pl sfc-ext/sfc-ext-nacos -am compile
 > `sfc-ext-nacos/target/classes/plugin-lib`。IDE 的增量编译通常**不会**触发这个 Maven 插件，
 > 导致你改了 `<exclusions>` 却看不到任何变化。
 >
-> `-am`（also-make）会连带构建 `sfc-cloud-api`、`sfc-api` 等上游模块。
+> **改过 `<exclusions>` 时必须 `clean`**（或先手动删掉 `plugin-lib` 目录）：`copy-dependencies`
+> 只做"复制"，**不清理 `outputDirectory`**，被排除的旧 jar 会一直留在里面继续参与两级校验。见 §7.3。
+>
+> 只构建本插件时还要**加 `-am`**：不加的话 `sfc-api` 会从 `~/.m2` 里的旧 jar 解析，见 §7.4。
 
 ### 4.3 对比脚本
 
@@ -233,6 +240,15 @@ $pluginJars | Where-Object { -not $hostMap.ContainsKey($_.Name) } |
 
 **经验起点**（**必须用 §4.3 实测确认，不要照抄**）：JSON / 日志 / YAML 类通常与宿主重叠，值得优先排查。
 
+> **实测补充（2026-10-05，`nacos-client:3.2.4` + SpringBoot 4.1.0 BOM）**：插件模块的父 pom 通常导入了
+> `spring-boot-dependencies` BOM，而 BOM 会把传递依赖的版本**统一到与宿主相同的版本**
+> （实测：nacos 声明 jackson 2.21.2 / snakeyaml 2.0 / micrometer 1.15.11，被 BOM 对齐为
+> 2.21.4 / 2.6 / 1.17.0，与宿主**完全一致**）。此时这些条目在第一级会被判为
+> 「完全重复(无害)」而**不是**「版本冲突」——排除与否运行期类路径等价，排除只是为了得到零告警日志。
+>
+> **所以判断顺序是**：先看 BOM 是否管理了该 artifact（`dependency:tree` 里显示的已是被 BOM 覆盖后的版本），
+> 再决定要不要动 `<exclusion>`。可以省掉一整轮试错。
+
 `pom.xml` 中的写法：
 
 ```xml
@@ -284,7 +300,7 @@ $pluginJars | Where-Object { -not $hostMap.ContainsKey($_.Name) } |
 
 ---
 
-## 7. 操作要点（最容易浪费时间的两件事）
+## 7. 操作要点（最容易浪费时间的四件事）
 
 ### 7.1 在 `exclusions` 调通前，不要把插件加进 `extra-resource`
 
@@ -300,7 +316,7 @@ $pluginJars | Where-Object { -not $hostMap.ContainsKey($_.Name) } |
 
 ```
 1. 先让项目在 registry-provider: local 下正常运行     ← Step 1~4 的成果，零风险
-2. mvn -pl sfc-ext/sfc-ext-nacos -am compile          ← 生成 plugin-lib
+2. mvn -pl sfc-ext/sfc-ext-nacos -am clean compile      ← 生成 plugin-lib（改过 exclusions 必须 clean）
 3. 跑 §4.3 脚本，为「版本冲突」条目补 <exclusion>
 4. 把 sfc-ext-nacos 加入 plugin.extra-resource，启动
 5. 若报「存在以下冲突class」→ 把报出的 jar 补进 <exclusion>，回到 2
@@ -324,6 +340,46 @@ mvn -q -pl sfc-ext/sfc-ext-nacos -am compile
 
 > 这一点 `docs/develop/plugin/create-plugin.md` 也提到了：
 > 「如果插件有配置第三方依赖，请务必对插件的maven模块执行 `mvn compile` 确保依赖库能得到加载」。
+
+### 7.3 改了 `<exclusions>` 还必须 `clean`：`copy-dependencies` 不清理旧 jar
+
+`maven-dependency-plugin:copy-dependencies` 只做"复制"，**不会删除 `outputDirectory` 中的陈旧文件**。
+
+**后果**：被新排除的 jar 依然留在 `plugin-lib/` 里，继续参与两级校验——你会以为"排除项根本没生效"。
+（实测：新增 `jspecify` / `micrometer-observation` 两条排除后 `mvn compile`，两个 jar 仍在 `plugin-lib` 中。）
+
+**判断你踩了这个坑**：改了 `<exclusions>`、重新 `mvn compile`，但插件依赖清单**一个不少**。
+
+**规避**：
+
+```powershell
+mvn -q -pl sfc-ext/sfc-ext-nacos -am clean compile
+```
+
+或者先手动删掉 `sfc-ext-nacos/target/classes/plugin-lib` 再 `compile`。
+
+### 7.4 单独构建插件模块必须带 `-am`：否则会拿 `~/.m2` 里的旧宿主 API 编译
+
+```powershell
+mvn -pl sfc-ext/sfc-ext-nacos clean compile     # ❌ 不加 -am
+```
+
+不带 `-am` 时，`sfc-ext-nacos` 的 `provided` 依赖 `sfc-api` 会从**本地仓库**解析。如果本地仓库里的
+`sfc-api-<revision>.jar` 是"仓库源码更新之前"安装的旧版本（例如阶段 1 安装、阶段 2 才给 `SysProperties.Service`
+加了 `registryGroup` 字段），编译就会报：
+
+```
+找不到符号: 方法 getRegistryGroup()  位置: 类 com.xiaotao.saltedfishcloud.config.SysProperties.Service
+```
+
+**这个报错极具误导性**——它看起来像"我自己的代码写错了"，实际是自己几轮之前的构建产物在作祟。
+
+**规避**：构建插件时固定带 `-am`（让 `sfc-api` / `sfc-cloud-api` 等上游模块走 reactor）。
+或者先把上游模块重新 `install` 一次。
+
+> 附带的一个 PowerShell 坑：`Select-Object -First N` 会在拿够 N 行后**掐断原生命令的管道**，
+> 可能把 `mvn` 进程提前打断（表现为"构建没跑完、产物没生成"）。要过滤 Maven 输出时，
+> 先 `$out = mvn ... 2>&1` 完整捕获，再对 `$out` 过滤。
 
 ---
 
@@ -349,7 +405,10 @@ mvn -q -pl sfc-ext/sfc-ext-nacos -am compile
 | 启动失败，报「存在以下冲突class」 | 类级重复（第二级） | 把报出的 jar 加 `<exclusion>` |
 | 启动成功，调用 Nacos 时 `NoSuchMethodError` | 某 jar 被静默跳过，宿主版本 API 不兼容 | 查 warn 日志找被跳过的 jar |
 | 改了 `<exclusions>` 但日志毫无变化 | IDE 编译未触发 `copy-dependencies` | `mvn -pl sfc-ext/sfc-ext-nacos -am compile` |
+| 改了 `<exclusions>`、也 `mvn compile` 了，但插件依赖清单一个不少 | `copy-dependencies` 不清理旧 jar | `-am clean compile`，或手动删 `plugin-lib`（§7.3） |
+| 编译插件报"找不到符号 `getRegistryGroup`"等宿主 API 不存在 | 没带 `-am`，`sfc-api` 用的是 `~/.m2` 里的旧 jar | 加 `-am`（§7.4） |
 | 没启用 Nacos 却启动失败 | 插件已加入 `extra-resource`，校验与 provider 无关 | 先从 `extra-resource` 移除插件 |
 | `plugin-lib` 目录不存在或是空的 | 未执行 `mvn compile` | §4.2 |
 | 排除了某库后报 `ClassNotFoundException` | 排除过度，宿主没有这个类 | 撤销该条 `<exclusion>` |
-| 客户端反复重连、注册不上 | Nacos 2.x gRPC 端口 9848 未暴露 | Docker 加 `-p 9848:9848` |
+| 客户端反复重连、注册不上 | gRPC 端口 9848 未暴露（3.x 同样需要） | Docker 加 `-p 9848:9848` |
+| 控制台 `http://127.0.0.1:8848/nacos` 打不开 | Nacos 3.x 的控制台已迁到 **8080** | 访问 `http://127.0.0.1:8080/` |

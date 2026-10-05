@@ -40,6 +40,17 @@ sys:
     registry-group: ${REGISTRY_GROUP:SFC}
     # 本机对外可达地址（host 或 IP，不含端口）。多网卡 / 容器 / NAS 环境下自动解析出的地址可能不可达，此时显式指定；留空表示自动解析
     advertise-address: ${ADVERTISE_ADDRESS:}
+    # Nacos provider 专属配置，仅在 registry-provider 为 nacos 时生效（由 sfc-ext-nacos 插件绑定）
+    nacos:
+      # 服务端地址，多节点用逗号分隔
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      # 命名空间 ID。留空表示 public 命名空间（它的 ID 是空串，不要写 public）
+      namespace: ${NACOS_NAMESPACE:}
+      # 鉴权用户名与密码，服务端未开启鉴权时留空
+      username: ${NACOS_USERNAME:}
+      password: ${NACOS_PASSWORD:}
+      # 集群名，用于同一服务内实例的再分组
+      cluster-name: ${NACOS_CLUSTER_NAME:DEFAULT}
     local-cache:
       # 本地缓存默认过期时间（毫秒），默认 15 分钟
       default-expire-ms: ${LOCAL_CACHE_DEFAULT_EXPIRE_MS:900000}
