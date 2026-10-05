@@ -449,6 +449,20 @@ docker run -d --name sfc-nacos -p 8080:8080 -p 8848:8848 -p 9848:9848 -e MODE=st
 | `.../NacosAutoConfiguration.java` | 新增，`@Configuration` + `@ConditionalOnProperty` |
 | `src/main/resources/plugin-info.json` | 新增，`loadType: merge` |
 | `src/main/resources/META-INF/spring/...AutoConfiguration.imports` | 新增 |
+| `sfc-core/pom.xml` | **改**：显式加入 `io.micrometer:micrometer-core`（宿主提供，插件侧排除）—— 理由见下方"宿主必须提供 micrometer-core" |
+
+> **⚠️ 宿主必须提供 `micrometer-core`（本轮实测新增的硬要求）**
+>
+> nacos-client 的 naming 主路径（`ServiceInfoHolder` → `FailoverReactor`）依赖 `io.micrometer.core.instrument.MeterRegistry`；
+> 而宿主有 **5 个**自动配置类（Tomcat / WebMvc / DataSourcePool / Hibernate / DataRepository 的 metrics）以
+> 类级 `@ConditionalOnClass(MeterRegistry.class)` 为开关。于是：
+>
+> - **不能让插件单方面把它带上来**：条件判定（能看到插件 jar 的加载器）会通过，而这些类自身由 `AppClassLoader` 定义、
+>   解析方法签名时找不到该类 → 启动失败 `NoClassDefFoundError: MeterRegistry`；
+> - **也不能在插件里排除它**：nacos 自己真的要用 → 创建 `NamingService` 时 `NoClassDefFoundError`。
+>
+> 正解是**宿主提供 + 插件排除**（版本由 BOM 统一为 1.17.0，两边完全一致）。
+> 完整机制与判定方法见[调试手册 §7.7](microservice-nacos-dependency-debugging.md)。
 
 **⚠️ 两个必须知道的操作要点**：
 

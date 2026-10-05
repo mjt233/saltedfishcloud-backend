@@ -74,6 +74,27 @@
                     <groupId>io.micrometer</groupId>
                     <artifactId>micrometer-observation</artifactId>
                 </exclusion>
+                <!--
+                    指标实现：由【宿主 sfc-core】显式提供（见 sfc-core/pom.xml 中的同名依赖），这里是纯粹的"全局只留一份"。
+
+                    反面教训（实测）：不要试图在插件里排除它。nacos-client 的 naming 主路径
+                    （ServiceInfoHolder -> FailoverReactor）真的需要 MeterRegistry，排除后创建 NamingService 时即抛
+                        NoClassDefFoundError: io/micrometer/core/instrument/MeterRegistry
+
+                    正面理由：宿主有 5 个自动配置类以 @ConditionalOnClass(MeterRegistry.class) 为开关
+                    （TomcatMetricsAutoConfiguration、WebMvcObservationAutoConfiguration$MeterFilterConfiguration、
+                    DataSourcePoolMetricsAutoConfiguration、HibernateMetricsAutoConfiguration、
+                    DataRepositoryMetricsAutoConfiguration）。只要插件把 micrometer-core 摆到合并类加载器上，
+                    这些条件就会通过，而它们自身由 AppClassLoader 定义、解析方法签名时又找不到该类，启动直接失败：
+                        Lookup method resolution failed ... TomcatMetricsAutoConfiguration
+
+                    即"宿主提供 + 插件排除"：宿主侧可加载 → 自动配置内省正常；插件侧不重复 → 无「完全重复」告警，
+                    也不再把 MeterRegistry 暴露给宿主条件判定。
+                -->
+                <exclusion>
+                    <groupId>io.micrometer</groupId>
+                    <artifactId>micrometer-core</artifactId>
+                </exclusion>
                 <!-- 空值注解：宿主 org.jspecify:jspecify 1.0.0（已加载的 sfc-ext-mcp 也带同名同版本 jar） -->
                 <exclusion>
                     <groupId>org.jspecify</groupId>

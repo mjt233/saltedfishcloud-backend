@@ -161,21 +161,49 @@
 - [x] **3.6** `plugin-info.json`（`loadType: merge`）+ `AutoConfiguration.imports`
 - [x] **3.7** `mvn -pl sfc-ext/sfc-ext-nacos -am compile` 生成 `plugin-lib`
 - [x] **3.8** 跑依赖对比脚本，为「版本冲突」条目补 `<exclusion>`
-- [ ] **3.9** 加入 `plugin.extra-resource`，启动；报「存在以下冲突class」则继续补 `<exclusion>`，**循环直到启动成功** ← *代码侧已就位，启动验证待执行*
-- [ ] **3.10** 切 `sys.service.registry-provider: nacos`，**确认 Nacos 控制台出现 `sfc-core` 实例** ← *待执行*
+- [x] **3.9** 加入 `plugin.extra-resource`，启动；报「存在以下冲突class」则继续补 `<exclusion>`，**循环直到启动成功**
+- [x] **3.10** 切 `sys.service.registry-provider: nacos`，**确认 Nacos 控制台出现 `sfc-core` 实例**
 - [x] **3.11**（清单补漏）`sys.service.nacos.*` 配置同步 —— 4 个配置文件 + `docs/quick-start/config.md` 两处示例；阶段 2 实施记录第 6 条已明确"留待阶段 3 由插件引入"
 
-> **实施记录（2026-10-05）**：3.1~3.8、3.11 已落地。编译验证 `mvn -pl sfc-ext/sfc-ext-nacos -am -DskipTests compile` → BUILD SUCCESS，IDEA `build_project` 无新增错误/警告；**3.9 与 3.10 的启动验证待使用者在本地执行**（这也是唯一能发现"模式 B：运行期 NoSuchMethodError"的步骤）。
+> **实施记录（2026-10-05）**：3.1~3.11 **全部完成并实测通过**。依赖冲突面为**零**，但"启动成功"花了三轮，每一轮的根因都不是依赖冲突——这才是本阶段真正的内容。
 >
-> 八处落地细节：
-> 1. **冲突结论是"零冲突"，而原因比结论更值得记住**：`nacos-client-3.2.4.jar` 是一个 14.27MB / 5311 类的**自包含 fat jar**（grpc / protobuf / netty / jackson 等已 relocate 到 `com.alibaba.nacos` 之下，`nacos-api` / `nacos-common` **不再作为独立 artifact 出现**）。因此 grpc、protobuf、guava、netty 这些"教科书级冲突源"**根本不在比对范围内**——冲突面只剩通用基础设施。
-> 2. **父模块导入的 SpringBoot BOM 会把 nacos 声明的版本对齐到宿主版本**：Central 上 `nacos-client:3.2.4` 的 pom 写的是 jackson 2.21.2 / snakeyaml 2.0 / micrometer-core 1.15.11，但 `sfc-ext` 导入的 `spring-boot-dependencies:4.1.0` 把它们统一成 jackson 2.21.4 / snakeyaml 2.6 / micrometer 1.17.0 ——**与宿主完全相同**。所以这些 jar 若不排除，只会被判为「完全重复(无害)」并静默跳过；排除与否运行期类路径完全等价，排除换来的是零告警日志，并消除"宿主版本变化后退化为类级冲突"的隐患。
-> 3. **静态预检方法**（复刻 `checkLibDependence` + `ClassUtils.validUrl` 语义，**启动前**即可得到两级结论）：宿主 202 个 jar × 插件 `plugin-lib` 16 个 jar × 已加载的另外 6 个插件的类集，做**精确类名交集**。终态结果：第一级零命中、第二级（宿主）零命中、第二级（其它插件）零命中。
-> 4. **手册未覆盖的坑（已补进调试手册 §7.3）**：`maven-dependency-plugin:copy-dependencies` **不清理 `outputDirectory`**。改完 `<exclusions>` 只 `mvn compile` 的话，被排除的 jar 仍留在 `plugin-lib` 继续参与校验（本次实测：新加的 jspecify / micrometer-observation 排除项"看起来完全没生效"）。
-> 5. **环境坑（已补进调试手册 §7.4）**：不带 `-am` 单独构建插件时，`sfc-api` 从 `~/.m2` 解析，而本地仓库里的 `sfc-api-3.1.2.jar` 是阶段 2 之前安装的旧版本（没有 `registryGroup` 字段），报"找不到符号 `getRegistryGroup`"——**看起来像自己的代码错了**。插件构建一律带 `-am`。
-> 6. **发现侧查询用 `subscribe=false`**：SPI 语义是"查询一次"（无变更通知），而 `selectInstances(..., subscribe=true, ...)` 依赖订阅缓存、由服务端推送异步填充，**首次查询可能返回空列表**；直连查询语义准确且无隐藏状态。
-> 7. **namespace 只能来自插件配置**：`NamingService` 没有任何 per-call 的 namespace 参数，故 `ServiceDefinition.namespace` 在 nacos provider 中**被忽略**（`group` 反之取 `definition.group`，与 `local` provider 的不对称一致）。默认值**留空**而非 `public`——public 命名空间的 ID 是空串。实例以 `ephemeral=true` 注册，续约由客户端内置心跳完成（对应 SPI 不提供 `renew()`）；`isAvailable()` 以 `getServerStatus()` 是否 `UP` 判定，`close()` 先注销再关客户端，`destroy()` 委托 `close()`。
-> 8. **配置同步共 5 处**：`application-develop.yml`、`application-develop-mysql.yml`、`application-product.yml`、`pre-release/config.yml`（`${NACOS_*:默认}` 占位符风格）、`docs/quick-start/config.md` 两处示例。`plugin.extra-resource` 只在两个 develop 配置中加入（product / pre-release 无该节点）。
+> **一、依赖冲突的实际结论**
+> 1. `nacos-client-3.2.4.jar` 是一个 14.27MB / 5311 类的**自包含 fat jar**（grpc / protobuf / netty / jackson 等已 relocate 到 `com.alibaba.nacos` 之下，`nacos-api` / `nacos-common` **不再作为独立 artifact**）。因此 grpc、protobuf、guava、netty 这些"教科书级冲突源"**根本不在比对范围内**；插件依赖最终只有 14 个 jar。
+> 2. 父模块导入的 `spring-boot-dependencies:4.1.0` BOM 会把 nacos 声明的版本**对齐到与宿主完全相同**（jackson 2.21.2→2.21.4、snakeyaml 2.0→2.6、micrometer 1.15.11→1.17.0）。所以这些 jar 若不排除只会被判为「完全重复(无害)」而静默跳过，**排除与否运行期类路径等价**；排除换来零告警日志，并消除"宿主版本变化后退化为类级冲突"的隐患。
+> 3. 静态预检方法（复刻 `checkLibDependence` + `ClassUtils.validUrl` 语义，**启动前**即可得两级结论）：宿主 204 jar × 插件 `plugin-lib` 14 jar × 另外 6 个已加载插件的类集做**精确类名交集** → **第一级零命中、第二级（宿主）零命中、第二级（其它插件）零命中**。启动日志亦确认：nacos 插件**零依赖告警**。
+>
+> **二、第一轮启动失败：插件把类"暴露"给了宿主的条件判定（本轮最有价值的一课）**
+> - **现象**：`NoClassDefFoundError: io/micrometer/core/instrument/MeterRegistry`，Spring 在 `TomcatMetricsAutoConfiguration` 上 `Lookup method resolution failed`。
+> - **根因**：宿主有 **5 个**自动配置类以类级 `@ConditionalOnClass(MeterRegistry.class)` 为开关（Tomcat / WebMvc / DataSourcePool / Hibernate / DataRepository 的 metrics），它们本应因"宿主没有 micrometer-core"而全部跳过。插件一旦把 `micrometer-core` 摆上**合并类加载器**，条件判定（走能看到插件 jar 的加载器）就通过；而这些类自身由 **AppClassLoader** 定义，解析方法签名时又找不到该类 → 崩。**条件判定与类内省走的是两个加载器，这是不对称的来源。**
+> - **错误修法（已实测否决）**：在插件里排除 `micrometer-core`。nacos-client 的 naming 主路径（`ServiceInfoHolder` → `FailoverReactor`）真的需要 `MeterRegistry`，排除后创建 `NamingService` 立即 `NoClassDefFoundError`。
+> - **正解**：**宿主提供 + 插件排除**。`sfc-core/pom.xml` 显式加入 `io.micrometer:micrometer-core`（BOM 管理 → 1.17.0，与插件原本要带的那份完全一致），插件侧保持排除 → 全局只有一份且可被宿主加载器解析。宿主没有 actuator，不会创建 `MeterRegistry` Bean，上述自动配置的方法级 `@ConditionalOnBean` 仍会跳过，**不引入任何指标行为**。
+> - **可复用的判定方法**：拿插件依赖的包名去扫宿主的 `spring-boot-*` jar，凡"同时含 `ConditionalOnClass` 与插件包名"的类即风险点。本次扫描只有 `io/micrometer/core` 命中（5 个类），prometheus / apache.hc / HdrHistogram / nacos 均无风险。
+>
+> **三、第二轮失败：`java -cp` 跑不起来（插件系统的 classpath 形态要求）**
+> - **现象**：`MalformedURLException: no !/ in spec` → `[插件初始化]插件信息初始化失败`。
+> - **根因**：`PluginInitializer` 会扫描 classpath 上**所有** `plugin-info.json`。`sfc-task-core-1.0.0.jar` 自带该文件，走的是 `jar:` 分支 → `URI.create("jar:file:...").toURL()` 要求 URL 里含 `!/`，扁平 jar 不满足。**IDEA 运行时这些模块是目录**（走 `file:` 分支），所以 IDE 里不会遇到。
+> - **结论**：本项目的应用只有两种受支持的运行形态——**IDEA 直接 Run**，或 **`java -jar` 打包产物**（内部是 `jar:nested:`）。**不要用 `-cp <扁平 jar 列表>` 手搓运行**。
+>
+> **四、第三轮失败：`spring.profiles.active` 是构建期写死的**
+> - **现象**：`No qualifying bean of type 'com.sfc.cloud.registry.ServiceDiscovery'`，且日志里插件清单只剩 `[sfc-task,sys]`（没有任何 `从额外资源路径加载插件`）。
+> - **根因**：`application.yml` 里是 `spring.profiles.active: ^spring-profile^`，由 Maven 资源过滤在**构建期**替换；`sfc-core/pom.xml` 的 `product` profile 是 `activeByDefault`，而 `develop` **必须显式选**（IDEA 里默认选的就是它）。我执行的一次 `mvn -pl sfc-core -am compile` 把 `target/classes/application.yml` 刷成了 `active: product`，于是 develop 的 `plugin.extra-resource` 全部消失；此时又用 `--sys.service.registry-provider=nacos` 覆盖，`LocalServiceRegistry` 被关掉、插件又没加载 → 没有 `ServiceDiscovery` Bean。
+> - **结论**：命令行构建请用 `mvn -P develop ...`；用 `java` 直接跑类目录时显式加 `--spring.profiles.active=develop`。
+>
+> **五、发现侧的真实 bug：`selectInstances(subscribe=false)` 恒为空**
+> - **现象**：实例已注册（Nacos 服务端 `GET /nacos/v3/client/ns/instance/list` 可见、`healthy=true`），但 `GET /api/admin/sys/service/list` 返回 `[]`。
+> - **定位**：写了最小客户端探针，在**全新客户端**上逐个调用。结果：`selectInstances(name, group, false, true)` → **`[]`**（且不会退化为服务端查询，2 秒后仍为空）；`selectInstances(..., true, true)` → 正确；**`getAllInstances(name, group)` → 冷启动即正确且不产生订阅状态**。
+> - **修正**：`listInstances` 改用 `getAllInstances` 直连查询，并在客户端侧按 `healthy + enabled` 过滤（`getAllInstances` 不过滤健康状态）——正好匹配 SPI"查询一次（无变更通知）"的语义。`listServiceNames()`（`getServicesOfServer`）本身是对的，未改。
+>
+> **六、其余落地细节**
+> 1. **namespace 只能来自插件配置**：`NamingService` 没有 per-call 的 namespace 参数，故 `ServiceDefinition.namespace` 在 nacos provider 中被忽略（`group` 反之取 `definition.group`）。默认值**留空**而非 `public`（public 的 ID 是空串）。实例 `ephemeral=true`；`isAvailable()` 以 `getServerStatus()` 是否 `UP` 判定；`close()` 先注销再关客户端，`destroy()` 委托 `close()`。
+> 2. **配置同步共 5 处**：`application-develop.yml`、`application-develop-mysql.yml`、`application-product.yml`、`pre-release/config.yml`（`${NACOS_*:默认}` 占位符风格）、`docs/quick-start/config.md` 两处示例。`plugin.extra-resource` 只在两个 develop 配置中加入。
+> 3. **两个工具链坑已补进调试手册 §7.3 / §7.4**：`copy-dependencies` 不清理 `outputDirectory`（改 exclusions 必须 `clean`）；单独构建插件不带 `-am` 会拿 `~/.m2` 里的旧 `sfc-api` 编译（报"找不到符号 `getRegistryGroup`"）。
+>
+> **七、验证证据（3.9 / 3.10）**
+> - `provider=local`：`Started SaltedfishcloudApplication in 22.333 seconds`；`[服务注册] 进程内注册表已登记 key=SFC:sfc-core instanceId=XIAOTAO-AMD-YES:8087`；API 返回该实例。
+> - `provider=nacos`：`Nacos 客户端初始化完成 serverAddr=127.0.0.1:8848 namespace=<public> cluster=DEFAULT 鉴权=未配置` → `Nacos 注册完成 serviceName=sfc-core group=SFC instance=XIAOTAO-AMD-YES:8087 ephemeral=true`；Nacos 服务端返回 `{"instanceId":"XIAOTAO-AMD-YES#8087#DEFAULT#SFC@@sfc-core","healthy":true,"ephemeral":true}`；**API 两种端点形态均返回该实例且 instanceId 是 Nacos 生成值**（证明经 Nacos 往返，而非本地表）。
+> - **配置已回退为默认 `registry-provider: local`**（验证是通过 `--sys.service.registry-provider=nacos` 命令行覆盖完成的，不依赖改文件）。
+> - **既存告警（与本插件无关，未处理）**：`sfc-ext-mcp` 自身的 `jackson-dataformat-yaml-3.1.4` 与宿主 2.21.4 冲突、`commons-io`/`jspecify`/`jackson-core` 完全重复——都是该插件既有的依赖状况。
 
 **为什么排第三**：
 

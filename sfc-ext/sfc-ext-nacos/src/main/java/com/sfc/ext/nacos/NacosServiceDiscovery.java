@@ -23,9 +23,12 @@ import java.util.List;
  * {@code sys.service.nacos.namespace}。这与 {@code local} provider 的取值方式一致；"注册与发现用了不同 group /
  * namespace"时会查不到实例，与 Nacos 自身的 {@code DEFAULT_GROUP} 错配问题同构。
  * <p>
- * <b>为什么查询用 subscribe=false</b>：{@link ServiceDiscovery} 的语义是"查询一次"（SPI 没有变更通知），
- * 而 {@code selectInstances(..., subscribe=true, ...)} 依赖客户端的订阅缓存，缓存由服务端推送异步填充，
- * <b>首次查询可能返回空列表</b>。直连查询（{@code subscribe=false}）语义准确、无隐藏状态，故采用后者。
+ * <b>为什么用 getAllInstances 而不是 selectInstances</b>：SPI 的语义是"查询一次"（没有变更通知），本应使用直连查询，
+ * 但实测（nacos-client 3.2.4）在客户端冷启动、尚未建立订阅时，
+ * {@code selectInstances(serviceName, group, subscribe=false, healthy=true)} <b>恒返回空列表</b>，且不会退化为服务端查询；
+ * 而 {@code getAllInstances(serviceName, group)} 首次调用即返回正确结果，又不产生订阅状态，故采用后者。
+ * 由于 {@code getAllInstances} 不过滤健康状态，这里在客户端侧按 {@code healthy + enabled} 过滤
+ * （{@code enabled} 对应控制台的实例禁用开关）。
  */
 @Slf4j
 public class NacosServiceDiscovery implements ServiceDiscovery {
@@ -66,7 +69,8 @@ public class NacosServiceDiscovery implements ServiceDiscovery {
         String group = configuredGroup();
         List<Instance> instances;
         try {
-            instances = namingService.selectInstances(name, group, false, true);
+            // 不要改用 selectInstances(name, group, false, true)：实测在 3.2.4 下恒为空列表
+            instances = namingService.getAllInstances(name, group);
         } catch (NacosException e) {
             String msg = "Nacos 服务查询失败：serviceName=" + name + " group=" + group + "。原因：" + e.getMessage();
             log.error("[服务发现] {}", msg, e);
@@ -77,9 +81,15 @@ public class NacosServiceDiscovery implements ServiceDiscovery {
         }
         List<ServiceInstance> result = new ArrayList<>(instances.size());
         for (Instance instance : instances) {
+            // getAllInstances 返回全部实例（含不健康 / 被禁用），此处对齐"只列出可用实例"的语义
+            if (!instance.isHealthy() || !instance.isEnabled()) {
+                log.debug("[服务发现] 跳过不可用实例 instanceId={} healthy={} enabled={}",
+                        instance.getInstanceId(), instance.isHealthy(), instance.isEnabled());
+                continue;
+            }
             result.add(toServiceInstance(name, instance));
         }
-        log.debug("[服务发现] serviceName={} group={} 命中 {} 个健康实例", name, group, result.size());
+        log.debug("[服务发现] serviceName={} group={} 命中 {} 个可用实例", name, group, result.size());
         return result;
     }
 

@@ -300,7 +300,7 @@ $pluginJars | Where-Object { -not $hostMap.ContainsKey($_.Name) } |
 
 ---
 
-## 7. 操作要点（最容易浪费时间的四件事）
+## 7. 操作要点（最容易浪费时间的六件事）
 
 ### 7.1 在 `exclusions` 调通前，不要把插件加进 `extra-resource`
 
@@ -383,6 +383,135 @@ mvn -pl sfc-ext/sfc-ext-nacos clean compile     # ❌ 不加 -am
 
 ---
 
+### 7.5 `spring.profiles.active` 是构建期写死的，别用错 profile 去判断"插件没加载"
+
+`sfc-core/src/main/config/application.yml` 里是：
+
+```yaml
+spring:
+  profiles:
+    active: ^spring-profile^      # 由 maven-resources-plugin 在构建期替换
+```
+
+替换值来自 `sfc-core/pom.xml` 的 Maven profile：`product` 是 `activeByDefault`，**`develop` 必须显式选**
+（IDEA 里默认选中的就是 `develop`）。
+
+**后果**：若用不带 profile 的命令行构建（如 `mvn -pl sfc-core -am compile`），
+`target/classes/application.yml` 会变成 `active: product` → develop 的 `plugin.extra-resource` 整段消失。
+
+**症状**：日志里插件清单只剩 `[sfc-task,sys]`、**没有任何 `从额外资源路径加载插件`**，
+随后可能出现 `No qualifying bean of type 'com.sfc.cloud.registry.ServiceDiscovery'`
+（因为 `registry-provider: nacos` 让 `LocalServiceRegistry` 关闭，而插件又没加载）。
+**这个报错看起来像代码/接线问题，实际只是 profile 选错了。**
+
+**规避**：
+
+```powershell
+mvn -P develop -pl sfc-core -am compile     # 命令行构建用 -P develop
+```
+
+直接用 `java` 跑类目录时显式指定：`--spring.profiles.active=develop`。
+
+### 7.6 运行形态：不要用 `-cp` 手搓扁平 jar 列表
+
+`PluginInitializer` 会扫描 classpath 上**所有** `plugin-info.json`。它包含多个分支，
+其中"扁平 jar"这一种会直接失败：
+
+```
+java.net.MalformedURLException: no !/ in spec
+  → [插件初始化]插件信息初始化失败 → RuntimeException
+```
+
+**原因**：`sfc-task-core-1.0.0.jar` 自带 `plugin-info.json`，命中的是 `jar:` 分支，
+代码会执行 `URI.create("jar:file:/...jar").toURL()`——该 URL 必须含 `!/`，扁平 jar 不满足。
+
+**本项目的应用只有两种受支持的运行形态**：
+
+| 形态 | classpath 形式 | 是否可用 |
+|---|---|---|
+| IDEA 直接 Run | 各模块 `target/classes` **目录** | ✅（走 `file:` 分支） |
+| `java -jar` 打包产物 | `jar:nested:...!/BOOT-INF/lib/*.jar` | ✅ |
+| `java -cp a.jar;b.jar;...` | 扁平 jar 列表 | ❌ **不要用** |
+
+> 用目录形式跑时，日志里会出现若干条
+> `[插件系统]无法识别的依赖资源：file:.../target/classes/META-INF` —— 这是**正常的**（warn 级，扫描继续），
+> 因为 `target/classes/META-INF` 不是 jar，无法解析出 jar 名。
+
+### 7.7 插件把类"暴露"给宿主的条件判定：`NoClassDefFoundError` 的真正来源
+
+**这不是版本冲突，也不是类重复**——两级校验都能通过，却照样启动失败。这是本阶段最值得记住的一课。
+
+**现象**：
+
+```
+BeanCreationException: ... 'TomcatMetricsAutoConfiguration': Lookup method resolution failed
+Caused by: NoClassDefFoundError: io/micrometer/core/instrument/MeterRegistry
+Caused by: ClassNotFoundException: io/micrometer/core/instrument/MeterRegistry
+  from ClassLoader [jdk.internal.loader.ClassLoaders$AppClassLoader]
+```
+
+**机制**：宿主有若干自动配置类以类级 `@ConditionalOnClass(X)` 作为开关，`X` 属于某个**插件才带的库**：
+
+| 条件类 | 所在 jar |
+|---|---|
+| `TomcatMetricsAutoConfiguration` | spring-boot-tomcat |
+| `WebMvcObservationAutoConfiguration$MeterFilterConfiguration` | spring-boot-webmvc |
+| `DataSourcePoolMetricsAutoConfiguration` | spring-boot-jdbc |
+| `HibernateMetricsAutoConfiguration` | spring-boot-hibernate |
+| `DataRepositoryMetricsAutoConfiguration` | spring-boot-data-commons |
+
+它们本应因"宿主没有 micrometer-core"而跳过。但插件一旦把该类摆上**合并类加载器**：
+
+- **条件判定**走的是能看到插件 jar 的加载器 → 条件**通过**，该配置被注册为 Bean 定义；
+- **类内省**（`ReflectionUtils.getDeclaredMethods`）走的是该配置类自己的定义加载器 `AppClassLoader` → 找不到 `MeterRegistry` → 抛错。
+
+> **一句话**：条件判定与类内省用的不是同一个加载器。插件给宿主"看见了一个它其实用不了的类"。
+
+**判定方法（启动前就能做）**：拿插件依赖的包名去扫宿主的 `spring-boot-*` jar，
+凡"同时包含 `ConditionalOnClass` 与该包名"的类即风险点：
+
+```powershell
+# 对每个宿主 spring-boot-* jar 的每个 .class，读取字节后判断是否同时含这两个字符串
+# 实测（nacos 3.2.4）只有 io/micrometer/core 命中 5 个类；
+# io/prometheus、org/apache/hc、org/HdrHistogram、com/alibaba/nacos 均无命中
+```
+
+**修法（本轮实测的结论）**：
+
+| 方案 | 结果 |
+|---|---|
+| ❌ 在插件里排除该库 | **不可行**。nacos-client 的 naming 主路径（`ServiceInfoHolder` → `FailoverReactor`）真的需要 `MeterRegistry`，排除后创建 `NamingService` 即 `NoClassDefFoundError` |
+| ✅ **宿主提供 + 插件排除** | 可行。`sfc-core/pom.xml` 显式加 `io.micrometer:micrometer-core`（BOM 管理，与插件原本要带的版本完全一致），插件侧仍排除 → 全局一份、可被宿主加载器解析 |
+| ⚠️ shade relocate | 需把 nacos-client 一起重定位（否则字符串/反射引用改不到），代价远大于收益，本轮未采用 |
+
+> 注意区分**警告信号**与**误报**：只按"字节里是否含某包名"扫插件自己的 jar 会漏判——
+> 本轮据此得出过"只有 FailoverReactor 引用 micrometer"的错误结论，而实际 `ServiceInfoHolder` 经它间接触达。
+> **最终判据只能是"真的能注册上去"**（见 §8）。
+
+### 7.8 客户端 API 陷阱：`selectInstances(..., subscribe=false, ...)` 恒为空
+
+注册成功、Nacos 控制台/服务端 API 也能看到实例，但**应用侧查询返回空列表**时，先怀疑这条：
+
+```java
+namingService.selectInstances(serviceName, group, false, true);   // ❌ 实测恒为空（nacos-client 3.2.4）
+```
+
+**实测（每种调用都在全新客户端上作为第一次调用）**：
+
+| 调用 | 冷启动结果 |
+|---|---|
+| `selectInstances(n, g, false, true)` | **`[]`**（且不会退化为服务端查询，2 秒后仍为空） |
+| `selectInstances(n, g, true, true)` | ✅ 立即返回 |
+| `getAllInstances(n, g)` | ✅ 立即返回，且不产生订阅状态 |
+| `getServicesOfServer(1, 100, g)` | ✅ 立即返回服务名列表 |
+
+**结论**：SPI 的"查询一次"语义应使用 **`getAllInstances(n, g)`**；
+它不过滤健康状态，需在客户端侧按 `healthy`（必要时再叠加 `enabled`）过滤。
+
+**定位手法**（可复用）：写一个最小探针类，用**插件同一套 plugin-lib** 作 classpath，
+让每种调用都在**全新客户端**上先跑一次，并打印结果——比在应用里加日志快得多，也能一次排除全部假设。
+探针放在 `target/` 下即可（已被 gitignore）。
+
 ## 8. 完成标准
 
 不要以"编译通过"或"进程起来了"作为完成标准。逐条确认：
@@ -407,8 +536,13 @@ mvn -pl sfc-ext/sfc-ext-nacos clean compile     # ❌ 不加 -am
 | 改了 `<exclusions>` 但日志毫无变化 | IDE 编译未触发 `copy-dependencies` | `mvn -pl sfc-ext/sfc-ext-nacos -am compile` |
 | 改了 `<exclusions>`、也 `mvn compile` 了，但插件依赖清单一个不少 | `copy-dependencies` 不清理旧 jar | `-am clean compile`，或手动删 `plugin-lib`（§7.3） |
 | 编译插件报"找不到符号 `getRegistryGroup`"等宿主 API 不存在 | 没带 `-am`，`sfc-api` 用的是 `~/.m2` 里的旧 jar | 加 `-am`（§7.4） |
+| 插件清单只剩 `[sfc-task,sys]`，且没有任何"从额外资源路径加载插件" | 构建期 profile 选错（`^spring-profile^` 被替换成 `product`） | `mvn -P develop ...` 或 `--spring.profiles.active=develop`（§7.5） |
+| 启动即 `MalformedURLException: no !/ in spec` → 插件信息初始化失败 | 用 `-cp` 手搓扁平 jar 列表运行 | 改用 IDEA Run 或 `java -jar`（§7.6） |
+| 启动失败，`NoClassDefFoundError` 指向**宿主自动配置类**引用的类（如 `MeterRegistry`） | 插件把该类暴露给了宿主的 `@ConditionalOnClass`，宿主加载器却解析不了 | 改为**宿主提供 + 插件排除**（§7.7） |
+| 注册成功、服务端 API 能查到实例，但应用侧查询返回 `[]` | `selectInstances(..., subscribe=false, ...)` 恒为空 | 改用 `getAllInstances(n, g)` 并自行过滤 healthy（§7.8） |
 | 没启用 Nacos 却启动失败 | 插件已加入 `extra-resource`，校验与 provider 无关 | 先从 `extra-resource` 移除插件 |
 | `plugin-lib` 目录不存在或是空的 | 未执行 `mvn compile` | §4.2 |
-| 排除了某库后报 `ClassNotFoundException` | 排除过度，宿主没有这个类 | 撤销该条 `<exclusion>` |
+| 排除了某库后报 `ClassNotFoundException` / `NoClassDefFoundError` | 排除过度，宿主或插件自身真的需要它 | 撤销该条 `<exclusion>`（若宿主也确实需要，见 §7.7 的正解） |
 | 客户端反复重连、注册不上 | gRPC 端口 9848 未暴露（3.x 同样需要） | Docker 加 `-p 9848:9848` |
 | 控制台 `http://127.0.0.1:8848/nacos` 打不开 | Nacos 3.x 的控制台已迁到 **8080** | 访问 `http://127.0.0.1:8080/` |
+| 服务端排查实例注册情况（3.x 可用） | — | `GET /nacos/v3/client/ns/instance/list?serviceName=<name>&groupName=<group>` |
