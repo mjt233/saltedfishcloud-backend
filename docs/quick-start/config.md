@@ -47,6 +47,8 @@ sys:
     mq-provider: local
     # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
     rpc-provider: mq
+    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。可选 nacos（需 sfc-ext-nacos 插件）
+    registry-provider: local
 ```
 
 完整配置见 [附录1: config.yml](#1configyml)
@@ -87,6 +89,8 @@ sys:
     mq-provider: ${MQ_PROVIDER:redis}
     # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
     rpc-provider: ${RPC_PROVIDER:redis}
+    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。可选 nacos（需 sfc-ext-nacos 插件）
+    registry-provider: ${REGISTRY_PROVIDER:local}
     local-cache:
       # 本地缓存默认过期时间（毫秒），默认 15 分钟
       default-expire-ms: ${LOCAL_CACHE_DEFAULT_EXPIRE_MS:900000}

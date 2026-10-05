@@ -92,7 +92,10 @@
 
 - [x] **1.1** 新建 `sfc-cloud-api` 模块：`pom.xml` + 2 个 POJO（`ServiceInstance` / `ServiceDefinition`）+ 2 个 SPI（`ServiceRegistry` / `ServiceDiscovery`）
 - [x] **1.2** root `pom.xml` 的 `<modules>` 注册新模块
-- [ ] **1.3** `sfc-api` 的 `SysProperties.Service` 新增 `registryProvider`、`serviceName`、`registryGroup`、`advertiseAddress`
+- [x] **1.3** `sfc-api` 的 `SysProperties.Service` 新增 `registryProvider`、`serviceName`、`registryGroup`、`advertiseAddress`
+  > **实施记录（配置同步范围）**：仅 `registry-provider: local` 写入配置文件，共 **4 处**——文档所列三处（`application-develop.yml`、`application-product.yml`、`pre-release/config.yml`，后者沿用 `${REGISTRY_PROVIDER:local}` 占位符风格）之外，补充了同样存在 `sys.service` 节点的 `application-develop-mysql.yml`；另在 `docs/quick-start/config.md` 的两处示例中同步。其余三个字段保留 Java 默认值（`sfc-core` / `SFC` / 空串）而不落 YAML——与决策 3 的精神一致，避免出现无人绑定的"假配置"。
+  >
+  > 因此阶段 2.6 的配置同步工作**已部分完成**（provider 开关项），实施时只需确认，不必重复添加。
 - [x] **1.4** 编译验证：`mvn -pl sfc-cloud-api -am install`
 
 **为什么排第一**：它是后续所有实现的前置。**纯新增，不碰任何现有代码路径，零风险，且不需要 Nacos。**
