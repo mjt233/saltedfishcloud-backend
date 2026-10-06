@@ -3,8 +3,9 @@
 > **状态**：设计定稿，**尚未产生任何代码改动**。等待审阅。
 > **范围**：微服务的前端资源接入 + 接口调用链路
 > **依赖**：档位 1 的 `ServiceDiscovery`（必需）。**不依赖档位 2**，可提前实施
-> **配套**：[档位 1 设计方案](microservice-phase1-design.md) · [依赖冲突调试手册](microservice-nacos-dependency-debugging.md)
+> **配套**：[档位 1 设计方案](microservice-phase1-design.md) · [**服务鉴权机制设计**](microservice-service-auth-design.md)（§7.3 / §7.4 / §8 的**机制细节以它为准**） · [依赖冲突调试手册](microservice-nacos-dependency-debugging.md) · [拓扑 / 泳道图](review/microservice-auth-topology.md)
 > **创建日期**：2026-02-12
+> **修订日期**：2026-10-06（§7.3 的鉴权机制由"内部服务令牌（共享对称密钥 ＋ 自定义头 `X-Sfc-Internal-Token`）"改为"**委托令牌**（RS256 / **自持密钥** / **自建匿名 JWKS 端点** / `Authorization: Bearer`）"，并**与 OIDC/OAuth 解耦**；§7.4 的信任边界表述加强；§7.5 补自建代理必修安全项；**新增 §7.6 路径映射与放行规则**；§8 数据面改为"同一枚令牌换载体"。机制论证见[服务鉴权机制设计](microservice-service-auth-design.md)）
 
 ---
 
@@ -19,6 +20,8 @@
 | 前端怎么发现微服务扩展 | §5 |
 | 前端 JS/CSS 从哪加载 | §6 |
 | 前端怎么调微服务接口 | §7 |
+| **鉴权机制细节（令牌形态 / claims / 失败语义）** | [服务鉴权机制设计](microservice-service-auth-design.md)、[拓扑 / 泳道图](review/microservice-auth-topology.md) |
+| **路径映射与放行规则** | §7.6 |
 | 大文件怎么不走 core | §8 |
 | 开发期怎么调试 | §9 |
 | 有什么硬约束和坑 | §10、§13 |
@@ -133,7 +136,7 @@ if (extension.type == 'extension') {
 ┌──────────────────────────────────────────────────────────────────┐
 │  sfc-core（唯一入口 / 网关）                                       │
 │   ServiceExtensionRegistry  ←读─ Nacos 实例 metadata               │
-│   ServiceProxyController    ←─ 反代 + 内部服务令牌 + UID/PATH 校验  │
+│   ServiceProxyController    ←─ 反代 + 委托令牌（现签）+ 信任边界       │
 └───────┬──────────────────────────────────────┬───────────────────┘
         │ ② 资源代理                            │ ③ 转发
         │ /api/ext/{svc}/static/**              │
@@ -152,9 +155,9 @@ if (extension.type == 'extension') {
 | # | 链路 | 鉴权 | 缓存 |
 |---|---|---|---|
 | ① | 扩展清单 | `@AllowAnonymous`（与 `autoLoad.js` 一致） | 不缓存 |
-| ② | 静态资源代理 | `@AllowAnonymous` | ✅ 长缓存 + URL 版本号 |
-| ③ | 控制面 API 代理 | 需登录 + UID/PATH 校验 | 不缓存 |
-| ④ | 大文件预签名 | 一次性 token | 由微服务决定 |
+| ② | 静态资源代理 | 匿名，但**必须做路径规范化 ＋ 前缀精确匹配**（§7.6） | ✅ 长缓存 + URL 版本号 |
+| ③ | 控制面 API 代理 | 需登录；core 现签**委托令牌**（`aud` ＝ 目标服务名、TTL ≤ 60s）；**uid 只来自令牌的 `sub`** | 不缓存 |
+| ④ | 大文件预签名 | **同一枚委托令牌换载体**（query；TTL **5 分钟** ＋ 资源绑定；**不是"一次性"**） | 由微服务决定 |
 
 ---
 
@@ -351,36 +354,57 @@ public class ServiceProxyController {
 
 > 补充：`SpringConfig` 中 `ProtectBlocker` 拦截器作用于 `/api/**`，因此 `/api/ext/**` 会经过它；`SecurityConfig` 的 `anyRequest().authenticated()` 也会覆盖它——**这正是我们想要的**（控制面必须鉴权）。静态资源代理路径要单独放行（§3 表格 ②）。
 
-### 7.3 鉴权：内部服务令牌
+### 7.3 鉴权：委托令牌（core 唯一签发，微服务 JWKS 离线验签）
 
 ```
-前端请求 → core 已通过 JWT 鉴权 + @UID/@ValidPath 校验
-        → core 签发短时效内部令牌 { uid, roles, scope, exp }
-        → header: X-Sfc-Internal-Token
-        → 微服务用共享内部密钥校验
+前端请求 → core 已完成 JWT 鉴权
+        → core 每请求现签「委托令牌」（RS256，自持密钥 sys.service.auth.signing-key）
+          { iss, aud = 目标服务名, sub = uid, scope = internal.*, exp ≤ 60s, jti }
+        → header: Authorization: Bearer <委托令牌>
+        → 微服务离线验签：公钥取自 core 的自建匿名端点 GET /api/service-auth/jwks
+          （本地缓存，按 kid 命中；未知 kid 必须回源一次）
+          校验 iss / exp / scope，且 aud 必须包含自己（aud == 自己的服务名）
+          → uid 只取 sub（不读任何请求参数）
 ```
 
 **为什么不让微服务直接验用户 JWT**：
 
 | 做法 | 问题 |
 |---|---|
-| 微服务共享 core 的 JWT 签名密钥 | 密钥扩散面变大，**微服务被攻破 = core 被攻破** |
-| 微服务每请求回调 core 校验 | 每个请求多一跳，core 压力翻倍 |
-| **内部服务令牌（推荐）** | 独立密钥、短时效、只授予必要 scope |
+| 微服务共享 core 的 JWT 签名密钥 | 用户会话令牌是 **30 天长效**；密钥扩散面变大，**微服务被攻破 = core 被攻破** |
+| 微服务每请求回调 core 校验 | 每个请求多一跳，core 压力翻倍；并把 core 的可用性变成微服务的前置依赖 |
+| 微服务持有**共享对称**内部密钥 | ❌ **同样是"校验方也能签发"** —— 任何微服务都能伪造 `sub` 为任意 uid 的令牌，与上一条等价，只是换了把钥匙（HMAC 密钥既能验也能签） |
+| **委托令牌：非对称签名，微服务只拿公钥（采用）** | core 持有**自持私钥**，微服务只拿**公钥**（自建匿名 JWKS 端点）⇒ **"只有 core 能签发"由算法保证**；且分发公钥没有安全后果，"密钥怎么送到微服务"这个问题直接消失 |
+| ~~复用 OIDC 的 JWK 与 `/oauth2/jwks`~~ | ❌ 已否决：那样 `sys.oidc.enabled=false` 时微服务鉴权一起失效，且 OIDC 侧换密钥/改 scope 会波及微服务鉴权（详见[服务鉴权机制设计 · 决策 8](microservice-service-auth-design.md)） |
 
-### 7.4 ⚠️ 安全要点：UID / PATH 校验语义必须保留
+> **⚠️ 这里最容易走错的一步**：把"内部令牌"实现成**共享对称密钥**（HMAC）。它在功能上完全跑得通，而且"独立于用户 JWT 密钥"听起来很安全——**但它让每个微服务都获得了签发任意用户令牌的能力**。
+> 判断标准只有一条：**校验方手里拿到的材料，能不能用来签发？** 能，就是错的。
 
-`@UID` 与 `@ValidPath` 校验是**在 core 的 Controller 层**生效的。代理路径上如果只是无脑转发：
+机制细节（claims 表、TTL、失败语义、密钥配置、`/api/internal/**` 落地方式）见[服务鉴权机制设计](microservice-service-auth-design.md)。
+
+> **⚠️ 一处不能想当然的地方：`aud` 在两个校验方的规则不同**
+> 微服务侧是 `aud == 自己的服务名`（这正是防横向重放的那一条）；但 **core 的 `/api/internal/**` 侧校验的是 `aud ∈ 已注册服务名集合`**——因为令牌本就是 core 签发的，而且它要被**透传回 core**。若在 core 侧写成 `== sfc-core`，"core → 微服务 → core"的链路（阶段 6）会直接断掉。
+
+> **⚠️ 与 OIDC/OAuth 解耦（本轮新增的硬要求）**：委托令牌的密钥、JWKS 端点、作用域**全部自持**，**不依赖** `sys.oidc.*` / `/oauth2/jwks` / `JwtDecoder` / `StandardScopes`。验收方式：**`sys.oidc.enabled=false` 时本链路必须照常工作**。
+
+### 7.4 ⚠️ 安全要点：信任边界（uid 只来自令牌）
+
+`@UID` 与 `@ValidPath` 校验是**在 core 的 Controller 层**生效的，读的是 SecurityContext。代理路径上如果只是无脑转发：
 
 > 攻击者可以构造 `/api/ext/svc/...?uid=999` 越权访问他人网盘资源。
 
-**因此代理层必须**：
-- 对代理请求执行与普通接口一致的 UID/PATH 校验
-- 或在内部令牌中固化 uid，微服务**只信令牌里的 uid**，忽略请求参数里的 uid
+**两侧的约定（本轮表述已加强）**：
 
-第二种更稳妥（**信任边界收敛到令牌**），推荐。
+| 表述 | 内容 | 性质 |
+|---|---|---|
+| 弱表述（原方案） | 在令牌中固化 uid，微服务**只信令牌里的 uid，忽略请求参数里的 uid** | **约定式安全**——依赖每个微服务都正确地"忽略"某个参数 |
+| **强表述（采用）** | **uid 根本不是一个参数**：微服务业务代码不得读取任何名为 `uid` 的请求参数；core 的 `/api/internal/**` 方法签名里也不出现 uid 参数，一律取自令牌的 `sub` | **结构性安全** |
 
-### 7.5 流式与故障处理
+**为什么强表述重要**：弱表述下，"篡改 uid 越权"是一个**存在但被约定绕过**的入口——只要有一个微服务、一个接口、一次重构忘了忽略它，就是越权；而且这类缺陷**不会在功能测试里暴露**。强表述下这个入口**不存在**。
+
+配套硬约束：微服务**无令牌一律 401（fail-closed）**，**不把"内网不可达"当作安全前提**（它是目标，不是约束）。
+
+### 7.5 流式、故障处理与代理安全
 
 | 事项 | 要求 |
 |---|---|
@@ -391,16 +415,63 @@ public class ServiceProxyController {
 | 全部不可用 | 返回 **503**（而非 500），并给出明确的业务错误码 |
 | 服务不存在 | 返回 404 |
 
+**自建代理的必修安全项**（选择自建代理 = 自己承担网关的安全细节，原评估报告 🟠-2）：
+
+| 细节 | 风险 | 处理 |
+|---|---|---|
+| hop-by-hop 头（`Connection`、`TE`、`Transfer-Encoding`、`Keep-Alive` 等） | 请求走私（request smuggling） | 转发前按 RFC 7230 **剥离** |
+| `Host` / `X-Forwarded-For` / `X-Forwarded-Host` | 下游服务自我认知错误；伪造来源 IP | core **重写** `Host`，**追加**（而非信任）`X-Forwarded-*` |
+| 请求体大小上限 | 恶意大请求打满 core | 控制面设上限（数据面已走预签名，不过 core） |
+| 目标 URL 构造 | **SSRF** | `serviceName` **必须**命中 `ServiceDiscovery` 已知服务（§7.5 的"服务不存在 → 404"**就是这条防线**，实现处应写明） |
+| 静态放行前缀匹配 | 绕过鉴权直达业务 API | 路径规范化（§7.6 硬规则 1） |
+
+### 7.6 路径映射与放行规则（一张表说清 ＋ 两条硬规则）
+
+**映射规则**：
+
+| 浏览器请求 | core 的处理 | 转发到微服务 | 鉴权 |
+|---|---|---|---|
+| `GET /api/ext/manifest` | 清单端点（**不走代理**） | — | 匿名 |
+| `GET /api/service-auth/jwks` | **服务鉴权公钥端点**（阶段 5 提供，不走代理） | — | **匿名（必须）** |
+| `/api/ext/{svc}/static/**` | 静态资源代理：`serviceName` ＝ 路径第 1 段，**余部直接映射**（**不**拼 `sfc.api.prefix`） | `/static/**` | 匿名（＋ 路径规范化） |
+| 其余 `/api/ext/{svc}/**` | 控制面代理：strip 前缀后，**拼上 metadata 的 `sfc.api.prefix`**（默认 `/api`） | `{prefix}/**` | 需登录 ＋ 委托令牌 |
+| `/dl/...`（阶段 9） | **不经过 core**（Nginx 或直连） | 微服务下载端点 | 委托令牌（query） |
+
+> 两条规则**不对称**（静态直连 `/static/**`，接口要拼 `sfc.api.prefix`）是**刻意**的：静态产物是随微服务发布的**物理目录**，而接口前缀是微服务的**自描述**。
+
+**两条必须写死的硬规则**：
+
+| # | 规则 | 不这么做的后果 |
+|---|---|---|
+| 1 | 放行前缀匹配前**必须做路径规范化**（拒绝 `.`、`..`、`%2e` 及多重编码） | "放行 `/static/**`"会因为 `/api/ext/svc/static/../api/task/create` 这类构造，变成"**放行任意路径**" |
+| 2 | **代理 Controller 禁止使用 `@AllowAnonymous`** | `@AllowAnonymous` 的注册粒度是 **controller 方法的 pattern values**（见 `SecurityConfig.getAnonymousUrls()`）。代理 Controller 映射的是 `/api/ext/**`，一旦被标注，**整个控制面代理会一起 permitAll**，§7.4 的红线当场失效。静态放行必须走 `SecurityConfig` 的显式 `requestMatchers` |
+
 ---
 
 ## 8. 数据面：大文件预签名直连
 
 ```
-① 浏览器 → POST /api/ext/p2p-download/task/downloadUrl   （经 core 代理）
-② core   → 鉴权 + 校验文件归属 → 签发一次性 token（含 uid、文件、过期时间）
+① 浏览器 → POST /api/ext/p2p-download/task/downloadUrl   （经 core 代理，携带委托令牌）
+② core   → 鉴权 + 校验文件归属 → 签发「数据面委托令牌」
+            （与 §7.3 同一枚令牌，只是换了载体：aud = 目标服务名、资源绑定、TTL 5 分钟）
 ③ core   → 返回 { url: "http://<微服务可达地址>:<port>/dl/<token>" }
 ④ 浏览器 → 直连微服务下载（流量不过 core）
+⑤ 微服务 → 用「同一套 JWKS 验签逻辑」校验 query 里的令牌（不新增校验实现）
 ```
+
+**这不是第二套机制，而是同一枚令牌的第三种载体**：
+
+| | 控制面（§7） | 内部回调（档位 2） | 数据面（本节） |
+|---|---|---|---|
+| 载体 | `Authorization: Bearer` | `Authorization: Bearer`（透传） | URL query |
+| TTL | ≤ 60 秒 | 随原令牌 | 5 分钟（`download-token-ttl-seconds` 可配） |
+| 额外绑定 | — | — | 资源标识（文件/任务） |
+| 签发时机 | 每请求现签 | 不签发 | 生成下载地址时签发 |
+
+> **⚠️ "一次性 token"必须收回或补状态**：原文写的是"签发**一次性** token"，但机制里没有任何 nonce / 状态存储——签出来的 JWT 在有效期内**可以无限次重放**。
+> **建议改为"短时效 ＋ 资源绑定"**（与既有文件临时链接的语义一致）；若确实需要一次性，微服务侧必须补 nonce 存储与原子消费，多一个有状态组件。详见[服务鉴权机制设计 · 决策 6](microservice-service-auth-design.md)。
+
+> **URL 载体的固有风险**：query 里的令牌会经 `Referer`、浏览器历史、Nginx access log 与各类代理日志泄漏 ⇒ 必须**短 TTL ＋ 资源绑定 ＋ 只读 scope**，且**不得**复用控制面用的高权限 scope。
 
 ### 部署前提（必须点明）
 
@@ -413,6 +484,10 @@ public class ServiceProxyController {
 | 仅 core 可达 | ❌ 预签名不可行 | 退回 §7 的流式代理 |
 
 **因此 §7 的流式代理实现不能省**——它既是降级路径，也承接控制面本身。
+
+> **⚠️ URL 模板必须统一（原评估报告 🟠-3）**：两种部署形态下的 URL 形态不同——直连是 `/dl/{token}`（无服务名段），Nginx 路由是 `/dl/{service}/{token}`（含服务名段）。
+> 这**不是**两套签名逻辑，只是**同一个配置项**（如 `sys.service.gateway.download-url-template`）切换的拼接模板。**不要**在代码里写死两套分支。
+> 实现时机：阶段 9（见[路线图 9.4](microservice-roadmap.md)）。
 
 ---
 
@@ -478,10 +553,15 @@ public class ServiceProxyController {
 | `.../service/registry/ServiceExtensionRegistry.java` | 新增 | 从 Nacos metadata 聚合扩展清单 |
 | `.../controller/ext/ServiceExtensionController.java` | 新增 | `GET /api/ext/manifest`，`@AllowAnonymous` |
 | `.../controller/ext/ServiceProxyController.java` | 新增 | `@RequestMapping("/api/ext/**")`，无 `{}` 占位符 |
-| `.../service/registry/InternalServiceTokenService.java` | 新增 | 内部服务令牌签发 / 校验 |
+| `.../service/auth/ServiceAuthProperties.java` | 新增 | 绑定 `sys.service.auth.*`：私钥解析（base64(DER)/PEM）、格式校验、profile 判定 |
+| `.../service/auth/DelegationTokenIssuer.java` | 新增 | 委托令牌**签发**（**自持 RSA ＋ jjwt**，RS256、`kid` ＝ 公钥指纹、`aud` 绑定、TTL ≤ 60s）——见[服务鉴权机制设计](microservice-service-auth-design.md) |
+| `.../service/auth/DelegationTokenVerifier.java` | 新增 | 委托令牌**校验**（**自持**验签，不经 OIDC 的 `JwtDecoder`：`iss` / `exp` / `scope`，`aud ∈ 已注册服务名`） |
+| `.../constant/ServiceAuthScopes.java` | 新增 | 独立作用域常量（`internal.read` / `internal.write`），**不复用** `StandardScopes` |
+| `.../controller/ServiceAuthJwksController.java` | 新增 | `GET /api/service-auth/jwks`，**匿名**，返回公钥数组 |
+| `.../config/security/ServiceAuthSecurityConfig.java` | 新增 | `/api/internal/**` 过滤器链，**始终注册**，**无任何 OIDC 条件注解** |
 | `sfc-core/pom.xml` | 改 | 加 HTTP 客户端依赖（复用已有的 okhttp 或 `RestTemplate`） |
-| 三个配置文件 | 改 | 新增 `sys.service.gateway.*`（超时、启用开关、dev-manifest-url）。**AGENTS.md 要求同步 `application-develop.yml`、`application-product.yml`、`pre-release/config.yml`，不改 `application.yml`** |
-| `SecurityConfig.java` | 改 | 放行 `/api/ext/*/static/**` 与 `/api/ext/manifest` |
+| 三个配置文件 | 改 | 新增 `sys.service.gateway.*`（超时、启用开关、dev-manifest-url；阶段 9 的下载 URL 模板）与 `sys.service.auth.*`（阶段 5 的服务鉴权配置）。**AGENTS.md 要求同步 `application-develop.yml`、`application-product.yml`、`pre-release/config.yml`，不改 `application.yml`** |
+| `SecurityConfig.java` | 改 | 放行 `/api/service-auth/jwks`（**匿名，必须是 public**）与 `/api/ext/manifest`、`/api/ext/*/static/**`；静态放行**必须做路径规范化**，且**代理 Controller 禁止用 `@AllowAnonymous`**（`/api/ext/**` 会整体 permitAll，见 §7.6 硬规则 2）。注意这是**非 OIDC 类**——本机制对 OIDC 代码零改动 |
 
 > `ExtensionInfo` 放在 `sfc-core` 而非 `sfc-cloud-api`：它是**前端契约**，不是注册中心 SPI，放瘦契约模块会污染其边界。
 
@@ -505,7 +585,8 @@ public class ServiceProxyController {
 | 前端产物 | 构建输出到 `src/main/resources/static/`，随自身发布 |
 | 静态服务 | 暴露 `GET /static/**` |
 | Nacos metadata | 声明 `sfc.*` 自描述字段 |
-| 内部令牌校验 | 校验 `X-Sfc-Internal-Token` |
+| 鉴权校验 | 从 `Authorization: Bearer` 取**委托令牌** → 公钥取自 **`GET /api/service-auth/jwks`**（本地缓存，按 `kid` 命中；**未知 `kid` 必须回源一次**）→ 校 `iss` / `aud == 自己` / `exp` / `scope`；**uid 只取 `sub`**；**无令牌一律 401（fail-closed）**。可用瘦库 `sfc-cloud-auth`（内部 jjwt，只验签） |
+| 静态放行 | 仅 `/static/**` 与健康检查匿名；放行前**必须路径规范化**（见 §7.6 硬规则 1） |
 
 ---
 
@@ -520,11 +601,14 @@ public class ServiceProxyController {
 **Step 3（前端）**：新增数据源 + 构建输出参数化
 - 验证：清单返回后，DevTools Network 能看到 bundle 被加载；**现有 jar 插件加载行为无回归**
 
-**Step 4（控制面）**：控制面代理 + 内部令牌 + UID/PATH 校验
-- 验证：越权请求（篡改 uid）必须被拒
+**Step 4（控制面）**：控制面代理 + **委托令牌现签** + 信任边界（§7.4 / §7.6）
+- 验证：`curl /api/service-auth/jwks` **匿名可达**，返回的公钥能被离线验签通过
+- 验证：**四条拒绝路径必须逐条实测** —— ①无令牌 → 401；②令牌 `aud` 不符 → 401；③令牌已过期 → 401；④`scope` 不足 → 403。另需验证"篡改 uid 的越权请求必然被拒"（因为 uid 根本不是参数）
+- 验证：**`sys.oidc.enabled=false` 时本链路照常工作**（独立性验收）；**`sys.service.auth.enabled=false` 时 `/api/internal/**` 返回 401**（不落到主链）
+- 验证：静态放行的路径规范化（`/api/ext/svc/static/../api/...` 必须被拒）
 
-**Step 5（数据面）**：预签名下载
-- 验证：大文件下载时确认 **core 进程带宽/线程无显著增长**
+**Step 5（数据面）**：数据面令牌（**同一枚委托令牌换载体**）+ 预签名下载
+- 验证：大文件下载时确认 **core 进程带宽/线程无显著增长**；query 里的令牌被篡改/过期时微服务返回 401
 
 **Step 6**：开发期 dev server 直连
 - 验证：微服务前端改代码，刷新主页面即生效
@@ -544,7 +628,7 @@ public class ServiceProxyController {
 
 | # | 风险 | 影响 | 对策 |
 |---|---|---|---|
-| 1 | **UID/PATH 校验在代理层被绕过** | ⚠️ **越权访问他人网盘数据** | §7.4：信任边界收敛到内部令牌，微服务只信令牌中的 uid |
+| 1 | **越权访问他人网盘数据**（代理层只转发、或 uid 来自请求参数） | ⚠️ **数据越权** | §7.4：**uid 根本不是参数**——只取令牌 `sub`；`/api/internal/**` 方法签名里不出现 uid 参数 |
 | 2 | 静态资源长缓存 + 固定文件名 | 微服务升级后前端加载旧版本 | 清单 URL 带 `?v={version}` |
 | 3 | 清单端点故障 | 拖垮整个前端启动 | `fetchRemoteExtensionManifest()` 失败降级返回 `[]` |
 | 4 | 微服务前端 bundle 加载失败 | 微服务功能不可用 | 复用 `mount()` 已有的 `logWarning`/`logError` 与 Promise reject |
@@ -552,6 +636,12 @@ public class ServiceProxyController {
 | 6 | 预签名地址浏览器不可达 | 下载失败 | §8：三种部署形态；保留流式代理作为降级 |
 | 7 | 多实例 metadata 不一致 | 清单与实际入口不符 | 部署约定：同一服务所有实例 metadata 必须一致 |
 | 8 | 前端改动引入回归 | 现有 jar 插件加载异常 | §11.2 全部为增量改动；Step 3 明确回归验证项 |
+| 9 | ⚠️ **微服务 fail-open**（无令牌即放行，依赖"内网不可达"） | 内网边界一旦被打破就是**任意读** | §7.4 硬约束：**无令牌一律 401**；把"内网不可达"当**目标**而非约束 |
+| 10 | ⚠️ **静态放行被路径穿越绕过** | "放行 `/static/**`" 变成"放行任意路径" | §7.6 硬规则 1：放行前**路径规范化**；**代理 Controller 禁用 `@AllowAnonymous`**（硬规则 2） |
+| 11 | **微服务漏校验 `aud`** | 给 A 的令牌被重放给 B（跨服务越权） | 提供"只验签瘦库"＋线协议文档；验收项含"`aud` 不符必须 401" |
+| 12 | **私钥被提交进仓库**（配置式密钥的固有风险） | 私钥泄漏 ⇒ 任何人可伪造委托令牌 | 生产**只用环境变量注入**；`application-product.yml` 只留 `${SERVICE_AUTH_SIGNING_KEY:}` 占位符；部署说明写明（[服务鉴权机制设计 §10](microservice-service-auth-design.md) 风险 1） |
+| 13 | **集群各 core 节点密钥不一致** | LB 之后"A 节点签发、B 节点出 JWKS"验签失败 | 部署约束：所有节点配**同一把**密钥；验收项含"任一节点签发、任一节点出 JWKS 均能验签通过" |
+| 14 | 数据面 URL 经 `Referer` / 日志泄漏 | 令牌被他人使用 | 短 TTL（**5 分钟**）＋ 资源绑定 ＋ **只读 scope**；不复用控制面高权限 scope |
 
 ---
 
@@ -561,7 +651,9 @@ public class ServiceProxyController {
 |---|---|
 | **网关模式与同源策略** | §3、§7：为什么前端必须只跟 core 说话 |
 | **服务自描述（metadata 驱动）** | §5.3：core 不硬编码任何微服务，靠 Nacos metadata 实现"注册即接入" |
-| **鉴权边界与信任传递** | §7.3、§7.4：内部服务令牌、为什么不能共享用户 JWT、UID 校验为何会丢 |
+| **鉴权边界与信任传递** | §7.3、§7.4：委托令牌、为什么"共享对称密钥"等于把**签发权**也交给了校验方、为什么要把"忽略 uid 参数"升级成"uid 不是参数" |
+| **非对称签名的"能力不对称"** | §7.3：公钥可以随便分发、私钥不能——"密钥怎么安全送给微服务"这个问题因此**消失**，而不是被解决 |
+| **解耦做没做到，如何验证** | §7.3：`sys.oidc.enabled=false` 时本链路必须照常工作——一个开关就能检验"解耦"是真做到了还是只写在文档里 |
 | **控制面 / 数据面分离** | §8：不是所有流量都该过网关，这是架构分层而非实现细节 |
 | **缓存失效策略** | §6.3：长缓存 + 固定文件名的经典冲突，用版本化 URL 解决 |
 | **浏览器同源模型的细节** | §9：`<script src>` 不受 CORS 限制——知道这个才能设计出"开发期直连"的便利 |
@@ -569,12 +661,13 @@ public class ServiceProxyController {
 
 ---
 
-## 15. 审阅时建议重点看这四处
+## 15. 审阅时建议重点看这五处
 
 1. **§5.1 为什么不用 `/static-extension.json`**——这是最容易走错的一步。它看起来"现成"，但 `vite.config.ts` 只代理 `/api`，开发模式下打不到后端。请确认你认同改用 `/api/ext/manifest`。
-2. **§7.4 UID/PATH 校验语义**——这是**安全红线**。代理层如果只做转发，就会把 core 已有的越权防护整个绕过去。请确认"信任边界收敛到内部令牌"的设计。
-3. **§10 UMD 外部依赖约束**——它决定了微服务前端**不能**是独立 SPA 页面，也决定了 iframe 方案的真实成本。这是个容易被忽略但影响架构选择的事实。
-4. **§4.4 源码位置的取舍**——保留了主前端仓库的源码位置，只做产物独立。请确认这符合你对"独立发布"的预期。
+2. **§7.3 的鉴权机制选型**——这是**安全主线**。请特别确认这一条判断：**微服务持有"共享对称内部密钥"= 微服务也能签发任意用户的令牌**，因此必须用非对称签名（core 持私钥、微服务只拿公钥）。机制细节见[服务鉴权机制设计](microservice-service-auth-design.md)。
+3. **§7.4 / §7.6 的信任边界与放行规则**——§7.4 把"忽略 uid 参数"升级为"**uid 不是参数**"；§7.6 有两条硬规则（路径规范化、代理 Controller 禁用 `@AllowAnonymous`），其中第二条若不遵守，**整个控制面代理会一起 permitAll**。
+4. **§10 UMD 外部依赖约束**——它决定了微服务前端**不能**是独立 SPA 页面，也决定了 iframe 方案的真实成本。这是个容易被忽略但影响架构选择的事实。
+5. **§4.4 源码位置的取舍**——保留了主前端仓库的源码位置，只做产物独立。请确认这符合你对"独立发布"的预期。
 
 ---
 
