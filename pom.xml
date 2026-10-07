@@ -11,6 +11,7 @@
     </parent>
     <modules>
         <module>sfc-cloud-api</module>
+        <module>sfc-cloud-auth</module>
         <module>sfc-archive</module>
         <module>sfc-api</module>
         <module>sfc-task</module>

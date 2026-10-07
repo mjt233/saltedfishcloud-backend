@@ -3,6 +3,7 @@
 > **性质**：有序执行清单 + 排序理由。细节见各阶段对应的设计文档。
 > **配套**：[档位 1 设计](microservice-phase1-design.md) · [**服务鉴权机制设计**](microservice-service-auth-design.md) · [依赖冲突调试手册](microservice-nacos-dependency-debugging.md) · [档位 3 设计](microservice-phase3-frontend-integration.md) · [阶段 2 provider 修订说明](microservice-stage2-provider-revision-note.md) · [拓扑 / 泳道图](review/microservice-auth-topology.md)
 > **创建日期**：2026-02-12
+> **修订日期**：2026-10-07（**阶段 5 落地**：5.1~5.8 全部完成并逐条实测通过；新增[线协议文档](microservice-service-auth-protocol.md)；新建 `sfc-cloud-auth` 只验签瘦库并接入 `sfc-demo-service`；裁定两处文档冲突，详见阶段 5 的"实施记录"）
 > **修订日期**：2026-10-06（**阶段 5 方案调整（含独立性调整）**：由"内部服务令牌（两类令牌 `issueForService` / `issueForUser` ＋ 独立共享密钥）"改为"**委托令牌**"——**单一令牌类型**、**RS256 ＋ 自持 RSA 密钥**、微服务用**自建匿名 JWKS 端点**离线验签；并**与 OIDC / OAuth 彻底解耦**（自持密钥、自建端点、独立作用域、无 `@ConditionalOnProperty`）。这同时影响阶段 6 / 8 / 9 的表述，见阶段 5 的"修订说明"与[服务鉴权机制设计](microservice-service-auth-design.md)）
 > **修订日期**：2026-10-05（**阶段 4 方案调整**：由"仓库外独立 git 仓库 + 裸 `nacos-client`"改为"仓库内 `microservices/` 子目录 + Spring Cloud Alibaba 声明式注册"，见阶段 4 的"修订说明"与"版本矩阵"）
 
@@ -305,20 +306,20 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 
 ---
 
-## 阶段 5：服务鉴权机制（委托令牌）—— 契约冻结点
+## 阶段 5：服务鉴权机制（委托令牌）—— 契约冻结点 ✅ 2026-10-07 完成
 
 > **方案修订（2026-10-06，含独立性调整）**：本节原方案是"**内部服务令牌**"——`InternalServiceTokenService` ＋ 两类令牌（`issueForService` 服务身份 / `issueForUser` 用户委托）＋ **一套独立于用户 JWT 的共享对称密钥**。
 > 现按[服务鉴权机制设计](microservice-service-auth-design.md)改为"**委托令牌**"：**单一令牌类型**、**RS256 ＋ 自持 RSA 密钥**、微服务用**自建匿名 JWKS 端点**离线验签，且**与 OIDC / OAuth 零耦合**。
 > **净效果**：从"新引入一套密钥体系 ＋ 两类令牌 ＋ 一个新服务接口"收缩为"一枚令牌 ＋ 一个校验规则"，同时**不再与 OIDC 共享任何密钥、端点或开关**。
 
-- [ ] **5.1** 设计定稿：[服务鉴权机制设计](microservice-service-auth-design.md)（**契约冻结**，无代码）
-- [ ] **5.2** `ServiceAuthProperties`（`sfc-core`）—— 绑定 `sys.service.auth.*`：私钥解析（base64(DER) / PEM）、格式校验、profile 判定
-- [ ] **5.3** `DelegationTokenIssuer`（`sfc-core`）—— **自持** RSA 签名（jjwt），`kid` ＝ 公钥 SHA-256 指纹，按 `aud` ＋ `sub` ＋ `scope` ＋ TTL 现签
-- [ ] **5.4** `DelegationTokenVerifier`（`sfc-core`）—— **自持**验签（不经 OIDC 的 `JwtDecoder`），校验 `iss` / `exp` / `scope`，`aud ∈ 已注册服务名 ∪ 白名单`
-- [ ] **5.5** `GET /api/service-auth/jwks` —— **自建、匿名**的公钥端点（在 `SecurityConfig` 里 permitAll，**不改 OIDC 安全链**）
-- [ ] **5.6** `/api/internal/**` 独立过滤器链 —— **始终注册**（不随 `enabled` 或缺密钥而消失），`enabled=false` 时一律 401
-- [ ] **5.7** 微服务侧**线协议**（header / JWKS URL / claims 表 / 失败语义）＋（可选）`sfc-cloud-auth` 只验签瘦库（内部 jjwt）
-- [ ] **5.8** 配置同步：`sys.service.auth.*` 写入 4 个配置文件 ＋ `docs/quick-start/config.md`
+- [x] **5.1** 设计定稿：[服务鉴权机制设计](microservice-service-auth-design.md)（**契约冻结**，无代码）
+- [x] **5.2** `ServiceAuthProperties`（`sfc-core`）—— 绑定 `sys.service.auth.*`：私钥解析（base64(DER) / PEM）、格式校验、profile 判定
+- [x] **5.3** `DelegationTokenIssuer`（`sfc-core`）—— **自持** RSA 签名（jjwt），`kid` ＝ 公钥 SHA-256 指纹，按 `aud` ＋ `sub` ＋ `scope` ＋ TTL 现签
+- [x] **5.4** `DelegationTokenVerifier`（`sfc-core`）—— **自持**验签（不经 OIDC 的 `JwtDecoder`），校验 `iss` / `exp` / `scope`，`aud ∈ 已注册服务名 ∪ 白名单`
+- [x] **5.5** `GET /api/service-auth/jwks` —— **自建、匿名**的公钥端点（在 `SecurityConfig` 里 permitAll，**不改 OIDC 安全链**）
+- [x] **5.6** `/api/internal/**` 独立过滤器链 —— **始终注册**（不随 `enabled` 或缺密钥而消失），`enabled=false` 时一律 401
+- [x] **5.7** 微服务侧**线协议**（header / JWKS URL / claims 表 / 失败语义）＋（可选）`sfc-cloud-auth` 只验签瘦库（内部 jjwt）
+- [x] **5.8** 配置同步：`sys.service.auth.*` 写入 4 个配置文件 ＋ `docs/quick-start/config.md`
 
 ### 修订说明：与原方案的三处实质差异
 
@@ -361,6 +362,66 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 2. **私钥不得提交进仓库**——生产只用环境变量注入，`application-product.yml` 里只留 `${SERVICE_AUTH_SIGNING_KEY:}` 占位符。
 
 **验证标准**：见[服务鉴权机制设计 §11](microservice-service-auth-design.md)——含 **`aud` 不匹配 / 已过期 / scope 不足 / 无令牌** 四条拒绝路径、**`enabled=false` 时 401（不落到主链）**、**`sys.oidc.enabled=false` 时功能完好**、**换密钥后未知 `kid` 回源一次即通过**，必须逐条实测。
+
+> **实施记录（2026-10-07）：5.1~5.8 全部落地并实测通过**（develop profile，SQLite，非写测试类；全部验收项由 curl 实测取得证据）。
+>
+> **一、落地清单**（13 个新增文件 ＋ 2 个一行级改动）
+>
+> | 位置 | 文件 | 职责 |
+> |---|---|---|
+> | `sfc-api` | `constant/ServiceAuthScopes.java` | `internal.read` / `internal.write`，**刻意与 `StandardScopes` 同包同形但取值独立** |
+> | `sfc-core` | `service/auth/ServiceAuthProperties.java` | `@ConfigurationProperties("sys.service.auth")`；私钥解析（单行 base64(DER) / 多行 PEM）、RSA＋≥2048 校验、profile 白名单判定 |
+> | `sfc-core` | `service/auth/ServiceAuthKeyGenerator.java` | `main` 打印可粘贴的单行 base64 ＋ 派生 `kid`（规避 Windows 无 `base64 -w0`） |
+> | `sfc-core` | `service/auth/DelegationTokenIssuer.java` | jjwt RS256 现签；`kid` ＝ 公钥 SHA-256 指纹（不可配置）；claims 含 `scope`，**不含 `roles`** |
+> | `sfc-core` | `service/auth/DelegationTokenVerifier.java` | 自持公钥离线验签；`iss` / `exp`；**`aud ∈ 已注册服务名 ∪ allowed-audiences`**（不是 `== sfc-core`） |
+> | `sfc-core` | `service/auth/DelegationTokenAuthenticationFilter.java` | 按 `sub` 装载 `UserPrincipal` ＋ `SCOPE_*`；**不授予 `ROLE_OAUTH_USER`**；自带 401 / 500 语义 |
+> | `sfc-core` | `controller/ServiceAuthJwksController.java` | `GET /api/service-auth/jwks`，返回 RFC 7517 的 JWK Set（**不套 `JsonResultImpl` 包装**，因为它是线协议） |
+> | `sfc-core` | `config/security/ServiceAuthSecurityConfig.java` | `/api/internal/**` 链，`@Order(0)`，**无任何 `@ConditionalOnProperty`** |
+> | `sfc-core` | `config/security/SecurityConfig.java` | **只加 1 行**（permitAll 列表加 JWKS 路径）；OIDC 侧零改动 |
+> | `sfc-cloud-auth`（新模块） | 12 个类 ＋ `pom.xml` ＋ `AutoConfiguration.imports` | 只验签瘦库：JWKS 拉取/缓存、未知 `kid` 回源一次、fail-closed 过滤器、路径规范化、`@RequireInternalToken` ＋ 拦截器、**不引 spring-security** |
+> | demo 微服务 | `DemoAuthController.java` ＋ `pom.xml` ＋ `application.yml` | 受保护探针端点，**方法签名里不出现 `uid` 参数** |
+> | 文档 | `microservice-service-auth-protocol.md` | 线协议：header / JWKS URL / claims 表 / 两侧 `aud` 规则差异 / 失败语义 / 轮换契约 |
+>
+> **二、实测证据（逐条）**
+>
+> | 验收项 | 结果 |
+> |---|---|
+> | `curl /api/service-auth/jwks` **匿名可达** | **200**，返回 `kid`/`n`/`e` |
+> | **公钥离线验签** | 生产签发器产出的令牌被微服务**仅凭 JWKS 公钥**验签通过（200），零回调 |
+> | `enabled=false` ＋ **admin 已登录会话令牌** 请求 `/api/internal/**` | **401**（同一会话令牌在主链上是 404＝已认证通过）⇒ 证明**未回落主链** |
+> | 无令牌 / 伪造令牌 | 各 **401** |
+> | `aud` 不符 / 已过期 / `iss` 不符 / 未知 `kid` | 各 **401** |
+> | 合法令牌 | **404**（穿透鉴权链、到达 DispatcherServlet） |
+> | `scope` 不足 | **403**（demo 侧 `@RequireInternalToken("internal.write")`） |
+> | 令牌内**不存在 `roles`** | 解 base64 校验通过 |
+> | **`sys.oidc.enabled=false`** | OIDC 授权服务器未启动（日志无 `从数据库加载 JWK 密钥`），JWKS / 签发 / 两侧验签**全部照常** |
+> | develop ＋ 缺私钥 | 启动 **WARN**（含 openssl 命令）＋ JWKS 请求 **500 ＋ 明确消息**；`/api/internal/**` 仍 401 |
+> | 私钥**格式非法** / **RSA-1024** | **任何 profile 都启动失败**（含 `develop`） |
+> | profile 白名单 | `develop` / `develop-mysql` 允许 WARN 启动；`product` / 未知 profile / 无 profile 一律**拒绝启动** |
+> | **密钥轮换** | 换密钥后 `kid` 由 `OpE_R30…` 变为 `BxBgYck…`；demo 缓存旧公钥仍**回源一次后通过**（200），旧 `kid` 令牌随即 401 |
+> | demo 无令牌 | **401**（fail-closed） |
+> | demo 带 `?uid=999` | 返回的 uid **仍来自 `sub`**（越权入口不存在） |
+> | 路径规范化 | `/static/../api/…`、`%2e%2e`、`%252e%252e`、`/static/./../api/…` **全部 401**；真正的 `/static/**` 放行 |
+>
+> **三、三处需要记录的实现判断**
+>
+> 1. **`allowed-audiences` 在 standalone 下是必需的**（设计与评审文档都未点出）：`registry-provider: local` 时进程内注册表**只含 `sfc-core`**，任何面向微服务的令牌都会被 `aud` 判定拒绝；develop 配置因此显式列出 `sfc-core` ＋ `sfc-demo-service`。
+> 2. **已注册服务名快照加了 10 秒缓存**（设计未规定）：`registry-provider: nacos` 时 `listServiceNames()` 是一次**服务端查询**，若每个内部请求都问一次注册中心，等于给鉴权链路加一跳 RPC、并把注册中心可用性变成鉴权前置依赖。命中 `allowed-audiences` 时**完全不触碰**服务发现；查询失败时退化为"只用白名单"，属 fail-closed 方向。
+> 3. **未知 `kid` 回源带 1 秒合并窗口**：防止用随机 `kid` 构造对 JWKS 端点的请求放大；正常轮换不会在 1 秒内发生两次，因此不影响"回源一次即通过"这条契约（已实测）。
+>
+> **四、两处文档冲突的裁定**（动手前与使用者确认）
+>
+> | # | 冲突 | 裁定 |
+> |---|---|---|
+> | 1 | [auth-topology ③](review/microservice-auth-topology.md) 称"`enabled=false` **或缺密钥**时一律 401"；定稿 §3.3 把"私钥不可用"定为 **500 ＋ 明确消息** | 按定稿拆成三种情形：`enabled=false` → 401；**无令牌 → 401**；**令牌存在但密钥不可用 → 500** |
+> | 2 | 档位 3 §11.1 说同步"**三个**配置文件"（与 `AGENTS.md` 措辞一致）；定稿 §7.2 / 本清单 5.8 是"**4 个 ＋ `config.md`**" | 以定稿为准（已核对 `application-develop-mysql.yml` 与 `docs/quick-start/config.md` 均真实存在，且阶段 1.3 / 3.11 本就是按 5 处同步的） |
+>
+> **五、已知留白（刻意）**
+>
+> - **`/api/internal/**` 尚无任何业务端点**（阶段 6 的内容），因此 core 侧的 `scope 不足 → 403` 只能在 demo 微服务侧实测；core 侧该路径由既有的 `@RequireScope` ＋ `RequireScopeAspect` 承担，机制未改动。
+> - **最小签发入口不做**（决策 7 明确属阶段 6，形态未定）。实测时用一次性探针直接驱动 `DelegationTokenIssuer`（**探针不入库，验证后已删除**），以此证明签发器本身产出的是可验签令牌。
+> - `ServiceAuthScopes` 的两个常量**当前无调用方**（IDE 会提示 "never used"）——这是阶段 5 作为"契约冻结"的必然结果：它的消费者是阶段 6 / 8 的 `/api/internal/**` 端点。**保留而不是删除**，理由见与使用者的讨论（`scope` 是阶段 9 数据面"只读"与"URL 泄漏令牌不得被拿去写"的唯一防线）。
+> - **`origin/kid` 之外未做**：数据面令牌（`res` / `path` / 5 分钟 TTL）属阶段 9，签发器中**未预留**对应方法。
 
 ---
 

@@ -66,6 +66,21 @@ sys:
       password: ""
       # 集群名，用于同一服务内实例的再分组
       cluster-name: DEFAULT
+    # 委托令牌（内部服务鉴权）机制
+    auth:
+      # 是否启用。注意语义：false 表示"关闭"，不是"放开"——/api/internal/** 仍注册过滤器链并一律 401
+      enabled: true
+      # 签名私钥（PKCS#8）。单行 base64(DER) 或多行 PEM 均可。
+      # ⚠️ 私钥不得提交进仓库：开发环境留空（启动只 WARN，用到时才报明确错误），实测/联调时用环境变量注入
+      signing-key: ${SERVICE_AUTH_SIGNING_KEY:}
+      # 控制面令牌 TTL（秒），设计约束为不超过 60 秒
+      token-ttl-seconds: 60
+      # 数据面（下载）令牌 TTL（秒），阶段 9 使用
+      download-token-ttl-seconds: 300
+      # aud 追加白名单，与"已注册服务名集合"取并集
+      allowed-audiences:
+        - sfc-core
+        - sfc-demo-service
 ```
 
 完整配置见 [附录1: config.yml](#1configyml)
@@ -125,6 +140,20 @@ sys:
       password: ${NACOS_PASSWORD:}
       # 集群名，用于同一服务内实例的再分组
       cluster-name: ${NACOS_CLUSTER_NAME:DEFAULT}
+    # 委托令牌（内部服务鉴权）机制
+    auth:
+      # 默认关闭：功能未启用时不阻断既有部署的启动。
+      # 注意语义：false 表示"关闭"，不是"放开"——/api/internal/** 仍注册过滤器链并一律 401
+      enabled: ${SERVICE_AUTH_ENABLED:false}
+      # 签名私钥（PKCS#8）。单行 base64(DER) 或多行 PEM 均可。
+      # ⚠️ 生产环境【只】通过环境变量 SERVICE_AUTH_SIGNING_KEY 注入，此处【绝不可】写入真实私钥
+      signing-key: ${SERVICE_AUTH_SIGNING_KEY:}
+      # 控制面令牌 TTL（秒），设计约束为不超过 60 秒
+      token-ttl-seconds: ${SERVICE_AUTH_TOKEN_TTL_SECONDS:60}
+      # 数据面（下载）令牌 TTL（秒），阶段 9 使用
+      download-token-ttl-seconds: ${SERVICE_AUTH_DOWNLOAD_TOKEN_TTL_SECONDS:300}
+      # aud 追加白名单（逗号分隔），与"已注册服务名集合"取并集；留空表示只用注册中心里的服务名
+      allowed-audiences: ${SERVICE_AUTH_ALLOWED_AUDIENCES:}
     local-cache:
       # 本地缓存默认过期时间（毫秒），默认 15 分钟
       default-expire-ms: ${LOCAL_CACHE_DEFAULT_EXPIRE_MS:900000}

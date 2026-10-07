@@ -22,3 +22,32 @@ spring:
         # 临时实例：由客户端内置心跳续约，也是"停服后实例自动消失"（4.5）的前提。
         # 与咸鱼云侧 NacosServiceRegistry 的 ephemeral=true 对齐
         ephemeral: true
+
+# 委托令牌验签（阶段 5）：微服务侧 fail-closed 校验 core 签发的委托令牌
+#
+# 微服务是【唯一校验方】：用 core 自建匿名 JWKS 端点拿到的公钥离线验签，
+# 零回调、零共享秘密、不持有任何密钥材料，因此"微服务被攻破 ≠ core 被攻破"由算法保证。
+sfc:
+  cloud:
+    auth:
+      # 默认 fail-closed：只要本库在类路径上就保护全部端点。
+      # "内网不可达"是目标不是约束，因此默认为 true，确需关闭必须显式配置。
+      enabled: true
+      # core 侧自建、匿名的公钥端点（阶段 5 交付）
+      jwks-url: ${SFC_JWKS_URL:http://127.0.0.1:8087/api/service-auth/jwks}
+      # ⚠️ aud 校验的基准：本库要求令牌的 aud == 本值。
+      # 这与 core 侧"aud ∈ 已注册服务名集合"的规则刻意不同——受众绑定要防的正是
+      # "给 A 的令牌被 B 接受"，即微服务之间的横向重放。
+      service-name: sfc-demo-service
+      # 期望的签发方，必须与令牌的 iss 一致
+      issuer: sfc-core
+      # 放行路径（默认值即可）：注意匹配前会做路径规范化，
+      # 因此 /static/../api/demo/whoami 这类构造不会被当成放行路径
+      public-paths:
+        - /static/**
+        - /favicon.ico
+        - /index.html
+        - /actuator/health
+        - /actuator/health/**
+        - /actuator/info
+        - /error
