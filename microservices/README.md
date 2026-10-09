@@ -32,7 +32,12 @@
 
 | 工程 | 作用 | 状态 |
 |---|---|---|
-| [`sfc-demo-service`](sfc-demo-service/) | 档位 1 阶段 4 的**极简探针**：验证"独立微服务 → Nacos 注册 → 咸鱼云能发现" | 已接入 |
+| [`sfc-demo-service`](sfc-demo-service/) | **微服务示例/探针**：验证"独立微服务 → Nacos 注册 → 咸鱼云能发现"，并提供 `whoami` / echo / stream 等验收探针（身份来自网关注入的 `X-Sfc-Uid`） | 已接入 |
+| `sfc-gateway` | **独立网关**（Spring Cloud Gateway Server WebFlux）：整站**唯一入口**，承担入口透传（SPA / `/api/**` / WebSocket）与微服务代理（`/api/ext/**`）。**不是微服务**——它不被任何服务反向调用 | **待建**（[设计已定稿](../docs/plan/microservice/microservice-gateway-design.md)） |
+
+> **网关与微服务的区别**：微服务是"被发现的业务进程"，网关是"入口"。两者都放在本目录，是因为它们**共享同一条构建与版本约定**：独立 POM 边界、不继承 root pom、不进 root `<modules>`、零咸鱼云依赖，且使用同一套 Spring Boot / Spring Cloud 版本矩阵。
+>
+> ⚠️ **框架期的信任模式**：网关是**唯一身份来源**（从 core 的 `resolve` 取得 uid 后注入 `X-Sfc-Uid`），微服务直接信任、不做任何校验 ⇒ **微服务只允许内网 / 本机暴露**，上公网前必须先完成服务间鉴权（见[路线图阶段 5](../docs/plan/microservice/microservice-roadmap.md)）。
 
 ---
 

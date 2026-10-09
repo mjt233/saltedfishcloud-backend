@@ -101,23 +101,6 @@ sys:
       password: ""
       # 集群名，用于同一服务内实例的再分组
       cluster-name: DEFAULT
-    # 委托令牌（内部服务鉴权）机制，见 docs/plan/microservice/microservice-service-auth-design.md
-    auth:
-      # 是否启用。注意语义：false 表示"关闭"，不是"放开"——/api/internal/** 仍注册过滤器链并一律 401
-      enabled: true
-      # 签名私钥（PKCS#8）。单行 base64(DER) 或多行 PEM 均可。
-      # ⚠️ 私钥不得提交进仓库：开发环境留空（启动只 WARN，用到时才报明确错误），
-      #    实测/联调时用环境变量注入：SERVICE_AUTH_SIGNING_KEY=<ServiceAuthKeyGenerator 输出的 base64>
-      signing-key: ${SERVICE_AUTH_SIGNING_KEY:}
-      # 控制面令牌 TTL（秒），设计约束为不超过 60 秒
-      token-ttl-seconds: 60
-      # 数据面（下载）令牌 TTL（秒），阶段 9 使用
-      download-token-ttl-seconds: 300
-      # aud 追加白名单，与"已注册服务名集合"取并集。
-      # registry-provider=local 时进程内注册表只含 sfc-core，因此面向微服务的令牌必须靠这里放行
-      allowed-audiences:
-        - sfc-core
-        - sfc-demo-service
     local-cache:
       # 本地缓存默认过期时间（毫秒），默认 15 分钟
       default-expire-ms: 900000

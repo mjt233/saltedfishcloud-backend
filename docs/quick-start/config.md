@@ -66,21 +66,14 @@ sys:
       password: ""
       # 集群名，用于同一服务内实例的再分组
       cluster-name: DEFAULT
-    # 委托令牌（内部服务鉴权）机制
-    auth:
-      # 是否启用。注意语义：false 表示"关闭"，不是"放开"——/api/internal/** 仍注册过滤器链并一律 401
+    # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
+    # 转发、负载均衡、重试、流式管道与头部治理都在网关进程内；core 只做会话校验与策略判定（resolve）
+    gateway:
+      # 是否启用 resolve 端点。注意语义：false 时端点【仍然注册】但一律拒绝——"关闭"不等于"放开"
       enabled: true
-      # 签名私钥（PKCS#8）。单行 base64(DER) 或多行 PEM 均可。
-      # ⚠️ 私钥不得提交进仓库：开发环境留空（启动只 WARN，用到时才报明确错误），实测/联调时用环境变量注入
-      signing-key: ${SERVICE_AUTH_SIGNING_KEY:}
-      # 控制面令牌 TTL（秒），设计约束为不超过 60 秒
-      token-ttl-seconds: 60
-      # 数据面（下载）令牌 TTL（秒），阶段 9 使用
-      download-token-ttl-seconds: 300
-      # aud 追加白名单，与"已注册服务名集合"取并集
-      allowed-audiences:
-        - sfc-core
-        - sfc-demo-service
+      # 实例 metadata 未声明 sfc.api.prefix 时使用的缺省 API 前缀
+      # （微服务在注册时用 metadata 的 sfc.api.prefix 自描述，core 不硬编码任何微服务的路径）
+      default-api-prefix: /api
 ```
 
 完整配置见 [附录1: config.yml](#1configyml)
@@ -140,20 +133,16 @@ sys:
       password: ${NACOS_PASSWORD:}
       # 集群名，用于同一服务内实例的再分组
       cluster-name: ${NACOS_CLUSTER_NAME:DEFAULT}
-    # 委托令牌（内部服务鉴权）机制
-    auth:
-      # 默认关闭：功能未启用时不阻断既有部署的启动。
-      # 注意语义：false 表示"关闭"，不是"放开"——/api/internal/** 仍注册过滤器链并一律 401
-      enabled: ${SERVICE_AUTH_ENABLED:false}
-      # 签名私钥（PKCS#8）。单行 base64(DER) 或多行 PEM 均可。
-      # ⚠️ 生产环境【只】通过环境变量 SERVICE_AUTH_SIGNING_KEY 注入，此处【绝不可】写入真实私钥
-      signing-key: ${SERVICE_AUTH_SIGNING_KEY:}
-      # 控制面令牌 TTL（秒），设计约束为不超过 60 秒
-      token-ttl-seconds: ${SERVICE_AUTH_TOKEN_TTL_SECONDS:60}
-      # 数据面（下载）令牌 TTL（秒），阶段 9 使用
-      download-token-ttl-seconds: ${SERVICE_AUTH_DOWNLOAD_TOKEN_TTL_SECONDS:300}
-      # aud 追加白名单（逗号分隔），与"已注册服务名集合"取并集；留空表示只用注册中心里的服务名
-      allowed-audiences: ${SERVICE_AUTH_ALLOWED_AUDIENCES:}
+    # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
+    # ⚠️ 代理侧的转发配置（core 地址、监听端口、超时、请求体上限、重试次数）在
+    #    microservices/sfc-gateway 工程自己的 application.yml 内，不占用 sys. 前缀。
+    # ⚠️ 框架期采用【信任模式】：网关从 resolve 取得 uid 后注入 X-Sfc-Uid，微服务直接信任；
+    #    因此微服务与 core 的内部接口只允许内网可达，上公网前必须先完成服务间鉴权（阶段 5）。
+    gateway:
+      # 是否启用 resolve 端点。注意语义：false 时端点【仍然注册】但一律拒绝——"关闭"不等于"放开"
+      enabled: ${SERVICE_GATEWAY_ENABLED:true}
+      # 实例 metadata 未声明 sfc.api.prefix 时使用的缺省 API 前缀
+      default-api-prefix: ${SERVICE_GATEWAY_DEFAULT_API_PREFIX:/api}
     local-cache:
       # 本地缓存默认过期时间（毫秒），默认 15 分钟
       default-expire-ms: ${LOCAL_CACHE_DEFAULT_EXPIRE_MS:900000}

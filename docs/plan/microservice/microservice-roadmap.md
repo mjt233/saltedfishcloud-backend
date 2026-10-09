@@ -1,10 +1,9 @@
 # 微服务改造推进路线图
 
 > **性质**：有序执行清单 + 排序理由。细节见各阶段对应的设计文档。
-> **配套**：[档位 1 设计](microservice-phase1-design.md) · [**服务鉴权机制设计**](microservice-service-auth-design.md) · [依赖冲突调试手册](microservice-nacos-dependency-debugging.md) · [档位 3 设计](microservice-phase3-frontend-integration.md) · [阶段 2 provider 修订说明](microservice-stage2-provider-revision-note.md) · [拓扑 / 泳道图](review/microservice-auth-topology.md)
+> **配套**：[档位 1 设计](microservice-phase1-design.md) · [**网关独立化设计（`sfc-gateway`）**](microservice-gateway-design.md) · [依赖冲突调试手册](microservice-nacos-dependency-debugging.md) · [档位 3 设计](microservice-phase3-frontend-integration.md) · [阶段 2 provider 修订说明](microservice-stage2-provider-revision-note.md) · [方案评估报告](review/microservice-plan-review.md)
 > **创建日期**：2026-02-12
-> **修订日期**：2026-10-07（**阶段 5 落地**：5.1~5.8 全部完成并逐条实测通过；新增[线协议文档](microservice-service-auth-protocol.md)；新建 `sfc-cloud-auth` 只验签瘦库并接入 `sfc-demo-service`；裁定两处文档冲突，详见阶段 5 的"实施记录"）
-> **修订日期**：2026-10-06（**阶段 5 方案调整（含独立性调整）**：由"内部服务令牌（两类令牌 `issueForService` / `issueForUser` ＋ 独立共享密钥）"改为"**委托令牌**"——**单一令牌类型**、**RS256 ＋ 自持 RSA 密钥**、微服务用**自建匿名 JWKS 端点**离线验签；并**与 OIDC / OAuth 彻底解耦**（自持密钥、自建端点、独立作用域、无 `@ConditionalOnProperty`）。这同时影响阶段 6 / 8 / 9 的表述，见阶段 5 的"修订说明"与[服务鉴权机制设计](microservice-service-auth-design.md)）
+> **安全后置**：服务间鉴权（阶段 5）**整体后置**——框架阶段统一采用**信任模式**（网关是唯一身份来源），安全机制待框架完成后另行规划。取舍、债务与部署约束见[网关独立化设计 §2](microservice-gateway-design.md)
 > **修订日期**：2026-10-05（**阶段 4 方案调整**：由"仓库外独立 git 仓库 + 裸 `nacos-client`"改为"仓库内 `microservices/` 子目录 + Spring Cloud Alibaba 声明式注册"，见阶段 4 的"修订说明"与"版本矩阵"）
 
 ---
@@ -60,11 +59,11 @@
 | 2 | 进程内 provider 闭环（纯内存，不依赖任何既有组件） | **无** | 小 | 阶段 1 | 管理端可见自身节点 |
 | 3 | **Nacos 适配插件** | ⚠️ **高** | 中 | 阶段 1、2、0 | |
 | 4 | demo 微服务双向注册（SCA 声明式） | 低 | 小 | 阶段 3 | 🏁 **档位 1 完成** |
-| 5 | 服务鉴权机制（**委托令牌**：契约冻结 ＋ 签发 / 校验基建） | 低 | 小 | 阶段 4（**排序偏好**） | |
-| 6 | **档位 2**：远程核心能力 | 中高 | **大** | 阶段 5 | 🏁 微服务可读写网盘 |
-| 7 | **档位 3**：前端发现 + 资源代理 | 中 | 中 | 阶段 4 | 🏁 前端能加载微服务扩展 |
-| 8 | 控制面 API 代理 + 鉴权 | **中高**（安全） | 中 | 阶段 5、7 | |
-| 9 | 数据面预签名直连 | 中 | 中 | 阶段 8 | 🏁 **档位 3 完成** |
+| 5 | 服务间鉴权（**后置**：框架期采用**信任模式**） | — | — | 框架完成后 | 🔒 待重新规划 |
+| 6 | **档位 2**：远程核心能力 | 中高 | **大** | 阶段 4、8 | 🏁 微服务可读写网盘 |
+| 7 | **档位 3**：前端发现 + 资源代理 | 中 | 中 | 阶段 4（代理部分依赖阶段 8 的网关） | 🏁 前端能加载微服务扩展 |
+| 8 | 控制面代理（**独立网关 `sfc-gateway`**）— **信任模式** | **中高**（新进程） | 中 | 阶段 4、7 | 🏁 网关成为唯一入口 |
+| 9 | 数据面预签名直连 —— **⏸ 暂缓**（框架期下载走网关流式代理） | — | — | 安全阶段 | |
 | 10 | 开发期体验（dev server 直连） | 低 | 小 | 阶段 7 | |
 
 **并行机会**：阶段 0 可与阶段 1、2 并行；阶段 7 可与阶段 6 并行（阶段 7 只依赖阶段 4）。
@@ -306,152 +305,51 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 
 ---
 
-## 阶段 5：服务鉴权机制（委托令牌）—— 契约冻结点 ✅ 2026-10-07 完成
+## 阶段 5：服务间鉴权 —— 🔒 **后置，待重新规划**
 
-> **方案修订（2026-10-06，含独立性调整）**：本节原方案是"**内部服务令牌**"——`InternalServiceTokenService` ＋ 两类令牌（`issueForService` 服务身份 / `issueForUser` 用户委托）＋ **一套独立于用户 JWT 的共享对称密钥**。
-> 现按[服务鉴权机制设计](microservice-service-auth-design.md)改为"**委托令牌**"：**单一令牌类型**、**RS256 ＋ 自持 RSA 密钥**、微服务用**自建匿名 JWKS 端点**离线验签，且**与 OIDC / OAuth 零耦合**。
-> **净效果**：从"新引入一套密钥体系 ＋ 两类令牌 ＋ 一个新服务接口"收缩为"一枚令牌 ＋ 一个校验规则"，同时**不再与 OIDC 共享任何密钥、端点或开关**。
-
-- [x] **5.1** 设计定稿：[服务鉴权机制设计](microservice-service-auth-design.md)（**契约冻结**，无代码）
-- [x] **5.2** `ServiceAuthProperties`（`sfc-core`）—— 绑定 `sys.service.auth.*`：私钥解析（base64(DER) / PEM）、格式校验、profile 判定
-- [x] **5.3** `DelegationTokenIssuer`（`sfc-core`）—— **自持** RSA 签名（jjwt），`kid` ＝ 公钥 SHA-256 指纹，按 `aud` ＋ `sub` ＋ `scope` ＋ TTL 现签
-- [x] **5.4** `DelegationTokenVerifier`（`sfc-core`）—— **自持**验签（不经 OIDC 的 `JwtDecoder`），校验 `iss` / `exp` / `scope`，`aud ∈ 已注册服务名 ∪ 白名单`
-- [x] **5.5** `GET /api/service-auth/jwks` —— **自建、匿名**的公钥端点（在 `SecurityConfig` 里 permitAll，**不改 OIDC 安全链**）
-- [x] **5.6** `/api/internal/**` 独立过滤器链 —— **始终注册**（不随 `enabled` 或缺密钥而消失），`enabled=false` 时一律 401
-- [x] **5.7** 微服务侧**线协议**（header / JWKS URL / claims 表 / 失败语义）＋（可选）`sfc-cloud-auth` 只验签瘦库（内部 jjwt）
-- [x] **5.8** 配置同步：`sys.service.auth.*` 写入 4 个配置文件 ＋ `docs/quick-start/config.md`
-
-### 修订说明：与原方案的三处实质差异
-
-| # | 原方案 | 现方案 | 理由 |
-|---|---|---|---|
-| 1 | 两类令牌（服务身份 ＋ 用户委托） | **只有一类：委托令牌** | "服务身份"在当前规划里**没有真实消费者**：阶段 6 的调用是**代表用户**读他的文件，而服务身份里没有 uid ⇒ core 无从知道"读谁的文件"；若改用"服务身份 ＋ 参数 uid"，又直接违反阶段 8.5 的红线。这重演了[决策 5](microservice-phase1-design.md) 否决 `cache` provider 时用的标准——"常驻成本，却没有真实消费者" |
-| 2 | **共享对称密钥**（独立于用户 JWT 密钥） | **RS256 ＋ 自持 RSA 密钥**；微服务只拿**公钥** | 对称密钥交给校验方 ⇒ **校验方也能签发**，于是"微服务被攻破 = core 被攻破"依然成立（只是换了把钥匙，而这正是档位 3 §7.3 想避免的）。改为公钥后，**分发没有安全后果，"密钥分发"这个问题直接消失** |
-| 3 | 自定义头 `X-Sfc-Internal-Token` | **`Authorization: Bearer`** | 与既有 `OidcAccessTokenFilter` / `McpApiKeyFilter` 的 Bearer 约定一致；且 `Authorization` 已在 CORS 白名单内，自定义头不在 |
-
-### 独立性调整：与 OIDC / OAuth 解耦（2026-10-06 追加）
-
-原以为"复用 OIDC 的 JWK / `JwtDecoder` / `/oauth2/jwks` / `StandardScopes`"是最省事的路径，但那样会有两个不能接受的后果：**①`sys.oidc.enabled=false` 时微服务鉴权一起失效；②OIDC 侧的密钥/作用域变更会波及微服务鉴权**。现全部自持：
-
-| 维度 | 复用 OIDC（已否决） | **自持（采用）** |
-|---|---|---|
-| 签名密钥 | `OidcAuthorizationServerConfig.jwkSource()` | **`sys.service.auth.signing-key`**（配置文件 ＋ 环境变量） |
-| JWKS 端点 | `/oauth2/jwks`（SAS 的 OIDC 端点） | **`GET /api/service-auth/jwks`**（自建、匿名） |
-| 验签器 | OIDC 的 `JwtDecoder` bean | **自持**（jjwt 直接持公钥） |
-| 作用域 | `StandardScopes`（开放平台 scope 值） | **独立 `internal.*`**（`ServiceAuthScopes`） |
-| 开关 | `@ConditionalOnProperty("sys.oidc.enabled")` | **无 OIDC 条件**（独立 `sys.service.auth.enabled`） |
-| 对 OIDC 代码的改动 | 需要 | **零改动**（只在**非 OIDC** 的 `SecurityConfig` 里加一行 permitAll） |
-
-> **唯一刻意保留的"机制级复用"**：`@RequireScope` 注解 ＋ `RequireScopeAspect`（只做 `SCOPE_*` authority 检查，无任何 OAuth 运行时依赖）；**作用域的值完全独立**。重复实现这 40 行才是新的技术债。
+> **本阶段当前不实施。** 框架阶段（阶段 6~8）**统一采用信任模式**：网关是唯一的身份来源——它从 core 的 resolve 端点取得 uid 后注入 `X-Sfc-Uid`，微服务直接信任；**不做令牌、不做验签、不做 `aud` / `scope`**。
 >
-> **独立性验收项**：`sys.oidc.enabled=false` 时，签发、JWKS 端点、`/api/internal/**` 调用**必须全部正常工作**。
+> 取舍、安全债务与部署约束见[网关独立化设计 §2](microservice-gateway-design.md)。**硬约束：微服务仅内网/本机可达，网关是唯一对外入口；上公网前必须先完成本节。**
 
-### 为什么仍然单列一个阶段（而不是并入阶段 8）
+**重新规划时必须回答的问题（本节不预设方案）**：
 
-1. **契约必须先冻结**：微服务是**独立仓库 / 独立进程**，令牌形态是跨进程协作的前置，不能边做边定；
-2. **它现在是阶段 6 的硬前置**（不再是"排序偏好"）：阶段 6 的微服务要访问 core 的 `/api/internal/**`，就必须先有签发器与校验规则；
-3. **它引入的新变量是"一把自持密钥 ＋ 一个自建端点"**，而不是"一套与既有体系纠缠的新密钥体系"——故障域与演进都与 OIDC 隔离（见上表）。
+1. 身份载体如何做到**可验证**——不能是任何人都能写的请求头；
+2. 如何防**跨服务重放**（给 A 的凭证不能被 B 接受）；
+3. 微服务侧的失败语义：无凭证一律拒绝（**fail-closed**），而不是"内网即信任"；
+4. **core 的 `/api/internal/**`** 的服务身份与用户身份如何同时表达；
+5. 数据面（下载）URL 载体的防泄漏与资源绑定；
+6. 签名材料的**分发与轮换**，以及判定标准：**校验方拿到的材料能不能用来签发**（能，则方案错误）；
+7. 与 OIDC / OAuth 的耦合边界（是否复用其密钥与端点）。
 
-> **⚠️ 一个必须提前知道的必然推论**：令牌只能由 core 签发 ⇒ **阶段 6 的调用链必须由 core 起头**，微服务**无法自发**访问 core 的文件能力。
-> 这不是缺陷，而是一条想要的性质（"微服务后台任务随便读盘"在结构上不可能发生）。阶段 6 期间的令牌来源、以及它与阶段 8 代理层的关系（同一个签发器，只是签发时机不同），见[服务鉴权机制设计 · 决策 7](microservice-service-auth-design.md)。
-
-**规模**：**小~中**（原为"中"）。不新建与既有体系纠缠的密钥设施、不新建令牌服务接口；核心工作是自己持有密钥、建一个匿名端点、接一条过滤器链——**大部分是接线 ＋ 一段配置校验，不是造轮子**。
-
-**⚠️ 两个必须提前知道的运维约束**：
-1. **集群各 core 节点必须配同一把密钥**，否则 LB 之后"A 节点签发、B 节点出 JWKS"会验签失败（这是配置式密钥相对数据库式密钥的代价）；
-2. **私钥不得提交进仓库**——生产只用环境变量注入，`application-product.yml` 里只留 `${SERVICE_AUTH_SIGNING_KEY:}` 占位符。
-
-**验证标准**：见[服务鉴权机制设计 §11](microservice-service-auth-design.md)——含 **`aud` 不匹配 / 已过期 / scope 不足 / 无令牌** 四条拒绝路径、**`enabled=false` 时 401（不落到主链）**、**`sys.oidc.enabled=false` 时功能完好**、**换密钥后未知 `kid` 回源一次即通过**，必须逐条实测。
-
-> **实施记录（2026-10-07）：5.1~5.8 全部落地并实测通过**（develop profile，SQLite，非写测试类；全部验收项由 curl 实测取得证据）。
->
-> **一、落地清单**（13 个新增文件 ＋ 2 个一行级改动）
->
-> | 位置 | 文件 | 职责 |
-> |---|---|---|
-> | `sfc-api` | `constant/ServiceAuthScopes.java` | `internal.read` / `internal.write`，**刻意与 `StandardScopes` 同包同形但取值独立** |
-> | `sfc-core` | `service/auth/ServiceAuthProperties.java` | `@ConfigurationProperties("sys.service.auth")`；私钥解析（单行 base64(DER) / 多行 PEM）、RSA＋≥2048 校验、profile 白名单判定 |
-> | `sfc-core` | `service/auth/ServiceAuthKeyGenerator.java` | `main` 打印可粘贴的单行 base64 ＋ 派生 `kid`（规避 Windows 无 `base64 -w0`） |
-> | `sfc-core` | `service/auth/DelegationTokenIssuer.java` | jjwt RS256 现签；`kid` ＝ 公钥 SHA-256 指纹（不可配置）；claims 含 `scope`，**不含 `roles`** |
-> | `sfc-core` | `service/auth/DelegationTokenVerifier.java` | 自持公钥离线验签；`iss` / `exp`；**`aud ∈ 已注册服务名 ∪ allowed-audiences`**（不是 `== sfc-core`） |
-> | `sfc-core` | `service/auth/DelegationTokenAuthenticationFilter.java` | 按 `sub` 装载 `UserPrincipal` ＋ `SCOPE_*`；**不授予 `ROLE_OAUTH_USER`**；自带 401 / 500 语义 |
-> | `sfc-core` | `controller/ServiceAuthJwksController.java` | `GET /api/service-auth/jwks`，返回 RFC 7517 的 JWK Set（**不套 `JsonResultImpl` 包装**，因为它是线协议） |
-> | `sfc-core` | `config/security/ServiceAuthSecurityConfig.java` | `/api/internal/**` 链，`@Order(0)`，**无任何 `@ConditionalOnProperty`** |
-> | `sfc-core` | `config/security/SecurityConfig.java` | **只加 1 行**（permitAll 列表加 JWKS 路径）；OIDC 侧零改动 |
-> | `sfc-cloud-auth`（新模块） | 12 个类 ＋ `pom.xml` ＋ `AutoConfiguration.imports` | 只验签瘦库：JWKS 拉取/缓存、未知 `kid` 回源一次、fail-closed 过滤器、路径规范化、`@RequireInternalToken` ＋ 拦截器、**不引 spring-security** |
-> | demo 微服务 | `DemoAuthController.java` ＋ `pom.xml` ＋ `application.yml` | 受保护探针端点，**方法签名里不出现 `uid` 参数** |
-> | 文档 | `microservice-service-auth-protocol.md` | 线协议：header / JWKS URL / claims 表 / 两侧 `aud` 规则差异 / 失败语义 / 轮换契约 |
->
-> **二、实测证据（逐条）**
->
-> | 验收项 | 结果 |
-> |---|---|
-> | `curl /api/service-auth/jwks` **匿名可达** | **200**，返回 `kid`/`n`/`e` |
-> | **公钥离线验签** | 生产签发器产出的令牌被微服务**仅凭 JWKS 公钥**验签通过（200），零回调 |
-> | `enabled=false` ＋ **admin 已登录会话令牌** 请求 `/api/internal/**` | **401**（同一会话令牌在主链上是 404＝已认证通过）⇒ 证明**未回落主链** |
-> | 无令牌 / 伪造令牌 | 各 **401** |
-> | `aud` 不符 / 已过期 / `iss` 不符 / 未知 `kid` | 各 **401** |
-> | 合法令牌 | **404**（穿透鉴权链、到达 DispatcherServlet） |
-> | `scope` 不足 | **403**（demo 侧 `@RequireInternalToken("internal.write")`） |
-> | 令牌内**不存在 `roles`** | 解 base64 校验通过 |
-> | **`sys.oidc.enabled=false`** | OIDC 授权服务器未启动（日志无 `从数据库加载 JWK 密钥`），JWKS / 签发 / 两侧验签**全部照常** |
-> | develop ＋ 缺私钥 | 启动 **WARN**（含 openssl 命令）＋ JWKS 请求 **500 ＋ 明确消息**；`/api/internal/**` 仍 401 |
-> | 私钥**格式非法** / **RSA-1024** | **任何 profile 都启动失败**（含 `develop`） |
-> | profile 白名单 | `develop` / `develop-mysql` 允许 WARN 启动；`product` / 未知 profile / 无 profile 一律**拒绝启动** |
-> | **密钥轮换** | 换密钥后 `kid` 由 `OpE_R30…` 变为 `BxBgYck…`；demo 缓存旧公钥仍**回源一次后通过**（200），旧 `kid` 令牌随即 401 |
-> | demo 无令牌 | **401**（fail-closed） |
-> | demo 带 `?uid=999` | 返回的 uid **仍来自 `sub`**（越权入口不存在） |
-> | 路径规范化 | `/static/../api/…`、`%2e%2e`、`%252e%252e`、`/static/./../api/…` **全部 401**；真正的 `/static/**` 放行 |
->
-> **三、三处需要记录的实现判断**
->
-> 1. **`allowed-audiences` 在 standalone 下是必需的**（设计与评审文档都未点出）：`registry-provider: local` 时进程内注册表**只含 `sfc-core`**，任何面向微服务的令牌都会被 `aud` 判定拒绝；develop 配置因此显式列出 `sfc-core` ＋ `sfc-demo-service`。
-> 2. **已注册服务名快照加了 10 秒缓存**（设计未规定）：`registry-provider: nacos` 时 `listServiceNames()` 是一次**服务端查询**，若每个内部请求都问一次注册中心，等于给鉴权链路加一跳 RPC、并把注册中心可用性变成鉴权前置依赖。命中 `allowed-audiences` 时**完全不触碰**服务发现；查询失败时退化为"只用白名单"，属 fail-closed 方向。
-> 3. **未知 `kid` 回源带 1 秒合并窗口**：防止用随机 `kid` 构造对 JWKS 端点的请求放大；正常轮换不会在 1 秒内发生两次，因此不影响"回源一次即通过"这条契约（已实测）。
->
-> **四、两处文档冲突的裁定**（动手前与使用者确认）
->
-> | # | 冲突 | 裁定 |
-> |---|---|---|
-> | 1 | [auth-topology ③](review/microservice-auth-topology.md) 称"`enabled=false` **或缺密钥**时一律 401"；定稿 §3.3 把"私钥不可用"定为 **500 ＋ 明确消息** | 按定稿拆成三种情形：`enabled=false` → 401；**无令牌 → 401**；**令牌存在但密钥不可用 → 500** |
-> | 2 | 档位 3 §11.1 说同步"**三个**配置文件"（与 `AGENTS.md` 措辞一致）；定稿 §7.2 / 本清单 5.8 是"**4 个 ＋ `config.md`**" | 以定稿为准（已核对 `application-develop-mysql.yml` 与 `docs/quick-start/config.md` 均真实存在，且阶段 1.3 / 3.11 本就是按 5 处同步的） |
->
-> **五、已知留白（刻意）**
->
-> - **`/api/internal/**` 尚无任何业务端点**（阶段 6 的内容），因此 core 侧的 `scope 不足 → 403` 只能在 demo 微服务侧实测；core 侧该路径由既有的 `@RequireScope` ＋ `RequireScopeAspect` 承担，机制未改动。
-> - **最小签发入口不做**（决策 7 明确属阶段 6，形态未定）。实测时用一次性探针直接驱动 `DelegationTokenIssuer`（**探针不入库，验证后已删除**），以此证明签发器本身产出的是可验签令牌。
-> - `ServiceAuthScopes` 的两个常量**当前无调用方**（IDE 会提示 "never used"）——这是阶段 5 作为"契约冻结"的必然结果：它的消费者是阶段 6 / 8 的 `/api/internal/**` 端点。**保留而不是删除**，理由见与使用者的讨论（`scope` 是阶段 9 数据面"只读"与"URL 泄漏令牌不得被拿去写"的唯一防线）。
-> - **`origin/kid` 之外未做**：数据面令牌（`res` / `path` / 5 分钟 TTL）属阶段 9，签发器中**未预留**对应方法。
+> **历史**：曾实现过一版"委托令牌"（RS256 ＋ 自建 JWKS ＋ `sfc-cloud-auth` 瘦库），已随本次**安全后置**整体回退，内容可从 git 历史取回参考；**其文档不予保留**，避免"半成品安全设施"误导后续实现。
 
 ---
 
 ## 阶段 6：档位 2 —— 远程核心能力 ⭐ 学习价值最高
 
-- [ ] **6.1** core 暴露内部 API（**`/api/internal/**`**，与项目 `/api/**` 约定一致，顺带继承 `ProtectBlocker`），**首批只做只读、无流式的方法**；由阶段 5 的过滤器链验签，**方法签名里不出现 uid 参数**（uid 一律取自令牌的 `sub`）
+- [ ] **6.1** core 暴露内部 API（**`/api/internal/**`**，与项目 `/api/**` 约定一致，顺带继承 `ProtectBlocker`），**首批只做只读、无流式的方法**；**框架期走信任模式**：core 按网关注入的 `X-Sfc-Uid` 装载主体，**方法签名里不出现 uid 参数**
 - [ ] **6.2** 新建 `sfc-remote-client` SDK 模块
 - [ ] **6.3** `RemoteDiskFileSystem implements DiskFileSystem` —— 让微服务侧代码与本地实现**同构、零改造**
 - [ ] **6.4** 流式接口专项设计（`getResource` / `saveFileByStream` / `newOutputStream`）
 - [ ] **6.5** 微服务引入 SDK，实际调用验证
 
-**鉴权：微服务只做"透传"，不做"签发"**
+**身份传递：微服务"透传"，不做任何签发或校验**
 
 | 项 | 做法 |
 |---|---|
-| 令牌来源 | 由 core 在发起调用时签发（阶段 6 的入口见下方 ⚠️ 说明）；**微服务不产生令牌** |
-| 携带方式 | SDK 把收到的令牌**原样**放进 `Authorization: Bearer`——**不改写、不重签、不解析**。微服务侧完全不需要读令牌内容：uid 由 core 从令牌的 `sub` 取得 |
-| core 侧校验 | 复用阶段 5 的过滤器链：验签 → 校验 `iss` / `exp` / `scope` ＋ **`aud` ∈ 已注册服务名集合**（**不是** `== sfc-core`，否则"core → 微服务 → core"的透传当场断掉）→ 按 `sub` 装载 `UserPrincipal` ⇒ `@UID` / `@RequireScope` / `@RolesAllowed` **原样生效** |
+| 身份来源 | 网关从 core 的 resolve 端点取得 uid 后注入 `X-Sfc-Uid`；微服务必须把它**原样**带在回调 core 的请求上 |
+| 微服务侧 | **不产生、不解析、不校验**任何身份凭证；业务代码只读该头 |
+| core 侧校验 | 框架期**信任该头**并按它装载 `UserPrincipal` ⇒ `@UID` / `@RolesAllowed` / `@ValidPath` 原样生效；**无该头一律 401**（"降级"不等于"放开"） |
 
-> **⚠️ 阶段 6 的令牌从哪来（原方案没写，必须补）**：令牌只能由 core 签发，所以在阶段 8 的代理层就位之前，**调用链必须由 core 起头**——由 core 侧一个**管理员限定**的最小签发入口签发并发起调用。
-> 阶段 8 起，签发时机前移到代理层（每请求现签），**复用同一个 `DelegationTokenIssuer`，不产生第二条签名路径**。
-> 完整论证见[服务鉴权机制设计 · 决策 7](microservice-service-auth-design.md)。
+> ⚠️ **这是框架期的临时契约，不是最终信任模型**：任何人都能伪造 `X-Sfc-Uid`，因此微服务与 core 的内部接口**只能在内网暴露**。安全阶段（阶段 5）会把它换成**可验证**的载体——见上方阶段 5 的"待答问题清单"。
 
 **为什么推荐排在档位 3 之前**：
 
 1. **它决定微服务的"业务能力边界"**——如果核心能力调不通，前端接上去也只是个空壳
-2. 它的传输层与鉴权设施**可被档位 3 的代理层直接复用**
+2. 它的传输层**可被档位 3 的代理层直接复用**
 3. 它是难度最高、学习价值最大的一块（跨进程流式语义），**越早暴露越好**
 
-**"首批只做只读、无流式"是刻意的**：先把跨进程调用的骨架和鉴权打通，再逐步啃流式这个硬骨头。见 [档位 1 设计 §1 的非目标划分思路](microservice-phase1-design.md)。
+**"首批只做只读、无流式"是刻意的**：先把跨进程调用的骨架打通，再逐步啃流式这个硬骨头。见 [档位 1 设计 §1 的非目标划分思路](microservice-phase1-design.md)。
 
 > ⚠️ **免责提醒**：`DiskFileSystem` 的流式语义（`Resource` / `InputStream` / `OutputStream`）跨进程**无法直接序列化**，必须另开传输通道。这是"拆"的代价的具象体现，也是本项目最难的一块。规划时要给它留出充足时间。
 
@@ -464,8 +362,8 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 - [ ] **7.1** `ExtensionInfo` / `ExtensionResource` DTO（字段严格对齐前端 TS 类型）
 - [ ] **7.2** `ServiceExtensionRegistry` —— 从 Nacos 实例 metadata 聚合扩展清单
 - [ ] **7.3** `GET /api/ext/manifest`（`@AllowAnonymous`）
-- [ ] **7.4** `ServiceProxyController` —— `@RequestMapping("/api/ext/**")`，**无 `{}` 占位符**（AGENTS.md 合规）
-- [ ] **7.5** `SecurityConfig` 放行 `/api/ext/manifest` 与 `/api/ext/*/static/**`
+- [ ] **7.4** 网关路由：`/api/ext/{svc}/static/**` → 微服务 `/static/**`（`serviceName` 取路径第 1 段，**余部直接映射、不拼 `sfc.api.prefix`**）
+- [ ] **7.5** 静态资源放行：**在网关侧**匿名放行，**连同路径校验一起加**；core 的 `SecurityConfig` 只放行 `/api/ext/manifest`
 - [ ] **7.6** 缓存策略 + 清单 URL 带 `?v={version}`
 - [ ] **7.7** 前端：`sfc-common/api/sys.ts` 加 API 定义
 - [ ] **7.8** 前端：`Extension.ts` 的 `getExtensionResource()` 增加数据源 + **失败降级返回 `[]`**
@@ -480,36 +378,37 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 
 ## 阶段 8：控制面 API 代理 + 鉴权 ⚠️ 安全敏感
 
-- [ ] **8.1** 控制面转发（必须**流式管道**，禁止 `byte[]` 全量缓冲）
-- [ ] **8.2** 接入阶段 5 的**委托令牌**：**每请求现签**（RS256、`aud` ＝ 目标服务名、TTL ≤ 60s、`sub` ＝ 当前 uid），走 `Authorization: Bearer`
-- [ ] **8.3** 实例选择 + 轮询负载均衡 + 故障重试
-- [ ] **8.4** 全部实例不可用 → 返回 **503**（而非 500）
-- [ ] **8.5** ⚠️ **信任边界**：**uid 只来自令牌的 `sub`**，微服务侧业务代码**不得**读取任何名为 `uid` 的请求参数；`/api/internal/**` 的方法签名里**不出现 uid 参数**
-- [ ] **8.6** 验证：**篡改 uid 的越权请求必须被拒**
-- [ ] **8.7** 自建代理的必修安全项：剥离 hop-by-hop 头、重写 `Host` / 追加 `X-Forwarded-*`、请求体上限、`serviceName` 白名单（SSRF 防线）、静态放行前缀的**路径规范化**
+- [ ] **8.1** 预研实测（spike）：WebSocket 透传（4 个端点）、1GB 流式在 `-Xmx512m` 下不 OOM、`lb://` ＋ Nacos 两实例轮询、`Retry` 语义（含陈旧连接）、请求体上限（含 chunked）、原始路径保真 —— 产出 `microservice-gateway-spike-report.md`；**不合格就停在本步**
+- [ ] **8.2** 新建 `microservices/sfc-gateway`（独立进程，SCG **Server WebFlux**）：**独立 POM 边界**（不继承 root pom、不进 root `<modules>`、零咸鱼云依赖）＋ Boot 4.0.8 / Spring Cloud 2025.1.0 / SCG 5.0.0 / SCA 2025.1.0.0
+- [ ] **8.3** core 侧 **resolve 端点** `POST /api/gateway/resolve`：会话校验 ＋ 路径合法性 ＋ 服务白名单 → `{uid, serviceName, targetPath}`；**不签发任何令牌**
+- [ ] **8.4** 网关侧路由与 filter：`/`、`/api/**`、WebSocket 透传到 core；`/api/ext/**` 经 resolve 后 `lb://` 转发；**剥离入站 `X-Sfc-*`**、注入 `X-Sfc-Uid`、会话凭证三入口剥离、`X-Forwarded-*` 覆盖、hop-by-hop 剥离、请求体上限、错误语义（7000 / 7001 / 7002 / 7005）映射、**只对 `GET`/`HEAD` 换实例重试**
+- [ ] **8.5** ⚠️ **信任边界（框架期）**：`uid` **只来自网关**（resolve 的结果），微服务不读任何名为 `uid` 的参数；网关**必须剥离入站同名头**——这是本期唯一一条"不可协商"的安全规则
+- [ ] **8.6** 验证：**伪造 `X-Sfc-Uid` 的入站请求必须被覆盖**；`?uid=999` 无效；未登录 403；服务不存在 / 目标为自身 404
+- [ ] **8.7** 入口切换与收尾：浏览器只访问网关（SPA / OIDC / WebSocket / 大文件回归）＋ core 侧**不保留任何转发实现** ＋ 配置与文档同步
 
-**⚠️ 安全红线**：`@UID` / `@ValidPath` 校验是在 core 的 Controller 层生效的。代理路径上如果只做转发，攻击者构造 `/api/ext/svc/...?uid=999` 就能越权访问他人网盘数据。**这一步不能省，也不能"先跑通再补"。**
+**⚠️ 框架期的安全债务（必须写进文档与部署说明，不得含糊）**：
 
-> **信任边界的表述在本轮被加强**：原方案说"微服务只信令牌中的 uid，**忽略**请求参数中的 uid"——这是一条**约定式**安全（依赖每个微服务都正确地"忽略"某个参数）。
-> 现改为结构性约束：**uid 根本不是一个参数**。详见[服务鉴权机制设计 · 决策 5](microservice-service-auth-design.md)、以及该设计 §9 的安全红线与必修项清单。
+1. 任何能直连微服务的人都能伪造 `X-Sfc-Uid` ⇒ **微服务与 core 的内部接口只允许在内网暴露**；
+2. 微服务侧接口**没有任何权限校验**，只有"是否为登录用户"这一层由网关 / resolve 把关；
+3. **上公网前必须先完成阶段 5**（安全机制另行规划，问题清单见阶段 5）。
+
+> **为什么代理必须独立成进程**：结构清晰来自"**独立进程 ＋ 边界重划**"，不是来自换库；且官方库只覆盖 **HTTP 传输机制**，头治理、凭证剥离、路径校验、错误语义仍要自己写 filter。完整设计见[网关独立化设计](microservice-gateway-design.md)。
 
 ---
 
-## 阶段 9：数据面预签名直连 🏁 档位 3 完成
+## 阶段 9：数据面预签名直连 —— ⏸ **暂缓（记录在案）**
 
-- [ ] **9.1** 数据面令牌签发 —— **同一枚委托令牌换载体**（URL query）、`aud` ＝ 目标服务名、TTL **5 分钟**（`download-token-ttl-seconds` 可配）、**额外绑定资源标识 `res`**、只授予**只读** scope
-- [ ] **9.2** 微服务侧下载端点（用**同一套** JWKS 验签逻辑校验 query 里的令牌）
-- [ ] **9.3** （可选，最优）配置 Nginx 把 `/dl/{service}/**` 直接路由到微服务，**绕过 core 的 Java 进程**
-- [ ] **9.4** 统一 URL 模板（原评估报告 🟠-3）：直连形态 `/dl/{token}` 与 Nginx 形态 `/dl/{service}/{token}` 由**同一个配置项**切换，不写死两套拼接逻辑
-- [ ] **9.5** 验证：大文件下载时确认 **core 进程带宽 / 线程无显著增长**
+> **本阶段暂缓。** 预签名直连的载体（URL query 里的凭证）在**信任模式**下没有安全语义——没有可验证的载体，预签名 URL 就退化成"带 uid 的明文链接"。因此框架期的下载路径统一走**网关的流式代理**，预签名直连随**安全阶段（阶段 5）**一起重新规划。
 
-> **⚠️ "一次性 token"这个说法必须收回或补状态**：原方案写的是"签发**一次性** token"，但机制里没有任何 nonce / 状态存储——签出来的 JWT 在有效期内**可以无限次重放**。
-> 两条路选一条并写明：**A（建议）改为"短时效 ＋ 资源绑定"**，与既有文件临时链接的语义一致；**B 保留"一次性"**，则微服务侧需加 nonce 存储与原子消费，多一个有状态组件。
-> 详见[服务鉴权机制设计 · 决策 6](microservice-service-auth-design.md)。
+**暂缓项清单（届时要处理的原始设计要点）**：
 
-**部署前提**：预签名要求**微服务的下载端点对浏览器可达**。若微服务只在 core 可达的容器内网，此方案不成立——**阶段 8 的流式代理就是降级路径**，所以它不能省。
+- 数据面凭证的载体、TTL 与**资源绑定**（不得复用控制面高权限凭证）；
+- 微服务侧下载端点的校验方式；
+- `/dl/{service}/**` 的 Nginx 直连路由（绕过后端 Java 进程）；
+- 直连 `/dl/{token}` 与 Nginx `/dl/{service}/{token}` 两种 URL 形态由**同一个配置项**切换，不写死两套拼接逻辑；
+- 验证：大文件下载时后端进程带宽 / 线程无显著增长。
 
-> **URL 载体的固有风险**：query 里的令牌会经 `Referer`、浏览器历史、Nginx access log 泄漏 ⇒ 必须短 TTL ＋ 资源绑定 ＋ **只读 scope**，且**不得**复用控制面用的高权限 scope。
+> **不变量**：**网关的流式代理不能省**——它既是本阶段的降级路径，也承接控制面本身（阶段 8 实现）。
 
 ---
 
@@ -530,7 +429,8 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 |---|---|---|
 | 🚩 **1** ✅ 2026-10-05 | 服务注册发现全链路、SPI 抽象设计、类加载器与依赖冲突、**新微服务完全独立开发** | 阶段 4 |
 | 🚩 **2** | 跨进程调用存量能力、内部 API 契约设计、SDK 代理模式、**流式语义的代价** | 阶段 6 |
-| 🚩 **3** | 网关模式、信任边界与鉴权传递、控制面/数据面分离、前端模块化扩展 | 阶段 9 |
+| 🚩 **3** | 网关模式、控制面 / 数据面分离（**数据面预签名暂缓**）、前端模块化扩展 | 阶段 8 |
+| 🔒 **4**（待规划） | 服务间鉴权的完整设计：**可验证的身份载体**、受众绑定、fail-closed、密钥分发与轮换 | 阶段 5（安全阶段） |
 
 **每个检查点都是可交付、可验证、可长期停下的状态。** 不必追求一次走完。
 
@@ -542,13 +442,13 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 |---|---|---|---|
 | 1 | 把 Nacos 插件放第一步 | 同时面对"代码 / 配置 / 依赖"三个未知，排查量乘算 | 先在阶段 2 把接线、身份解析与消费者注入路径验证掉（`registry-provider: local`） |
 | 2 | 依赖冲突调试期间把插件留在 `extra-resource` | 误以为"没启用 Nacos 就不会受影响" | 调通前不加入；且记得改 `<exclusions>` 后重新 `mvn compile` |
-| 3 | 代理层跳过 UID / PATH 校验 | **越权访问他人网盘数据** | 信任边界收敛到令牌：**uid 只来自 `sub`**，微服务业务代码不读 `uid` 参数，`/api/internal/**` 方法签名里不出现 uid 参数（阶段 8.5） |
+| 3 | **代理层忘记剥离入站身份头**（`X-Sfc-Uid` 及一切 `X-Sfc-*`） | 任何人都能把自己伪装成任意用户——**信任模式当场失效** | 网关**无条件剥离并覆盖**入站身份头，只写入 resolve 得到的 uid（阶段 8.5）；这是框架期唯一一条不可协商的安全规则 |
 | 4 | 把 `local` provider 当成 `ClusterService` 的替代品，或试图"统一"两者 | **集群内 RPC 与异步任务分发失效**（`ClusterService.request()`、`ClusterScheduleJobDispatch` 仍依赖 `sfc:cluster:*`） | 职责分离而非替换：`ClusterService` 服务集群内**同构**节点（RPC / 任务），`local` provider 只服务进程内 SPI 调用 |
 | 5 | 只顾注册侧配置，忘了**发现侧只能用它自己的配置查询** | "注册成功但互相看不见"，会误判成插件或注册中心的 bug | 所有参与者收敛到同一 `group` / `namespace`（本档位：`SFC` / public）；排查顺序**先 Nacos 服务端、再 core 管理端** |
-| 6 | **给微服务分发一把共享对称密钥**（"内部服务密钥"），让它自己校验令牌 | 校验方获得签发能力 ⇒ 任何微服务都能伪造 `sub` 为任意 uid 的令牌，**"微服务被攻破 = core 被攻破"依然成立**；且密钥分发/轮换本身无解 | 用**非对称**签名：core 持有私钥，微服务只拿**公钥**（自建匿名 JWKS 端点）。"只有 core 能签发"由**算法**保证，不由约定保证（阶段 5） |
-| 7 | 微服务放行逻辑写成"内网/无令牌即通过" | 内网边界一旦被打破（同网段扫描、误配 Nginx）就是**任意读** | 微服务**无令牌一律 401（fail-closed）**；"内网不可达"是目标，**不是约束**（[服务鉴权机制设计 §8.1](microservice-service-auth-design.md)） |
-| 8 | **把内部服务鉴权挂在 OIDC 设施上**（复用 `sys.oidc.jwk` / `JwtDecoder` / `/oauth2/jwks` / `StandardScopes`） | **①`sys.oidc.enabled=false` 时微服务鉴权一起失效**；②OIDC 侧换密钥或改 scope 会**直接波及**微服务鉴权（两个故障域被合并） | 全部自持：**自持密钥**（`sys.service.auth.signing-key`）＋ **自建匿名端点**（`/api/service-auth/jwks`）＋ **独立作用域**（`internal.*`）＋ **无 `@ConditionalOnProperty`**。验收项：`sys.oidc.enabled=false` 时功能完好（阶段 5） |
-| 9 | **`enabled=false` 或缺密钥时干脆不注册 `/api/internal/**` 的过滤器链** | 请求落到主链的 `anyRequest().authenticated()` ⇒ **任何登录用户都能访问内部 API**（用自己的 uid 读自己的文件）——"降级"变成了"放开" | 过滤器链**始终注册**，条件不满足就**一律 401**（[服务鉴权机制设计 §9.1 红线 6](microservice-service-auth-design.md)） |
+| 6 | 把"信任模式"当成长期方案，或让它悄悄越过内网边界 | 微服务一旦被公网 / 同网段直连，就是**任意用户越权** | 文档与部署说明写明：**微服务与内部接口仅内网可达**；**上公网前必须先完成阶段 5**（安全阶段） |
+| 7 | 忘记"用户权限校验仍在 core 侧生效" | 误以为信任模式 = 没有鉴权 ⇒ 把 core 的登录要求也一起放开 | core 自己的 `/api/**` 上 `@UID` / `@ValidPath` / `@RolesAllowed` / `ProtectBlocker` **零改动**；`/api/ext/**` 仍要求登录（resolve 拿不到会话即 403） |
+| 8 | 微服务侧或 core 内部接口**只信"来源 IP / 内网"**，不做任何来源约束 | "内网不可达"是**目标**而不是**约束**，边界一旦被打破就是任意读 | 框架期的最低要求是"**只允许网关访问 / 仅内网暴露**"这条部署约束被写进文档并被实际遵守；正式机制在阶段 5 落地 |
+| 9 | 把网关职责留在 core 内（"换个库内嵌"也算） | 结构不变、Boot 4.1 与 SC 2025.1 矩阵错配、还要给插件类加载器再加一条战线 | 代理**独立成进程**（`microservices/sfc-gateway`），core 只做控制面与会话权威 |
 
 ---
 
@@ -561,11 +461,11 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 | 2 | 小 | 无 | 纯内存 Map + 身份解析 + 管理端 API，零既有依赖 |
 | 3 | 中 | ⚠️ **可能最大** | 依赖冲突迭代，**预留充足时间** |
 | 4 | 小 | 小 | 独立小工程 |
-| 5 | 小~中 | 小 | **契约冻结 ＋ 自持密钥/端点 ＋ 接线**：一把 RSA 密钥（配置/环境变量）、一个匿名 JWKS 端点、一条过滤器链；**不与 OIDC 共享任何密钥或开关**（原方案为"中 / 中"） |
+| 5 | — | — | **🔒 后置**：框架期不实施（统一信任模式），安全阶段另行规划 |
 | 6 | **大** | **大** | 流式语义是最大难点 |
 | 7 | 中 | 中 | 前后端各改少量 |
-| 8 | 中 | 中 | 安全敏感，需仔细验证 |
-| 9 | 中 | 中 | 依赖部署形态 |
+| 8 | 中（含**一个独立工程**） | 中~大 | 新增独立进程与 resolve 调用；**WebSocket 透传与大流量流式必须先实测**（8.1 预研），不合格就停 |
+| 9 | — | — | **⏸ 暂缓**：预签名依赖可验证的数据面载体，随安全阶段一起做 |
 | 10 | 小 | 小 | — |
 
 **时间分布的非直觉之处**：阶段 3 代码量只有"中"，但**调试时间可能占全程最多**——因为依赖冲突是试错式的。而阶段 6 代码量与难度都是"大"，是真正需要设计能力的地方。

@@ -80,17 +80,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
-        <!--
-            委托令牌验签瘦库（阶段 5）：只验签、只读 sub。
-            它内部用 jjwt 0.12.6（与咸鱼云根 pom 同版本），只多 3 个小 jar；
-            刻意不引入 spring-security，作用域校验由瘦库自己的拦截器完成。
-            "零咸鱼云依赖"这一条仍然成立——本模块唯一的咸鱼云 groupId 依赖就是这个瘦库。
-        -->
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-cloud-auth</artifactId>
-            <version>1.0.0</version>
-        </dependency>
     </dependencies>
 
     <build>

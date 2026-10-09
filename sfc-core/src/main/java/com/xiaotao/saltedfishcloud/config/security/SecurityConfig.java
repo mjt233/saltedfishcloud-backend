@@ -95,11 +95,7 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/","/static-extension.json", "/api/oauth/callback/**","/ext/**",
                         "/assets/**", "/oauth/assets/**", "/oauth/index.html", "/oauth", "/oauth/",
-                        "/static/**", "/api/static/**", "/favicon.ico", "/index.*",
-                        // 委托令牌的 JWKS 公钥端点：微服务取公钥做离线验签，必须匿名可达。
-                        // 这是本机制对既有类唯一的一处改动——匿名性由我们自己的 permitAll 保证，
-                        // 因此不必改 OIDC 的安全链，也不依赖 /oauth2/jwks。
-                        "/api/service-auth/jwks"
+                        "/static/**", "/api/static/**", "/favicon.ico", "/index.*"
                 )
                 .permitAll()
                 .requestMatchers(getAnonymousUrls(requestMappingHandlerMapping)).permitAll()
