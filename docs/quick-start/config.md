@@ -67,13 +67,10 @@ sys:
       # 集群名，用于同一服务内实例的再分组
       cluster-name: DEFAULT
     # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
-    # 转发、负载均衡、重试、流式管道与头部治理都在网关进程内；core 只做会话校验与策略判定（resolve）
-    gateway:
-      # 是否启用 resolve 端点。注意语义：false 时端点【仍然注册】但一律拒绝——"关闭"不等于"放开"
-      enabled: true
-      # 实例 metadata 未声明 sfc.api.prefix 时使用的缺省 API 前缀
-      # （微服务在注册时用 metadata 的 sfc.api.prefix 自描述，core 不硬编码任何微服务的路径）
-      default-api-prefix: /api
+    # ⚠️ core 不参与代理链路：凭证验签（密钥经环境变量 SFC_JWT_SECRET 注入）、路径校验、服务名白名单、
+    #    api 前缀解析与转发全部在网关进程内（网关默认监听 8081，是整站唯一入口）。
+    #    此处曾有的 sys.service.gateway.*（enabled / default-api-prefix）与 POST /api/gateway/resolve
+    #    已随"网关独立验签"一并删除，不要再补回来。
 ```
 
 完整配置见 [附录1: config.yml](#1configyml)
@@ -134,15 +131,13 @@ sys:
       # 集群名，用于同一服务内实例的再分组
       cluster-name: ${NACOS_CLUSTER_NAME:DEFAULT}
     # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
-    # ⚠️ 代理侧的转发配置（core 地址、监听端口、超时、请求体上限、重试次数）在
+    # ⚠️ core 不参与代理链路：凭证验签、路径校验、服务名白名单、api 前缀解析与转发全部在网关进程内；
+    #    代理侧配置（core 服务名、监听端口、缺省 api 前缀、密钥环境变量名）在
     #    microservices/sfc-gateway 工程自己的 application.yml 内，不占用 sys. 前缀。
-    # ⚠️ 框架期采用【信任模式】：网关从 resolve 取得 uid 后注入 X-Sfc-Uid，微服务直接信任；
+    #    注：网关【不】管控请求体大小（无上限配置项），请求体多大由承载业务的服务自己决定。
+    # ⚠️ 框架期采用【信任模式】：网关本地验签得到 uid 后注入 X-Sfc-Uid，微服务直接信任；
     #    因此微服务与 core 的内部接口只允许内网可达，上公网前必须先完成服务间鉴权（阶段 5）。
-    gateway:
-      # 是否启用 resolve 端点。注意语义：false 时端点【仍然注册】但一律拒绝——"关闭"不等于"放开"
-      enabled: ${SERVICE_GATEWAY_ENABLED:true}
-      # 实例 metadata 未声明 sfc.api.prefix 时使用的缺省 API 前缀
-      default-api-prefix: ${SERVICE_GATEWAY_DEFAULT_API_PREFIX:/api}
+    #    此处曾有的 sys.service.gateway.* 与 POST /api/gateway/resolve 已整体删除，不要再补回来。
     local-cache:
       # 本地缓存默认过期时间（毫秒），默认 15 分钟
       default-expire-ms: ${LOCAL_CACHE_DEFAULT_EXPIRE_MS:900000}

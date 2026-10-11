@@ -52,3 +52,7 @@ log/**
 *.db
 settings.local.json
 .flattened-pom.xml
+
+# 网关验收脚本的临时产物：大体积测试二进制与会话令牌，绝不入库
+microservices/sfc-gateway/verify/.tmp/
+microservices/sfc-gateway/verify/.token

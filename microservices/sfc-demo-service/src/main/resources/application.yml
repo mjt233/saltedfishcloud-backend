@@ -5,6 +5,8 @@
 # ⚠️ 身份传递（框架期「信任模式」）：本服务从网关注入的 X-Sfc-Uid 头读取当前用户，
 #    **不做任何校验**——服务间调用鉴权整体后置（docs/plan/microservice/microservice-roadmap.md 阶段 5）。
 #    因此本服务【只允许内网 / 本机暴露】，对外入口只有 sfc-gateway。
+# ⚠️ 网关会把用户的会话凭证【原值透传】过来（Token 头 / token cookie / ?Token=），
+#    供下游做自己的完整校验；本服务不得把它写入日志或任何响应体（见 docs/plan/todo.md）。
 server:
   # 避开咸鱼云宿主的 8087、Nacos 控制台的 8080 与控制台 API 的 8848/9848
   port: 8090
@@ -26,8 +28,8 @@ spring:
         # 临时实例：由客户端内置心跳续约，也是"停服后实例自动消失"（4.5）的前提。
         # 与咸鱼云侧 NacosServiceRegistry 的 ephemeral=true 对齐
         ephemeral: true
-        # 实例 metadata：微服务的「自描述」——core 与网关都不硬编码任何微服务的路径。
-        #   sfc.api.prefix —— 网关转发时拼接的 API 前缀（缺省 /api，见 sys.service.gateway.default-api-prefix）
+        # 实例 metadata：微服务的「自描述」——网关不硬编码任何微服务的路径。
+        #   sfc.api.prefix —— 网关判定时拼接的 API 前缀（缺省 /api，见网关的 sfc.gateway.default-api-prefix）
         #   sfc.version    —— 供前端资源 URL 带版本号（阶段 7）
         metadata:
           sfc.api.prefix: /api

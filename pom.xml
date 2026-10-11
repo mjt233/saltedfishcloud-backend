@@ -17,6 +17,7 @@
         <module>sfc-rpc</module>
         <module>sfc-ext</module>
         <module>microservices/sfc-demo-service</module>
+        <module>microservices/sfc-gateway</module>
         <module>sfc-core</module>
     </modules>
     <groupId>com.xiaotao</groupId>

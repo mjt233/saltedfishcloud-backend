@@ -80,6 +80,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
+        <!--
+            WebSocket 探针：网关是整站唯一入口，必须能转发 WebSocket 的【升级握手与双向帧】。
+            core 侧的 /api/ws 只能验证"握手能过"，无法验证"服务端主动发的帧能不能回到客户端"，
+            因此本服务提供一个回显端点 GET /api/demo/ws 作为帧级取证用（Tomcat 的 jakarta @ServerEndpoint）。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

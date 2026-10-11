@@ -2,6 +2,7 @@ package com.sfc.demo.controller;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,11 +49,28 @@ import java.util.Map;
  * </table>
  */
 @RestController
-@RequestMapping("/demo")
+@RequestMapping(DemoController.PREFIX)
 public class DemoController {
+
+    /**
+     * 本服务的业务路径前缀（{@code /api/demo}）。
+     * <p>
+     * ⚠️ 必须与 {@code application.yml} 中实例 metadata 声明的 {@code sfc.api.prefix: /api} 一致：
+     * 网关转发时用的是 core 的 resolve 端点拼好的完整下游路径（{@code sfc.api.prefix} ＋ 路径余部），
+     * 微服务这边不能再"少一段"——否则表现为经网关访问一律 404，而直连本服务却正常。
+     * </p>
+     */
+    public static final String PREFIX = "/api/demo";
 
     /** 网关注入的用户身份头（框架期信任模式下的唯一身份来源） */
     public static final String HEADER_UID = "X-Sfc-Uid";
+
+    /**
+     * 本实例的 HTTP 端口。
+     * <p>仅用于验收取证：同一服务名起多个实例时，靠它判断"请求落到了哪个实例"（轮询与故障转移）。</p>
+     */
+    @Value("${server.port:0}")
+    private int serverPort;
 
     /** 流式响应 / 请求体拷贝的缓冲区大小（8KB，与网关侧一致，不随数据量增长） */
     private static final int PIPE_BUFFER_SIZE = 8192;
@@ -76,6 +94,7 @@ public class DemoController {
         result.put("uidSource", HEADER_UID);
         result.put("rawUidHeader", rawUid);
         result.put("trustMode", true);
+        result.put("instancePort", serverPort);
         result.put("note", "uid 只来自网关注入的头；本服务不校验任何凭证（服务间鉴权已后置）");
         return result;
     }
@@ -97,6 +116,7 @@ public class DemoController {
         result.put("requestUri", request.getRequestURI());
         result.put("queryString", request.getQueryString());
         result.put("uid", request.getHeader(HEADER_UID));
+        result.put("instancePort", serverPort);
 
         Map<String, String> headers = new LinkedHashMap<>();
         for (String name : OBSERVED_HEADERS) {

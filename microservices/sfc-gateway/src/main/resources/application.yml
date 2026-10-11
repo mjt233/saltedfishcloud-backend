@@ -1,0 +1,169 @@
+# ============================================================================================
+# sfc-gateway —— 咸鱼云微服务改造 · 阶段 8 的独立网关（整站唯一入口）
+#
+# 本文件是网关【自己的】配置，不占用咸鱼云的 sys. 前缀。
+# 设计依据：docs/plan/microservice/microservice-gateway-design.md
+#
+# ⚠️ 信任模式（框架期）：网关是唯一身份来源——它用【环境变量注入的密钥】本地验签用户凭证，
+#    把结果写进 X-Sfc-Uid 头，微服务直接信任、不校验。因此：本网关【只允许】作为对外入口，
+#    微服务与 core 的内部接口只允许内网 / 本机可达；上公网前必须先完成服务间鉴权（路线图阶段 5）。
+#
+# ⚠️ 密钥一致性由【部署】保证：core 的会话密钥存在数据库配置项 sys.safe.token 里（首次启动随机生成、
+#    且支持在线修改），网关不读 core 的配置，只读环境变量 SFC_JWT_SECRET。缺失或漂移的症状是
+#    "登录正常，但经网关访问 /api/ext/** 全量 403/7005"。密钥变更后必须重启网关并重新注入。
+# ============================================================================================
+
+server:
+  # 与设计文档的 8080 不同：本机 Nacos 3.x 控制台（docker 容器）占用 8080，两者不能同时监听。
+  # 生产形态下入口应是 80 / 443，8080/8081 都只是开发期取值。
+  port: 8081
+
+spring:
+  application:
+    # 注册到 Nacos 的服务名。网关注册【只为让管理端看到完整拓扑】，它不被任何服务反向调用，
+    # 且网关自己的判定必须把"目标为 sfc-gateway"判 404（回环阻断，见 sfc.gateway.self-service-name）。
+    name: sfc-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        # 与 sfc-core / sfc-demo-service 收敛为同一 group 与 namespace（public 的 ID 是空串，不要写 public）
+        group: SFC
+        namespace: ""
+        # 临时实例：停服即从注册中心消失，避免入口继续把流量打向已死进程
+        ephemeral: true
+
+    loadbalancer:
+      cache:
+        # 实例列表缓存。Spring Cloud 默认 35s，这里收到 5s：
+        #   · 缓存窗口内"已死但仍被列在缓存里"的实例仍可能被选中 ——
+        #     不重试的写请求会得到 503/7004，可重试的 GET/HEAD 会换实例自愈；
+        #   · 代理分支的【判定】走的是 DiscoveryClient（与 lb 同源但不走这层缓存），
+        #     所以"实例全部消失"应当尽快表现为 404/7001，而不是先在缓存窗口里给一堆 503。
+        ttl: 5s
+
+    gateway:
+      # ⚠️ Spring Cloud 2025（Gateway 5.x）把 WebFlux 服务端的配置前缀从 spring.cloud.gateway.*
+      #    迁移到了 spring.cloud.gateway.server.webflux.*（mvc 变体为 ...server.webmvc.*）。
+      server:
+        webflux:
+          # ⚠️ 必须显式关闭"按服务发现自动生成路由"。
+          #    开启的话，注册中心里每个服务都会自动得到一条 /{serviceName}/** 的匿名代理路由，
+          #    等于绕过代理分支的路径校验、服务白名单与登录要求——那是信任模式下最危险的一个口子。
+          discovery:
+            locator:
+              enabled: false
+
+          httpclient:
+            # 连接建立超时：控制面短超时（实例不可达时要快速失败，而不是拖住浏览器）
+            connect-timeout: 2000
+            # 说明：这里【不设】全局 response-timeout。
+            # 唯一入口要承接 1GB 级下载，全局响应超时会把长下载掐断；
+            # 需要超时的路由应在该路由的 metadata.response-timeout 上单独配置。
+
+          routes:
+            # ① 扩展清单（阶段 7 提供）：透传到 core，不改写、不注入身份。
+            #    当前 core 尚未实现该端点，命中它只会得到 core 的 404/403——此处只留路由位。
+            - id: core-manifest
+              uri: lb://${sfc.gateway.core-service}
+              order: 1
+              predicates:
+                - Path=/api/ext/manifest
+
+            # ====================================================================================
+            # ② 微服务代理（代理分支）：能落到这条路由的请求，全部由
+            #    com.sfc.gateway.filter.ProxyRequestFilter 处理——先本地验签拿 uid，
+            #    再做本地判定（路径 / 方法 / 服务白名单 / 自我转发阻断 / sfc.api.prefix），
+            #    然后注入 X-Sfc-Uid、把路径换成判定算出的 targetPath，
+            #    最后以 lb://{serviceName} 交给官方负载均衡 filter 选实例。
+            #    ⚠️ 凭证（Token 头 / token cookie / ?Token=）【原样透传】给目标微服务，不再剥离。
+            #
+            #    ⚠️ uri 是【占位值】：真实目标由 ProxyRequestFilter 通过 GATEWAY_REQUEST_URL_ATTR 覆盖。
+            #       刻意不用 no://op 之类的"安静占位"——若该 filter 未生效，占位服务名会解析不到实例，
+            #       表现为 503（目标服务实例不可达），而不是"空响应的 200"。故障要响，不要静默。
+            # ====================================================================================
+            - id: micro-proxy
+              uri: lb://proxy-target-unset
+              order: 2
+              predicates:
+                - Path=/api/ext/**
+              filters:
+                # 重试：只对【不携带请求体】的方法换实例重试。
+                # 写请求的请求体是一次性流、不可重放——带体重试等于让下游收到空请求体，
+                # 而调用方却看到"成功"。这条不是优化，是正确性。
+                - name: Retry
+                  args:
+                    retries: 2
+                    methods: GET,HEAD
+                    series: SERVER_ERROR
+                    exceptions: java.io.IOException,java.util.concurrent.TimeoutException
+
+            # ③ core 业务 API（含 WebSocket）：【完全透明】。
+            #    不解析身份、不注入身份头、不改写语义——core 的 @UID / @ValidPath / @RolesAllowed
+            #    与 OIDC 因此原样生效。⚠️ 这条分支【不得】剥离 Token 头 / token cookie / ?Token=：
+            #    /api/ws 的握手凭证正是 ?Token=（剥离它等于把 WebSocket 打死）。
+            #    代理分支同样不剥离凭证（改为对下游原样透传），详见 ProxyRequestFilter 的注释。
+            - id: core-api
+              uri: lb://${sfc.gateway.core-service}
+              order: 10
+              predicates:
+                - Path=/api/**
+
+            # ③ 前端静态资源与站点入口：透传到 core（core 若集成了前端产物，则由 core 提供 SPA）。
+            - id: core-static
+              uri: lb://${sfc.gateway.core-service}
+              order: 11
+              predicates:
+                - Path=/,/index.html,/index.*,/favicon.ico,/logo.png,/static-extension.json,/assets/**,/static/**,/ext/**,/oauth,/oauth/**
+
+            # ④ OIDC / OAuth2 端点：内置授权服务器的路径前缀不在 /api 下，必须单独列一条。
+            #    ⚠️ 不写这条的后果不是"OIDC 用不了"这么轻——它会让授权码流程、设备码流程、
+            #    discovery 文档与退出端点全部 404，而 core 直连时却是正常的（实测：同一请求
+            #    直连 403、经网关 404）。前端 vite 的 dev proxy 正好也代理了这四个前缀，可作对照。
+            - id: core-oidc
+              uri: lb://${sfc.gateway.core-service}
+              order: 12
+              predicates:
+                - Path=/oauth2/**,/connect/**,/.well-known/**
+
+# ================================================================================================
+# 网关自有配置（不使用 sys. 前缀）
+# ================================================================================================
+sfc:
+  gateway:
+    # core 在注册中心里的服务名。只写服务名、固定走 lb://（由 Spring Cloud LoadBalancer 解析实例地址）：
+    #   · 多实例 core 时自然轮询；
+    #   · 用途：core 透传路由的目标 + 【自我转发阻断】（目标为 core 一律 404/7001）。
+    core-service: sfc-core
+    # 网关自身在注册中心里的服务名：只用于自我转发阻断（目标为网关自身 → 404/7001，阻断回环）。
+    self-service-name: ${spring.application.name:sfc-gateway}
+    # 代理分支（/api/ext/**）的路由 id：只有该路由的请求才走本地验签、身份注入与改道
+    proxy-route-id: micro-proxy
+    # 微服务实例 metadata 未声明 sfc.api.prefix 时使用的缺省下游前缀
+    # （该配置原先在 core 的 sys.service.gateway.default-api-prefix，随判定一起下沉）
+    default-api-prefix: /api
+    # ================================================================================================
+    # 用户凭证的验签密钥。⚠️ 必须与 core 的会话密钥（数据库配置项 sys.safe.token）一致：
+    #   core 不动、网关不读 core 的配置，两侧一致性【由部署保证】。
+    #   取法：从 core 的配置表 config 中 item_key='sys.safe.token' 取值，或从管理端配置页复制，
+    #         然后以环境变量 SFC_JWT_SECRET 注入（容器/启动脚本/IDE 运行配置均可）。
+    #   缺失或不足 32 字节 → 网关【启动失败】（fail-fast），不会"起来了但所有代理请求 403"。
+    #   密钥在线变更（core 支持）后必须重启网关并重新注入；网关不做热更新（见 docs/plan/todo.md）。
+    # ================================================================================================
+    jwt-secret: ${SFC_JWT_SECRET:}
+    # 说明：网关【不】管控请求体大小——既不设全局上限，也没有代理分支的增量拦截 filter。
+    #      请求体大小由承载业务的服务自己决定（core 的 multipart 上限是 8GB）；网关不做计数、不做截断。
+    #      若要限流，应在专业边缘（nginx / Ingress / WAF）上做。
+    # ⚠️ 已知边界（本轮暂不处理，别当成回归）：请求体方向的内存占用与体量同阶——实测 -Xmx512m 下
+    #      65/128/256MB 两种传输方式均完整通过，≥512MB 必失败（OutOfDirectMemoryError → 500/0）；
+    #      客户端限速 50MB/s 亦相同。详见 docs/plan/microservice/microservice-gateway-design.md 风险 12。
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 唯一入口必须有健康端点：部署脚本靠它判断"网关还能不能接客"
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

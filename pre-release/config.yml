@@ -40,6 +40,11 @@ sys:
     registry-group: ${REGISTRY_GROUP:SFC}
     # 本机对外可达地址（host 或 IP，不含端口）。多网卡 / 容器 / NAS 环境下自动解析出的地址可能不可达，此时显式指定；留空表示自动解析
     advertise-address: ${ADVERTISE_ADDRESS:}
+    # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
+    # ⚠️ core 不参与代理链路：凭证验签、路径校验、服务名白名单、api 前缀解析与转发全部在网关进程内
+    #    （网关配置见 microservices/sfc-gateway/src/main/resources/application.yml，密钥经 SFC_JWT_SECRET 注入）。
+    #    此处曾有的 sys.service.gateway.*（SERVICE_GATEWAY_ENABLED / SERVICE_GATEWAY_DEFAULT_API_PREFIX）
+    #    与 POST /api/gateway/resolve 已随"网关独立验签"一并删除，不要再补回来。
     # Nacos provider 专属配置，仅在 registry-provider 为 nacos 时生效（由 sfc-ext-nacos 插件绑定）
     nacos:
       # 服务端地址，多节点用逗号分隔
