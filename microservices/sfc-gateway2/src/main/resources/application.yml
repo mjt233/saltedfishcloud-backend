@@ -1,0 +1,36 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: sfc-gateway2
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        # 与 sfc-core / sfc-demo-service 收敛为同一 group 与 namespace（public 的 ID 是空串，不要写 public）
+        group: SFC
+        namespace: ""
+        # 临时实例：停服即从注册中心消失，避免入口继续把流量打向已死进程
+        ephemeral: true
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              predicates:
+                - name: Path
+                  args:
+                    pattern: "'/api/service/' + serviceId + '/**'"
+              filters:
+                - name: RewritePath
+                  args:
+                    regexp: "'/api/service/' + serviceId + '/?(?<remaining>.*)'"
+                    replacement: "'/api/${remaining}'"
+              enabled: true
+          # 若要改用显式路由（不依赖服务发现自动生成），在此追加：
+          routes:
+            - id: core-route
+              uri: lb://sfc-core
+              predicates:
+                - Path=/**
