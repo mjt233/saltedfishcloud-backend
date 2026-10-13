@@ -1,166 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <!--
-        独立网关工程：刻意【不继承】咸鱼云的 root pom，也【不】被 root pom 的 <modules> 聚合。
-
-        理由与 sfc-demo-service 同源——咸鱼云 root pom 在 <dependencies>（而非 <dependencyManagement>）中
-        声明了 JPA / Security / Redis / Redisson / okhttp 等整套技术栈，继承它的模块会被无条件拖入约 208 个 jar。
-        网关照此约定执行：仓库内统一维护、独立构建、独立运行、零咸鱼云依赖。
-
-        <relativePath/> 留空是必须的：本工程位于咸鱼云仓库的 microservices/ 子目录内，
-        若让 Maven 按默认的 ../pom.xml 向上找父 POM，会找到咸鱼云的 root pom（groupId/artifactId 不匹配）。
-
-        ⚠️ 版本矩阵与 sfc-demo-service、sfc-core 的关系：
-          · 网关用 Boot 4.0.8（与 demo 同源），宿主 sfc-core 用 Boot 4.1.0——【刻意不对齐】：两者只通过 HTTP 协议耦合，不共享任何 jar；
-          · Spring Cloud 2025.1.0 的官方基线是 Boot 4.0.x，对应 Spring Cloud Gateway 5.0.0；
-          · Spring Cloud Alibaba 2025.1.0.0 提供 nacos-discovery starter（lb:// 的实例来源）。
-    -->
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.8</version>
-        <relativePath/>
+        <groupId>com.sfc.cloud</groupId>
+        <artifactId>microservices</artifactId>
+        <version>1.0.0</version>
     </parent>
 
-    <groupId>com.sfc.gateway</groupId>
     <artifactId>sfc-gateway</artifactId>
-    <version>1.0.0</version>
-    <name>sfc-gateway</name>
-    <description>咸鱼云微服务改造 · 阶段 8 的独立网关（Spring Cloud Gateway Server WebFlux）</description>
 
     <properties>
-        <java.version>25</java.version>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-cloud.version>2025.1.0</spring-cloud.version>
-        <spring-cloud-alibaba.version>2025.1.0.0</spring-cloud-alibaba.version>
-        <!-- JWT 库版本：与咸鱼云宿主 root pom 的 jjwt 版本严格一致（判定口径必须相同） -->
-        <jjwt.version>0.12.6</jjwt.version>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <!-- Spring Cloud 版本列车：管理 spring-cloud-gateway-dependencies 5.0.0（含 Server WebFlux starter） -->
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <!-- Spring Cloud Alibaba 版本管理：提供 nacos-discovery starter 及其 nacos-client 版本 -->
-            <dependency>
-                <groupId>com.alibaba.cloud</groupId>
-                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
-                <version>${spring-cloud-alibaba.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
-        <!--
-            网关本体：Server WebFlux 变体。
-            选它而不是 Server WebMVC 的唯一硬理由是【必须能转发 WebSocket】——
-            MVC 变体没有 WebSocket 转发能力，而整站唯一入口要承接 /api/ws 等端点。
-            它同时带来 Netty 的流式管道（默认行为）：1GB 下载不会经过 byte[] 全量缓冲。
-        -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
-        </dependency>
-        <!--
-            负载均衡：lb://{serviceName} 的客户端实现。
-            SCG 的 ReactiveLoadBalancerClientFilter 依赖它，并配合注册中心（本工程为 Nacos）拿到实例列表。
-            显式声明而不是依赖传递：这是网关的【核心能力】，不应由别的 starter 的传递依赖决定去留。
-        -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
-        </dependency>
-        <!--
-            服务注册与发现：网关自己【也注册】到 Nacos，目的只是让管理端能看到完整拓扑；
-            ⚠️ 网关自身【不可被代理】——core 的 resolve 必须把目标为网关服务名的请求判 404（回环阻断）。
-        -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-        </dependency>
-        <!--
-            健康检查与运行时观测。唯一入口必须有健康端点：
-            部署脚本要靠它判断"网关是否还能接客"，而不是靠猜。
-        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <optional>true</optional>
         </dependency>
-        <!--
-            JWT 验签：网关【本地】验证用户会话凭证（不再向 core 询问会话）。
-            ⚠️ 版本与用法刻意与宿主 core 的 JwtUtils 保持一致（同为 0.12.6、同为 Keys.hmacShaKeyFor
-               ＋ Jwts.parser().verifyWith(key)）：两侧必须对"什么算有效凭证"给出完全相同的判定，
-               因此这里不写死算法（由密钥长度自适应 HS256/384/512），也不引入第二套 JWT 实现。
-            ⚠️ jjwt-jackson 依赖 Jackson 2（com.fasterxml.jackson），而 Boot 4 的应用侧是 Jackson 3
-               （tools.jackson）：两者包名不同、互不覆盖，Jackson 2 只服务于 jjwt 内部的声明编解码。
-               密钥从环境变量 SFC_JWT_SECRET 注入（见 application.yml），没有硬编码默认值。
-        -->
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>${jjwt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <!--
-            Lombok：与咸鱼云宿主保持同一编码风格（配置类 / DTO 用 @Data、日志用 @Slf4j）。
-            scope=provided：只在编译期生效，运行期不进入依赖（spring-boot-maven-plugin 也会把它排除出 fat jar）。
-        -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <!--
-                打出可执行 jar，便于以 java -jar 形态运行（本项目受支持的运行形态之一）
-            -->
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <!--
-                ⚠️ <proc>full</proc> 是必须的：JDK 23 起 javac 不再默认启用注解处理，
-                不显式打开的话 Lombok 的 @Data / @Slf4j 会静默不生效，报错形式是
-                "找不到符号: 方法 getXxx()"——很难一眼看出是 Lombok 的问题。
-                咸鱼云 root pom 同样配置了 <proc>full</proc>（本工程不继承它，因此要自己写一遍）。
-            -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <proc>full</proc>
-                    <release>${java.version}</release>
-                    <encoding>UTF-8</encoding>
-                    <parameters>true</parameters>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
 </project>

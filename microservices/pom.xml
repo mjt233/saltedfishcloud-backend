@@ -21,7 +21,7 @@
     <modules>
         <module>sfc-gateway</module>
         <module>sfc-demo-service</module>
-        <module>sfc-gateway2</module>
+        <module>sfc-gateway</module>
     </modules>
 
     <properties>

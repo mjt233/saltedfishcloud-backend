@@ -4,8 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SfcGateway2Application {
+public class SfcGatewayApplication {
     static void main(String[] args) {
-        SpringApplication.run(SfcGateway2Application.class, args);
+        SpringApplication.run(SfcGatewayApplication.class, args);
     }
 }
