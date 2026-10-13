@@ -2,6 +2,7 @@ package com.sfc.cloud.filter;
 
 import com.sfc.cloud.config.SfcGatewayProperties;
 import com.sfc.cloud.model.UserPrincipal;
+import com.sfc.cloud.trust.SfcTrustHeaders;
 import com.sfc.cloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.InitializingBean;
@@ -36,10 +37,10 @@ public class AuthFilter implements GlobalFilter, InitializingBean {
 
         ServerHttpRequest req = exchange.getRequest().mutate()
                 // 验证token是否有效，如果有效则设置X-Sfc-Uid为该token对应用户的id，否则设置为“0”。
-                .header("X-Sfc-Uid", userPrincipal == null ? "0" : String.valueOf(userPrincipal.getId()))
+                .header(SfcTrustHeaders.UID, userPrincipal == null ? SfcTrustHeaders.ANONYMOUS_UID : String.valueOf(userPrincipal.getId()))
 
                 // 向微服务 表明请求来自网关
-                .header("X-From-Gateway", "sfc-gateway")
+                .header(SfcTrustHeaders.FROM_GATEWAY, SfcTrustHeaders.GATEWAY_NAME)
                 .build();
         return chain.filter(exchange.mutate().request(req).build());
     }

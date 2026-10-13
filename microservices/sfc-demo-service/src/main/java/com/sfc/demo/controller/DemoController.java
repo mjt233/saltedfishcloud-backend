@@ -1,5 +1,6 @@
 package com.sfc.demo.controller;
 
+import com.sfc.cloud.trust.SfcTrustHeaders;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,9 +17,6 @@ import java.util.Map;
 public class DemoController {
     public static final String PREFIX = "/api/demo";
 
-    /** 网关注入的用户身份头（框架期信任模式下的唯一身份来源） */
-    public static final String HEADER_UID = "X-Sfc-Uid";
-
     /**
      * 回显当前用户。
      *
@@ -28,9 +26,9 @@ public class DemoController {
     @GetMapping("/whoami")
     public Map<String, Object> whoami(HttpServletRequest request) {
         Map<String, Object> result = new LinkedHashMap<>();
-        String rawUid = request.getHeader(HEADER_UID);
+        String rawUid = request.getHeader(SfcTrustHeaders.UID);
         result.put("uid", rawUid);
-        result.put("uidSource", HEADER_UID);
+        result.put("uidSource", SfcTrustHeaders.UID);
         result.put("rawUidHeader", rawUid);
         return result;
     }

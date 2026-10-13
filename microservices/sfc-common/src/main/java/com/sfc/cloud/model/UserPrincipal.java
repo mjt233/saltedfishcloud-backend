@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.util.Date;
 
+/**
+ * 用户身份模型：网关注入下游的「当前用户主体」。
+ */
 @Data
 public class UserPrincipal {
     /** 用户唯一标识 */

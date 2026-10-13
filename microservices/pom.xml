@@ -19,17 +19,16 @@
     <description>咸鱼云微服务</description>
 
     <modules>
+        <module>sfc-common</module>
         <module>sfc-gateway</module>
         <module>sfc-demo-service</module>
-        <module>sfc-gateway</module>
     </modules>
 
     <properties>
+        <common.version>${project.version}</common.version>
         <java.version>25</java.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-cloud.version>2025.1.0</spring-cloud.version>
         <spring-cloud-alibaba.version>2025.1.0.0</spring-cloud-alibaba.version>
-        <!-- JWT 库版本：与咸鱼云宿主 root pom 的 jjwt 版本严格一致（判定口径必须相同） -->
         <jjwt.version>0.12.6</jjwt.version>
     </properties>
 
@@ -51,11 +50,52 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!--
+                JWT 三件套：版本与作用域只在此声明一次，sfc-common 引用时不再写 version/scope。
+                jjwt-impl 与 jjwt-jackson 是纯运行期实现（Jwts.parser() 经 ServiceLoader 装载），故固定为 runtime，
+                并由 sfc-common 传递到网关等消费方的运行期类路径上。
+            -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
+    <dependencies>
+        <!-- Lombok：三个子模块共用，在此声明一次（provided 不具备传递性，不会污染任何消费方） -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <proc>full</proc>
+                </configuration>
+            </plugin>
+        </plugins>
+
         <resources>
             <resource>
                 <directory>src/main/resources</directory>

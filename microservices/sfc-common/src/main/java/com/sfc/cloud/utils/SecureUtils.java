@@ -19,6 +19,9 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * 用户会话凭证工具：从请求中取出凭证，并用与 core 相同的判定口径本地验签。
+ */
 @UtilityClass
 @Slf4j
 public class SecureUtils {
@@ -29,6 +32,9 @@ public class SecureUtils {
 
     /**
      * 从请求中获取token字符串
+     *
+     * @param request 请求对象
+     * @return 凭证原值；三个入口都没有时返回 {@code null}
      */
     public static String getToken(ServerHttpRequest request) {
         String token = request.getHeaders().getFirst("Token");
