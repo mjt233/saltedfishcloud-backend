@@ -1,6 +1,10 @@
 server:
   port: 9090
 
+sfc:
+  gateway:
+    jwt-secret: ${SFC_JWT_SECRET:}
+
 spring:
   application:
     name: sfc-gateway2
