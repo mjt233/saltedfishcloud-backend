@@ -331,7 +331,7 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 ## 阶段 6：档位 2 —— 远程核心能力 ⭐ 学习价值最高
 
 - [ ] **6.1** core 暴露内部 API（**`/api/internal/**`**，与项目 `/api/**` 约定一致，顺带继承 `ProtectBlocker`），**首批只做只读、无流式的方法**；**框架期走信任模式**：core 按网关注入的 `X-Sfc-Uid` 装载主体，**方法签名里不出现 uid 参数**
-- [ ] **6.2** 新建 `sfc-remote-client` SDK 模块
+- [x] **6.2** 新建 `sfc-remote-client` SDK 模块 —— ✅ 2026-10-13 已交付，见[模块说明](../../../microservices/sfc-remote-client/README.md)
 - [ ] **6.3** `RemoteDiskFileSystem implements DiskFileSystem` —— 让微服务侧代码与本地实现**同构、零改造**
 - [ ] **6.4** 流式接口专项设计（`getResource` / `saveFileByStream` / `newOutputStream`）
 - [ ] **6.5** 微服务引入 SDK，实际调用验证
@@ -356,6 +356,19 @@ demo 是**独立微服务**，因此不对齐宿主版本，而是取 SCA 矩阵
 **"首批只做只读、无流式"是刻意的**：先把跨进程调用的骨架打通，再逐步啃流式这个硬骨头。见 [档位 1 设计 §1 的非目标划分思路](microservice-phase1-design.md)。
 
 > ⚠️ **免责提醒**：`DiskFileSystem` 的流式语义（`Resource` / `InputStream` / `OutputStream`）跨进程**无法直接序列化**，必须另开传输通道。这是"拆"的代价的具象体现，也是本项目最难的一块。规划时要给它留出充足时间。
+
+> **实施记录（2026-10-13，阶段 6.2）**：新建 `microservices/sfc-remote-client`（库，零宿主依赖、独立 POM 边界），
+> 首批落地 **6 个网盘文件操作**（列出 / 删除 / 保存 / 复制 / 移动 / 重命名）。
+> 两点与原计划的偏差，如实记录：
+> 1. **范围比 6.1 设想的「只读」更宽**（含写操作）——因为它对接的是**现有**接口，写操作的权限判定全部由 core 现有逻辑承担，无需等内部 API；
+> 2. **刻意不改 core**：客户端直接对接 `/api/diskFile/**` 与 `PUT /api/resource/upload`（uid 作为参数、凭证透传），
+>    使 6.1 的内部 API 改造与 6.3/6.4 的流式通道可以独立推进——6.1 落地时只需改 `@FeignClient` 的路径常量，调用方零改造。
+>
+> 实测要点（都是"先实测再实现"换来的）：① feign 的 `decodeSlash` 默认 `true`，core「把路径写在 URL 里」的通配接口可直接对接，
+> 无需 `%2F` 绕行；② **DELETE 携带请求体**必须靠 `feign-hc5`（实测生效实现为 `feign.hc5.ApacheHttp5Client`）；
+> ③ multipart 由 SCA 内置的 `feign-form-spring` 组装（`SpringEncoder` 对 form 类内容类型转 `SpringFormEncoder`），**无需第三方 `feign-form`**；
+> ④ 凭证按本阶段的信任模式**原样透传**（`Token` 头 → 查询参数 → `token` Cookie，与 core 同口径），无 HTTP 上下文时不伪造身份。
+> 验证方式：本地 `HttpServer` 桩 + 真实 Spring 上下文的**一次性探针**（不入库）27 项断言全绿，覆盖路径编码 / DELETE body / multipart 形状 / 凭证透传 / 错误信封解码。
 
 - [ ] 🚩 **暂停检查点 2**：微服务能真正读写网盘文件。
 

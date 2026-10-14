@@ -20,6 +20,7 @@
 
     <modules>
         <module>sfc-common</module>
+        <module>sfc-remote-client</module>
         <module>sfc-gateway</module>
         <module>sfc-demo-service</module>
     </modules>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    咸鱼云远程客户端 SDK（OpenFeign）：微服务回调 sfc-core 的用户网盘文件操作客户端。
+
+    版本与构建配置【零重复】：Boot / Spring Cloud / SCA 的版本、Lombok、proc=full、java 版本
+    全部继承 microservices/pom.xml，本 POM 只声明"用哪些依赖"。
+
+    零宿主依赖：除本目录自建的 com.sfc.cloud:sfc-common 外，不依赖任何仓库内坐标
+    （不引 com.xiaotao.saltedfishcloud:*，也不引宿主契约模块 sfc-cloud-api）。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfc.cloud</groupId>
+        <artifactId>microservices</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>sfc-remote-client</artifactId>
+    <name>sfc-remote-client</name>
+    <description>微服务远程客户端 SDK：sfc-core 用户网盘文件操作的 OpenFeign 声明式接口</description>
+
+    <dependencies>
+        <!-- 契约层：响应信封、文件模型、请求模型、错误信封异常、常量 -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-common</artifactId>
+            <version>${common.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>
