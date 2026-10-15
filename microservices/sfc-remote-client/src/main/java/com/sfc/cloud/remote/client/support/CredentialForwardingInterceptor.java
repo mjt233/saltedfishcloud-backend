@@ -4,26 +4,21 @@ import com.sfc.cloud.remote.constants.SfcRemoteConstants;
 import com.sfc.cloud.trust.SfcTrustHeaders;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * 凭证透传拦截器。
+ * 凭证透传拦截器（Feign）。
  */
 @Slf4j
 public class CredentialForwardingInterceptor implements RequestInterceptor {
 
     @Override
     public void apply(RequestTemplate template) {
-        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
-        if (!(attributes instanceof ServletRequestAttributes servletAttributes)) {
+        HttpServletRequest request = SfcCredentialResolver.currentRequest();
+        if (request == null) {
             return;
         }
-        HttpServletRequest request = servletAttributes.getRequest();
         forwardToken(request, template);
         forwardUid(request, template);
     }
@@ -33,7 +28,7 @@ public class CredentialForwardingInterceptor implements RequestInterceptor {
         if (hasHeader(template, SfcRemoteConstants.HEADER_TOKEN)) {
             return;
         }
-        String token = resolveToken(request);
+        String token = SfcCredentialResolver.resolveToken(request);
         if (token == null) {
             return;
         }
@@ -47,35 +42,10 @@ public class CredentialForwardingInterceptor implements RequestInterceptor {
         if (hasHeader(template, SfcTrustHeaders.UID)) {
             return;
         }
-        String uid = request.getHeader(SfcTrustHeaders.UID);
-        if (uid != null && !uid.isBlank()) {
+        String uid = SfcCredentialResolver.resolveUid(request);
+        if (uid != null) {
             template.header(SfcTrustHeaders.UID, uid);
         }
-    }
-
-    /** 解析入站凭证：请求头、查询参数、Cookie */
-    private String resolveToken(HttpServletRequest request) {
-        String token = request.getHeader(SfcRemoteConstants.HEADER_TOKEN);
-        if (token == null && !isMultipart(request)) {
-            token = request.getParameter(SfcRemoteConstants.PARAM_TOKEN);
-        }
-        if (token == null) {
-            Cookie[] cookies = request.getCookies();
-            if (cookies != null) {
-                for (Cookie cookie : cookies) {
-                    if (SfcRemoteConstants.COOKIE_TOKEN.equals(cookie.getName())) {
-                        token = cookie.getValue();
-                    }
-                }
-            }
-        }
-        return token == null || token.isBlank() ? null : token;
-    }
-
-    /** 是否为 multipart 请求 */
-    private boolean isMultipart(HttpServletRequest request) {
-        String contentType = request.getContentType();
-        return contentType != null && contentType.toLowerCase().startsWith("multipart/");
     }
 
     /** 请求模板是否已包含指定请求头 */

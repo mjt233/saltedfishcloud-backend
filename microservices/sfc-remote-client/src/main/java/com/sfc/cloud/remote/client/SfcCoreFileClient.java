@@ -1,30 +1,34 @@
 package com.sfc.cloud.remote.client;
 
-import com.sfc.cloud.remote.constants.SfcServiceName;
 import com.sfc.cloud.remote.model.SfcFileInfo;
 import com.sfc.cloud.remote.model.SfcJsonResult;
 import feign.Response;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
- * sfc-core 网盘文件操作客户端。
+ * sfc-core 网盘文件操作统一客户端
  */
-@FeignClient(
-        name = SfcServiceName.CORE,
-        contextId = "sfcCoreFileClient",
-        path = SfcCoreFileClient.PREFIX
-)
-public interface SfcCoreFileClient {
+public class SfcCoreFileClient {
 
-    /** 接口前缀 */
-    String PREFIX = "/api/internal/file/v2";
+    /** Feign 链路实现：列表 / 下载 / 重命名 / 复制 / 移动 / 删除 */
+    private final SfcCoreFileFeignClient feignClient;
+
+    /** 流式链路实现：上传 */
+    private final SfcCoreStreamFileClient streamClient;
+
+    /**
+     * 构造统一客户端，由自动装配负责组装（包内可见：消费方不应自行构造）。
+     *
+     * @param feignClient  Feign 链路实现
+     * @param streamClient 流式上传链路实现
+     */
+    SfcCoreFileClient(SfcCoreFileFeignClient feignClient, SfcCoreStreamFileClient streamClient) {
+        this.feignClient = Objects.requireNonNull(feignClient, "feignClient 不能为 null");
+        this.streamClient = Objects.requireNonNull(streamClient, "streamClient 不能为 null");
+    }
 
     /**
      * 获取文件列表。
@@ -33,54 +37,23 @@ public interface SfcCoreFileClient {
      * @param path 要列出的目录路径
      * @return 目录下的文件与目录列表（目录在前）
      */
-    @GetMapping("list")
-    SfcJsonResult<List<SfcFileInfo>> list(@RequestParam("uid") long uid,
-                                          @RequestParam("path") String path);
+    public SfcJsonResult<List<SfcFileInfo>> list(long uid, String path) {
+        return feignClient.list(uid, path);
+    }
 
     /**
      * 下载文件。
+     *
+     * <p>返回的是原始 {@link Response}（与底层契约 1:1），调用方负责消费并关闭响应体；内容仍会整体读入内存，
+     * 真流式下载通道见路线图阶段 6.4。</p>
      *
      * @param uid  资源所属用户ID，0 表示公共网盘
      * @param path 文件路径，需要包含文件名本身，如 "/docs/a.txt"
      * @return 文件资源
      */
-    @GetMapping("download")
-    Response download(@RequestParam("uid") long uid,
-                      @RequestParam("path") String path);
-
-    /**
-     * 上传文件。
-     *
-     * @param file  上传的文件
-     * @param uid   保存到的用户ID，0 表示公共网盘，写入公共网盘需要管理员权限
-     * @param path  保存到的目录路径，不含文件名，根目录为 "/"
-     * @param name  保存的文件名，为 null 时使用上传文件的原始文件名
-     * @param mtime 文件修改时间（毫秒时间戳），为 null 时由服务端决定
-     * @return 保存结果状态码
-     */
-    @PostMapping(value = "upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    SfcJsonResult<Long> uploadFile(@RequestPart("file") InputStreamSource file,
-                                   @RequestPart("uid") long uid,
-                                   @RequestPart("path") String path,
-                                   @RequestPart(value = "name", required = false) String name,
-                                   @RequestPart(value = "mtime", required = false) Long mtime);
-
-    /**
-     * 上传文件。
-     *
-     * @param content 文件内容字节
-     * @param name    保存的文件名，不能为 null（字节内容无法提供文件名）
-     * @param uid     保存到的用户ID，0 表示公共网盘，写入公共网盘需要管理员权限
-     * @param path    保存到的目录路径，不含文件名，根目录为 "/"
-     * @param mtime   文件修改时间（毫秒时间戳），为 null 时由服务端决定
-     * @return 保存结果状态码
-     */
-    @PostMapping(value = "upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    SfcJsonResult<Long> uploadBytes(@RequestPart("file") byte[] content,
-                                    @RequestPart("name") String name,
-                                    @RequestPart("uid") long uid,
-                                    @RequestPart("path") String path,
-                                    @RequestPart(value = "mtime", required = false) Long mtime);
+    public Response download(long uid, String path) {
+        return feignClient.download(uid, path);
+    }
 
     /**
      * 重命名文件。
@@ -89,12 +62,11 @@ public interface SfcCoreFileClient {
      * @param path    被重命名对象所在的目录路径，不含其名称本身，根目录为 "/"
      * @param oldName 原名称
      * @param newName 新名称
+     * @return core 的响应信封（含执行结果状态码）
      */
-    @PostMapping("rename")
-    SfcJsonResult<Void> rename(@RequestParam("uid") long uid,
-                               @RequestParam("path") String path,
-                               @RequestParam("oldName") String oldName,
-                               @RequestParam("newName") String newName);
+    public SfcJsonResult<Void> rename(long uid, String path, String oldName, String newName) {
+        return feignClient.rename(uid, path, oldName, newName);
+    }
 
     /**
      * 复制文件。
@@ -106,15 +78,12 @@ public interface SfcCoreFileClient {
      * @param targetPath 目标目录路径，不含文件名，根目录为 "/"
      * @param overwrite  目标存在同名文件时是否覆盖
      * @param names      要复制的文件名列表，只含名称本身，不含目录
+     * @return core 的响应信封（含执行结果状态码）
      */
-    @PostMapping("copy")
-    SfcJsonResult<Void> copy(@RequestParam("uid") long uid,
-                             @RequestParam("sourceUid") long sourceUid,
-                             @RequestParam("targetUid") long targetUid,
-                             @RequestParam("sourcePath") String sourcePath,
-                             @RequestParam("targetPath") String targetPath,
-                             @RequestParam("overwrite") boolean overwrite,
-                             @RequestBody List<String> names);
+    public SfcJsonResult<Void> copy(long uid, long sourceUid, long targetUid, String sourcePath,
+                                    String targetPath, boolean overwrite, List<String> names) {
+        return feignClient.copy(uid, sourceUid, targetUid, sourcePath, targetPath, overwrite, names);
+    }
 
     /**
      * 移动文件。
@@ -126,15 +95,12 @@ public interface SfcCoreFileClient {
      * @param targetPath 目标目录路径，不含文件名，根目录为 "/"
      * @param overwrite  目标存在同名文件时是否覆盖
      * @param names      要移动的文件名列表，只含名称本身，不含目录
+     * @return core 的响应信封（含执行结果状态码）
      */
-    @PostMapping("move")
-    SfcJsonResult<Void> move(@RequestParam("uid") long uid,
-                              @RequestParam("sourceUid") long sourceUid,
-                              @RequestParam("targetUid") long targetUid,
-                              @RequestParam("sourcePath") String sourcePath,
-                              @RequestParam("targetPath") String targetPath,
-                              @RequestParam("overwrite") boolean overwrite,
-                              @RequestBody List<String> names);
+    public SfcJsonResult<Void> move(long uid, long sourceUid, long targetUid, String sourcePath,
+                                    String targetPath, boolean overwrite, List<String> names) {
+        return feignClient.move(uid, sourceUid, targetUid, sourcePath, targetPath, overwrite, names);
+    }
 
     /**
      * 删除文件。
@@ -142,9 +108,26 @@ public interface SfcCoreFileClient {
      * @param uid   资源所属用户ID，0 表示公共网盘，写入公共网盘需要管理员权限
      * @param path  文件所在目录路径，不含文件名，根目录为 "/"
      * @param names 要删除的文件名列表，只含名称本身，不含目录
+     * @return core 的响应信封（含执行结果状态码）
      */
-    @PostMapping("delete")
-    SfcJsonResult<Void> delete(@RequestParam("uid") long uid,
-                               @RequestParam("path") String path,
-                               @RequestBody List<String> names);
+    public SfcJsonResult<Void> delete(long uid, String path, List<String> names) {
+        return feignClient.delete(uid, path, names);
+    }
+
+    /**
+     * 以流式方式上传文件到 core。
+     *
+     * <p>文件内容从 {@code file} 边读边写，调用方需保证在上传期间该资源可读；上传完成后本方法不会关闭它。</p>
+     *
+     * @param file  文件资源，建议使用文件型资源（{@code FileSystemResource}，支持边读边发）；
+     *              使用无文件名的资源（如 {@code InputStreamResource}、{@code ByteArrayResource}）时请显式传 {@code name}
+     * @param uid   保存到的用户ID，0 表示公共网盘，写入公共网盘需要管理员权限
+     * @param path  保存到的目录路径，不含文件名，根目录为 "/"
+     * @param name  保存的文件名，为 null 时使用资源的文件名
+     * @param mtime 文件修改时间（毫秒时间戳），为 null 时由服务端决定
+     * @return core 的响应信封（含保存结果状态码）；失败时抛 {@code SfcRemoteApiException}
+     */
+    public SfcJsonResult<Long> upload(Resource file, long uid, String path, String name, Long mtime) {
+        return streamClient.upload(file, uid, path, name, mtime);
+    }
 }

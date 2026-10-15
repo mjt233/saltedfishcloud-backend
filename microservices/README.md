@@ -2,7 +2,7 @@
 
 > 本目录用于在**咸鱼云后端仓库内**统一维护各个微服务工程。
 > 与仓库内其它目录的本质区别：**这里的工程不继承 root `pom.xml`**——父 POM 是本目录的 [`pom.xml`](pom.xml)，而它的父 POM 才是 `spring-boot-starter-parent`（`<relativePath/>` 留空）。因此**不会被拖入咸鱼云那套约 208 个 jar 的技术栈**。
-> 模块依赖方向（也是构建顺序）：`sfc-common`（共享模型 / 工具 / 信任头常量）→ `sfc-gateway`、`sfc-demo-service`。
+> 模块依赖方向（也是构建顺序）：`sfc-common`（共享模型 / 工具 / 信任头常量 / 远程调用契约模型）→ `sfc-remote-client`（回调 core 的 OpenFeign SDK）、`sfc-gateway`、`sfc-demo-service`。
 > ⚠️ **现状校正（2026-10-11）**：本目录的工程**当前已在 root `pom.xml` 的 `<modules>` 中**（`microservices` 作为聚合器被引入），也就是说根目录执行 `mvn package` 会一并构建它们。这与本节早先"不进 root `<modules>`"的约定不同——属于**构建便利与"独立开发"之间的取舍现状**，本文档如实记录；"独立开发"的硬标准仍由下面两条保证：**不继承 root pom**、**零宿主依赖**（两者都可逐条验证）。
 > 若要恢复"完全不进 reactor"，只需从 root `<modules>` 移除 `microservices` 一项，各工程的独立构建命令（见 §三）无需改动。
 
@@ -35,7 +35,8 @@
 
 | 工程 | 作用 | 状态 |
 |---|---|---|
-| [`sfc-common`](sfc-common/) | **共享库**（不是可运行进程）：跨进程实体模型 `UserPrincipal`、用户凭证解析与本地验签 `SecureUtils`、网关与微服务的信任头常量 `SfcTrustHeaders`。被下面两个工程以 jar 形式引用，**版本/依赖管理全部继承本目录的 `pom.xml`** | 已接入 |
+| [`sfc-common`](sfc-common/) | **共享库**（不是可运行进程）：跨进程实体模型 `UserPrincipal`、用户凭证解析与本地验签 `SecureUtils`、网关与微服务的信任头常量 `SfcTrustHeaders`，以及远程调用契约模型（`com.sfc.cloud.remote.model`：响应信封、文件模型、请求参数）。被下面三个工程以 jar 形式引用，**版本/依赖管理全部继承本目录的 `pom.xml`** | 已接入 |
+| [`sfc-remote-client`](sfc-remote-client/) | **远程客户端 SDK**（库，不是可运行进程）：OpenFeign 声明式接口，让微服务直接调用 core 的用户网盘文件操作（列出/删除/保存/复制/移动/重命名），凭证按「信任模式」自动透传。对应[路线图阶段 6.2](../../docs/plan/microservice/microservice-roadmap.md) | 已接入 |
 | [`sfc-demo-service`](sfc-demo-service/) | **微服务示例/探针**：验证"独立微服务 → Nacos 注册 → 咸鱼云能发现"，并提供 `whoami` / `echo` / `echo-body` / `stream` / `ws` 等验收探针（身份来自网关注入的 `X-Sfc-Uid`） | 已接入 |
 | [`sfc-gateway`](sfc-gateway/) | **独立网关**（Spring Cloud Gateway Server WebFlux）：整站**唯一入口**，承担入口透传（SPA / `/api/**` / WebSocket / OIDC）与微服务代理（`/api/ext/**`）。**不是微服务**——它不被任何服务反向调用 | **已接入**（[设计](../../docs/plan/microservice/microservice-gateway-design.md) · [预研实测报告](../../docs/plan/microservice/microservice-gateway-spike-report.md)） |
 
@@ -52,6 +53,7 @@
 mvn -f microservices/pom.xml clean package -DskipTests
 
 # 只构建其中一个工程：-am 会把它的上游 sfc-common 一并放进 reactor
+mvn -f microservices/pom.xml clean package -DskipTests -pl :sfc-remote-client -am
 mvn -f microservices/pom.xml clean package -DskipTests -pl :sfc-gateway -am
 mvn -f microservices/pom.xml clean package -DskipTests -pl :sfc-demo-service -am
 
