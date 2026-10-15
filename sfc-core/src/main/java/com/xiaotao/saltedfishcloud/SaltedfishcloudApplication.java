@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud;
 
 import com.sfc.archive.annocation.EnableArchive;
+import com.sfc.cloud.auth.annotation.EnableSfcInternalAuth;
 import com.sfc.rpc.annotation.EnableRpc;
 import com.sfc.task.annocation.EnableAsyncTask;
 import com.xiaotao.saltedfishcloud.ext.DefaultPluginManager;
@@ -48,6 +49,7 @@ import java.util.function.Supplier;
 @EnableAsyncTask
 @EnableArchive
 @EnableRpc
+@EnableSfcInternalAuth
 @Indexed
 public class SaltedfishcloudApplication {
 

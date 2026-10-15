@@ -32,6 +32,16 @@
             <version>${common.version}</version>
         </dependency>
 
+        <!--
+            内部接口鉴权 SDK：提供共享密钥配置、每请求签发 HS256 JWT 的签发器，
+            以及 Feign / RestClient 两个客户端适配器（由本模块显式挂到"面向 core"的链路上）。
+        -->
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-auth</artifactId>
+            <version>${auth.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>

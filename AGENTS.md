@@ -4,7 +4,7 @@
 
 这是一个基于 SpringBoot 的网盘项目。
 
-注意：这是一个多模块 Maven 项目（见根 `pom.xml` 的 <modules>），主要模块包括 `sfc-core`、`sfc-api`、`sfc-ext`、`sfc-task`、`sfc-rpc`、`sfc-archive`。扩展插件位于 `sfc-ext` 目录（例如 `sfc-ext-webdav`、`sfc-ext-minio-store` 等）。
+注意：这是一个多模块 Maven 项目（见根 `pom.xml` 的 <modules>），主要模块包括 `sfc-core`、`sfc-api`、`sfc-ext`、`sfc-task`、`sfc-rpc`、`sfc-archive`、`sfc-auth`。扩展插件位于 `sfc-ext` 目录（例如 `sfc-ext-webdav`、`sfc-ext-minio-store` 等）。
 
 ## 模块架构
 
@@ -14,6 +14,7 @@
 
 - **sfc-api**: 共享模型、`BaseModel`→`AuditModel` 实体基类、`BaseRepo`（`JpaRepository`+`JpaSpecificationExecutor`）、`JsonException`、校验器、注解
 - **sfc-core**: 主应用入口 `SaltedfishcloudApplication`，聚合 security/config/controller/service
+- **sfc-auth**: 内部接口（服务间调用）鉴权 SDK：共享密钥（`sfc.internal.key`）、HS256 JWT 自签与校验、Servlet 过滤器与 Feign/RestClient 适配器（不做防重放）。**不继承根 pom**（避免消费方被拖入宿主整套技术栈），同时被 `sfc-core` 与 `microservices/` 侧依赖；单独构建 `microservices/` 前需先 `mvn -pl sfc-auth install`
 - **sfc-ext/**: 每个子目录是一个独立 Maven 模块插件，依赖 `sfc-api` 和可选 `sfc-core` API
 - **sfc-task**: 内部分 `sfc-task-api` + `sfc-task-core`
 - **sfc-archive**: 内部分 `sfc-archive-api` + `sfc-archive-core`

@@ -7,6 +7,13 @@
 #    因此本服务【只允许内网 / 本机暴露】，对外入口只有 sfc-gateway。
 # ⚠️ 网关会把用户的会话凭证【原值透传】过来（Token 头 / token cookie / ?Token=），
 #    供下游做自己的完整校验；本服务不得把它写入日志或任何响应体（见 docs/plan/todo.md）。
+#
+# 调用 core 内部接口（/api/internal/**）需要服务间共享密钥：各服务用同一份密钥自行签发调用凭证
+# （配置项 sfc.internal.key ← 环境变量 SFC_INTERNAL_KEY，由 sfc-auth SDK 提供）。
+# 留空则无法签发凭证、调用必然失败；core 侧未配置时对外一律 403（fail-closed）。
+sfc:
+  internal:
+    key: ${SFC_INTERNAL_KEY:}
 server:
   # 避开咸鱼云宿主的 8087、Nacos 控制台的 8080 与控制台 API 的 8848/9848
   port: 8090

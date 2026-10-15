@@ -137,6 +137,10 @@ sys:
     #    注：网关【不】管控请求体大小（无上限配置项），请求体多大由承载业务的服务自己决定。
     # ⚠️ 框架期采用【信任模式】：网关本地验签得到 uid 后注入 X-Sfc-Uid，微服务直接信任；
     #    因此微服务与 core 的内部接口只允许内网可达，上公网前必须先完成服务间鉴权（阶段 5）。
+    #    已落地的一层兜底：/api/internal/** 只允许微服务间调用——各服务用同一份共享密钥
+    #    （sfc.internal.key ← 环境变量 SFC_INTERNAL_KEY，由 sfc-auth SDK 提供）为每次调用自签 HS256 JWT，
+    #    core 侧校验「签名 + 有效期（含时钟偏移）+ 必需声明」，网关侧直接拒绝该前缀。
+    #    该兜底不区分服务身份、不做防重放，仍不能替代阶段 5。
     #    此处曾有的 sys.service.gateway.* 与 POST /api/gateway/resolve 已整体删除，不要再补回来。
     local-cache:
       # 本地缓存默认过期时间（毫秒），默认 15 分钟
@@ -252,4 +256,13 @@ management:
 app:
   version: ^project.version^
 
+# 内部接口（服务间调用）鉴权 SDK（sfc-auth）配置：/api/internal/** 只允许微服务间调用。
+# 该节点不在 sys. 下（配置项前缀由 SDK 固定为 sfc.internal），但同样需要在各部署配置中同步。
+# 密钥必须与所有微服务侧的 SFC_INTERNAL_KEY 完全一致。
+sfc:
+  internal:
+    # 服务间共享密钥（环境变量 SFC_INTERNAL_KEY）。各项含义与默认值见 sfc-auth/README.md：
+    # key / service-name / token-ttl / clock-skew / server-enabled / allowed-issuers
+    key: ${SFC_INTERNAL_KEY:}
+    server-enabled: true
 ```

@@ -31,6 +31,12 @@
         <spring-cloud.version>2025.1.0</spring-cloud.version>
         <spring-cloud-alibaba.version>2025.1.0.0</spring-cloud-alibaba.version>
         <jjwt.version>0.12.6</jjwt.version>
+        <!--
+            内部接口鉴权 SDK（com.xiaotao:sfc-auth）版本，需与仓库根 pom 的 auth.version 保持一致。
+            ⚠️ 本 SDK 在【仓库根 reactor】中且不继承根 pom，因此单独执行 `mvn -f microservices/pom.xml package`
+            时它属于外部依赖：需先在仓库根执行 `mvn -pl sfc-auth install`（或改从根目录用 -pl 构建本目录的目标模块）。
+        -->
+        <auth.version>1.0.0</auth.version>
     </properties>
 
     <dependencyManagement>

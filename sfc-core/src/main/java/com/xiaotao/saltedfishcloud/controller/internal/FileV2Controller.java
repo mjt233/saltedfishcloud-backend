@@ -32,16 +32,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 网盘文件操作 V2 控制器。暂仅用于微服务系统内部调用
+ * 网盘文件操作 V2 控制器。仅用于微服务系统内部调用。
  *
- * todo 权限需要校验，确保只能服务内调用
+ * <p>{@value #PREFIX} 属于 {@code /api/internal/**} 前缀，由 {@code sfc-auth} SDK 的
+ * {@code SfcInternalAuthFilter} 强制校验服务间调用凭证（请求头 {@code X-Sfc-Internal-Token} 中
+ * 每次调用新签发的 HS256 JWT），客户端无法直接访问；网关侧也会直接拒绝该前缀。
+ * 因此这里的 {@code @AllowAnonymous} 表达的是"调用方是服务、没有用户登录态"，而不是"对所有人开放"。</p>
  */
 @RestController
 @RequestMapping(FileV2Controller.PREFIX)
 @Validated
 @ProtectBlock
 @RequiredArgsConstructor
-@Tag(name = "网盘文件操作V2")
+@Tag(name = "网盘文件操作-sfc-core微服务间内部接口")
 public class FileV2Controller {
 
     /** 接口前缀 */
@@ -85,6 +88,7 @@ public class FileV2Controller {
 
     /** 上传文件 */
     @PostMapping("upload")
+    @AllowAnonymous
     public JsonResult<Long> upload(@RequestParam("uid") @UID(true) long uid,
                                    @RequestParam("path") @ValidPath String path,
                                    @RequestParam(value = "name", required = false) @FileName String name,
@@ -106,6 +110,7 @@ public class FileV2Controller {
 
     /** 重命名文件 */
     @PostMapping("rename")
+    @AllowAnonymous
     public JsonResult<Object> rename(@RequestParam("uid") @UID(true) long uid,
                                      @RequestParam("path") @ValidPath String path,
                                      @RequestParam("oldName") @FileName String oldName,
@@ -116,6 +121,7 @@ public class FileV2Controller {
 
     /** 复制文件 */
     @PostMapping("copy")
+    @AllowAnonymous
     public JsonResult<Object> copy(@RequestParam("uid") @UID long uid,
                                    @RequestParam(value = "sourceUid", required = false) Long sourceUid,
                                    @RequestParam(value = "targetUid", required = false) Long targetUid,
@@ -142,6 +148,7 @@ public class FileV2Controller {
 
     /** 移动文件 */
     @PostMapping("move")
+    @AllowAnonymous
     public JsonResult<Object> move(@RequestParam("uid") @UID long uid,
                                     @RequestParam(value = "sourceUid", required = false) Long sourceUid,
                                     @RequestParam(value = "targetUid", required = false) Long targetUid,
@@ -163,6 +170,7 @@ public class FileV2Controller {
 
     /** 删除文件 */
     @PostMapping("delete")
+    @AllowAnonymous
     public JsonResult<Object> delete(@RequestParam("uid") @UID(true) long uid,
                                      @RequestParam("path") @ValidPath String path,
                                      @RequestBody List<String> names) throws IOException {

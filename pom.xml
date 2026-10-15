@@ -11,6 +11,7 @@
     </parent>
     <modules>
         <module>sfc-cloud-api</module>
+        <module>sfc-auth</module>
         <module>sfc-archive</module>
         <module>sfc-api</module>
         <module>sfc-task</module>
@@ -45,6 +46,8 @@
         <rpc.version>1.0.0</rpc.version>
         <!--   微服务契约模块版本。sfc-cloud-api 未继承本 pom，其 <version> 需与此处保持一致     -->
         <cloud.version>1.0.0</cloud.version>
+        <!--   内部接口鉴权 SDK 版本。sfc-auth 未继承本 pom，其 <version> 需与 microservices/pom.xml 中的 auth.version 保持一致     -->
+        <auth.version>1.0.0</auth.version>
         <oshi.version>6.4.0</oshi.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    内部接口（服务间调用）鉴权 SDK。
+
+    刻意【不继承】仓库根 pom：根 pom 在 <dependencies>（而非 <dependencyManagement>）中声明了
+    JPA / Security / Redis / Netty 等整套技术栈，会被所有子模块无条件继承（实测 208 个 jar）。
+    本 SDK 同时被 sfc-core 与 microservices 侧（网关、远程客户端、demo）使用，一旦继承根 pom，
+    微服务侧会被拖入同一套技术栈。因此本模块自带全部构建配置，依赖全部显式声明并以 provided 为主
+    （同类写法见 sfc-cloud-api、sfc-ext）。
+
+    编译基线取 microservices 侧的 spring-boot-dependencies 4.0.8（低于 core 的 4.1.0）：
+    只用两端都存在的稳定 API，编译基线不高于运行侧即为兼容方向。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.xiaotao</groupId>
+    <artifactId>sfc-auth</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>sfc-auth</name>
+    <description>内部接口（服务间调用）鉴权 SDK：Key 配置、HS256 JWT 签发与校验、Servlet/Feign/RestClient 适配</description>
+
+    <properties>
+        <java.version>25</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 编译期对齐 Spring Cloud 2025.1.0（microservices 侧运行版本）所用的 openfeign 版本 -->
+        <feign.version>13.6</feign.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!--
+                仅导入 BOM 用于管理 spring / jakarta / slf4j / lombok 的版本，不引入任何实际依赖。
+                dependencyManagement 不具备传递性，因此不影响本模块的消费者。
+            -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>4.0.8</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- JWT：api 编译期引用，impl / jackson 是纯运行期实现（Jwts 经 ServiceLoader 装载） -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- 以下运行期一律由消费方提供（core 与各微服务都已具备）：provided 不传递，避免污染消费方 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- RestClient 请求初始化器使用的 HttpHeaders / ClientHttpRequest -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- 自动配置与 @ConfigurationProperties；Servlet 过滤器基类 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Feign 请求拦截器；不引 spring-cloud-openfeign，只依赖其底层 feign-core -->
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-core</artifactId>
+            <version>${feign.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                因不继承 parent，编译相关配置需全部显式声明：
+                proc=full 用于在 JDK 23+ 下启用 classpath 中的注解处理器，否则 lombok 不生效；
+                release / encoding 用于确定编译目标版本与源码编码（本模块含中文注释与中文响应消息）。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <proc>full</proc>
+                    <release>${java.version}</release>
+                    <encoding>UTF-8</encoding>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -4,11 +4,12 @@ import com.sfc.cloud.remote.constants.SfcRemoteConstants;
 import com.sfc.cloud.trust.SfcTrustHeaders;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestInitializer;
 
 /**
- * RestClient 凭证透传初始化器。语义与 Feign 的 {@link CredentialForwardingInterceptor} 一致：
+ * RestClient 凭证透传初始化器。语义与 Feign 的 {@link FeignCredentialForwardingInterceptor} 一致：
  * 把入站请求的凭证（Token 头 / 查询参数 / token Cookie）与网关注入的 {@code X-Sfc-Uid} 原样带到回调请求上，
  * 不产生、不解析、不校验任何凭证；无 HTTP 上下文时不伪造身份。
  *
@@ -21,7 +22,7 @@ import org.springframework.http.client.ClientHttpRequestInitializer;
 public class SfcCredentialRequestInitializer implements ClientHttpRequestInitializer {
 
     @Override
-    public void initialize(ClientHttpRequest request) {
+    public void initialize(@NonNull ClientHttpRequest request) {
         HttpServletRequest inbound = SfcCredentialResolver.currentRequest();
         if (inbound == null) {
             return;

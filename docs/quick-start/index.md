@@ -71,7 +71,7 @@ java -Xmx512m -jar microservices/sfc-gateway/target/sfc-gateway-1.0.0.jar
 | 构建命令 | **独立构建**：`mvn -f microservices/pom.xml clean package -DskipTests`（聚合器一次构建共享库 `sfc-common` 与网关；只构建网关用 `-pl :sfc-gateway -am`）。本目录的工程都不继承 root pom。⚠️ 它当前也在 root `<modules>` 中，因此根目录 `mvn package` 会一并构建；但它的产物**不打进 `release/` 目录**，是独立发布的进程 |
 | ⚠️ 密钥（必做） | 网关用**环境变量 `SFC_JWT_SECRET`** 验签，取值必须与 core 的 `sys.safe.token` **一致**：漂移的症状是"登录正常，但 `/api/ext/**` 全量 403/7005"；core 在线改密钥后**必须重启网关**并重新注入 |
 | 回退路径 | 不启动网关时，直连 `http://127.0.0.1:8087/` 一切照旧（网关只是入口，不是必需品） |
-| ⚠️ 部署约束 | 微服务与 core 的内部接口**只允许内网可达**：框架期采用**信任模式**（网关本地验签后注入明文头 `X-Sfc-Uid`，微服务不校验），且**凭证原值会透传给微服务**（微服务不得打印凭证）；**上公网前必须先完成服务间鉴权** |
+| ⚠️ 部署约束 | 微服务与 core 的内部接口**只允许内网可达**：框架期采用**信任模式**（网关本地验签后注入明文头 `X-Sfc-Uid`，微服务不校验），且**凭证原值会透传给微服务**（微服务不得打印凭证）；**上公网前必须先完成服务间鉴权**。已落地一层兜底：`/api/internal/**` 只允许微服务间调用——各服务用共享密钥 `SFC_INTERNAL_KEY`（`sfc.internal.key`）自签 HS256 JWT，core 侧校验签名/有效期，网关侧直接拒绝该前缀；该兜底不区分服务身份、**不做防重放**，替代不了服务间鉴权 |
 | 配置 | 网关自己的配置在 `microservices/sfc-gateway/src/main/resources/application.yml`（不使用 `sys.` 前缀）；**core 侧没有任何代理配置**——`sys.service.gateway.*` 与 `POST /api/gateway/resolve` 已随"网关独立验签"一并删除（见[参数配置](./config.md)） |
 
 > 注：如果你是通过release页面下载的已经打包编译好的程序，此时应该可以直接访问到完整的功能页面。

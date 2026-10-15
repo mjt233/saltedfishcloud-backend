@@ -12,6 +12,10 @@ import java.util.List;
 /**
  * sfc-core 网盘文件操作客户端（Feign 声明式接口）
  *
+ * <p>所有请求都落在 core 的内部接口前缀 {@link #PREFIX} 下，由
+ * {@link SfcRemoteClientAutoConfiguration} 注册的内部调用凭证拦截器
+ * （{@code com.sfc.cloud.auth.client.SfcInternalTokenFeignInterceptor}）逐请求签发 JWT 凭证。</p>
+ *
  * @see SfcCoreFileClient 对外的统一调用入口
  */
 @FeignClient(

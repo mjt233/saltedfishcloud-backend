@@ -43,12 +43,19 @@
 > **网关与微服务的区别**：微服务是"被发现的业务进程"，网关是"入口"。两者都放在本目录，是因为它们**共享同一条构建与版本约定**：独立 POM 边界（不继承 root pom）、零宿主依赖，且使用同一套 Spring Boot / Spring Cloud / SCA 版本矩阵（由本目录的 `pom.xml` 单点声明）。
 >
 > ⚠️ **框架期的信任模式（2026-10-11 起：网关本地验签）**：网关是**唯一身份来源**——它用**环境变量 `SFC_JWT_SECRET`**（＝ core 的 `sys.safe.token`）**本地验签**用户凭证，把 uid 注入 `X-Sfc-Uid`，并把**凭证原值透传**给下游；微服务直接信任该头、不做校验，如需"登出即失效"级别判定则用透传的凭证自行完整校验。头名常量统一取自 `sfc-common` 的 `com.sfc.cloud.trust.SfcTrustHeaders`（网关注入、微服务读取，两侧都不写字面量）。因此：**微服务只允许内网 / 本机暴露**、**不得打印凭证**，上公网前必须先完成服务间鉴权（见[路线图阶段 5](../docs/plan/microservice/microservice-roadmap.md) 与[技术债务清单](../docs/plan/todo.md)）。
+>
+> 🔒 **内部接口的一层兜底（2026-10-15，同日改为 SDK + 自签 JWT）**：core 的 `/api/internal/**`（当前即 `sfc-remote-client` 访问的网盘文件 V2 接口）**只允许微服务间调用**——各服务用同一份共享密钥 **`SFC_INTERNAL_KEY`**（配置项 `sfc.internal.key`）**为每次调用自签 HS256 JWT**，放在请求头 **`X-Sfc-Internal-Token`** 里（密钥本身不上线传输）；core 侧校验「签名 + 有效期（含时钟偏移）+ 必需声明」，未配置密钥时 fail-closed 全部拒绝；网关（`sfc-gateway`）对该前缀**直接拒绝**，服务间调用走 `lb://sfc-core` 直连、不经网关。签发/校验与两端适配全部由独立 SDK **[`sfc-auth`](../sfc-auth/README.md)**（仓库根目录）实现。注意：仍是**共享密钥**模型——不区分服务身份、**不做防重放**（调小 `token-ttl` 是唯一缓解手段）、轮换需全部重启，属于框架期兜底，**不能替代**阶段 5 的服务间鉴权。
+>
+> ⚠️ **构建前置**：`sfc-auth` 位于**仓库根 reactor**、不继承根 pom，因此单独构建本目录前需先 `mvn -pl sfc-auth install`（或改从仓库根用 `-pl microservices/...` 构建）；否则本目录的 reactor 找不到 `com.xiaotao:sfc-auth`。
 
 ---
 
 ## 三、构建与运行
 
 ```powershell
+# 前置：内部接口鉴权 SDK 在【仓库根 reactor】且不继承根 pom，先装进本地仓库
+mvn -pl sfc-auth install -DskipTests
+
 # 构建（在仓库根目录执行即可）——推荐：聚合器一次构建全部模块（含共享库 sfc-common）
 mvn -f microservices/pom.xml clean package -DskipTests
 

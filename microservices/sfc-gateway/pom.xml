@@ -34,6 +34,17 @@
             <version>${common.version}</version>
         </dependency>
 
+        <!--
+            内部接口契约常量（头名 / 路径前缀 / 统一拒绝响应体）的唯一来源：
+            网关据此对 /api/internal/** 整前缀拒绝，并剥离入站凭证头。
+            只需常量类，SDK 的服务端过滤器在 WebFlux 进程里会被条件装配跳过。
+        -->
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-auth</artifactId>
+            <version>${auth.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>

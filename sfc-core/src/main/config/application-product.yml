@@ -83,3 +83,15 @@ sys:
       url: hdfs://localhost:9000
       root: /xyy2
       user: xiaotao
+
+# 内部接口（服务间调用）鉴权 SDK（sfc-auth）配置：/api/internal/** 只允许微服务间调用。
+# 密钥必须与所有微服务侧的 SFC_INTERNAL_KEY 完全一致；本节点不在 sys. 下，但同样需要在各部署配置中同步。
+sfc:
+  internal:
+    # 服务间共享密钥（环境变量 SFC_INTERNAL_KEY）。留空 = 未配置：服务端拒绝全部 /api/internal/** 请求
+    # （fail-closed，启动打印 ERROR），客户端也无法签发调用凭证；不得少于 32 个字符，例如 `openssl rand -hex 16`。
+    key: ${SFC_INTERNAL_KEY:}
+    # 本服务名（写入调用凭证的 iss，便于接收方审计/白名单）
+    service-name: sfc-core
+    # 是否在本进程启用服务端校验过滤器，默认 true（Servlet 应用自动装配）
+    server-enabled: true

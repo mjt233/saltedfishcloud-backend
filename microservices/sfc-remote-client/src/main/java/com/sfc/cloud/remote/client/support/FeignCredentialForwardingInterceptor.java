@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
  * 凭证透传拦截器（Feign）。
  */
 @Slf4j
-public class CredentialForwardingInterceptor implements RequestInterceptor {
+public class FeignCredentialForwardingInterceptor implements RequestInterceptor {
 
     @Override
     public void apply(RequestTemplate template) {
