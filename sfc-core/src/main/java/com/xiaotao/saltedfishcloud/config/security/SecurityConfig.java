@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.config.security;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.helper.Md5PasswordEncoder;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.springframework.context.annotation.Bean;
@@ -86,7 +86,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setContentType("application/json;charset=utf-8");
                     response.setStatus(403);
-                    response.getWriter().print(JsonResultImpl.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
+                    response.getWriter().print(SfcJsonResult.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
                 })
         );
 

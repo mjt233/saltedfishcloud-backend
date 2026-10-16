@@ -6,8 +6,8 @@ import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
 import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.SFunc;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.data.utils.SfcFunc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -57,14 +57,14 @@ public interface ConfigService {
      * 从配置表读取一个配置项的值
      * @param keyLambdaFunc 配置实体类getter方法的lambda函数，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
      */
-    <T,R> R getConfig(SFunc<T, R> keyLambdaFunc);
+    <T,R> R getConfig(SfcFunc<T, R> keyLambdaFunc);
 
     /**
      * 从配置表读取一个配置项的值
      * @param keyLambdaFunc 配置实体类getter方法的lambda函数，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
      * @param defaultValue 默认值
      */
-    <T,R> R getConfig(SFunc<T, R> keyLambdaFunc, R defaultValue);
+    <T,R> R getConfig(SfcFunc<T, R> keyLambdaFunc, R defaultValue);
 
     /**
      * 从配置表读取一个配置项的值
@@ -81,7 +81,7 @@ public interface ConfigService {
         if (config == null) {
             return null;
         }
-        return MapperHolder.parseJson(config, clazz);
+        return SfcMapperHolder.parseJson(config, clazz);
     }
 
     /**
@@ -96,7 +96,7 @@ public interface ConfigService {
      * @param keyLambdaFunc 被监听的配置实体类getter方法，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
      * @param value     配置值
      */
-    <T,R> boolean setConfig(SFunc<T, R> keyLambdaFunc, R value);
+    <T,R> boolean setConfig(SfcFunc<T, R> keyLambdaFunc, R value);
 
     /**
      * 批量设置配置项
@@ -121,7 +121,7 @@ public interface ConfigService {
      * @param keyLambdaFunc 被监听的配置实体类getter方法，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
      * @param listener  监听器，参数为值
      */
-    <T,R> void addBeforeSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener);
+    <T,R> void addBeforeSetListener(SfcFunc<T, R> keyLambdaFunc, Consumer<R> listener);
 
     /**
      * 添加一个监听指定配置被设置后触发的监听器
@@ -135,7 +135,7 @@ public interface ConfigService {
      * @param keyLambdaFunc 被监听的配置实体类getter方法，自动根据该getter对应的字段获取配置key。 e.g. SysLogConfig::getEnableLog
      * @param listener  监听器，参数为值
      */
-    <T,R> void addAfterSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener);
+    <T,R> void addAfterSetListener(SfcFunc<T, R> keyLambdaFunc, Consumer<R> listener);
 
     /**
      * 设置存储类型

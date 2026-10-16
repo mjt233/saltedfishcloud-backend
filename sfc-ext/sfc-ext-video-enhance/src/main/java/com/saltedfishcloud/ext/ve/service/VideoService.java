@@ -14,11 +14,11 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.utils.*;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +34,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.saltedfishcloud.ext.ve.constant.VEConstants.*;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 
 @Service
 @Slf4j
@@ -56,13 +59,13 @@ public class VideoService {
      */
     public void check() {
         VEProperty property = ffMpegHelper.getProperty();
-        if (!StringUtils.hasText(property.getFfmpegPath())) {
-            throw new JsonException("未配置ffmpeg路径");
+        if (!SfcStringUtils.hasText(property.getFfmpegPath())) {
+            throw new SfcJsonException("未配置ffmpeg路径");
         }
         try {
             ffMpegHelper.getFFMpegInfo();
         } catch (IOException e) {
-            throw new JsonException("检查失败，错误：" + e.getMessage());
+            throw new SfcJsonException("检查失败，错误：" + e.getMessage());
         }
     }
 
@@ -72,7 +75,7 @@ public class VideoService {
      * @param identify  视频标识，可通过相同的标识获取进度
      * @param time      观看进度
      */
-    public void recordWatchProgress(@UID(value = true) Long uid, String identify, double time) {
+    public void recordWatchProgress(@SfcUID(value = true) Long uid, String identify, double time) {
         cacheService.set(CacheKeyPrefixes.WATCH_PROGRESS + uid + "::" + identify, time, 7, TimeUnit.DAYS);
     }
 
@@ -82,7 +85,7 @@ public class VideoService {
      * @param identify  视频标识
      * @return          观看进度，返回null就是没有记录
      */
-    public Double getWatchProgress(@UID(value = true) Long uid, String identify) {
+    public Double getWatchProgress(@SfcUID(value = true) Long uid, String identify) {
         return cacheService.get(CacheKeyPrefixes.WATCH_PROGRESS + uid + "::" + identify);
     }
 
@@ -93,7 +96,7 @@ public class VideoService {
      * @param page      页码，首页为0
      * @param pageSize  页大小
      */
-    public CommonPageInfo<EncodeConvertTask> listTask(Long uid, Integer status, Integer page, Integer pageSize) {
+    public SfcPageInfo<EncodeConvertTask> listTask(Long uid, Integer status, Integer page, Integer pageSize) {
         PageRequest pageRequest = PageRequest.of(page, pageSize);
         Page<EncodeConvertTask> tasks = encodeConvertTaskRepo.findByUidAndTaskStatus(uid, status, pageRequest);
 
@@ -110,7 +113,7 @@ public class VideoService {
                 }
             }
         });
-        return CommonPageInfo.of(tasks);
+        return SfcPageInfo.of(tasks);
     }
 
     /**
@@ -119,14 +122,14 @@ public class VideoService {
      * @return  如果资源请求未指定实际的资源来源，则返回本次请求参数本身
      */
     public ResourceRequest getSourceResourceRequest(ResourceRequest param) {
-        String sourceProtocol = TypeUtils.toString(param.getParams().get("sourceProtocol"));
+        String sourceProtocol = SfcTypeUtils.toString(param.getParams().get("sourceProtocol"));
 
         // 若指定了文件来源协议，则从来源协议处理器中获取资源（如：从文件分享中获取，或是其他拓展的协议）
         if (sourceProtocol != null) {
             if (sourceProtocol.equals(param.getProtocol())) {
                 throw new IllegalArgumentException("来源协议不能与请求协议相同");
             }
-            String sourceId = TypeUtils.toString(param.getParams().get("sourceId"));
+            String sourceId = SfcTypeUtils.toString(param.getParams().get("sourceId"));
             if (sourceId == null) {
                 throw new IllegalArgumentException("缺少sourceId");
             }
@@ -184,7 +187,7 @@ public class VideoService {
         AsyncTaskRecord record = AsyncTaskRecord.builder()
                 .name("视频编码转换")
                 .taskType(VEConstants.TASK_TYPE)
-                .params(MapperHolder.toJson(param))
+                .params(SfcMapperHolder.toJson(param))
                 .status(AsyncTaskConstants.Status.WAITING)
                 // 涉及到视频重编码时，开销设定跑16个CPU核心以便让多核CPU平台上能同时运行多个视频转换，非多核平台上最多只能运行一个视频编码转换任务，且运行期间不再接收其他任务
                 .cpuOverhead(isHandleVideo ? 1600 : 100)
@@ -214,7 +217,7 @@ public class VideoService {
 
     private EncodeConvertTask createTaskPo(EncodeConvertTaskParam taskParam) throws JsonProcessingException {
         EncodeConvertTask task = new EncodeConvertTask();
-        task.setParams(MapperHolder.toJson(taskParam));
+        task.setParams(SfcMapperHolder.toJson(taskParam));
 
         Map<String, List<EncodeConvertRule>> typeMap = taskParam.getEncodeConvertParam().getRules().stream().collect(Collectors.groupingBy(EncodeConvertRule::getType));
         boolean videoConvert = typeMap.getOrDefault(EncoderType.VIDEO, Collections.emptyList()).stream().anyMatch(e -> EncodeMethod.CONVERT.equals(e.getMethod()));

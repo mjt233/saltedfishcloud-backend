@@ -14,10 +14,10 @@ import com.sfc.dm.repo.InvalidDataRecordRepo;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -89,7 +89,7 @@ public class InvalidDataService {
     /**
      * 查询已发布可认领的失效数据列表（分页+筛选，状态强制为PUBLISHED）
      */
-    public CommonPageInfo<InvalidDataRecord> listPublished(InvalidDataQuery query, PageableRequest pageable) {
+    public SfcPageInfo<InvalidDataRecord> listPublished(InvalidDataQuery query, SfcPageableRequest pageable) {
         query.setStatus(List.of(InvalidDataStatus.PUBLISHED.name()));
         return list(query, pageable);
     }
@@ -97,11 +97,11 @@ public class InvalidDataService {
     /**
      * 查询失效数据列表（分页+筛选）
      */
-    public CommonPageInfo<InvalidDataRecord> list(InvalidDataQuery query, PageableRequest pageable) {
+    public SfcPageInfo<InvalidDataRecord> list(InvalidDataQuery query, SfcPageableRequest pageable) {
         JpaLambdaQueryWrapper<InvalidDataRecord> wrapper = JpaLambdaQueryWrapper.get(InvalidDataRecord.class);
         applyQueryFilter(wrapper, query);
         Sort sort = buildSort(query);
-        return CommonPageInfo.of(repo.findAll(wrapper.build(), PageRequest.of(pageable.getPage(), pageable.getSize(), sort)));
+        return SfcPageInfo.of(repo.findAll(wrapper.build(), PageRequest.of(pageable.getPage(), pageable.getSize(), sort)));
     }
 
     /**
@@ -136,7 +136,7 @@ public class InvalidDataService {
 
     /**
      * 流式查询可认领的失效数据记录（UNIQUE 模式下类型为失效物理存储）。
-     * <p>在 {@link #list(InvalidDataQuery, PageableRequest)} 的筛选条件基础上，
+     * <p>在 {@link #list(InvalidDataQuery, SfcPageableRequest)} 的筛选条件基础上，
      * 强制限定 type = PHYSICAL_STORAGE 且 storeMode = UNIQUE。
      * 若 query 包含 {@code filterScript}，则在 DB 筛选后进一步应用 Groovy 脚本过滤。</p>
      *
@@ -163,10 +163,10 @@ public class InvalidDataService {
      * @param pageable 分页参数
      * @return 分页结果
      */
-    public CommonPageInfo<InvalidDataRecord> listByFilterId(String filterId, PageableRequest pageable) {
+    public SfcPageInfo<InvalidDataRecord> listByFilterId(String filterId, SfcPageableRequest pageable) {
         List<Long> allIds = cacheService.get(CACHE_KEY_PREFIX + filterId);
         if (allIds == null) {
-            throw new JsonException(InvalidDataError.FILTER_EXPIRED);
+            throw new SfcJsonException(InvalidDataError.FILTER_EXPIRED);
         }
 
         int page = pageable.getPage();
@@ -176,7 +176,7 @@ public class InvalidDataService {
         long totalPage = (allIds.size() + size - 1) / size;
 
         if (fromIndex >= allIds.size()) {
-            return new CommonPageInfo<InvalidDataRecord>()
+            return new SfcPageInfo<InvalidDataRecord>()
                     .setContent(List.of())
                     .setTotalCount(allIds.size())
                     .setTotalPage(totalPage);
@@ -191,7 +191,7 @@ public class InvalidDataService {
                 .map(recordMap::get)
                 .collect(Collectors.toList());
 
-        return new CommonPageInfo<InvalidDataRecord>()
+        return new SfcPageInfo<InvalidDataRecord>()
                 .setContent(ordered)
                 .setTotalCount(allIds.size())
                 .setTotalPage(totalPage);

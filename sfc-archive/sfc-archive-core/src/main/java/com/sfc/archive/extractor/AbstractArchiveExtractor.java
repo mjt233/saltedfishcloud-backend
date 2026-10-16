@@ -4,7 +4,7 @@ import com.sfc.archive.ArchiveHandleEventListener;
 import com.sfc.archive.model.ArchiveFile;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -77,7 +77,7 @@ public abstract class AbstractArchiveExtractor implements ArchiveExtractor {
      */
     protected File fetchResource(Resource resource) throws IOException {
         File file;
-        tempArchivePath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), StringUtils.getRandomString(6) + ".zip"));
+        tempArchivePath = Paths.get(SfcStringUtils.appendPath(PathUtils.getTempDirectory(), SfcStringUtils.getRandomString(6) + ".zip"));
         resourceBeginFetchFetchers.forEach(e -> e.accept(tempArchivePath));
         try {
             ResourceUtils.saveToFile(resource, tempArchivePath);

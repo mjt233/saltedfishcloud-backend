@@ -5,10 +5,10 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.service.third.handler.AbstractThirdPartyPlatformHandler;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Lazy;
@@ -49,7 +49,7 @@ public class GoogleThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
             if (platform == null || platform.getConfig() == null) {
                 return null;
             }
-            return MapperHolder.parseJson(platform.getConfig(), GooglePlatformProperty.class);
+            return SfcMapperHolder.parseJson(platform.getConfig(), GooglePlatformProperty.class);
         } catch (IOException e) {
             throw new RuntimeException("解析Google平台配置失败", e);
         }
@@ -58,9 +58,9 @@ public class GoogleThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
     @Override
     protected boolean isConfigurationIncomplete(ThirdPartyAuthPlatform platform,@Nullable GooglePlatformProperty property) {
         return property == null ||
-                !StringUtils.hasText(property.getRedirectUrl()) ||
-                !StringUtils.hasText(property.getClientId()) ||
-                !StringUtils.hasText(property.getClientSecret());
+                !SfcStringUtils.hasText(property.getRedirectUrl()) ||
+                !SfcStringUtils.hasText(property.getClientId()) ||
+                !SfcStringUtils.hasText(property.getClientSecret());
     }
 
     @Override
@@ -73,7 +73,7 @@ public class GoogleThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
 
     @Override
     protected ThirdPartyPlatformUser handleCallback(ThirdPartyAuthPlatform thirdPartyAuthPlatform, GooglePlatformProperty property, Map<String, Object> platformCallbackParam) throws IOException {
-        String code = Objects.requireNonNull(TypeUtils.toString(platformCallbackParam.get("code")), "缺少参数 code");
+        String code = Objects.requireNonNull(SfcTypeUtils.toString(platformCallbackParam.get("code")), "缺少参数 code");
 
         // 获取访问令牌
         String accessToken = getAccessToken(thirdPartyAuthPlatform, property, code);

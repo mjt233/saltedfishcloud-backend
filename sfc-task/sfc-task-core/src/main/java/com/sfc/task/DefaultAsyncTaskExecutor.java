@@ -13,7 +13,7 @@ import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -409,7 +409,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
             return null;
         }
         if (record.getId() == null) {
-            record.setId(IdUtil.getId());
+            record.setId(SfcIdUtil.getId());
         }
         AsyncTaskFactory asyncTaskFactory = this.getTaskFactory(record);
 
@@ -538,7 +538,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     @Override
     public void execute(AsyncTaskRecord record) {
         if (record.getId() == null) {
-            record.setId(IdUtil.getId());
+            record.setId(SfcIdUtil.getId());
         }
         AsyncTaskFactory asyncTaskFactory = getTaskFactory(record);
         AsyncTask task = asyncTaskFactory.createTask(record.getParams(), record);

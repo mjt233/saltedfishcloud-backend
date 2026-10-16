@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 public class PathUtils {
 
@@ -28,7 +29,7 @@ public class PathUtils {
             }
         }
 
-        TEMP_PATH = Paths.get(StringUtils.appendPath(System.getProperty("java.io.tmpdir"), "xyy"));
+        TEMP_PATH = Paths.get(SfcStringUtils.appendPath(System.getProperty("java.io.tmpdir"), "xyy"));
         if (!Files.exists(TEMP_PATH)) {
             try {
                 Files.createDirectories(TEMP_PATH);
@@ -73,9 +74,9 @@ public class PathUtils {
      */
     public static Path createTemplateFilePath(@Nullable String prefix) {
         if (prefix == null || prefix.isEmpty()) {
-            return getTempPath().resolve(IdUtil.getUUID() + ".tmp");
+            return getTempPath().resolve(SfcIdUtil.getUUID() + ".tmp");
         } else {
-            return getTempPath().resolve(prefix + IdUtil.getUUID() + ".tmp");
+            return getTempPath().resolve(prefix + SfcIdUtil.getUUID() + ".tmp");
         }
     }
 

@@ -6,8 +6,8 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 
@@ -47,7 +47,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
 
     @Override
     public void clear() throws IOException {
-        handler.delete(StringUtils.appendPath(getStoreRoot(), "repo"));
+        handler.delete(SfcStringUtils.appendPath(getStoreRoot(), "repo"));
     }
 
     /**
@@ -95,7 +95,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
      * @return      存储服务绝对路径
      */
     private String getMd5ResourcePath(String md5) {
-        return StringUtils.appendPath(getRepoRoot(), getMd5PathEnd(md5));
+        return SfcStringUtils.appendPath(getRepoRoot(), getMd5PathEnd(md5));
     }
 
     /**
@@ -107,7 +107,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
             fileInfo.updateMd5();
             md5 = fileInfo.getMd5();
         }
-        final String path = StringUtils.appendPath(getRepoRoot(), getMd5PathEnd(md5));
+        final String path = SfcStringUtils.appendPath(getRepoRoot(), getMd5PathEnd(md5));
         if (handler.exist(path)) {
             return null;
         } else {
@@ -122,7 +122,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     @Override
     public void storeByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
 
-        final String tmpPath = StringUtils.appendPath(getRepoRoot(), IdUtil.getId() + ".tmp");
+        final String tmpPath = SfcStringUtils.appendPath(getRepoRoot(), SfcIdUtil.getId() + ".tmp");
         boolean isSuccess = false;
         try(OutputStream tmpFileOutputStream = handler.newOutputStream(tmpPath)) {
             streamConsumer.accept(tmpFileOutputStream).applyTo(file);
@@ -162,7 +162,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
     public long delete(long uid, String path, Collection<String> files) throws IOException {
         int cnt = 0;
         for (String file : files) {
-            final String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, file));
+            final String md5 = md5Resolver.getResourceMd5(uid, SfcStringUtils.appendPath(path, file));
             if (!md5Resolver.hasRef(md5)) {
                 delete(md5);
                 final String storePath = getMd5ResourcePath(md5);
@@ -205,7 +205,7 @@ public abstract class AbstractUniqueStoreService extends AbstractRawStoreService
 
     @Override
     public Resource getResource(long uid, String path, String name) throws IOException {
-        final String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, name));
+        final String md5 = md5Resolver.getResourceMd5(uid, SfcStringUtils.appendPath(path, name));
         if (md5 == null) {
             return null;
         }

@@ -6,7 +6,7 @@ import com.saltedfishcloud.ext.ve.core.FFMpegHelperImpl;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;
@@ -34,7 +34,7 @@ public class VEAutoConfiguration implements InitializingBean {
         // 配置更新时，操作器也跟着更新
         configService.addBeforeSetListener(VEConstants.PROPERTY_KEY, json -> {
             try {
-                VEProperty newProperty = MapperHolder.parseJson(json, VEProperty.class);
+                VEProperty newProperty = SfcMapperHolder.parseJson(json, VEProperty.class);
                 BeanUtils.copyProperties(newProperty, property);
             } catch (IOException e) {
                 log.error("视频增强插件配置更新出错", e);

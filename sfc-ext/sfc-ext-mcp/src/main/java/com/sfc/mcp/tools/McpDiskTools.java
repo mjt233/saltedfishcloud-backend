@@ -7,11 +7,11 @@ import com.sfc.mcp.model.McpFileSearchResult;
 import com.sfc.mcp.model.McpOperationResult;
 import com.sfc.mcp.service.McpFileTransferService;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
-import com.xiaotao.saltedfishcloud.constant.SysRole;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.constant.SfcSysRole;
+import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.User;
@@ -24,8 +24,8 @@ import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.RequestContextUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,11 +49,11 @@ import java.util.stream.Collectors;
  * <p>
  * 该服务通过 Spring AI 的 {@link Tool} 注解向 MCP Server 暴露网盘工具，
  * 并复用系统现有的 OAuth + Spring Security 上下文与网盘文件系统能力。
- * 所有工具方法均要求当前请求已通过 MCP API Key 认证，并拥有 {@link SysRole#OAUTH_USER} 角色。
+ * 所有工具方法均要求当前请求已通过 MCP API Key 认证，并拥有 {@link SfcSysRole#OAUTH_USER} 角色。
  * </p>
  */
 @RequiredArgsConstructor
-@RolesAllowed(SysRole.OAUTH_USER)
+@RolesAllowed(SfcSysRole.OAUTH_USER)
 public class McpDiskTools {
 
     private final DiskFileSystemManager diskFileSystemManager;
@@ -87,7 +87,7 @@ public class McpDiskTools {
             @McpToolParam(description = "要查询的用户 ID") String uid
     ) {
         long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, true);
+        SfcUIDValidator.validateWithException(uidValue, true);
         return toUserVo(uidValue);
     }
 
@@ -105,7 +105,7 @@ public class McpDiskTools {
             @McpToolParam(description = "目录路径，以 / 开头，例如 / 或 /文档") String path
     ) throws IOException {
         long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, false);
+        SfcUIDValidator.validateWithException(uidValue, false);
         List<FileInfo>[] fileList = diskFileSystemManager.getMainFileSystem().getUserFileList(uidValue, path);
         List<McpFileEntry> dirs = fileList == null ? Collections.emptyList() : toEntries(fileList[0]);
         List<McpFileEntry> files = fileList == null ? Collections.emptyList() : toEntries(fileList[1]);
@@ -129,13 +129,13 @@ public class McpDiskTools {
             @McpToolParam(description = "每页大小，范围 1-200") String size
     ) throws IOException {
         long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, false);
-        if (!StringUtils.hasText(keyword)) {
-            throw new JsonException(CommonError.FORMAT_ERROR, "keyword不能为空");
+        SfcUIDValidator.validateWithException(uidValue, false);
+        if (!SfcStringUtils.hasText(keyword)) {
+            throw new SfcJsonException(SfcCommonError.FORMAT_ERROR, "keyword不能为空");
         }
         int pageValue = parsePositiveInt(page, "page", null);
         int sizeValue = parsePositiveInt(size, "size", 200);
-        CommonPageInfo<FileInfo> result = diskFileSystemManager.getMainFileSystem()
+        SfcPageInfo<FileInfo> result = diskFileSystemManager.getMainFileSystem()
                 .search(uidValue, keyword, pageValue, sizeValue);
         return toSearchResult(uidValue, keyword, pageValue, sizeValue, result);
     }
@@ -156,7 +156,7 @@ public class McpDiskTools {
             @McpToolParam(description = "待删除的文件或目录名称列表") List<String> names
     ) throws IOException {
         long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, true);
+        SfcUIDValidator.validateWithException(uidValue, true);
         long deleted = diskFileSystemManager.getMainFileSystem().deleteFile(uidValue, path, names);
         return new McpOperationResult(true, "删除完成", deleted);
     }
@@ -184,8 +184,8 @@ public class McpDiskTools {
     ) throws IOException {
         long sourceUidValue = parseUid(sourceUid);
         long targetUidValue = parseUid(targetUid);
-        UIDValidator.validateWithException(sourceUidValue, false);
-        UIDValidator.validateWithException(targetUidValue, true);
+        SfcUIDValidator.validateWithException(sourceUidValue, false);
+        SfcUIDValidator.validateWithException(targetUidValue, true);
         SimpleFileTransferParam param = SimpleFileTransferParam.builder()
                 .sourceUid(sourceUidValue)
                 .sourcePath(sourcePath)
@@ -221,8 +221,8 @@ public class McpDiskTools {
     ) throws IOException {
         long uidValue = parseUid(uid);
         long targetUidValue = targetUid != null && !targetUid.isBlank() ? parseUid(targetUid) : uidValue;
-        UIDValidator.validateWithException(uidValue, false);
-        UIDValidator.validateWithException(targetUidValue, true);
+        SfcUIDValidator.validateWithException(uidValue, false);
+        SfcUIDValidator.validateWithException(targetUidValue, true);
         boolean overwriteValue = Boolean.TRUE.equals(overwrite);
         for (String name : names) {
             diskFileSystemManager.getMainFileSystem().move(uidValue, sourcePath, targetUidValue, targetPath, name, overwriteValue);
@@ -252,12 +252,12 @@ public class McpDiskTools {
             @McpToolParam(description = "文件完整路径（包含文件名），以 / 开头") String path
     ) {
         long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, false);
+        SfcUIDValidator.validateWithException(uidValue, false);
         ValidPathValidator.valid(path);
 
         String fileName = PathUtils.getLastNode(path);
-        if (!StringUtils.hasText(fileName)) {
-            throw new JsonException(CommonError.FORMAT_ERROR, "path必须包含文件名");
+        if (!SfcStringUtils.hasText(fileName)) {
+            throw new SfcJsonException(SfcCommonError.FORMAT_ERROR, "path必须包含文件名");
         }
 
         String parentPath = PathUtils.getParentPath(path);
@@ -306,7 +306,7 @@ public class McpDiskTools {
             @McpToolParam(description = "新文件名或目录名") String newName
     ) throws IOException {
         long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, true);
+        SfcUIDValidator.validateWithException(uidValue, true);
         diskFileSystemManager.getMainFileSystem().rename(uidValue, path, oldName, newName);
         return new McpOperationResult(true, "重命名完成", 1L);
     }
@@ -325,7 +325,7 @@ public class McpDiskTools {
             @McpToolParam(description = "要创建的完整目录路径，以 / 开头，例如 /新目录 或 /文档/归档") String path
     ) throws IOException {
         long uidValue = parseUid(uid);
-        UIDValidator.validateWithException(uidValue, true);
+        SfcUIDValidator.validateWithException(uidValue, true);
         diskFileSystemManager.getMainFileSystem().mkdirs(uidValue, path);
         return new McpOperationResult(true, "目录创建完成", 1L);
     }
@@ -340,7 +340,7 @@ public class McpDiskTools {
         try {
             return Long.parseLong(uid);
         } catch (NumberFormatException ex) {
-            throw new JsonException(CommonError.FORMAT_ERROR);
+            throw new SfcJsonException(SfcCommonError.FORMAT_ERROR);
         }
     }
 
@@ -369,7 +369,7 @@ public class McpDiskTools {
      * @param result 原始分页结果
      * @return MCP 搜索分页结果
      */
-    private McpFileSearchResult toSearchResult(long uid, String keyword, int page, int size, CommonPageInfo<FileInfo> result) throws IOException {
+    private McpFileSearchResult toSearchResult(long uid, String keyword, int page, int size, SfcPageInfo<FileInfo> result) throws IOException {
         List<McpFileSearchEntry> entries = toSearchEntries(uid, result == null ? null : result.getContent());
         long totalPage = result == null ? 0L : result.getTotalPage();
         long totalCount = result == null ? 0L : result.getTotalCount();
@@ -385,14 +385,14 @@ public class McpDiskTools {
     private List<McpFileSearchEntry> toSearchEntries(long uid, List<FileInfo> fileInfos) throws IOException {
         List<FileInfo> items = Optional.ofNullable(fileInfos).orElse(Collections.emptyList());
         Map<String, List<FileInfo>> groupedByNode = items.stream()
-                .filter(fileInfo -> StringUtils.hasText(fileInfo.getNode()))
+                .filter(fileInfo -> SfcStringUtils.hasText(fileInfo.getNode()))
                 .collect(Collectors.groupingBy(FileInfo::getNode, LinkedHashMap::new, Collectors.toList()));
 
         List<McpFileSearchEntry> entries = new ArrayList<>();
         for (Map.Entry<String, List<FileInfo>> entry : groupedByNode.entrySet()) {
             String nodeId = entry.getKey();
             String parentPath = fileRecordService.getPathByNodeId(uid, nodeId).orElse(null);
-            if (!StringUtils.hasText(parentPath)) {
+            if (!SfcStringUtils.hasText(parentPath)) {
                 continue;
             }
             for (FileInfo fileInfo : entry.getValue()) {
@@ -402,7 +402,7 @@ public class McpDiskTools {
                         fileInfo.getMtime(),
                         fileInfo.isDir(),
                         fileInfo.getMd5(),
-                        StringUtils.appendPath(parentPath, fileInfo.getName())
+                        SfcStringUtils.appendPath(parentPath, fileInfo.getName())
                 ));
             }
         }
@@ -421,14 +421,14 @@ public class McpDiskTools {
         try {
             int parsedValue = Integer.parseInt(value);
             if (parsedValue < 0) {
-                throw new JsonException(CommonError.FORMAT_ERROR, paramName + "必须大于等于0");
+                throw new SfcJsonException(SfcCommonError.FORMAT_ERROR, paramName + "必须大于等于0");
             }
             if (max != null && parsedValue > max) {
-                throw new JsonException(CommonError.FORMAT_ERROR, paramName + "必须小于等于" + max);
+                throw new SfcJsonException(SfcCommonError.FORMAT_ERROR, paramName + "必须小于等于" + max);
             }
             return parsedValue;
         } catch (NumberFormatException ex) {
-            throw new JsonException(CommonError.FORMAT_ERROR, paramName + "格式错误");
+            throw new SfcJsonException(SfcCommonError.FORMAT_ERROR, paramName + "格式错误");
         }
     }
 
@@ -456,7 +456,7 @@ public class McpDiskTools {
     private long requireCurrentUid() {
         Long currentUidValue = SecureUtils.getCurrentUid();
         if (currentUidValue == null) {
-            throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+            throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
         }
         return currentUidValue;
     }

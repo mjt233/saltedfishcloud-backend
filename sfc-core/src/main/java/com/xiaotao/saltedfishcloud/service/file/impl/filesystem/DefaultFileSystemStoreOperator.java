@@ -13,7 +13,7 @@ import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -78,7 +78,7 @@ public class DefaultFileSystemStoreOperator {
      * @return 缩略图资源，不存在时返回null
      */
     public Resource getThumbnail(long uid, String path, String name) throws IOException {
-        String md5 = md5Resolver.getResourceMd5(uid, StringUtils.appendPath(path, name));
+        String md5 = md5Resolver.getResourceMd5(uid, SfcStringUtils.appendPath(path, name));
         if (md5 != null) {
             return thumbnailService.getThumbnail(md5, FileUtils.getSuffix(name));
         }
@@ -105,7 +105,7 @@ public class DefaultFileSystemStoreOperator {
      */
     public void ensureDirectory(long uid, String path) throws IOException {
         StoreService storeService = getStoreService();
-        if (!storeService.isUnique() && StringUtils.hasText(path)) {
+        if (!storeService.isUnique() && SfcStringUtils.hasText(path)) {
             storeService.mkdir(uid, path, "");
         }
     }

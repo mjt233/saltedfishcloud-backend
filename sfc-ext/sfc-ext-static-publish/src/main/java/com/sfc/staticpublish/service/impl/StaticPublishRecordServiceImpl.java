@@ -1,15 +1,15 @@
 package com.sfc.staticpublish.service.impl;
 
-import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.cloud.data.service.SfcCrudServiceImpl;
+import com.sfc.cloud.constant.SfcCommonError;
 import com.sfc.staticpublish.constants.CacheNames;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.model.property.StaticPublishProperty;
 import com.sfc.staticpublish.repo.StaticPublishRecordRepo;
 import com.sfc.staticpublish.service.StaticPublishRecordService;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.po.User;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublishRecord, StaticPublishRecordRepo> implements StaticPublishRecordService {
+public class StaticPublishRecordServiceImpl extends SfcCrudServiceImpl<StaticPublishRecord, StaticPublishRecordRepo> implements StaticPublishRecordService {
     @Autowired
     private UserService userService;
 
@@ -65,17 +65,17 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
         if (entity.isByHost()) {
             StaticPublishRecord existRecord = repository.getBySiteName(entity.getSiteName());
             if (existRecord != null && !existRecord.getId().equals(entity.getId())) {
-                throw new JsonException("站点名称冲突，请尝试其他站点名称");
+                throw new SfcJsonException("站点名称冲突，请尝试其他站点名称");
             }
         } else if (entity.isByPath()) {
             StaticPublishRecord existRecord = repository.getByPath(entity.getUsername(), entity.getSiteName());
             if (existRecord != null && !existRecord.getId().equals(entity.getId())) {
-                throw new JsonException("站点名称冲突，请尝试其他站点名称");
+                throw new SfcJsonException("站点名称冲突，请尝试其他站点名称");
             }
         } else {
             StaticPublishRecord existRecord = repository.getDirectRootPathBySiteName(entity.getSiteName());
             if (existRecord != null && !existRecord.getId().equals(entity.getId())) {
-                throw new JsonException("站点名称冲突，请尝试其他站点名称");
+                throw new SfcJsonException("站点名称冲突，请尝试其他站点名称");
             }
         }
 
@@ -89,7 +89,7 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
         checkOperatePermission();
         StaticPublishRecord record = findById(id);
         if (record == null) {
-            throw new JsonException(CommonError.RESOURCE_NOT_FOUND);
+            throw new SfcJsonException(SfcCommonError.RESOURCE_NOT_FOUND);
         }
         super.deleteWithOwnerPermissions(id);
         removeCache(record);
@@ -98,7 +98,7 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
     @Override
     public void batchSave(Collection<StaticPublishRecord> entityList) {
         checkOperatePermission();
-        Map<Long, User> userMap = userService.findBaseInfoByIds(entityList.stream().map(AuditModel::getUid).distinct().collect(Collectors.toList()))
+        Map<Long, User> userMap = userService.findBaseInfoByIds(entityList.stream().map(SfcAuditModel::getUid).distinct().collect(Collectors.toList()))
                 .stream()
                 .collect(Collectors.toMap(e -> e.getId(), Function.identity()));
         for (StaticPublishRecord record : entityList) {
@@ -113,7 +113,7 @@ public class StaticPublishRecordServiceImpl extends CrudServiceImpl<StaticPublis
      */
     private void checkOperatePermission() {
         if (property.getIsOnlyAdminPublish() && !SecureUtils.currentIsAdmin()) {
-            throw new JsonException(403, "只有管理员才能操作站点");
+            throw new SfcJsonException(403, "只有管理员才能操作站点");
         }
     }
 

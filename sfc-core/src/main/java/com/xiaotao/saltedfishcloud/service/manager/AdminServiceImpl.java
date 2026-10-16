@@ -5,12 +5,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
 import com.xiaotao.saltedfishcloud.model.TimestampRecord;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultModel;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
@@ -18,7 +18,7 @@ import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import org.springframework.beans.factory.InitializingBean;
@@ -119,9 +119,9 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
         }
         ResponseEntity<String> response = request(node.getRequestUrl("/api/admin/sys/listSystemInfo"), HttpMethod.GET);
         try {
-            return MapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<List<TimestampRecord<SystemInfoVO>>>>(){}).getData();
+            return SfcMapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<List<TimestampRecord<SystemInfoVO>>>>(){}).getData();
         } catch (JsonProcessingException e) {
-            throw new JsonException("json解析错误" + e.getMessage());
+            throw new SfcJsonException("json解析错误" + e.getMessage());
         }
 
     }
@@ -140,9 +140,9 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
         ClusterNodeInfo node = this.getNode(nodeId);
         ResponseEntity<String> response = request(node.getRequestUrl("/api/admin/sys/getCurSystemInfo"), HttpMethod.GET);
         try {
-            return MapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<SystemInfoVO>>() {}).getData();
+            return SfcMapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<SystemInfoVO>>() {}).getData();
         } catch (JsonProcessingException e) {
-            throw new JsonException("json解析错误" + e.getMessage());
+            throw new SfcJsonException("json解析错误" + e.getMessage());
         }
     }
 
@@ -152,7 +152,7 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
         if (user != null) {
             headers.put(JwtUtils.AUTHORIZATION, Collections.singletonList(user.getToken()));
         }
-        HttpEntity<JsonResult<T>> httpEntity = new HttpEntity<>(headers);
+        HttpEntity<SfcJsonResult<T>> httpEntity = new HttpEntity<>(headers);
 
         return restTemplate.exchange(
                 url,
@@ -223,9 +223,9 @@ public class AdminServiceImpl implements AdminService, InitializingBean {
         ClusterNodeInfo node = getNode(nodeId);
         ResponseEntity<String> response = request(node.getRequestUrl("/api/admin/sys/overview"), HttpMethod.GET);
         try {
-            return MapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<SystemOverviewVO>>() {}).getData();
+            return SfcMapperHolder.mapper.readValue(response.getBody(), new TypeReference<JsonResultModel<SystemOverviewVO>>() {}).getData();
         } catch (JsonProcessingException e) {
-            throw new JsonException("json解析错误" + e.getMessage());
+            throw new SfcJsonException("json解析错误" + e.getMessage());
         }
     }
 

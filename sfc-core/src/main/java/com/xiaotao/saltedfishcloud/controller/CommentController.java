@@ -1,13 +1,12 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.CommentListParam;
 import com.xiaotao.saltedfishcloud.model.param.CommentSendParam;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
 import com.xiaotao.saltedfishcloud.model.vo.CommentVo;
 import com.xiaotao.saltedfishcloud.service.comment.CommentService;
@@ -31,11 +30,11 @@ public class CommentController {
      */
     @GetMapping("/listByTopicId")
     @AllowAnonymous
-    public JsonResult<CommonPageInfo<CommentVo>> listByTopicId(Long topicId, PageableRequest pageableRequest) {
+    public SfcJsonResult<SfcPageInfo<CommentVo>> listByTopicId(Long topicId, SfcPageableRequest pageableRequest) {
         CommentListParam param = new CommentListParam()
                 .setTopicId(topicId)
                 .setPageableRequest(pageableRequest);
-        return JsonResultImpl.getInstance(commentService.listByTopicId(param));
+        return SfcJsonResult.getInstance(commentService.listByTopicId(param));
     }
 
     /**
@@ -47,11 +46,11 @@ public class CommentController {
      */
     @GetMapping("/listByCommentId")
     @AllowAnonymous
-    public JsonResult<CommonPageInfo<CommentVo>> listByCommentId(Long commentId, PageableRequest pageableRequest) {
+    public SfcJsonResult<SfcPageInfo<CommentVo>> listByCommentId(Long commentId, SfcPageableRequest pageableRequest) {
         CommentListParam param = new CommentListParam()
                 .setCommentId(commentId)
                 .setPageableRequest(pageableRequest);
-        return JsonResultImpl.getInstance(commentService.listByCommentId(param));
+        return SfcJsonResult.getInstance(commentService.listByCommentId(param));
     }
 
     /**
@@ -60,9 +59,9 @@ public class CommentController {
      * @param param   评论发送参数
      */
     @PostMapping("sendComment")
-    public JsonResult<Object> sendComment(@RequestBody CommentSendParam param, HttpServletRequest request) {
+    public SfcJsonResult<Object> sendComment(@RequestBody CommentSendParam param, HttpServletRequest request) {
         if (param.getTopicId() == null || param.getTopicId() == 0L) {
-            throw new JsonException("未指定topicId 或 topicId不能为0");
+            throw new SfcJsonException("未指定topicId 或 topicId不能为0");
         }
         Comment comment = new Comment();
         comment.setContent(param.getContent());
@@ -71,7 +70,7 @@ public class CommentController {
         comment.setAtUid(param.getAtUid());
         comment.setIp(request.getRemoteAddr());
         commentService.sendComment(comment);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -81,7 +80,7 @@ public class CommentController {
      */
     @PostMapping("sendPublicComment")
     @AllowAnonymous
-    public JsonResult<Object> sendPublicComment(@RequestBody CommentSendParam param, HttpServletRequest request) {
+    public SfcJsonResult<Object> sendPublicComment(@RequestBody CommentSendParam param, HttpServletRequest request) {
         Comment comment = new Comment();
         comment.setContent(param.getContent());
         comment.setReplyId(param.getReplyId());
@@ -89,6 +88,6 @@ public class CommentController {
         comment.setIp(request.getRemoteAddr());
         comment.setTopicId(0L);
         commentService.sendComment(comment);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 }

@@ -1,16 +1,16 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.cloud.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.MountPointRepo;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
 import com.xiaotao.saltedfishcloud.model.param.MountPointSyncFileRecordParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
+import com.sfc.cloud.data.service.SfcCrudServiceImpl;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -19,8 +19,8 @@ import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.StorageDiskFileSystemAdapter;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.*;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
+import com.sfc.cloud.data.validation.SfcUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
@@ -37,10 +37,12 @@ import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 @Service
 @Slf4j
-public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPointRepo> implements MountPointService {
+public class MountPointServiceImpl extends SfcCrudServiceImpl<MountPoint, MountPointRepo> implements MountPointService {
     private final static String LOG_PREFIX = "[挂载点]";
     private final static String CACHE_NAME = "mount_point";
     @Autowired
@@ -77,7 +79,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         if (mountPoint == null) {
             return null;
         }
-        UIDValidator.validateWithException(mountPoint.getUid(), true);
+        SfcUIDValidator.validateWithException(mountPoint.getUid(), true);
         return mountPoint;
     }
 
@@ -119,7 +121,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         if (mountPointList == null || mountPointList.isEmpty()) {
             return;
         }
-        mountPointList.forEach(m -> UIDValidator.validateWithException(m.getUid(), true));
+        mountPointList.forEach(m -> SfcUIDValidator.validateWithException(m.getUid(), true));
         mountPointList.forEach(this::clearFileRecord);
         mountPointList.forEach(this::clearFileSystemFactoryCache);
         clearCache(uid);
@@ -128,17 +130,17 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void remove(@Validated @UID long uid, long id) {
+    public void remove(@Validated @SfcUID long uid, long id) {
         MountPoint mountPoint = mountPointRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("不存在该id"));
         clearFileSystemFactoryCache(mountPoint);
         clearFileRecord(mountPoint);
         clearCache(uid);
-        String path = fileRecordService.getPathByNodeId(uid, mountPoint.getNid()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
+        String path = fileRecordService.getPathByNodeId(uid, mountPoint.getNid()).orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND));
         mountPointRepo.deleteById(id);
         try {
             fileRecordService.deleteRecords(uid, path, Collections.singletonList(mountPoint.getName()));
         } catch (NoSuchFileException e) {
-            throw new JsonException(e.getMessage());
+            throw new SfcJsonException(e.getMessage());
         }
     }
 
@@ -147,7 +149,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
      */
     private void clearFileSystemFactoryCache(MountPoint mountPoint) {
         try {
-            storageRegistry.getStorageFactory(mountPoint.getProtocol()).clearCache(MapperHolder.parseJsonToMap(mountPoint.getParams()));
+            storageRegistry.getStorageFactory(mountPoint.getProtocol()).clearCache(SfcMapperHolder.parseJsonToMap(mountPoint.getParams()));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -171,7 +173,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
     }
 
     private void changeMountPoint(MountPoint mountPoint) throws NoSuchFileException {
-        MountPoint dbObj = mountPointRepo.findById(mountPoint.getId()).orElseThrow(() -> new JsonException(CommonError.RESOURCE_NOT_FOUND));
+        MountPoint dbObj = mountPointRepo.findById(mountPoint.getId()).orElseThrow(() -> new SfcJsonException(SfcCommonError.RESOURCE_NOT_FOUND));
         Long uid = dbObj.getUid();
         if (!Objects.equals(uid, mountPoint.getUid())) {
             throw new IllegalArgumentException("不能修改uid");
@@ -186,8 +188,8 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         // 所属路径发生变化，先执行目录移动的逻辑
         if (!Objects.equals(mountPoint.getNid(), dbObj.getNid())) {
             String originNodePath = fileRecordService.getPathByNodeId(uid, dbObj.getNid())
-                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "原节点丢失"));
-            fileRecordService.move(uid, originNodePath, uid, newNodePath.get().orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "移动失败，节点丢失")), dbObj.getName(), true);
+                    .orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "原节点丢失"));
+            fileRecordService.move(uid, originNodePath, uid, newNodePath.get().orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "移动失败，节点丢失")), dbObj.getName(), true);
         }
         // 清理该挂载点的缓存
         clearFileSystemFactoryCache(dbObj);
@@ -197,9 +199,9 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         String originName = dbObj.getName();
         if (!Objects.equals(originName, mountPoint.getName())) {
             try {
-                fileRecordService.rename(uid, newNodePath.get().orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "重命名失败，节点丢失")), originName, mountPoint.getName());
+                fileRecordService.rename(uid, newNodePath.get().orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "重命名失败，节点丢失")), originName, mountPoint.getName());
             } catch (NoSuchFileException e) {
-                throw new JsonException(e.getMessage());
+                throw new SfcJsonException(e.getMessage());
             }
         }
         mountPointRepo.save(mountPoint);
@@ -207,7 +209,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         // 挂载点的存储记录代理配置发生变化时，清空掉原有存储记录信息
         if(Boolean.TRUE.equals(dbObj.getIsProxyStoreRecord()) != Boolean.TRUE.equals(mountPoint.getIsProxyStoreRecord())) {
             String mountPath = fileRecordService.getPathByNodeId(mountPoint.getUid(), mountPoint.getNid())
-                    .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND, mountPoint.getNid() + " " + mountPoint.getPath()));
+                    .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND, mountPoint.getNid() + " " + mountPoint.getPath()));
             fileRecordService.deleteRecords(mountPoint.getUid(), mountPath, List.of(mountPoint.getName()));
         }
     }
@@ -218,27 +220,27 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
      * @param mountPoint    待创建的挂载点
      */
     private void createMountPoint(MountPoint mountPoint) throws IOException, FileSystemParameterException {
-        String path = StringUtils.appendPath(
-                fileRecordService.getPathByNodeId(mountPoint.getUid(), mountPoint.getNid()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "目标节点丢失")),
+        String path = SfcStringUtils.appendPath(
+                fileRecordService.getPathByNodeId(mountPoint.getUid(), mountPoint.getNid()).orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "目标节点丢失")),
                 mountPoint.getName()
         );
-        if (!StringUtils.hasText(mountPoint.getNid())) {
+        if (!SfcStringUtils.hasText(mountPoint.getNid())) {
             mountPoint.setNid(mountPoint.getUid().toString());
         }
         log.debug("{}创建挂载点:{}", LOG_PREFIX, path);
         if(diskFileSystemManager.getMainFileSystem().exist(mountPoint.getUid(), path)) {
-            throw new JsonException(FileSystemError.FILE_EXIST);
+            throw new SfcJsonException(FileSystemError.FILE_EXIST);
         }
         boolean protocolIsAvailable = storageRegistry.listPublicStorageFactory().stream().anyMatch(e -> e.getMetadata().getProtocol().equals(mountPoint.getProtocol()));
         if (!protocolIsAvailable) {
-            throw new JsonException("找不到或无权创建对应的文件系统协议");
+            throw new SfcJsonException("找不到或无权创建对应的文件系统协议");
         }
 
         // 测试挂载点参数
-        Map<String, Object> paramMap = MapperHolder.parseJsonToMap(mountPoint.getParams());
+        Map<String, Object> paramMap = SfcMapperHolder.parseJsonToMap(mountPoint.getParams());
         StorageFactory factory = storageRegistry.getStorageFactory(mountPoint.getProtocol());
         if (factory == null) {
-            throw new JsonException("不支持的协议" + mountPoint.getProtocol());
+            throw new SfcJsonException("不支持的协议" + mountPoint.getProtocol());
         }
         Storage storage = factory.getStorage(paramMap);
         factory.testStorage(storage);
@@ -246,7 +248,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
             storage.listFiles("/");
         } catch (IOException e) {
             log.error("{}挂载测试失败：", LOG_PREFIX, e);
-            throw new JsonException("挂载测试失败:" + e);
+            throw new SfcJsonException("挂载测试失败:" + e);
         }
 
         // 主表保存
@@ -273,9 +275,9 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         }
         // key末尾加个/，防止出现部分前缀误匹配导致的挂载点误匹配，如：/挂载点1 与 /挂载点11，两者前缀相同，访问/挂载点11时容易出现误匹配到/挂载点1
         Map<String, MountPoint> mountPointMap = mountPointList.stream().collect(Collectors.toMap(
-                e -> StringUtils.appendPath(
+                e -> SfcStringUtils.appendPath(
                         fileRecordService.getPathByNodeId(e.getUid(), e.getNid())
-                                .orElseThrow(() -> new JsonException(404, "节点信息丢失")),
+                                .orElseThrow(() -> new SfcJsonException(404, "节点信息丢失")),
                         e.getName()
                 ) + "/",
                 Function.identity(),
@@ -314,9 +316,9 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         if (mountPoint.getPath() != null) {
             return mountPoint.getPath();
         }
-        return StringUtils.appendPath(
+        return SfcStringUtils.appendPath(
                 fileRecordService.getPathByNodeId(mountPoint.getUid(), mountPoint.getNid())
-                        .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "挂载点丢失")),
+                        .orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND.getCode(), "挂载点丢失")),
                 mountPoint.getName()
         );
     }
@@ -344,7 +346,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         Long id = param.getId();
         MountPoint mountPoint = findById(id);
         if(!Boolean.TRUE.equals(mountPoint.getIsProxyStoreRecord())) {
-            throw new JsonException(400, "挂载点" + mountPoint.getName() + "未开启委托存储记录，不能进行文件记录同步操作");
+            throw new SfcJsonException(400, "挂载点" + mountPoint.getName() + "未开启委托存储记录，不能进行文件记录同步操作");
         }
         String mountPointPath = Objects.requireNonNull(getMountPointPath(mountPoint), "获取挂载点路径失败");
         log.info("{}同步挂载点文件记录-路径: {}", LOG_PREFIX, mountPointPath);
@@ -356,7 +358,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
         log.info("{}同步挂载点文件记录-路径: {} 删除原记录完成", LOG_PREFIX, mountPointPath);
 
         // 重建记录
-        Map<String, Object> params = MapperHolder.parseJsonToMap(mountPoint.getParams());
+        Map<String, Object> params = SfcMapperHolder.parseJsonToMap(mountPoint.getParams());
         Storage storage = storageRegistry.getStorage(mountPoint.getProtocol(), params);
         DiskFileSystem fileSystem = new StorageDiskFileSystemAdapter(storage);
         DiskFileSystemUtils.walk(fileSystem, uid, "/", (path, fileList) -> {
@@ -365,11 +367,11 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
                     fileInfo.setIsMount(true);
                     fileInfo.setUid(uid);
                     if (fileInfo.isDir()) {
-                        String dirPath = StringUtils.appendPath(mountPointPath, path, fileInfo.getName());
+                        String dirPath = SfcStringUtils.appendPath(mountPointPath, path, fileInfo.getName());
                         log.info("{}同步挂载点文件记录-创建目录: {}", LOG_PREFIX, dirPath);
                         fileRecordService.mkdirs(uid, dirPath, true);
                     } else {
-                        String filePath = StringUtils.appendPath(mountPointPath, path);
+                        String filePath = SfcStringUtils.appendPath(mountPointPath, path);
                         fileInfo.setNode(null);
 
                         // 计算md5
@@ -392,7 +394,7 @@ public class MountPointServiceImpl extends CrudServiceImpl<MountPoint, MountPoin
                 }
             } catch (Exception e) {
                 log.error("{}同步挂载点记录异常", LOG_PREFIX, e);
-                throw new JsonException(500, e.getMessage());
+                throw new SfcJsonException(500, e.getMessage());
             }
         });
     }

@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.utils.db;
 
-import com.xiaotao.saltedfishcloud.utils.ClassUtils;
-import com.xiaotao.saltedfishcloud.utils.SFunc;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.cloud.data.utils.SfcFunc;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -157,8 +157,8 @@ public class JpaLambdaQueryWrapper<T> {
         }
     }
 
-    private <R> String getFieldName(SFunc<T, R> func) {
-        ClassUtils.LambdaMetaData metaData = ClassUtils.parseGetterLambdaMetaData(func);
+    private <R> String getFieldName(SfcFunc<T, R> func) {
+        SfcClassUtils.LambdaMetaData metaData = SfcClassUtils.parseGetterLambdaMetaData(func);
         return metaData.fieldName();
     }
 
@@ -171,12 +171,12 @@ public class JpaLambdaQueryWrapper<T> {
         }
         if (val instanceof String strVal) {
             if (strVal.contains(".")) {
-                return TypeUtils.toNumber(BigDecimal.class, val);
+                return SfcTypeUtils.toNumber(BigDecimal.class, val);
             } else {
-                return TypeUtils.toNumber(BigInteger.class, val);
+                return SfcTypeUtils.toNumber(BigInteger.class, val);
             }
         }
-        return TypeUtils.toInt(val);
+        return SfcTypeUtils.toInt(val);
     }
 
     private JpaLambdaQueryWrapper<T> handleNullStrategy(String field, Operate operate) {
@@ -194,7 +194,7 @@ public class JpaLambdaQueryWrapper<T> {
         return val != null || property.getNullStrategy() == NullStrategy.USE_DIRECT;
     }
 
-    public <R> JpaLambdaQueryWrapper<T> eq(SFunc<T, R> func, Object val) {
+    public <R> JpaLambdaQueryWrapper<T> eq(SfcFunc<T, R> func, Object val) {
         return this.eq(getFieldName(func), val);
     }
 
@@ -206,7 +206,7 @@ public class JpaLambdaQueryWrapper<T> {
         return handleNullStrategy(field, Operate.EQ);
     }
 
-    public <R> JpaLambdaQueryWrapper<T> ne(SFunc<T, R> func, Object value) {
+    public <R> JpaLambdaQueryWrapper<T> ne(SfcFunc<T, R> func, Object value) {
         return this.ne(getFieldName(func), value);
     }
 
@@ -223,8 +223,8 @@ public class JpaLambdaQueryWrapper<T> {
     }
 
     @SafeVarargs
-    public final <R> JpaLambdaQueryWrapper<T> orderByAsc(SFunc<T, R>... fields) {
-        for (SFunc<T, R> s : fields) {
+    public final <R> JpaLambdaQueryWrapper<T> orderByAsc(SfcFunc<T, R>... fields) {
+        for (SfcFunc<T, R> s : fields) {
             this.orderBy(SortType.ASC, getFieldName(s));
         }
         return this;
@@ -235,8 +235,8 @@ public class JpaLambdaQueryWrapper<T> {
     }
 
     @SafeVarargs
-    public final <R> JpaLambdaQueryWrapper<T> orderByDesc(SFunc<T, R>... fields) {
-        for (SFunc<T, R> s : fields) {
+    public final <R> JpaLambdaQueryWrapper<T> orderByDesc(SfcFunc<T, R>... fields) {
+        for (SfcFunc<T, R> s : fields) {
             this.orderBy(SortType.DESC, getFieldName(s));
         }
         return this;
@@ -263,7 +263,7 @@ public class JpaLambdaQueryWrapper<T> {
         return this;
     }
 
-    public <R> JpaLambdaQueryWrapper<T> ge(SFunc<T, R> func, Object val) {
+    public <R> JpaLambdaQueryWrapper<T> ge(SfcFunc<T, R> func, Object val) {
         return this.ge(getFieldName(func), val);
     }
 
@@ -275,7 +275,7 @@ public class JpaLambdaQueryWrapper<T> {
         return handleNullStrategy(field, Operate.GE);
     }
 
-    public <R> JpaLambdaQueryWrapper<T> gt(SFunc<T, R> func, Object val) {
+    public <R> JpaLambdaQueryWrapper<T> gt(SfcFunc<T, R> func, Object val) {
         return this.ge(getFieldName(func), val);
     }
 
@@ -287,7 +287,7 @@ public class JpaLambdaQueryWrapper<T> {
         return handleNullStrategy(field, Operate.GT);
     }
 
-    public <R> JpaLambdaQueryWrapper<T> le(SFunc<T, R> func, Object val) {
+    public <R> JpaLambdaQueryWrapper<T> le(SfcFunc<T, R> func, Object val) {
         return this.le(getFieldName(func), val);
     }
 
@@ -299,7 +299,7 @@ public class JpaLambdaQueryWrapper<T> {
         return handleNullStrategy(field, Operate.LE);
     }
 
-    public <R> JpaLambdaQueryWrapper<T> lt(SFunc<T, R> func, Object val) {
+    public <R> JpaLambdaQueryWrapper<T> lt(SfcFunc<T, R> func, Object val) {
         return this.le(getFieldName(func), val);
     }
 
@@ -311,7 +311,7 @@ public class JpaLambdaQueryWrapper<T> {
         return handleNullStrategy(field, Operate.LT);
     }
 
-    public <R> JpaLambdaQueryWrapper<T> isNull(SFunc<T, R> func) {
+    public <R> JpaLambdaQueryWrapper<T> isNull(SfcFunc<T, R> func) {
         return this.isNull(getFieldName(func));
     }
 
@@ -320,7 +320,7 @@ public class JpaLambdaQueryWrapper<T> {
         return this;
     }
 
-    public <R> JpaLambdaQueryWrapper<T> isNotNull(SFunc<T, R> func) {
+    public <R> JpaLambdaQueryWrapper<T> isNotNull(SfcFunc<T, R> func) {
         return this.isNotNull(getFieldName(func));
     }
 
@@ -329,7 +329,7 @@ public class JpaLambdaQueryWrapper<T> {
         return this;
     }
 
-    public <R> JpaLambdaQueryWrapper<T> like(SFunc<T, R> func, String val) {
+    public <R> JpaLambdaQueryWrapper<T> like(SfcFunc<T, R> func, String val) {
         return this.like(getFieldName(func), val);
     }
 
@@ -341,7 +341,7 @@ public class JpaLambdaQueryWrapper<T> {
         return handleNullStrategy(field, Operate.LIKE);
     }
 
-    public <R> JpaLambdaQueryWrapper<T> between(SFunc<T, R> func, Object val1, Object val2) {
+    public <R> JpaLambdaQueryWrapper<T> between(SfcFunc<T, R> func, Object val1, Object val2) {
         return this.between(getFieldName(func), val1, val2);
     }
 
@@ -350,7 +350,7 @@ public class JpaLambdaQueryWrapper<T> {
         return this;
     }
 
-    public <R> JpaLambdaQueryWrapper<T> in(SFunc<T, R> func, Object...val) {
+    public <R> JpaLambdaQueryWrapper<T> in(SfcFunc<T, R> func, Object...val) {
         return this.in(getFieldName(func), val);
     }
 
@@ -370,7 +370,7 @@ public class JpaLambdaQueryWrapper<T> {
         return this;
     }
 
-    public <R> JpaLambdaQueryWrapper<T> in(SFunc<T, R> func, Collection<?> val) {
+    public <R> JpaLambdaQueryWrapper<T> in(SfcFunc<T, R> func, Collection<?> val) {
         return this.in(getFieldName(func), val);
     }
 

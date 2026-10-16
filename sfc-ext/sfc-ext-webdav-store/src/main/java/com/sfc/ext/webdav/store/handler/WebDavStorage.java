@@ -6,13 +6,13 @@ import com.github.sardine.SardineFactory;
 import com.github.sardine.impl.SardineException;
 import com.sfc.ext.webdav.store.WebDavFileResource;
 import com.sfc.ext.webdav.store.model.WebDavClientProperty;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.validator.RejectRegex;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -94,7 +94,7 @@ public class WebDavStorage implements Storage, Closeable {
      */
     private void checkReadOnly() {
         if (Boolean.TRUE.equals(property.getIsReadOnly())) {
-            throw new JsonException(403, "存储处于只读模式，不允许执行写操作");
+            throw new SfcJsonException(403, "存储处于只读模式，不允许执行写操作");
         }
     }
 
@@ -189,7 +189,7 @@ public class WebDavStorage implements Storage, Closeable {
                 .orElseGet(() -> String.valueOf(System.currentTimeMillis() / 1000));
 
         sardine.put(
-                getFullPath(path) + StringUtils.appendPath("/", encodedFileName),
+                getFullPath(path) + SfcStringUtils.appendPath("/", encodedFileName),
                 inputStream,
                 // 兼容 NextCloud 的文件修改日期header
                 Map.of("X-OC-MTime", mTime)
@@ -249,7 +249,7 @@ public class WebDavStorage implements Storage, Closeable {
     public boolean rename(String path, String newName) throws IOException {
         checkReadOnly();
         String sourceFullPath = getFullPath(path);
-        String targetFullPath = getFullPath(StringUtils.appendPath(PathUtils.getParentPath(path), newName));
+        String targetFullPath = getFullPath(SfcStringUtils.appendPath(PathUtils.getParentPath(path), newName));
         sardine.move(
                 sourceFullPath,
                 targetFullPath,
@@ -288,7 +288,7 @@ public class WebDavStorage implements Storage, Closeable {
         // Sardine库提供了patch方法来实现这一点
         // 模拟 Windows WebDAV 客户端行为
         for (String name : names) {
-            String fullPath = StringUtils.appendPath(path, name);
+            String fullPath = SfcStringUtils.appendPath(path, name);
             String encodedPath = getFullPath(fullPath);
             // 构建要设置的属性
             Map<QName, String> patchData = new HashMap<>();

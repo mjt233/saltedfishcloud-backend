@@ -5,9 +5,9 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.xiaotao.saltedfishcloud.service.third.handler.AbstractThirdPartyPlatformHandler;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Lazy;
@@ -47,7 +47,7 @@ public class GithubThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
 
     @Override
     protected ThirdPartyPlatformUser handleCallback(ThirdPartyAuthPlatform thirdPartyAuthPlatform, GithubPlatformProperty property, Map<String, Object> platformCallbackParam) throws IOException {
-        String code = Objects.requireNonNull(TypeUtils.toString(platformCallbackParam.get("code")), "缺少参数 code");
+        String code = Objects.requireNonNull(SfcTypeUtils.toString(platformCallbackParam.get("code")), "缺少参数 code");
         String accessToken = getAccessToken(thirdPartyAuthPlatform, property, code);
         GithubUserInfo githubUserInfo = getUserInfo(thirdPartyAuthPlatform, accessToken);
         return ThirdPartyPlatformUser.builder()
@@ -71,7 +71,7 @@ public class GithubThirdPartyPlatformHandler extends AbstractThirdPartyPlatformH
             if (platform == null || platform.getConfig() == null) {
                 return null;
             }
-            return MapperHolder.parseJson(platform.getConfig(), GithubPlatformProperty.class);
+            return SfcMapperHolder.parseJson(platform.getConfig(), GithubPlatformProperty.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

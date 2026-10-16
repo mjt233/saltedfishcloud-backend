@@ -3,8 +3,8 @@ package com.sfc.archive.engine;
 import com.sfc.archive.ArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.CompressionLevel;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +44,7 @@ public abstract class AbstractArchiveEngineProvider implements ArchiveEngineProv
     protected @NotNull String matchDecompressorExtension(ArchiveEngineProperty property, String filename) {
         String extension = matchExtension(property, filename, getSupportedDecompressExtensions());
         if (extension == null) {
-            throw new JsonException(this.getName() + " 不支持该解压格式");
+            throw new SfcJsonException(this.getName() + " 不支持该解压格式");
         }
         return extension;
     }
@@ -57,7 +57,7 @@ public abstract class AbstractArchiveEngineProvider implements ArchiveEngineProv
     protected @NotNull String matchCompressorExtension(ArchiveEngineProperty property, String filename) {
         String extension = matchExtension(property, filename, getSupportedCompressExtensions());
         if (extension == null) {
-            throw new JsonException(this.getName() + " 不支持该压缩格式");
+            throw new SfcJsonException(this.getName() + " 不支持该压缩格式");
         }
         return extension;
     }
@@ -72,7 +72,7 @@ public abstract class AbstractArchiveEngineProvider implements ArchiveEngineProv
     protected @Nullable String matchExtension(ArchiveEngineProperty property, @Nullable String filename, Collection<String> candidateExtensions) {
         // 检查是否直接指定了格式，如果有直接指定则以指定的为准
         String specifyExtension = Optional.ofNullable(property.getExtension())
-                .filter(StringUtils::hasText)
+                .filter(SfcStringUtils::hasText)
                 .map(String::toLowerCase)
                 .orElse(null);
         if (specifyExtension != null) {
@@ -85,7 +85,7 @@ public abstract class AbstractArchiveEngineProvider implements ArchiveEngineProv
 
         // 没有指定有效的格式，则根据文件名匹配末尾
         String availableFilename = Optional.ofNullable(filename)
-                .filter(StringUtils::hasText)
+                .filter(SfcStringUtils::hasText)
                 .map(String::toLowerCase)
                 .orElse(null);
         if (availableFilename != null) {

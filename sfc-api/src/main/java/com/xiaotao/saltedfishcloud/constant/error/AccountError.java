@@ -1,9 +1,10 @@
 package com.xiaotao.saltedfishcloud.constant.error;
 
 import lombok.Getter;
+import com.sfc.cloud.exception.SfcErrorInfo;
 
 @Getter
-public enum AccountError implements ErrorInfo {
+public enum AccountError implements SfcErrorInfo {
 
     // 账号系统
     EMAIL_EXIST(10000, 400, "邮箱已被使用"),

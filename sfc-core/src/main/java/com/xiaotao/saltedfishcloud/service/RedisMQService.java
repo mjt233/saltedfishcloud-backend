@@ -8,10 +8,10 @@ import com.xiaotao.saltedfishcloud.model.MQMessage;
 import com.xiaotao.saltedfishcloud.model.vo.MQMessageRecord;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
-import com.xiaotao.saltedfishcloud.utils.ClassUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -65,7 +65,7 @@ public class RedisMQService implements MQService {
 
     @Override
     public void push(String topic, Object message) throws JsonProcessingException {
-        String messageBody = message instanceof CharSequence ? message.toString() : MapperHolder.toJson(message);
+        String messageBody = message instanceof CharSequence ? message.toString() : SfcMapperHolder.toJson(message);
         String key = MQTopicConstants.Prefix.STREAM_PREFIX + topic;
         RedisStreamCommands.XAddOptions options = RedisStreamCommands.XAddOptions.maxlen(4096).approximateTrimming(true);
         redisTemplate.opsForStream().add(key, Collections.singletonMap("msg", messageBody), options);
@@ -99,9 +99,9 @@ public class RedisMQService implements MQService {
     @Override
     @SuppressWarnings("unchecked")
     public <T> long subscribeMessageQueue(MQTopic<T> topic, String group, MQOffsetStrategy offsetStrategy, @Nullable String offsetPoint, Consumer<MQMessageRecord<T>> consumer) {
-        Class<?> clazz = ClassUtils.getTypeParameterBySuperClass(topic);
+        Class<?> clazz = SfcClassUtils.getTypeParameterBySuperClass(topic);
         return this.subscribeMessageQueue(topic.getTopic(), group, offsetStrategy, offsetPoint, mqMessage -> {
-            consumer.accept(new MQMessageRecord<>(mqMessage.getTopic(), (T) TypeUtils.convert(clazz, mqMessage.getBody())));
+            consumer.accept(new MQMessageRecord<>(mqMessage.getTopic(), (T) SfcTypeUtils.convert(clazz, mqMessage.getBody())));
         });
     }
 
@@ -118,7 +118,7 @@ public class RedisMQService implements MQService {
 
         String key = MQTopicConstants.Prefix.STREAM_PREFIX + topic;
         this.ensureGroupExists(key, group);
-        long id = IdUtil.getId();
+        long id = SfcIdUtil.getId();
         Subscription subscription = stringStreamMessageListenerContainer.receive(
                 org.springframework.data.redis.connection.stream.Consumer.from(group, id + ""),
                 StreamOffset.create(key, offset),
@@ -179,14 +179,14 @@ public class RedisMQService implements MQService {
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <T> long subscribeBroadcast(MQTopic<T> topic, Consumer<MQMessageRecord<T>> consumer) {
-        long id = IdUtil.getId();
-        Class<?> clazz = ClassUtils.getTypeParameterBySuperClass(topic);
+        long id = SfcIdUtil.getId();
+        Class<?> clazz = SfcClassUtils.getTypeParameterBySuperClass(topic);
         MessageListener listener = (message, pattern) -> {
             String bodyString = new String(message.getBody(), StandardCharsets.UTF_8);
             try {
                 consumer.accept(new MQMessageRecord(
                         new String(message.getChannel(), StandardCharsets.UTF_8),
-                        TypeUtils.isSupportConvert(clazz) ? (T)TypeUtils.convert(clazz, bodyString) : (T)MapperHolder.parseJson(bodyString, clazz)
+                        SfcTypeUtils.isSupportConvert(clazz) ? (T)SfcTypeUtils.convert(clazz, bodyString) : (T)SfcMapperHolder.parseJson(bodyString, clazz)
                 ));
             } catch (IOException e) {
                 log.error("{}消费消息出错", LOG_PREFIX, e);
@@ -200,7 +200,7 @@ public class RedisMQService implements MQService {
 
     @Override
     public long subscribeBroadcast(String topic, Consumer<MQMessage> consumer) {
-        long id = IdUtil.getId();
+        long id = SfcIdUtil.getId();
         MessageListener listener = (message, pattern) -> consumer.accept(
                 MQMessage.builder()
                         .topic(new String(message.getChannel(), StandardCharsets.UTF_8))

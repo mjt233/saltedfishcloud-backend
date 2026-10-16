@@ -1,9 +1,9 @@
 package com.sfc.webshell.service;
 
 import com.sfc.webshell.model.po.ShellExecuteRecord;
-import com.xiaotao.saltedfishcloud.service.CrudService;
+import com.sfc.cloud.data.service.SfcCrudService;
 
-public interface ShellExecuteRecordService extends CrudService<ShellExecuteRecord> {
+public interface ShellExecuteRecordService extends SfcCrudService<ShellExecuteRecord> {
     /**
      * 添加一条命令执行记录
      * @param workDir 工作路径

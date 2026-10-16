@@ -9,7 +9,7 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysLogConfig;
@@ -233,7 +233,7 @@ public class DefaultLogRecordManager implements LogRecordManager, InitializingBe
     }
 
     @Override
-    public CommonPageInfo<LogRecord> queryLog(LogRecordQueryParam param) {
+    public SfcPageInfo<LogRecord> queryLog(LogRecordQueryParam param) {
         return Optional.ofNullable(getMainStorageName())
                 .map(e -> e.query(param))
                 .orElse(null);

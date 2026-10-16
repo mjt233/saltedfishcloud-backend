@@ -2,11 +2,10 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
@@ -49,8 +48,8 @@ public class FileLinkController {
      */
     @Operation(summary = "创建临时下载链接")
     @PostMapping("/create")
-    public JsonResult<String> createLink(@RequestParam("baseUrl") String baseUrl,@RequestBody @Valid ResourceRequest resourceRequest) throws IOException {
-        return JsonResultImpl.getInstance(fileLinkService.createLink(baseUrl, resourceRequest));
+    public SfcJsonResult<String> createLink(@RequestParam("baseUrl") String baseUrl,@RequestBody @Valid ResourceRequest resourceRequest) throws IOException {
+        return SfcJsonResult.getInstance(fileLinkService.createLink(baseUrl, resourceRequest));
     }
 
     /**

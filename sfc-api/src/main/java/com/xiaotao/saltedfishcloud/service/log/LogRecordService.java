@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.log;
 
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
-import com.xiaotao.saltedfishcloud.service.CrudService;
+import com.sfc.cloud.data.service.SfcCrudService;
 
-public interface LogRecordService extends CrudService<LogRecord> {
+public interface LogRecordService extends SfcCrudService<LogRecord> {
 }

@@ -6,7 +6,7 @@ import com.sfc.ext.download.repo.DownloadTaskRepo;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -28,6 +28,8 @@ import java.io.OutputStream;
 import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 public class DownloadAsyncTask implements AsyncTask {
     private final String originParams;
@@ -95,7 +97,7 @@ public class DownloadAsyncTask implements AsyncTask {
     public DownloadAsyncTask(String originParams) {
         try {
             this.originParams = originParams;
-            this.params = MapperHolder.parseJson(originParams, DownloadTaskParams.class);
+            this.params = SfcMapperHolder.parseJson(originParams, DownloadTaskParams.class);
 
         } catch (IOException e) {
             throw new IllegalArgumentException("参数解析失败", e);
@@ -165,7 +167,7 @@ public class DownloadAsyncTask implements AsyncTask {
         // 校验参数合法性
         logger.info("检查路径" + params.uid + " - " + params.savePath);
         fileRecordService.getByPath(params.uid, params.savePath)
-                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND.getCode(), "无效的保存路径" + params.savePath));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND.getCode(), "无效的保存路径" + params.savePath));
     }
 
     /**
@@ -214,8 +216,8 @@ public class DownloadAsyncTask implements AsyncTask {
      */
     private void initFilename() {
 
-        this.filename = StringUtils.getURLLastName(params.url);
-        if (!StringUtils.hasText(filename) || this.filename.equals("/")) {
+        this.filename = SfcStringUtils.getURLLastName(params.url);
+        if (!SfcStringUtils.hasText(filename) || this.filename.equals("/")) {
             this.filename = System.currentTimeMillis() + "";
             logger.warn("URL中不包含文件名信息, 临时设置为:" + this.filename);
         } else {
@@ -322,12 +324,12 @@ public class DownloadAsyncTask implements AsyncTask {
         // 处理文件重名的情况，后面加个".{重复次数}"
         int existCount = 0;
         String saveFilename = this.filename;
-        String savePath = StringUtils.appendPath(params.savePath, saveFilename);
+        String savePath = SfcStringUtils.appendPath(params.savePath, saveFilename);
         while (diskFileSystem.exist(params.uid, savePath)) {
             logger.warn("目录存在同名文件，文件名调整为: " + saveFilename);
             existCount++;
             saveFilename = this.filename + "." + existCount;
-            savePath = StringUtils.appendPath(params.savePath, saveFilename);
+            savePath = SfcStringUtils.appendPath(params.savePath, saveFilename);
         }
 
         // 更改文件名为下载任务的文件名

@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
@@ -16,7 +16,7 @@ import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -73,7 +73,7 @@ public class ResourceServiceImpl implements ResourceService {
             String data = JwtUtils.parse(dc);
             info = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false).readValue(data, FileDCInfo.class);
         } catch (JsonProcessingException e) {
-            throw new JsonException(400, "下载码无效");
+            throw new SfcJsonException(400, "下载码无效");
         }
         Resource resource = fileSystemFactory.getMainFileSystem().getResource(info.getUid(), info.getDir(), info.getName());
         if (directDownload) {
@@ -98,14 +98,14 @@ public class ResourceServiceImpl implements ResourceService {
                 !fileSystem.exist(uid, PathBuilder.formatPath(path + "/" + fileInfo.getName(), true))
                         || fileSystem.getResource(uid, path, fileInfo.getName()) == null
         ) {
-            throw new JsonException(404, "文件不存在");
+            throw new SfcJsonException(404, "文件不存在");
         }
         FileDCInfo info = new FileDCInfo();
         info.setDir(path);
         info.setMd5(fileInfo.getMd5());
         info.setName(fileInfo.getName());
         info.setUid(uid);
-        return JwtUtils.generateToken(MapperHolder.mapper.writeValueAsString(info), expr < 0 ? expr : expr*60*60*24);
+        return JwtUtils.generateToken(SfcMapperHolder.mapper.writeValueAsString(info), expr < 0 ? expr : expr*60*60*24);
     }
 
     @Override

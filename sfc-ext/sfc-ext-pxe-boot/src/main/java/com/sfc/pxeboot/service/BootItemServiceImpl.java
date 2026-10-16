@@ -3,7 +3,7 @@ package com.sfc.pxeboot.service;
 import com.sfc.pxeboot.model.dto.BootItemDTO;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.repo.BootItemRepo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ public class BootItemServiceImpl implements BootItemService {
     @Override
     public BootItem findById(Long id) {
         return bootItemRepo.findById(id)
-            .orElseThrow(() -> new JsonException("启动项不存在: " + id));
+            .orElseThrow(() -> new SfcJsonException("启动项不存在: " + id));
     }
 
     @Override
@@ -62,7 +62,7 @@ public class BootItemServiceImpl implements BootItemService {
     @Override
     public void delete(Long id) {
         if (!bootItemRepo.existsById(id)) {
-            throw new JsonException("启动项不存在: " + id);
+            throw new SfcJsonException("启动项不存在: " + id);
         }
         bootItemRepo.deleteById(id);
     }

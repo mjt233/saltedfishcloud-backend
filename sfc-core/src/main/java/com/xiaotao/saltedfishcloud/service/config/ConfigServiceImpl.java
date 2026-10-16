@@ -31,6 +31,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.cloud.data.utils.SfcFunc;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcTypeUtils;
 
 /**
  * 配置服务实现类
@@ -238,7 +242,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     @Override
     public void bindPropertyEntity(Object bean) {
         ConfigPropertyEntity entity = bean.getClass().getAnnotation(ConfigPropertyEntity.class);
-        for (Field field : ClassUtils.getAllFields(bean.getClass())) {
+        for (Field field : SfcClassUtils.getAllFields(bean.getClass())) {
             ConfigProperty property = field.getAnnotation(ConfigProperty.class);
             if (property == null) {
                 continue;
@@ -250,9 +254,9 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
                     if (newVal == null) {
                         String defaultValue = property.defaultValue();
                         log.warn("{}配置项{}设置了null值，将设定回默认值：{}", LOG_PREFIX, configName, defaultValue);
-                        field.set(bean, TypeUtils.convert(field.getType(), defaultValue));
+                        field.set(bean, SfcTypeUtils.convert(field.getType(), defaultValue));
                     } else {
-                        field.set(bean, TypeUtils.convert(field.getType(), newVal));
+                        field.set(bean, SfcTypeUtils.convert(field.getType(), newVal));
                     }
                 } catch (IllegalAccessException e) {
                     log.error("{}绑定配置实体字段 [{}] 值设置失败, 配置项:{}", LOG_PREFIX, field.getName(), configName, e);
@@ -266,7 +270,7 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
 
 
     @Override
-    public <T, R> void addAfterSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
+    public <T, R> void addAfterSetListener(SfcFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
         PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
         Function<String, R> convertFunc = convertValTypeFunc(meta);
         addAfterSetListener(meta.getConfigName(), rawVal -> listener.accept(convertFunc.apply(rawVal)));
@@ -275,15 +279,15 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
     @SuppressWarnings("unchecked")
     private <R> Function<String,R> convertValTypeFunc(PropertyUtils.ConfigFieldMeta meta) {
         Class<?> targetType = meta.getField().getType();
-        if(TypeUtils.isSupportConvert(targetType)) {
-            return rawVal -> (R)TypeUtils.convert(targetType, rawVal);
+        if(SfcTypeUtils.isSupportConvert(targetType)) {
+            return rawVal -> (R)SfcTypeUtils.convert(targetType, rawVal);
         } else if (ConfigInputType.FORM.equals(meta.getConfigProperty().inputType())) {
             return rawVal -> {
                 try {
                     if (rawVal == null) {
                         return null;
                     }
-                    return (R) MapperHolder.parseJson(rawVal, targetType);
+                    return (R) SfcMapperHolder.parseJson(rawVal, targetType);
                 } catch (IOException e) {
                     throw new IllegalArgumentException(e);
                 }
@@ -295,26 +299,26 @@ public class ConfigServiceImpl implements ConfigService, InitializingBean {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T, R> R getConfig(SFunc<T, R> keyLambdaFunc) {
+    public <T, R> R getConfig(SfcFunc<T, R> keyLambdaFunc) {
         PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
         return ((Function<String, R>) convertValTypeFunc(meta)).apply(getConfig(meta.getConfigName()));
     }
 
     @Override
-    public <T, R> R getConfig(SFunc<T, R> keyLambdaFunc, R defaultValue) {
+    public <T, R> R getConfig(SfcFunc<T, R> keyLambdaFunc, R defaultValue) {
         return Optional
                 .ofNullable(getConfig(keyLambdaFunc))
                 .orElse(defaultValue);
     }
 
     @Override
-    public <T, R> boolean setConfig(SFunc<T, R> keyLambdaFunc, R value) {
+    public <T, R> boolean setConfig(SfcFunc<T, R> keyLambdaFunc, R value) {
         PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
-        return setConfig(meta.getConfigName(), TypeUtils.toString(value));
+        return setConfig(meta.getConfigName(), SfcTypeUtils.toString(value));
     }
 
     @Override
-    public <T, R> void addBeforeSetListener(SFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
+    public <T, R> void addBeforeSetListener(SfcFunc<T, R> keyLambdaFunc, Consumer<R> listener) {
         PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(keyLambdaFunc);
         Function<String, R> convertFunc = convertValTypeFunc(meta);
         addBeforeSetListener(meta.getConfigName(), rawVal -> listener.accept(convertFunc.apply(rawVal)));

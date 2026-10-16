@@ -6,8 +6,7 @@ import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecuteRPCService;
 import com.sfc.webshell.service.ShellExecuteService;
 import com.sfc.webshell.model.ShellExecuteResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -32,9 +31,9 @@ public class WebShellController {
      */
     @PostMapping("/executeCommand")
     @RolesAllowed("ADMIN")
-    public JsonResult<ShellExecuteResult> executeCommand(@RequestParam(value = "nodeId", required = false) Long nodeId,
+    public SfcJsonResult<ShellExecuteResult> executeCommand(@RequestParam(value = "nodeId", required = false) Long nodeId,
                                                          @RequestBody ShellExecuteParameter parameter) throws IOException {
-        return JsonResultImpl.getInstance(service.executeCommand(nodeId, parameter));
+        return SfcJsonResult.getInstance(service.executeCommand(nodeId, parameter));
     }
 
     /**
@@ -44,58 +43,58 @@ public class WebShellController {
      */
     @PostMapping("/createSession")
     @RolesAllowed("ADMIN")
-    public JsonResult<ShellSessionRecord> createSession(@RequestParam(value = "nodeId", required = false) Long nodeId,
+    public SfcJsonResult<ShellSessionRecord> createSession(@RequestParam(value = "nodeId", required = false) Long nodeId,
                                                         @RequestBody ShellExecuteParameter parameter) throws IOException {
-        return JsonResultImpl.getInstance(service.createSession(nodeId, parameter));
+        return SfcJsonResult.getInstance(service.createSession(nodeId, parameter));
     }
 
     @GetMapping("/listSession")
     @RolesAllowed("ADMIN")
-    public JsonResult<List<ShellSessionRecord>> listSession() throws IOException {
-        return JsonResultImpl.getInstance(rpcService.getAllSession());
+    public SfcJsonResult<List<ShellSessionRecord>> listSession() throws IOException {
+        return SfcJsonResult.getInstance(rpcService.getAllSession());
     }
 
     @GetMapping("/getLog")
     @RolesAllowed("ADMIN")
-    public JsonResult<String> getLog(@RequestParam("sessionId") Long sessionId) throws IOException {
-        return JsonResultImpl.getInstance(rpcService.getLog(sessionId));
+    public SfcJsonResult<String> getLog(@RequestParam("sessionId") Long sessionId) throws IOException {
+        return SfcJsonResult.getInstance(rpcService.getLog(sessionId));
     }
 
     @GetMapping("/rename")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> rename(@RequestParam("sessionId") Long sessionId, @RequestParam("name") String newName) {
+    public SfcJsonResult<?> rename(@RequestParam("sessionId") Long sessionId, @RequestParam("name") String newName) {
         rpcService.rename(sessionId, newName);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @GetMapping("/restart")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> restart(@RequestParam("sessionId") Long sessionId) throws IOException {
+    public SfcJsonResult<?> restart(@RequestParam("sessionId") Long sessionId) throws IOException {
         rpcService.restart(sessionId);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @GetMapping("/resizePty")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> resizePty(@RequestParam("sessionId") Long sessionId,
+    public SfcJsonResult<?> resizePty(@RequestParam("sessionId") Long sessionId,
                                    @RequestParam("rows") @Min(1) Integer rows,
                                    @RequestParam("cols") @Min(1) Integer cols) throws IOException {
         rpcService.resizePty(sessionId, rows, cols);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @GetMapping("/remove")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> remove(@RequestParam("sessionId") Long sessionId) throws IOException {
+    public SfcJsonResult<?> remove(@RequestParam("sessionId") Long sessionId) throws IOException {
         rpcService.remove(sessionId);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @GetMapping("/kill")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> kill(@RequestParam("sessionId") Long sessionId) throws IOException {
+    public SfcJsonResult<?> kill(@RequestParam("sessionId") Long sessionId) throws IOException {
         rpcService.kill(sessionId, 60000);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
 

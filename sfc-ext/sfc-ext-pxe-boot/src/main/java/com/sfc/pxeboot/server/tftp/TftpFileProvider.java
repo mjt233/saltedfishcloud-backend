@@ -4,7 +4,7 @@ import com.sfc.pxeboot.PxeBootProperty;
 import com.sfc.pxeboot.server.ipxe.IpxeScriptEngine;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -48,7 +48,7 @@ public class TftpFileProvider {
                 case TftpConstants.ResourcePath.I_PXE -> {
                     // 响应 iPXE 固件本体（Legacy BIOS 版本）
                     String ipxeBinaryPath = property.getIpxeBinaryPath();
-                    if (!StringUtils.hasText(ipxeBinaryPath)) {
+                    if (!SfcStringUtils.hasText(ipxeBinaryPath)) {
                         log.warn("{} iPXE Legacy BIOS 固件路径未配置", LOG_PREFIX);
                         return null;
                     }
@@ -57,7 +57,7 @@ public class TftpFileProvider {
                 case TftpConstants.ResourcePath.I_PXE_UEFI -> {
                     // 响应 iPXE UEFI 固件
                     String ipxeUefiBinaryPath = property.getIpxeUefiBinaryPath();
-                    if (!StringUtils.hasText(ipxeUefiBinaryPath)) {
+                    if (!SfcStringUtils.hasText(ipxeUefiBinaryPath)) {
                         log.warn("{} iPXE UEFI 固件路径未配置", LOG_PREFIX);
                         return null;
                     }

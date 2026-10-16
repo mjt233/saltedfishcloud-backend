@@ -9,7 +9,7 @@ import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -119,7 +119,7 @@ public class DownloadServiceImpl implements DownloadService {
 
         // 拿到 DownloadTask 的id后，再提交 AsyncTaskRecord
         params.downloadId = downloadTask.getId();
-        asyncTaskRecord.setParams(MapperHolder.toJson(params));
+        asyncTaskRecord.setParams(SfcMapperHolder.toJson(params));
         asyncTaskManager.submitAsyncTask(asyncTaskRecord);
 
         // 在 DownloadTask 中反向记录 AsyncTaskRecord的id

@@ -9,7 +9,7 @@ import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -53,7 +53,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
         List<StorageFactory> storageFactories = storageRegistry.listStorageFactory();
         String protocols = storageFactories.stream().map(e -> e.getMetadata().getProtocol()).collect(Collectors.joining(","));
         String publicProtocols = storageRegistry.listPublicStorageFactory().stream().map(e -> e.getMetadata().getProtocol()).collect(Collectors.joining(","));
-        String tempSize = StringUtils.getFormatSize(new File(PathUtils.getTempDirectory()).getFreeSpace());
+        String tempSize = SfcStringUtils.getFormatSize(new File(PathUtils.getTempDirectory()).getFreeSpace());
         return Collections.singletonList(ConfigNode.builder()
                         .name("fileSystemFeature")
                         .title("文件系统功能")
@@ -63,7 +63,7 @@ public class DefaultFileSystemManager implements DiskFileSystemManager, SystemOv
                                 new ConfigNode("临时目录可用空间", tempSize),
                                 new ConfigNode("主存储服务", storeServiceFactory.toString()),
                                 new ConfigNode("支持的挂载协议", protocols),
-                                new ConfigNode("开放的挂载协议", StringUtils.hasText(publicProtocols) ? publicProtocols : "-")
+                                new ConfigNode("开放的挂载协议", SfcStringUtils.hasText(publicProtocols) ? publicProtocols : "-")
                         ))
                 .build());
     }

@@ -9,10 +9,10 @@ import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class ClusterServiceImpl implements ClusterService, InitializingBean {
-    private final long selfId = IdUtil.getId();
+    private final long selfId = SfcIdUtil.getId();
 
     @Autowired
     private CacheService cacheService;
@@ -102,7 +102,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
         cacheNodeList = keys.stream().map(key -> cacheService.get(key)).filter(Objects::nonNull)
                 .map(obj -> {
                     try {
-                        return MapperHolder.parseAsJson(obj, ClusterNodeInfo.class);
+                        return SfcMapperHolder.parseAsJson(obj, ClusterNodeInfo.class);
                     } catch (IOException e) {
                         throw new IllegalArgumentException(e);
                     }
@@ -124,7 +124,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean {
             if (obj == null) {
                 return null;
             }
-            return MapperHolder.parseAsJson(obj, ClusterNodeInfo.class);
+            return SfcMapperHolder.parseAsJson(obj, ClusterNodeInfo.class);
         } catch (IOException e) {
             log.error("节点信息解析错误：",e);
             return null;

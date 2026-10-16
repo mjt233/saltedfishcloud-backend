@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.collection;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionRecordRepo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -15,9 +15,9 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.resource.AbstractWritableResourceProtocolHandler;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -118,21 +118,21 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
                 })
                 .orElse(collectionInfo.getSavePathSnapshot());
 
-        return SecureUtils.getMd5(uid + ":" + StringUtils.appendPath(path, record.getFilename()));
+        return SecureUtils.getMd5(uid + ":" + SfcStringUtils.appendPath(path, record.getFilename()));
     }
 
     @Override
     public FileCollectionResourceParam validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
         try {
-            FileCollectionResourceParam parsedParam = MapperHolder.parseJson(MapperHolder.toJson(resourceRequest.getParams()), FileCollectionResourceParam.class);
+            FileCollectionResourceParam parsedParam = SfcMapperHolder.parseJson(SfcMapperHolder.toJson(resourceRequest.getParams()), FileCollectionResourceParam.class);
             CollectionInfo info = collectionService.getCollectionWitchVerification(new CollectionInfoId(parsedParam.getCid(), parsedParam.getVerification()));
             if (info == null) {
-                throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
+                throw new SfcJsonException(CollectionError.COLLECTION_NOT_FOUND);
             }
             if (parsedParam.getType() == FileCollectionResourceParam.Type.SUBMIT || isWrite) {
                 // 校验开关状态
                 if (info.getState() == CollectionInfo.State.CLOSED) {
-                    throw new JsonException(CollectionError.COLLECTION_CLOSED);
+                    throw new SfcJsonException(CollectionError.COLLECTION_CLOSED);
                 }
 
                 // 校验过期
@@ -142,10 +142,10 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
 
 
                 // 校验匿名状态
-                if (!info.getAllowAnonymous() && SecureUtils.getCurrentUid() == null) { throw new JsonException(CollectionError.COLLECTION_REQUIRE_LOGIN); }
+                if (!info.getAllowAnonymous() && SecureUtils.getCurrentUid() == null) { throw new SfcJsonException(CollectionError.COLLECTION_REQUIRE_LOGIN); }
 
                 // 校验约束
-                if (!CollectionValidator.validateSubmit(info, parsedParam.getSubmitFile())) { throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED); }
+                if (!CollectionValidator.validateSubmit(info, parsedParam.getSubmitFile())) { throw new SfcJsonException(CollectionError.COLLECTION_CHECK_FAILED); }
             }
 
             parsedParam.setCollectionInfo(info);
@@ -159,7 +159,7 @@ public class CollectionProtocolHandler extends AbstractWritableResourceProtocolH
     }
 
     private CollectionRecord getRecordById(String id) {
-        return collectionRecordRepo.findById(Long.valueOf(id)).orElseThrow(() -> new JsonException("不存在的文件提交记录"));
+        return collectionRecordRepo.findById(Long.valueOf(id)).orElseThrow(() -> new SfcJsonException("不存在的文件提交记录"));
     }
 
     @Override

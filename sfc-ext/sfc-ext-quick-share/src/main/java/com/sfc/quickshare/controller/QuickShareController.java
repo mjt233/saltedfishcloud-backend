@@ -3,8 +3,7 @@ package com.sfc.quickshare.controller;
 import com.sfc.quickshare.model.QuickShare;
 import com.sfc.quickshare.service.QuickShareService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
@@ -25,15 +24,15 @@ public class QuickShareController {
     @PostMapping("upload")
     @BreakPoint
     @AllowAnonymous
-    public JsonResult<String> upload(@MergeFile @RequestParam("file") MultipartFile file, QuickShare quickShare) throws IOException {
+    public SfcJsonResult<String> upload(@MergeFile @RequestParam("file") MultipartFile file, QuickShare quickShare) throws IOException {
         String code = quickShareService.saveTempFile(file.getResource(), quickShare);
-        return JsonResultImpl.getInstance(code);
+        return SfcJsonResult.getInstance(code);
     }
 
     @GetMapping("getByCode")
     @AllowAnonymous
-    public JsonResult<QuickShare> getByCode(@RequestParam("code") String code) {
-        return JsonResultImpl.getInstance(quickShareService.getByCode(code));
+    public SfcJsonResult<QuickShare> getByCode(@RequestParam("code") String code) {
+        return SfcJsonResult.getInstance(quickShareService.getByCode(code));
     }
 
     @GetMapping("getShareFile")

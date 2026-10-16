@@ -1,14 +1,14 @@
 package com.sfc.dm.task.detect.scanner;
 
 import com.sfc.dm.model.po.InvalidDataRecord;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.node.FileTree;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,9 +58,9 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
 
         // 扫描用户网盘
         String storeRoot = sysProperties.getStore().getRoot();
-        String userFileRoot = StringUtils.appendPath(storeRoot + "/user_file");
+        String userFileRoot = SfcStringUtils.appendPath(storeRoot + "/user_file");
         forEachUser(user -> {
-            String userDir = StringUtils.appendPath(userFileRoot, user.getId().toString());
+            String userDir = SfcStringUtils.appendPath(userFileRoot, user.getId().toString());
             log("扫描用户网盘: uid=" + user.getId());
             try {
                 scanDirectory(storage, userDir, "/", user.getId(), callback);
@@ -88,7 +88,7 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
     }
 
     private String getUserStoragePath(Long uid) {
-        return uid == UserConstants.PUBLIC_USER_ID ? sysProperties.getStore().getPublicRoot() : StringUtils.appendPath(sysProperties.getStore().getRoot(), "user_file", uid.toString());
+        return uid == SfcUserConstants.PUBLIC_USER_ID ? sysProperties.getStore().getPublicRoot() : SfcStringUtils.appendPath(sysProperties.getStore().getRoot(), "user_file", uid.toString());
     }
 
     /**
@@ -110,7 +110,7 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
             if (Boolean.TRUE.equals(node.getIsMount()) || node.getMountId() != null) {
                 continue;
             }
-            String diskParentPath = rootMd5.equals(node.getMd5()) ? "/" : StringUtils.appendPath(fileTree.getPath(node.getNode()), node.getName());
+            String diskParentPath = rootMd5.equals(node.getMd5()) ? "/" : SfcStringUtils.appendPath(fileTree.getPath(node.getNode()), node.getName());
             List<FileInfo> files = fileRecordService.findByUidAndNodeId(uid, node.getMd5());
 
             for (FileInfo file : files) {
@@ -121,8 +121,8 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
                 if (Boolean.TRUE.equals(file.getIsMount()) || file.getMountId() != null) {
                     continue;
                 }
-                String diskPath = StringUtils.appendPath(diskParentPath, file.getName());
-                String storagePath = StringUtils.appendPath(storageRoot, diskParentPath, file.getName());
+                String diskPath = SfcStringUtils.appendPath(diskParentPath, file.getName());
+                String storagePath = SfcStringUtils.appendPath(storageRoot, diskParentPath, file.getName());
                 try {
                     // 检查物理文件是否存在
                     if (!storage.exist(storagePath)) {
@@ -162,8 +162,8 @@ public class RawModeScanner extends AbstractInvalidDataScanner {
             if (interrupted.get()) {
                 return;
             }
-            String fullPath = StringUtils.appendPath(path, file.getName());
-            String diskPath = StringUtils.appendPath(diskRoot, file.getName());
+            String fullPath = SfcStringUtils.appendPath(path, file.getName());
+            String diskPath = SfcStringUtils.appendPath(diskRoot, file.getName());
             if (file.isDir()) {
                 scanDirectory(storage, fullPath, diskPath, ownerUid, callback);
             } else {

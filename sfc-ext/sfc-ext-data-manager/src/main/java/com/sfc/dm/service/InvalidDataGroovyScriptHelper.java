@@ -2,8 +2,8 @@ package com.sfc.dm.service;
 
 import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.po.InvalidDataRecord;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 import groovy.lang.Binding;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 
@@ -23,7 +23,7 @@ public final class InvalidDataGroovyScriptHelper {
      * @return 脚本执行器，脚本为空时返回 null
      */
     public static GroovyScriptExecutor createExecutor(String script) {
-        if (!StringUtils.hasText(script)) {
+        if (!SfcStringUtils.hasText(script)) {
             return null;
         }
         return new GroovyScriptExecutor(script, config -> {
@@ -55,10 +55,10 @@ public final class InvalidDataGroovyScriptHelper {
         binding.setVariable("record", record);
         binding.setVariable("context", context);
         String typeCheckResult = record.getTypeCheckResult();
-        if (StringUtils.hasText(typeCheckResult)) {
+        if (SfcStringUtils.hasText(typeCheckResult)) {
             try {
                 binding.setVariable("typeCheckResult",
-                        MapperHolder.parseJson(typeCheckResult, FileTypeCheckResult.class));
+                        SfcMapperHolder.parseJson(typeCheckResult, FileTypeCheckResult.class));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -1,6 +1,6 @@
 package com.sfc.ext.download.model;
 
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.http.HttpMethod;
 
@@ -27,7 +27,7 @@ public class DownloadTaskParams {
     /**
      * 用户id
      */
-    @UID
+    @SfcUID
     public long uid;
 
     /**

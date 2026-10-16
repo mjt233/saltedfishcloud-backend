@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.share;
 
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -65,7 +65,7 @@ public interface ShareService {
      * @param hideKeyAttr 隐藏关键信息
      * @return  分页信息
      */
-    CommonPageInfo<ShareInfo> getUserShare(long uid, int page, int size, boolean hideKeyAttr);
+    SfcPageInfo<ShareInfo> getUserShare(long uid, int page, int size, boolean hideKeyAttr);
 
     /**
      * 获取分享信息，内部将进行有效性校验，包括：文件是否存在、分享是否存在、校验码是否正确

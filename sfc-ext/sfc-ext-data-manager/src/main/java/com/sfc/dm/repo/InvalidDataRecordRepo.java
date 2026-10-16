@@ -3,7 +3,7 @@ package com.sfc.dm.repo;
 import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.enums.ProcessMethod;
 import com.sfc.dm.model.po.InvalidDataRecord;
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * 失效数据记录Repository
  */
-public interface InvalidDataRecordRepo extends BaseRepo<InvalidDataRecord>, InvalidDataRecordRepoCustom {
+public interface InvalidDataRecordRepo extends SfcBaseRepo<InvalidDataRecord>, InvalidDataRecordRepoCustom {
     /**
      * 按状态批量删除
      */

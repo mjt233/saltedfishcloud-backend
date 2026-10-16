@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.config.security;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -41,7 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         try {
-            UserPrincipal user = MapperHolder.mapper.readValue(JwtUtils.parse(token), UserPrincipal.class);
+            UserPrincipal user = SfcMapperHolder.mapper.readValue(JwtUtils.parse(token), UserPrincipal.class);
             user.setToken(token);
             if (tokenService.isTokenValid(user.getId(), token)) {
                 SecurityContextHolder.getContext()

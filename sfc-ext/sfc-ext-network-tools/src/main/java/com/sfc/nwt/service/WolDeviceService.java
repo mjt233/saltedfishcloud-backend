@@ -1,28 +1,28 @@
 package com.sfc.nwt.service;
 
-import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
+import com.sfc.cloud.data.service.SfcCrudServiceImpl;
 import com.sfc.nwt.model.po.WolDevice;
 import com.sfc.nwt.repo.WolDeviceRepo;
 import com.sfc.nwt.utils.NetworkUtils;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.model.SfcAuditModel;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 
-public class WolDeviceService extends CrudServiceImpl<WolDevice, WolDeviceRepo> {
+public class WolDeviceService extends SfcCrudServiceImpl<WolDevice, WolDeviceRepo> {
     @Override
     public void save(WolDevice entity) {
-        UIDValidator.validate(entity.getUid(), true);
+        SfcUIDValidator.validate(entity.getUid(), true);
         super.save(entity);
     }
 
     @Override
     public void batchSave(Collection<WolDevice> entityList) {
-        entityList.stream().map(AuditModel::getUid).distinct().forEach(uid -> UIDValidator.validate(uid, true));
+        entityList.stream().map(SfcAuditModel::getUid).distinct().forEach(uid -> SfcUIDValidator.validate(uid, true));
         super.batchSave(entityList);
     }
 
@@ -33,7 +33,7 @@ public class WolDeviceService extends CrudServiceImpl<WolDevice, WolDeviceRepo> 
      */
     public List<WolDevice> findByUidAndCheckOnline(Long uid) {
         List<WolDevice> deviceList = findByUid(uid);
-        Set<String> ips = deviceList.stream().map(WolDevice::getIp).filter(StringUtils::hasText).collect(Collectors.toSet());
+        Set<String> ips = deviceList.stream().map(WolDevice::getIp).filter(SfcStringUtils::hasText).collect(Collectors.toSet());
         Set<String> onlineIps = NetworkUtils.testIpAlive(ips);
         for (WolDevice wolDevice : deviceList) {
             wolDevice.setIsOnline(onlineIps.contains(wolDevice.getIp()));
@@ -47,7 +47,7 @@ public class WolDeviceService extends CrudServiceImpl<WolDevice, WolDeviceRepo> 
      */
     public void wake(Long id) throws IOException {
         WolDevice device = findById(id);
-        UIDValidator.validate(device.getUid(), false);
+        SfcUIDValidator.validate(device.getUid(), false);
 
         NetworkUtils.wakeOnLan(
                 device.getMac(),
@@ -61,7 +61,7 @@ public class WolDeviceService extends CrudServiceImpl<WolDevice, WolDeviceRepo> 
     public int batchDelete(Collection<Long> ids) {
         List<WolDevice> deviceList = repository.findAllById(ids);
         for (WolDevice wolDevice : deviceList) {
-            UIDValidator.validate(wolDevice.getUid(), true);
+            SfcUIDValidator.validate(wolDevice.getUid(), true);
         }
         return repository.batchDelete(ids);
     }

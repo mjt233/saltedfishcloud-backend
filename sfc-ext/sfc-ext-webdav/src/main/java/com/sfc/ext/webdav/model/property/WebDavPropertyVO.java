@@ -1,6 +1,6 @@
 package com.sfc.ext.webdav.model.property;
 
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 import java.util.Optional;
 
@@ -16,6 +16,6 @@ public class WebDavPropertyVO {
     }
 
     public String getDisplayUrl() {
-        return Optional.ofNullable(delegate.getDisplayUrl()).filter(StringUtils::hasText).orElseGet(() -> "{protocol}//{hostname}:" + delegate.getListenPort());
+        return Optional.ofNullable(delegate.getDisplayUrl()).filter(SfcStringUtils::hasText).orElseGet(() -> "{protocol}//{hostname}:" + delegate.getListenPort());
     }
 }

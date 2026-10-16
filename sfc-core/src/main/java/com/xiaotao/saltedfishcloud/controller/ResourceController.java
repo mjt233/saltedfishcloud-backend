@@ -5,11 +5,10 @@ import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -20,7 +19,7 @@ import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -57,7 +56,7 @@ public class ResourceController {
     @Operation(summary = "上传文件到目标资源")
     @PutMapping("upload")
     @AllowAnonymous
-    public JsonResult<Object> uploadResource(@Validated ResourceRequest resourceRequest,
+    public SfcJsonResult<Object> uploadResource(@Validated ResourceRequest resourceRequest,
                                              HttpServletRequest request,
                                              @MergeFile @RequestParam("file") MultipartFile file
                                              ) throws UnsupportedProtocolException, IOException {
@@ -76,7 +75,7 @@ public class ResourceController {
             throw new IllegalArgumentException("不允许的特殊参数：createUId");
         }
         handler.writeResource(resourceRequest, file.getResource());
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @GetMapping("get")
@@ -87,7 +86,7 @@ public class ResourceController {
         // 根据请求对象获取资源
         Resource resource = resourceService.getResource(resourceRequest);
         if (resource == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
 
         if (Boolean.TRUE.equals(resourceRequest.getIsCache())) {
@@ -111,9 +110,9 @@ public class ResourceController {
     @GetMapping({"node/**", "node"})
     @AllowAnonymous
     @NotBlock
-    public JsonResult<Deque<FileInfo>> pathToNodeList(@PathVariable("uid") @UID long uid, HttpServletRequest request) throws NoSuchFileException {
+    public SfcJsonResult<Deque<FileInfo>> pathToNodeList(@PathVariable("uid") @SfcUID long uid, HttpServletRequest request) throws NoSuchFileException {
         String path = URLUtils.getRequestFilePath(PREFIX + "/" + uid + "/node", request);
-        return JsonResultImpl.getInstance(fileRecordService.getVisitPathInfo(uid, "/" + path));
+        return SfcJsonResult.getInstance(fileRecordService.getVisitPathInfo(uid, "/" + path));
     }
 
     /**
@@ -124,10 +123,10 @@ public class ResourceController {
     @GetMapping("path/{node}")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<String> getPath(@PathVariable("uid") @UID long uid,
+    public SfcJsonResult<String> getPath(@PathVariable("uid") @SfcUID long uid,
                               @PathVariable("node") String node) {
-        return JsonResultImpl.getInstance(fileRecordService.getPathByNodeId(uid, node)
-                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND)));
+        return SfcJsonResult.getInstance(fileRecordService.getPathByNodeId(uid, node)
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND)));
     }
 
     /**
@@ -136,7 +135,7 @@ public class ResourceController {
     @GetMapping("FDC/**")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<Object> getFDC(@PathVariable @UID long uid,
+    public SfcJsonResult<Object> getFDC(@PathVariable @SfcUID long uid,
                              HttpServletRequest request,
                              @RequestParam(value = "md5", required = false) String md5,
                              @RequestParam("name") @Valid @FileName String name,
@@ -146,7 +145,7 @@ public class ResourceController {
         fileInfo.setName(name);
         fileInfo.setMd5(md5);
         String dc = resourceService.getFileDownloadCode(uid, filePath, fileInfo, expr);
-        return JsonResultImpl.getInstance(dc);
+        return SfcJsonResult.getInstance(dc);
     }
 
 
@@ -180,7 +179,7 @@ public class ResourceController {
             throws IOException {
         Resource resource = fileService.getMainFileSystem().getResourceByMd5(md5);
         if (resource == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND, md5);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND, md5);
         }
 
         String path = URLUtils.getRequestFilePath(PREFIX + uid + "/fileContentByMD5/" + md5, request);

@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import org.springframework.validation.annotation.Validated;
@@ -24,7 +24,7 @@ public interface UserService {
      */
     void initAdminUser(String user, String password);
 
-    CommonPageInfo<User> listUsers(PageableRequest request);
+    SfcPageInfo<User> listUsers(SfcPageableRequest request);
 
     /**
      * 按用户名或邮箱模糊搜索用户（分页）
@@ -32,7 +32,7 @@ public interface UserService {
      * @param request   分页参数
      * @return          分页用户结果
      */
-    CommonPageInfo<User> searchUsers(String keyword, PageableRequest request);
+    SfcPageInfo<User> searchUsers(String keyword, SfcPageableRequest request);
 
     /**
      * 根据id批量查询用户的基本信息（仅包含用户名等基础数据）

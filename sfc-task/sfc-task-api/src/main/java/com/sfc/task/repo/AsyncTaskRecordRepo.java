@@ -1,7 +1,7 @@
 package com.sfc.task.repo;
 
 import com.sfc.task.model.AsyncTaskRecord;
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-public interface AsyncTaskRecordRepo extends BaseRepo<AsyncTaskRecord> {
+public interface AsyncTaskRecordRepo extends SfcBaseRepo<AsyncTaskRecord> {
     /**
      * 修改任务状态。
      * 需要传入原状态是作为并发控制的乐观锁版本号机制

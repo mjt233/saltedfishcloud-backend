@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.ext;
 
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -22,7 +22,7 @@ class DirPathClassLoaderTest {
         Enumeration<URL> resources = loader.getResources(PluginManager.PLUGIN_INFO_FILE);
         if (resources.hasMoreElements()) {
             System.out.println(resources.nextElement());
-            PluginInfo pluginInfo = MapperHolder.parseJson(ExtUtils.getResourceText(loader, PluginManager.PLUGIN_INFO_FILE), PluginInfo.class);
+            PluginInfo pluginInfo = SfcMapperHolder.parseJson(ExtUtils.getResourceText(loader, PluginManager.PLUGIN_INFO_FILE), PluginInfo.class);
             assertNotNull(pluginInfo.getName());
         } else {
             fail();

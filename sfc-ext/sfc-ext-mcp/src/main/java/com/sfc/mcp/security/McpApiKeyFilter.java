@@ -1,7 +1,7 @@
 package com.sfc.mcp.security;
 
 import com.sfc.mcp.service.McpApiKeyService;
-import com.xiaotao.saltedfishcloud.constant.SysRole;
+import com.sfc.cloud.constant.SfcSysRole;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -70,7 +70,7 @@ public class McpApiKeyFilter extends OncePerRequestFilter {
 
         UserPrincipal principal = UserPrincipal.from(user);
         List<GrantedAuthority> authorities = new ArrayList<>(principal.getAuthorities());
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + SysRole.OAUTH_USER));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + SfcSysRole.OAUTH_USER));
         authorities.add(new SimpleGrantedAuthority("SCOPE_storage_read"));
         authorities.add(new SimpleGrantedAuthority("SCOPE_storage_write"));
 

@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppAuthorizationService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,14 +13,15 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.sfc.cloud.data.service.SfcCrudServiceImpl;
 
 @Service
 @RequiredArgsConstructor
-public class ThirdPartyAppAuthorizationServiceImpl extends CrudServiceImpl<ThirdPartyAppAuthorization, ThirdPartyAppAuthorizationRepo> implements ThirdPartyAppAuthorizationService {
+public class ThirdPartyAppAuthorizationServiceImpl extends SfcCrudServiceImpl<ThirdPartyAppAuthorization, ThirdPartyAppAuthorizationRepo> implements ThirdPartyAppAuthorizationService {
     private final ThirdPartyAppService thirdPartyAppService;
 
     @Override
-    public ThirdPartyAppUserAuthorizationVo getUserAppAuthorization(Long appId, @UID(value = true) Long uid) {
+    public ThirdPartyAppUserAuthorizationVo getUserAppAuthorization(Long appId, @SfcUID(value = true) Long uid) {
         return ThirdPartyAppUserAuthorizationVo.builder()
                 .thirdPartyApp(thirdPartyAppService.checkAndGetById(appId))
                 .authorization(repository.findByAppIdAndUid(appId, uid).orElse(null))
@@ -28,7 +29,7 @@ public class ThirdPartyAppAuthorizationServiceImpl extends CrudServiceImpl<Third
     }
 
     @Override
-    public ThirdPartyAppAuthorization authorize(Long appId, @UID(value = true) Long uid, String scope) {
+    public ThirdPartyAppAuthorization authorize(Long appId, @SfcUID(value = true) Long uid, String scope) {
         ThirdPartyAppAuthorization authorization = repository.findByAppIdAndUid(appId, uid)
                 .orElseGet(() -> {
                     ThirdPartyAppAuthorization a = new ThirdPartyAppAuthorization();

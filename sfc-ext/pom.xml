@@ -17,6 +17,8 @@
         <task.version>1.0.0</task.version>
         <!-- 微服务契约模块 sfc-cloud-api 的版本。本 pom 不继承 root，故必须自带该属性 -->
         <cloud.version>1.0.0</cloud.version>
+        <!-- 共享基座 sfc-common / sfc-common-data 的版本。本 pom 不继承 root，故必须自带该属性 -->
+        <sfc.common.version>1.0.0</sfc.common.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -66,6 +68,24 @@
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-cloud-api</artifactId>
             <version>${cloud.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!--
+            共享基座（Phase 1 从 sfc-api 迁出）：常量/信封/异常/工具/分页 与 JPA 基座。
+            运行期由宿主 sfc-core 提供，故为 provided。
+            ⚠️ 必须显式声明：本 pom 以 provided 引用 sfc-api，而 provided 的传递依赖不会向下传递，
+            因此 25 个 sfc-ext 插件无法经由 sfc-api 间接获得这两个模块。
+        -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-common</artifactId>
+            <version>${sfc.common.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-common-data</artifactId>
+            <version>${sfc.common.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

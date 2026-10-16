@@ -1,8 +1,8 @@
 package com.sfc.cloud.remote.client;
 
 import com.sfc.cloud.remote.model.SfcFileInfo;
-import com.sfc.cloud.remote.model.SfcJsonResult;
-import com.sfc.cloud.remote.model.SfcPageInfo;
+import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.cloud.model.SfcPageInfo;
 import feign.Response;
 import org.springframework.core.io.Resource;
 

@@ -2,8 +2,7 @@ package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.model.SystemInfoVO;
 import com.xiaotao.saltedfishcloud.model.TimestampRecord;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.vo.SystemOverviewVO;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
@@ -33,34 +32,34 @@ public class SysController {
 
     @GetMapping("restart")
     @Operation(summary = "重启咸鱼云系统")
-    public JsonResult<Object> restart(@RequestParam(value = "withCluster", defaultValue = "true", required = false) Boolean withCluster) {
+    public SfcJsonResult<Object> restart(@RequestParam(value = "withCluster", defaultValue = "true", required = false) Boolean withCluster) {
         adminService.restart(withCluster);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
      * 获取系统总览参数
      */
     @GetMapping("overview")
-    public JsonResult<SystemOverviewVO> getOverview(@RequestParam(value = "nodeId", required = false) Long nodeId) {
-        return JsonResultImpl.getInstance(adminService.getOverviewData(nodeId));
+    public SfcJsonResult<SystemOverviewVO> getOverview(@RequestParam(value = "nodeId", required = false) Long nodeId) {
+        return SfcJsonResult.getInstance(adminService.getOverviewData(nodeId));
     }
 
     @Operation(summary = "获取当前系统信息")
     @GetMapping("getCurSystemInfo")
-    public JsonResult<SystemInfoVO> getCurSystemInfo(@RequestParam(value = "nodeId", required = false) Long nodeId) {
-        return JsonResultImpl.getInstance(adminService.getCurSystemInfo(nodeId, true));
+    public SfcJsonResult<SystemInfoVO> getCurSystemInfo(@RequestParam(value = "nodeId", required = false) Long nodeId) {
+        return SfcJsonResult.getInstance(adminService.getCurSystemInfo(nodeId, true));
     }
 
     @Operation(summary = "列出系统一段时间范围内的信息采集集合")
     @GetMapping("listSystemInfo")
-    public JsonResult<Collection<TimestampRecord<SystemInfoVO>>> listSystemInfo(@RequestParam(value = "nodeId", required = false) Long nodeId) {
-        return JsonResultImpl.getInstance(adminService.listSystemInfo(nodeId));
+    public SfcJsonResult<Collection<TimestampRecord<SystemInfoVO>>> listSystemInfo(@RequestParam(value = "nodeId", required = false) Long nodeId) {
+        return SfcJsonResult.getInstance(adminService.listSystemInfo(nodeId));
     }
 
     @Operation(summary = "获取系统支持的缩略图生成器名称")
     @GetMapping("getThumbnailHandlerNames")
-    public JsonResult<List<String>> getThumbnailHandlerNames() {
-        return JsonResultImpl.getInstance(thumbnailService.getRegisteredHandler().stream().map(ThumbnailHandler::getName).distinct().toList());
+    public SfcJsonResult<List<String>> getThumbnailHandlerNames() {
+        return SfcJsonResult.getInstance(thumbnailService.getRegisteredHandler().stream().map(ThumbnailHandler::getName).distinct().toList());
     }
 }

@@ -2,7 +2,7 @@ package com.sfc.pxeboot.model.po;
 
 import com.sfc.pxeboot.model.enums.BootItemType;
 import com.sfc.pxeboot.model.enums.IsoBootMethod;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,7 +17,7 @@ import lombok.Setter;
 })
 @Getter
 @Setter
-public class BootItem extends AuditModel {
+public class BootItem extends SfcAuditModel {
 
     /**
      * 菜单显示名称

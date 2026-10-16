@@ -1,12 +1,10 @@
 package com.sfc.mcp.controller;
 
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.sfc.mcp.model.McpApiKey;
 import com.sfc.mcp.model.vo.McpApiKeyVO;
 import com.sfc.mcp.service.McpApiKeyService;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +37,8 @@ public class McpApiKeyController {
      */
     @Operation(summary = "查询当前用户的MCP API Key列表")
     @GetMapping("/list")
-    public JsonResult<List<McpApiKeyVO>> list(@AuthenticationPrincipal UserPrincipal userPrincipal) {
-        return JsonResultImpl.getInstance(McpApiKeyVO.from(mcpApiKeyService.listByUid(userPrincipal.getId())));
+    public SfcJsonResult<List<McpApiKeyVO>> list(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return SfcJsonResult.getInstance(McpApiKeyVO.from(mcpApiKeyService.listByUid(userPrincipal.getId())));
     }
 
     /**
@@ -51,11 +49,11 @@ public class McpApiKeyController {
      */
     @Operation(summary = "生成MCP API Key")
     @PostMapping("/generate")
-    public JsonResult<String> generate(
+    public SfcJsonResult<String> generate(
             @RequestParam(value = "name", defaultValue = "default") String name,
             @AuthenticationPrincipal UserPrincipal userPrincipal
             ) {
-        return JsonResultImpl.getInstance(mcpApiKeyService.generate(userPrincipal.getId(), name));
+        return SfcJsonResult.getInstance(mcpApiKeyService.generate(userPrincipal.getId(), name));
     }
 
     /**
@@ -66,10 +64,10 @@ public class McpApiKeyController {
      */
     @Operation(summary = "撤销MCP API Key")
     @PostMapping("/delete")
-    public JsonResult<Object> delete(@RequestParam("id") Long id,@AuthenticationPrincipal UserPrincipal userPrincipal) {
+    public SfcJsonResult<Object> delete(@RequestParam("id") Long id,@AuthenticationPrincipal UserPrincipal userPrincipal) {
         validateOwnership(id, userPrincipal.getId());
         mcpApiKeyService.deleteApiKey(id);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -81,14 +79,14 @@ public class McpApiKeyController {
      */
     @Operation(summary = "重命名MCP API Key")
     @PostMapping("/rename")
-    public JsonResult<Object> rename(
+    public SfcJsonResult<Object> rename(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
         validateOwnership(id, userPrincipal.getId());
         mcpApiKeyService.rename(id, name);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**

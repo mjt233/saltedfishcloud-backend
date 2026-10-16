@@ -4,9 +4,9 @@ import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.enums.InvalidDataType;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -55,10 +55,10 @@ public abstract class AbstractInvalidDataScanner implements InvalidDataScanner {
             if (interrupted.get()) {
                 break;
             }
-            PageableRequest pageableRequest = new PageableRequest();
+            SfcPageableRequest pageableRequest = new SfcPageableRequest();
             pageableRequest.setPage(page);
             pageableRequest.setSize(pageSize);
-            CommonPageInfo<User> userPage = userService.listUsers(pageableRequest);
+            SfcPageInfo<User> userPage = userService.listUsers(pageableRequest);
             if (userPage.getContent() == null || userPage.getContent().isEmpty()) {
                 break;
             }

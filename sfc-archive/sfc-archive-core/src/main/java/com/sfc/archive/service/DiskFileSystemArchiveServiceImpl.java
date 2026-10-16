@@ -14,13 +14,13 @@ import com.xiaotao.saltedfishcloud.config.SysProperties;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.model.template.BaseModel;
+import com.sfc.cloud.data.model.SfcBaseModel;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -97,7 +97,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
      * @throws IOException 遍历或写入失败
      */
     private void addDirectoryResources(DiskFileSystem fileSystem, ArchiveEngineCompressor compressor, long uid, String sourceBasePath, FileInfo rootDirectory) throws IOException {
-        String rootDirectoryPath = StringUtils.appendPath(sourceBasePath, rootDirectory.getName());
+        String rootDirectoryPath = SfcStringUtils.appendPath(sourceBasePath, rootDirectory.getName());
         Map<String, ArchiveResource> candidateDirectoryResources = new LinkedHashMap<>();
         candidateDirectoryResources.put(rootDirectoryPath, EngineResourceUtils.toArchiveResource(rootDirectory, "/", null));
 
@@ -106,7 +106,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
                 candidateDirectoryResources.remove(curPath);
             }
 
-            String basePath = StringUtils.removePrefix(sourceBasePath, curPath);
+            String basePath = SfcStringUtils.removePrefix(sourceBasePath, curPath);
             if (basePath.isEmpty()) {
                 basePath = "/";
             }
@@ -115,7 +115,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
                 if (subFile.isFile()) {
                     compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, fileSystem.getResource(uid, curPath, subFile.getName())));
                 } else {
-                    String subDirectoryPath = StringUtils.appendPath(curPath, subFile.getName());
+                    String subDirectoryPath = SfcStringUtils.appendPath(curPath, subFile.getName());
                     candidateDirectoryResources.put(subDirectoryPath, EngineResourceUtils.toArchiveResource(subFile, basePath, null));
                 }
             }
@@ -138,7 +138,7 @@ public class DiskFileSystemArchiveServiceImpl implements DiskFileSystemArchiveSe
         record.setName(AsyncTaskType.ARCHIVE_COMPRESS + "-" + param.getEngineProviderId());
         record.setTaskType(AsyncTaskType.ARCHIVE_COMPRESS);
         record.setCpuOverhead(10);
-        record.setParams(MapperHolder.toJson(param));
+        record.setParams(SfcMapperHolder.toJson(param));
         UserPrincipal curUser = SecureUtils.getSpringSecurityUser();
         record.setUid(Optional.ofNullable(curUser).map(UserPrincipal::getId).orElse(param.getSourceUid()));
 

@@ -3,18 +3,18 @@ package com.xiaotao.saltedfishcloud.service.comment;
 import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.CommentRepo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.CommentRateLimitConfig;
 import com.xiaotao.saltedfishcloud.model.config.SysSafeConfig;
 import com.xiaotao.saltedfishcloud.model.param.CommentListParam;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.CommentVo;
 import com.xiaotao.saltedfishcloud.service.BaseJpaService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -103,7 +103,7 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
      * @param isAnonymous 是否匿名
      */
     private void validateComment(Comment comment, UserPrincipal user, boolean isAnonymous) {
-        if (!TypeUtils.toBoolean(sysSafeConfig.getAllowAnonymousComments())) {
+        if (!SfcTypeUtils.toBoolean(sysSafeConfig.getAllowAnonymousComments())) {
             if (isAnonymous) {
                 throw new IllegalArgumentException("不允许匿名留言");
             }
@@ -119,7 +119,7 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
                 String cacheKey = CacheKeyPrefixes.COMMENT_INTERVAL + comment.getTopicId() + ":" + identifier.hashCode();
                 boolean allowed = cacheService.setIfAbsent(cacheKey, Boolean.TRUE, minInterval, TimeUnit.SECONDS);
                 if (!allowed) {
-                    throw new JsonException("留言过于频繁，请稍后再试");
+                    throw new SfcJsonException("留言过于频繁，请稍后再试");
                 }
             }
         }
@@ -150,7 +150,7 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
                         replyCount = repo.countByReplyIdAndUid(comment.getReplyId(), user.getId());
                     }
                     if (replyCount >= maxReplies) {
-                        throw new JsonException("超过单用户最大回复数限制");
+                        throw new SfcJsonException("超过单用户最大回复数限制");
                     }
                 }
             }
@@ -166,7 +166,7 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
                         rootCount = repo.countByTopicIdAndUidAndReplyIdIsNull(comment.getTopicId(), user.getId());
                     }
                     if (rootCount >= maxRoot) {
-                        throw new JsonException("超过单用户最大评论数限制");
+                        throw new SfcJsonException("超过单用户最大评论数限制");
                     }
                 }
             }
@@ -174,31 +174,31 @@ public class CommentServiceImpl extends BaseJpaService<CommentRepo> implements C
 
         // 内容安全过滤：检测敏感词（未开启过滤时 contains 返回 false）
         if (sensitiveWordProvider.contains(comment.getContent())) {
-            throw new JsonException("评论内容包含敏感词，请修改后重新提交");
+            throw new SfcJsonException("评论内容包含敏感词，请修改后重新提交");
         }
     }
 
     @Override
-    public CommonPageInfo<CommentVo> listByTopicId(CommentListParam param) {
-        PageableRequest pageableRequest = param.getPageableRequest();
+    public SfcPageInfo<CommentVo> listByTopicId(CommentListParam param) {
+        SfcPageableRequest pageableRequest = param.getPageableRequest();
         Page<CommentVo> rootPage = repo.findRootByTopicId(
                 param.getTopicId(),
                 PageRequest.of(pageableRequest.getPage(), pageableRequest.getSize())
         );
-        CommonPageInfo<CommentVo> result = CommonPageInfo.of(rootPage);
+        SfcPageInfo<CommentVo> result = SfcPageInfo.of(rootPage);
         // 根据IP显示策略处理IP地址
         applyIpDisplayPolicy(result.getContent());
         return result;
     }
 
     @Override
-    public CommonPageInfo<CommentVo> listByCommentId(CommentListParam param) {
-        PageableRequest pageableRequest = param.getPageableRequest();
+    public SfcPageInfo<CommentVo> listByCommentId(CommentListParam param) {
+        SfcPageableRequest pageableRequest = param.getPageableRequest();
         Page<CommentVo> replyPage = repo.findRepliesByCommentId(
                 param.getCommentId(),
                 PageRequest.of(pageableRequest.getPage(), pageableRequest.getSize())
         );
-        CommonPageInfo<CommentVo> result = CommonPageInfo.of(replyPage);
+        SfcPageInfo<CommentVo> result = SfcPageInfo.of(replyPage);
         // 根据IP显示策略处理IP地址
         applyIpDisplayPolicy(result.getContent());
         return result;

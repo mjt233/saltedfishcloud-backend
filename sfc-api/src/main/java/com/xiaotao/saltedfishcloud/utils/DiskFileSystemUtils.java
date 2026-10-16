@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.function.IOExceptionBiConsumer;
 import com.xiaotao.saltedfishcloud.model.DiskFileAttributes;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static com.xiaotao.saltedfishcloud.constant.ByteSize._1KiB;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 @UtilityClass
 public class DiskFileSystemUtils {
@@ -79,7 +80,7 @@ public class DiskFileSystemUtils {
             fileList.addAll(userFileList[0]);
             fileList.addAll(userFileList[1]);
             if (!userFileList[0].isEmpty()) {
-                pathQueue.addAll(userFileList[0].stream().map(e -> StringUtils.appendPath(curPath, e.getName())).toList());
+                pathQueue.addAll(userFileList[0].stream().map(e -> SfcStringUtils.appendPath(curPath, e.getName())).toList());
             }
             consumer.accept(curPath, fileList);
         } while (!pathQueue.isEmpty());
@@ -101,7 +102,7 @@ public class DiskFileSystemUtils {
         if (isFile) {
             List<FileInfo> l = fileSystem.getUserFileList(uid, PathUtils.getParentPath(startPath), Collections.singletonList(PathUtils.getLastNode(startPath)));
             if (CollectionUtils.isEmpty(l)) {
-                throw new JsonException(FileSystemError.FILE_NOT_FOUND, startPath);
+                throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND, startPath);
             }
             FileInfo f = l.get(0);
             f.setPath(startPath);
@@ -121,7 +122,7 @@ public class DiskFileSystemUtils {
 
             boolean isSkipSibling = false;
             for (FileInfo file : fileList) {
-                String filePath = StringUtils.appendPath(curPath, file.getName());
+                String filePath = SfcStringUtils.appendPath(curPath, file.getName());
                 DiskFileAttributes attr = DiskFileAttributes.from(file);
                 file.setPath(filePath);
 

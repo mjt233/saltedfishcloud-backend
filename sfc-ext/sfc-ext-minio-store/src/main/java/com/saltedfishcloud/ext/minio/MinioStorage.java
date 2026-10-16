@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.messages.Item;
@@ -150,7 +150,7 @@ public class MinioStorage implements Storage {
                 return null;
             }
 
-            String name = StringUtils.getURLLastName(resource.getFilename());
+            String name = SfcStringUtils.getURLLastName(resource.getFilename());
             return new FileInfo(
                     name,
                     resource.contentLength(),
@@ -242,7 +242,7 @@ public class MinioStorage implements Storage {
     public OutputStream newOutputStream(String path) throws IOException {
 
         // Minio不支持创建输出流，这里需要在本地创建临时文件，使用临时文件的输出流，流关闭时再存储到Minio
-        Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), StringUtils.getRandomString(32)));
+        Path tempPath = Paths.get(SfcStringUtils.appendPath(PathUtils.getTempDirectory(), SfcStringUtils.getRandomString(32)));
         OutputStream outputStream = Files.newOutputStream(tempPath);
         log.info("{}<-创建输出流：{}，本地临时文件：{}", LOG_PREFIX, path, tempPath);
         return StreamUtils.createCloseActionOutputStream(outputStream, () -> {
@@ -257,7 +257,7 @@ public class MinioStorage implements Storage {
 
     @Override
     public boolean rename(String path, String newName) throws IOException {
-        String dest = StringUtils.appendPath(PathUtils.getParentPath(path), newName);
+        String dest = SfcStringUtils.appendPath(PathUtils.getParentPath(path), newName);
         move(MinioUtils.toMinioObjectName(path), MinioUtils.toMinioObjectName(dest), null);
         return true;
     }
@@ -276,7 +276,7 @@ public class MinioStorage implements Storage {
                 isDir = true;
                 Item itemObj = list.get();
                 String originName = itemObj.objectName();
-                String newName = StringUtils.appendPath(dest, originName.substring(src.length()));
+                String newName = SfcStringUtils.appendPath(dest, originName.substring(src.length()));
 
                 log.debug("{}->复制子项：{} -> {}", LOG_PREFIX, originName, newName);
                 client.copyObject(CopyObjectArgs.builder()

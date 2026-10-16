@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.constant.ComponentType;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.Lob;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,7 +17,7 @@ import jakarta.persistence.Table;
         @Index(name = "idx_desktop_component_config_uid", columnList = "uid"),
         @Index(name = "idx_desktop_component_config_name", columnList = "name"),
 })
-public class DesktopComponentConfig extends AuditModel {
+public class DesktopComponentConfig extends SfcAuditModel {
     /**
      * 组件标题
      */

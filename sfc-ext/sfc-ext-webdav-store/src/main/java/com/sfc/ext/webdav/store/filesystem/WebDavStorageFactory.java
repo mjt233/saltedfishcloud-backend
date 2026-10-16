@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -24,7 +24,7 @@ public class WebDavStorageFactory extends AbstractStorageFactory<WebDavClientPro
     public Storage generateStorage(WebDavClientProperty property) throws IOException {
         return new ScopedStorage(
                 new WebDavStorage(property),
-                Optional.ofNullable(property.getBasePath()).filter(StringUtils::hasText).orElse("/")
+                Optional.ofNullable(property.getBasePath()).filter(SfcStringUtils::hasText).orElse("/")
         );
     }
 

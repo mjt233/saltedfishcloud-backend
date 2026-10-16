@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.file.store.attach;
 
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -42,11 +42,11 @@ public class DefaultAttachStorageManager implements AttachStorageManager {
     public AttachStorage getStorage(String storageDomainId) {
         String normalizedStorageDomainId = normalizeStorageDomainId(storageDomainId);
         if (!definitionMap.containsKey(normalizedStorageDomainId)) {
-            throw new JsonException(404, "附属存储域不存在：" + normalizedStorageDomainId);
+            throw new SfcJsonException(404, "附属存储域不存在：" + normalizedStorageDomainId);
         }
         return storageMap.computeIfAbsent(
                 normalizedStorageDomainId,
-                id -> new DefaultAttachStorage(storeServiceFactory, StringUtils.appendPath(getAttachRootPath(), id))
+                id -> new DefaultAttachStorage(storeServiceFactory, SfcStringUtils.appendPath(getAttachRootPath(), id))
         );
     }
 
@@ -56,7 +56,7 @@ public class DefaultAttachStorageManager implements AttachStorageManager {
     @Override
     public void registerStorageDomain(AttachStorageDomainDefinition definition) {
         if (definition == null) {
-            throw new JsonException(400, "附属存储域定义不能为空");
+            throw new SfcJsonException(400, "附属存储域定义不能为空");
         }
         AttachStorageDomainDefinition copiedDefinition = copyDefinition(definition);
         String normalizedStorageDomainId = normalizeStorageDomainId(copiedDefinition.getId());
@@ -67,7 +67,7 @@ public class DefaultAttachStorageManager implements AttachStorageManager {
             if (exists.equals(copiedDefinition)) {
                 return;
             }
-            throw new JsonException(400, "附属存储域已注册：" + normalizedStorageDomainId);
+            throw new SfcJsonException(400, "附属存储域已注册：" + normalizedStorageDomainId);
         }
         try {
             getStorageProvider().mkdirs(getStorageDomainRootPath(normalizedStorageDomainId));
@@ -76,7 +76,7 @@ public class DefaultAttachStorageManager implements AttachStorageManager {
             definitionMap.remove(normalizedStorageDomainId);
             storageMap.remove(normalizedStorageDomainId);
             log.error("[Attach Storage]初始化附属存储域失败：{}", normalizedStorageDomainId, e);
-            JsonException exception = new JsonException("初始化附属存储域失败：" + normalizedStorageDomainId + "，" + e.getMessage());
+            SfcJsonException exception = new SfcJsonException("初始化附属存储域失败：" + normalizedStorageDomainId + "，" + e.getMessage());
             exception.initCause(e);
             throw exception;
         }
@@ -116,14 +116,14 @@ public class DefaultAttachStorageManager implements AttachStorageManager {
      * 获取附属存储的公共根目录。
      */
     private String getAttachRootPath() {
-        return StringUtils.appendPath(sysProperties.getStore().getRoot(), ATTACH_ROOT_DIR);
+        return SfcStringUtils.appendPath(sysProperties.getStore().getRoot(), ATTACH_ROOT_DIR);
     }
 
     /**
      * 获取指定存储域的根目录。
      */
     private String getStorageDomainRootPath(String storageDomainId) {
-        return StringUtils.appendPath(getAttachRootPath(), normalizeStorageDomainId(storageDomainId));
+        return SfcStringUtils.appendPath(getAttachRootPath(), normalizeStorageDomainId(storageDomainId));
     }
 
     /**
@@ -142,17 +142,17 @@ public class DefaultAttachStorageManager implements AttachStorageManager {
      */
     private String normalizeStorageDomainId(String storageDomainId) {
         if (storageDomainId == null) {
-            throw new JsonException(400, "附属存储域ID不能为空");
+            throw new SfcJsonException(400, "附属存储域ID不能为空");
         }
         String normalizedStorageDomainId = storageDomainId.trim();
         if (normalizedStorageDomainId.isEmpty()) {
-            throw new JsonException(400, "附属存储域ID不能为空");
+            throw new SfcJsonException(400, "附属存储域ID不能为空");
         }
         if (!STORAGE_DOMAIN_ID_PATTERN.matcher(normalizedStorageDomainId).matches()) {
-            throw new JsonException(400, "附属存储域ID包含非法字符：" + storageDomainId);
+            throw new SfcJsonException(400, "附属存储域ID包含非法字符：" + storageDomainId);
         }
         if (".".equals(normalizedStorageDomainId) || "..".equals(normalizedStorageDomainId)) {
-            throw new JsonException(400, "附属存储域ID不合法：" + storageDomainId);
+            throw new SfcJsonException(400, "附属存储域ID不合法：" + storageDomainId);
         }
         return normalizedStorageDomainId;
     }

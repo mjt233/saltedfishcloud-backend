@@ -17,10 +17,26 @@
     </properties>
 
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>com.xiaotao</groupId>-->
-<!--            <artifactId>sfc-archive-api</artifactId>-->
-<!--            <version>${project.version}</version>-->
-<!--        </dependency>-->
+        <!--
+            共享基座（Phase 1 从本模块迁出）：
+              - sfc-common      —— 常量 / 响应信封 / 异常 / 字符串与 JSON 工具 / 分页模型；
+              - sfc-common-data —— 实体基类（SfcBaseModel/SfcAuditModel）、雪花主键、SfcBaseRepo、
+                                   SfcCrudService(Impl)、SFC DB 工具与 @SfcUID 权限校验。
+            两者均不继承根 pom，版本由根 pom 的 sfc.common.version 单点声明。
+
+            ⚠️ 必须以 compile 声明（不能是 provided）：sfc-api 是全仓库的基础库，
+            而 sfc-ext 侧以 provided 作用域引用 sfc-api。若这里用 provided，
+            其传递依赖不会到达 25 个 sfc-ext 插件，插件将无法解析这些类型。
+        -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-common</artifactId>
+            <version>${sfc.common.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-common-data</artifactId>
+            <version>${sfc.common.version}</version>
+        </dependency>
     </dependencies>
 </project>

@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -14,8 +14,8 @@ import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
@@ -104,7 +104,7 @@ public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
             return null;
         }
         String lastModified = String.valueOf(resource.lastModified());
-        return thumbnailService.getThumbnail(resource, suffix, SecureUtils.getMd5(StringUtils.appendPath(path, name, lastModified)));
+        return thumbnailService.getThumbnail(resource, suffix, SecureUtils.getMd5(SfcStringUtils.appendPath(path, name, lastModified)));
     }
 
     @Override
@@ -119,7 +119,7 @@ public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
 
     @Override
     public Resource getResource(long uid, String path, String name) throws IOException {
-        return storage.getResource(StringUtils.appendPath(path, name));
+        return storage.getResource(SfcStringUtils.appendPath(path, name));
     }
 
     @Override
@@ -150,8 +150,8 @@ public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
                 return;
             }
             copyAndMoveHandler.copy(
-                    StringUtils.appendPath(sourcePath, fileName),
-                    StringUtils.appendPath(targetPath, fileName),
+                    SfcStringUtils.appendPath(sourcePath, fileName),
+                    SfcStringUtils.appendPath(targetPath, fileName),
                     overwrite,
                     callback
             );
@@ -160,7 +160,7 @@ public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
 
     @Override
     public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException {
-        copyAndMoveHandler.move(StringUtils.appendPath(source, name), StringUtils.appendPath(target, name), overwrite);
+        copyAndMoveHandler.move(SfcStringUtils.appendPath(source, name), SfcStringUtils.appendPath(target, name), overwrite);
     }
 
     @Override
@@ -177,14 +177,14 @@ public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
     }
 
     @Override
-    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
+    public SfcPageInfo<FileInfo> search(long uid, String key, Integer page) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void saveFileByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
-        String finalTargetPath = StringUtils.appendPath(savePath, file.getName());
-        String tmpPath = finalTargetPath + "." + IdUtil.getId() + ".tmp";
+        String finalTargetPath = SfcStringUtils.appendPath(savePath, file.getName());
+        String tmpPath = finalTargetPath + "." + SfcIdUtil.getId() + ".tmp";
         boolean success = false;
         try (OutputStream outputStream = storage.newOutputStream(tmpPath)) {
             streamConsumer.accept(outputStream).applyTo(file);
@@ -205,20 +205,20 @@ public class StorageDiskFileSystemAdapter implements DiskFileSystem, Closeable {
 
     @Override
     public void mkdir(long uid, String path, String name) throws IOException {
-        storage.mkdir(StringUtils.appendPath(path, name));
+        storage.mkdir(SfcStringUtils.appendPath(path, name));
     }
 
     @Override
     public long deleteFile(long uid, String path, List<String> name) throws IOException {
         for (String item : name) {
-            storage.delete(StringUtils.appendPath(path, item));
+            storage.delete(SfcStringUtils.appendPath(path, item));
         }
         return name.size();
     }
 
     @Override
     public void rename(long uid, String path, String name, String newName) throws IOException {
-        storage.rename(StringUtils.appendPath(path, name), newName);
+        storage.rename(SfcStringUtils.appendPath(path, name), newName);
     }
 
     @Override

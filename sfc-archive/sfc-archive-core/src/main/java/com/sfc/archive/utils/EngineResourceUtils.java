@@ -5,7 +5,7 @@ import com.sfc.archive.model.ArchiveResource;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 
@@ -32,7 +32,7 @@ public final class EngineResourceUtils {
      */
     public static ArchiveResource toArchiveResource(FileInfo fileInfo, String basePath, Resource resource) {
         // 1. 先计算基础路径
-        String archivePath = StringUtils.appendPath(basePath, fileInfo.getName());
+        String archivePath = SfcStringUtils.appendPath(basePath, fileInfo.getName());
 
         // 2. 补齐目录后缀
         if (fileInfo.isDir()) {
@@ -109,7 +109,7 @@ public final class EngineResourceUtils {
         if (resource.isFile() || resource instanceof PathResource) {
             return new LocalFileResource(resource.getFile(), null);
         }
-        Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), StringUtils.getRandomString(10) + suffix));
+        Path tempPath = Paths.get(SfcStringUtils.appendPath(PathUtils.getTempDirectory(), SfcStringUtils.getRandomString(10) + suffix));
         boolean isSuccess = false;
         try {
             ResourceUtils.saveToFile(resource, tempPath);

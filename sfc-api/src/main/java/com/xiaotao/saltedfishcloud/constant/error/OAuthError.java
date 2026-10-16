@@ -2,12 +2,13 @@ package com.xiaotao.saltedfishcloud.constant.error;
 
 
 import lombok.Getter;
+import com.sfc.cloud.exception.SfcErrorInfo;
 
 /**
  * 开放平台相关错误
  */
 @Getter
-public enum OAuthError implements ErrorInfo {
+public enum OAuthError implements SfcErrorInfo {
     INVALID_TOKEN(60000, 400, "无效的token"),
     INVALID_CODE(60001, 400, "无效的授权码code"),
     INVALID_APP_ID(60002, 400, "无效的appId"),

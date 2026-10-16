@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
@@ -10,7 +10,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.Resource;
 
@@ -74,7 +74,7 @@ public interface DiskFileSystem {
      * @param uid   用户ID
      * @param path  网盘目录完整路径
      * @return 目录创建后，该目录的节点ID
-     * @throws JsonException 目录树中某个部分与文件名冲突时抛出
+     * @throws SfcJsonException 目录树中某个部分与文件名冲突时抛出
      */
     String mkdirs(long uid, String path) throws IOException;
 
@@ -130,7 +130,7 @@ public interface DiskFileSystem {
      */
     List<FileInfo> getUserFileList(long uid, String path,@Nullable Collection<String> nameList) throws IOException;
 
-    CommonPageInfo<FileInfo> search(long uid, String key, Integer page);
+    SfcPageInfo<FileInfo> search(long uid, String key, Integer page);
 
     /**
      * 搜索目标用户网盘中的文件或目录，并指定分页大小。
@@ -141,7 +141,7 @@ public interface DiskFileSystem {
      * @param size 每页数量
      * @return 分页搜索结果
      */
-    default CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
+    default SfcPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
         return search(uid, key, page);
     }
 
@@ -193,7 +193,7 @@ public interface DiskFileSystem {
             if (callback != null) {
                 callback.onFileStart(FileTransferItem.builder()
                         .from(fileInfo.getName())
-                        .to(StringUtils.appendPath(fileInfo.getPath(), fileInfo.getName()))
+                        .to(SfcStringUtils.appendPath(fileInfo.getPath(), fileInfo.getName()))
                         .total(fileInfo.getSize())
                         .loaded(0L)
                         .fileInfo(fileInfo)
@@ -203,7 +203,7 @@ public interface DiskFileSystem {
             if (callback != null) {
                 callback.onFileComplete(FileTransferItem.builder()
                         .from(fileInfo.getName())
-                        .to(StringUtils.appendPath(fileInfo.getPath(), fileInfo.getName()))
+                        .to(SfcStringUtils.appendPath(fileInfo.getPath(), fileInfo.getName()))
                         .total(fileInfo.getSize())
                         .loaded(fileInfo.getSize())
                         .fileInfo(fileInfo)

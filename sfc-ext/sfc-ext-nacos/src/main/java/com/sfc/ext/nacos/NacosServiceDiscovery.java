@@ -7,7 +7,7 @@ import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.sfc.cloud.model.ServiceInstance;
 import com.sfc.cloud.registry.ServiceDiscovery;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -58,7 +58,7 @@ public class NacosServiceDiscovery implements ServiceDiscovery {
      *
      * @param serviceName 服务名，为空时返回空列表
      * @return 实例列表，无匹配时返回空列表
-     * @throws JsonException Nacos 服务端返回错误时抛出
+     * @throws SfcJsonException Nacos 服务端返回错误时抛出
      */
     @Override
     public List<ServiceInstance> listInstances(String serviceName) {
@@ -74,7 +74,7 @@ public class NacosServiceDiscovery implements ServiceDiscovery {
         } catch (NacosException e) {
             String msg = "Nacos 服务查询失败：serviceName=" + name + " group=" + group + "。原因：" + e.getMessage();
             log.error("[服务发现] {}", msg, e);
-            throw new JsonException(msg);
+            throw new SfcJsonException(msg);
         }
         if (instances == null || instances.isEmpty()) {
             return Collections.emptyList();
@@ -97,7 +97,7 @@ public class NacosServiceDiscovery implements ServiceDiscovery {
      * 列出当前配置分组下所有已知服务名（分页拉全）。
      *
      * @return 服务名列表，无匹配时返回空列表
-     * @throws JsonException Nacos 服务端返回错误时抛出
+     * @throws SfcJsonException Nacos 服务端返回错误时抛出
      */
     @Override
     public List<String> listServiceNames() {
@@ -110,7 +110,7 @@ public class NacosServiceDiscovery implements ServiceDiscovery {
             } catch (NacosException e) {
                 String msg = "Nacos 服务名列表查询失败：group=" + group + " pageNo=" + pageNo + "。原因：" + e.getMessage();
                 log.error("[服务发现] {}", msg, e);
-                throw new JsonException(msg);
+                throw new SfcJsonException(msg);
             }
             List<String> data = view == null ? null : view.getData();
             if (data == null || data.isEmpty()) {

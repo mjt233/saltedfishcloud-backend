@@ -2,10 +2,9 @@ package com.xiaotao.saltedfishcloud.servlet;
 
 import com.xiaotao.saltedfishcloud.helper.http.HttpMultipartRequestParser;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,7 +48,7 @@ public class FileUploadServlet extends HttpServlet {
             HttpMultipartRequestParser.create(req, FILE_BUFFER_SIZE)
                     .start(item -> {
                         if ("param".equals(item.name())) {
-                            rr.set(MapperHolder.parseJson(StreamUtils.copyToString(item.inputStream(), StandardCharsets.UTF_8), ResourceRequest.class));
+                            rr.set(SfcMapperHolder.parseJson(StreamUtils.copyToString(item.inputStream(), StandardCharsets.UTF_8), ResourceRequest.class));
                         }
                         if ("file".equals(item.name()) && StringUtils.hasText(item.fileName())) {
                             ResourceRequest resourceRequest = rr.get();
@@ -77,7 +76,7 @@ public class FileUploadServlet extends HttpServlet {
     private void writeError(int code, HttpServletResponse resp, String msg) throws IOException {
         resp.setStatus(code);
         resp.setContentType("application/json;charset=utf8");
-        String body = JsonResultImpl.getInstance(code, code, null, msg).toString();
+        String body = SfcJsonResult.getInstance(code, code, null, msg).toString();
         resp.getWriter().print(body);
         resp.flushBuffer();
     }
@@ -86,7 +85,7 @@ public class FileUploadServlet extends HttpServlet {
         int code = HttpStatus.OK.value();
         resp.setStatus(code);
         resp.setContentType("application/json;charset=utf8");
-        String body = JsonResult.emptySuccess().getJsonStr();
+        String body = SfcJsonResult.emptySuccess().getJsonStr();
         resp.getWriter().print(body);
         resp.flushBuffer();
     }

@@ -10,13 +10,12 @@ import com.saltedfishcloud.ext.ve.service.VideoService;
 import com.saltedfishcloud.ext.ve.service.VideoSubtitleService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -38,48 +37,48 @@ public class VideoController {
     private final FFMpegHelper ffMpegHelper;
 
     @GetMapping("listConvertTask")
-    public JsonResult<CommonPageInfo<EncodeConvertTask>> listConvertTask(@RequestParam("uid") @UID Long uid,
+    public SfcJsonResult<SfcPageInfo<EncodeConvertTask>> listConvertTask(@RequestParam("uid") @SfcUID Long uid,
                                                                          @RequestParam("status") Integer status,
                                                                          @RequestParam(value = "page", defaultValue = "1") Integer page,
                                                                          @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize
     ) {
-        return JsonResultImpl.getInstance(videoService.listTask(uid, status, page, pageSize));
+        return SfcJsonResult.getInstance(videoService.listTask(uid, status, page, pageSize));
     }
 
     @GetMapping("getLog")
-    public JsonResult<EncodeConvertTaskLog> getLog(@RequestParam("taskId") Long taskId) throws IOException {
-        return JsonResultImpl.getInstance(videoService.getTaskLog(taskId));
+    public SfcJsonResult<EncodeConvertTaskLog> getLog(@RequestParam("taskId") Long taskId) throws IOException {
+        return SfcJsonResult.getInstance(videoService.getTaskLog(taskId));
     }
 
     @GetMapping("check")
     @Operation(summary = "检查插件是否配置正确")
-    public JsonResult<Object> check() {
+    public SfcJsonResult<Object> check() {
         videoService.check();
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
      * 获取ffmpeg信息
      */
     @GetMapping("getFFMpegInfo")
-    public JsonResult<FFMpegInfo> getFFMpegInfo() throws IOException {
-        return JsonResultImpl.getInstance(ffMpegHelper.getFFMpegInfo());
+    public SfcJsonResult<FFMpegInfo> getFFMpegInfo() throws IOException {
+        return SfcJsonResult.getInstance(ffMpegHelper.getFFMpegInfo());
     }
 
     /**
      * 编码转换
      */
     @PostMapping("encodeConvert")
-    public JsonResult<String> encodeConvert(@RequestBody EncodeConvertTaskParam task) throws IOException {
+    public SfcJsonResult<String> encodeConvert(@RequestBody EncodeConvertTaskParam task) throws IOException {
         String taskId = videoService.createEncodeConvertTask(task);
-        return JsonResultImpl.getInstance(taskId);
+        return SfcJsonResult.getInstance(taskId);
     }
 
     @AllowAnonymous
     @GetMapping("getVideoInfo")
-    public JsonResult<VideoInfo> getVideoInfo(ResourceRequest resourceRequest) throws IOException, UnsupportedProtocolException {
+    public SfcJsonResult<VideoInfo> getVideoInfo(ResourceRequest resourceRequest) throws IOException, UnsupportedProtocolException {
         Resource resource = resourceService.getResource(resourceRequest);
-        return JsonResultImpl.getInstance(videoService.getVideoInfo(resource));
+        return SfcJsonResult.getInstance(videoService.getVideoInfo(resource));
     }
 
 
@@ -101,11 +100,11 @@ public class VideoController {
      * @param time      观看进度
      */
     @PostMapping("recordWatchProgress")
-    public JsonResult<?> recordWatchProgress(@RequestParam("uid") @UID(value = true) Long uid,
+    public SfcJsonResult<?> recordWatchProgress(@RequestParam("uid") @SfcUID(value = true) Long uid,
                                     @RequestParam("identify") String identify,
                                     @RequestParam("time") double time) {
         videoService.recordWatchProgress(uid, identify, time);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -115,8 +114,8 @@ public class VideoController {
      * @return          观看进度，返回null就是没有记录
      */
     @GetMapping("getWatchProgress")
-    public JsonResult<Double> getWatchProgress(@RequestParam("uid") @UID(value = true) Long uid,
+    public SfcJsonResult<Double> getWatchProgress(@RequestParam("uid") @SfcUID(value = true) Long uid,
                                              @RequestParam("identify") String identify) {
-        return JsonResultImpl.getInstance(videoService.getWatchProgress(uid, identify));
+        return SfcJsonResult.getInstance(videoService.getWatchProgress(uid, identify));
     }
 }

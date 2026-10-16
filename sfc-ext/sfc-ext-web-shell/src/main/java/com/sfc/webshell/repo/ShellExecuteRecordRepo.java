@@ -1,7 +1,7 @@
 package com.sfc.webshell.repo;
 
 import com.sfc.webshell.model.po.ShellExecuteRecord;
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 
-public interface ShellExecuteRecordRepo extends BaseRepo<ShellExecuteRecord> {
+public interface ShellExecuteRecordRepo extends SfcBaseRepo<ShellExecuteRecord> {
 }

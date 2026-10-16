@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.node.FileTree;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,7 +25,7 @@ public class UniqueModeScanner extends AbstractInvalidDataScanner {
     public void scan(Consumer<InvalidDataRecord> callback) {
         log("开始UNIQUE模式扫描...");
         Storage storage = storeServiceFactory.getService().getStorageProvider();
-        String storeRoot = StringUtils.appendPath(sysProperties.getStore().getRoot(), "repo");
+        String storeRoot = SfcStringUtils.appendPath(sysProperties.getStore().getRoot(), "repo");
 
         // 1. 扫描失效物理存储（物理文件存在但MD5没有对应文件记录）
         log("扫描失效物理存储...");
@@ -98,7 +98,7 @@ public class UniqueModeScanner extends AbstractInvalidDataScanner {
                 try {
                     if (!storage.exist(md5Path)) {
                         // 文件记录存在但物理文件不存在 -> 失效文件记录
-                        String diskPath = StringUtils.appendPath(parentPath, file.getName());
+                        String diskPath = SfcStringUtils.appendPath(parentPath, file.getName());
                         InvalidDataRecord invalidRecord = createInvalidFileRecordRecord(
                                 md5Path, uid, diskPath, file.getSize(), new Date(file.getMtime()), file.getMd5());
                         callback.accept(invalidRecord);
@@ -118,7 +118,7 @@ public class UniqueModeScanner extends AbstractInvalidDataScanner {
      * @return 物理资源路径
      */
     private String getMd5ResourcePath(String repoRoot, String md5) {
-        return StringUtils.appendPath(repoRoot, md5.substring(0, 2), md5.substring(2, 4), md5);
+        return SfcStringUtils.appendPath(repoRoot, md5.substring(0, 2), md5.substring(2, 4), md5);
     }
 
     /**

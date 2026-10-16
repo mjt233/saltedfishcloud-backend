@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.cache.LockFactory;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
@@ -18,8 +18,8 @@ import com.xiaotao.saltedfishcloud.utils.LockUtils;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +79,7 @@ public class DefaultFileSystemMainExecutor {
      * @return 分布式锁key
      */
     private static String getStoreLockKey(long uid, String path, String name) {
-        return uid + ":" + StringUtils.appendPath(path, name);
+        return uid + ":" + SfcStringUtils.appendPath(path, name);
     }
 
     /**
@@ -246,9 +246,9 @@ public class DefaultFileSystemMainExecutor {
             metadataOperator.move(sourceUid, source, targetUid, decodedTarget, name, overwrite);
             storeOperator.move(sourceUid, source, targetUid, decodedTarget, name, overwrite);
         } catch (DuplicateKeyException e) {
-            throw new JsonException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
+            throw new SfcJsonException(409, "目标目录下已存在 " + name + " 暂不支持目录合并或移动覆盖");
         } catch (UnsupportedEncodingException e) {
-            throw new JsonException(400, "不支持的编码（请使用UTF-8）");
+            throw new SfcJsonException(400, "不支持的编码（请使用UTF-8）");
         } finally {
             lock.unlock();
         }
@@ -297,7 +297,7 @@ public class DefaultFileSystemMainExecutor {
      * @param size 页大小
      * @return 搜索结果
      */
-    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
+    public SfcPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
         return metadataOperator.search(uid, key, page, size);
     }
 
@@ -357,7 +357,7 @@ public class DefaultFileSystemMainExecutor {
                 }
                 FileTransferItem item = FileTransferItem.builder()
                         .from(fileInfo.getName())
-                        .to(StringUtils.appendPath(key.path(), fileInfo.getName()))
+                        .to(SfcStringUtils.appendPath(key.path(), fileInfo.getName()))
                         .total(fileInfo.getSize())
                         .loaded(0L)
                         .fileInfo(fileInfo)
@@ -423,7 +423,7 @@ public class DefaultFileSystemMainExecutor {
                 }
                 FileInfo tmpFile = new FileInfo();
                 BeanUtils.copyProperties(file, tmpFile);
-                tmpFile.setName(tmpFile.getName() + "." + IdUtil.getId() + ".tmp");
+                tmpFile.setName(tmpFile.getName() + "." + SfcIdUtil.getId() + ".tmp");
 
                 storeOperator.storeByStream(tmpFile, savePath, streamConsumer);
                 metadataOperator.saveRecord(tmpFile, savePath);
@@ -448,7 +448,7 @@ public class DefaultFileSystemMainExecutor {
         if (!storeOperator.mkdir(uid, path, name)) {
             throw new IOException("在" + path + "创建文件夹失败");
         }
-        metadataOperator.mkdirs(uid, StringUtils.appendPath(path, name), false);
+        metadataOperator.mkdirs(uid, SfcStringUtils.appendPath(path, name), false);
     }
 
     /**

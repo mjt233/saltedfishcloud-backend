@@ -13,10 +13,9 @@ import com.sfc.nwt.upnp.model.xml.device.UpnpDescribe;
 import com.sfc.nwt.upnp.model.xml.service.av.Scpd;
 import com.sfc.nwt.utils.NetworkUtils;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.validation.SfcUID;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -55,18 +54,18 @@ public class NwtController {
      */
     @GetMapping("findWolByUid")
     @AllowAnonymous
-    public JsonResult<List<WolDevice>> findByUid(@RequestParam("uid") @UID Long uid, @RequestParam(value = "checkOnline", defaultValue = "false") Boolean checkOnline) {
+    public SfcJsonResult<List<WolDevice>> findByUid(@RequestParam("uid") @SfcUID Long uid, @RequestParam(value = "checkOnline", defaultValue = "false") Boolean checkOnline) {
         if (checkOnline) {
-            return JsonResultImpl.getInstance(wolDeviceService.findByUidAndCheckOnline(uid));
+            return SfcJsonResult.getInstance(wolDeviceService.findByUidAndCheckOnline(uid));
         } else {
-            return JsonResultImpl.getInstance(wolDeviceService.findByUid(uid));
+            return SfcJsonResult.getInstance(wolDeviceService.findByUid(uid));
         }
     }
 
     @PostMapping("saveWolDevice")
-    public JsonResult<?> saveWolDevice(@RequestBody WolDevice wolDevice) {
+    public SfcJsonResult<?> saveWolDevice(@RequestBody WolDevice wolDevice) {
         wolDeviceService.save(wolDevice);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -74,9 +73,9 @@ public class NwtController {
      * @param id    WOL设备id
      */
     @GetMapping("wakeWolDevice")
-    public JsonResult<?> wakeWolDevice(@RequestParam("id") Long id) throws IOException {
+    public SfcJsonResult<?> wakeWolDevice(@RequestParam("id") Long id) throws IOException {
         wolDeviceService.wake(id);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -85,14 +84,14 @@ public class NwtController {
      * @return      删除数量
      */
     @PostMapping("batchDeleteWol")
-    public JsonResult<Integer> batchDeleteWol(@RequestBody Collection<Long> ids) {
-        return JsonResultImpl.getInstance(wolDeviceService.batchDelete(ids));
+    public SfcJsonResult<Integer> batchDeleteWol(@RequestBody Collection<Long> ids) {
+        return SfcJsonResult.getInstance(wolDeviceService.batchDelete(ids));
     }
 
     @GetMapping("getAllInterface")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<List<NetworkInterfaceInfo>> getAllInterface() throws SocketException {
-        return JsonResultImpl.getInstance(
+    public SfcJsonResult<List<NetworkInterfaceInfo>> getAllInterface() throws SocketException {
+        return SfcJsonResult.getInstance(
                 NetworkUtils.getAllConnectedInterface()
                         .stream()
                         .map(NetworkInterfaceInfo::of)
@@ -105,11 +104,11 @@ public class NwtController {
      */
     @GetMapping("listUPnP")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<List<UpnpDevice>> listUPnP(@RequestParam(value = "forceCheckAlive", defaultValue = "false") Boolean isForceCheckAlive) {
+    public SfcJsonResult<List<UpnpDevice>> listUPnP(@RequestParam(value = "forceCheckAlive", defaultValue = "false") Boolean isForceCheckAlive) {
         if (Boolean.TRUE.equals(isForceCheckAlive)) {
             upnpDevicesManager.checkAndUpdateDeviceAlive(true).join();
         }
-        return JsonResultImpl.getInstance(upnpDevicesManager.getUpnpDeviceList());
+        return SfcJsonResult.getInstance(upnpDevicesManager.getUpnpDeviceList());
     }
 
     /**
@@ -139,7 +138,7 @@ public class NwtController {
 
         URL url = UpnpUtils.getServiceOrDeviceUrl(upnpDevice.getLocation(), icon.getUrl());
         Optional.ofNullable(icon.getMimetype())
-                .filter(StringUtils::hasText)
+                .filter(SfcStringUtils::hasText)
                 .ifPresent(response::setContentType);
         byte[] iconBytes = UpnpUtils.getContentByUrl(url);
         response.setContentLength(iconBytes.length);
@@ -153,10 +152,10 @@ public class NwtController {
      */
     @GetMapping("getUpnpServiceScpd")
     @RolesAllowed("ADMIN")
-    public JsonResult<Scpd> getUpnpServiceScpd(@RequestParam("usn") String usn,
+    public SfcJsonResult<Scpd> getUpnpServiceScpd(@RequestParam("usn") String usn,
                                                  @RequestParam("serviceType") String serviceType
                                                ) throws IOException {
-        return JsonResultImpl.getInstance(upnpService.getUpnpServiceScpd(usn, serviceType));
+        return SfcJsonResult.getInstance(upnpService.getUpnpServiceScpd(usn, serviceType));
     }
 
     /**
@@ -165,8 +164,8 @@ public class NwtController {
      */
     @PostMapping("invokeUpnpService")
     @RolesAllowed("ADMIN")
-    public JsonResult<UpnpUtils.SimpleHttpResponse> invokeUpnpService(@RequestBody ServiceActionInvokeParam param) throws IOException {
-        return JsonResultImpl.getInstance(upnpService.invokeUpnpService(param));
+    public SfcJsonResult<UpnpUtils.SimpleHttpResponse> invokeUpnpService(@RequestBody ServiceActionInvokeParam param) throws IOException {
+        return SfcJsonResult.getInstance(upnpService.invokeUpnpService(param));
     }
 
     /**
@@ -174,8 +173,8 @@ public class NwtController {
      * @param usn   根设备UDN/USN
      */
     @GetMapping("getMediaUpnpProtocolInfo")
-    public JsonResult<List<String>> getMediaUpnpProtocolInfo(@RequestParam("usn") String usn) throws IOException {
-        return JsonResultImpl.getInstance(new MediaRendererControlPoint(upnpDevicesManager.getByRootUSN(usn)).getProtocolInfo());
+    public SfcJsonResult<List<String>> getMediaUpnpProtocolInfo(@RequestParam("usn") String usn) throws IOException {
+        return SfcJsonResult.getInstance(new MediaRendererControlPoint(upnpDevicesManager.getByRootUSN(usn)).getProtocolInfo());
     }
 
     /**
@@ -187,10 +186,10 @@ public class NwtController {
      */
     @PostMapping("castMedia")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> castMedia(@RequestParam("usn") String usn,
+    public SfcJsonResult<?> castMedia(@RequestParam("usn") String usn,
                           @RequestParam("uri") String uri,
                           @RequestParam(value = "instanceId", required = false) String instanceId) throws IOException {
         new MediaRendererControlPoint(upnpDevicesManager.getByRootUSN(usn)).castMedia(instanceId, uri);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 }

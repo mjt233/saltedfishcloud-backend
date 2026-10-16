@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.log;
 
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
 import com.xiaotao.saltedfishcloud.model.param.RangeRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
@@ -21,7 +21,7 @@ public interface LogRecordStorage {
     /**
      * 查询日志
      */
-    CommonPageInfo<LogRecord> query(LogRecordQueryParam queryParam);
+    SfcPageInfo<LogRecord> query(LogRecordQueryParam queryParam);
 
     /**
      * 按日期范围统计日志

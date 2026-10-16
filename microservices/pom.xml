@@ -19,7 +19,11 @@
     <description>咸鱼云微服务</description>
 
     <modules>
-        <module>sfc-common</module>
+        <!--
+            ⚠️ sfc-common 已于 Phase 1 上提到仓库根目录（见 ../../sfc-common），
+            目的是让宿主（sfc-api → sfc-core）与微服务侧共用同一份轻量库。
+            它仍是不继承任何 parent 的独立模块，仅由根 pom 的 <modules> 聚合。
+        -->
         <module>sfc-remote-client</module>
         <module>sfc-gateway</module>
         <module>sfc-demo-service</module>

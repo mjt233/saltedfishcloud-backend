@@ -4,7 +4,7 @@ import com.sfc.rpc.RPCHandler;
 import com.sfc.rpc.RPCRequest;
 import com.sfc.rpc.RPCResponse;
 import com.sfc.rpc.annotation.RPCAction;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,7 +43,7 @@ public class RPCMethodActionHandler<T> implements RPCHandler<T> {
     public RPCResponse<T> handleRpcRequest(RPCRequest request) {
         RPCContextHolder.setRequest(request);
         try {
-            Object[] args = MapperHolder.withTypeMapper.readValue(request.getParam(), List.class).toArray();
+            Object[] args = SfcMapperHolder.withTypeMapper.readValue(request.getParam(), List.class).toArray();
             Object result = rpcMethod.invoke(originInstance, args);
             if (result instanceof RPCResponse) {
                 return (RPCResponse<T>)result;

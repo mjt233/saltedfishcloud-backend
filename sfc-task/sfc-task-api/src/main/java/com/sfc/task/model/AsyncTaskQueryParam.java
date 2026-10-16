@@ -1,6 +1,6 @@
 package com.sfc.task.model;
 
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class AsyncTaskQueryParam extends PageableRequest {
+public class AsyncTaskQueryParam extends SfcPageableRequest {
     /**
      * 用户id
      */

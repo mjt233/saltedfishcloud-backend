@@ -1,7 +1,7 @@
 package com.sfc.ext.webdav.model.resource;
 
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
@@ -15,7 +15,7 @@ public class UnAuthoriseWebDavItem extends WebDavItem implements UnAuthoriseReso
         return UnAuthoriseWebDavItem.builder()
                 .name(PathUtils.getLastNode(name))
                 .resourceArea(parent.getResourceArea())
-                .path(StringUtils.appendPath(parent.getPath(), parent.getName()))
+                .path(SfcStringUtils.appendPath(parent.getPath(), parent.getName()))
                 .build();
     }
 

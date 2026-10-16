@@ -2,8 +2,7 @@ package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.sfc.cloud.model.ServiceInstance;
 import com.sfc.cloud.registry.ServiceDiscovery;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,7 +42,7 @@ public class ServiceRegistryController {
      */
     @Operation(summary = "获取注册中心中的服务实例列表")
     @GetMapping("list")
-    public JsonResult<List<ServiceInstance>> list(@RequestParam(value = "serviceName", required = false) String serviceName) {
+    public SfcJsonResult<List<ServiceInstance>> list(@RequestParam(value = "serviceName", required = false) String serviceName) {
         List<ServiceInstance> instances;
         if (serviceName == null || serviceName.isBlank()) {
             // 展平所有服务名的实例：阶段 4 的 demo 微服务接入后，同一端点即可看到多个服务
@@ -54,6 +53,6 @@ public class ServiceRegistryController {
         } else {
             instances = serviceDiscovery.listInstances(serviceName.trim());
         }
-        return JsonResultImpl.getInstance(instances);
+        return SfcJsonResult.getInstance(instances);
     }
 }

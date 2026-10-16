@@ -2,9 +2,9 @@ package com.sfc.ext.webrtc.controller;
 
 import com.sfc.ext.webrtc.enums.MessageDataType;
 import com.sfc.ext.webrtc.model.RTCSignalingMessage;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
@@ -53,7 +53,7 @@ public class WebRTCSignalingHandler {
     public void onOpen(Session session, @PathParam("peerId") String peerId) {
         String actualPeerId = peerId;
         while (PEER_ID_TO_SESSION.putIfAbsent(actualPeerId, session) != null) {
-            actualPeerId = StringUtils.getRandomString(6);
+            actualPeerId = SfcStringUtils.getRandomString(6);
         }
         log.debug("{} peer接入ws: {}. WebSocket Session ID: {}", LOG_PREFIX, actualPeerId, session.getId());
         SESSION_PEER_MAP.put(session.getId(), actualPeerId);
@@ -62,14 +62,14 @@ public class WebRTCSignalingHandler {
         RTCSignalingMessage msg = new RTCSignalingMessage();
         msg.setData(actualPeerId);
         msg.setDataType(MessageDataType.PEER_ID);
-        session.getAsyncRemote().sendText(MapperHolder.toJsonNoEx(msg));
+        session.getAsyncRemote().sendText(SfcMapperHolder.toJsonNoEx(msg));
     }
 
     @OnMessage
     public void onMessage(String message, Session session) {
         try {
             // 1. 解析收到的信令消息
-            RTCSignalingMessage signal = MapperHolder.parseJson(message, RTCSignalingMessage.class);
+            RTCSignalingMessage signal = SfcMapperHolder.parseJson(message, RTCSignalingMessage.class);
 
             String peerId = SESSION_PEER_MAP.get(session.getId());
             // 2. 补全发送者 ID（可选，方便对端处理）
@@ -83,11 +83,11 @@ public class WebRTCSignalingHandler {
 
             if (targetSession != null && targetSession.isOpen()) {
                 // 4. 转发消息给目标用户
-                String jsonResponse = MapperHolder.toJson(signal);
+                String jsonResponse = SfcMapperHolder.toJson(signal);
                 targetSession.getAsyncRemote().sendText(jsonResponse);
 
                 if (signal.getDataType() == MessageDataType.REDIRECT_NEW_PEER) {
-                    String newHostPeerId = TypeUtils.toString(signal.getData());
+                    String newHostPeerId = SfcTypeUtils.toString(signal.getData());
                     String guestPeerId = signal.getToPeerId();
                     String originHostPeerId = signal.getFromPeerId();
                     PEER_TO_PEER.put(guestPeerId, newHostPeerId);
@@ -121,7 +121,7 @@ public class WebRTCSignalingHandler {
                         msg.setFromPeerId(peerId);
                         msg.setToPeerId(targetPeerId);
                         msg.setDataType(MessageDataType.INTERRUPT);
-                        targetSession.getAsyncRemote().sendText(MapperHolder.toJson(msg));
+                        targetSession.getAsyncRemote().sendText(SfcMapperHolder.toJson(msg));
                     } catch (IOException e) {
                         log.warn("{} 会话端{}下线，给对端{}发送通知失败 {}", LOG_PREFIX, peerId, targetPeerId, e.getMessage());
                     }

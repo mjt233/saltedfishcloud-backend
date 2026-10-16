@@ -11,7 +11,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,7 +117,7 @@ public class DispatchServlet extends HttpServlet {
         }
 
         // 组装站点发布路径 + 请求资源路径为 网盘文件请求路径，从网盘中获取对应的资源
-        String diskPath = StringUtils.appendPath(record.getPath(), resourcePath);
+        String diskPath = SfcStringUtils.appendPath(record.getPath(), resourcePath);
         // 获取文件资源
         Resource fileResource = getFileResource(resp, record, diskPath);
         // 若文件不存在，则尝试响应文件列表（如果开启了该项配置）

@@ -4,8 +4,7 @@ import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
 import com.xiaotao.saltedfishcloud.model.po.Config;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +24,7 @@ public class DebugController {
     private SysCommonConfig sysCommonConfig;
 
     @PutMapping("readOnly")
-    public JsonResult<Object> setReadOnlyLevel(@RequestParam String level) {
+    public SfcJsonResult<Object> setReadOnlyLevel(@RequestParam String level) {
         ProtectLevel r;
         try {
             r = ProtectLevel.valueOf(level);
@@ -33,23 +32,23 @@ public class DebugController {
             r = ProtectLevel.OFF;
         }
         SysRuntimeConfig.getInstance().setProtectModeLevel(r);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @GetMapping("readOnly")
-    public JsonResult<ProtectLevel> getReadOnlyLevel() {
-        return JsonResultImpl.getInstance(SysRuntimeConfig.getInstance().getProtectModeLevel());
+    public SfcJsonResult<ProtectLevel> getReadOnlyLevel() {
+        return SfcJsonResult.getInstance(SysRuntimeConfig.getInstance().getProtectModeLevel());
     }
 
     @GetMapping("options")
-    public JsonResult<LinkedHashMap<String, Object>> getAllOptions() {
-        LinkedHashMap<String, Object> data = JsonResultImpl.getDataMap();
+    public SfcJsonResult<LinkedHashMap<String, Object>> getAllOptions() {
+        LinkedHashMap<String, Object> data = SfcJsonResult.getDataMap();
         List<Config> conf = configDao.getAllConfig();
         if (conf != null) {
             conf.forEach(e -> data.put(e.getItemKey(), e.getItemValue()));
         }
         data.put("READ_ONLY_LEVEL", SysRuntimeConfig.getInstance().getProtectModeLevel());
         data.put("read_only_level", SysRuntimeConfig.getInstance().getProtectModeLevel());
-        return JsonResultImpl.getInstance(200, data, "小写字段将在后续版本中废弃");
+        return SfcJsonResult.getInstance(200, data, "小写字段将在后续版本中废弃");
     }
 }

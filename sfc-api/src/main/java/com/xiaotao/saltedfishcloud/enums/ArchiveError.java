@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.enums;
 
-import com.xiaotao.saltedfishcloud.constant.error.ErrorInfo;
+import com.sfc.cloud.exception.SfcErrorInfo;
 import lombok.Getter;
 
 @Getter
-public enum ArchiveError implements ErrorInfo {
+public enum ArchiveError implements SfcErrorInfo {
     ARCHIVE_EMPTY_DIRECTORY(6001, 400, "选定的目录不存在文件"),
     ARCHIVE_FORMAT_UNSUPPORTED(6000, 400, "未知或不支持的压缩包格式"),
     ARCHIVE_LIST_RESOURCE_NOT_SUPPORTED(6002, 400, "该资源不支持预览文件列表"),

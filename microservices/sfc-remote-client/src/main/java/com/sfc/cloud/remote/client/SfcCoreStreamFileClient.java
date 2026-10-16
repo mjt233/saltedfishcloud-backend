@@ -1,7 +1,7 @@
 package com.sfc.cloud.remote.client;
 
 import com.sfc.cloud.remote.SfcRemoteApiException;
-import com.sfc.cloud.remote.model.SfcJsonResult;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;

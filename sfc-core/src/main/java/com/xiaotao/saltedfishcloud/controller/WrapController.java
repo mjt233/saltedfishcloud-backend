@@ -1,8 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.xiaotao.saltedfishcloud.service.wrap.WrapService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +25,9 @@ public class WrapController {
      * @return  打包信息
      */
     @PostMapping("create")
-    public JsonResult<String> createWrap(@RequestBody WrapParam param) {
+    public SfcJsonResult<String> createWrap(@RequestBody WrapParam param) {
         String wid = wrapService.registerWrap(param);
-        return JsonResultImpl.getInstance(wid);
+        return SfcJsonResult.getInstance(wid);
     }
 
     @GetMapping({ "{wid}", "{wid}/{alias}" })

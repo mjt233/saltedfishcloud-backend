@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -12,9 +12,9 @@ import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -58,11 +58,11 @@ public class FileLinkServiceImpl implements FileLinkService {
 
     @Override
     public String createLink(String baseUrl, ResourceRequest resourceRequest) {
-        if (!StringUtils.hasText(baseUrl)) {
-            throw new JsonException(400, "baseUrl不能为空");
+        if (!SfcStringUtils.hasText(baseUrl)) {
+            throw new SfcJsonException(400, "baseUrl不能为空");
         }
         if (resourceRequest == null) {
-            throw new JsonException(400, "resourceRequest不能为空");
+            throw new SfcJsonException(400, "resourceRequest不能为空");
         }
         Optional.ofNullable(resourceRequest.getParams())
                 .filter(m -> m.containsKey(ResourceRequest.CREATE_UID))
@@ -74,12 +74,12 @@ public class FileLinkServiceImpl implements FileLinkService {
             // 确保创建链接的会话能够根据该参数读取资源，证明有权操作读取
             resource = resourceService.getResource(resourceRequest);
         } catch (UnsupportedProtocolException e) {
-            throw new JsonException(400, "无效的资源协议");
+            throw new SfcJsonException(400, "无效的资源协议");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         if (resource == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
 
         String token = createToken(resourceRequest);
@@ -89,8 +89,8 @@ public class FileLinkServiceImpl implements FileLinkService {
     @Override
     public Resource parseLink(String url) throws IOException {
         String token = extractToken(url);
-        if (!StringUtils.hasText(token)) {
-            throw new JsonException(400, INVALID_LINK_MSG);
+        if (!SfcStringUtils.hasText(token)) {
+            throw new SfcJsonException(400, INVALID_LINK_MSG);
         }
         FileLinkTokenPayload tokenPayload = parsePayloadFromToken(token);
         ResourceRequest request = tokenPayload.getResourceRequest();
@@ -103,9 +103,9 @@ public class FileLinkServiceImpl implements FileLinkService {
             SecureUtils.bindUser(creator);
             resource = resourceService.getResource(request);
         } catch (UnsupportedProtocolException e) {
-            throw new JsonException(400, INVALID_LINK_MSG);
+            throw new SfcJsonException(400, INVALID_LINK_MSG);
         } catch (RuntimeException e) {
-            throw new JsonException(500, e.getMessage());
+            throw new SfcJsonException(500, e.getMessage());
         } finally {
             if (originalUser != null) {
                 SecureUtils.bindUser(originalUser);
@@ -114,7 +114,7 @@ public class FileLinkServiceImpl implements FileLinkService {
             }
         }
         if (resource == null) {
-            throw new JsonException(400, INVALID_LINK_MSG);
+            throw new SfcJsonException(400, INVALID_LINK_MSG);
         }
         return resource;
     }
@@ -129,7 +129,7 @@ public class FileLinkServiceImpl implements FileLinkService {
         long expireSeconds = getLinkExpireMinutes() * 60L;
         int jwtExpireSeconds = expireSeconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) expireSeconds;
         Long createUid = SecureUtils.getCurrentUid();
-        String payload = MapperHolder.toJsonNoEx(FileLinkTokenPayload.builder()
+        String payload = SfcMapperHolder.toJsonNoEx(FileLinkTokenPayload.builder()
                 .resourceRequest(resourceRequest)
                 .createUid(createUid)
                 .build());
@@ -145,17 +145,17 @@ public class FileLinkServiceImpl implements FileLinkService {
     private FileLinkTokenPayload parsePayloadFromToken(String token) {
         try {
             String payload = JwtUtils.parse(token);
-            if (!StringUtils.hasText(payload)) {
-                throw new JsonException(400, INVALID_LINK_MSG);
+            if (!SfcStringUtils.hasText(payload)) {
+                throw new SfcJsonException(400, INVALID_LINK_MSG);
             }
-            FileLinkTokenPayload tokenPayload = MapperHolder.parseAsJson(payload, FileLinkTokenPayload.class);
+            FileLinkTokenPayload tokenPayload = SfcMapperHolder.parseAsJson(payload, FileLinkTokenPayload.class);
             if (tokenPayload == null || tokenPayload.getResourceRequest() == null || tokenPayload.getCreateUid() == null) {
-                throw new JsonException(400, INVALID_LINK_MSG);
+                throw new SfcJsonException(400, INVALID_LINK_MSG);
             }
             return tokenPayload;
         } catch (Exception e) {
             log.error("下载链接解析失败 ", e);
-            throw new JsonException(400, INVALID_LINK_MSG);
+            throw new SfcJsonException(400, INVALID_LINK_MSG);
         }
     }
 
@@ -169,7 +169,7 @@ public class FileLinkServiceImpl implements FileLinkService {
         User creator = userService.getUserById(createUid);
         UserPrincipal creatorPrincipal = UserPrincipal.from(creator);
         if (creatorPrincipal == null) {
-            throw new JsonException(400, INVALID_LINK_MSG);
+            throw new SfcJsonException(400, INVALID_LINK_MSG);
         }
         return creatorPrincipal;
     }
@@ -196,7 +196,7 @@ public class FileLinkServiceImpl implements FileLinkService {
      * @return 临时授权码
      */
     private String extractToken(String url) {
-        if (!StringUtils.hasText(url)) {
+        if (!SfcStringUtils.hasText(url)) {
             return null;
         }
 

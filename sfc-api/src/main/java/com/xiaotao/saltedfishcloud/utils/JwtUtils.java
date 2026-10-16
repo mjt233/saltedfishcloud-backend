@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -106,9 +106,9 @@ public class JwtUtils {
                     .getPayload();
             return (String)body.get("data");
         } catch (ExpiredJwtException e) {
-            throw new JsonException("token已过期");
+            throw new SfcJsonException("token已过期");
         } catch (Exception e) {
-            throw new JsonException("token无效");
+            throw new SfcJsonException("token无效");
         }
     }
 }

@@ -2,7 +2,7 @@ package com.sfc.dm.service;
 
 import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.po.InvalidDataRecord;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -44,12 +44,12 @@ public class GroovyRecordFilter {
     /**
      * 对记录流执行脚本筛选。
      * <p>结果最多返回 {@value #MAX_RESULT_SIZE} 条，超出静默截断。
-     * 脚本执行超过 {@value #TIMEOUT_MILLIS} 毫秒将抛出 JsonException。</p>
+     * 脚本执行超过 {@value #TIMEOUT_MILLIS} 毫秒将抛出 SfcJsonException。</p>
      *
      * @param records 待筛选的记录流
      * @param script  Groovy 脚本代码
      * @return 筛选后的记录 ID 列表（保持输入顺序）
-     * @throws JsonException 脚本编译失败或执行超时时抛出
+     * @throws SfcJsonException 脚本编译失败或执行超时时抛出
      */
     public List<Long> filter(Stream<InvalidDataRecord> records, String script) {
         try (GroovyScriptExecutor executor = InvalidDataGroovyScriptHelper.createExecutor(script)) {
@@ -75,14 +75,14 @@ public class GroovyRecordFilter {
     /**
      * 对记录流执行脚本筛选，返回筛选后的记录流。
      * <p>结果最多返回 {@value #MAX_RESULT_SIZE} 条，超出静默截断。
-     * 脚本执行超过 {@value #TIMEOUT_MILLIS} 毫秒将抛出 JsonException。</p>
+     * 脚本执行超过 {@value #TIMEOUT_MILLIS} 毫秒将抛出 SfcJsonException。</p>
      * <p>与 {@link #filter(Stream, String)} 语义一致，区别在于返回值为记录对象流而非 ID 列表，
      * 用于需要直接消费记录对象的场景（如批量认领）。</p>
      *
      * @param records 待筛选的记录流
      * @param script  Groovy 脚本代码
      * @return 筛选后的记录流（保持输入顺序）
-     * @throws JsonException 脚本编译失败或执行超时时抛出
+     * @throws SfcJsonException 脚本编译失败或执行超时时抛出
      */
     public Stream<InvalidDataRecord> filterStream(Stream<InvalidDataRecord> records, String script) {
         try (GroovyScriptExecutor executor = InvalidDataGroovyScriptHelper.createExecutor(script)) {

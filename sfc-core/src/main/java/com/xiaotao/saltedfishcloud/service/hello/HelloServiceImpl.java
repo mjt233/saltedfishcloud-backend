@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.hello;
 
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.xiaotao.saltedfishcloud.utils.SFunc;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.data.utils.SfcFunc;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -90,12 +90,12 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
     }
 
     @Override
-    public <T, R> void bindConfigAsFeature(SFunc<T, R> configKey, String mapKey) {
+    public <T, R> void bindConfigAsFeature(SfcFunc<T, R> configKey, String mapKey) {
         this.bindConfigAsFeature(configKey, mapKey, null);
     }
 
     @Override
-    public <T, R> void bindConfigAsFeature(SFunc<T, R> configKey, String mapKey, R defaultValue) {
+    public <T, R> void bindConfigAsFeature(SfcFunc<T, R> configKey, String mapKey, R defaultValue) {
         PropertyUtils.ConfigFieldMeta meta = PropertyUtils.parseLambdaConfigNameMeta(configKey);
         this.bindConfigAsFeature(meta.getConfigName(), mapKey, (Class<R>)meta.getField().getType(), defaultValue);
     }
@@ -114,17 +114,17 @@ public class HelloServiceImpl implements HelloService, ApplicationRunner {
             Object value;
             try {
                 if (Boolean.class.isAssignableFrom(type)) {
-                    value = TypeUtils.toBoolean(configValue);
+                    value = SfcTypeUtils.toBoolean(configValue);
                 } else if (Number.class.isAssignableFrom(type)) {
-                    value = TypeUtils.toNumber(type, configValue);
+                    value = SfcTypeUtils.toNumber(type, configValue);
                 } else if (String.class.isAssignableFrom(type)) {
                     value = configValue;
                 } else if (Collection.class.isAssignableFrom(type)) {
-                    value = MapperHolder.parseJsonToList(configValue, Map.class);
+                    value = SfcMapperHolder.parseJsonToList(configValue, Map.class);
                 } else if (Map.class.isAssignableFrom(type)) {
-                    value = MapperHolder.parseJsonToMap(configValue);
+                    value = SfcMapperHolder.parseJsonToMap(configValue);
                 } else {
-                    value = MapperHolder.parseJson(configValue, type);
+                    value = SfcMapperHolder.parseJson(configValue, type);
                 }
                 setFeature(mapKey, value);
             } catch (Exception e) {

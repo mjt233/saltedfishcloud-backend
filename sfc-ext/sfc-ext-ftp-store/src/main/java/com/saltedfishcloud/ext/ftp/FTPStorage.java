@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -215,7 +215,7 @@ public class FTPStorage implements Storage, Closeable {
     @Override
     public boolean rename(String path, String newName) throws IOException {
         try(FTPSession session = getSession()) {
-            return session.rename(path, StringUtils.appendPath(PathUtils.getParentPath(path), newName));
+            return session.rename(path, SfcStringUtils.appendPath(PathUtils.getParentPath(path), newName));
         }
     }
 
@@ -265,7 +265,7 @@ public class FTPStorage implements Storage, Closeable {
                 return;
             }
             for (String name : names) {
-                session.setModificationTime(StringUtils.appendPath(path, name), dateStr);
+                session.setModificationTime(SfcStringUtils.appendPath(path, name), dateStr);
             }
         }
     }

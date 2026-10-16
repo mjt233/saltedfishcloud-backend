@@ -8,14 +8,14 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import com.sfc.task.repo.AsyncTaskLogRecordRepo;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -236,10 +236,10 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
 
     @Override
     public AsyncTaskRecord createTask(AsyncTaskCreateParam param) throws IOException {
-        if (!StringUtils.hasText(param.getName())) {
+        if (!SfcStringUtils.hasText(param.getName())) {
             throw new IllegalArgumentException("任务名称 name 不能为空");
         }
-        if (!StringUtils.hasText(param.getTaskType())) {
+        if (!SfcStringUtils.hasText(param.getTaskType())) {
             throw new IllegalArgumentException("任务类型 taskType 不能为空");
         }
         AsyncTaskRecord record = AsyncTaskRecord.builder()
@@ -268,7 +268,7 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
                 .stream()
                 .map(e -> "----------------[历史日志][ " + e.getCreateAt() + "]----------------\n" + e.getLogInfo())
                 .collect(Collectors.joining("\n"));
-        AsyncTaskRecord task = repo.findById(taskId).orElseThrow(() -> new JsonException(CommonError.RESOURCE_NOT_FOUND.getCode(), "任务id不存在"));
+        AsyncTaskRecord task = repo.findById(taskId).orElseThrow(() -> new SfcJsonException(SfcCommonError.RESOURCE_NOT_FOUND.getCode(), "任务id不存在"));
 
         // 如果任务是运行中的，则再获取最新的日志
         if (AsyncTaskConstants.Status.RUNNING.equals(task.getStatus())) {
@@ -301,7 +301,7 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
     }
     @Override
     public long listenLog(Long taskId, Consumer<String> consumer) {
-        String group = "log_group_" + IdUtil.getId();
+        String group = "log_group_" + SfcIdUtil.getId();
         return mqService.subscribeMessageQueue(ASYNC_TASK_LOG(taskId), group, msg -> consumer.accept(msg.body()));
     }
 
@@ -313,8 +313,8 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
     @Override
     public AsyncTaskRecord rerun(Long taskId) throws IOException {
         AsyncTaskRecord originTask = repo.findById(taskId).orElseThrow(() -> new IllegalArgumentException("无效的任务id"));
-        if(!UIDValidator.validate(originTask.getUid(), true)) {
-            throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+        if(!SfcUIDValidator.validate(originTask.getUid(), true)) {
+            throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
         }
         if (
                 AsyncTaskConstants.Status.RUNNING.equals(originTask.getStatus()) ||

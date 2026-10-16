@@ -5,7 +5,7 @@ import com.sfc.cloud.model.ServiceInstance;
 import com.sfc.cloud.registry.ServiceDiscovery;
 import com.sfc.cloud.registry.ServiceRegistry;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -74,12 +74,12 @@ public class LocalServiceRegistry implements ServiceRegistry, ServiceDiscovery {
      *
      * @param definition 自身服务描述，{@code serviceName} 不能为空
      * @param instance   自身实例信息
-     * @throws JsonException 服务名为空或入参为 null 时抛出
+     * @throws SfcJsonException 服务名为空或入参为 null 时抛出
      */
     @Override
     public void register(ServiceDefinition definition, ServiceInstance instance) {
         if (definition == null || instance == null || !hasText(definition.getServiceName())) {
-            throw new JsonException("服务注册失败：ServiceDefinition.serviceName 与 ServiceInstance 均不能为空");
+            throw new SfcJsonException("服务注册失败：ServiceDefinition.serviceName 与 ServiceInstance 均不能为空");
         }
         String key = buildKey(definition.getGroup(), definition.getServiceName());
         String instanceId = instanceIdOf(instance);

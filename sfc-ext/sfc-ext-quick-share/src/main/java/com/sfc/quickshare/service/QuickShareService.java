@@ -7,11 +7,11 @@ import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +61,7 @@ public class QuickShareService {
         String actualCode = code.toLowerCase();
         long effectiveDuration = property.getEffectiveDuration();
         while (!cacheService.setIfAbsent(this.getCacheKey(actualCode), id, effectiveDuration, TimeUnit.MINUTES)) {
-            actualCode = StringUtils.getRandomString(5, false);
+            actualCode = SfcStringUtils.getRandomString(5, false);
         }
         return actualCode;
     }
@@ -118,7 +118,7 @@ public class QuickShareService {
         if (id == null) {
             return null;
         } else {
-            return TypeUtils.toLong(id);
+            return SfcTypeUtils.toLong(id);
         }
     }
 
@@ -182,7 +182,7 @@ public class QuickShareService {
         this.checkIsEnable();
         Resource resource = this.getStoreService().getFile(this.getFilePath(id)).orElse(null);
         if (resource == null || !resource.exists()) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
         return resource;
     }
@@ -196,7 +196,7 @@ public class QuickShareService {
     private void checkSize(long fileSize) {
         long maxSize = property.getMaxSize() * ByteSize._1MiB;
         if (fileSize > maxSize) {
-            throw new IllegalArgumentException("文件不能大于" + StringUtils.getFormatSize(maxSize));
+            throw new IllegalArgumentException("文件不能大于" + SfcStringUtils.getFormatSize(maxSize));
         }
     }
 
@@ -209,9 +209,9 @@ public class QuickShareService {
         this.checkIsEnable();
         Long id = getIdByCode(code);
         if (id == null) {
-            throw new JsonException("提取码不存在或文件已过期");
+            throw new SfcJsonException("提取码不存在或文件已过期");
         }
-        return repo.findById(id).orElseThrow(() -> new JsonException("文件已过期或记录失效"));
+        return repo.findById(id).orElseThrow(() -> new SfcJsonException("文件已过期或记录失效"));
     }
 
 

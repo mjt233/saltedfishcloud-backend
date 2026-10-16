@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.plugin;
 
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.ext.PluginProperty;
@@ -11,8 +11,8 @@ import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -48,7 +48,7 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
     public Resource getPluginFile(String name) throws IOException {
         PluginInfo pluginInfo = pluginManager.getPluginInfo(name);
         if (pluginInfo == null) {
-            throw new JsonException("插件不存在");
+            throw new SfcJsonException("插件不存在");
         }
         return new UrlResource(pluginInfo.getUrl());
     }
@@ -74,7 +74,7 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
 
     @Override
     public Resource getPluginStaticResource(String name, String path) throws PluginNotFoundException {
-        return pluginManager.getPluginResource(name, StringUtils.appendPath("static", path));
+        return pluginManager.getPluginResource(name, SfcStringUtils.appendPath("static", path));
     }
 
     @Override
@@ -132,8 +132,8 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
     @Override
     public PluginInfoVo uploadPlugin(Resource resource) throws IOException {
         // 临时保存
-        long tempId = IdUtil.getId();
-        Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
+        long tempId = SfcIdUtil.getId();
+        Path tempPath = Paths.get(SfcStringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
         ResourceUtils.saveToFile(resource, tempPath);
 
         // 解析插件
@@ -146,7 +146,7 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
 
     @Override
     public void installPlugin(Long tempId, String fileName) throws IOException {
-        Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
+        Path tempPath = Paths.get(SfcStringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
         if (!Files.exists(tempPath)) {
             throw new IllegalArgumentException("无效的临时id");
         }

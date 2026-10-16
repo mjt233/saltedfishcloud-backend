@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Supplier;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 public class ResourceUtils {
     public static class Header {
@@ -58,7 +59,7 @@ public class ResourceUtils {
         String resourceFileName;
         if (resource instanceof ResponseResource r) {
             ct = r.getContentType();
-            resourceFileName = Optional.ofNullable(r.getFilename()).filter(StringUtils::hasText).orElse(filename);
+            resourceFileName = Optional.ofNullable(r.getFilename()).filter(SfcStringUtils::hasText).orElse(filename);
         } else {
             resourceFileName = filename;
         }

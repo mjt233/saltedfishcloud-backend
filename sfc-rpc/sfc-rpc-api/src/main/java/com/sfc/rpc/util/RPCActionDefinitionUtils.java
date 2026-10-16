@@ -8,9 +8,9 @@ import com.sfc.rpc.annotation.RPCService;
 import com.sfc.rpc.enums.RPCResponseStrategy;
 import com.sfc.rpc.exception.RPCIgnoreException;
 import com.sfc.rpc.support.RPCActionDefinition;
-import com.xiaotao.saltedfishcloud.utils.ClassUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cglib.proxy.Enhancer;
@@ -42,7 +42,7 @@ public class RPCActionDefinitionUtils {
      * @return      获取到的注解，若获取不到则返回null
      */
     public static RPCService getRPCServiceAnnotation(Class<?> clazz) {
-        return CLASS_RPC_SERVICE_CACHE.computeIfAbsent(clazz, k -> ClassUtils.getAnnotation(clazz, RPCService.class));
+        return CLASS_RPC_SERVICE_CACHE.computeIfAbsent(clazz, k -> SfcClassUtils.getAnnotation(clazz, RPCService.class));
     }
 
     /**
@@ -80,7 +80,7 @@ public class RPCActionDefinitionUtils {
             RPCRequest request = RPCRequest.builder()
                     .functionName(definition.getFullFunctionName())
                     .isReportIgnore(rpcAction.reportIgnore())
-                    .param(MapperHolder.withTypeMapper.writeValueAsString(Arrays.asList(args)))
+                    .param(SfcMapperHolder.withTypeMapper.writeValueAsString(Arrays.asList(args)))
                     .build();
 
             if (definition.getStrategy() == RPCResponseStrategy.ONLY_ACCEPT_ONE) {
@@ -158,7 +158,7 @@ public class RPCActionDefinitionUtils {
             throw new IllegalArgumentException(clazz + "不是有效的rpc服务");
         }
 
-        if (StringUtils.hasText(rpcService.namespace())) {
+        if (SfcStringUtils.hasText(rpcService.namespace())) {
             return rpcService.namespace();
         } else {
             return clazz.getName().replaceAll("\\.", "_");
@@ -178,7 +178,7 @@ public class RPCActionDefinitionUtils {
         }
         return "rpc_func::" + namespace + "::" +
                 Optional.of(rpcAction.value())
-                        .filter(StringUtils::hasText)
+                        .filter(SfcStringUtils::hasText)
                         .orElseGet(() -> {
                             StringJoiner joiner = new StringJoiner("_");
                             joiner.add(method.getName() + "_");

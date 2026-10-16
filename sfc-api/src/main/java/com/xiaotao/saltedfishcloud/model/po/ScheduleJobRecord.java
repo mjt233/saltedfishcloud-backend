@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +17,7 @@ import jakarta.persistence.Table;
 @Table(indexes = {
         @Index(name = "idx_job_name", columnList = "jobName")
 })
-public class ScheduleJobRecord extends AuditModel {
+public class ScheduleJobRecord extends SfcAuditModel {
     /**
      * 任务名称
      */

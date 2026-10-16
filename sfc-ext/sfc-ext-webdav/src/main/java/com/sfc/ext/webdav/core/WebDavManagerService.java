@@ -2,7 +2,7 @@ package com.sfc.ext.webdav.core;
 
 import com.sfc.ext.webdav.model.property.WebDavProperty;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import io.milton.http.annotated.AnnotationResourceFactory;
 import io.milton.servlet.MiltonFilter;
 import jakarta.servlet.ServletContext;
@@ -50,7 +50,7 @@ public class WebDavManagerService {
         Connector connector = new Connector();
         connector.setPort(Optional.ofNullable(webDavProperty.getListenPort()).orElse(8086));
         Optional.ofNullable(webDavProperty.getListenIp())
-                .filter(StringUtils::hasText)
+                .filter(SfcStringUtils::hasText)
                 .ifPresent(ip -> connector.setProperty("address", ip));
         tomcat.setAddDefaultWebXmlToWebapp(false);
         tomcat.setConnector(connector);

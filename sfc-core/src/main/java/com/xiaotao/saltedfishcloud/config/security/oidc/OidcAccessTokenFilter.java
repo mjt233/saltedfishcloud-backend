@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.config.security.oidc;
 
-import com.xiaotao.saltedfishcloud.constant.SysRole;
+import com.sfc.cloud.constant.SfcSysRole;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
@@ -120,7 +120,7 @@ public class OidcAccessTokenFilter extends OncePerRequestFilter {
         Set<String> authorizedScopes = oAuth2Authorization.getAuthorizedScopes();
 
         List<GrantedAuthority> authorities = new ArrayList<>(principal.getAuthorities());
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + SysRole.OAUTH_USER));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + SfcSysRole.OAUTH_USER));
         for (String scope : authorizedScopes) {
             authorities.add(new SimpleGrantedAuthority("SCOPE_" + scope));
         }

@@ -6,9 +6,9 @@ import com.xiaotao.saltedfishcloud.constant.WebSocketConstant;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketRequest;
 import com.xiaotao.saltedfishcloud.model.websocket.WebSocketResponse;
 import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
 import lombok.extern.slf4j.Slf4j;
@@ -173,8 +173,8 @@ public class WebSocketHandler {
      */
     @OnMessage
     public void onMessage(String message, Session session) throws IOException {
-        WebSocketRequest request = MapperHolder.parseAsJson(message, WebSocketRequest.class);
-        Long taskId = TypeUtils.toLong(request.getData());
+        WebSocketRequest request = SfcMapperHolder.parseAsJson(message, WebSocketRequest.class);
+        Long taskId = SfcTypeUtils.toLong(request.getData());
         MQTopic<String> mqTopic = ASYNC_TASK_LOG(taskId);
         String topic = mqTopic.getTopic();
 
@@ -185,7 +185,7 @@ public class WebSocketHandler {
             }
             long listenId = getAsyncTaskManager().listenLog(taskId, logMessage -> {
                 try {
-                    String response = MapperHolder.toJson(WebSocketResponse.builder()
+                    String response = SfcMapperHolder.toJson(WebSocketResponse.builder()
                             .id(taskId)
                             .type(WebSocketConstant.Type.ASYNC_TASK_LOG)
                             .data(logMessage)

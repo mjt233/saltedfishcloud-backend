@@ -10,7 +10,7 @@ import com.xiaotao.saltedfishcloud.service.file.StoreService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.impl.filesystem.DefaultFileSystem;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -77,7 +77,7 @@ public class StoreTypeSwitch {
                         }
                         continue;
                     }
-                    final String diskFullPath = StringUtils.appendPath(dirPath, file.getName());
+                    final String diskFullPath = SfcStringUtils.appendPath(dirPath, file.getName());
 
                     // unique不支持list
                     if (targetMode == StoreMode.UNIQUE) {

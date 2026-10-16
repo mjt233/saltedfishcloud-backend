@@ -1,6 +1,6 @@
 package emergency.controller;
 
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import emergency.EmergencyApplication;
 import org.springframework.http.HttpStatus;
@@ -41,7 +41,7 @@ public class EmergencyController {
     }
 
     @GetMapping("/api/admin/sys/restart")
-    public JsonResult<Object> restart() {
+    public SfcJsonResult<Object> restart() {
         Thread thread = new Thread(() -> {
             try {
                 Thread.sleep(500);
@@ -51,6 +51,6 @@ public class EmergencyController {
             }
         });
         thread.start();
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 }

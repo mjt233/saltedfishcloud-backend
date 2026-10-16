@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.util.Date;
 import java.util.List;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 
 /**
  * 日志记录查询参数
@@ -32,5 +33,5 @@ public class LogRecordQueryParam {
     private RangeRequest<Date> dateRange;
 
     @Schema(description = "分页参数")
-    private PageableRequest pageableRequest;
+    private SfcPageableRequest pageableRequest;
 }

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.service.file.UserCustomStoreService;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
@@ -62,7 +62,7 @@ public class UserCustomStoreServiceImpl implements UserCustomStoreService {
     public void saveAvatar(long uid, Resource resource) throws IOException {
         String fileType = FileUtils.getSuffix(Objects.requireNonNull(resource.getFilename())).toLowerCase();
         if (!ACCEPT_TYPE.contains(fileType)) {
-            throw new JsonException("只接受类型: " + String.join(" ", ACCEPT_TYPE));
+            throw new SfcJsonException("只接受类型: " + String.join(" ", ACCEPT_TYPE));
         }
         avatarStorage.saveFile(getUserAvatarPath(uid, fileType), resource);
     }

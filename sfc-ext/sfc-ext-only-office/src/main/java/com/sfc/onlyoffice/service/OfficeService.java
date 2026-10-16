@@ -11,9 +11,9 @@ import com.onlyoffice.model.documenteditor.config.document.Type;
 import com.onlyoffice.model.documenteditor.config.editorconfig.Mode;
 import com.onlyoffice.service.documenteditor.config.ConfigService;
 import com.sfc.onlyoffice.model.OfficeConfigProperty;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.cloud.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -21,8 +21,8 @@ import com.xiaotao.saltedfishcloud.service.resource.ResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.PathResource;
@@ -69,24 +69,24 @@ public class OfficeService {
      *
      */
     public Config getResourceConfig(ResourceRequest resourceRequest, URL requestOriginUrl, boolean isView) throws UnsupportedProtocolException, IOException {
-        if (!StringUtils.hasText(officeConfigProperty.getDocumentServerHost())) {
-            throw new JsonException("未配置文档服务器信息，请联系管理员");
+        if (!SfcStringUtils.hasText(officeConfigProperty.getDocumentServerHost())) {
+            throw new SfcJsonException("未配置文档服务器信息，请联系管理员");
         }
         // 校验文件是否存在，并校验权限（读取权限不足时该方法会抛异常）
         if (resourceService.getResource(resourceRequest) == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
 
         // 校验编辑权限，需要有写入权限
         ResourceProtocolHandler resourceHandler = resourceService.getResourceHandler(resourceRequest.getProtocol());
         if(!isView) {
             if(!resourceHandler.isWriteable()) {
-                throw new JsonException("该文件不支持编辑");
+                throw new SfcJsonException("该文件不支持编辑");
             }
             PermissionInfo permissionInfo = resourceHandler
                     .getPermissionInfo(resourceRequest);
             if (permissionInfo == null || !permissionInfo.isWritable()) {
-                throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+                throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
             }
         }
 
@@ -94,7 +94,7 @@ public class OfficeService {
         String identity = resourceHandler.getPathMappingIdentity(resourceRequest);
         Config config = configService.createConfig(identity, Mode.EDIT, Type.DESKTOP);
 
-        String urlPrefix = StringUtils.hasText(officeConfigProperty.getFileServerHost()) ?
+        String urlPrefix = SfcStringUtils.hasText(officeConfigProperty.getFileServerHost()) ?
                 officeConfigProperty.getFileServerHost() :
                 (requestOriginUrl.getProtocol() + "://" + requestOriginUrl.getHost() + ":" + requestOriginUrl.getPort());
 
@@ -139,12 +139,12 @@ public class OfficeService {
         }
 
         if (!Boolean.TRUE.equals(officeConfigProperty.getEnableEdit())) {
-            throw new JsonException("服务器未启用编辑功能");
+            throw new SfcJsonException("服务器未启用编辑功能");
         }
 
         // 验证请求合法性
         if (Boolean.TRUE.equals(officeConfigProperty.getEnableJwt())) {
-            jwtManager.verify(TypeUtils.toString(callback.getToken()));
+            jwtManager.verify(SfcTypeUtils.toString(callback.getToken()));
         }
 
         // 记录触发回调的操作用户id
@@ -157,19 +157,19 @@ public class OfficeService {
                     })
                     .put(ResourceRequest.CREATE_UID, userId);
         } catch (NumberFormatException e) {
-            throw new JsonException("不允许匿名用户保存文档");
+            throw new SfcJsonException("不允许匿名用户保存文档");
         }
 
         // 校验资源能否修改
         ResourceProtocolHandler resourceHandler = resourceService.getResourceHandler(resourceRequest.getProtocol());
         if (!resourceHandler.isWriteable()) {
-            throw new JsonException("该文件不支持编辑");
+            throw new SfcJsonException("该文件不支持编辑");
         }
         Boolean isWritable = Optional.ofNullable(resourceHandler.getPermissionInfo(resourceRequest))
                 .map(PermissionInfo::isWritable)
                 .orElse(false);
         if (isWritable) {
-            throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+            throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
         }
 
         // 保存ONLYOFFICE响应的文件
@@ -180,7 +180,7 @@ public class OfficeService {
         if (!Files.exists(tempDir)) {
             Files.createDirectories(tempDir);
         }
-        Path tempFile = tempDir.resolve(System.currentTimeMillis() + "_" + StringUtils.getRandomString(5) + ".office");
+        Path tempFile = tempDir.resolve(System.currentTimeMillis() + "_" + SfcStringUtils.getRandomString(5) + ".office");
         try(InputStream stream = connection.getInputStream();
             OutputStream outputStream = Files.newOutputStream(tempFile)
         ) {

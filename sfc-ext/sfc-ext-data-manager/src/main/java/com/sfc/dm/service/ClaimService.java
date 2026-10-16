@@ -13,8 +13,8 @@ import com.sfc.dm.model.po.ClaimRecord;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.ClaimRecordRepo;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -22,7 +22,7 @@ import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.*;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 
 import java.io.IOException;
 
@@ -43,6 +43,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 /**
  * 认领服务（仅UNIQUE模式）
@@ -71,9 +73,9 @@ public class ClaimService {
         // 1. 查询失效数据记录
         Long operatorUid = SecureUtils.getCurrentUid();
         InvalidDataRecord record = invalidDataRecordRepo.findById(param.getInvalidDataId())
-                .orElseThrow(() -> new JsonException(InvalidDataError.INVALID_DATA_NOT_FOUND));
+                .orElseThrow(() -> new SfcJsonException(InvalidDataError.INVALID_DATA_NOT_FOUND));
         if (record.getType() != InvalidDataType.PHYSICAL_STORAGE) {
-            throw new JsonException(InvalidDataError.ONLY_INVALID_STORAGE_CLAIMABLE);
+            throw new SfcJsonException(InvalidDataError.ONLY_INVALID_STORAGE_CLAIMABLE);
         }
 
         // 2. 状态校验
@@ -88,7 +90,7 @@ public class ClaimService {
         Long targetUid = param.getTargetUid();
         if (Objects.equals(targetUid, operatorUid)) {
             // 非自己的网盘仅管理员可操作
-            UIDValidator.validateWithException(targetUid, true);
+            SfcUIDValidator.validateWithException(targetUid, true);
         }
 
         // 4. 文件名冲突检查
@@ -103,7 +105,7 @@ public class ClaimService {
         }
 
         // 5. 创建文件记录
-        if (!StringUtils.hasText(record.getMd5())) {
+        if (!SfcStringUtils.hasText(record.getMd5())) {
             throw new IllegalArgumentException("失效数据记录缺少MD5信息，无法认领");
         }
         Storage storage = storeServiceFactory.getService().getStorageProvider();
@@ -142,9 +144,9 @@ public class ClaimService {
     /**
      * 查询用户的认领记录
      */
-    public CommonPageInfo<ClaimRecord> listByUid(Long uid, Pageable pageable) {
+    public SfcPageInfo<ClaimRecord> listByUid(Long uid, Pageable pageable) {
         Page<ClaimRecord> page = claimRecordRepo.findByUid(uid, pageable);
-        return CommonPageInfo.of(page);
+        return SfcPageInfo.of(page);
     }
 
     /**
@@ -209,7 +211,7 @@ public class ClaimService {
         Long targetUid = param.getTargetUid();
 
         if (Objects.equals(targetUid, operatorUid)) {
-            UIDValidator.validateWithException(targetUid, true);
+            SfcUIDValidator.validateWithException(targetUid, true);
         }
 
         int success = 0;
@@ -255,9 +257,9 @@ public class ClaimService {
         for (InvalidDataRecord record : chunk) {
             try {
                 if (record.getType() != InvalidDataType.PHYSICAL_STORAGE) {
-                    throw new JsonException(InvalidDataError.ONLY_INVALID_STORAGE_CLAIMABLE);
+                    throw new SfcJsonException(InvalidDataError.ONLY_INVALID_STORAGE_CLAIMABLE);
                 }
-                if (!StringUtils.hasText(record.getMd5())) {
+                if (!SfcStringUtils.hasText(record.getMd5())) {
                     throw new IllegalArgumentException("失效数据记录缺少MD5信息，无法认领");
                 }
                 String[] resolved = resolvePathAndName(param, record, executor);
@@ -410,10 +412,10 @@ public class ClaimService {
         if (executor != null) {
             Map<String, String> scriptResult = executePathScript(executor, record);
             if (scriptResult != null) {
-                if (StringUtils.hasText(scriptResult.get("path"))) {
+                if (SfcStringUtils.hasText(scriptResult.get("path"))) {
                     resolvedPath = scriptResult.get("path");
                 }
-                if (StringUtils.hasText(scriptResult.get("name"))) {
+                if (SfcStringUtils.hasText(scriptResult.get("name"))) {
                     resolvedName = scriptResult.get("name");
                 }
             }
@@ -427,7 +429,7 @@ public class ClaimService {
     private String getDefaultClaimFileName(InvalidDataRecord record) {
         String originalName = PathUtils.getLastNode(record.getStoragePath());
         String extension = getRecognizedExtension(record);
-        if (StringUtils.hasText(extension) && !originalName.endsWith(extension)) {
+        if (SfcStringUtils.hasText(extension) && !originalName.endsWith(extension)) {
             return originalName + extension;
         }
         return originalName;
@@ -437,12 +439,12 @@ public class ClaimService {
      * 从文件类型检查结果中获取识别的文件扩展名。
      */
     private String getRecognizedExtension(InvalidDataRecord record) {
-        if (!StringUtils.hasText(record.getTypeCheckResult())) {
+        if (!SfcStringUtils.hasText(record.getTypeCheckResult())) {
             return null;
         }
         try {
-            FileTypeCheckResult result = MapperHolder.parseJson(record.getTypeCheckResult(), FileTypeCheckResult.class);
-            if (result.getDetail() != null && StringUtils.hasText(result.getDetail().getExtension())) {
+            FileTypeCheckResult result = SfcMapperHolder.parseJson(record.getTypeCheckResult(), FileTypeCheckResult.class);
+            if (result.getDetail() != null && SfcStringUtils.hasText(result.getDetail().getExtension())) {
                 return result.getDetail().getExtension();
             }
         } catch (IOException ignored) {

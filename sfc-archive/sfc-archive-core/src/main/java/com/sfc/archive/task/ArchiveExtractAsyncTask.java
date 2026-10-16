@@ -16,7 +16,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -320,7 +320,7 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
                 if (interrupted.get()) {
                     return FileVisitResult.TERMINATE;
                 }
-                String diskPath = StringUtils.appendPath(dest,
+                String diskPath = SfcStringUtils.appendPath(dest,
                         dir.toString().substring(tempLen).replaceAll("\\\\+", "/"));
                 fileTransferCallback.onDirStart(diskPath);
                 if (!diskFileSystem.exist(uid, diskPath)) {
@@ -335,7 +335,7 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
                 if (interrupted.get()) {
                     return FileVisitResult.TERMINATE;
                 }
-                String diskDir = StringUtils.appendPath(dest,
+                String diskDir = SfcStringUtils.appendPath(dest,
                         file.getParent().toString().substring(tempLen).replaceAll("\\\\+", "/"));
                 FileInfo fileInfo = FileInfo.getLocal(file.toString(), false);
                 fileInfo.setUid(uid);
@@ -368,7 +368,7 @@ public class ArchiveExtractAsyncTask implements AsyncTask {
         fileTransferCallback = buildFileTransferCallback();
 
         // 创建本地临时目录
-        Path tempBasePath = Paths.get(StringUtils.appendPath(
+        Path tempBasePath = Paths.get(SfcStringUtils.appendPath(
                 PathUtils.getTempDirectory(),
                 "extract_" + System.currentTimeMillis()
         ));

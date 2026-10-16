@@ -1,14 +1,13 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -29,9 +28,9 @@ public class ProxyController {
      * @param proxyInfo 代理信息
      */
     @PostMapping("save")
-    public JsonResult<ProxyInfo> save(@RequestBody ProxyInfo proxyInfo) {
+    public SfcJsonResult<ProxyInfo> save(@RequestBody ProxyInfo proxyInfo) {
         proxyInfoService.saveWithOwnerPermissions(proxyInfo);
-        return JsonResultImpl.getInstance(proxyInfo);
+        return SfcJsonResult.getInstance(proxyInfo);
     }
 
     /**
@@ -40,14 +39,14 @@ public class ProxyController {
      * @param pageableRequest   分页参数，可为null
      */
     @GetMapping("findByUid")
-    public JsonResult<CommonPageInfo<ProxyInfo>> findByUid(Long uid, @RequestParam(required = false) PageableRequest pageableRequest) {
-        CommonPageInfo<ProxyInfo> res = proxyInfoService.findByUidWithOwnerPermissions(uid, pageableRequest);
+    public SfcJsonResult<SfcPageInfo<ProxyInfo>> findByUid(Long uid, @RequestParam(required = false) SfcPageableRequest pageableRequest) {
+        SfcPageInfo<ProxyInfo> res = proxyInfoService.findByUidWithOwnerPermissions(uid, pageableRequest);
 
         // 非管理员获取公共代理列表时，移除所有非公开的代理
-        if (Objects.equals(UserConstants.PUBLIC_USER_ID, uid) && !UIDValidator.validate(uid, true)) {
+        if (Objects.equals(SfcUserConstants.PUBLIC_USER_ID, uid) && !SfcUIDValidator.validate(uid, true)) {
             res.setContent(res.getContent().stream().filter(proxy -> !Boolean.TRUE.equals(proxy.getIsProtect())).toList());
         }
-        return JsonResultImpl.getInstance(res);
+        return SfcJsonResult.getInstance(res);
     }
 
     /**
@@ -55,8 +54,8 @@ public class ProxyController {
      */
     @GetMapping
     @RolesAllowed({"ADMIN"})
-    public JsonResult<List<ProxyInfo>> getAllProxy() {
-        return JsonResultImpl.getInstance(proxyInfoService.findAll());
+    public SfcJsonResult<List<ProxyInfo>> getAllProxy() {
+        return SfcJsonResult.getInstance(proxyInfoService.findAll());
     }
 
     /**
@@ -64,9 +63,9 @@ public class ProxyController {
      * @param proxyId   代理id
      */
     @DeleteMapping
-    public JsonResult<?> deleteProxy(@RequestParam Long proxyId) {
+    public SfcJsonResult<?> deleteProxy(@RequestParam Long proxyId) {
         proxyInfoService.deleteWithOwnerPermissions(proxyId);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -74,8 +73,8 @@ public class ProxyController {
      * @return 可用代理列表
      */
     @GetMapping("available")
-    public JsonResult<List<ProxyInfo>> getAvailableProxy() {
-        return JsonResultImpl.getInstance(proxyInfoService.listAvailableProxy());
+    public SfcJsonResult<List<ProxyInfo>> getAvailableProxy() {
+        return SfcJsonResult.getInstance(proxyInfoService.listAvailableProxy());
     }
 
     /**
@@ -86,10 +85,10 @@ public class ProxyController {
      * @return          是否连通，连同为true，否则为false
      */
     @GetMapping("test")
-    public JsonResult<Boolean> test(@RequestParam("proxyId") Long proxyId,
+    public SfcJsonResult<Boolean> test(@RequestParam("proxyId") Long proxyId,
                                     @RequestParam(value = "timeout", defaultValue = "10000") int timeout,
                                     @RequestParam(value = "useCache",defaultValue = "true") boolean useCache
     ) {
-        return JsonResultImpl.getInstance(proxyInfoService.testProxy(proxyId, timeout, useCache));
+        return SfcJsonResult.getInstance(proxyInfoService.testProxy(proxyId, timeout, useCache));
     }
 }

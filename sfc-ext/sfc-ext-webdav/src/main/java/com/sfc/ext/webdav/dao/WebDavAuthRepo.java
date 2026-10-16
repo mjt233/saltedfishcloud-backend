@@ -1,12 +1,12 @@
 package com.sfc.ext.webdav.dao;
 
 import com.sfc.ext.webdav.model.po.WebDavAuth;
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 
-public interface WebDavAuthRepo extends BaseRepo<WebDavAuth> {
+public interface WebDavAuthRepo extends SfcBaseRepo<WebDavAuth> {
     @Query("SELECT wda FROM WebDavAuth wda WHERE wda.uid = :uid")
     WebDavAuth findOneByUid(@Param("uid") Long uid);
 

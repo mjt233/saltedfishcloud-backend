@@ -1,13 +1,13 @@
 package com.xiaotao.saltedfishcloud.service;
 
 import com.xiaotao.saltedfishcloud.constant.CacheNames;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.ProxyInfoRepo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.http.IgnoreSSLHttpRequestFactory;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -20,10 +20,11 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import com.sfc.cloud.data.service.SfcCrudServiceImpl;
 
 @Service
 @Slf4j
-public class ProxyInfoServiceImpl extends CrudServiceImpl<ProxyInfo, ProxyInfoRepo> implements ProxyInfoService {
+public class ProxyInfoServiceImpl extends SfcCrudServiceImpl<ProxyInfo, ProxyInfoRepo> implements ProxyInfoService {
     private final static String LOG_PREFIX = "[代理服务]";
 
     @Override
@@ -38,7 +39,7 @@ public class ProxyInfoServiceImpl extends CrudServiceImpl<ProxyInfo, ProxyInfoRe
         factory.setReadTimeout(timeout);
         factory.setProxy(proxyInfo.toProxy());
         String testUrl = Optional.ofNullable(proxyInfo.getTestUrl())
-                .filter(StringUtils::hasText)
+                .filter(SfcStringUtils::hasText)
                 .orElse("https://www.baidu.com");
         try {
             log.debug("{}使用url：{} 测试连通性: {}", LOG_PREFIX, testUrl, proxyInfo);
@@ -63,14 +64,14 @@ public class ProxyInfoServiceImpl extends CrudServiceImpl<ProxyInfo, ProxyInfoRe
 
     @Override
     public List<ProxyInfo> listAvailableProxy() {
-        List<ProxyInfo> res = new ArrayList<>(findByUid(UserConstants.PUBLIC_USER_ID));
+        List<ProxyInfo> res = new ArrayList<>(findByUid(SfcUserConstants.PUBLIC_USER_ID));
         Long currentUid = SecureUtils.getCurrentUid();
         if (currentUid != null) {
             res.addAll(findByUid(currentUid));
         }
-        if (!UIDValidator.validate(UserConstants.PUBLIC_USER_ID, true)) {
+        if (!SfcUIDValidator.validate(SfcUserConstants.PUBLIC_USER_ID, true)) {
             return res.stream()
-                    .filter(proxy -> proxy.getUid().equals(UserConstants.PUBLIC_USER_ID) && !Boolean.TRUE.equals(proxy.getIsProtect()))
+                    .filter(proxy -> proxy.getUid().equals(SfcUserConstants.PUBLIC_USER_ID) && !Boolean.TRUE.equals(proxy.getIsProtect()))
                     .toList();
         }
         return res;

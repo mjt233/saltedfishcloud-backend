@@ -2,7 +2,7 @@ package com.sfc.rpc;
 
 import com.sfc.rpc.support.RPCMethodActionHandler;
 import com.sfc.rpc.util.RPCActionDefinitionUtils;
-import com.xiaotao.saltedfishcloud.utils.ClassUtils;
+import com.sfc.cloud.data.utils.SfcClassUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cglib.proxy.Enhancer;
@@ -129,11 +129,11 @@ public class DefaultRPCRegistry implements RPCRegistry {
      * @param client RPC客户端实例
      */
     protected void bindRpcClient(Class<?> clazz, Object client) {
-        ClassUtils.visitExtendsPath(clazz, parentClass -> {
+        SfcClassUtils.visitExtendsPath(clazz, parentClass -> {
             rpcRegistryStore.addRpcClient(parentClass, client);
             return true;
         });
-        ClassUtils.visitImplementsPath(clazz, interfaceClass -> {
+        SfcClassUtils.visitImplementsPath(clazz, interfaceClass -> {
             rpcRegistryStore.addRpcClient(interfaceClass, client);
             return true;
         });

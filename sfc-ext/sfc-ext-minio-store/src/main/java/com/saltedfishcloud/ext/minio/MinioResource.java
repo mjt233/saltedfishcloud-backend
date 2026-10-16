@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.minio;
 
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import io.minio.GetObjectResponse;
 import io.minio.StatObjectResponse;
 import lombok.Builder;
@@ -47,7 +47,7 @@ public class MinioResource extends AbstractResource {
     }
     @Override
     public String getFilename() {
-        return StringUtils.getURLLastName(statObjectResponse.object());
+        return SfcStringUtils.getURLLastName(statObjectResponse.object());
     }
 
 

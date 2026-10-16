@@ -8,7 +8,7 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -46,7 +46,7 @@ public class ArchiveExtractAsyncTaskFactory implements AsyncTaskFactory {
     @Override
     public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
         try {
-            AsyncArchiveExtractParam extractParam = MapperHolder.parseJson(params, AsyncArchiveExtractParam.class);
+            AsyncArchiveExtractParam extractParam = SfcMapperHolder.parseJson(params, AsyncArchiveExtractParam.class);
             ArchiveExtractAsyncTask task = new ArchiveExtractAsyncTask(params, extractParam);
             task.setArchiveEngineManager(archiveEngineManager);
             task.setResourceService(resourceService);

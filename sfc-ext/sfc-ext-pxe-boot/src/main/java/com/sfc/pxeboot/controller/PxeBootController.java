@@ -11,14 +11,13 @@ import com.sfc.pxeboot.server.tftp.PxeTftpServer;
 import com.sfc.pxeboot.service.BootItemService;
 import com.sfc.pxeboot.service.IsoResourceExtractorService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +74,7 @@ public class PxeBootController {
      */
     @GetMapping("status")
     @RolesAllowed("ADMIN")
-    public JsonResult<PxeServiceStatus> status() {
+    public SfcJsonResult<PxeServiceStatus> status() {
         PxeServiceStatus status = PxeServiceStatus.builder()
             .tftpRunning(pxeTftpServer.isRunning())
             .httpRunning(true) // HTTP 服务始终运行（复用主应用）
@@ -84,7 +83,7 @@ public class PxeBootController {
             .tftpPort(property.getTftpPort())
             .activeBootItems(bootItemService.findEnabled().size())
             .build();
-        return JsonResultImpl.getInstance(status);
+        return SfcJsonResult.getInstance(status);
     }
 
     // ==================== 启动项管理 ====================
@@ -94,8 +93,8 @@ public class PxeBootController {
      */
     @GetMapping("items")
     @RolesAllowed("ADMIN")
-    public JsonResult<List<BootItem>> listItems() {
-        return JsonResultImpl.getInstance(bootItemService.findAll());
+    public SfcJsonResult<List<BootItem>> listItems() {
+        return SfcJsonResult.getInstance(bootItemService.findAll());
     }
 
     /**
@@ -103,9 +102,9 @@ public class PxeBootController {
      */
     @PostMapping("items")
     @RolesAllowed("ADMIN")
-    public JsonResult<BootItem> createItem(@RequestBody BootItemDTO dto, @AuthenticationPrincipal UserPrincipal user) {
+    public SfcJsonResult<BootItem> createItem(@RequestBody BootItemDTO dto, @AuthenticationPrincipal UserPrincipal user) {
         BootItem item = bootItemService.create(dto, user.getId());
-        return JsonResultImpl.getInstance(item);
+        return SfcJsonResult.getInstance(item);
     }
 
     /**
@@ -113,10 +112,10 @@ public class PxeBootController {
      */
     @PutMapping("items/{id}")
     @RolesAllowed("ADMIN")
-    public JsonResult<BootItem> updateItem(@PathVariable Long id, @RequestBody BootItemDTO dto) {
+    public SfcJsonResult<BootItem> updateItem(@PathVariable Long id, @RequestBody BootItemDTO dto) {
         BootItem item = bootItemService.update(id, dto);
-        UIDValidator.validateWithException(item.getUid(), true);
-        return JsonResultImpl.getInstance(item);
+        SfcUIDValidator.validateWithException(item.getUid(), true);
+        return SfcJsonResult.getInstance(item);
     }
 
     /**
@@ -124,9 +123,9 @@ public class PxeBootController {
      */
     @DeleteMapping("items/{id}")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> deleteItem(@PathVariable Long id) {
+    public SfcJsonResult<?> deleteItem(@PathVariable Long id) {
         bootItemService.delete(id);
-        return new JsonResultImpl<>();
+        return new SfcJsonResult<>();
     }
 
     /**
@@ -134,9 +133,9 @@ public class PxeBootController {
      */
     @PostMapping("items/{id}/enable")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> enableItem(@PathVariable Long id) {
+    public SfcJsonResult<?> enableItem(@PathVariable Long id) {
         bootItemService.enable(id);
-        return new JsonResultImpl<>();
+        return new SfcJsonResult<>();
     }
 
     /**
@@ -144,9 +143,9 @@ public class PxeBootController {
      */
     @PostMapping("items/{id}/disable")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> disableItem(@PathVariable Long id) {
+    public SfcJsonResult<?> disableItem(@PathVariable Long id) {
         bootItemService.disable(id);
-        return new JsonResultImpl<>();
+        return new SfcJsonResult<>();
     }
 
     /**
@@ -154,9 +153,9 @@ public class PxeBootController {
      */
     @PostMapping("items/reorder")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> reorderItems(@RequestBody List<Long> orderedIds) {
+    public SfcJsonResult<?> reorderItems(@RequestBody List<Long> orderedIds) {
         bootItemService.reorder(orderedIds);
-        return new JsonResultImpl<>();
+        return new SfcJsonResult<>();
     }
 
     // ==================== 菜单预览 ====================
@@ -166,9 +165,9 @@ public class PxeBootController {
      */
     @GetMapping("menu/preview")
     @RolesAllowed("ADMIN")
-    public JsonResult<String> previewMenuScript(HttpServletRequest request) {
+    public SfcJsonResult<String> previewMenuScript(HttpServletRequest request) {
         String script = ipxeScriptEngine.generateMenuScript(URLUtils.getBaseUrl(request.getRequestURL().toString()));
-        return JsonResultImpl.getInstance(script);
+        return SfcJsonResult.getInstance(script);
     }
 
     // ==================== PXE 引导资源（无需认证） ====================
@@ -182,7 +181,7 @@ public class PxeBootController {
             return ResponseEntity.notFound().build();
         }
         Resource resource = diskFileSystemManager.getMainFileSystem()
-                .getResource(UserConstants.PUBLIC_USER_ID, wimbootPath, null);
+                .getResource(SfcUserConstants.PUBLIC_USER_ID, wimbootPath, null);
         if (resource == null) {
             log.warn("wimboot 文件不存在: {}", wimbootPath);
             return ResponseEntity.notFound().build();
@@ -199,7 +198,7 @@ public class PxeBootController {
             return ResponseEntity.notFound().build();
         }
         Resource resource = diskFileSystemManager.getMainFileSystem()
-                .getResource(UserConstants.PUBLIC_USER_ID, memdiskPath, null);
+                .getResource(SfcUserConstants.PUBLIC_USER_ID, memdiskPath, null);
         if (resource == null) {
             log.warn("memdisk 文件不存在: {}", memdiskPath);
             return ResponseEntity.notFound().build();
@@ -270,7 +269,7 @@ public class PxeBootController {
         int lastSlash = isoPath.lastIndexOf('/');
         String isoDir = lastSlash >= 0 ? isoPath.substring(0, lastSlash) : "/";
         String isoFileName = lastSlash >= 0 ? isoPath.substring(lastSlash + 1) : isoPath;
-        Resource resource = loadResource(UserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
+        Resource resource = loadResource(SfcUserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
 
         if (resource == null) {
             return ResponseEntity.notFound().build();
@@ -305,14 +304,14 @@ public class PxeBootController {
         switch (item.getType()) {
             case CUSTOM_IPXE_SCRIPT:
             case KERNEL_INITRD:
-                resource = loadResource(UserConstants.PUBLIC_USER_ID, item.getResourcePath(), filePath);
+                resource = loadResource(SfcUserConstants.PUBLIC_USER_ID, item.getResourcePath(), filePath);
                 break;
             case ISO:
                 String isoPath = item.getResourcePath();
                 int lastSlash = isoPath.lastIndexOf('/');
                 String isoDir = lastSlash >= 0 ? isoPath.substring(0, lastSlash) : "/";
                 String isoFileName = lastSlash >= 0 ? isoPath.substring(lastSlash + 1) : isoPath;
-                Resource isoResource = loadResource(UserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
+                Resource isoResource = loadResource(SfcUserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
                 if (isoResource == null) {
                     return ResponseEntity.notFound().build();
                 }

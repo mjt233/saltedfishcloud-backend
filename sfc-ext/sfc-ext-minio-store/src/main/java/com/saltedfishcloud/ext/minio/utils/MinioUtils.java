@@ -2,7 +2,7 @@ package com.saltedfishcloud.ext.minio.utils;
 
 import com.saltedfishcloud.ext.minio.MinioResource;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.messages.Item;
@@ -90,7 +90,7 @@ public class MinioUtils {
     }
 
     public static boolean isRootPath(String path) {
-        return !StringUtils.hasText(path) || "/".equals(path);
+        return !SfcStringUtils.hasText(path) || "/".equals(path);
     }
 
     public static boolean isNotFound(Exception e) {
@@ -118,7 +118,7 @@ public class MinioUtils {
             lastModified = 0;
         }
         return new FileInfo(
-                StringUtils.getURLLastName(item.objectName()),
+                SfcStringUtils.getURLLastName(item.objectName()),
                 item.size(),
                 isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE,
                 MinioUtils.toDirectoryName(item.objectName()),

@@ -9,6 +9,7 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 /**
  * 数据迁移相关工具类
@@ -25,8 +26,8 @@ public class MigrateUtils {
     public static void moveDirectory(String src, String dest) throws IOException {
         Storage storageProvider = SpringContextUtils.getContext().getBean(StoreServiceFactory.class).getService().getStorageProvider();
         String root = SpringContextUtils.getContext().getBean(SysProperties.class).getStore().getRoot();
-        String srcPath = StringUtils.appendPath(root, src);
-        String descPath = StringUtils.appendPath(root, dest);
+        String srcPath = SfcStringUtils.appendPath(root, src);
+        String descPath = SfcStringUtils.appendPath(root, dest);
 
         if (!storageProvider.exist(srcPath)) {
             log.info("源路径不存在，无需迁移 {} => {}", srcPath, descPath);

@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.common;
 import com.sun.management.OperatingSystemMXBean;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.springframework.stereotype.Component;
 
 import java.lang.management.ManagementFactory;
@@ -37,10 +37,10 @@ public class RuntimeInfoProvider implements SystemOverviewItemProvider {
                         .nodes(Arrays.asList(
                                 new ConfigNode("CPU核心数", cpu + ""),
                                 new ConfigNode("操作系统类型", OSInfo.isWindows() ? "Windows" : "Unix (like)"),
-                                new ConfigNode("服务器内存总量", StringUtils.getFormatSize(totalPhysicalMemorySize)),
-                                new ConfigNode("服务器剩余内存", StringUtils.getFormatSize(freePhysicalMemorySize)),
-                                new ConfigNode("JVM最大可用内存", StringUtils.getFormatSize(max)),
-                                new ConfigNode("JVM已用内存", StringUtils.getFormatSize(used))
+                                new ConfigNode("服务器内存总量", SfcStringUtils.getFormatSize(totalPhysicalMemorySize)),
+                                new ConfigNode("服务器剩余内存", SfcStringUtils.getFormatSize(freePhysicalMemorySize)),
+                                new ConfigNode("JVM最大可用内存", SfcStringUtils.getFormatSize(max)),
+                                new ConfigNode("JVM已用内存", SfcStringUtils.getFormatSize(used))
                         ))
                         .build()
         );

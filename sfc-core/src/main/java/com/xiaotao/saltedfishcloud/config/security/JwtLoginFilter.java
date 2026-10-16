@@ -1,13 +1,13 @@
 package com.xiaotao.saltedfishcloud.config.security;
 
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -55,13 +55,13 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
             response.setHeader("Set-Cookie",
                     String.format("token=%s; Path=/; HttpOnly; Secure; SameSite=Lax", token));
         }
-        response.getWriter().print(JsonResultImpl.getInstance(token));
+        response.getWriter().print(SfcJsonResult.getInstance(token));
         userService.updateLoginDate(user.getId());
         logRecordManager.saveRecordAsync(LogRecord.builder()
                         .level(LogLevel.INFO)
                         .type(LOGIN_LOG_TYPE)
                         .msgAbstract("用户[" + user.getUsername() + "]登录成功 ip[" + request.getRemoteAddr() + "]")
-                        .msgDetail(MapperHolder.toJsonNoEx(user))
+                        .msgDetail(SfcMapperHolder.toJsonNoEx(user))
                 .build());
     }
 
@@ -69,7 +69,7 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException {
         response.setContentType("application/json;charset=utf-8");
         response.setStatus(400);
-        response.getWriter().print(JsonResultImpl.getInstance(400, null, "用户名或密码错误"));
+        response.getWriter().print(SfcJsonResult.getInstance(400, null, "用户名或密码错误"));
         logRecordManager.saveRecordAsync(LogRecord.builder()
                 .level(LogLevel.ERROR)
                 .type(LOGIN_LOG_TYPE)

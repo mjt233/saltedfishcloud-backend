@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.init;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.xiaotao.saltedfishcloud.utils.DBUtils;
+import com.sfc.cloud.data.utils.SfcDBUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,19 +35,19 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
      * 在DataSource可用后立即执行Config表字段迁移，确保在JPA及版本检查之前完成。
      */
     private void migrateConfigTable(DataSource dataSource) {
-        if (!DBUtils.tableExists(dataSource, "config")) {
+        if (!SfcDBUtils.tableExists(dataSource, "config")) {
             log.debug("[ConfigFieldMigration] config表不存在，无需迁移");
             return;
         }
-        if (DBUtils.columnExists(dataSource, "config", "item_key")) {
+        if (SfcDBUtils.columnExists(dataSource, "config", "item_key")) {
             log.debug("[ConfigFieldMigration] config表已包含item_key字段，无需迁移");
             return;
         }
         log.info("[ConfigFieldMigration] 开始迁移config表字段: key -> item_key, value -> item_value");
         try (Connection conn = dataSource.getConnection()) {
             try (Statement stmt = conn.createStatement()) {
-                stmt.execute("ALTER TABLE config RENAME COLUMN " + DBUtils.quoteIdentifier(conn, "key") + " TO item_key");
-                stmt.execute("ALTER TABLE config RENAME COLUMN " + DBUtils.quoteIdentifier(conn, "value") + " TO item_value");
+                stmt.execute("ALTER TABLE config RENAME COLUMN " + SfcDBUtils.quoteIdentifier(conn, "key") + " TO item_key");
+                stmt.execute("ALTER TABLE config RENAME COLUMN " + SfcDBUtils.quoteIdentifier(conn, "value") + " TO item_value");
             }
             log.info("[ConfigFieldMigration] config表字段迁移完成");
         } catch (SQLException e) {
@@ -66,10 +66,10 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
      */
     private void migrateCollectionTable(DataSource dataSource) {
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
-            if (DBUtils.tableExists(dataSource, "collection") && !DBUtils.tableExists(dataSource, "collection_info")) {
-                String oldTableName = DBUtils.quoteIdentifier(connection, "collection");
-                String newTableName = DBUtils.quoteIdentifier(connection, "collection_info");
-                String dbType = DBUtils.getDatabaseProductName(connection);
+            if (SfcDBUtils.tableExists(dataSource, "collection") && !SfcDBUtils.tableExists(dataSource, "collection_info")) {
+                String oldTableName = SfcDBUtils.quoteIdentifier(connection, "collection");
+                String newTableName = SfcDBUtils.quoteIdentifier(connection, "collection_info");
+                String dbType = SfcDBUtils.getDatabaseProductName(connection);
                 String renameTableSql;
                 if (dbType.contains("mysql") || dbType.contains("mariadb")) {
                     renameTableSql = "RENAME TABLE " + oldTableName + " TO " + newTableName;
@@ -80,15 +80,15 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
                 log.info("[CollectionTableMigration] 数据表迁移完成: collection -> collection_info");
             }
 
-            if (!DBUtils.tableExists(dataSource, "collection_info")) {
+            if (!SfcDBUtils.tableExists(dataSource, "collection_info")) {
                 return;
             }
 
-            if (DBUtils.columnExists(dataSource, "collection_info", "describe")
-                    && !DBUtils.columnExists(dataSource, "collection_info", "describe_content")) {
-                String tableName = DBUtils.quoteIdentifier(connection, "collection_info");
-                String oldColumnName = DBUtils.quoteIdentifier(connection, "describe");
-                String newColumnName = DBUtils.quoteIdentifier(connection, "describe_content");
+            if (SfcDBUtils.columnExists(dataSource, "collection_info", "describe")
+                    && !SfcDBUtils.columnExists(dataSource, "collection_info", "describe_content")) {
+                String tableName = SfcDBUtils.quoteIdentifier(connection, "collection_info");
+                String oldColumnName = SfcDBUtils.quoteIdentifier(connection, "describe");
+                String newColumnName = SfcDBUtils.quoteIdentifier(connection, "describe_content");
                 statement.execute("ALTER TABLE " + tableName + " RENAME COLUMN " + oldColumnName + " TO " + newColumnName);
                 log.info("[CollectionTableMigration] 字段迁移完成: collection_info.describe -> collection_info.describe_content");
             }
@@ -131,21 +131,21 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
      */
     private void cleanupLegacyIndexes(DataSource dataSource) {
         try (Connection connection = dataSource.getConnection()) {
-            if (DBUtils.isSQLite(connection)) {
+            if (SfcDBUtils.isSQLite(connection)) {
                 log.debug("[LegacyIndexMigration] 当前数据库为SQLite，跳过旧索引清理");
                 return;
             }
             for (Map.Entry<String, List<String>> entry : getLegacyIndexMappings()) {
                 String tableName = entry.getKey();
-                if (!DBUtils.tableExists(dataSource, tableName)) {
+                if (!SfcDBUtils.tableExists(dataSource, tableName)) {
                     continue;
                 }
                 for (String indexName : entry.getValue()) {
-                    if (!DBUtils.indexExists(connection, tableName, indexName)) {
+                    if (!SfcDBUtils.indexExists(connection, tableName, indexName)) {
                         continue;
                     }
                     log.info("[LegacyIndexMigration] 删除旧索引: {}.{}", tableName, indexName);
-                    DBUtils.dropIndex(connection, tableName, indexName);
+                    SfcDBUtils.dropIndex(connection, tableName, indexName);
                 }
             }
         } catch (SQLException e) {
@@ -162,7 +162,7 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
      * @param dataSource    数据库连接dataSource
      */
     private void checkSystemVersion(DataSource dataSource) {
-        if(!DBUtils.tableExists(dataSource, "config")) {
+        if(!SfcDBUtils.tableExists(dataSource, "config")) {
             return;
         }
         String version = getVersionStr(dataSource);
@@ -178,8 +178,8 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
      */
     @Nullable
     private static String getVersionStr(DataSource dataSource) {
-        boolean hasNewKeyField = DBUtils.columnExists(dataSource, "config", "item_key");
-        boolean hasNewValueField = DBUtils.columnExists(dataSource, "config", "item_value");
+        boolean hasNewKeyField = SfcDBUtils.columnExists(dataSource, "config", "item_key");
+        boolean hasNewValueField = SfcDBUtils.columnExists(dataSource, "config", "item_value");
 
         String valueField = hasNewValueField && hasNewKeyField ? "item_value" : "value";
         String keyField = hasNewValueField && hasNewKeyField ? "item_key" : "key";
@@ -207,9 +207,9 @@ public class DataMigrateAndCheckInitializer implements ApplicationContextInitial
     @NotNull
     private static String buildConfigVersionQuerySql(DataSource dataSource, String valueField, String keyField) {
         try (Connection connection = dataSource.getConnection()) {
-            String quotedTableName = DBUtils.quoteIdentifier(connection, "config");
-            String quotedValueField = DBUtils.quoteIdentifier(connection, valueField);
-            String quotedKeyField = DBUtils.quoteIdentifier(connection, keyField);
+            String quotedTableName = SfcDBUtils.quoteIdentifier(connection, "config");
+            String quotedValueField = SfcDBUtils.quoteIdentifier(connection, valueField);
+            String quotedKeyField = SfcDBUtils.quoteIdentifier(connection, keyField);
             return String.format("SELECT %s FROM %s WHERE %s = ?", quotedValueField, quotedTableName, quotedKeyField);
         } catch (SQLException e) {
             throw new RuntimeException("构造config表版本查询SQL时出错", e);

@@ -3,20 +3,20 @@ name: generate-service
 description: 为实体类(Entity)创建一个对应的Service接口和实现类，需要继承CrudService和CrudServiceImpl 
 ---
 
-Service 接口和实现类的规则如下所示。该模式的基类代码位于 `sfc-api` 模块，因此所有模块均可使用此模式。
+Service 接口和实现类的规则如下所示。该模式的基类代码位于共享库 **`sfc-common-data`** 模块（Phase 1 起从 `sfc-api` 迁出），因此所有模块均可使用此模式（`sfc-ext/*` 需在 `sfc-ext/pom.xml` 显式声明该依赖，因其以 provided 引用 sfc-api）。
 
 ## 1. Service 接口
 
 - 接口命名为 `{实体类名}Service`，如实体类为 `ProxyInfo`，接口则为 `ProxyInfoService`
-- 接口需要继承 `com.xiaotao.saltedfishcloud.service.CrudService<T>`，其中 `T` 为实体类
-- 接口中只需声明 **自定义业务方法**，基础 CRUD 方法已由 `CrudService` 提供
+- 接口需要继承 `com.sfc.cloud.data.service.SfcCrudService<T>`，其中 `T` 为实体类
+- 接口中只需声明 **自定义业务方法**，基础 CRUD 方法已由 `SfcCrudService` 提供
 
 ```java
 package com.xiaotao.saltedfishcloud.service;
 
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 
-public interface ProxyInfoService extends CrudService<ProxyInfo> {
+public interface ProxyInfoService extends SfcCrudService<ProxyInfo> {
     boolean testProxy(Long proxyId, int timeout, boolean useCache);
 }
 ```
@@ -24,9 +24,9 @@ public interface ProxyInfoService extends CrudService<ProxyInfo> {
 ## 2. Service 实现类
 
 - 实现类命名为 `{实体类名}ServiceImpl`
-- 需要继承 `com.xiaotao.saltedfishcloud.service.CrudServiceImpl<T, R>`
-  - `T` — 实体类（需继承 `AuditModel`）
-  - `R` — JPA Repository（需继承 `BaseRepo<T>`）
+- 需要继承 `com.sfc.cloud.data.service.SfcCrudServiceImpl<T, R>`
+  - `T` — 实体类（需继承 `SfcAuditModel`）
+  - `R` — JPA Repository（需继承 `SfcBaseRepo<T>`）
 - 需要实现对应的 Service 接口
 - 添加 `@Service` 注解（推荐添加，部分模块也可省略）
 - 继承的 `repository` 字段可直接用于调用自定义 Repository 方法
@@ -39,7 +39,7 @@ import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ProxyInfoServiceImpl extends CrudServiceImpl<ProxyInfo, ProxyInfoRepo> implements ProxyInfoService {
+public class ProxyInfoServiceImpl extends SfcCrudServiceImpl<ProxyInfo, ProxyInfoRepo> implements ProxyInfoService {
 
     @Override
     public boolean testProxy(Long proxyId, int timeout, boolean useCache) {
@@ -87,7 +87,7 @@ Service 实现类在以下场景需要注意权限校验：
 
 ### 自定义方法中的权限校验
 
-使用 `UIDValidator.validateWithException(uid, ...)` 进行权限校验：
+使用 `SfcUIDValidator.validateWithException(uid, ...)` 进行权限校验：
 - `true` — 禁止非管理员操作公共数据（uid=0）
 - `false` — 允许所有用户访问公共数据，但禁止访问非本人数据
 
@@ -98,7 +98,7 @@ Service 实现类在以下场景需要注意权限校验：
 public T findById(Long id) {
     T entity = super.findById(id);
     if (entity != null) {
-        UIDValidator.validateWithException(entity.getUid(), true);
+        SfcUIDValidator.validateWithException(entity.getUid(), true);
     }
     return entity;
 }
@@ -118,20 +118,20 @@ public T findById(Long id) {
 
 ```java
 // ❌ 错误：第二个泛型参数遗漏
-public class ProxyInfoServiceImpl extends CrudServiceImpl<ProxyInfo> implements ProxyInfoService
+public class ProxyInfoServiceImpl extends SfcCrudServiceImpl<ProxyInfo> implements ProxyInfoService
 
 // ✅ 正确：需要同时指定实体类和 Repository 类型
-public class ProxyInfoServiceImpl extends CrudServiceImpl<ProxyInfo, ProxyInfoRepo> implements ProxyInfoService
+public class ProxyInfoServiceImpl extends SfcCrudServiceImpl<ProxyInfo, ProxyInfoRepo> implements ProxyInfoService
 ```
 
-### 实体类未继承 AuditModel
+### 实体类未继承 SfcAuditModel
 
 ```java
-// ❌ 错误：CrudServiceImpl 要求 T extends AuditModel
+// ❌ 错误：SfcCrudServiceImpl 要求 T extends SfcAuditModel
 public class PlainEntity { ... }
 
-// ✅ 正确：实体类需要继承 AuditModel
-public class PlainEntity extends AuditModel { ... }
+// ✅ 正确：实体类需要继承 SfcAuditModel
+public class PlainEntity extends SfcAuditModel { ... }
 ```
 
 ### 接口/实现包位置不对导致 sfc-core 无法扫描

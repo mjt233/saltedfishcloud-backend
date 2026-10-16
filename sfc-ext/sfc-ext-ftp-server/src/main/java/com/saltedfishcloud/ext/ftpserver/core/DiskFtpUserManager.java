@@ -1,7 +1,7 @@
 package com.saltedfishcloud.ext.ftpserver.core;
 
 import com.saltedfishcloud.ext.ftpserver.FTPServerProperty;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.apache.ftpserver.ftplet.*;
@@ -66,7 +66,7 @@ public class DiskFtpUserManager implements UserManager {
             if (!ftpServerProperty.isEnableAnonymous()) {
                 return null;
             }
-            return getUserByName(UserConstants.SYS_NAME_PUBLIC);
+            return getUserByName(SfcUserConstants.SYS_NAME_PUBLIC);
         }
         if (authentication instanceof UsernamePasswordAuthentication) {
             UsernamePasswordAuthentication auth = (UsernamePasswordAuthentication) authentication;
@@ -86,7 +86,7 @@ public class DiskFtpUserManager implements UserManager {
 
     @Override
     public boolean isAdmin(String username) throws FtpException {
-        return userRepo.getUserByUser(username).getType() == UserConstants.TYPE_ADMIN;
+        return userRepo.getUserByUser(username).getType() == SfcUserConstants.TYPE_ADMIN;
     }
 }
 

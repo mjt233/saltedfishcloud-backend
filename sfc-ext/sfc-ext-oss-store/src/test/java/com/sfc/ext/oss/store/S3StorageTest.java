@@ -2,7 +2,7 @@ package com.sfc.ext.oss.store;
 
 import com.sfc.ext.oss.OSSProperty;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +19,7 @@ class S3StorageTest {
 
     static {
         try {
-            ossProperty = MapperHolder.mapper.readValue(
+            ossProperty = SfcMapperHolder.mapper.readValue(
                     S3StorageTest.class.getClassLoader().getResourceAsStream("test-oss-property.json"),
                     OSSProperty.class
             );

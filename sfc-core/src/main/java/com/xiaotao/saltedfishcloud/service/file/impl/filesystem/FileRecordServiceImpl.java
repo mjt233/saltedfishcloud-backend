@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -10,12 +10,12 @@ import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.model.progress.event.EnterDirEvent;
 import com.xiaotao.saltedfishcloud.model.progress.event.MountPointSkipEvent;
-import com.xiaotao.saltedfishcloud.model.template.BaseModel;
+import com.sfc.cloud.data.model.SfcBaseModel;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.node.FileTree;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +36,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.sfc.cloud.data.utils.SfcDBUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 
 /**
@@ -123,14 +125,14 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     private void doCopy(SimpleFileTransferParam param, @Nullable FileTransferCallback callback, int depth) {
         if (depth >= 32) {
-            throw new JsonException(FileSystemError.DIR_TOO_DEPTH, depth + "");
+            throw new SfcJsonException(FileSystemError.DIR_TOO_DEPTH, depth + "");
         }
         if (callback != null && callback.shouldInterrupt()) {
             return;
         }
 
         // 查询待复制的源文件
-        String sourceNodeId = getNodeIdByPath(param.getSourceUid(), param.getSourcePath()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, param.getSourcePath()));
+        String sourceNodeId = getNodeIdByPath(param.getSourceUid(), param.getSourcePath()).orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND, param.getSourcePath()));
         List<FileInfo> sourceFileItemList = findByUidAndNodeId(param.getSourceUid(), sourceNodeId, param.getFiles())
                 .stream()
                 .map(f -> {
@@ -138,7 +140,7 @@ public class FileRecordServiceImpl implements FileRecordService {
                     BeanUtils.copyProperties(f, fileInfo);
 
                     // 生成一个新ID
-                    fileInfo.setId(IdUtil.getId());
+                    fileInfo.setId(SfcIdUtil.getId());
 
                     // 目录类型的文件要设置个新的目录节点id标识
                     if (fileInfo.isDir()) {
@@ -155,8 +157,8 @@ public class FileRecordServiceImpl implements FileRecordService {
                 .peek(f -> {
                     f.setMountId(null);
                     if(callback != null) {
-                        String from = StringUtils.appendPath(param.getSourcePath(), f.getName());
-                        String to = StringUtils.appendPath(param.getTargetPath(), f.getName());
+                        String from = SfcStringUtils.appendPath(param.getSourcePath(), f.getName());
+                        String to = SfcStringUtils.appendPath(param.getTargetPath(), f.getName());
                         callback.onAdditionalEvent(MountPointSkipEvent.of(f.getName(), from, to,
                                 FileTransferItem.builder()
                                         .fileInfo(f)
@@ -166,10 +168,10 @@ public class FileRecordServiceImpl implements FileRecordService {
                         ));
                     }
                 })
-                .map(BaseModel::getId).collect(Collectors.toSet());
+                .map(SfcBaseModel::getId).collect(Collectors.toSet());
 
         // 查询目标位置的节点id，将源文件批量保存到目标位置下
-        String targetNodeId = getNodeIdByPath(param.getTargetUid(), param.getTargetPath()).orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, param.getTargetPath()));
+        String targetNodeId = getNodeIdByPath(param.getTargetUid(), param.getTargetPath()).orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND, param.getTargetPath()));
         if (callback != null && callback.shouldInterrupt()) {
             return;
         }
@@ -180,8 +182,8 @@ public class FileRecordServiceImpl implements FileRecordService {
             if (callback != null && callback.shouldInterrupt()) {
                 return;
             }
-            String nextSourcePath = StringUtils.appendPath(param.getSourcePath(), dir.getName());
-            String nextTargetPath = StringUtils.appendPath(param.getTargetPath(), dir.getName());
+            String nextSourcePath = SfcStringUtils.appendPath(param.getSourcePath(), dir.getName());
+            String nextTargetPath = SfcStringUtils.appendPath(param.getTargetPath(), dir.getName());
             if (callback != null) {
                 if (callback.shouldInterrupt()) {
                     return;
@@ -239,7 +241,7 @@ public class FileRecordServiceImpl implements FileRecordService {
                         )
                         .findAny()
                         .ifPresent(f -> {
-                            throw new JsonException(f.isDir() ? FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE : FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR);
+                            throw new SfcJsonException(f.isDir() ? FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE : FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR);
                         });
 
                 if (existFileMap.isEmpty()) {
@@ -275,7 +277,7 @@ public class FileRecordServiceImpl implements FileRecordService {
             if (toInsertFiles.isEmpty()) {
                 return;
             }
-            DBUtils.batchInsert(jdbcTemplate, toInsertFiles);
+            SfcDBUtils.batchInsert(jdbcTemplate, toInsertFiles);
         }
     }
 
@@ -305,8 +307,8 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws NoSuchFileException {
-        String sourceNode = this.getNodeIdByPath(sourceUid, source).orElseThrow(() -> new JsonException(404, "原文件所在目录不存在"));
-        String targetNode = this.getNodeIdByPath(targetUid, target).orElseThrow(() -> new JsonException(404, "目标文件所在目录不存在"));
+        String sourceNode = this.getNodeIdByPath(sourceUid, source).orElseThrow(() -> new SfcJsonException(404, "原文件所在目录不存在"));
+        String targetNode = this.getNodeIdByPath(targetUid, target).orElseThrow(() -> new SfcJsonException(404, "目标文件所在目录不存在"));
         FileInfo sourceFileInfo = fileInfoRepo.findFileInfo(sourceUid, name, sourceNode);
         if (sourceFileInfo == null) {
             throw new NoSuchFileException("资源不存在，目录" + source + " 文件名：" + name);
@@ -319,12 +321,12 @@ public class FileRecordServiceImpl implements FileRecordService {
         }
 
         if (sourceFileInfo.isDir()) {
-            if (PathUtils.isSubDir(StringUtils.appendPath(source, name), StringUtils.appendPath(target, name))) {
-                throw new JsonException("目标目录不能为源目录的子目录");
+            if (PathUtils.isSubDir(SfcStringUtils.appendPath(source, name), SfcStringUtils.appendPath(target, name))) {
+                throw new SfcJsonException("目标目录不能为源目录的子目录");
             }
             if (targetFileInfo != null) {
                 if (targetFileInfo.getIsMount() != null || sourceFileInfo.getIsMount() != null) {
-                    throw new JsonException("存在同名的挂载点目录\"" + name + "\"，无法移动:" + source + "->" + target);
+                    throw new SfcJsonException("存在同名的挂载点目录\"" + name + "\"，无法移动:" + source + "->" + target);
                 }
                 if (targetFileInfo.isDir()) {
                     copy(SimpleFileTransferParam.builder()
@@ -337,7 +339,7 @@ public class FileRecordServiceImpl implements FileRecordService {
                             .build(), null);
                     deleteRecords(sourceUid, source, Collections.singleton(name));
                 } else {
-                    throw new JsonException("目标位置存在同名文件\"" + name + "\"，无法移动");
+                    throw new SfcJsonException("目标位置存在同名文件\"" + name + "\"，无法移动");
                 }
             } else {
                 if (sourceUid != targetUid) {
@@ -368,10 +370,10 @@ public class FileRecordServiceImpl implements FileRecordService {
                         sourceFileInfo.setNode(targetNode);
                         fileInfoRepo.save(sourceFileInfo);
                     } else {
-                        throw new JsonException(409, "目标位置已存在同名文件\"" + name + "\"，未启用覆盖");
+                        throw new SfcJsonException(409, "目标位置已存在同名文件\"" + name + "\"，未启用覆盖");
                     }
                 } else if (targetFileInfo.isDir()) {
-                    throw new JsonException("目标位置存在同名目录\"" + name + "\"，无法移动");
+                    throw new SfcJsonException("目标位置存在同名目录\"" + name + "\"，无法移动");
                 }
             } else {
                 if (sourceUid != targetUid) {
@@ -428,7 +430,7 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<FileInfo> deleteRecords(long uid, String path, Collection<String> name) throws NoSuchFileException {
-        String nodeId = this.getNodeIdByPath(uid, path).orElseThrow(() -> new JsonException("目录不存在"));
+        String nodeId = this.getNodeIdByPath(uid, path).orElseThrow(() -> new SfcJsonException("目录不存在"));
         List<FileInfo> infos = fileInfoRepo.findFileInfoByNames(uid, name, nodeId);
         List<FileInfo> res = new LinkedList<>();
 
@@ -453,7 +455,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
     @Override
     public String mkdir(long uid, String name, String path) throws NoSuchFileException {
-        return doGetAndMkdirs(uid, StringUtils.appendPath(path, name), false);
+        return doGetAndMkdirs(uid, SfcStringUtils.appendPath(path, name), false);
     }
 
     /**
@@ -531,7 +533,7 @@ public class FileRecordServiceImpl implements FileRecordService {
             int maxTryCount = 25;
             AtomicInteger tryCount = new AtomicInteger();
             while (tryCount.get() < maxTryCount) {
-                String nodeId = DBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRED, TransactionDefinition.ISOLATION_READ_COMMITTED, () -> {
+                String nodeId = SfcDBUtils.executeWithTransactional(TransactionDefinition.PROPAGATION_REQUIRED, TransactionDefinition.ISOLATION_READ_COMMITTED, () -> {
                     // 双重检查
                     Optional<String> newestNodeId = this.getNodeIdByPath(uid, path);
                     if (newestNodeId.isPresent()) {
@@ -571,10 +573,10 @@ public class FileRecordServiceImpl implements FileRecordService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rename(long uid, String path, String oldName, String newName) throws NoSuchFileException {
-        String nodeId = this.getNodeIdByPath(uid, path).orElseThrow(() -> new JsonException(404, "所在目录不存在"));
+        String nodeId = this.getNodeIdByPath(uid, path).orElseThrow(() -> new SfcJsonException(404, "所在目录不存在"));
         FileInfo fileInfo = fileInfoRepo.findFileInfo(uid, oldName, nodeId);
         if (fileInfo == null) {
-            throw new JsonException(404, "文件不存在");
+            throw new SfcJsonException(404, "文件不存在");
         }
 //        cacheService.deleteNodeCache(uid, Collections.singleton(nodeId));
         fileInfo.setName(newName);
@@ -649,7 +651,7 @@ public class FileRecordServiceImpl implements FileRecordService {
             }
         }));
         // 文件直接删除
-        List<Long> fileIdList = typeGroup.getOrDefault("file", Collections.emptyList()).stream().map(BaseModel::getId).collect(Collectors.toList());
+        List<Long> fileIdList = typeGroup.getOrDefault("file", Collections.emptyList()).stream().map(SfcBaseModel::getId).collect(Collectors.toList());
         if (!fileIdList.isEmpty()) {
             fileInfoRepo.batchDelete(fileIdList);
         }
@@ -807,7 +809,7 @@ public class FileRecordServiceImpl implements FileRecordService {
 
             // 检测是否存在死循环
             if (visitedNodeIdSet.contains(file.getId())) {
-                throw new JsonException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + file.getId() + " => " + dirName);
+                throw new SfcJsonException(500, "出现文件夹循环包含，请联系管理员并提供以下信息：uid=" + uid + " " + file.getId() + " => " + dirName);
             } else {
                 curPath.append("/").append(file.getName());
                 file.setPath(curPath.toString());

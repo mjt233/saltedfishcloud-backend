@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
@@ -144,7 +144,7 @@ public class FileSystemRouteContext {
         if (mountPoint == null) {
             return false;
         }
-        return StringUtils.isPathEqual(path, mountPoint.getPath());
+        return SfcStringUtils.isPathEqual(path, mountPoint.getPath());
     }
 
     /**

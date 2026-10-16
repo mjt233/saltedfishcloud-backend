@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 import jakarta.mail.BodyPart;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -90,7 +90,7 @@ public class SfcMailSender extends JavaMailSenderImpl {
             props.put(
                     "mail.smtp.ssl.protocols",
                     Optional.ofNullable(configuration.getTlsProtocols())
-                            .filter(StringUtils::hasText)
+                            .filter(SfcStringUtils::hasText)
                             .orElse(DEFAULT_TLS_PROTOCOL)
             );
             props.put("mail.smtp.socketFactory.class", SSLSocketFactory.class.getName());
@@ -166,7 +166,7 @@ public class SfcMailSender extends JavaMailSenderImpl {
         // 组装最终明细
         String msgDetail;
         try {
-            msgDetail = MapperHolder.toJson(detail);
+            msgDetail = SfcMapperHolder.toJson(detail);
         } catch (JsonProcessingException | RuntimeException e) {
             error.append("; ").append(e.getMessage());
             log.error("{}记录邮件发送日志序列化失败", LOG_PREFIX, e);

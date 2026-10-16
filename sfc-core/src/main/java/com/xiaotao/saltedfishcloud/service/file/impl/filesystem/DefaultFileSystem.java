@@ -7,9 +7,9 @@ import com.xiaotao.saltedfishcloud.event.dir.MkdirEvent;
 import com.xiaotao.saltedfishcloud.event.file.FileDeleteEvent;
 import com.xiaotao.saltedfishcloud.event.file.FileStoreEvent;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
@@ -24,7 +24,7 @@ import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -111,10 +111,10 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
      * @param name 文件名
      */
     private void validateNotMountPointPath(long uid, String path, String name) {
-        String fullPath = StringUtils.appendPath(path, name);
+        String fullPath = SfcStringUtils.appendPath(path, name);
         FileSystemRouteContext routeContext = matchFileSystem(uid, fullPath);
         if (routeContext.matchesMountPath(fullPath)) {
-            throw new JsonException(FileSystemError.MOUNT_POINT_EXIST);
+            throw new SfcJsonException(FileSystemError.MOUNT_POINT_EXIST);
         }
     }
 
@@ -152,7 +152,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         }
         if (success) {
             publishFileStoreEvent(routeContext.getFileSystemOr(this), uid, routeContext.getDelegatePath(path), name,
-                    StringUtils.appendPath(path, name), null);
+                    SfcStringUtils.appendPath(path, name), null);
         }
         return success;
     }
@@ -183,7 +183,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     public String mkdirs(long uid, String path) throws IOException {
         FileSystemRouteContext routeContext = matchFileSystem(uid, path);
         if (routeContext.matchesMountPath(path)) {
-            throw new JsonException(FileSystemError.MOUNT_POINT_EXIST);
+            throw new SfcJsonException(FileSystemError.MOUNT_POINT_EXIST);
         }
         String dirNodeId;
         if (routeContext.isMainRoute()) {
@@ -206,8 +206,8 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         }
         FileInfo fileInfo = files.getFirst();
         String path = metadataOperator.getPathByNodeId(fileInfo.getUid(), fileInfo.getNode())
-                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
-        fileInfo.setPath(StringUtils.appendPath(path, fileInfo.getName()));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND));
+        fileInfo.setPath(SfcStringUtils.appendPath(path, fileInfo.getName()));
         Resource resource = getResource(fileInfo.getUid(), path, fileInfo.getName());
         if (resource == null) {
             return null;
@@ -226,7 +226,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     private void syncProxyQuickSaveRecord(FileSystemRouteContext routeContext, long uid, String path, String name) throws IOException {
         List<FileInfo> fileInfos = routeContext.requireDelegateFileSystem().getUserFileList(uid, routeContext.getResolvedPath(), Collections.singletonList(name));
         if (fileInfos == null || fileInfos.isEmpty()) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND, StringUtils.appendPath(path, name));
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND, SfcStringUtils.appendPath(path, name));
         }
         FileInfo savedFile = ObjectUtils.clone(fileInfos.getFirst(), FileInfo::new);
         savedFile.setUid(uid);
@@ -302,8 +302,8 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException {
-        String fullSourcePath = StringUtils.appendPath(source, name);
-        String fullTargetPath = StringUtils.appendPath(target, name);
+        String fullSourcePath = SfcStringUtils.appendPath(source, name);
+        String fullTargetPath = SfcStringUtils.appendPath(target, name);
         FileSystemRouteContext targetRoute = matchFileSystem(targetUid, target);
         FileSystemRouteContext sourceRoute = matchFileSystem(sourceUid, source);
         FileSystemRouteContext sourceFullRoute = matchFileSystem(sourceUid, fullSourcePath);
@@ -315,16 +315,16 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             mountPoints = mountPointService.listByPath(sourceUid, fullSourcePath);
             if (targetRoute.isMountRoute() || targetFullRoute.matchesMountPath(fullTargetPath)) {
                 if (mountPoints != null && !mountPoints.isEmpty()) {
-                    throw new JsonException("目录包含挂载点，不能移动到其他挂载点下");
+                    throw new SfcJsonException("目录包含挂载点，不能移动到其他挂载点下");
                 }
                 if (sourceFullRoute.matchesMountPath(fullSourcePath)) {
-                    throw new JsonException("挂载点不允许移动到其他挂载点下");
+                    throw new SfcJsonException("挂载点不允许移动到其他挂载点下");
                 }
             }
 
             if (sourceFullRoute.matchesMountPath(fullSourcePath)) {
                 String nodeId = metadataOperator.getNodeIdByPath(targetUid, target)
-                        .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+                        .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND));
                 MountPoint mountPoint = sourceFullRoute.requireMountPoint();
                 mountPoint.setNid(nodeId);
                 try {
@@ -407,12 +407,12 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     }
 
     @Override
-    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page) {
+    public SfcPageInfo<FileInfo> search(long uid, String key, Integer page) {
         return search(uid, key, page, 10);
     }
 
     @Override
-    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
+    public SfcPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
         return mainExecutor.search(uid, key, page, size);
     }
 
@@ -434,7 +434,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             }
         }
         publishFileStoreEvent(routeContext.getFileSystemOr(this), uid, routeContext.getDelegatePath(path),
-                fileInfo.getName(), StringUtils.appendPath(path, fileInfo.getName()), null);
+                fileInfo.getName(), SfcStringUtils.appendPath(path, fileInfo.getName()), null);
     }
 
     @Override
@@ -494,7 +494,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             for (FileInfo fileInfo : delegateFiles) {
                 publishFileStoreEvent(routeContext.getFileSystemOr(this), fileInfo.getUid(),
                         routeContext.getDelegatePath(group.originPath), fileInfo.getName(),
-                        StringUtils.appendPath(group.originPath, fileInfo.getName()), fileInfo);
+                        SfcStringUtils.appendPath(group.originPath, fileInfo.getName()), fileInfo);
             }
         }
     }
@@ -515,7 +515,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
             }
         }
         publishFileStoreEvent(routeContext.getFileSystemOr(this), file.getUid(), routeContext.getDelegatePath(savePath),
-                file.getName(), StringUtils.appendPath(savePath, file.getName()), file);
+                file.getName(), SfcStringUtils.appendPath(savePath, file.getName()), file);
     }
 
     @Override
@@ -526,7 +526,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         } else {
             routeContext.requireDelegateFileSystem().mkdir(uid, routeContext.getResolvedPath(), name);
             if (routeContext.requiresMainMetadataSync()) {
-                metadataOperator.mkdirs(uid, StringUtils.appendPath(path, name), true);
+                metadataOperator.mkdirs(uid, SfcStringUtils.appendPath(path, name), true);
             }
         }
     }
@@ -544,7 +544,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
         Map<String, MountPoint> mountPointMap = mountPointService.findMountPointPathByUid(uid);
         Map<Long, MountPoint> needRemoveMountPointMap = names.stream()
                 .flatMap(name -> mountPointMap.entrySet().stream()
-                        .filter(entry -> entry.getKey().startsWith(StringUtils.appendPath(path, name)))
+                        .filter(entry -> entry.getKey().startsWith(SfcStringUtils.appendPath(path, name)))
                         .map(Map.Entry::getValue))
                 .collect(Collectors.toMap(MountPoint::getId, Function.identity(), DefaultFileSystem::keepExistingValue));
         if (!needRemoveMountPointMap.isEmpty()) {
@@ -571,11 +571,11 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rename(long uid, String path, String name, String newName) throws IOException {
-        String originPath = StringUtils.appendPath(path, name);
+        String originPath = SfcStringUtils.appendPath(path, name);
         FileSystemRouteContext routeContext = matchFileSystem(uid, originPath);
         if (routeContext.matchesMountPath(originPath)) {
-            if (exist(uid, StringUtils.appendPath(path, newName))) {
-                throw new JsonException(FileSystemError.FILE_EXIST);
+            if (exist(uid, SfcStringUtils.appendPath(path, newName))) {
+                throw new SfcJsonException(FileSystemError.FILE_EXIST);
             }
             try {
                 MountPoint mountPoint = routeContext.requireMountPoint();
@@ -583,7 +583,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
                 mountPointService.saveMountPoint(mountPoint);
             } catch (FileSystemParameterException e) {
                 log.error("{}重命名文件时发生错误", LOG_PREFIX, e);
-                throw new JsonException(e.getMessage());
+                throw new SfcJsonException(e.getMessage());
             }
             return;
         }
@@ -602,7 +602,7 @@ public class DefaultFileSystem implements DiskFileSystem, FeatureProvider {
     @Override
     public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
         for (String name : names) {
-            String filePath = StringUtils.appendPath(path, name);
+            String filePath = SfcStringUtils.appendPath(path, name);
             FileSystemRouteContext routeContext = matchFileSystem(uid, filePath);
             if (routeContext.isMainRoute()) {
                 mainExecutor.updateTime(uid, path, Collections.singletonList(name), attribute);

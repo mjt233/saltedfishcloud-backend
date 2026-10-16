@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -41,7 +41,7 @@ public class MountFileSystemClearSchedule {
                     .filter(Objects::nonNull)
                     .map(e -> {
                         try {
-                            return MapperHolder.parseJsonToMap(e);
+                            return SfcMapperHolder.parseJsonToMap(e);
                         } catch (IOException err) {
                             err.printStackTrace();
                             return null;

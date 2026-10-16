@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 /**
  * 压缩任务
@@ -196,7 +197,7 @@ public class CompressAsyncTask implements AsyncTask {
      */
     private void addDirectoryResources(ArchiveEngineCompressor compressor, Long uid, String sourceBasePath, FileInfo rootDirectory) throws IOException {
         checkInterrupted();
-        String rootDirectoryPath = StringUtils.appendPath(sourceBasePath, rootDirectory.getName());
+        String rootDirectoryPath = SfcStringUtils.appendPath(sourceBasePath, rootDirectory.getName());
         Map<String, ArchiveResource> candidateDirectoryResources = new LinkedHashMap<>();
         candidateDirectoryResources.put(rootDirectoryPath, EngineResourceUtils.toArchiveResource(rootDirectory, "/", null));
 
@@ -206,7 +207,7 @@ public class CompressAsyncTask implements AsyncTask {
                 candidateDirectoryResources.remove(curPath);
             }
 
-            String basePath = StringUtils.removePrefix(sourceBasePath, curPath);
+            String basePath = SfcStringUtils.removePrefix(sourceBasePath, curPath);
             if (basePath.isEmpty()) {
                 basePath = "/";
             }
@@ -217,7 +218,7 @@ public class CompressAsyncTask implements AsyncTask {
                     appendProgressTotal(subFile.getSize());
                     compressor.addArchiveResource(EngineResourceUtils.toArchiveResource(subFile, basePath, fileSystem.getResource(uid, curPath, subFile.getName())));
                 } else {
-                    String subDirectoryPath = StringUtils.appendPath(curPath, subFile.getName());
+                    String subDirectoryPath = SfcStringUtils.appendPath(curPath, subFile.getName());
                     candidateDirectoryResources.put(subDirectoryPath, EngineResourceUtils.toArchiveResource(subFile, basePath, null));
                 }
             }

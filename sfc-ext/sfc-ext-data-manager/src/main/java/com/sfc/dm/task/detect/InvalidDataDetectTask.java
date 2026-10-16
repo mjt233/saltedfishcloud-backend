@@ -18,7 +18,7 @@ import com.xiaotao.saltedfishcloud.service.user.UserService;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import com.xiaotao.saltedfishcloud.utils.DBUtils;
+import com.sfc.cloud.data.utils.SfcDBUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.OutputStream;
@@ -119,14 +119,14 @@ public class InvalidDataDetectTask implements AsyncTask {
             scanner.scan(record -> {
                 batchBuffer.add(record);
                 if (batchBuffer.size() >= BATCH_SIZE) {
-                    DBUtils.batchInsert(jdbcTemplate, batchBuffer);
+                    SfcDBUtils.batchInsert(jdbcTemplate, batchBuffer);
                     savedCount.addAndGet(batchBuffer.size());
                     log("已保存 " + savedCount.get() + " 条");
                     batchBuffer.clear();
                 }
             });
             if (!batchBuffer.isEmpty()) {
-                DBUtils.batchInsert(jdbcTemplate, batchBuffer);
+                SfcDBUtils.batchInsert(jdbcTemplate, batchBuffer);
                 savedCount.addAndGet(batchBuffer.size());
                 log("已保存 " + savedCount.get() + " 条");
                 batchBuffer.clear();

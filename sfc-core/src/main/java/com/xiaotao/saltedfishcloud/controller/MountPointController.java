@@ -1,18 +1,17 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.cloud.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.MountPointSyncFileRecordParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.StorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
+import com.sfc.cloud.data.validation.SfcUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -40,8 +39,8 @@ public class MountPointController {
             "listAvailableFileSystem",
             "listAvailableStorage"
     })
-    public JsonResult<List<StorageMetadata>> listAvailableFileSystem() {
-        return JsonResultImpl.getInstance(storageRegistry.listPublicStorageFactory().stream().map(StorageFactory::getMetadata).collect(Collectors.toList()));
+    public SfcJsonResult<List<StorageMetadata>> listAvailableFileSystem() {
+        return SfcJsonResult.getInstance(storageRegistry.listPublicStorageFactory().stream().map(StorageFactory::getMetadata).collect(Collectors.toList()));
     }
 
     /**
@@ -49,9 +48,9 @@ public class MountPointController {
      * @param mountPoint    挂载点信息
      */
     @PutMapping("setMountPoint")
-    public JsonResult<?> setMountPoint(@RequestBody MountPoint mountPoint) throws IOException, FileSystemParameterException {
+    public SfcJsonResult<?> setMountPoint(@RequestBody MountPoint mountPoint) throws IOException, FileSystemParameterException {
         mountPointService.saveMountPoint(mountPoint);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -59,24 +58,24 @@ public class MountPointController {
      * @param uid 用户id
      */
     @GetMapping("listByUid")
-    public JsonResult<List<MountPoint>> listByUid(@UID @RequestParam("uid") long uid) {
-        return JsonResultImpl.getInstance(mountPointService.findByUid(uid));
+    public SfcJsonResult<List<MountPoint>> listByUid(@SfcUID @RequestParam("uid") long uid) {
+        return SfcJsonResult.getInstance(mountPointService.findByUid(uid));
     }
 
     /**
      * 根据挂载点id获取挂载点信息
      */
     @GetMapping("getById")
-    public JsonResult<MountPoint> getById(@RequestParam("id") long id) {
+    public SfcJsonResult<MountPoint> getById(@RequestParam("id") long id) {
         MountPoint mountPoint = mountPointService.findById(id);
         if (mountPoint != null) {
-            if(!UIDValidator.validate(mountPoint.getUid(), true)) {
-                throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+            if(!SfcUIDValidator.validate(mountPoint.getUid(), true)) {
+                throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
             }
         } else {
-            throw new JsonException(CommonError.RESOURCE_NOT_FOUND);
+            throw new SfcJsonException(SfcCommonError.RESOURCE_NOT_FOUND);
         }
-        return JsonResultImpl.getInstance(mountPoint);
+        return SfcJsonResult.getInstance(mountPoint);
     }
 
     /**
@@ -85,18 +84,18 @@ public class MountPointController {
      * @param id    挂载点id
      */
     @DeleteMapping("remove")
-    public JsonResult<?> delete(@UID @RequestParam("uid") long uid, @RequestParam("id") long id) {
+    public SfcJsonResult<?> delete(@SfcUID @RequestParam("uid") long uid, @RequestParam("id") long id) {
         mountPointService.remove(uid, id);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
      * 同步挂载点的文件信息到文件记录服务
      */
     @PostMapping("syncFileRecord")
-    public JsonResult<?> syncFileRecord(@RequestBody MountPointSyncFileRecordParam param) throws FileSystemParameterException, IOException {
+    public SfcJsonResult<?> syncFileRecord(@RequestBody MountPointSyncFileRecordParam param) throws FileSystemParameterException, IOException {
         mountPointService.syncFileRecord(param);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
 }

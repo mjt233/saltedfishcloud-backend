@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.oidc;
 
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
@@ -99,12 +99,12 @@ public class OidcUserClaimsMapper {
             claims.put("preferred_username", username);
             claims.put("name", username);
             // 沿用遗留 open API 的头像 URL 模式，与 OpenApiUserController 保持一致
-            if (StringUtils.hasText(issuer)) {
+            if (SfcStringUtils.hasText(issuer)) {
                 String baseUrl = issuer.endsWith("/") ? issuer.substring(0, issuer.length() - 1) : issuer;
                 claims.put("picture", baseUrl + "/api/user/avatar/" + username + "?uid=" + uid);
             }
 
-            if (StringUtils.hasText(user.getEmail())) {
+            if (SfcStringUtils.hasText(user.getEmail())) {
                 claims.put("email", user.getEmail());
                 claims.put("email_verified", true);
             }

@@ -1,10 +1,10 @@
 package com.sfc.ext.webdav.model.resource;
 
 import com.sfc.ext.webdav.enums.ResourceArea;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -62,14 +62,14 @@ public class WebDavItem {
         String errorFileName = "系统出错.txt";
         Date now = new Date();
         file.setName(errorFileName);
-        file.setPath(StringUtils.appendPath(basePath, errorFileName));
+        file.setPath(SfcStringUtils.appendPath(basePath, errorFileName));
         file.setErrorMessage(msg);
         file.setContentLength((long) msg.length());
         file.setUid(uid);
         file.setModifiedDate(now);
         file.setCreateDate(now);
         file.setError(true);
-        if (uid == null || uid == UserConstants.PUBLIC_USER_ID) {
+        if (uid == null || uid == SfcUserConstants.PUBLIC_USER_ID) {
             file.setResourceArea(ResourceArea.PUBLIC);
         } else {
             file.setResourceArea(ResourceArea.PRIVATE);
@@ -103,8 +103,8 @@ public class WebDavItem {
                         .or(() -> Optional.ofNullable(fileInfo.getUpdateAt()))
                         .orElse(new Date())
         );
-        item.setPath(StringUtils.appendPath(basePath, fileInfo.getName()));
-        item.setResourceArea(fileInfo.getUid() == UserConstants.PUBLIC_USER_ID ? ResourceArea.PUBLIC : ResourceArea.PRIVATE);
+        item.setPath(SfcStringUtils.appendPath(basePath, fileInfo.getName()));
+        item.setResourceArea(fileInfo.getUid() == SfcUserConstants.PUBLIC_USER_ID ? ResourceArea.PUBLIC : ResourceArea.PRIVATE);
         if (item instanceof WebDavFile f) {
             f.setContentLength(fileInfo.getSize());
             f.setContentType(FileUtils.getContentType(fileInfo.getName()));

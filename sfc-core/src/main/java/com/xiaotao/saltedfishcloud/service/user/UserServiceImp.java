@@ -2,16 +2,16 @@ package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.error.AccountError;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.UserInfo;
@@ -19,9 +19,9 @@ import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.mail.MailMessageGenerator;
 import com.xiaotao.saltedfishcloud.service.mail.MailValidateType;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.ServletRequest;
@@ -80,14 +80,14 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public CommonPageInfo<User> listUsers(PageableRequest request) {
+    public SfcPageInfo<User> listUsers(SfcPageableRequest request) {
         int page = Optional.ofNullable(request.getPage()).orElse(0);
         int size = Optional.ofNullable(request.getSize()).orElse(10);
-        return CommonPageInfo.of(userRepo.findAll(PageRequest.of(page, size)).map(UserRepo::toUser));
+        return SfcPageInfo.of(userRepo.findAll(PageRequest.of(page, size)).map(UserRepo::toUser));
     }
 
     @Override
-    public CommonPageInfo<User> searchUsers(String keyword, PageableRequest request) {
+    public SfcPageInfo<User> searchUsers(String keyword, SfcPageableRequest request) {
         int page = Optional.ofNullable(request.getPage()).orElse(0);
         int size = Optional.ofNullable(request.getSize()).orElse(10);
 
@@ -99,7 +99,7 @@ public class UserServiceImp implements UserService {
                 k,
                 PageRequest.of(page, size)
         ).map(UserRepo::toUser);
-        return CommonPageInfo.of(res);
+        return SfcPageInfo.of(res);
     }
 
     @Override
@@ -123,8 +123,8 @@ public class UserServiceImp implements UserService {
 
     @Override
     public String sendBindEmail(Long uid, String email) throws MessagingException, UnsupportedEncodingException {
-        if (userRepo.getByEmail(email) != null) throw new JsonException(AccountError.EMAIL_EXIST);
-        String code = StringUtils.getRandomString(6, false);
+        if (userRepo.getByEmail(email) != null) throw new SfcJsonException(AccountError.EMAIL_EXIST);
+        String code = SfcStringUtils.getRandomString(6, false);
         cacheService.set(
                 RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL),
                 code,
@@ -137,10 +137,10 @@ public class UserServiceImp implements UserService {
     @Override
     public String sendResetPasswordEmail(String account) throws MessagingException, UnsupportedEncodingException {
         final User user = getUserByAccount(account);
-        if (user == null) throw new JsonException(AccountError.USER_NOT_EXIST);
-        if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(AccountError.EMAIL_NOT_SET);
+        if (user == null) throw new SfcJsonException(AccountError.USER_NOT_EXIST);
+        if (user.getEmail() == null || user.getEmail().length() == 0) throw new SfcJsonException(AccountError.EMAIL_NOT_SET);
 
-        String code = StringUtils.getRandomString(6, false);
+        String code = SfcStringUtils.getRandomString(6, false);
         cacheService.set(
                 RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD),
                 code,
@@ -163,10 +163,10 @@ public class UserServiceImp implements UserService {
     @Override
     public void resetPassword(String account, String code, String password) {
         final User user = getUserByAccount(account);
-        if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
+        if (user == null) { throw new SfcJsonException(AccountError.USER_NOT_EXIST); }
         String key = RedisKeyGenerator.getUserEmailValidKey(user.getId(), user.getEmail(), MailValidateType.RESET_PASSWORD);
         String record = cacheService.get(key);
-        if (code == null || !code.equalsIgnoreCase(record)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
+        if (code == null || !code.equalsIgnoreCase(record)) { throw new SfcJsonException(AccountError.EMAIL_CODE_ERROR); }
 
         userRepo.modifyPassword(user.getId(), SecureUtils.getPassswd(password));
         cacheService.delete(key);
@@ -177,10 +177,10 @@ public class UserServiceImp implements UserService {
     @Override
     public String sendVerifyEmail(Long uid) throws MessagingException, UnsupportedEncodingException {
         final User user = getUserById(uid);
-        if (user == null) throw new JsonException(AccountError.USER_NOT_EXIST);
-        if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(AccountError.EMAIL_NOT_SET);
+        if (user == null) throw new SfcJsonException(AccountError.USER_NOT_EXIST);
+        if (user.getEmail() == null || user.getEmail().length() == 0) throw new SfcJsonException(AccountError.EMAIL_NOT_SET);
 
-        String code = StringUtils.getRandomString(6, false);
+        String code = SfcStringUtils.getRandomString(6, false);
         mailSender.send(mailMessageGenerator.getVerifyMailCodeMessage(user.getEmail(), code));
         cacheService.set(
                 RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL),
@@ -193,19 +193,19 @@ public class UserServiceImp implements UserService {
     @Override
     public void verifyEmail(Long uid, String code) throws MessagingException, UnsupportedEncodingException {
         final User user = getUserById(uid);
-        if (user == null) throw new JsonException(AccountError.USER_NOT_EXIST);
-        if (user.getEmail() == null || user.getEmail().length() == 0) throw new JsonException(AccountError.EMAIL_NOT_SET);
+        if (user == null) throw new SfcJsonException(AccountError.USER_NOT_EXIST);
+        if (user.getEmail() == null || user.getEmail().length() == 0) throw new SfcJsonException(AccountError.EMAIL_NOT_SET);
 
         final Object record = cacheService.get(RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL));
         if (!code.equals(record)) {
-            throw new JsonException(AccountError.EMAIL_CODE_ERROR);
+            throw new SfcJsonException(AccountError.EMAIL_CODE_ERROR);
         }
     }
 
     @Override
     public void setEmail(Long uid, String email) {
         final User user = userRepo.getUserById(uid);
-        if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
+        if (user == null) { throw new SfcJsonException(AccountError.USER_NOT_EXIST); }
         userRepo.updateEmail(uid, email);
     }
 
@@ -213,20 +213,20 @@ public class UserServiceImp implements UserService {
     @Override
     public void bindEmail(Long uid, String email, String originCode, String newCode) {
         final User user = userRepo.getUserById(uid);
-        if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
+        if (user == null) { throw new SfcJsonException(AccountError.USER_NOT_EXIST); }
         String originKey = null, originRecord = null, newKey = null, newRecord = null;
 
         // 验证原邮箱
         if (user.getEmail() != null && user.getEmail().length() != 0) {
             originKey = RedisKeyGenerator.getUserEmailValidKey(uid, user.getEmail(), MailValidateType.VERIFY_MAIL);
             originRecord = cacheService.get(originKey);
-            if (originCode == null || !originCode.equals(originRecord)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
+            if (originCode == null || !originCode.equals(originRecord)) { throw new SfcJsonException(AccountError.EMAIL_CODE_ERROR); }
         }
 
         // 验证新邮箱
         newKey = RedisKeyGenerator.getUserEmailValidKey(uid, email, MailValidateType.BIND_MAIL);
         newRecord = cacheService.get(newKey);
-        if (newCode == null || !newCode.equals(newRecord)) { throw new JsonException(AccountError.EMAIL_CODE_ERROR); }
+        if (newCode == null || !newCode.equals(newRecord)) { throw new SfcJsonException(AccountError.EMAIL_CODE_ERROR); }
 
 
 
@@ -240,20 +240,20 @@ public class UserServiceImp implements UserService {
     @Override
     public String sendRegEmail(String email) {
         // 判断邮件注册开关
-        if (!sysCommonConfig.getEnableEmailReg()) throw new JsonException(AccountError.EMAIL_REG_DISABLE);
+        if (!sysCommonConfig.getEnableEmailReg()) throw new SfcJsonException(AccountError.EMAIL_REG_DISABLE);
 
         // 先判断邮箱是否已被使用
         User user = userRepo.getByEmail(email);
-        if (user != null) { throw new JsonException(AccountError.EMAIL_EXIST); }
+        if (user != null) { throw new SfcJsonException(AccountError.EMAIL_EXIST); }
 
 
-        String code = StringUtils.getRandomString(5, false);
+        String code = SfcStringUtils.getRandomString(5, false);
         cacheService.set(RedisKeyGenerator.getRegCodeKey(email), code, 15, TimeUnit.MINUTES);
         try {
             mailSender.send(mailMessageGenerator.getRegCodeMessage(email, code));
         } catch (MessagingException | UnsupportedEncodingException e) {
             e.printStackTrace();
-            throw new JsonException(CommonError.SYSTEM_ERROR);
+            throw new SfcJsonException(SfcCommonError.SYSTEM_ERROR);
         }
 
         return code;
@@ -264,7 +264,7 @@ public class UserServiceImp implements UserService {
         if (type > 1 || type < 0) throw new IllegalArgumentException("不合法的用户类型");
         User user = userRepo.getUserById(uid);
         if (user == null) throw new UserNoExistException(404, "用户不存在");
-        if (type == UserConstants.TYPE_COMMON && "admin".equals(user.getUser())) {
+        if (type == SfcUserConstants.TYPE_COMMON && "admin".equals(user.getUser())) {
             throw new IllegalArgumentException("不允许撤销admin用户的管理员权限");
         }
         userRepo.grant(uid, type);
@@ -282,7 +282,7 @@ public class UserServiceImp implements UserService {
         User user = userRepo.getUserById(uid);
         if (user == null) throw new UserNoExistException(404, "用户不存在");
         if (!SecureUtils.getPassswd(oldPassword).equals(user.getPwd())) {
-            throw new JsonException(403, "原密码错误");
+            throw new SfcJsonException(403, "原密码错误");
         }
         return resetPasswd(uid, newPassword);
     }
@@ -305,29 +305,29 @@ public class UserServiceImp implements UserService {
         if (isEmailCode && !sysCommonConfig.getEnableEmailReg()) {
 
             // 请求邮箱验证，判断是否开启
-            throw new JsonException(AccountError.EMAIL_REG_DISABLE);
+            throw new SfcJsonException(AccountError.EMAIL_REG_DISABLE);
         } else if (!isEmailCode && !sysCommonConfig.getEnableRegCode()) {
 
             // 请求注册邀请码验证，判断是否开启
-            throw new JsonException(AccountError.REG_CODE_DISABLE);
+            throw new SfcJsonException(AccountError.REG_CODE_DISABLE);
         } else if (isEmailCode) {
 
             String key = RedisKeyGenerator.getRegCodeKey(email);
             // 通过邮箱验证码注册
             String recordCode = cacheService.get(key);
             if (!code.equals(recordCode)) {
-                throw new JsonException(AccountError.EMAIL_CODE_ERROR);
+                throw new SfcJsonException(AccountError.EMAIL_CODE_ERROR);
             }
-            int ret = addUser(user, passwd, email, UserConstants.TYPE_COMMON);
+            int ret = addUser(user, passwd, email, SfcUserConstants.TYPE_COMMON);
             cacheService.delete(key);
             return ret;
         } else {
 
             // 通过注册邀请码注册
             if (!code.equals(sysCommonConfig.getRegCode())) {
-                throw new JsonException(AccountError.REG_CODE_ERROR);
+                throw new SfcJsonException(AccountError.REG_CODE_ERROR);
             }
-            return addUser(user, passwd, null, UserConstants.TYPE_COMMON);
+            return addUser(user, passwd, null, SfcUserConstants.TYPE_COMMON);
         }
     }
 
@@ -350,21 +350,21 @@ public class UserServiceImp implements UserService {
             addRegLog(userRepo.getUserById(userInfo.getId()));
             return 1;
         } catch (DuplicateKeyException e) {
-            throw new JsonException(AccountError.USER_EXIST);
+            throw new SfcJsonException(AccountError.USER_EXIST);
         }
     }
 
     @Override
     public int addUser(String user, String passwd, String email, Integer type) {
         String  upperName = user.toUpperCase();
-        if (UserConstants.SYS_NAME_PUBLIC.equals(upperName) || UserConstants.SYS_NAME_ADMIN.equals(upperName)) {
+        if (SfcUserConstants.SYS_NAME_PUBLIC.equals(upperName) || SfcUserConstants.SYS_NAME_ADMIN.equals(upperName)) {
             throw new IllegalArgumentException("用户名" + user + "为系统保留用户名，不允许添加");
         }
         if(userRepo.findByUser(user) != null) {
-            throw new JsonException(AccountError.USER_EXIST);
+            throw new SfcJsonException(AccountError.USER_EXIST);
         }
         if (email != null && !email.isEmpty() && userRepo.getByEmail(email) != null) {
-            throw new JsonException(AccountError.EMAIL_EXIST);
+            throw new SfcJsonException(AccountError.EMAIL_EXIST);
         }
         return doAddUser(user, passwd, email, type);
     }
@@ -380,7 +380,7 @@ public class UserServiceImp implements UserService {
                         .level(LogLevel.INFO)
                         .type("注册用户")
                         .msgAbstract("新用户[" + user.getUser() + "] 邮箱[" + user.getEmail() + "] ip[" + ip + "]")
-                        .msgDetail(MapperHolder.toJsonNoEx(user))
+                        .msgDetail(SfcMapperHolder.toJsonNoEx(user))
                 .build());
     }
 

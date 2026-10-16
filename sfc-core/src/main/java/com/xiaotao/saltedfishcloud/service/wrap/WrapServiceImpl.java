@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.wrap;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.constant.error.ShareError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -72,28 +74,28 @@ public class WrapServiceImpl implements WrapService {
             Map<String, Object> otherData = param.getOtherData();
             // 1. 数据校验
             if (otherData == null) {
-                throw new JsonException("缺少otherData");
+                throw new SfcJsonException("缺少otherData");
             }
-            String extractCode = TypeUtils.toString(otherData.get("extractCode"));
-            String vid = TypeUtils.toString(otherData.get("vid"));
+            String extractCode = SfcTypeUtils.toString(otherData.get("extractCode"));
+            String vid = SfcTypeUtils.toString(otherData.get("vid"));
             if (vid == null) {
-                throw new JsonException("otherData缺少vid");
+                throw new SfcJsonException("otherData缺少vid");
             }
 
             // 2. 获取分享的信息，记录到打包信息中
             ShareInfo shareInfo = shareService.getShare(Long.parseLong(sourceId), vid);
             if (!shareInfo.validateExtractCode(extractCode)) {
-                throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
+                throw new SfcJsonException(ShareError.SHARE_EXTRACT_ERROR);
             }
 
             // 3. 获取分享的目录所在的用户网盘路径
             String shareRootPath = fileRecordService.getPathByNodeId(shareInfo.getUid(), shareInfo.getNid())
-                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
+                    .orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND));
 
             uid = shareInfo.getUid();
-            files.setSource(StringUtils.appendPath(shareRootPath, param.getPath()));
+            files.setSource(SfcStringUtils.appendPath(shareRootPath, param.getPath()));
         } else {
-            throw new JsonException("不支持的source");
+            throw new SfcJsonException("不支持的source");
         }
         return this.registerWrap(uid, files);
     }
@@ -103,7 +105,7 @@ public class WrapServiceImpl implements WrapService {
 
         WrapInfo wrapInfo = getWrapInfo(wid);
         if (wrapInfo == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
         FileTransferInfo files = wrapInfo.getFiles();
         archiveService.compressAndWriteOut(wrapInfo.getUid(), files.getSource(), files.getFilenames(), outputStream);
@@ -114,7 +116,7 @@ public class WrapServiceImpl implements WrapService {
     public void writeWrapToServlet(String wid, String alias, HttpServletResponse response) throws IOException {
         WrapInfo wrapInfo = getWrapInfo(wid);
         if (wrapInfo == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
         if (alias == null) {
             alias = "打包下载" + System.currentTimeMillis() + ".zip";

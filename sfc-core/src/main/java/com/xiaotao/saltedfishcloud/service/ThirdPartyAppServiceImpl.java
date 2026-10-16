@@ -3,9 +3,9 @@ package com.xiaotao.saltedfishcloud.service;
 import com.xiaotao.saltedfishcloud.constant.error.OAuthError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppRepo;
 import com.xiaotao.saltedfishcloud.event.oauth.ThirdPartyAppDeleteEvent;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
@@ -17,10 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import com.sfc.cloud.data.service.SfcCrudServiceImpl;
 
 @Service
 @RequiredArgsConstructor
-public class ThirdPartyAppServiceImpl extends CrudServiceImpl<ThirdPartyApp, ThirdPartyAppRepo> implements ThirdPartyAppService {
+public class ThirdPartyAppServiceImpl extends SfcCrudServiceImpl<ThirdPartyApp, ThirdPartyAppRepo> implements ThirdPartyAppService {
 
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -37,7 +38,7 @@ public class ThirdPartyAppServiceImpl extends CrudServiceImpl<ThirdPartyApp, Thi
                 .build()
         );
         if (exists) {
-            throw new JsonException("已存在同名应用");
+            throw new SfcJsonException("已存在同名应用");
         }
     }
 
@@ -54,11 +55,11 @@ public class ThirdPartyAppServiceImpl extends CrudServiceImpl<ThirdPartyApp, Thi
     }
 
     @Override
-    public CommonPageInfo<ThirdPartyApp> listApps(PageableRequest pageableRequest) {
+    public SfcPageInfo<ThirdPartyApp> listApps(SfcPageableRequest pageableRequest) {
         if (pageableRequest == null || pageableRequest.getSize() == null || pageableRequest.getPage() == null) {
-            throw new JsonException("缺少 page 或 size 参数");
+            throw new SfcJsonException("缺少 page 或 size 参数");
         }
-        return CommonPageInfo.of(getRepository().findAll(
+        return SfcPageInfo.of(getRepository().findAll(
                 JpaLambdaQueryWrapper.get(ThirdPartyApp.class).build(),
                 PageRequest.of(pageableRequest.getPage(), pageableRequest.getSize())
         ));
@@ -68,10 +69,10 @@ public class ThirdPartyAppServiceImpl extends CrudServiceImpl<ThirdPartyApp, Thi
     public ThirdPartyApp checkAndGetById(Long appId) {
         ThirdPartyApp app = findById(appId);
         if (app == null) {
-            throw new JsonException(OAuthError.INVALID_APP_ID);
+            throw new SfcJsonException(OAuthError.INVALID_APP_ID);
         }
         if (!Boolean.TRUE.equals(app.getIsEnabled())) {
-            throw new JsonException(OAuthError.APP_DISABLED);
+            throw new SfcJsonException(OAuthError.APP_DISABLED);
         }
         return app;
     }

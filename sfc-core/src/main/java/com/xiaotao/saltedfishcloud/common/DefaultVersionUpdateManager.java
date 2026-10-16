@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.common.update.VersionUpdateHandler;
 import com.xiaotao.saltedfishcloud.common.update.VersionUpdateManager;
 import com.xiaotao.saltedfishcloud.model.UpdateContext;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,7 +107,7 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
             if (updater == null) {
                 return null;
             }
-            String scope = StringUtils.hasText(updater.value()) ? updater.value() : null;
+            String scope = SfcStringUtils.hasText(updater.value()) ? updater.value() : null;
             return Arrays.stream(clazz.getMethods())
                     .map(method -> {
                         UpdateAction updateAction = method.getAnnotation(UpdateAction.class);
@@ -215,7 +215,7 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
         }
         Map<String, Map<Version, List<VersionUpdateHandler>>> handlerMap = handlerList.stream()
                 .collect(Collectors.groupingBy(
-                        e -> StringUtils.hasText(e.getScope()) ? e.getScope() : GLOBAL_SCOPE,
+                        e -> SfcStringUtils.hasText(e.getScope()) ? e.getScope() : GLOBAL_SCOPE,
                         Collectors.groupingBy(VersionUpdateHandler::getUpdateVersion)
                 ));
         handlerMap.forEach((scope, scopeHandlerList) -> {
@@ -233,7 +233,7 @@ public class DefaultVersionUpdateManager implements VersionUpdateManager, Applic
 
     @Override
     public synchronized void registerUpdateHandler(VersionUpdateHandler handler) {
-        String scope = StringUtils.hasText(handler.getScope()) ? handler.getScope() : GLOBAL_SCOPE;
+        String scope = SfcStringUtils.hasText(handler.getScope()) ? handler.getScope() : GLOBAL_SCOPE;
         log.debug("{}在作用域[{}]注册[{}]的更新器：{}", LOG_PREFIX,scope, handler.getUpdateVersion(),handler);
         List<VersionUpdateHandler> existList = allHandler
                 .computeIfAbsent(scope, k -> new TreeMap<>(Version::compareTo))

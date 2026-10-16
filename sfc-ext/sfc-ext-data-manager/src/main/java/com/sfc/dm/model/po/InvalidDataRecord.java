@@ -4,7 +4,7 @@ import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.enums.InvalidDataType;
 import com.sfc.dm.enums.ProcessMethod;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,7 +22,7 @@ import java.util.Date;
         @Index(name = "idx_invalid_data_record_owner_uid", columnList = "ownerUid"),
         @Index(name = "idx_invalid_data_record_md5", columnList = "md5")
 })
-public class InvalidDataRecord extends AuditModel {
+public class InvalidDataRecord extends SfcAuditModel {
     /**
      * 失效数据类型
      */

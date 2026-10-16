@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
-import com.xiaotao.saltedfishcloud.model.template.BaseModel;
+import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.cloud.data.model.SfcBaseModel;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,7 +22,7 @@ import java.util.Date;
 })
 @Getter
 @Setter
-public class UserInfo extends BaseModel {
+public class UserInfo extends SfcBaseModel {
     /**
      * 用户名
      */
@@ -38,7 +38,7 @@ public class UserInfo extends BaseModel {
     /**
      * 用户权限类型
      */
-    protected Integer type = UserConstants.TYPE_COMMON;
+    protected Integer type = SfcUserConstants.TYPE_COMMON;
 
     /**
      * 上次登录日期

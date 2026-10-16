@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -11,9 +11,9 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.resource.AbstractWritableResourceProtocolHandler;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -41,15 +41,15 @@ public class MainResourceHandler extends AbstractWritableResourceProtocolHandler
         long targetId = Long.parseLong(resourceRequest.getTargetId());
         return PermissionInfo.builder()
                 .ownerUid(targetId)
-                .isReadable(UIDValidator.validate(targetId, false))
-                .isWritable(UIDValidator.validate(targetId, true))
+                .isReadable(SfcUIDValidator.validate(targetId, false))
+                .isWritable(SfcUIDValidator.validate(targetId, true))
                 .build();
     }
 
     @Override
     public Resource getFileResource(ResourceRequest resourceRequest, ResourceRequest param) throws IOException {
-        if(!UIDValidator.validate(Long.parseLong(resourceRequest.getTargetId()), false)) {
-            throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+        if(!SfcUIDValidator.validate(Long.parseLong(resourceRequest.getTargetId()), false)) {
+            throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
         }
         if (Boolean.TRUE.equals(resourceRequest.getIsThumbnail())) {
             return fileSystemManager.getMainFileSystem().getThumbnail(Long.parseLong(resourceRequest.getTargetId()), resourceRequest.getPath(), resourceRequest.getName());
@@ -60,7 +60,7 @@ public class MainResourceHandler extends AbstractWritableResourceProtocolHandler
 
     @Override
     public String getPathMappingIdentity(ResourceRequest resourceRequest, ResourceRequest param) {
-        return SecureUtils.getMd5(resourceRequest.getTargetId() + ":" + StringUtils.appendPath(resourceRequest.getPath(), resourceRequest.getName()));
+        return SecureUtils.getMd5(resourceRequest.getTargetId() + ":" + SfcStringUtils.appendPath(resourceRequest.getPath(), resourceRequest.getName()));
     }
 
     @Override
@@ -78,10 +78,14 @@ public class MainResourceHandler extends AbstractWritableResourceProtocolHandler
         long resourceUid = Long.parseLong(resourceRequest.getTargetId());
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (isWrite && user == null) {
-            Long createUid = Objects.requireNonNull(TypeUtils.toLong(resourceRequest.getParams().get(ResourceRequest.CREATE_UID)), "缺失权限上下文会话或创建人id");
+            Long createUid = Objects.requireNonNull(SfcTypeUtils.toLong(resourceRequest.getParams().get(ResourceRequest.CREATE_UID)), "缺失权限上下文会话或创建人id");
             user = UserPrincipal.from(Objects.requireNonNull(userService.getUserById(createUid), "无效的创建人id"));
         }
-        if(!UIDValidator.validate(user, resourceUid, isWrite)) {
+        // 共享基座的身份 SPI 只接受 uid + 是否管理员（不引入对宿主 UserPrincipal 的依赖），
+        // 因此就地解包；用三元表达式保留"user 为 null = 未登录"的语义（与宿主 3 参重载一致）。
+        Long currentUid = user == null ? null : user.getId();
+        boolean currentIsAdmin = user != null && user.isAdmin();
+        if(!SfcUIDValidator.validate(currentUid, currentIsAdmin, resourceUid, isWrite)) {
             throw new IllegalArgumentException("访问拒绝");
         }
         return resourceRequest;

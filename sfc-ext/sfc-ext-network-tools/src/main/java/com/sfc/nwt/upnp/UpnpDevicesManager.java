@@ -7,7 +7,7 @@ import com.sfc.nwt.upnp.model.NotifySsdpMessage;
 import com.sfc.nwt.upnp.model.SsdpMessage;
 import com.sfc.nwt.upnp.model.UpnpDevice;
 import com.sfc.nwt.upnp.model.xml.device.UpnpDescribe;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.SmartLifecycle;
 
@@ -172,7 +172,7 @@ public class UpnpDevicesManager implements SSDPEventListener, SmartLifecycle {
      * 收到 SSDP 响应消息后，将该消息对应的设备添加到已发现设备中，并获取设备描述。若无法获取设备描述则添加失败。
      */
     protected CompletableFuture<UpnpDevice> addOrRefreshRootDevice(NotifySsdpMessage message) {
-        if(!StringUtils.hasText(message.getLocation())) {
+        if(!SfcStringUtils.hasText(message.getLocation())) {
             log.warn("{} NOTIFY消息缺少设备描述URL: {}", LOG_PREFIX, message);
             return CompletableFuture.failedFuture(new RuntimeException("NOTIFY消息缺少设备描述URL:\n" + message));
         }

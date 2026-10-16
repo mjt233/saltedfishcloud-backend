@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.Lob;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,7 +23,7 @@ import jakarta.persistence.Table;
 @SQLRestriction("is_delete = 0")
 @Getter
 @Setter
-public class Comment extends AuditModel {
+public class Comment extends SfcAuditModel {
     /**
      * 评论主题id / 关联的业务主题id
      * 为null表示公共留言板

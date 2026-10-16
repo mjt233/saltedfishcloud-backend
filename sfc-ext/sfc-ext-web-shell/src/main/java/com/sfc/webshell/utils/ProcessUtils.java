@@ -1,7 +1,7 @@
 package com.sfc.webshell.utils;
 
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.experimental.UtilityClass;
 
 import java.nio.file.Files;
@@ -114,7 +114,7 @@ public class ProcessUtils {
                         )
                         .split(splitter))
                 .map(envPath -> {
-                    Path path = Paths.get(StringUtils.appendPath(envPath, cmds[0]));
+                    Path path = Paths.get(SfcStringUtils.appendPath(envPath, cmds[0]));
                     if (Files.isExecutable(path)) {
                         return path.toString();
                     }

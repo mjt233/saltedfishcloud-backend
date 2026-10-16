@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.AbstractRawStoreService;
 import com.xiaotao.saltedfishcloud.service.file.FileResourceMd5Resolver;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -102,7 +102,7 @@ public class LocalStoreService extends AbstractRawStoreService implements Applic
     @Override
     public void moveToSave(long uid, Path nativePath, String diskPath, FileInfo fileInfo) throws IOException {
         final String root = getUserFileRoot(uid);
-        final String savePath = StringUtils.appendPath(root, diskPath, fileInfo.getName());
+        final String savePath = SfcStringUtils.appendPath(root, diskPath, fileInfo.getName());
         Path targetPath = Path.of(savePath);
         if (Files.exists(targetPath)) {
             if (Files.isDirectory(targetPath)) {

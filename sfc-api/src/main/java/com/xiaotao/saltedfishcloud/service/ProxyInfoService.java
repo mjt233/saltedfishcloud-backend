@@ -3,8 +3,9 @@ package com.xiaotao.saltedfishcloud.service;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 
 import java.util.List;
+import com.sfc.cloud.data.service.SfcCrudService;
 
-public interface ProxyInfoService extends CrudService<ProxyInfo> {
+public interface ProxyInfoService extends SfcCrudService<ProxyInfo> {
     /**
      * 测试代理是否可用
      * @param proxyId   代理id

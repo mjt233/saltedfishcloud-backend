@@ -4,7 +4,7 @@ import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.server.iso.IsoFileEntry;
 import com.sfc.pxeboot.server.iso.IsoHandler;
 import com.xiaotao.saltedfishcloud.cache.LockFactory;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
@@ -242,7 +242,7 @@ public class IsoResourceExtractorService {
         String isoDir = lastSlash >= 0 ? isoPath.substring(0, lastSlash) : "/";
         String isoFileName = lastSlash >= 0 ? isoPath.substring(lastSlash + 1) : isoPath;
         Resource isoResource = diskFileSystemManager.getMainFileSystem()
-            .getResource(UserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
+            .getResource(SfcUserConstants.PUBLIC_USER_ID, isoDir, isoFileName);
         if (isoResource == null || !isoResource.exists()) {
             throw new IOException("ISO 文件不存在: " + isoPath);
         }

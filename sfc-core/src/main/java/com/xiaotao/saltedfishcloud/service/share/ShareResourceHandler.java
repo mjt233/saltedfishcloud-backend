@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.share;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
@@ -11,8 +11,8 @@ import com.xiaotao.saltedfishcloud.service.resource.AbstractResourceProtocolHand
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -34,7 +34,7 @@ public class ShareResourceHandler extends AbstractResourceProtocolHandler<Resour
     public ResourceRequest validAndParseParam(ResourceRequest resourceRequest, boolean isWrite) {
         Object vid = resourceRequest.getParams().get("vid");
         if (vid == null) {
-            throw new JsonException("缺少参数：vid");
+            throw new SfcJsonException("缺少参数：vid");
         }
         return resourceRequest;
     }
@@ -56,14 +56,14 @@ public class ShareResourceHandler extends AbstractResourceProtocolHandler<Resour
         ShareInfo share = shareService.getShare(Long.parseLong(param.getTargetId()), vid.toString());
 
         String basePath = fileRecordService.getPathByNodeId(share.getUid(), share.getParentId())
-                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND));
         if (share.getType() == ShareType.FILE) {
             return SecureUtils.getMd5(
-                    share.getUid() + ":" + StringUtils.appendPath(basePath, param.getName())
+                    share.getUid() + ":" + SfcStringUtils.appendPath(basePath, param.getName())
             );
         }
         return SecureUtils.getMd5(
-                share.getUid() + ":" + StringUtils.appendPath(
+                share.getUid() + ":" + SfcStringUtils.appendPath(
                         basePath,
                         share.getName(),
                         param.getPath(),
@@ -75,7 +75,7 @@ public class ShareResourceHandler extends AbstractResourceProtocolHandler<Resour
     @Override
     public Resource getFileResource(ResourceRequest resourceRequest, ResourceRequest param) throws IOException {
         Object vid = param.getParams().get("vid");
-        String code = TypeUtils.toString(param.getParams().getOrDefault("code", ""));
+        String code = SfcTypeUtils.toString(param.getParams().getOrDefault("code", ""));
         return shareService.getFileResource(ShareExtractorDTO.builder()
                 .code(code)
                 .isThumbnail(param.getIsThumbnail())

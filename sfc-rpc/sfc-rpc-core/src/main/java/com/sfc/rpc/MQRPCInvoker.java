@@ -6,7 +6,7 @@ import com.sfc.rpc.support.RPCContextHolder;
 import com.xiaotao.saltedfishcloud.enums.MQOffsetStrategy;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,7 +113,7 @@ public class MQRPCInvoker implements RPCInvoker {
             return request;
         }
         if (requestRawObj instanceof String requestJson) {
-            return MapperHolder.parseJson(requestJson, RPCRequest.class);
+            return SfcMapperHolder.parseJson(requestJson, RPCRequest.class);
         }
         throw new IllegalArgumentException("无法识别的RPC请求: " + requestRawObj.getClass());
     }
@@ -136,7 +136,7 @@ public class MQRPCInvoker implements RPCInvoker {
         if (responseRawObj instanceof RPCResponse<?> response) {
             rpcResponse = response;
         } else if (responseRawObj instanceof String responseJson) {
-            rpcResponse = MapperHolder.parseJson(responseJson, RPCResponse.class);
+            rpcResponse = SfcMapperHolder.parseJson(responseJson, RPCResponse.class);
         } else {
             throw new IllegalArgumentException("无法识别的RPC响应: " + responseRawObj.getClass());
         }
@@ -144,9 +144,9 @@ public class MQRPCInvoker implements RPCInvoker {
             String resultJson = rpcResponse.getResult().toString();
             boolean isJsonArray = resultJson.startsWith("[\"") && resultJson.endsWith("]]");
             if ((!resultJson.startsWith("[") || isJsonArray) && Collection.class.isAssignableFrom(resultType)) {
-                rpcResponse.setResult(List.of(MapperHolder.withTypeMapper.readValue(resultJson, Object.class)));
+                rpcResponse.setResult(List.of(SfcMapperHolder.withTypeMapper.readValue(resultJson, Object.class)));
             } else {
-                rpcResponse.setResult(MapperHolder.parseJson(resultJson, resultType));
+                rpcResponse.setResult(SfcMapperHolder.parseJson(resultJson, resultType));
             }
         }
         return rpcResponse;
@@ -200,9 +200,9 @@ public class MQRPCInvoker implements RPCInvoker {
         }
         Object result = response.getResult();
         if (result != null) {
-            response.setResult(MapperHolder.toJsonWithType(result));
+            response.setResult(SfcMapperHolder.toJsonWithType(result));
         }
-        mqService.push(request.getResponseKey(), MapperHolder.toJsonWithType(response));
+        mqService.push(request.getResponseKey(), SfcMapperHolder.toJsonWithType(response));
     }
 
     /**
@@ -213,7 +213,7 @@ public class MQRPCInvoker implements RPCInvoker {
      */
     protected void sendRequest(RPCRequest request) throws JsonProcessingException {
         request.generateIdIfAbsent();
-        mqService.sendBroadcast(RPC_REQUEST_TOPIC, MapperHolder.toJson(request));
+        mqService.sendBroadcast(RPC_REQUEST_TOPIC, SfcMapperHolder.toJson(request));
     }
 
     /**

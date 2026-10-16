@@ -4,7 +4,7 @@ import com.sfc.archive.engine.AbstractArchiveEngineDecompressor;
 import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.utils.EngineResourceUtils;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -90,7 +90,7 @@ public class CommonsCompressorStreamArchiveEngineDecompressor extends AbstractAr
         String normalizedPath = normalizeArchivePath(archivePath);
         String currentPath = normalizeArchivePath(archiveResource.getArchivePath());
         if (!currentPath.equals(normalizedPath)) {
-            throw new JsonException("压缩包内资源不存在: " + archivePath);
+            throw new SfcJsonException("压缩包内资源不存在: " + archivePath);
         }
         InputStream sourceInputStream = resource.getInputStream();
         InputStream stream = null;
@@ -130,7 +130,7 @@ public class CommonsCompressorStreamArchiveEngineDecompressor extends AbstractAr
         if (".bz2".equals(extension)) {
             return new BZip2CompressorInputStream(sourceInputStream);
         }
-        throw new JsonException("不支持的单流解压格式: " + extension);
+        throw new SfcJsonException("不支持的单流解压格式: " + extension);
     }
 
     /**

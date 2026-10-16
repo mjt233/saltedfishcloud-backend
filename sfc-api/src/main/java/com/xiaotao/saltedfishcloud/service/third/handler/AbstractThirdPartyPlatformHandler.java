@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamCopyResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamSource;
@@ -140,7 +140,7 @@ public abstract class AbstractThirdPartyPlatformHandler<T> implements ThirdParty
      */
     protected String cacheAvatar(ThirdPartyAuthPlatform platform, ThirdPartyPlatformUser user) {
         String avatarUrl = user.getAvatarUrl();
-        if (!StringUtils.hasText(avatarUrl) || avatarUrl.startsWith("data:")) {
+        if (!SfcStringUtils.hasText(avatarUrl) || avatarUrl.startsWith("data:")) {
             return null;
         }
 

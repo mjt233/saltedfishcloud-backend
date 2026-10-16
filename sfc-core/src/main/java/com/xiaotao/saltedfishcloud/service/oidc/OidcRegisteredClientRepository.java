@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.enums.OidcTokenEndpointAuthMethod;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -85,7 +85,7 @@ public class OidcRegisteredClientRepository implements RegisteredClientRepositor
         }
 
         Set<String> redirectUris = new HashSet<>();
-        if (StringUtils.hasText(app.getCallbackUrl())) {
+        if (SfcStringUtils.hasText(app.getCallbackUrl())) {
             redirectUris.add(app.getCallbackUrl());
         }
 

@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.desktop;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.DesktopComponent;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +53,7 @@ public class DesktopComponentServiceImpl implements DesktopComponentService, Ini
                         }
                         try (InputStream is = resource.getInputStream()) {
                             String json = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-                            return MapperHolder.parseJsonToList(json, DesktopComponent.class).stream();
+                            return SfcMapperHolder.parseJsonToList(json, DesktopComponent.class).stream();
                         } catch (FileNotFoundException ignore) {
                             return Stream.empty();
                         } catch (IOException ioException) {

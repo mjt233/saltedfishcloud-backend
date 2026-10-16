@@ -6,8 +6,7 @@ import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.service.StaticPublishRPCClient;
 import com.sfc.staticpublish.service.StaticPublishRecordService;
 import com.sfc.staticpublish.service.StaticPublishService;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import org.apache.catalina.LifecycleException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -33,8 +32,8 @@ public class StaticPublishController {
      */
     @GetMapping("listStatus")
     @RolesAllowed("ADMIN")
-    public JsonResult<List<ServiceStatus>> listStatus() {
-        return JsonResultImpl.getInstance(rpcClient.getStatus());
+    public SfcJsonResult<List<ServiceStatus>> listStatus() {
+        return SfcJsonResult.getInstance(rpcClient.getStatus());
     }
 
     /**
@@ -42,9 +41,9 @@ public class StaticPublishController {
      */
     @GetMapping("start")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> start() throws LifecycleException, IOException {
+    public SfcJsonResult<?> start() throws LifecycleException, IOException {
         staticPublishService.start();
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -52,25 +51,25 @@ public class StaticPublishController {
      */
     @GetMapping("stop")
     @RolesAllowed("ADMIN")
-    public JsonResult<?> stop() throws LifecycleException {
+    public SfcJsonResult<?> stop() throws LifecycleException {
         staticPublishService.stop();
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @PostMapping("save")
-    public JsonResult<StaticPublishRecord> save(@RequestBody StaticPublishRecord record) {
+    public SfcJsonResult<StaticPublishRecord> save(@RequestBody StaticPublishRecord record) {
         staticPublishRecordService.saveWithOwnerPermissions(record);
-        return JsonResultImpl.getInstance(record);
+        return SfcJsonResult.getInstance(record);
     }
 
     @GetMapping("listSite")
-    public JsonResult<List<StaticPublishRecord>> listSite(@RequestParam("uid") Long uid) {
-        return JsonResultImpl.getInstance(staticPublishRecordService.findByUidWithOwnerPermissions(uid, null).getContent());
+    public SfcJsonResult<List<StaticPublishRecord>> listSite(@RequestParam("uid") Long uid) {
+        return SfcJsonResult.getInstance(staticPublishRecordService.findByUidWithOwnerPermissions(uid, null).getContent());
     }
 
     @PostMapping("deleteSite")
-    public JsonResult<?> deleteSite(@RequestParam("id") Long id) {
+    public SfcJsonResult<?> deleteSite(@RequestParam("id") Long id) {
         staticPublishRecordService.deleteWithOwnerPermissions(id);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 }

@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.helper;
 
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,7 +58,7 @@ public class MapValidator<K,V> {
                 invalidPropertyList.add(name);
             } else {
                 V v = map.get(key);
-                if (validString && v instanceof String && !StringUtils.hasText((String) v)) {
+                if (validString && v instanceof String && !SfcStringUtils.hasText((String) v)) {
                     invalidPropertyList.add(name);
                 }
             }

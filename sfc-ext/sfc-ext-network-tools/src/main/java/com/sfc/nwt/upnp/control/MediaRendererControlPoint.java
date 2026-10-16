@@ -7,7 +7,7 @@ import com.sfc.nwt.upnp.model.UpnpDevice;
 import com.sfc.nwt.upnp.model.xml.device.UpnpDescribe;
 import com.sfc.nwt.upnp.model.xml.service.av.Scpd;
 import com.xiaotao.saltedfishcloud.model.Pair;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -64,7 +64,7 @@ public class MediaRendererControlPoint {
      * @param instanceId 目标实例 id。一般情况给null或0即可
      */
     public void castMedia(String instanceId, String uri) throws IOException {
-        String instanceIdValue = Optional.ofNullable(instanceId).filter(StringUtils::hasText).orElse(getInstanceId());
+        String instanceIdValue = Optional.ofNullable(instanceId).filter(SfcStringUtils::hasText).orElse(getInstanceId());
 
         // 先停止正在进行的播放
         this.stop(instanceIdValue);
@@ -85,7 +85,7 @@ public class MediaRendererControlPoint {
      * @param instanceId 目标实例 id。一般情况给null或0即可
      */
     public UpnpUtils.SimpleHttpResponse setAVTransportURI(String instanceId, String uri) throws IOException {
-        String instanceIdValue = Optional.ofNullable(instanceId).filter(StringUtils::hasText).orElse(getInstanceId());
+        String instanceIdValue = Optional.ofNullable(instanceId).filter(SfcStringUtils::hasText).orElse(getInstanceId());
         return this.invokeAVTransportService("SetAVTransportURI", List.of(
                 new Pair<>("InstanceID", instanceIdValue),
                 new Pair<>("CurrentURI", uri),
@@ -97,7 +97,7 @@ public class MediaRendererControlPoint {
      * 暂停媒体播放
      */
     public UpnpUtils.SimpleHttpResponse pause(String instanceId) throws IOException {
-        String instanceIdValue = Optional.ofNullable(instanceId).filter(StringUtils::hasText).orElse(getInstanceId());
+        String instanceIdValue = Optional.ofNullable(instanceId).filter(SfcStringUtils::hasText).orElse(getInstanceId());
         return this.invokeAVTransportService("Pause", List.of( new Pair<>("InstanceID", instanceIdValue) ));
     }
 
@@ -105,7 +105,7 @@ public class MediaRendererControlPoint {
      * 停止媒体播放
      */
     public UpnpUtils.SimpleHttpResponse stop(String instanceId) throws IOException {
-        String instanceIdValue = Optional.ofNullable(instanceId).filter(StringUtils::hasText).orElse(getInstanceId());
+        String instanceIdValue = Optional.ofNullable(instanceId).filter(SfcStringUtils::hasText).orElse(getInstanceId());
         return this.invokeAVTransportService("Stop", List.of( new Pair<>("InstanceID", instanceIdValue) ));
     }
 
@@ -113,7 +113,7 @@ public class MediaRendererControlPoint {
      * 执行播放
      */
     public UpnpUtils.SimpleHttpResponse play(String instanceId) throws IOException {
-        String instanceIdValue = Optional.ofNullable(instanceId).filter(StringUtils::hasText).orElse(getInstanceId());
+        String instanceIdValue = Optional.ofNullable(instanceId).filter(SfcStringUtils::hasText).orElse(getInstanceId());
         // 播放
         return this.invokeAVTransportService("Play", List.of(
                 new Pair<>("InstanceID", instanceIdValue),
@@ -125,7 +125,7 @@ public class MediaRendererControlPoint {
      * 执行播放
      */
     public UpnpUtils.SimpleHttpResponse seek(String instanceId) throws IOException {
-        String instanceIdValue = Optional.ofNullable(instanceId).filter(StringUtils::hasText).orElse(getInstanceId());
+        String instanceIdValue = Optional.ofNullable(instanceId).filter(SfcStringUtils::hasText).orElse(getInstanceId());
         // 播放
         return this.invokeAVTransportService("Play", List.of(
                 new Pair<>("InstanceID", instanceIdValue),

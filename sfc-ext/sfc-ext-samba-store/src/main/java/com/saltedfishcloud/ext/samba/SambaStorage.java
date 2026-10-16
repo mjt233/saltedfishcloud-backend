@@ -19,14 +19,14 @@ import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.Directory;
 import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.BasePooledObjectFactory;
@@ -137,7 +137,7 @@ public class SambaStorage implements Storage, Closeable {
             }
         } catch (Exception e) {
             log.error("{}", LOG_PREFIX, e);
-            throw new JsonException(e.getMessage());
+            throw new SfcJsonException(e.getMessage());
         }
     }
 
@@ -259,7 +259,7 @@ public class SambaStorage implements Storage, Closeable {
                         if (".".equals(fileName) || "..".equals(fileName)) {
                             continue;
                         }
-                        pending.push(convertDelimiter(StringUtils.appendPath(currentPath, fileName)));
+                        pending.push(convertDelimiter(SfcStringUtils.appendPath(currentPath, fileName)));
                     }
                     continue;
                 }
@@ -348,7 +348,7 @@ public class SambaStorage implements Storage, Closeable {
 
     @Override
     public boolean rename(String path, String newName) throws IOException {
-        String newPath = StringUtils.appendPath(PathUtils.getParentPath(path), newName)
+        String newPath = SfcStringUtils.appendPath(PathUtils.getParentPath(path), newName)
                 .replaceAll("^[/\\\\]+", "")
                 .replaceAll("/", "\\\\");
         String smbPath = convertDelimiter(path);

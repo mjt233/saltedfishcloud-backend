@@ -18,8 +18,8 @@ import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -175,7 +175,7 @@ public class S3Storage implements Storage {
         boolean isDir = OSSPathUtils.isDir(ossPath);
         final String objectKey = ossPath;
         FileInfo fileInfo = new FileInfo();
-        fileInfo.setName(StringUtils.getURLLastName(objectKey));
+        fileInfo.setName(SfcStringUtils.getURLLastName(objectKey));
         fileInfo.setSize(isDir ? -1L : objectMetadata.getContentLength());
         fileInfo.setType(isDir ? FileInfo.TYPE_DIR : FileInfo.TYPE_FILE);
         fileInfo.setMd5(isDir ? null : objectMetadata.getETag().toLowerCase());
@@ -216,7 +216,7 @@ public class S3Storage implements Storage {
             List<FileInfo> fileInfos = listFiles(path);
             if (!fileInfos.isEmpty()) {
                 fileInfo = new FileInfo();
-                fileInfo.setName(StringUtils.getURLLastName(path));
+                fileInfo.setName(SfcStringUtils.getURLLastName(path));
                 fileInfo.setType(FileInfo.TYPE_DIR);
                 fileInfo.setSize(-1L);
                 selfIsObj = false;
@@ -290,7 +290,7 @@ public class S3Storage implements Storage {
 
     @Override
     public OutputStream newOutputStream(String path) throws IOException {
-        Path tmpPath = PathUtils.getTempPath().resolve("oss_upload_tmp_" + IdUtil.getId());
+        Path tmpPath = PathUtils.getTempPath().resolve("oss_upload_tmp_" + SfcIdUtil.getId());
         log.debug("{}为{}创建outputStream, 本地临时文件: {}", LOG_PREFIX, path, tmpPath);
         return StreamUtils.createCloseActionOutputStream(Files.newOutputStream(tmpPath), () -> {
             try {

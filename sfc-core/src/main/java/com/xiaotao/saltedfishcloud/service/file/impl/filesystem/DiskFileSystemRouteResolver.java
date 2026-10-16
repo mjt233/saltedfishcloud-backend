@@ -6,8 +6,8 @@ import com.xiaotao.saltedfishcloud.service.file.StorageRegistry;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.service.mountpoint.MountPointService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -59,7 +59,7 @@ public class DiskFileSystemRouteResolver {
             return new FileSystemRouteContext(null, null, path, FileSystemRouteMode.MAIN);
         }
         try {
-            Map<String, Object> map = MapperHolder.parseJsonToMap(mountPoint.getParams());
+            Map<String, Object> map = SfcMapperHolder.parseJsonToMap(mountPoint.getParams());
             Storage storage = storageRegistry.getStorage(mountPoint.getProtocol(), map);
             DiskFileSystem fileSystem = getStorageAdapter(storage);
             FileSystemRouteMode routeMode = Boolean.TRUE.equals(mountPoint.getIsProxyStoreRecord())
@@ -80,7 +80,7 @@ public class DiskFileSystemRouteResolver {
      */
     private MountPoint matchMountPoint(long uid, String path) {
         Map<String, MountPoint> mountPointMap = mountPointService.findMountPointPathByUid(uid);
-        String name = StringUtils.getURLLastName(path);
+        String name = SfcStringUtils.getURLLastName(path);
         if (name == null) {
             return null;
         }
@@ -120,6 +120,6 @@ public class DiskFileSystemRouteResolver {
         if (requestPath.startsWith("/")) {
             return requestPath.substring(prefixLength);
         }
-        return StringUtils.appendPath("/", requestPath.substring(prefixLength));
+        return SfcStringUtils.appendPath("/", requestPath.substring(prefixLength));
     }
 }

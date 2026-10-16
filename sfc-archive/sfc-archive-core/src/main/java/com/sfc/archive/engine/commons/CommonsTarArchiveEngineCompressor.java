@@ -3,7 +3,7 @@ package com.sfc.archive.engine.commons;
 import com.sfc.archive.engine.AbstractArchiveEngineCompressor;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
@@ -104,7 +104,7 @@ public class CommonsTarArchiveEngineCompressor extends AbstractArchiveEngineComp
         } else {
             Long size = resource.getSize();
             if (size == null || size < 0) {
-                throw new JsonException("tar 格式压缩文件时必须提供有效文件大小: " + resource.getArchivePath());
+                throw new SfcJsonException("tar 格式压缩文件时必须提供有效文件大小: " + resource.getArchivePath());
             }
             entry.setSize(size);
         }

@@ -2,14 +2,14 @@ package com.xiaotao.saltedfishcloud.ext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
-import com.xiaotao.saltedfishcloud.model.Result;
+import com.sfc.cloud.model.SfcResult;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.*;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -38,6 +38,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 /**
  * 默认的插件管理器
@@ -268,7 +271,7 @@ public class DefaultPluginManager implements PluginManager {
         String pluginUnpackPath = DEP_EXPLODE_PATH + "/" + pluginInfo.getName();
         Files.createDirectories(Paths.get(pluginUnpackPath));
 
-        List<Result<List<String>, URL>> errorList = new ArrayList<>();
+        List<SfcResult<List<String>, URL>> errorList = new ArrayList<>();
         List<String> conflictList = new ArrayList<>();
         List<URL> passValidUrls = new ArrayList<>();
 
@@ -277,7 +280,7 @@ public class DefaultPluginManager implements PluginManager {
             log.info("{}验证来自{}的依赖，共{}个", LOG_PREFIX, pluginInfo.getName(), urls.size());
         }
         for (URL url : urls) {
-            String depName = StringUtils.getURLLastName(url.getPath());
+            String depName = SfcStringUtils.getURLLastName(url.getPath());
             Path tempFile =  Paths.get(pluginUnpackPath + "/" + depName);
 
             // 整包冲突校验
@@ -300,7 +303,7 @@ public class DefaultPluginManager implements PluginManager {
             }
 
             // 类加载冲突校验
-            Result<List<String>, URL> result = ClassUtils.validUrl(loader, tempFile.toUri().toURL());
+            SfcResult<List<String>, URL> result = SfcClassUtils.validUrl(loader, tempFile.toUri().toURL());
             if (!result.isSuccess()) {
                 errorList.add(result);
             } else {
@@ -310,15 +313,15 @@ public class DefaultPluginManager implements PluginManager {
 
         // 若存在未通过校验的，则展示出来
         if (!errorList.isEmpty()) {
-            for (Result<List<String>, URL> result : errorList) {
-                String depFullName = StringUtils.getURLLastName(result.getParam().toString());
+            for (SfcResult<List<String>, URL> result : errorList) {
+                String depFullName = SfcStringUtils.getURLLastName(result.getParam().toString());
                 log.error("{}外部插件无法加载: {}，存在以下冲突class：{}", LOG_PREFIX, depFullName, result.getData());
             }
             for (String conflictName : conflictList) {
                 log.error(conflictName);
             }
             String failJar = Stream.concat(
-                        errorList.stream().map(e -> StringUtils.getURLLastName(e.getParam())),
+                        errorList.stream().map(e -> SfcStringUtils.getURLLastName(e.getParam())),
                         conflictList.stream()
                     ).collect(Collectors.joining("\n"));
             log.error("{}以下插件依赖无法被加载：\n{}", LOG_PREFIX, failJar);
@@ -326,19 +329,19 @@ public class DefaultPluginManager implements PluginManager {
         }
 
         // 通过校验，开始加载依赖
-        log.info("{}加载来自{}的依赖：{}", LOG_PREFIX, pluginInfo.getName(), passValidUrls.stream().map(StringUtils::getURLLastName).collect(Collectors.toList()));
+        log.info("{}加载来自{}的依赖：{}", LOG_PREFIX, pluginInfo.getName(), passValidUrls.stream().map(SfcStringUtils::getURLLastName).collect(Collectors.toList()));
         for (URL url : passValidUrls) {
-            String depName = StringUtils.getURLLastName(url.getPath());
+            String depName = SfcStringUtils.getURLLastName(url.getPath());
             Path tempFile =  Paths.get(pluginUnpackPath + "/" + depName);
             loader.loadFromUrl(new PathResource(tempFile).getURL());
         }
     }
 
     private void validPluginInfo(PluginInfo pluginInfo) {
-        if (!StringUtils.hasText(pluginInfo.getName())) {
+        if (!SfcStringUtils.hasText(pluginInfo.getName())) {
             throw new IllegalArgumentException("插件缺少name");
         }
-        if (!StringUtils.hasText(pluginInfo.getVersion())) {
+        if (!SfcStringUtils.hasText(pluginInfo.getVersion())) {
             throw new IllegalArgumentException("插件缺失有效的version");
         }
         try {
@@ -348,7 +351,7 @@ public class DefaultPluginManager implements PluginManager {
             throw e;
         }
 
-        if (!StringUtils.hasText(pluginInfo.getApiVersion())) {
+        if (!SfcStringUtils.hasText(pluginInfo.getApiVersion())) {
             throw new IllegalArgumentException("插件缺失有效的apiVersion");
         }
         try {
@@ -452,7 +455,7 @@ public class DefaultPluginManager implements PluginManager {
             throw new PluginNotFoundException(name);
         }
         String resourceRoot = pluginResourceRootMap.get(name);
-        String realPath = StringUtils.appendPath(resourceRoot, path);
+        String realPath = SfcStringUtils.appendPath(resourceRoot, path);
         return new ClassPathResource(realPath, loader);
     }
 
@@ -549,7 +552,7 @@ public class DefaultPluginManager implements PluginManager {
             return new ArrayList<>();
         }
         try (InputStream inputStream = Files.newInputStream(deleteRecord)) {
-            return MapperHolder.parseJsonToList(StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8), String.class);
+            return SfcMapperHolder.parseJsonToList(StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8), String.class);
         } catch (IOException e) {
             log.error("{}获取待删除插件出错", LOG_PREFIX,e);
             return new ArrayList<>();
@@ -565,12 +568,12 @@ public class DefaultPluginManager implements PluginManager {
         }
         List<String> names;
         try (InputStream stream = Files.newInputStream(deleteRecordPath)) {
-            names = MapperHolder.parseJsonToList(StreamUtils.copyToString(stream, StandardCharsets.UTF_8), String.class);
+            names = SfcMapperHolder.parseJsonToList(StreamUtils.copyToString(stream, StandardCharsets.UTF_8), String.class);
         }
 
         // 获取待删除的插件信息
         String loaded = names.stream().filter(e -> getPluginInfo(e) != null).collect(Collectors.joining(","));
-        if(StringUtils.hasText(loaded)) {
+        if(SfcStringUtils.hasText(loaded)) {
             throw new IllegalArgumentException("已加载的插件无法删除:" + loaded);
         }
         Map<String, PluginInfo> pluginMap = listAvailablePlugins().stream().collect(Collectors.toMap(PluginInfo::getName, Function.identity()));
@@ -589,7 +592,7 @@ public class DefaultPluginManager implements PluginManager {
                 Files.deleteIfExists(path);
 
                 // 删除附带的依赖
-                Path dependencePath = Paths.get(StringUtils.appendPath(DEP_EXPLODE_PATH, name));
+                Path dependencePath = Paths.get(SfcStringUtils.appendPath(DEP_EXPLODE_PATH, name));
                 if (Files.exists(dependencePath) && Files.isDirectory(dependencePath)) {
                     FileUtils.delete(dependencePath);
                 }
@@ -649,7 +652,7 @@ public class DefaultPluginManager implements PluginManager {
      * 保存待删除的插件列表
      */
     private synchronized void saveDeleteList(Collection<String> deleteNameList) throws IOException {
-        String json = MapperHolder.toJson(deleteNameList);
+        String json = SfcMapperHolder.toJson(deleteNameList);
         Path deleteRecord = ExtUtils.getExtDir().resolve(DELETE_JSON);
         try (OutputStream outputStream = Files.newOutputStream(deleteRecord)) {
             StreamUtils.copy(json, StandardCharsets.UTF_8, outputStream);
@@ -682,10 +685,10 @@ public class DefaultPluginManager implements PluginManager {
 
     @Override
     public void installPlugin(Resource resource) throws IOException {
-        if (!StringUtils.hasText(resource.getFilename())) {
+        if (!SfcStringUtils.hasText(resource.getFilename())) {
             throw new IllegalArgumentException("文件名不能为空");
         }
-        long id = IdUtil.getId();
+        long id = SfcIdUtil.getId();
         Path path = ExtUtils.getExtDir();
         if (!Files.exists(path)) {
             Files.createDirectories(path);
@@ -730,7 +733,7 @@ public class DefaultPluginManager implements PluginManager {
         } else {
             try (InputStream is = Files.newInputStream(path)) {
                 String json = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-                return MapperHolder.parseJsonToMap(json, String.class, String.class);
+                return SfcMapperHolder.parseJsonToMap(json, String.class, String.class);
             } catch (IOException e) {
                 log.error("{}读取升级记录失败：", LOG_PREFIX, e);
                 return new HashMap<>();
@@ -748,7 +751,7 @@ public class DefaultPluginManager implements PluginManager {
             Files.createDirectories(extDir);
         }
         Path path = extDir.resolve(UPGRADE_JSON);
-        String json = MapperHolder.toJson(record);
+        String json = SfcMapperHolder.toJson(record);
         try (OutputStream os = Files.newOutputStream(path)) {
             StreamUtils.copy(json, StandardCharsets.UTF_8, os);
         }
@@ -830,7 +833,7 @@ public class DefaultPluginManager implements PluginManager {
                 pluginConfigNodeGroupMap.put(pluginName, nodes);
             } catch (IOException e) {
                 log.error("{}更新插件配置项失败", LOG_PREFIX);
-                throw new JsonException(500, e.getMessage());
+                throw new SfcJsonException(500, e.getMessage());
             }
         });
     }

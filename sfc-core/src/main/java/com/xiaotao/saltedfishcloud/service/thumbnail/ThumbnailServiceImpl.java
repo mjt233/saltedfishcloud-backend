@@ -11,9 +11,9 @@ import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailHandler;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,9 +70,9 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
      */
     public String getThumbnailTempPath(String id) {
         if (id.length() == 32) {
-            return "md5/" + StringUtils.getUniquePath(id);
+            return "md5/" + SfcStringUtils.getUniquePath(id);
         } else if (id.length() > 4) {
-            return "other/" + StringUtils.getUniquePath(id);
+            return "other/" + SfcStringUtils.getUniquePath(id);
         } else {
             return "id/" + id;
         }
@@ -197,12 +197,12 @@ public class ThumbnailServiceImpl implements ThumbnailService, ApplicationRunner
 
     private void updateMaxSourceFileSizeConfigCache(String configJson) {
         try {
-            if (!StringUtils.hasText(configJson)) {
+            if (!SfcStringUtils.hasText(configJson)) {
                 return;
             }
-            MapperHolder.parseJsonToList(configJson, NameValueType.class).forEach(e -> sourceFileMaxSizeCache.put(
+            SfcMapperHolder.parseJsonToList(configJson, NameValueType.class).forEach(e -> sourceFileMaxSizeCache.put(
                     e.getName(),
-                    Optional.ofNullable(TypeUtils.toLong(e.getValue())).orElse(DEFAULT_SOURCE_FILE_MAX_SIZE_LIMIT)
+                    Optional.ofNullable(SfcTypeUtils.toLong(e.getValue())).orElse(DEFAULT_SOURCE_FILE_MAX_SIZE_LIMIT)
             ));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

@@ -7,7 +7,7 @@ import com.alibaba.nacos.api.naming.NamingService;
 import com.sfc.ext.nacos.NacosServiceDiscovery;
 import com.sfc.ext.nacos.NacosServiceRegistry;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -24,7 +24,7 @@ import java.util.Properties;
  * {@code LocalServiceRegistry} 兜底，两者<b>不会同时存在</b>（否则 {@code ServiceRegistry} /
  * {@code ServiceDiscovery} 各有两个 Bean，注入点会歧义）。
  * <p>
- * <b>fail-fast</b>：客户端初始化失败直接抛 {@link JsonException} 中止启动，而不是留下"启动了但没注册"的假成功状态
+ * <b>fail-fast</b>：客户端初始化失败直接抛 {@link SfcJsonException} 中止启动，而不是留下"启动了但没注册"的假成功状态
  * ——调试手册已明确"启动成功不是通过标准"。
  */
 @Configuration
@@ -41,7 +41,7 @@ public class NacosAutoConfiguration {
      *
      * @param properties 插件配置
      * @return Nacos 命名服务客户端
-     * @throws JsonException 客户端创建失败时抛出
+     * @throws SfcJsonException 客户端创建失败时抛出
      */
     @Bean(destroyMethod = "")
     public NamingService namingService(SysNacosProperties properties) {
@@ -58,7 +58,7 @@ public class NacosAutoConfiguration {
                     + "。请检查 sys.service.nacos.* 配置与 Nacos 服务端可达性"
                     + "（Nacos 2.x/3.x 客户端需 8848 与 9848 两个端口均可达）。原因：" + e.getMessage();
             log.error("[服务注册] {}", msg, e);
-            throw new JsonException(msg);
+            throw new SfcJsonException(msg);
         }
     }
 

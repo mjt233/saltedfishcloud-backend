@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -37,8 +37,8 @@ public class UserPrincipal implements UserDetails {
     @JsonIgnore
     private String password;
 
-    /** 用户类型，参见 {@link UserConstants}，决定角色分配 */
-    private Integer type = UserConstants.TYPE_COMMON;
+    /** 用户类型，参见 {@link SfcUserConstants}，决定角色分配 */
+    private Integer type = SfcUserConstants.TYPE_COMMON;
 
     /** 用户邮箱 */
     private String email;
@@ -63,18 +63,18 @@ public class UserPrincipal implements UserDetails {
         this.type = type;
         authorities.clear();
         authorities.add(new SimpleGrantedAuthority("ROLE_COMMON"));
-        if (type != null && type == UserConstants.TYPE_ADMIN) {
+        if (type != null && type == SfcUserConstants.TYPE_ADMIN) {
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
         }
     }
 
     public boolean isAdmin() {
-        return UserConstants.TYPE_ADMIN == (this.type == null ? UserConstants.TYPE_COMMON : this.type);
+        return SfcUserConstants.TYPE_ADMIN == (this.type == null ? SfcUserConstants.TYPE_COMMON : this.type);
     }
 
     @JsonIgnore
     public boolean isPublicUser() {
-        return this.id != null && this.id == UserConstants.PUBLIC_USER_ID;
+        return this.id != null && this.id == SfcUserConstants.PUBLIC_USER_ID;
     }
 
     @Override
@@ -139,8 +139,8 @@ public class UserPrincipal implements UserDetails {
     /** 构建公共用户实例 */
     public static UserPrincipal publicUser() {
         UserPrincipal principal = new UserPrincipal();
-        principal.setId(UserConstants.PUBLIC_USER_ID);
-        principal.setUsername(UserConstants.SYS_NAME_PUBLIC);
+        principal.setId(SfcUserConstants.PUBLIC_USER_ID);
+        principal.setUsername(SfcUserConstants.SYS_NAME_PUBLIC);
         return principal;
     }
 }

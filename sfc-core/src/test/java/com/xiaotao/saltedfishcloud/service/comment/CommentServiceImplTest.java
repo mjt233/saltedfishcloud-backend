@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.comment;
 
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.CommentRepo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.config.CommentRateLimitConfig;
 import com.xiaotao.saltedfishcloud.model.config.SysSafeConfig;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
@@ -77,7 +77,7 @@ class CommentServiceImplTest {
             when(SecureUtils.getSpringSecurityUser()).thenReturn(user);
             when(commentRepo.countByTopicIdAndUidAndReplyIdIsNull(anyLong(), anyLong())).thenReturn(3L);
 
-            assertThrows(JsonException.class, () -> commentService.sendComment(createRootComment()));
+            assertThrows(SfcJsonException.class, () -> commentService.sendComment(createRootComment()));
             verify(commentRepo, never()).save(any());
         }
     }
@@ -106,7 +106,7 @@ class CommentServiceImplTest {
             when(SecureUtils.getSpringSecurityUser()).thenReturn(null);
             when(commentRepo.countByTopicIdAndIpAndReplyIdIsNull(anyLong(), anyString())).thenReturn(2L);
 
-            assertThrows(JsonException.class, () -> commentService.sendComment(comment));
+            assertThrows(SfcJsonException.class, () -> commentService.sendComment(comment));
             verify(commentRepo).countByTopicIdAndIpAndReplyIdIsNull(comment.getTopicId(), comment.getIp());
         }
     }
@@ -150,7 +150,7 @@ class CommentServiceImplTest {
             when(SecureUtils.getSpringSecurityUser()).thenReturn(user);
             when(cacheService.setIfAbsent(anyString(), any(), anyLong(), any())).thenReturn(false);
 
-            assertThrows(JsonException.class, () -> commentService.sendComment(createRootComment()));
+            assertThrows(SfcJsonException.class, () -> commentService.sendComment(createRootComment()));
             verify(commentRepo, never()).save(any());
         }
     }
@@ -163,7 +163,7 @@ class CommentServiceImplTest {
             when(SecureUtils.getSpringSecurityUser()).thenReturn(user);
             when(cacheService.setIfAbsent(anyString(), any(), anyLong(), any())).thenReturn(false);
 
-            assertThrows(JsonException.class, () -> commentService.sendComment(createReplyComment()));
+            assertThrows(SfcJsonException.class, () -> commentService.sendComment(createReplyComment()));
             verify(commentRepo, never()).save(any());
         }
     }
@@ -212,7 +212,7 @@ class CommentServiceImplTest {
             when(commentRepo.findById(anyLong())).thenReturn(Optional.of(target));
             when(commentRepo.countByReplyIdAndUid(anyLong(), anyLong())).thenReturn(3L);
 
-            assertThrows(JsonException.class, () -> commentService.sendComment(createReplyComment()));
+            assertThrows(SfcJsonException.class, () -> commentService.sendComment(createReplyComment()));
             verify(commentRepo, never()).save(any());
         }
     }
@@ -245,7 +245,7 @@ class CommentServiceImplTest {
             when(commentRepo.findById(anyLong())).thenReturn(Optional.of(target));
             when(commentRepo.countByReplyIdAndIp(anyLong(), anyString())).thenReturn(2L);
 
-            assertThrows(JsonException.class, () -> commentService.sendComment(comment));
+            assertThrows(SfcJsonException.class, () -> commentService.sendComment(comment));
             verify(commentRepo).countByReplyIdAndIp(target.getId(), comment.getIp());
         }
     }
@@ -259,7 +259,7 @@ class CommentServiceImplTest {
             when(SecureUtils.getSpringSecurityUser()).thenReturn(user);
             when(sensitiveWordProvider.contains(any())).thenReturn(true);
 
-            assertThrows(JsonException.class, () -> commentService.sendComment(createRootComment()));
+            assertThrows(SfcJsonException.class, () -> commentService.sendComment(createRootComment()));
             verify(commentRepo, never()).save(any());
         }
     }

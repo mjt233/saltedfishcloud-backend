@@ -1,15 +1,16 @@
 package com.xiaotao.saltedfishcloud.exception;
 
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
+import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.cloud.exception.SfcJsonException;
 
-public class UserNoExistException extends JsonException {
+public class UserNoExistException extends SfcJsonException {
     private static final long serialVersionUID = -1973360070517009554L;
 
     public UserNoExistException(String message) {
         super(message);
     }
 
-    public UserNoExistException(JsonResult jsonResult) {
+    public UserNoExistException(SfcJsonResult jsonResult) {
         super(jsonResult);
     }
 

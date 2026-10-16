@@ -2,15 +2,14 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenServiceImpl;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.QuotaInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
@@ -19,7 +18,7 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.*;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.mail.MessagingException;
@@ -66,15 +65,15 @@ public class UserController {
     @Operation(summary = "验证用户重置密码时输入的验证码是否正确")
     @PostMapping("/validResetPasswordEmailCode")
     @AllowAnonymous
-    public JsonResult<Boolean> validResetPasswordEmailCode(@RequestParam("account") String account,
+    public SfcJsonResult<Boolean> validResetPasswordEmailCode(@RequestParam("account") String account,
                                                   @RequestParam("code") String code) {
-        return JsonResultImpl.getInstance(userService.validResetPasswordEmailCode(account, code));
+        return SfcJsonResult.getInstance(userService.validResetPasswordEmailCode(account, code));
     }
 
     @PostMapping("findBaseUserInfo")
     @AllowAnonymous
-    public JsonResult<List<User>> findBaseUserInfo(@RequestBody List<Long> ids) {
-        return JsonResultImpl.getInstance(userService.findBaseInfoByIds(ids));
+    public SfcJsonResult<List<User>> findBaseUserInfo(@RequestBody List<Long> ids) {
+        return SfcJsonResult.getInstance(userService.findBaseInfoByIds(ids));
     }
 
     /**
@@ -82,13 +81,13 @@ public class UserController {
      * @param kick 是否使旧token失效（踢下线）
      */
     @PostMapping("/updateToken")
-    public JsonResult<String> updateToken(@RequestParam(value = "kick", defaultValue = "true") boolean kick) {
+    public SfcJsonResult<String> updateToken(@RequestParam(value = "kick", defaultValue = "true") boolean kick) {
         final User user = userService.getUserById(SecureUtils.getSpringSecurityUser().getId());
         if (kick) {
             tokenDao.cleanUserToken(user.getId());
         }
         String token = tokenDao.generateUserToken(user.getId());
-        return JsonResultImpl.getInstance(token);
+        return SfcJsonResult.getInstance(token);
     }
 
     /**
@@ -99,11 +98,11 @@ public class UserController {
      */
     @PostMapping("/resetPassword")
     @AllowAnonymous
-    public JsonResult<?> resetPassword(@RequestParam("account") String account,
+    public SfcJsonResult<?> resetPassword(@RequestParam("account") String account,
                                     @RequestParam("code") String code,
                                     @RequestParam("password") @Length(min = 6) String password) {
         userService.resetPassword(account, code, password);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -113,12 +112,12 @@ public class UserController {
      * @param newCode  新邮箱验证码
      */
     @PostMapping("/newMail")
-    public JsonResult<?> setEmail(@RequestParam("email") @Email String email,
+    public SfcJsonResult<?> setEmail(@RequestParam("email") @Email String email,
                                @RequestParam(value = "originCode", required = false) String originCode,
                                @RequestParam("newCode") String newCode) {
         Long uid = SecureUtils.getSpringSecurityUser().getId();
         userService.bindEmail(uid, email, originCode, newCode);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -126,19 +125,19 @@ public class UserController {
      * @param email 新邮箱
      */
     @PostMapping("/sendBindEmail")
-    public JsonResult<?> sendBindEmail(@RequestParam("email") @Email String email) throws MessagingException, UnsupportedEncodingException {
+    public SfcJsonResult<?> sendBindEmail(@RequestParam("email") @Email String email) throws MessagingException, UnsupportedEncodingException {
         Long uid = SecureUtils.getSpringSecurityUser().getId();
         userService.sendBindEmail(uid, email);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
      * 发送用于验证旧邮箱的邮箱验证码
      */
     @PostMapping("/sendVerifyEmail")
-    public JsonResult<?> sendVerifyEmail() throws MessagingException, UnsupportedEncodingException {
+    public SfcJsonResult<?> sendVerifyEmail() throws MessagingException, UnsupportedEncodingException {
         userService.sendVerifyEmail(SecureUtils.getSpringSecurityUser().getId());
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -146,9 +145,9 @@ public class UserController {
      * @param code 验证码
      */
     @PostMapping("/verifyEmail")
-    public JsonResult<?> verifyEmail(@RequestParam("code") String code) throws MessagingException, UnsupportedEncodingException {
+    public SfcJsonResult<?> verifyEmail(@RequestParam("code") String code) throws MessagingException, UnsupportedEncodingException {
         userService.verifyEmail(SecureUtils.getSpringSecurityUser().getId(), code);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -156,9 +155,9 @@ public class UserController {
      */
     @PostMapping("/sendResetPasswordEmail")
     @AllowAnonymous
-    public JsonResult<?> sendResetPasswordEmail(@RequestParam(value = "account") String account) throws MessagingException, UnsupportedEncodingException {
+    public SfcJsonResult<?> sendResetPasswordEmail(@RequestParam(value = "account") String account) throws MessagingException, UnsupportedEncodingException {
         userService.sendResetPasswordEmail(account);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -166,8 +165,8 @@ public class UserController {
      */
     @GetMapping("/regType")
     @AllowAnonymous
-    public JsonResult<?> getRegType() {
-        return JsonResultImpl.getInstance(new HashMap<String, Boolean>(){{
+    public SfcJsonResult<?> getRegType() {
+        return SfcJsonResult.getInstance(new HashMap<String, Boolean>(){{
             put("email", sysCommonConfig.getEnableEmailReg());
             put("regcode", sysCommonConfig.getEnableRegCode());
         }});
@@ -177,10 +176,10 @@ public class UserController {
      * 获取用户基本信息，并刷新token有效期
      */
     @GetMapping
-    public JsonResult<UserPrincipal> getUserInfo(HttpServletRequest request) throws UserNoExistException {
+    public SfcJsonResult<UserPrincipal> getUserInfo(HttpServletRequest request) throws UserNoExistException {
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user == null) {
-            throw new JsonException(401, "未登录");
+            throw new SfcJsonException(401, "未登录");
         }
         Optional.ofNullable(request.getHeader(JwtUtils.AUTHORIZATION))
                 .or(() -> Arrays.stream(request.getCookies())
@@ -188,7 +187,7 @@ public class UserController {
                         .map(Cookie::getValue)
                         .findAny())
                 .ifPresent(token -> tokenDao.setToken(user.getId(), token));
-        return JsonResultImpl.getInstance(user);
+        return SfcJsonResult.getInstance(user);
     }
 
     /**
@@ -196,7 +195,7 @@ public class UserController {
      */
     @PostMapping("logout")
     @ResponseBody
-    public JsonResult<Object> logout(HttpServletRequest request, HttpServletResponse response) {
+    public SfcJsonResult<Object> logout(HttpServletRequest request, HttpServletResponse response) {
         // 获取原token
         String token = SecureUtils.getToken(request);
 
@@ -210,7 +209,7 @@ public class UserController {
         if (token != null) {
             tokenDao.invalidToken(SecureUtils.getCurrentUid(), token);
         }
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
 
@@ -220,9 +219,9 @@ public class UserController {
      */
     @PostMapping("/regcode")
     @AllowAnonymous
-    public JsonResult<?> sendRegCode(@Validated @NotBlank @RequestParam("email") @Email String email) {
+    public SfcJsonResult<?> sendRegCode(@Validated @NotBlank @RequestParam("email") @Email String email) {
         userService.sendRegEmail(email);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -233,24 +232,24 @@ public class UserController {
      */
     @PostMapping
     @AllowAnonymous
-    public JsonResult<?> regUser(@RequestParam("user") String user,
+    public SfcJsonResult<?> regUser(@RequestParam("user") String user,
                               @RequestParam("passwd") @Length(min = 6) String rawPassword,
                               @RequestParam(value = "regcode", defaultValue = "") String regCode,
                               @RequestParam("email") @Email String email,
                               @RequestParam(value = "type", defaultValue = "0") int type,
                               @RequestParam(value = "validEmail", defaultValue = "false") Boolean validEmail
-                              ) throws JsonException {
+                              ) throws SfcJsonException {
 
 
 
         // 管理员直接添加，不受任何约束
         UserPrincipal principal = SecureUtils.getSpringSecurityUser();
         if (principal != null && principal.isAdmin()) {
-            userService.addUser(user, rawPassword, email, type == UserConstants.TYPE_ADMIN ? UserConstants.TYPE_ADMIN : UserConstants.TYPE_COMMON);
+            userService.addUser(user, rawPassword, email, type == SfcUserConstants.TYPE_ADMIN ? SfcUserConstants.TYPE_ADMIN : SfcUserConstants.TYPE_COMMON);
         } else {
             userService.addUser(user, rawPassword, email, regCode, validEmail);
         }
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -258,9 +257,9 @@ public class UserController {
      * @param file  头像文件
      */
     @PostMapping("avatar")
-    public JsonResult<?> uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
+    public SfcJsonResult<?> uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
         userCustomStoreService.saveAvatar(SecureUtils.getSpringSecurityUser().getId(), new MultipartFileResource(file));
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -307,13 +306,13 @@ public class UserController {
      * 获取用户空间配额使用情况
      */
     @GetMapping("quota")
-    public JsonResult<QuotaInfo> getQuotaUsed() {
+    public SfcJsonResult<QuotaInfo> getQuotaUsed() {
         Long uid = SecureUtils.getCurrentUid();
         User user = userService.getUserById(uid);
         QuotaInfo quotaInfo = new QuotaInfo();
         quotaInfo.setUsed(Optional.ofNullable(SpringContextUtils.getContext().getBean(FileRecordService.class).getUsage(user.getId())).orElse(0L));
         quotaInfo.setQuota(Optional.ofNullable(user.getQuota()).orElse(0L) * ByteSize._1GiB);
-        return JsonResultImpl.getInstance(quotaInfo);
+        return SfcJsonResult.getInstance(quotaInfo);
     }
 
     /**
@@ -323,9 +322,9 @@ public class UserController {
      * @param force 管理员使用无视旧密码强制修改
      */
     @PostMapping("{uid}/passwd")
-    public JsonResult<?> modifyPassword(@RequestParam("old") String oldPasswd,
+    public SfcJsonResult<?> modifyPassword(@RequestParam("old") String oldPasswd,
                                      @RequestParam("new") @Length(min = 6) String newPasswd,
-                                     @PathVariable("uid") @UID long uid,
+                                     @PathVariable("uid") @SfcUID long uid,
                                      @RequestParam(value = "force", defaultValue = "false") boolean force) throws AccessDeniedException {
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (force) {
@@ -333,11 +332,11 @@ public class UserController {
                 throw new AccessDeniedException("非管理员不允许使用force参数");
             } else {
                 userService.resetPasswd(uid, newPasswd);
-                return JsonResultImpl.getInstance(200, null, "force reset");
+                return SfcJsonResult.getInstance(200, null, "force reset");
             }
         } else {
             int i = userService.modifyPasswd(uid, oldPasswd, newPasswd);
-            return JsonResultImpl.getInstance(200, i, "ok");
+            return SfcJsonResult.getInstance(200, i, "ok");
         }
     }
 
@@ -348,14 +347,14 @@ public class UserController {
      */
     @PutMapping("{uid}/type/{typeCode}")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<?> grant(@PathVariable("uid") long uid,
+    public SfcJsonResult<?> grant(@PathVariable("uid") long uid,
                             @PathVariable("typeCode") int type) {
         User user = userService.getUserById(uid);
         if (user == null) {
             throw new UserNoExistException();
         }
         userService.grant(uid, type);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -365,11 +364,11 @@ public class UserController {
      */
     @GetMapping("list")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<CommonPageInfo<User>> getUserList(@RequestParam(value = "page", defaultValue = "1") int page,
+    public SfcJsonResult<SfcPageInfo<User>> getUserList(@RequestParam(value = "page", defaultValue = "1") int page,
                                   @RequestParam(value = "size", defaultValue = "10") @Max(500) @Min(5) @Valid int size) {
-        CommonPageInfo<User> res = userService.listUsers(new PageableRequest().setPage(page).setSize(size));
+        SfcPageInfo<User> res = userService.listUsers(new SfcPageableRequest().setPage(page).setSize(size));
         res.getContent().forEach(e -> e.setPwd(null));
-        return JsonResultImpl.getInstance(res);
+        return SfcJsonResult.getInstance(res);
     }
 
     /**
@@ -380,12 +379,12 @@ public class UserController {
      */
     @GetMapping("search")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<CommonPageInfo<User>> searchUsers(@RequestParam("keyword") String keyword,
+    public SfcJsonResult<SfcPageInfo<User>> searchUsers(@RequestParam("keyword") String keyword,
                                                         @RequestParam(value = "page", defaultValue = "1") int page,
                                                         @RequestParam(value = "size", defaultValue = "10") @Max(500) @Min(5) @Valid int size) {
-        CommonPageInfo<User> res = userService.searchUsers(keyword, new PageableRequest().setPage(page).setSize(size));
+        SfcPageInfo<User> res = userService.searchUsers(keyword, new SfcPageableRequest().setPage(page).setSize(size));
         res.getContent().forEach(e -> e.setPwd(null));
-        return JsonResultImpl.getInstance(res);
+        return SfcJsonResult.getInstance(res);
     }
 
 }

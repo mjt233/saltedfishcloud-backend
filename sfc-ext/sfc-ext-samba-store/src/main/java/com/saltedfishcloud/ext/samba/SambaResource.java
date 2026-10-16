@@ -3,7 +3,7 @@ package com.saltedfishcloud.ext.samba;
 import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.io.AbstractResource;
@@ -34,7 +34,7 @@ public class SambaResource extends AbstractResource {
         if (filename == null || lastModified == null || smbPath == null) {
             handler.getDiskShare(share -> {
                 try(File file = handler.openFileRead(share, path)) {
-                    filename = StringUtils.getURLLastName(file.getUncPath(), "\\");
+                    filename = SfcStringUtils.getURLLastName(file.getUncPath(), "\\");
                     lastModified = file.getFileInformation().getBasicInformation().getLastWriteTime().toDate().getTime();
                     smbPath = file.getPath();
                 }

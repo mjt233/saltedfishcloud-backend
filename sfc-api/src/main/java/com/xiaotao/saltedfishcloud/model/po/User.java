@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,8 +27,8 @@ public class User extends UserInfo {
 
     static {
         PUBLIC_USER_INST = new User() {{
-            super.setId(UserConstants.PUBLIC_USER_ID);
-            super.setUser(UserConstants.SYS_NAME_PUBLIC);
+            super.setId(SfcUserConstants.PUBLIC_USER_ID);
+            super.setUser(SfcUserConstants.SYS_NAME_PUBLIC);
         }};
     }
 
@@ -38,11 +38,11 @@ public class User extends UserInfo {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public boolean isAdmin() {
-        return UserConstants.TYPE_ADMIN == (this.getType() == null ? UserConstants.TYPE_COMMON : this.getType());
+        return SfcUserConstants.TYPE_ADMIN == (this.getType() == null ? SfcUserConstants.TYPE_COMMON : this.getType());
     }
 
     @JsonIgnore
     public boolean isPublicUser() {
-        return this.getId() != null && this.getId() == UserConstants.PUBLIC_USER_ID;
+        return this.getId() != null && this.getId() == SfcUserConstants.PUBLIC_USER_ID;
     }
 }

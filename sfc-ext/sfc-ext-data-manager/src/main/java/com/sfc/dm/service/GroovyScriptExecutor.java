@@ -1,7 +1,7 @@
 package com.sfc.dm.service;
 
 import com.sfc.dm.constant.InvalidDataError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
@@ -44,7 +44,7 @@ public class GroovyScriptExecutor implements AutoCloseable {
      * 编译 Groovy 脚本（使用默认配置）。
      *
      * @param script Groovy 脚本代码
-     * @throws JsonException 脚本编译失败时抛出
+     * @throws SfcJsonException 脚本编译失败时抛出
      */
     public GroovyScriptExecutor(String script) {
         this(script, null);
@@ -57,7 +57,7 @@ public class GroovyScriptExecutor implements AutoCloseable {
      *
      * @param script           Groovy 脚本代码
      * @param configCustomizer 编译配置自定义回调，可为 null
-     * @throws JsonException 脚本编译失败时抛出
+     * @throws SfcJsonException 脚本编译失败时抛出
      */
     public GroovyScriptExecutor(String script, Consumer<CompilerConfiguration> configCustomizer) {
         CompilerConfiguration config = new CompilerConfiguration();
@@ -70,7 +70,7 @@ public class GroovyScriptExecutor implements AutoCloseable {
         try {
             this.compiled = new GroovyShell(config).parse(script);
         } catch (CompilationFailedException e) {
-            throw new JsonException(InvalidDataError.GROOVY_COMPILE_FAIL, e.getMessage());
+            throw new SfcJsonException(InvalidDataError.GROOVY_COMPILE_FAIL, e.getMessage());
         }
         this.worker = Executors.newSingleThreadExecutor(DAEMON_FACTORY);
         this.interrupter = Executors.newScheduledThreadPool(1, DAEMON_FACTORY);
@@ -82,7 +82,7 @@ public class GroovyScriptExecutor implements AutoCloseable {
      * @param binding       脚本变量绑定
      * @param timeoutMillis 超时时间（毫秒）
      * @return 脚本执行结果
-     * @throws JsonException 脚本执行超时或异常时抛出
+     * @throws SfcJsonException 脚本执行超时或异常时抛出
      */
     public Object run(Binding binding, long timeoutMillis) {
         Future<Object> future = worker.submit(() -> {
@@ -105,14 +105,14 @@ public class GroovyScriptExecutor implements AutoCloseable {
             Throwable cause = e.getCause();
             if (cause instanceof InterruptedException
                     || (cause.getCause() instanceof InterruptedException)) {
-                throw new JsonException(InvalidDataError.GROOVY_TIMEOUT);
+                throw new SfcJsonException(InvalidDataError.GROOVY_TIMEOUT);
             }
-            throw new JsonException(InvalidDataError.GROOVY_EXECUTE_ERROR, cause.getMessage());
+            throw new SfcJsonException(InvalidDataError.GROOVY_EXECUTE_ERROR, cause.getMessage());
         } catch (CancellationException | TimeoutException e) {
-            throw new JsonException(InvalidDataError.GROOVY_TIMEOUT);
+            throw new SfcJsonException(InvalidDataError.GROOVY_TIMEOUT);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new JsonException(InvalidDataError.GROOVY_TIMEOUT);
+            throw new SfcJsonException(InvalidDataError.GROOVY_TIMEOUT);
         }
     }
 

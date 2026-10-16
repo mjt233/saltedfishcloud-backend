@@ -7,10 +7,10 @@ import com.xiaotao.saltedfishcloud.constant.error.AccountError;
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,7 +26,7 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public String generateUserToken(Long uid) {
         final User user = userRepo.getUserById(uid);
-        if (user == null) { throw new JsonException(AccountError.USER_NOT_EXIST); }
+        if (user == null) { throw new SfcJsonException(AccountError.USER_NOT_EXIST); }
         return generateUserToken(UserPrincipal.from(user));
     }
 
@@ -39,7 +39,7 @@ public class TokenServiceImpl implements TokenService {
     public String generateUserToken(UserPrincipal user) {
         final String token;
         try {
-            token = JwtUtils.generateToken(MapperHolder.mapper.writeValueAsString(user), 30 * 24 * 60 * 60);
+            token = JwtUtils.generateToken(SfcMapperHolder.mapper.writeValueAsString(user), 30 * 24 * 60 * 60);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             return null;
@@ -52,7 +52,7 @@ public class TokenServiceImpl implements TokenService {
     public String generateUserToken(UserVO user) {
         final String token;
         try {
-            token = JwtUtils.generateToken(MapperHolder.mapper.writeValueAsString(user), 30 * 24 * 60 * 60);
+            token = JwtUtils.generateToken(SfcMapperHolder.mapper.writeValueAsString(user), 30 * 24 * 60 * 60);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             return null;

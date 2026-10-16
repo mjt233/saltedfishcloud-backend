@@ -1,7 +1,7 @@
 package com.sfc.archive;
 
 import com.sfc.archive.model.ArchiveEngineProperty;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 
@@ -35,7 +35,7 @@ public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
     public ArchiveEngineProvider getEngineProvider(String providerId) {
         ArchiveEngineProvider provider = engineProviderMap.get(providerId);
         if (provider == null) {
-            throw new JsonException("压缩引擎不存在: " + providerId);
+            throw new SfcJsonException("压缩引擎不存在: " + providerId);
         }
         return provider;
     }
@@ -62,7 +62,7 @@ public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
         try {
             return getEngineProvider(providerId).createCompressor(outputStream, property);
         } catch (IOException e) {
-            throw new JsonException("创建压缩器失败: " + e.getMessage());
+            throw new SfcJsonException("创建压缩器失败: " + e.getMessage());
         }
     }
 
@@ -71,7 +71,7 @@ public class ArchiveEngineManagerImpl implements ArchiveEngineManager {
         try {
             return getEngineProvider(providerId).createDecompressor(resource, property);
         } catch (IOException e) {
-            throw new JsonException("创建解压器失败: " + e.getMessage());
+            throw new SfcJsonException("创建解压器失败: " + e.getMessage());
         }
     }
 

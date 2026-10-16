@@ -1,15 +1,14 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.utils.URLUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -35,22 +34,22 @@ public class PluginController {
 
     @GetMapping("/listAvailablePlugins")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<List<PluginInfo>> getAllPlugins() throws IOException {
-        return JsonResultImpl.getInstance(pluginService.listAvailablePlugins());
+    public SfcJsonResult<List<PluginInfo>> getAllPlugins() throws IOException {
+        return SfcJsonResult.getInstance(pluginService.listAvailablePlugins());
     }
 
     @PostMapping("/deletePlugin")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<Object> deletePlugin(@RequestParam("name") String name) throws IOException {
+    public SfcJsonResult<Object> deletePlugin(@RequestParam("name") String name) throws IOException {
         pluginService.deletePlugin(name);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @GetMapping("getPlugin")
     @RolesAllowed({"ADMIN"})
     public HttpEntity<Resource> getPlugin(@RequestParam("name") String name) throws IOException {
         Resource pluginFile = pluginService.getPluginFile(name);
-        return ResourceUtils.wrapResource(pluginFile, StringUtils.getURLLastName(pluginFile.getURL()));
+        return ResourceUtils.wrapResource(pluginFile, SfcStringUtils.getURLLastName(pluginFile.getURL()));
     }
 
     @AllowAnonymous
@@ -72,9 +71,9 @@ public class PluginController {
      */
     @GetMapping("/listPluginAutoLoadList")
     @AllowAnonymous
-    public JsonResult<List<PluginInfo>> listPluginAutoLoadList() {
+    public SfcJsonResult<List<PluginInfo>> listPluginAutoLoadList() {
         List<PluginInfo> pluginInfos = pluginService.listPlugins().stream().filter(e -> e.getAutoLoad() != null && !e.getAutoLoad().isEmpty()).collect(Collectors.toList());
-        return JsonResultImpl.getInstance(pluginInfos);
+        return SfcJsonResult.getInstance(pluginInfos);
     }
 
     /**
@@ -89,22 +88,22 @@ public class PluginController {
         }
         Resource resource = pluginService.getPluginStaticResource(pluginName, requestPath);
         if (resource == null || !resource.exists()) {
-            throw new JsonException(404, "资源不存在");
+            throw new SfcJsonException(404, "资源不存在");
         }
         return ResourceUtils.wrapResource(resource);
     }
 
     @PostMapping("/uploadPlugin")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<PluginInfoVo> uploadPlugin(@RequestParam("file") MultipartFile file) throws IOException {
+    public SfcJsonResult<PluginInfoVo> uploadPlugin(@RequestParam("file") MultipartFile file) throws IOException {
         PluginInfoVo pluginInfoVo = pluginService.uploadPlugin(file.getResource());
-        return JsonResultImpl.getInstance(pluginInfoVo);
+        return SfcJsonResult.getInstance(pluginInfoVo);
     }
 
     @PostMapping("/installPlugin")
     @RolesAllowed({"ADMIN"})
-    public JsonResult<Object> installPlugin(@RequestParam("tempId") Long tempId, @RequestParam("fileName") String fileName) throws IOException {
+    public SfcJsonResult<Object> installPlugin(@RequestParam("tempId") Long tempId, @RequestParam("fileName") String fileName) throws IOException {
         pluginService.installPlugin(tempId, fileName);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 }

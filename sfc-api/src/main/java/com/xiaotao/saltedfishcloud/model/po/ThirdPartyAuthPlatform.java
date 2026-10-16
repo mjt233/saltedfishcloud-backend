@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,7 +18,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ThirdPartyAuthPlatform extends AuditModel {
+public class ThirdPartyAuthPlatform extends SfcAuditModel {
     /**
      * 第三方平台类型
      */

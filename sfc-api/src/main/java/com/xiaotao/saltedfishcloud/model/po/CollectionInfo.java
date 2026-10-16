@@ -3,11 +3,11 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.annotations.id.SnowFlakeIdGenerator;
+import com.sfc.cloud.data.id.SfcSnowFlakeIdGenerator;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionParser;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,7 +38,7 @@ public class CollectionInfo {
         OPEN, CLOSED
     }
     @Id
-    @SnowFlakeIdGenerator
+    @SfcSnowFlakeIdGenerator
     private Long id;
 
     /**
@@ -152,7 +152,7 @@ public class CollectionInfo {
 
     public CollectionInfo setField(Collection<CollectionField> field) {
         try {
-            this.field = MapperHolder.mapper.writeValueAsString(field);
+            this.field = SfcMapperHolder.mapper.writeValueAsString(field);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             this.field = null;
@@ -168,7 +168,7 @@ public class CollectionInfo {
     public List<CollectionField> getFields() {
         if (StringUtils.hasLength(field)) {
             try {
-                List<CollectionField> res = MapperHolder.mapper.readValue(field, CollectionParser.FIELD_LIST_TYPE_REFERENCE);
+                List<CollectionField> res = SfcMapperHolder.mapper.readValue(field, CollectionParser.FIELD_LIST_TYPE_REFERENCE);
                 if (res.size() == 0) {
                     return null;
                 } else {

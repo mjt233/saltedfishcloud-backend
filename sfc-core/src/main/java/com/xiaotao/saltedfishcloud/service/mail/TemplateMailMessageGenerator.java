@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.mail;
 
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -30,7 +30,7 @@ public class TemplateMailMessageGenerator implements MailMessageGenerator {
      */
     protected MimeMessage createMessage(String to, String subject, String content) throws UnsupportedEncodingException, MessagingException {
         if (!properties.isValid()) {
-            throw new JsonException(500, "咸鱼云邮件发信配置不正确");
+            throw new SfcJsonException(500, "咸鱼云邮件发信配置不正确");
         }
         MimeMessageHelper message = new MimeMessageHelper(mailSender.createMimeMessage(), true, "UTF-8");
         String alias = properties.getAlias();

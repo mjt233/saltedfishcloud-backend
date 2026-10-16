@@ -6,9 +6,9 @@ import com.xiaotao.saltedfishcloud.model.MQMessage;
 import com.xiaotao.saltedfishcloud.model.vo.MQMessageRecord;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
-import com.xiaotao.saltedfishcloud.utils.ClassUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -75,9 +75,9 @@ public class LocalMQService implements MQService, AutoCloseable {
     @Override
     @SuppressWarnings("unchecked")
     public <T> long subscribeBroadcast(MQTopic<T> topic, Consumer<MQMessageRecord<T>> consumer) {
-        Class<?> clazz = ClassUtils.getTypeParameterBySuperClass(topic);
+        Class<?> clazz = SfcClassUtils.getTypeParameterBySuperClass(topic);
         return subscribeBroadcast(topic.getTopic(), message -> consumer.accept(
-                new MQMessageRecord<>(message.getTopic(), (T) TypeUtils.convert(clazz, message.getBody()))
+                new MQMessageRecord<>(message.getTopic(), (T) SfcTypeUtils.convert(clazz, message.getBody()))
         ));
     }
 
@@ -139,7 +139,7 @@ public class LocalMQService implements MQService, AutoCloseable {
     @SuppressWarnings("unchecked")
     public <T> long subscribeMessageQueue(MQTopic<T> topic, String group, MQOffsetStrategy offsetStrategy, @Nullable String offsetPoint,
                                           Consumer<MQMessageRecord<T>> consumer) {
-        Class<T> clazz = (Class<T>) ClassUtils.getTypeParameterBySuperClass(topic);
+        Class<T> clazz = (Class<T>) SfcClassUtils.getTypeParameterBySuperClass(topic);
         return subscribeMessageQueue(topic.getTopic(), group, offsetStrategy, offsetPoint, message -> consumer.accept(
                 new MQMessageRecord<>(message.getTopic(), convertQueueMessageBody(clazz, message.getBody()))
         ));
@@ -191,10 +191,10 @@ public class LocalMQService implements MQService, AutoCloseable {
             return null;
         }
         try {
-            if (TypeUtils.isSupportConvert(targetType) || targetType.isAssignableFrom(body.getClass())) {
-                return TypeUtils.convert(targetType, body);
+            if (SfcTypeUtils.isSupportConvert(targetType) || targetType.isAssignableFrom(body.getClass())) {
+                return SfcTypeUtils.convert(targetType, body);
             }
-            return MapperHolder.parseAsJson(body, targetType);
+            return SfcMapperHolder.parseAsJson(body, targetType);
         } catch (IOException e) {
             throw new IllegalStateException("无法将消息体转换为 " + targetType.getName(), e);
         }

@@ -2,12 +2,11 @@ package com.xiaotao.saltedfishcloud.controller.open;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.StandardScopes;
-import com.xiaotao.saltedfishcloud.constant.SysRole;
+import com.sfc.cloud.constant.SfcSysRole;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.FileNameList;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -16,11 +15,11 @@ import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 import com.xiaotao.saltedfishcloud.annotations.RequireScope;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,12 +46,12 @@ import java.util.List;
 /**
  * 开放平台网盘文件操作 API Controller。
  * <p>
- * 提供对指定 UID 网盘（公共或私人）的文件列表查询、上传、复制、移动、重命名和删除功能。
+ * 提供对指定 SfcUID 网盘（公共或私人）的文件列表查询、上传、复制、移动、重命名和删除功能。
  * 所有接口均要求 OAuth 用户已授权相应的 {@code storage_read} 或 {@code storage_write} 权限范围。
  * </p>
  */
 @RestController
-@RolesAllowed(SysRole.OAUTH_USER)
+@RolesAllowed(SfcSysRole.OAUTH_USER)
 @RequestMapping("/api/openApi/diskFile")
 @RequiredArgsConstructor
 @Validated
@@ -77,9 +76,9 @@ public class OpenApiDiskFileController {
     @Operation(summary = "获取网盘文件列表")
     @GetMapping("/fileList/v1")
     @RequireScope(StandardScopes.STORAGE_READ)
-    public JsonResult<List<FileInfo>> getFileList(
+    public SfcJsonResult<List<FileInfo>> getFileList(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID long uid,
+            @RequestParam("uid") @SfcUID long uid,
             @Parameter(description = "目录路径，默认为根目录 /", example = "/")
             @RequestParam(value = "path", defaultValue = "/") @ValidPath String path) throws IOException {
         DiskFileSystem fs = diskFileSystemManager.getMainFileSystem();
@@ -92,7 +91,7 @@ public class OpenApiDiskFileController {
                 }
             }
         }
-        return JsonResultImpl.getInstance(mergedList);
+        return SfcJsonResult.getInstance(mergedList);
     }
 
     /**
@@ -109,7 +108,7 @@ public class OpenApiDiskFileController {
     @RequireScope(StandardScopes.STORAGE_READ)
     public ResponseEntity<Resource> download(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID long uid,
+            @RequestParam("uid") @SfcUID long uid,
             @Parameter(description = "文件完整路径（包含文件名）", required = true)
             @RequestParam("path") @ValidPath String path) throws IOException, UnsupportedEncodingException {
         // 从完整路径中提取目录路径和文件名
@@ -121,7 +120,7 @@ public class OpenApiDiskFileController {
         Resource resource = fs.getResource(uid, parentPath, fileName);
 
         if (resource == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
 
         return ResourceUtils.wrapResource(resource, fileName);
@@ -138,9 +137,9 @@ public class OpenApiDiskFileController {
     @Operation(summary = "创建网盘文件下载链接")
     @GetMapping("/downloadLink/v1")
     @RequireScope(StandardScopes.STORAGE_READ)
-    public JsonResult<String> createDownloadLink(
+    public SfcJsonResult<String> createDownloadLink(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID long uid,
+            @RequestParam("uid") @SfcUID long uid,
             @Parameter(description = "文件完整路径（包含文件名）", required = true)
             @RequestParam("path") @ValidPath String path,
             HttpServletRequest request) {
@@ -158,7 +157,7 @@ public class OpenApiDiskFileController {
                 .replaceQuery(null)
                 .build()
                 .toUriString();
-        return JsonResultImpl.getInstance(fileLinkService.createLink(baseUrl, resourceRequest));
+        return SfcJsonResult.getInstance(fileLinkService.createLink(baseUrl, resourceRequest));
     }
 
     /**
@@ -173,26 +172,26 @@ public class OpenApiDiskFileController {
     @Operation(summary = "上传文件到网盘")
     @PostMapping("/upload/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
-    public JsonResult<Long> upload(
+    public SfcJsonResult<Long> upload(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID(true) long uid,
+            @RequestParam("uid") @SfcUID(true) long uid,
             @Parameter(description = "目标目录路径", required = true)
             @RequestParam("path") String path,
             @Parameter(description = "上传的文件", required = true)
             @RequestParam("file") MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
-            throw new JsonException(400, "文件为空");
+            throw new SfcJsonException(400, "文件为空");
         }
         if (!ValidPathValidator.isValid(path)) {
-            throw new JsonException(FileSystemError.INVALID_PATH, "当前值：" + path);
+            throw new SfcJsonException(FileSystemError.INVALID_PATH, "当前值：" + path);
         }
-        if (StringUtils.hasText(file.getName()) && !FileNameValidator.valid(file.getName())) {
-            throw new JsonException(FileSystemError.INVALID_FILE_NAME, "当前值：" + file.getName());
+        if (SfcStringUtils.hasText(file.getName()) && !FileNameValidator.valid(file.getName())) {
+            throw new SfcJsonException(FileSystemError.INVALID_FILE_NAME, "当前值：" + file.getName());
         }
         FileInfo fileInfo = new FileInfo(file);
         fileInfo.setUid(uid);
         long result = diskFileSystemManager.getMainFileSystem().saveFile(fileInfo, path);
-        return JsonResultImpl.getInstance(result);
+        return SfcJsonResult.getInstance(result);
     }
 
     /**
@@ -207,15 +206,15 @@ public class OpenApiDiskFileController {
     @Operation(summary = "创建目录")
     @PostMapping("/mkdir/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
-    public JsonResult<Object> mkdir(
+    public SfcJsonResult<Object> mkdir(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID(true) long uid,
+            @RequestParam("uid") @SfcUID(true) long uid,
             @Parameter(description = "父目录路径", required = true)
             @RequestParam("path") @ValidPath String path,
             @Parameter(description = "新目录名称", required = true)
             @RequestParam("name") String name) throws IOException {
         diskFileSystemManager.getMainFileSystem().mkdir(uid, path, name);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -233,13 +232,13 @@ public class OpenApiDiskFileController {
     @Operation(summary = "复制文件或目录（支持跨用户网盘）")
     @PostMapping("/copy/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
-    public JsonResult<Object> copy(
+    public SfcJsonResult<Object> copy(
             @Parameter(description = "用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
             @RequestParam("uid") Long uid,
             @RequestBody @Validated OpenApiFileTransferParam param) throws IOException {
         ResolvedTransferUid resolved = resolveTransferUids(uid, param);
-        UIDValidator.validateWithException(resolved.getSourceUid(), false);
-        UIDValidator.validateWithException(resolved.getTargetUid(), true);
+        SfcUIDValidator.validateWithException(resolved.getSourceUid(), false);
+        SfcUIDValidator.validateWithException(resolved.getTargetUid(), true);
         SimpleFileTransferParam transferParam = SimpleFileTransferParam.builder()
                 .sourceUid(resolved.getSourceUid())
                 .sourcePath(param.getSourcePath())
@@ -249,7 +248,7 @@ public class OpenApiDiskFileController {
                 .isOverwrite(param.getIsOverwrite() != null && param.getIsOverwrite())
                 .build();
         diskFileSystemManager.getMainFileSystem().copy(transferParam, null);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -267,19 +266,19 @@ public class OpenApiDiskFileController {
     @Operation(summary = "移动文件或目录（支持跨用户网盘）")
     @PostMapping("/move/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
-    public JsonResult<Object> move(
+    public SfcJsonResult<Object> move(
             @Parameter(description = "用户ID，兼容参数，优先使用请求体中 sourceUid 和 targetUid")
             @RequestParam("uid") Long uid,
             @RequestBody @Validated OpenApiFileTransferParam param) throws IOException {
         ResolvedTransferUid resolved = resolveTransferUids(uid, param);
-        UIDValidator.validateWithException(resolved.getSourceUid(), true);
-        UIDValidator.validateWithException(resolved.getTargetUid(), true);
+        SfcUIDValidator.validateWithException(resolved.getSourceUid(), true);
+        SfcUIDValidator.validateWithException(resolved.getTargetUid(), true);
         DiskFileSystem fs = diskFileSystemManager.getMainFileSystem();
         boolean overwrite = param.getIsOverwrite() != null && param.getIsOverwrite();
         for (String name : param.getFiles()) {
             fs.move(resolved.getSourceUid(), param.getSourcePath(), resolved.getTargetUid(), param.getTargetPath(), name, overwrite);
         }
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -295,9 +294,9 @@ public class OpenApiDiskFileController {
     @Operation(summary = "重命名文件或目录")
     @PostMapping("/rename/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
-    public JsonResult<Object> rename(
+    public SfcJsonResult<Object> rename(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID(true) long uid,
+            @RequestParam("uid") @SfcUID(true) long uid,
             @Parameter(description = "文件所在目录路径", required = true)
             @RequestParam("path") @ValidPath String path,
             @Parameter(description = "原文件名", required = true)
@@ -305,10 +304,10 @@ public class OpenApiDiskFileController {
             @Parameter(description = "新文件名", required = true)
             @RequestParam("newName") String newName) throws IOException {
         if (newName == null || newName.trim().isEmpty()) {
-            throw new JsonException(400, "文件名不能为空");
+            throw new SfcJsonException(400, "文件名不能为空");
         }
         diskFileSystemManager.getMainFileSystem().rename(uid, path, oldName, newName);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -323,14 +322,14 @@ public class OpenApiDiskFileController {
     @Operation(summary = "删除文件或目录")
     @DeleteMapping("/delete/v1")
     @RequireScope(StandardScopes.STORAGE_WRITE)
-    public JsonResult<Object> delete(
+    public SfcJsonResult<Object> delete(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID(true) long uid,
+            @RequestParam("uid") @SfcUID(true) long uid,
             @Parameter(description = "文件所在目录路径", required = true)
             @RequestParam("path") @ValidPath String path,
             @RequestBody @Validated FileNameList param) throws IOException {
         diskFileSystemManager.getMainFileSystem().deleteFile(uid, path, param.getFileName());
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     // ========================= Inner DTO =========================
@@ -377,7 +376,7 @@ public class OpenApiDiskFileController {
     }
 
     /**
-     * 解析后的文件传输 UID 结果。
+     * 解析后的文件传输 SfcUID 结果。
      */
     @AllArgsConstructor
     @Data
@@ -396,7 +395,7 @@ public class OpenApiDiskFileController {
      * @param uid   QueryParam 的兼容用户ID
      * @param param 文件传输参数
      * @return 解析后的 sourceUid 和 targetUid
-     * @throws JsonException 缺少必要参数时抛出
+     * @throws SfcJsonException 缺少必要参数时抛出
      */
     private ResolvedTransferUid resolveTransferUids(Long uid, OpenApiFileTransferParam param) {
         long sourceUid;
@@ -405,7 +404,7 @@ public class OpenApiDiskFileController {
         } else if (uid != null) {
             sourceUid = uid;
         } else {
-            throw new JsonException(400, "缺少 sourceUid 参数，请通过请求体 sourceUid 字段或 QueryParam uid 指定");
+            throw new SfcJsonException(400, "缺少 sourceUid 参数，请通过请求体 sourceUid 字段或 QueryParam uid 指定");
         }
 
         long targetUid;
@@ -414,7 +413,7 @@ public class OpenApiDiskFileController {
         } else if (uid != null) {
             targetUid = uid;
         } else {
-            throw new JsonException(400, "缺少 targetUid 参数，请通过请求体 targetUid 字段或 QueryParam uid 指定");
+            throw new SfcJsonException(400, "缺少 targetUid 参数，请通过请求体 targetUid 字段或 QueryParam uid 指定");
         }
 
         return new ResolvedTransferUid(sourceUid, targetUid);

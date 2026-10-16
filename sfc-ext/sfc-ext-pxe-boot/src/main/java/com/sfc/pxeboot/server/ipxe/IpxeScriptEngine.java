@@ -5,7 +5,7 @@ import com.sfc.pxeboot.model.enums.BootItemType;
 import com.sfc.pxeboot.model.enums.IsoBootMethod;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.service.BootItemService;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -39,7 +39,7 @@ public class IpxeScriptEngine {
 
         String menuItems = items.stream()
                 .map(item -> {
-                    String desc = StringUtils.hasText(item.getDescription()) ? item.getDescription() : item.getDisplayName();
+                    String desc = SfcStringUtils.hasText(item.getDescription()) ? item.getDescription() : item.getDisplayName();
                     return "item %s %s".formatted(item.getItemKey(), desc);
                 })
                 .collect(Collectors.joining("\n"));
@@ -97,7 +97,7 @@ public class IpxeScriptEngine {
         // 对于非自定义脚本类型，将 customIpxeScript 作为前置或后置脚本拼接
         if (item.getType() != BootItemType.CUSTOM_IPXE_SCRIPT
                 && item.getIsoBootMethod() != IsoBootMethod.CUSTOM_IPXE_SCRIPT
-                && StringUtils.hasText(item.getCustomIpxeScript())) {
+                && SfcStringUtils.hasText(item.getCustomIpxeScript())) {
             if (item.getType() == BootItemType.ISO && item.getIsoBootMethod() == IsoBootMethod.SANBOOT) {
                 // ISO 的 SANBOOT模式下，前置脚本
                 script = item.getCustomIpxeScript() + "\n" + script;

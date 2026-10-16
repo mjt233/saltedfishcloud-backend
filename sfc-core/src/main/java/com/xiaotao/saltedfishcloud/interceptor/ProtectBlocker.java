@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.interceptor;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.utils.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +56,7 @@ public class ProtectBlocker implements HandlerInterceptor {
 
             if (canBlock) {
                 response.setContentType("application/json;charset=utf-8");
-                response.getWriter().print(JsonResultImpl.getInstance(501, null, "系统处于保护状态，暂时无法响应该API的请求，稍后将解除，请过段时间再试").toString());
+                response.getWriter().print(SfcJsonResult.getInstance(501, null, "系统处于保护状态，暂时无法响应该API的请求，稍后将解除，请过段时间再试").toString());
                 return false;
             }
 

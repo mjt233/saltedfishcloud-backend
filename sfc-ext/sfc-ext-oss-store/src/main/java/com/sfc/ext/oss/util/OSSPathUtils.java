@@ -1,6 +1,6 @@
 package com.sfc.ext.oss.util;
 
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 public class OSSPathUtils {
 
@@ -42,7 +42,7 @@ public class OSSPathUtils {
      * @param path 待判断路径
      */
     public static boolean isRootPath(String path) {
-        return !StringUtils.hasText(path) || "/".equals(path);
+        return !SfcStringUtils.hasText(path) || "/".equals(path);
     }
 
 }

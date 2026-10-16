@@ -2,10 +2,11 @@ package com.xiaotao.saltedfishcloud.constant.error;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import com.sfc.cloud.exception.SfcErrorInfo;
 
 @Getter
 @RequiredArgsConstructor
-public enum FileSystemError implements ErrorInfo {
+public enum FileSystemError implements SfcErrorInfo {
     NODE_NOT_FOUND(1000, 404, "无效的节点ID"),
     FILE_NOT_FOUND(1001, 404, "找不到文件"),
     FILE_TOO_LARGE(1002, 413, "文件过大"),

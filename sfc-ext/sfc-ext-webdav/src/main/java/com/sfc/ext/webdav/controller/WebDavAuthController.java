@@ -1,9 +1,8 @@
 package com.sfc.ext.webdav.controller;
 
 import com.sfc.ext.webdav.service.WebDavAuthService;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.cloud.data.validation.SfcUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,14 +18,14 @@ public class WebDavAuthController {
     private final WebDavAuthService webDavAuthService;
 
     @PostMapping("setWebDavPassword")
-    public JsonResult<Object> setWebDavPassword(@UID @RequestParam("uid") Long uid,
+    public SfcJsonResult<Object> setWebDavPassword(@SfcUID @RequestParam("uid") Long uid,
                                         @RequestParam("password") String password) {
         webDavAuthService.setWebDavPassword(uid, password);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @PostMapping("getAuthStatus")
-    public JsonResult<Boolean> getAuthStatus(@UID @RequestParam("uid") Long uid) {
-        return JsonResultImpl.getInstance(webDavAuthService.existAuth(uid));
+    public SfcJsonResult<Boolean> getAuthStatus(@SfcUID @RequestParam("uid") Long uid) {
+        return SfcJsonResult.getInstance(webDavAuthService.existAuth(uid));
     }
 }

@@ -1,6 +1,6 @@
 package com.sfc.mcp.model;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
@@ -20,7 +20,7 @@ import lombok.EqualsAndHashCode;
 @Table(indexes = {
         @Index(name = "idx_mcp_api_key_uid", columnList = "uid", unique = true)
 })
-public class McpApiKey extends AuditModel {
+public class McpApiKey extends SfcAuditModel {
 
     /**
      * API Key 名称，便于用户识别

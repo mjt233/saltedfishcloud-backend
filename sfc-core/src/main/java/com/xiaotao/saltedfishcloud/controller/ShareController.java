@@ -1,15 +1,14 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.service.share.ShareService;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
@@ -36,13 +35,13 @@ public class ShareController {
     private final ShareService shareService;
 
     @DeleteMapping("{sid}")
-    public JsonResult<Object> deleteShare(@PathVariable("sid") Long sid) {
+    public SfcJsonResult<Object> deleteShare(@PathVariable("sid") Long sid) {
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
 
         assert user != null;
         shareService.deleteShare(sid, user.getId());
 
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -57,12 +56,12 @@ public class ShareController {
     @PostMapping("/wrap/{sid}/{verification}")
     @AllowAnonymous
     @Deprecated
-    public JsonResult<String> createWarp(@PathVariable("sid") Long sid,
+    public SfcJsonResult<String> createWarp(@PathVariable("sid") Long sid,
                                  @PathVariable("verification") String verification,
                                  @RequestParam(value = "code", required = false) String code,
                                  @RequestBody FileTransferInfo fileTransferInfo) {
         String wid = shareService.createwrap(sid, verification, code, fileTransferInfo);
-        return JsonResultImpl.getInstance(wid);
+        return SfcJsonResult.getInstance(wid);
     }
 
     /**
@@ -79,7 +78,7 @@ public class ShareController {
      */
     @GetMapping("/{sid}/{verification}")
     @AllowAnonymous
-    public JsonResult<ShareInfo> getShare(@PathVariable("sid") Long sid,
+    public SfcJsonResult<ShareInfo> getShare(@PathVariable("sid") Long sid,
                                @PathVariable("verification") String verification,
                                @RequestParam(value = "code", required = false) String extractCode) {
         ShareInfo share = shareService.getShare(sid, verification);
@@ -87,7 +86,7 @@ public class ShareController {
             share.setValidateSuccess(true);
         }
         share.hideKeyAttr();
-        return JsonResultImpl.getInstance(share);
+        return SfcJsonResult.getInstance(share);
     }
 
     /**
@@ -98,25 +97,25 @@ public class ShareController {
             "/view/{sid}/{verification}",
     })
     @AllowAnonymous
-    public JsonResult<List<FileInfo>[]> getDirContent(@PathVariable("sid") Long sid,
+    public SfcJsonResult<List<FileInfo>[]> getDirContent(@PathVariable("sid") Long sid,
                                     @PathVariable("verification") String verification,
                                     @RequestParam(value = "code", required = false) String extractCode,
                                     HttpServletRequest request) throws IOException {
         String path = URLUtils.getRequestFilePath("/api/share/view/" + sid + "/" + verification, request);
         List<FileInfo>[] files = shareService.browse(sid, verification, path, extractCode);
-        return JsonResultImpl.getInstance(files);
+        return SfcJsonResult.getInstance(files);
     }
 
     /**
      * 创建分享
      */
     @PostMapping
-    public JsonResult<ShareInfo> createShare(@RequestBody @Valid ShareDTO shareDTO, Principal principal) {
+    public SfcJsonResult<ShareInfo> createShare(@RequestBody @Valid ShareDTO shareDTO, Principal principal) {
         System.out.println(principal);
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
         assert user != null;
         ShareInfo share = shareService.createShare(user.getId(), shareDTO);
-        return JsonResultImpl.getInstance(share);
+        return SfcJsonResult.getInstance(share);
     }
 
     /**
@@ -127,7 +126,7 @@ public class ShareController {
             "/user"
     })
     @AllowAnonymous
-    public JsonResult<CommonPageInfo<ShareInfo>> getUserShare(@PathVariable(value = "uid", required = false) Long uid,
+    public SfcJsonResult<SfcPageInfo<ShareInfo>> getUserShare(@PathVariable(value = "uid", required = false) Long uid,
                                    @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
                                    @RequestParam(value = "size", defaultValue = "5") @Min(5) @Valid Integer size) {
         boolean emptyUid = false;
@@ -136,17 +135,17 @@ public class ShareController {
             emptyUid = true;
             UserPrincipal user = SecureUtils.getSpringSecurityUser();
             if (user == null) {
-                throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+                throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
             }
             uid = user.getId();
         }
         page--;
-        CommonPageInfo<ShareInfo> userShare = shareService.getUserShare(uid, page, size, !emptyUid);
+        SfcPageInfo<ShareInfo> userShare = shareService.getUserShare(uid, page, size, !emptyUid);
         if (emptyUid) {
             for (ShareInfo share : userShare.getContent()) {
                 share.setValidateSuccess(true);
             }
         }
-        return JsonResultImpl.getInstance(userShare);
+        return SfcJsonResult.getInstance(userShare);
     }
 }

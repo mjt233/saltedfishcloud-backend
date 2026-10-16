@@ -7,7 +7,7 @@ import com.sfc.cloud.model.ServiceDefinition;
 import com.sfc.cloud.model.ServiceInstance;
 import com.sfc.cloud.registry.ServiceRegistry;
 import com.sfc.ext.nacos.config.SysNacosProperties;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 
@@ -78,15 +78,15 @@ public class NacosServiceRegistry implements ServiceRegistry, DisposableBean {
      *
      * @param definition 自身服务描述，{@code serviceName} 不能为空
      * @param instance   自身实例信息，{@code host} 与 {@code port} 必须有效
-     * @throws JsonException 入参不合法或 Nacos 服务端返回错误时抛出
+     * @throws SfcJsonException 入参不合法或 Nacos 服务端返回错误时抛出
      */
     @Override
     public void register(ServiceDefinition definition, ServiceInstance instance) {
         if (definition == null || instance == null || !hasText(definition.getServiceName())) {
-            throw new JsonException("服务注册失败：ServiceDefinition.serviceName 与 ServiceInstance 均不能为空");
+            throw new SfcJsonException("服务注册失败：ServiceDefinition.serviceName 与 ServiceInstance 均不能为空");
         }
         if (!hasText(instance.getHost()) || instance.getPort() <= 0) {
-            throw new JsonException("服务注册失败：实例地址无效 host=" + instance.getHost() + " port=" + instance.getPort());
+            throw new SfcJsonException("服务注册失败：实例地址无效 host=" + instance.getHost() + " port=" + instance.getPort());
         }
         String serviceName = definition.getServiceName().trim();
         String group = normalizeGroup(definition.getGroup());
@@ -98,7 +98,7 @@ public class NacosServiceRegistry implements ServiceRegistry, DisposableBean {
                     + instance.getHost() + ":" + instance.getPort()
                     + "。请检查 sys.service.nacos.server-addr 与 Nacos 服务端状态。原因：" + e.getMessage();
             log.error("[服务注册] {}", msg, e);
-            throw new JsonException(msg);
+            throw new SfcJsonException(msg);
         }
 
         this.registeredServiceName = serviceName;
@@ -117,7 +117,7 @@ public class NacosServiceRegistry implements ServiceRegistry, DisposableBean {
      * 即使服务端此刻不可达，临时实例也会在客户端心跳停止后被服务端自动清理，不会留下永久残留。
      * 未注册时静默返回（幂等）。
      *
-     * @throws JsonException Nacos 服务端返回错误时抛出
+     * @throws SfcJsonException Nacos 服务端返回错误时抛出
      */
     @Override
     public void deregister() {
@@ -135,7 +135,7 @@ public class NacosServiceRegistry implements ServiceRegistry, DisposableBean {
             String msg = "Nacos 服务注销失败：serviceName=" + serviceName + " group=" + group + " instance=" + ip + ":" + port
                     + "。临时实例将由服务端心跳超时自动清理。原因：" + e.getMessage();
             log.error("[服务注销] {}", msg, e);
-            throw new JsonException(msg);
+            throw new SfcJsonException(msg);
         }
         log.info("[服务注销] Nacos 已注销自身实例 serviceName={} group={} instance={}:{}", serviceName, group, ip, port);
     }

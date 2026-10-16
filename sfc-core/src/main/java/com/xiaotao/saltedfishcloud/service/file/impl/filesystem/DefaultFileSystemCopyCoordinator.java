@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -14,7 +14,7 @@ import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamCopyResult;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,7 +103,7 @@ public class DefaultFileSystemCopyCoordinator {
      */
     private void validateCopyDepth(int depth) {
         if (depth > MAX_COPY_DEPTH) {
-            throw new JsonException(FileSystemError.DIR_TOO_DEPTH, "目录深度超过32");
+            throw new SfcJsonException(FileSystemError.DIR_TOO_DEPTH, "目录深度超过32");
         }
     }
 
@@ -143,17 +143,17 @@ public class DefaultFileSystemCopyCoordinator {
         }
         if (CollectionUtils.isEmpty(param.getFiles())) {
             if (PathUtils.isSubDir(sourcePath, targetPath)) {
-                throw new JsonException(FileSystemError.TARGET_IS_SUB_DIR, sourcePath);
+                throw new SfcJsonException(FileSystemError.TARGET_IS_SUB_DIR, sourcePath);
             }
             return;
         }
         boolean anyMatch = param.getFiles().stream().anyMatch(fileName -> {
-            String targetFullPath = StringUtils.appendPath(targetPath, fileName);
-            String sourceFullPath = StringUtils.appendPath(sourcePath, fileName);
+            String targetFullPath = SfcStringUtils.appendPath(targetPath, fileName);
+            String sourceFullPath = SfcStringUtils.appendPath(sourcePath, fileName);
             return PathUtils.isSubDir(sourceFullPath, targetFullPath);
         });
         if (anyMatch) {
-            throw new JsonException(FileSystemError.TARGET_IS_SUB_DIR, sourcePath);
+            throw new SfcJsonException(FileSystemError.TARGET_IS_SUB_DIR, sourcePath);
         }
     }
 
@@ -274,7 +274,7 @@ public class DefaultFileSystemCopyCoordinator {
                                        FileSystemRouteContext sourceRoute,
                                        FileSystemRouteContext targetRoute) throws IOException {
         Lazy<String> nodeId = Lazy.of(() -> metadataOperator.getNodeIdByPath(targetUid, targetPath)
-                .orElseThrow(() -> new JsonException(404, "路径" + targetPath + "节点信息丢失")));
+                .orElseThrow(() -> new SfcJsonException(404, "路径" + targetPath + "节点信息丢失")));
         List<FileInfo> sourceFileList = ObjectUtils.cloneListElement(listFiles(sourceUid, sourcePath, param.getFiles()), FileInfo::new);
         List<String> sourceNames = sourceFileList.stream().map(FileInfo::getName).toList();
         Map<String, FileInfo> targetExistFileMap = listFiles(targetUid, targetPath, sourceNames)
@@ -313,9 +313,9 @@ public class DefaultFileSystemCopyCoordinator {
             return;
         }
         if (sourceFile.isFile()) {
-            throw new JsonException(FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR);
+            throw new SfcJsonException(FileSystemError.NOT_ALLOW_FILE_OVERWRITE_DIR);
         }
-        throw new JsonException(FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE);
+        throw new SfcJsonException(FileSystemError.NOT_ALLOW_DIR_OVERWRITE_FILE);
     }
 
     /**
@@ -342,8 +342,8 @@ public class DefaultFileSystemCopyCoordinator {
                                            FileInfo sourceFile,
                                            @Nullable FileInfo existFile) throws IOException {
         FileTransferItem transferRecord = FileTransferItem.builder()
-                .from(StringUtils.appendPath(sourcePath, sourceFile.getName()))
-                .to(StringUtils.appendPath(targetPath, sourceFile.getName()))
+                .from(SfcStringUtils.appendPath(sourcePath, sourceFile.getName()))
+                .to(SfcStringUtils.appendPath(targetPath, sourceFile.getName()))
                 .fileInfo(sourceFile)
                 .total(sourceFile.getSize())
                 .loaded(0L)
@@ -364,7 +364,7 @@ public class DefaultFileSystemCopyCoordinator {
 
         Resource resource = getMatchedResource(sourceRoute, sourceUid, sourceRoute.getResolvedPath(), sourceFile.getName());
         if (resource == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND, StringUtils.appendPath(sourcePath, sourceFile.getName()));
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND, SfcStringUtils.appendPath(sourcePath, sourceFile.getName()));
         }
         FileInfo targetFile = new FileInfo();
         BeanUtils.copyProperties(sourceFile, targetFile);
@@ -398,8 +398,8 @@ public class DefaultFileSystemCopyCoordinator {
                                                 String sourcePath,
                                                 String targetPath,
                                                 FileInfo sourceFile) throws IOException {
-        String nextSourcePath = StringUtils.appendPath(sourcePath, sourceFile.getName());
-        String nextTargetPath = StringUtils.appendPath(targetPath, sourceFile.getName());
+        String nextSourcePath = SfcStringUtils.appendPath(sourcePath, sourceFile.getName());
+        String nextTargetPath = SfcStringUtils.appendPath(targetPath, sourceFile.getName());
         if (callback != null) {
             callback.onDirStart(nextTargetPath);
         }
@@ -513,7 +513,7 @@ public class DefaultFileSystemCopyCoordinator {
         }
         routeContext.requireDelegateFileSystem().mkdir(uid, routeContext.getResolvedPath(), name);
         if (routeContext.requiresMainMetadataSync()) {
-            metadataOperator.mkdirs(uid, StringUtils.appendPath(path, name), true);
+            metadataOperator.mkdirs(uid, SfcStringUtils.appendPath(path, name), true);
         }
     }
 }

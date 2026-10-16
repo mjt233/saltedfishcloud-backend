@@ -3,10 +3,10 @@ package com.sfc.task;
 import com.sfc.task.model.AsyncTaskQueryParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -20,10 +20,10 @@ public class AsyncTaskRecordServiceImpl implements AsyncTaskRecordService {
     private AsyncTaskRecordRepo asyncTaskRecordRepo;
 
     @Override
-    public CommonPageInfo<AsyncTaskRecord> listRecord(AsyncTaskQueryParam param) {
-        UIDValidator.validate(Optional.ofNullable(param.getUid()).orElse(UserConstants.PUBLIC_USER_ID), true);
+    public SfcPageInfo<AsyncTaskRecord> listRecord(AsyncTaskQueryParam param) {
+        SfcUIDValidator.validate(Optional.ofNullable(param.getUid()).orElse(SfcUserConstants.PUBLIC_USER_ID), true);
 
-        return CommonPageInfo.of(asyncTaskRecordRepo.findAll(JpaLambdaQueryWrapper.get(AsyncTaskRecord.class)
+        return SfcPageInfo.of(asyncTaskRecordRepo.findAll(JpaLambdaQueryWrapper.get(AsyncTaskRecord.class)
                                 .eq(AsyncTaskRecord::getUid, param.getUid())
                                 .in(AsyncTaskRecord::getStatus, param.getStatus())
                         .build(),

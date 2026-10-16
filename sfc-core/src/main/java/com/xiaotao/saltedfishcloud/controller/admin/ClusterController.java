@@ -1,8 +1,7 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,7 @@ public class ClusterController {
 
     @Operation(summary = "获取集群中的所有节点")
     @GetMapping("listNodes")
-    public JsonResult<List<ClusterNodeInfo>> listNodes() {
-        return JsonResultImpl.getInstance(clusterService.listNodes());
+    public SfcJsonResult<List<ClusterNodeInfo>> listNodes() {
+        return SfcJsonResult.getInstance(clusterService.listNodes());
     }
 }

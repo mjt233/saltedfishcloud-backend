@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.FileInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.projection.FileInfoSearchResult;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
@@ -290,7 +290,7 @@ public class DefaultFileSystemMetadataOperator implements FileSystemMetadataOper
     public List<FileInfo>[] getUserFileList(long uid, String path) {
         return getNodeIdByPath(uid, path)
                 .map(nodeId -> getUserFileListByNodeId(uid, nodeId))
-                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND));
     }
 
     /**
@@ -304,7 +304,7 @@ public class DefaultFileSystemMetadataOperator implements FileSystemMetadataOper
     public List<FileInfo> getUserFileList(long uid, String path, @Nullable Collection<String> nameList) {
         return getNodeIdByPath(uid, path)
                 .map(nodeId -> findByUidAndNodeId(uid, nodeId, nameList))
-                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, path));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND, path));
     }
 
     /**
@@ -340,12 +340,12 @@ public class DefaultFileSystemMetadataOperator implements FileSystemMetadataOper
      * @param size 页大小
      * @return 搜索结果
      */
-    public CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
+    public SfcPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size) {
         String searchKey = key.replace("%", "").replaceAll("\\s+", "%");
         int pageIndex = Math.max(Optional.ofNullable(page).orElse(0), 0);
         int pageSize = Math.max(Optional.ofNullable(size).orElse(10), 1);
         Page<FileInfoSearchResult> searchResult = fileInfoRepo.search(uid, searchKey, PageRequest.of(pageIndex, pageSize));
-        CommonPageInfo<FileInfo> pageInfo = new CommonPageInfo<>();
+        SfcPageInfo<FileInfo> pageInfo = new SfcPageInfo<>();
         pageInfo.setTotalPage(searchResult.getTotalPages());
         pageInfo.setTotalCount(searchResult.getTotalElements());
         pageInfo.setContent(searchResult.getContent().stream().map(item -> {

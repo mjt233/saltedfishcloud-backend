@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.comment;
 
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.CommentListParam;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
 import com.xiaotao.saltedfishcloud.model.vo.CommentVo;
@@ -22,7 +22,7 @@ public interface CommentService {
      * @param param 查询参数（topicId + 分页）
      * @return 根评论分页列表
      */
-    CommonPageInfo<CommentVo> listByTopicId(CommentListParam param);
+    SfcPageInfo<CommentVo> listByTopicId(CommentListParam param);
 
     /**
      * 按根评论ID分页查询该评论下的回复。
@@ -30,5 +30,5 @@ public interface CommentService {
      * @param param 查询参数（commentId + 分页）
      * @return 回复分页列表
      */
-    CommonPageInfo<CommentVo> listByCommentId(CommentListParam param);
+    SfcPageInfo<CommentVo> listByCommentId(CommentListParam param);
 }

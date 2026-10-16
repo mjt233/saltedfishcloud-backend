@@ -2,22 +2,21 @@ package com.sfc.mcp.controller;
 
 import com.sfc.mcp.model.McpOperationResult;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
-import com.xiaotao.saltedfishcloud.constant.SysRole;
+import com.sfc.cloud.constant.SfcSysRole;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -46,7 +45,7 @@ import java.io.UnsupportedEncodingException;
  * </p>
  */
 @RestController
-@RolesAllowed(SysRole.OAUTH_USER)
+@RolesAllowed(SfcSysRole.OAUTH_USER)
 @RequestMapping("/api/mcp/diskFile")
 @RequiredArgsConstructor
 @Validated
@@ -68,7 +67,7 @@ public class McpDiskFileController {
     @GetMapping("/download")
     public ResponseEntity<Resource> download(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID long uid,
+            @RequestParam("uid") @SfcUID long uid,
             @Parameter(description = "文件完整路径（包含文件名）", required = true)
             @RequestParam("path") @ValidPath String path) throws IOException {
         String parentPath = PathUtils.getParentPath(path);
@@ -78,7 +77,7 @@ public class McpDiskFileController {
         Resource resource = fs.getResource(uid, parentPath, fileName);
 
         if (resource == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
 
         return ResourceUtils.wrapResource(resource, fileName);
@@ -94,9 +93,9 @@ public class McpDiskFileController {
      */
     @Operation(summary = "MCP 创建网盘文件下载链接")
     @GetMapping("/downloadLink")
-    public JsonResult<String> createDownloadLink(
+    public SfcJsonResult<String> createDownloadLink(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID long uid,
+            @RequestParam("uid") @SfcUID long uid,
             @Parameter(description = "文件完整路径（包含文件名）", required = true)
             @RequestParam("path") @ValidPath String path,
             HttpServletRequest request) {
@@ -114,7 +113,7 @@ public class McpDiskFileController {
                 .replaceQuery(null)
                 .build()
                 .toUriString();
-        return JsonResultImpl.getInstance(fileLinkService.createLink(baseUrl, resourceRequest));
+        return SfcJsonResult.getInstance(fileLinkService.createLink(baseUrl, resourceRequest));
     }
 
     /**
@@ -128,25 +127,25 @@ public class McpDiskFileController {
      */
     @Operation(summary = "MCP 上传文件到网盘")
     @PostMapping("/upload")
-    public JsonResult<Long> upload(
+    public SfcJsonResult<Long> upload(
             @Parameter(description = "用户ID，0 表示公共网盘", required = true)
-            @RequestParam("uid") @UID(true) long uid,
+            @RequestParam("uid") @SfcUID(true) long uid,
             @Parameter(description = "目标目录路径", required = true)
             @RequestParam("path") String path,
             @Parameter(description = "上传的文件", required = true)
             @RequestParam("file") MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
-            throw new JsonException(400, "文件为空");
+            throw new SfcJsonException(400, "文件为空");
         }
         if (!ValidPathValidator.isValid(path)) {
-            throw new JsonException(FileSystemError.INVALID_PATH, "当前值：" + path);
+            throw new SfcJsonException(FileSystemError.INVALID_PATH, "当前值：" + path);
         }
-        if (StringUtils.hasText(file.getName()) && !FileNameValidator.valid(file.getName())) {
-            throw new JsonException(FileSystemError.INVALID_FILE_NAME, "当前值：" + file.getName());
+        if (SfcStringUtils.hasText(file.getName()) && !FileNameValidator.valid(file.getName())) {
+            throw new SfcJsonException(FileSystemError.INVALID_FILE_NAME, "当前值：" + file.getName());
         }
         FileInfo fileInfo = new FileInfo(file);
         fileInfo.setUid(uid);
         long result = diskFileSystemManager.getMainFileSystem().saveFile(fileInfo, path);
-        return JsonResultImpl.getInstance(result);
+        return SfcJsonResult.getInstance(result);
     }
 }

@@ -3,7 +3,7 @@ package com.sfc.ext.webdav.service;
 import com.sfc.ext.webdav.dao.WebDavAuthRepo;
 import com.sfc.ext.webdav.enums.Constants;
 import com.sfc.ext.webdav.model.po.WebDavAuth;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.LockUtils;
@@ -67,7 +67,7 @@ public class WebDavAuthService {
             if (auth == null) {
                 UserPrincipal user = UserPrincipal.from(userService.getUserById(uid));
                 if (user == null) {
-                    throw new JsonException("无效的用户id");
+                    throw new SfcJsonException("无效的用户id");
                 }
                 auth = new WebDavAuth();
                 auth.setUid(uid);

@@ -3,19 +3,18 @@ package com.xiaotao.saltedfishcloud.controller;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
-import com.xiaotao.saltedfishcloud.constant.SysRole;
+import com.sfc.cloud.constant.SfcSysRole;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.ext.oidc.OidcScopeInfo;
 import com.xiaotao.saltedfishcloud.ext.oidc.OidcScopeModule;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.BindUserParam;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.*;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppKeyVo;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
@@ -28,9 +27,9 @@ import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformManager;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformUserService;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
@@ -94,7 +93,7 @@ public class OAuthController {
      */
     @GetMapping("listModules")
     @ResponseBody
-    public JsonResult<List<OidcScopeModuleVO>> listModules() {
+    public SfcJsonResult<List<OidcScopeModuleVO>> listModules() {
         List<OidcScopeModuleVO> modules = scopeModules.stream()
                 .map(m -> new OidcScopeModuleVO(
                         m.getModuleId(),
@@ -103,7 +102,7 @@ public class OAuthController {
                         m.getIcon(),
                         m.getScopes()))
                 .toList();
-        return JsonResultImpl.getInstance(modules);
+        return SfcJsonResult.getInstance(modules);
     }
 
     /**
@@ -123,9 +122,9 @@ public class OAuthController {
     @AllowAnonymous
     @GetMapping("createUser")
     @ResponseBody
-    public JsonResult<ThirdPartyPlatformCallbackResult> createUser(@RequestParam("actionId") String actionId) {
+    public SfcJsonResult<ThirdPartyPlatformCallbackResult> createUser(@RequestParam("actionId") String actionId) {
         UserVO user = thirdPartyPlatformManager.createUser(actionId);
-        return JsonResultImpl.getInstance(ThirdPartyPlatformCallbackResult.builder()
+        return SfcJsonResult.getInstance(ThirdPartyPlatformCallbackResult.builder()
                 .newToken(tokenService.generateUserToken(user))
                 .user(user)
                 .build());
@@ -145,7 +144,7 @@ public class OAuthController {
 
             ThirdPartyPlatformCallbackResult callbackResult = thirdPartyPlatformManager.doCallback(platformType, request);
             return new ModelAndView("thirdPlatformCallback")
-                    .addObject("result", MapperHolder.toJson(callbackResult))
+                    .addObject("result", SfcMapperHolder.toJson(callbackResult))
                     .addObject("newToken", callbackResult.getNewToken());
         } catch (Exception e) {
             log.error(platformType + "平台第三方登录回调出错", e);
@@ -158,8 +157,8 @@ public class OAuthController {
     @GetMapping("getThirdPartyPlatformConfig")
     @ResponseBody
     @RolesAllowed("ADMIN")
-    public JsonResult<Map<String, List<ConfigNode>>> getThirdPartyPlatformConfig() {
-        return JsonResultImpl.getInstance(
+    public SfcJsonResult<Map<String, List<ConfigNode>>> getThirdPartyPlatformConfig() {
+        return SfcJsonResult.getInstance(
                 thirdPartyPlatformManager.getAllPlatformHandler().stream()
                         .collect(Collectors.toMap(
                                 ThirdPartyPlatformHandler::getType,
@@ -171,8 +170,8 @@ public class OAuthController {
     @GetMapping("getThirdPartyPlatformConfigValue")
     @ResponseBody
     @RolesAllowed("ADMIN")
-    public JsonResult<Map<String, ThirdPartyAuthPlatform>> getThirdPartyPlatformConfigValue() {
-        return JsonResultImpl.getInstance(
+    public SfcJsonResult<Map<String, ThirdPartyAuthPlatform>> getThirdPartyPlatformConfigValue() {
+        return SfcJsonResult.getInstance(
                 thirdPartyPlatformManager.listPlatform()
                         .stream()
                         .collect(Collectors.toMap(ThirdPartyAuthPlatform::getType, Function.identity()))
@@ -183,7 +182,7 @@ public class OAuthController {
     @PostMapping("saveThirdPartyPlatformConfigValue")
     @ResponseBody
     @RolesAllowed("ADMIN")
-    public JsonResult<?> saveThirdPartyPlatformConfigValue(@RequestBody List<ThirdPartyAuthPlatform> platformList) {
+    public SfcJsonResult<?> saveThirdPartyPlatformConfigValue(@RequestBody List<ThirdPartyAuthPlatform> platformList) {
         List<String> types = platformList.stream().map(ThirdPartyAuthPlatform::getType).collect(Collectors.toList());
         Map<String, ThirdPartyAuthPlatform> typeMap = thirdPartyAuthPlatformRepo.findByTypeIn(types)
                 .stream()
@@ -195,7 +194,7 @@ public class OAuthController {
                     .ifPresent(existData -> platform.setId(existData.getId()));
         }
 
-        return JsonResultImpl.getInstance(
+        return SfcJsonResult.getInstance(
                 thirdPartyAuthPlatformRepo.saveAll(platformList)
         );
     }
@@ -207,124 +206,124 @@ public class OAuthController {
     @GetMapping("listPlatform")
     @AllowAnonymous
     @ResponseBody
-    public JsonResult<List<ThirdPartyAuthPlatform>> listPlatform() {
+    public SfcJsonResult<List<ThirdPartyAuthPlatform>> listPlatform() {
         List<ThirdPartyAuthPlatform> list = thirdPartyPlatformManager.listPlatform();
         for (ThirdPartyAuthPlatform platform : list) {
             platform.setConfig(null);
         }
-        return JsonResultImpl.getInstance(list);
+        return SfcJsonResult.getInstance(list);
     }
 
     @PostMapping("bindUser")
     @AllowAnonymous
     @ResponseBody
-    public JsonResult<UserVO> bindUser(@RequestBody BindUserParam param) {
+    public SfcJsonResult<UserVO> bindUser(@RequestBody BindUserParam param) {
         UserVO user;
         if (!Boolean.TRUE.equals(param.getAutoBind())) {
             Objects.requireNonNull(param.getAccount(), "用户名不能为空");
             Objects.requireNonNull(param.getPassword(), "密码不能为空");
             User specifyUser = Optional.ofNullable(userService.getUserByAccount(param.getAccount())).orElseThrow(UserNoExistException::new);
             if (!passwordEncoder.encode(param.getPassword()).equals(specifyUser.getPwd())) {
-                throw new JsonException("用户名或密码错误");
+                throw new SfcJsonException("用户名或密码错误");
             }
             user = thirdPartyPlatformManager.bindUser(param.getActionId(), specifyUser);
         } else {
             user = thirdPartyPlatformManager.bindUser(param.getActionId(), null);
         }
 
-        return JsonResultImpl.getInstance(user);
+        return SfcJsonResult.getInstance(user);
     }
 
     @GetMapping("listAssocPlatformUser")
     @Operation(summary = "列出已关联的第三方平台用户信息")
     @ResponseBody
-    public JsonResult<List<ThirdPartyPlatformUser>> listAssocPlatformUser(@RequestParam("uid") @UID Long uid) {
-        return JsonResultImpl.getInstance(thirdPartyPlatformUserService.findByUid(uid));
+    public SfcJsonResult<List<ThirdPartyPlatformUser>> listAssocPlatformUser(@RequestParam("uid") @SfcUID Long uid) {
+        return SfcJsonResult.getInstance(thirdPartyPlatformUserService.findByUid(uid));
     }
 
     @Operation(summary = "保存/新增一个第三方OAuth应用")
     @PostMapping("saveThirdPartyApp")
-    @RolesAllowed(SysRole.ADMIN)
+    @RolesAllowed(SfcSysRole.ADMIN)
     @ResponseBody
-    public JsonResult<ThirdPartyApp> saveThirdPartyApp(@RequestBody @Validated ThirdPartyApp app) {
+    public SfcJsonResult<ThirdPartyApp> saveThirdPartyApp(@RequestBody @Validated ThirdPartyApp app) {
         if (app.getId() == null && app.getUid() == null) {
             app.setUid(SecureUtils.getCurrentUid());
         }
         thirdPartyAppService.save(app);
-        return JsonResultImpl.getInstance(app);
+        return SfcJsonResult.getInstance(app);
     }
 
     @Operation(summary = "列出系统中的第三方OAuth应用")
     @GetMapping("listThirdPartyApp")
-    @RolesAllowed(SysRole.ADMIN)
+    @RolesAllowed(SfcSysRole.ADMIN)
     @ResponseBody
-    public JsonResult<CommonPageInfo<ThirdPartyApp>> listThirdPartyApp(PageableRequest pageableRequest) {
-        return JsonResultImpl.getInstance(thirdPartyAppService.listApps(pageableRequest));
+    public SfcJsonResult<SfcPageInfo<ThirdPartyApp>> listThirdPartyApp(SfcPageableRequest pageableRequest) {
+        return SfcJsonResult.getInstance(thirdPartyAppService.listApps(pageableRequest));
     }
 
 
     @Operation(summary = "删除系统中的第三方OAuth应用")
     @PostMapping("deleteThirdPartyApp")
-    @RolesAllowed(SysRole.ADMIN)
+    @RolesAllowed(SfcSysRole.ADMIN)
     @ResponseBody
-    public JsonResult<Object> deleteThirdPartyApp(@RequestBody List<Long> idList) {
+    public SfcJsonResult<Object> deleteThirdPartyApp(@RequestBody List<Long> idList) {
         thirdPartyAppService.batchDelete(idList);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @Operation(summary = "新生成一个第三方OAuth应用密钥")
     @GetMapping("generateNewOauthAppKey")
-    @RolesAllowed(SysRole.ADMIN)
+    @RolesAllowed(SfcSysRole.ADMIN)
     @ResponseBody
-    public JsonResult<ThirdPartyAppKeyVo> generateNewOauthAppKey(@RequestParam Long appId, @RequestParam(required = false) String name) {
-        return JsonResultImpl.getInstance(thirdPartyAppKeyService.generateNewKey(appId, name));
+    public SfcJsonResult<ThirdPartyAppKeyVo> generateNewOauthAppKey(@RequestParam Long appId, @RequestParam(required = false) String name) {
+        return SfcJsonResult.getInstance(thirdPartyAppKeyService.generateNewKey(appId, name));
     }
 
     @Operation(summary = "列出第三方OAuth应用的密钥")
     @GetMapping("listOAuthAppKey")
-    @RolesAllowed(SysRole.ADMIN)
+    @RolesAllowed(SfcSysRole.ADMIN)
     @ResponseBody
-    public JsonResult<List<ThirdPartyAppKeyVo>> listOAuthAppKey(@RequestParam Long appId) {
-        return JsonResultImpl.getInstance(thirdPartyAppKeyService.listKeyByAppId(appId));
+    public SfcJsonResult<List<ThirdPartyAppKeyVo>> listOAuthAppKey(@RequestParam Long appId) {
+        return SfcJsonResult.getInstance(thirdPartyAppKeyService.listKeyByAppId(appId));
     }
 
     @Operation(summary = "删除第三方OAuth应用密钥")
     @PostMapping("deleteOAuthAppKey")
-    @RolesAllowed(SysRole.ADMIN)
+    @RolesAllowed(SfcSysRole.ADMIN)
     @ResponseBody
-    public JsonResult<Object> deleteOAuthAppKey(@RequestBody List<Long> idList) {
+    public SfcJsonResult<Object> deleteOAuthAppKey(@RequestBody List<Long> idList) {
         thirdPartyAppKeyService.batchDelete(idList);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @Operation(summary = "修改第三方OAuth应用密钥信息")
     @PostMapping("changeOAuthAppKey")
-    @RolesAllowed(SysRole.ADMIN)
+    @RolesAllowed(SfcSysRole.ADMIN)
     @ResponseBody
-    public JsonResult<Object> changeOAuthAppKey(@RequestBody ThirdPartyAppKeyVo keyVo) {
+    public SfcJsonResult<Object> changeOAuthAppKey(@RequestBody ThirdPartyAppKeyVo keyVo) {
         thirdPartyAppKeyService.changeKeyInfo(keyVo);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @Operation(summary = "获取当前用户在第三方OAuth应用的授权信息")
     @GetMapping("getUserAuthorization")
     @ResponseBody
-    public JsonResult<ThirdPartyAppUserAuthorizationVo> getUserAuthorization(@RequestParam("appId") Long appId) {
-        return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.getUserAppAuthorization(appId, SecureUtils.getCurrentUid()));
+    public SfcJsonResult<ThirdPartyAppUserAuthorizationVo> getUserAuthorization(@RequestParam("appId") Long appId) {
+        return SfcJsonResult.getInstance(thirdPartyAppAuthorizationService.getUserAppAuthorization(appId, SecureUtils.getCurrentUid()));
     }
 
     @Operation(summary = "列出用户所有已关联的第三方OAuth应用授权")
     @GetMapping("listUserAuthentication")
     @ResponseBody
-    public JsonResult<List<ThirdPartyAppAuthorization>> listUserAuthentication(@RequestParam("uid") @UID Long uid) {
-        return JsonResultImpl.getInstance(thirdPartyAppAuthorizationService.findByUid(uid));
+    public SfcJsonResult<List<ThirdPartyAppAuthorization>> listUserAuthentication(@RequestParam("uid") @SfcUID Long uid) {
+        return SfcJsonResult.getInstance(thirdPartyAppAuthorizationService.findByUid(uid));
     }
 
     @Operation(summary = "撤销第三方OAuth应用授权")
     @PostMapping("revoke")
     @ResponseBody
-    public JsonResult<Object> revoke(@RequestParam("appId") Long appId, @RequestParam("uid") @UID Long uid) {
+    public SfcJsonResult<Object> revoke(@RequestParam("appId") Long appId, @RequestParam("uid") @SfcUID Long uid) {
         thirdPartyAppAuthorizationService.revoke(appId, uid);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 }

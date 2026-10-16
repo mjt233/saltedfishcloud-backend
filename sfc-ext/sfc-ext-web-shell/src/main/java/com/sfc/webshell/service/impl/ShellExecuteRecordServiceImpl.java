@@ -1,10 +1,10 @@
 package com.sfc.webshell.service.impl;
 
-import com.xiaotao.saltedfishcloud.service.CrudServiceImpl;
+import com.sfc.cloud.data.service.SfcCrudServiceImpl;
 import com.sfc.webshell.model.po.ShellExecuteRecord;
 import com.sfc.webshell.repo.ShellExecuteRecordRepo;
 import com.sfc.webshell.service.ShellExecuteRecordService;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @Service
 public class ShellExecuteRecordServiceImpl
-        extends CrudServiceImpl<ShellExecuteRecord, ShellExecuteRecordRepo>
+        extends SfcCrudServiceImpl<ShellExecuteRecord, ShellExecuteRecordRepo>
         implements ShellExecuteRecordService {
 
     @Autowired
@@ -26,7 +26,7 @@ public class ShellExecuteRecordServiceImpl
         record.setUid(
                 Optional.ofNullable(SecureUtils.getSpringSecurityUser())
                         .map(e -> e.getId())
-                        .orElse(UserConstants.PUBLIC_USER_ID)
+                        .orElse(SfcUserConstants.PUBLIC_USER_ID)
         );
         record.setHost(clusterService.getSelf().getHost());
         record.setCmd(cmd);

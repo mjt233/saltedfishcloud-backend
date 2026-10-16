@@ -5,20 +5,19 @@ import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +60,7 @@ public class FileV2Controller {
     @GetMapping("list")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<List<FileInfo>> list(@RequestParam("uid") @UID long uid,
+    public SfcJsonResult<List<FileInfo>> list(@RequestParam("uid") @SfcUID long uid,
                                            @RequestParam(value = "path", defaultValue = "/") @ValidPath String path) throws IOException {
         List<FileInfo>[] fileList = diskFileSystemManager.getMainFileSystem().getUserFileList(uid, path);
         List<FileInfo> merged = new ArrayList<>();
@@ -72,7 +71,7 @@ public class FileV2Controller {
                 }
             }
         }
-        return JsonResultImpl.getInstance(merged);
+        return SfcJsonResult.getInstance(merged);
     }
 
     /**
@@ -90,16 +89,16 @@ public class FileV2Controller {
     @GetMapping("search")
     @AllowAnonymous
     @NotBlock
-    public JsonResult<CommonPageInfo<FileInfo>> search(@RequestParam("uid") @UID long uid,
+    public SfcJsonResult<SfcPageInfo<FileInfo>> search(@RequestParam("uid") @SfcUID long uid,
                                                       @RequestParam("keyword") String keyword,
                                                       @RequestParam(value = "page", defaultValue = "0") Integer page,
                                                       @RequestParam(value = "size", defaultValue = "10") Integer size) {
-        if (!StringUtils.hasText(keyword)) {
-            throw new JsonException(400, "搜索关键字不能为空");
+        if (!SfcStringUtils.hasText(keyword)) {
+            throw new SfcJsonException(400, "搜索关键字不能为空");
         }
         int pageIndex = Math.max(page == null ? 0 : page, 0);
         int pageSize = Math.min(Math.max(size == null ? 10 : size, 1), MAX_SEARCH_SIZE);
-        return JsonResultImpl.getInstance(
+        return SfcJsonResult.getInstance(
                 diskFileSystemManager.getMainFileSystem().search(uid, keyword.trim(), pageIndex, pageSize));
     }
 
@@ -107,13 +106,13 @@ public class FileV2Controller {
     @GetMapping("download")
     @AllowAnonymous
     @NotBlock(level = ProtectLevel.DATA_CHECKING)
-    public ResponseEntity<Resource> download(@RequestParam("uid") @UID long uid,
+    public ResponseEntity<Resource> download(@RequestParam("uid") @SfcUID long uid,
                                              @RequestParam("path") @ValidPath String path) throws IOException {
         String parentPath = PathUtils.getParentPath(path);
         String fileName = PathUtils.getLastNode(path);
         Resource resource = diskFileSystemManager.getMainFileSystem().getResource(uid, parentPath, fileName);
         if (resource == null) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
         return ResourceUtils.wrapResource(resource, fileName);
     }
@@ -121,40 +120,40 @@ public class FileV2Controller {
     /** 上传文件 */
     @PostMapping("upload")
     @AllowAnonymous
-    public JsonResult<Long> upload(@RequestParam("uid") @UID(true) long uid,
+    public SfcJsonResult<Long> upload(@RequestParam("uid") @SfcUID(true) long uid,
                                    @RequestParam("path") @ValidPath String path,
                                    @RequestParam(value = "name", required = false) @FileName String name,
                                    @RequestParam(value = "mtime", required = false) Long mtime,
                                    @RequestPart("file") MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
-            throw new JsonException(400, "文件为空");
+            throw new SfcJsonException(400, "文件为空");
         }
         FileInfo fileInfo = new FileInfo(file);
         fileInfo.setUid(uid);
-        if (StringUtils.hasText(name)) {
+        if (SfcStringUtils.hasText(name)) {
             fileInfo.setName(name);
         }
         if (mtime != null) {
             fileInfo.setMtime(mtime);
         }
-        return JsonResultImpl.getInstance(diskFileSystemManager.getMainFileSystem().saveFile(fileInfo, path));
+        return SfcJsonResult.getInstance(diskFileSystemManager.getMainFileSystem().saveFile(fileInfo, path));
     }
 
     /** 重命名文件 */
     @PostMapping("rename")
     @AllowAnonymous
-    public JsonResult<Object> rename(@RequestParam("uid") @UID(true) long uid,
+    public SfcJsonResult<Object> rename(@RequestParam("uid") @SfcUID(true) long uid,
                                      @RequestParam("path") @ValidPath String path,
                                      @RequestParam("oldName") @FileName String oldName,
                                      @RequestParam("newName") @FileName String newName) throws IOException {
         diskFileSystemManager.getMainFileSystem().rename(uid, path, oldName, newName);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /** 复制文件 */
     @PostMapping("copy")
     @AllowAnonymous
-    public JsonResult<Object> copy(@RequestParam("uid") @UID long uid,
+    public SfcJsonResult<Object> copy(@RequestParam("uid") @SfcUID long uid,
                                    @RequestParam(value = "sourceUid", required = false) Long sourceUid,
                                    @RequestParam(value = "targetUid", required = false) Long targetUid,
                                    @RequestParam("sourcePath") @ValidPath String sourcePath,
@@ -163,8 +162,8 @@ public class FileV2Controller {
                                    @RequestBody List<String> names) throws IOException {
         long fromUid = sourceUid == null ? uid : sourceUid;
         long toUid = targetUid == null ? uid : targetUid;
-        UIDValidator.validateWithException(fromUid, false);
-        UIDValidator.validateWithException(toUid, true);
+        SfcUIDValidator.validateWithException(fromUid, false);
+        SfcUIDValidator.validateWithException(toUid, true);
         requireNames(names);
         SimpleFileTransferParam param = SimpleFileTransferParam.builder()
                 .sourceUid(fromUid)
@@ -175,13 +174,13 @@ public class FileV2Controller {
                 .isOverwrite(overwrite)
                 .build();
         diskFileSystemManager.getMainFileSystem().copy(param, null);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /** 移动文件 */
     @PostMapping("move")
     @AllowAnonymous
-    public JsonResult<Object> move(@RequestParam("uid") @UID long uid,
+    public SfcJsonResult<Object> move(@RequestParam("uid") @SfcUID long uid,
                                     @RequestParam(value = "sourceUid", required = false) Long sourceUid,
                                     @RequestParam(value = "targetUid", required = false) Long targetUid,
                                     @RequestParam("sourcePath") @ValidPath String sourcePath,
@@ -190,31 +189,31 @@ public class FileV2Controller {
                                     @RequestBody List<String> names) throws IOException {
         long fromUid = sourceUid == null ? uid : sourceUid;
         long toUid = targetUid == null ? uid : targetUid;
-        UIDValidator.validateWithException(fromUid, true);
-        UIDValidator.validateWithException(toUid, true);
+        SfcUIDValidator.validateWithException(fromUid, true);
+        SfcUIDValidator.validateWithException(toUid, true);
         requireNames(names);
         DiskFileSystem fileSystem = diskFileSystemManager.getMainFileSystem();
         for (String name : names) {
             fileSystem.move(fromUid, sourcePath, toUid, targetPath, name, overwrite);
         }
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /** 删除文件 */
     @PostMapping("delete")
     @AllowAnonymous
-    public JsonResult<Object> delete(@RequestParam("uid") @UID(true) long uid,
+    public SfcJsonResult<Object> delete(@RequestParam("uid") @SfcUID(true) long uid,
                                      @RequestParam("path") @ValidPath String path,
                                      @RequestBody List<String> names) throws IOException {
         requireNames(names);
         diskFileSystemManager.getMainFileSystem().deleteFile(uid, path, names);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /** 校验文件名列表非空 */
     private void requireNames(List<String> names) {
         if (names == null || names.isEmpty()) {
-            throw new JsonException(400, "文件名列表不能为空");
+            throw new SfcJsonException(400, "文件名列表不能为空");
         }
     }
 }

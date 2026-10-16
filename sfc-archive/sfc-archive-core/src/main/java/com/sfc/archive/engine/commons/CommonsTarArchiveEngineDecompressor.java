@@ -5,7 +5,7 @@ import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.utils.EngineResourceUtils;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarFile;
@@ -127,7 +127,7 @@ public class CommonsTarArchiveEngineDecompressor extends AbstractArchiveEngineDe
         String normalizedPath = normalizeEntryName(normalizeArchivePath(archivePath));
         TarArchiveEntry entry = getEntryMap().get(normalizedPath);
         if (entry == null || entry.isDirectory()) {
-            throw new JsonException("压缩包内资源不存在: " + archivePath);
+            throw new SfcJsonException("压缩包内资源不存在: " + archivePath);
         }
         return wrapInputStreamWithCallback(
                 EngineResourceUtils.normalizeArchivePath(entry.getName()),
@@ -181,7 +181,7 @@ public class CommonsTarArchiveEngineDecompressor extends AbstractArchiveEngineDe
             }
         }
 
-        throw new JsonException("不支持的 TAR 解压格式: " + extension);
+        throw new SfcJsonException("不支持的 TAR 解压格式: " + extension);
     }
 
     /**
@@ -202,7 +202,7 @@ public class CommonsTarArchiveEngineDecompressor extends AbstractArchiveEngineDe
         if (".tar.bz2".equals(extension)) {
             return new BZip2CompressorInputStream(sourceInputStream);
         }
-        throw new JsonException("不支持的 TAR 复合格式: " + extension);
+        throw new SfcJsonException("不支持的 TAR 复合格式: " + extension);
     }
 
     /**

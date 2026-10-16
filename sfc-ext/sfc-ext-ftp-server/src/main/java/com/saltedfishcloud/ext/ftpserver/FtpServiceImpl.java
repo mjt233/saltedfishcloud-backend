@@ -6,7 +6,7 @@ import com.saltedfishcloud.ext.ftpserver.core.DiskFtpFileSystemFactory;
 import com.saltedfishcloud.ext.ftpserver.core.DiskFtpUserManager;
 import com.saltedfishcloud.ext.ftpserver.ftplet.FtpUploadAndLogHandler;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.*;
 import org.apache.ftpserver.ftplet.FtpException;
@@ -118,14 +118,14 @@ public class FtpServiceImpl implements ApplicationRunner , FtpService {
         String configRawJson = configService.getConfig(FtpConstant.CONFIG_NAME);
         if (configRawJson != null) {
             try {
-                final FTPServerProperty config = MapperHolder.mapper.readValue(configRawJson, FTPServerProperty.class);
+                final FTPServerProperty config = SfcMapperHolder.mapper.readValue(configRawJson, FTPServerProperty.class);
                 BeanUtils.copyProperties(config, ftpServerProperty);
                 log.info("[FTP]已加载配置");
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
         } else {
-            configService.setConfig(FtpConstant.CONFIG_NAME, MapperHolder.mapper.writeValueAsString(ftpServerProperty));
+            configService.setConfig(FtpConstant.CONFIG_NAME, SfcMapperHolder.mapper.writeValueAsString(ftpServerProperty));
             log.info("[FTP]初始化FTP配置");
         }
         // 参数更新时重新加载FTP服务器
@@ -133,7 +133,7 @@ public class FtpServiceImpl implements ApplicationRunner , FtpService {
             FTPServerProperty originProperties = new FTPServerProperty();
             BeanUtils.copyProperties(ftpServerProperty, originProperties);
             try {
-                FTPServerProperty config = MapperHolder.mapper.readValue(e, FTPServerProperty.class);
+                FTPServerProperty config = SfcMapperHolder.mapper.readValue(e, FTPServerProperty.class);
                 BeanUtils.copyProperties(config, ftpServerProperty);
                 restart();
             } catch (Exception ex) {

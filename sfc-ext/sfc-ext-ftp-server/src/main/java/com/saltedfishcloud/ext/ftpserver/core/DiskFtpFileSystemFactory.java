@@ -1,7 +1,7 @@
 package com.saltedfishcloud.ext.ftpserver.core;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -24,7 +24,7 @@ public class DiskFtpFileSystemFactory implements FileSystemFactory {
     @Override
     public FileSystemView createFileSystemView(User user) throws FtpException {
         try {
-            if (user.getName().equals(UserConstants.SYS_NAME_PUBLIC)) {
+            if (user.getName().equals(SfcUserConstants.SYS_NAME_PUBLIC)) {
                 return new DiskFtpFileSystemView(DiskFtpUser.getAnonymousUser(), fileSystemFactory);
             }
             com.xiaotao.saltedfishcloud.model.po.User dbUser = userRepo.getUserByUser(user.getName());

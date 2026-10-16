@@ -11,7 +11,7 @@ import com.xiaotao.saltedfishcloud.model.progress.CopyProgressEvent;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
 import com.xiaotao.saltedfishcloud.utils.DiskFileSystemUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -75,7 +75,7 @@ public class FileCopyAsyncTask implements AsyncTask {
         if (CollectionUtils.isEmpty(param.getFiles())) {
             return List.of(param.getSourcePath());
         } else {
-            return param.getFiles().stream().map(f -> StringUtils.appendPath(param.getSourcePath(), f)).toList();
+            return param.getFiles().stream().map(f -> SfcStringUtils.appendPath(param.getSourcePath(), f)).toList();
         }
     }
 
@@ -144,10 +144,10 @@ public class FileCopyAsyncTask implements AsyncTask {
                 @Override
                 public FileVisitResult preVisitDirectory(FileInfo dir, @NotNull BasicFileAttributes attrs) throws IOException {
                     if (dir.getMountId() != null) {
-                        log("发现子挂载点，跳过: " + StringUtils.appendPath(dir.getPath(), dir.getName()));
+                        log("发现子挂载点，跳过: " + SfcStringUtils.appendPath(dir.getPath(), dir.getName()));
                         return FileVisitResult.SKIP_SIBLINGS;
                     }
-                    log("发现子目录: " + StringUtils.appendPath(dir.getPath(), dir.getName()));
+                    log("发现子目录: " + SfcStringUtils.appendPath(dir.getPath(), dir.getName()));
                     return FileVisitResult.CONTINUE;
                 }
 
@@ -192,7 +192,7 @@ public class FileCopyAsyncTask implements AsyncTask {
                 log("开始文件复制: " + param.getSourcePath() + " -> " + param.getTargetPath());
             } else {
                 for (String file : param.getFiles()) {
-                    log("开始文件复制: " + StringUtils.appendPath(param.getSourcePath(), file) + " -> " + StringUtils.appendPath(param.getTargetPath(), file));
+                    log("开始文件复制: " + SfcStringUtils.appendPath(param.getSourcePath(), file) + " -> " + SfcStringUtils.appendPath(param.getTargetPath(), file));
                 }
             }
 
@@ -208,7 +208,7 @@ public class FileCopyAsyncTask implements AsyncTask {
             completedSize = getProgress().getTotal();
             CopyProgressRecord callbackProgressRecord = progressCallback.getProgressRecord();
             callbackProgressRecord.setCopiedFileSize(completedSize);
-            log("复制完成: " + StringUtils.getFormatSize(completedSize));
+            log("复制完成: " + SfcStringUtils.getFormatSize(completedSize));
 
         } catch (Exception e) {
             log.error("文件复制任务执行异常", e);

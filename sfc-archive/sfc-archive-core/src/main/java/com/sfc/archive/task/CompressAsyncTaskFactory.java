@@ -7,7 +7,7 @@ import com.sfc.task.AsyncTaskFactory;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +27,7 @@ public class CompressAsyncTaskFactory implements AsyncTaskFactory {
     @Override
     public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
         try {
-            DiskFileSystemCompressParam compressParam = MapperHolder.parseJson(params, DiskFileSystemCompressParam.class);
+            DiskFileSystemCompressParam compressParam = SfcMapperHolder.parseJson(params, DiskFileSystemCompressParam.class);
             CompressAsyncTask asyncTask = new CompressAsyncTask(compressParam, params);
             asyncTask.setArchiveEngineManager(archiveManager);
             asyncTask.setFileSystem(diskFileSystemManager.getMainFileSystem());

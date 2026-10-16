@@ -1,6 +1,6 @@
 package com.sfc.quickshare.model;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import lombok.*;
 import org.hibernate.validator.constraints.Length;
 
@@ -20,7 +20,7 @@ import java.util.Date;
         @Index(name = "idx_quick_share_uid", columnList = "uid"),
         @Index(name = "idx_expired", columnList = "expiredAt")
 })
-public class QuickShare extends AuditModel {
+public class QuickShare extends SfcAuditModel {
 
     /**
      * 文件名

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 })
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ThirdPartyAppKey extends AuditModel {
+public class ThirdPartyAppKey extends SfcAuditModel {
     /**
      * 第三方应用id
      * @see ThirdPartyApp#getId()

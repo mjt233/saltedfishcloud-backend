@@ -4,7 +4,7 @@ import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import lombok.Getter;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -148,15 +148,15 @@ public abstract class AbstractArchiveEngineCompressor extends AbstractArchiveEng
      */
     protected void validateResource(ArchiveResource resource) {
         if (resource == null) {
-            throw new JsonException("archive resource 不能为空");
+            throw new SfcJsonException("archive resource 不能为空");
         }
         boolean directory = Boolean.TRUE.equals(resource.getIsDirectory());
         if (!directory && resource.getResource() == null) {
-            throw new JsonException("文件资源 resource 不能为空");
+            throw new SfcJsonException("文件资源 resource 不能为空");
         }
         String archivePath = resource.getArchivePath();
         if (archivePath == null || archivePath.isEmpty()) {
-            throw new JsonException("archivePath 不能为空");
+            throw new SfcJsonException("archivePath 不能为空");
         }
     }
 

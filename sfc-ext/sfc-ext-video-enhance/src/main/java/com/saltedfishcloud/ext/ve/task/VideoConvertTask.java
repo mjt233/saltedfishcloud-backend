@@ -17,7 +17,7 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
 import com.xiaotao.saltedfishcloud.utils.*;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -32,6 +32,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 /**
  * 异步任务实例模板 - 视频编码转换任务
@@ -93,9 +95,9 @@ public class VideoConvertTask implements AsyncTask {
             this.originParams = jsonParam;
             this.resourceService = resourceService;
             this.ffMpegHelper = ffMpegHelper;
-            this.taskParam = MapperHolder.parseJson(jsonParam, EncodeConvertTaskParam.class);
+            this.taskParam = SfcMapperHolder.parseJson(jsonParam, EncodeConvertTaskParam.class);
             // 临时目录/ve/时间戳_文件名
-            this.outputFile = StringUtils.appendSystemPath(
+            this.outputFile = SfcStringUtils.appendSystemPath(
                     PathUtils.getTempDirectory(),
                     "ve",
                     System.currentTimeMillis() + "_" + taskParam.getTarget().getName()
@@ -186,7 +188,7 @@ public class VideoConvertTask implements AsyncTask {
             if (ResourceProtocol.MAIN.equals(taskParam.getTarget().getProtocol())) {
                 logger.info("目标保存位置在网盘主文件系统，通过文件移动保存");
                 long targetId = Long.parseLong(taskParam.getTarget().getTargetId());
-                UIDValidator.validateWithException(targetId, true);
+                SfcUIDValidator.validateWithException(targetId, true);
                 logger.info("开始计算文件md5");
                 FileInfo fileInfo = FileInfo.getLocal(outputFile, true);
                 fileInfo.setName(taskParam.getTarget().getName());

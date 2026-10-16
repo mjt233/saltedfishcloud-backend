@@ -2,11 +2,11 @@ package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAuthPlatformRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyPlatformUserRepo;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.po.*;
 import com.xiaotao.saltedfishcloud.model.vo.UserVO;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -16,11 +16,11 @@ import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.third.model.ThirdPartyPlatformCallbackResult;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamCopyResult;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -148,7 +148,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
 
         // 判断是否已关联了系统账号
         User assocUser = null;
-        String actionId = IdUtil.getId() + "";
+        String actionId = SfcIdUtil.getId() + "";
         ThirdPartyPlatformUser existPlatformUser = platformUserRepo.getByPlatformTypeAndThirdPartyUserId(platformUser.getPlatformType(), platformUser.getThirdPartyUserId());
         if (existPlatformUser != null) {
             if (Boolean.TRUE.equals(existPlatformUser.getIsActive())) {
@@ -175,7 +175,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                                 .type(LOG_TYPE)
                                 .level(LogLevel.INFO)
                                 .msgAbstract("[" + assocUser.getUser() + "]通过[" + platformType + "]登录")
-                                .msgDetail(MapperHolder.toJsonNoEx(result))
+                                .msgDetail(SfcMapperHolder.toJsonNoEx(result))
                         .build());
             } else {
                 // 登录过但未关联系统账号
@@ -188,7 +188,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                         .type(LOG_TYPE)
                         .level(LogLevel.INFO)
                         .msgAbstract("未绑定咸鱼云的用户通过[" + platformType + "]的[" + platformUser.getUserName() + "]登录")
-                        .msgDetail(MapperHolder.toJsonNoEx(result))
+                        .msgDetail(SfcMapperHolder.toJsonNoEx(result))
                         .build());
             }
         } else {
@@ -198,7 +198,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
             if (curUser != null) {
                 assocUser = userService.getUserById(curUser.getId());
                 platformUser.setUid(assocUser.getId());
-            } else if (StringUtils.hasText(platformUser.getEmail())) {
+            } else if (SfcStringUtils.hasText(platformUser.getEmail())) {
                 // 如果系统存在相同邮箱，默认匹配让用户确认
                 assocUser = userService.getUserByEmail(platformUser.getEmail());
                 if (assocUser != null) {
@@ -206,7 +206,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                 }
             }
             if (assocUser == null && !Boolean.TRUE.equals(platform.getIsAllowRegister())) {
-                throw new JsonException(platform.getName() + " 未开放新用户注册，请联系管理员");
+                throw new SfcJsonException(platform.getName() + " 未开放新用户注册，请联系管理员");
             }
 
             if (platformUser.getStatus() == null) {
@@ -223,7 +223,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                     .type(LOG_TYPE)
                     .level(LogLevel.INFO)
                     .msgAbstract("新用户通过[" + platformType + "]的[" + platformUser.getUserName() + "]登录")
-                    .msgDetail(MapperHolder.toJsonNoEx(result))
+                    .msgDetail(SfcMapperHolder.toJsonNoEx(result))
                     .build());
         }
 
@@ -239,7 +239,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         if (sameNameUser == null) {
             return platformUser.getUserName();
         } else {
-            return platformUser.getPlatformType() + "_" + Optional.ofNullable(platformUser.getThirdPartyUserId()).orElseGet(() -> String.valueOf(IdUtil.getId()));
+            return platformUser.getPlatformType() + "_" + Optional.ofNullable(platformUser.getThirdPartyUserId()).orElseGet(() -> String.valueOf(SfcIdUtil.getId()));
         }
     }
 
@@ -247,7 +247,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
      * 缓存用户头像，将头像数据缓存到网盘的存储系统并转为base64
      */
     private void cacheAvatar(ThirdPartyPlatformUser user) {
-        if(!StringUtils.hasText(user.getAvatarUrl()) || user.getAvatarUrl().startsWith("data:")) {
+        if(!SfcStringUtils.hasText(user.getAvatarUrl()) || user.getAvatarUrl().startsWith("data:")) {
             return;
         }
 
@@ -317,7 +317,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
                 .type(LOG_TYPE)
                 .level(LogLevel.INFO)
                 .msgAbstract("用户[" + bindUserObj.getUser() + "]绑定[" + callbackResult.getPlatformUser().getPlatformType() + "]的[" + platformUser.getUserName() + "]")
-                .msgDetail(MapperHolder.toJsonNoEx(new HashMap<>(){{
+                .msgDetail(SfcMapperHolder.toJsonNoEx(new HashMap<>(){{
                     put("callbackResult", callbackResult);
                     put("bindUserObj", bindUserObj);
                 }}))
@@ -331,7 +331,7 @@ public class ThirdPartyPlatformManagerImpl implements ThirdPartyPlatformManager 
         ThirdPartyPlatformCallbackResult callbackResult = getCallbackResult(actionId);
         ThirdPartyPlatformUser platformUser = callbackResult.getPlatformUser();
         String newUserName = this.generateNewUserName(platformUser);
-        userService.addUser(newUserName, IdUtil.getId() + "", platformUser.getEmail(), UserConstants.TYPE_COMMON);
+        userService.addUser(newUserName, SfcIdUtil.getId() + "", platformUser.getEmail(), SfcUserConstants.TYPE_COMMON);
         User newUser = userService.getUserByUser(newUserName);
         UserVO createResultVO = UserVO.from(newUser, false);
         createResultVO.setToken(tokenService.generateUserToken(UserPrincipal.from(newUser)));

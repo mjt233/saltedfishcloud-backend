@@ -1,13 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
 import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.cloud.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionRecordRepo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionRecordDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
@@ -43,23 +43,23 @@ public class CollectionServiceImpl implements CollectionService {
     private final DiskFileSystemManager fileSystem;
 
     @Override
-    public CommonPageInfo<CollectionRecordDTO> getSubmits(Long cid, int page, int size) {
-        return CommonPageInfo.of(recordDao.findByCid(cid, PageRequest.of(page, size)));
+    public SfcPageInfo<CollectionRecordDTO> getSubmits(Long cid, int page, int size) {
+        return SfcPageInfo.of(recordDao.findByCid(cid, PageRequest.of(page, size)));
     }
 
     @Override
     public void deleteCollection(long uid, long cid) {
         CollectionInfo collection = collectionDao.findById(cid).orElse(null);
-        if (collection == null) throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
-        if (!collection.getUid().equals(uid)) throw new JsonException(CommonError.FORMAT_ERROR);
+        if (collection == null) throw new SfcJsonException(CollectionError.COLLECTION_NOT_FOUND);
+        if (!collection.getUid().equals(uid)) throw new SfcJsonException(SfcCommonError.FORMAT_ERROR);
         collectionDao.deleteById(cid);
     }
 
     @Override
     public CollectionInfo setState(long uid, Long cid, CollectionInfo.State state) {
         CollectionInfo info = collectionDao.findById(cid).orElse(null);
-        if (info == null) throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
-        if (!info.getUid().equals(uid)) throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+        if (info == null) throw new SfcJsonException(CollectionError.COLLECTION_NOT_FOUND);
+        if (!info.getUid().equals(uid)) throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
         info.setState(state);
         collectionDao.save(info);
         return info;
@@ -67,10 +67,10 @@ public class CollectionServiceImpl implements CollectionService {
     @Override
     public CollectionInfoId createCollection(long uid, CollectionDTO info) {
         if(!CollectionValidator.validateCreate(info)) {
-            throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED);
+            throw new SfcJsonException(CollectionError.COLLECTION_CHECK_FAILED);
         }
         String savePath = fileRecordService.getPathByNodeId(uid, info.getSaveNode())
-                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND));
         CollectionInfo ci = new CollectionInfo(uid, info);
         ci.setVerification(SecureUtils.getUUID());
 
@@ -144,7 +144,7 @@ public class CollectionServiceImpl implements CollectionService {
         String filename = CollectionParser.parseFilename(collectionInfo, submitFile);
         DiskFileSystem fileSystem = this.fileSystem.getMainFileSystem();
         String path = fileRecordService.getPathByNodeId(collectionInfo.getUid(), collectionInfo.getSaveNode())
-                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND));
         String[] pair = FileUtils.parseName(filename);
 
         int cnt = 1;
@@ -159,7 +159,7 @@ public class CollectionServiceImpl implements CollectionService {
         // 保存成功后，消费可收集数。如果消费失败则把文件删掉。
         if(!this.consumeCount(collectionInfo)) {
             fileSystem.deleteFile(fileInfo.getUid(), path, Collections.singletonList(fileInfo.getName()));
-            throw new JsonException(CollectionError.COLLECTION_FULL);
+            throw new SfcJsonException(CollectionError.COLLECTION_FULL);
         }
     }
 
@@ -172,11 +172,11 @@ public class CollectionServiceImpl implements CollectionService {
     private void checkIsCanSubmit(CollectionInfo collectionInfo, SubmitFile submitFile, Long providerUid) {
 
         // 校验收集存在
-        if (collectionInfo == null) { throw new JsonException(CollectionError.COLLECTION_NOT_FOUND); }
+        if (collectionInfo == null) { throw new SfcJsonException(CollectionError.COLLECTION_NOT_FOUND); }
 
         // 校验开关状态
         if (collectionInfo.getState() == CollectionInfo.State.CLOSED) {
-            throw new JsonException(CollectionError.COLLECTION_CLOSED);
+            throw new SfcJsonException(CollectionError.COLLECTION_CLOSED);
         }
 
         // 校验过期
@@ -185,10 +185,10 @@ public class CollectionServiceImpl implements CollectionService {
         }
 
         // 校验匿名状态
-        if (!collectionInfo.getAllowAnonymous() && providerUid == 0) { throw new JsonException(CollectionError.COLLECTION_REQUIRE_LOGIN); }
+        if (!collectionInfo.getAllowAnonymous() && providerUid == 0) { throw new SfcJsonException(CollectionError.COLLECTION_REQUIRE_LOGIN); }
 
         // 校验约束
-        if (!CollectionValidator.validateSubmit(collectionInfo, submitFile)) { throw new JsonException(CollectionError.COLLECTION_CHECK_FAILED); }
+        if (!CollectionValidator.validateSubmit(collectionInfo, submitFile)) { throw new SfcJsonException(CollectionError.COLLECTION_CHECK_FAILED); }
 
         // 校验收集数是否够了
         this.checkCollectCountIsFull(collectionInfo);
@@ -202,7 +202,7 @@ public class CollectionServiceImpl implements CollectionService {
         if (allowMax != null && allowMax > -1) {
             // 收集满
             if (collectionInfo.getAvailable() == 0) {
-                throw new JsonException(CollectionError.COLLECTION_FULL);
+                throw new SfcJsonException(CollectionError.COLLECTION_FULL);
             }
         }
     }

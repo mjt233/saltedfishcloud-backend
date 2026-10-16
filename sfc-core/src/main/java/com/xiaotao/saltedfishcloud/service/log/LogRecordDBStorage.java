@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.log;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.LogRecordRepo;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
+import com.sfc.cloud.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.param.RangeRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.vo.LogRecordStatisticVO;
@@ -34,9 +34,9 @@ public class LogRecordDBStorage extends AbstractLogRecordStorage {
     }
 
     @Override
-    public CommonPageInfo<LogRecord> query(LogRecordQueryParam queryParam) {
-        PageableRequest pageableRequest = Optional.ofNullable(queryParam.getPageableRequest()).orElseGet(PageableRequest::new);
-        return CommonPageInfo.of(logRecordRepo.findAll(
+    public SfcPageInfo<LogRecord> query(LogRecordQueryParam queryParam) {
+        SfcPageableRequest pageableRequest = Optional.ofNullable(queryParam.getPageableRequest()).orElseGet(SfcPageableRequest::new);
+        return SfcPageInfo.of(logRecordRepo.findAll(
                 JpaLambdaQueryWrapper.get(LogRecord.class)
                         .eq(LogRecord::getUid, queryParam.getUid())
                         .eq(LogRecord::getProducerHost, queryParam.getHost())

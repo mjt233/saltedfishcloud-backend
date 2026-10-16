@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import jakarta.persistence.*;
 import lombok.*;
@@ -20,7 +20,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LogRecord extends AuditModel {
+public class LogRecord extends SfcAuditModel {
     /**
      * 日志类型
      */

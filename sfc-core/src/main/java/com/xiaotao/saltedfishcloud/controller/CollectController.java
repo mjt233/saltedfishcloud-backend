@@ -2,20 +2,19 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.cloud.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.dao.jpa.CollectionInfoRepo;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionRecordDTO;
 import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfoId;
 import com.xiaotao.saltedfishcloud.model.po.CollectionRecord;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionService;
@@ -46,49 +45,49 @@ public class CollectController {
      * 获取文件收集记录
      */
     @GetMapping("/record/{cid}")
-    public JsonResult<CommonPageInfo<CollectionRecordDTO>> getRecords(@PathVariable("cid") Long cid,
+    public SfcJsonResult<SfcPageInfo<CollectionRecordDTO>> getRecords(@PathVariable("cid") Long cid,
                                                                       @RequestParam(value = "page", defaultValue = "1") @Min(1) @Valid Integer page,
                                                                       @RequestParam(value = "size", defaultValue = "10") @Min(5) @Valid Integer size) {
         CollectionInfo info = collectionService.getCollection(cid);
         UserPrincipal u = SecureUtils.getSpringSecurityUser();
         assert u != null;
         if (!info.getUid().equals(u.getId())) {
-            throw new JsonException(CommonError.FORMAT_ERROR);
+            throw new SfcJsonException(SfcCommonError.FORMAT_ERROR);
         }
-        return JsonResultImpl.getInstance(collectionService.getSubmits(cid, page - 1, size));
+        return SfcJsonResult.getInstance(collectionService.getSubmits(cid, page - 1, size));
     }
 
     /**
      * 删除收集任务
      */
     @DeleteMapping("{cid}")
-    public JsonResult<Object> delete(@PathVariable("cid") Long cid) {
+    public SfcJsonResult<Object> delete(@PathVariable("cid") Long cid) {
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
         assert user != null;
         collectionService.deleteCollection(user.getId(), cid);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
      * 修改收集任务状态
      */
     @PutMapping("{cid}/state/{state}")
-    public JsonResult<CollectionInfo> setState(@PathVariable("cid") Long cid,
+    public SfcJsonResult<CollectionInfo> setState(@PathVariable("cid") Long cid,
                                @PathVariable("state") CollectionInfo.State state) {
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
         assert user != null;
-        return JsonResultImpl.getInstance(collectionService.setState(user.getId(), cid, state));
+        return SfcJsonResult.getInstance(collectionService.setState(user.getId(), cid, state));
     }
 
     /**
      * 创建收集任务
      */
     @PostMapping
-    public JsonResult<CollectionInfoId> createCollection(@Valid @RequestBody CollectionDTO data) {
+    public SfcJsonResult<CollectionInfoId> createCollection(@Valid @RequestBody CollectionDTO data) {
         UserPrincipal u = SecureUtils.getSpringSecurityUser();
         assert u != null;
         if (data.getNickname() == null) data.setNickname(u.getUsername());
-        return JsonResultImpl.getInstance(collectionService.createCollection(u.getId(), data));
+        return SfcJsonResult.getInstance(collectionService.createCollection(u.getId(), data));
     }
 
     /**
@@ -101,7 +100,7 @@ public class CollectController {
     @PostMapping("{cid}/{verification}")
     @BreakPoint
     @AllowAnonymous
-    public JsonResult<Object> submitCollection(@PathVariable Long cid,
+    public SfcJsonResult<Object> submitCollection(@PathVariable Long cid,
                                        @PathVariable String verification,
                                        @MergeFile @RequestPart("file") MultipartFile file,
                                        @RequestPart("submitInfo") @Valid SubmitFile submitFile,
@@ -125,7 +124,7 @@ public class CollectController {
                 submitFile,
                 ip
         );
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     @GetMapping("{cid}/{verification}")
@@ -134,11 +133,11 @@ public class CollectController {
                                         @PathVariable String verification) {
         CollectionInfo i = collectionService.getCollectionWitchVerification(new CollectionInfoId(cid, verification));
         if (i == null) {
-            throw new JsonException(CollectionError.COLLECTION_NOT_FOUND);
+            throw new SfcJsonException(CollectionError.COLLECTION_NOT_FOUND);
         }
         UserPrincipal user = SecureUtils.getSpringSecurityUser();
         if (user == null && !i.getAllowAnonymous()) {
-            throw new JsonException(CollectionError.COLLECTION_REQUIRE_LOGIN);
+            throw new SfcJsonException(CollectionError.COLLECTION_REQUIRE_LOGIN);
         } else if (user == null || !user.getId().equals(i.getUid())) {
             i.setUid(null);
         }

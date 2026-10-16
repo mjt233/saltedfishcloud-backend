@@ -3,8 +3,8 @@ package com.saltedfishcloud.ext.ve.core;
 import com.saltedfishcloud.ext.ve.constant.VEConstants;
 import com.saltedfishcloud.ext.ve.model.*;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -134,7 +134,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
     @Override
     public VideoInfo getVideoInfo(String localFilePath) throws IOException {
         String probeOutput = this.executeProbe(localFilePath);
-        return MapperHolder.parseSnakeJson(probeOutput, VideoInfo.class);
+        return SfcMapperHolder.parseSnakeJson(probeOutput, VideoInfo.class);
     }
 
     /**
@@ -199,7 +199,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
      */
     private StreamInfo getSourceStreamInfo(EncodeConvertRule rule, VideoInfo videoInfo) {
         try {
-            String streamIndex = Optional.ofNullable(rule.getIndex()).filter(StringUtils::hasText).orElseThrow(() -> new IllegalArgumentException("rule stream index is empty or null"));
+            String streamIndex = Optional.ofNullable(rule.getIndex()).filter(SfcStringUtils::hasText).orElseThrow(() -> new IllegalArgumentException("rule stream index is empty or null"));
             return videoInfo.getStreams().get(Integer.parseInt(streamIndex));
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("rule stream index format error: " + e.getMessage());
@@ -265,7 +265,7 @@ public class FFMpegHelperImpl implements FFMpegHelper {
         // 获取目标格式支持的流类型
         Set<String> formatSupportCodecType = getFormatSupportStreamType(
                 Optional.ofNullable(param.getFormat())
-                        .filter(StringUtils::hasText)
+                        .filter(SfcStringUtils::hasText)
                         .orElseGet(() -> FileUtils.getSuffix(output))
         );
 
@@ -301,17 +301,17 @@ public class FFMpegHelperImpl implements FFMpegHelper {
 
             // 视频编码质量、速度与优化参数
             if (VIDEO.equals(rule.getType())) {
-                Optional.ofNullable(rule.getCrf()).filter(StringUtils::hasText).ifPresent(crf -> {
+                Optional.ofNullable(rule.getCrf()).filter(SfcStringUtils::hasText).ifPresent(crf -> {
                     args.add("-crf");
                     args.add(crf);
                 });
 
-                Optional.ofNullable(rule.getTune()).filter(StringUtils::hasText).ifPresent(tune -> {
+                Optional.ofNullable(rule.getTune()).filter(SfcStringUtils::hasText).ifPresent(tune -> {
                     args.add("-tune");
                     args.add(tune);
                 });
 
-                Optional.ofNullable(rule.getPreset()).filter(StringUtils::hasText).ifPresent(preset -> {
+                Optional.ofNullable(rule.getPreset()).filter(SfcStringUtils::hasText).ifPresent(preset -> {
                     args.add("-preset");
                     args.add(preset);
                 });

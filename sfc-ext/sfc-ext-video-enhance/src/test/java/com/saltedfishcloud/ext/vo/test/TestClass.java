@@ -4,7 +4,7 @@ import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelperImpl;
 import com.saltedfishcloud.ext.ve.model.*;
 import com.saltedfishcloud.ext.ve.utils.StringParser;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -71,7 +71,7 @@ public class TestClass {
                 Double progress = StringParser.parseTimeProgress(line);
                 if (progress != null) {
                     System.out.println(line);
-                    System.out.println(StringUtils.getProcStr(progress.longValue(), videoInfo.getFormat().getDuration().longValue(), 64));
+                    System.out.println(SfcStringUtils.getProcStr(progress.longValue(), videoInfo.getFormat().getDuration().longValue(), 64));
                 }
             }
             process.waitFor();

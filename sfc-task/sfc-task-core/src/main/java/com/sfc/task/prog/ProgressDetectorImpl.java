@@ -2,7 +2,7 @@ package com.sfc.task.prog;
 
 import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,7 +100,7 @@ public class ProgressDetectorImpl implements ProgressDetector {
                     log.debug("{}任务进度速度更新{}：{}/s 进度：{}%",
                             LOG_TITLE,
                             id,
-                            StringUtils.getFormatSize(speedPreSecond),
+                            SfcStringUtils.getFormatSize(speedPreSecond),
                             String.format("%.2f", (provider.getProgressRecord().getLoaded() / (double)provider.getProgressRecord().getTotal()) * 100)
                     );
                 }

@@ -5,7 +5,7 @@ import com.saltedfishcloud.ext.ve.model.ProcessWrap;
 import com.saltedfishcloud.ext.ve.model.StreamInfo;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
 import com.xiaotao.saltedfishcloud.common.ResponseResource;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 
 @Service
@@ -95,7 +96,7 @@ public class VideoSubtitleService {
 
             // 远程资源：使用路径、文件名、修改时间和内容长度生成MD5
             cacheFileName = SecureUtils.getMd5(
-                    StringUtils.appendPath(videoResourceRequest.getPath(), resource.getFilename()) + "_"
+                    SfcStringUtils.appendPath(videoResourceRequest.getPath(), resource.getFilename()) + "_"
                             + resource.lastModified() + "_"
                             + resource.contentLength())
                     + "_" + streamIndex + "." + format;
@@ -132,7 +133,7 @@ public class VideoSubtitleService {
                             Files.deleteIfExists(tmpFilePath);
                         }
                     }
-                    output = attachStorage.getFile(cachePath).orElseThrow(() -> new JsonException(500, "字幕缓存文件丢失 " + cachePath));
+                    output = attachStorage.getFile(cachePath).orElseThrow(() -> new SfcJsonException(500, "字幕缓存文件丢失 " + cachePath));
                     return ResponseResource.create(output)
                             .setResponseFilename(FileUtils.parseName(videoResourceRequest.getName())[0] + "." + format)
                             .setContentType(contentType);

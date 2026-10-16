@@ -5,7 +5,7 @@ import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.utils.EngineResourceUtils;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
@@ -108,7 +108,7 @@ public class CommonsZipArchiveEngineDecompressor extends AbstractArchiveEngineDe
         String normalizedPath = normalizeEntryName(normalizeArchivePath(archivePath));
         ZipArchiveEntry entry = zipFile.getEntry(normalizedPath);
         if (entry == null || entry.isDirectory()) {
-            throw new JsonException("压缩包内资源不存在: " + archivePath);
+            throw new SfcJsonException("压缩包内资源不存在: " + archivePath);
         }
         String callbackPath = EngineResourceUtils.normalizeArchivePath(entry.getName());
         return wrapInputStreamWithCallback(callbackPath, entry.getSize(), zipFile.getInputStream(entry));

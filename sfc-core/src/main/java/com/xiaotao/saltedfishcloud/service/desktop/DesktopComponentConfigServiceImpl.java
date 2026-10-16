@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.desktop;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.DesktopComponentConfigRepo;
 import com.xiaotao.saltedfishcloud.model.po.DesktopComponentConfig;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,11 +24,11 @@ public class DesktopComponentConfigServiceImpl implements DesktopComponentConfig
     public void save(DesktopComponentConfig componentConfig) {
         if (componentConfig.getId() != null) {
             Long originId = repo.findById(componentConfig.getId()).orElseThrow(() -> new IllegalArgumentException("无效id")).getUid();
-            if(!UIDValidator.validate(originId, true)) {
+            if(!SfcUIDValidator.validate(originId, true)) {
                 throw new IllegalArgumentException("权限不足");
             }
         }
-        if(!UIDValidator.validate(componentConfig.getUid(), true)) {
+        if(!SfcUIDValidator.validate(componentConfig.getUid(), true)) {
             throw new IllegalArgumentException("权限不足");
         }
         repo.save(componentConfig);
@@ -38,7 +38,7 @@ public class DesktopComponentConfigServiceImpl implements DesktopComponentConfig
     @Override
     public void remove(Long id) {
         DesktopComponentConfig config = repo.findById(id).orElseThrow();
-        if(UIDValidator.validate(config.getUid(), true)) {
+        if(SfcUIDValidator.validate(config.getUid(), true)) {
             repo.deleteById(id);
         } else {
             throw new IllegalArgumentException("权限不足");

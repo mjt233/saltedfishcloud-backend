@@ -2,11 +2,11 @@ package com.xiaotao.saltedfishcloud.service.file.store;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -201,7 +201,7 @@ public abstract class CopyAndMoveHandler {
      */
     protected void doCopyWithProgress(String source, String target, boolean overwrite, int depth, boolean isMove, FileTransferCallback callback) throws IOException {
         if (depth > MAX_DEPTH) {
-            throw new JsonException(FileSystemError.DIR_TOO_DEPTH);
+            throw new SfcJsonException(FileSystemError.DIR_TOO_DEPTH);
         }
 
         // 检查是否被中断
@@ -233,8 +233,8 @@ public abstract class CopyAndMoveHandler {
                     return;
                 }
 
-                String srcPath = StringUtils.appendPath(source, file.getName());
-                String dstPath = StringUtils.appendPath(target, file.getName());
+                String srcPath = SfcStringUtils.appendPath(source, file.getName());
+                String dstPath = SfcStringUtils.appendPath(target, file.getName());
                 FileTransferItem record = FileTransferItem.builder()
                         .from(srcPath)
                         .to(dstPath)
@@ -277,7 +277,7 @@ public abstract class CopyAndMoveHandler {
         } else {
             // 待复制的资源为文件，直接复制
             FileInfo fileInfo = Optional.ofNullable(reader.getFileInfo(source))
-                    .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND, source));
+                    .orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND, source));
             FileTransferItem record = FileTransferItem.builder()
                     .from(source)
                     .to(target)
@@ -317,11 +317,11 @@ public abstract class CopyAndMoveHandler {
      */
     private void checkCopyOrMove(String source, String target) throws IOException {
         if (!reader.exist(source)) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
 
         if (isDirectory(source) && PathUtils.isSubDir(source, target)) {
-            throw new JsonException(FileSystemError.TARGET_IS_SUB_DIR);
+            throw new SfcJsonException(FileSystemError.TARGET_IS_SUB_DIR);
         }
 
     }

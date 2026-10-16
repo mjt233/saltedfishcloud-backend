@@ -1,13 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.share;
 
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.cloud.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ShareRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
@@ -36,7 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 
-import static com.xiaotao.saltedfishcloud.utils.StringUtils.appendPath;
+import static com.sfc.cloud.utils.SfcStringUtils.appendPath;
 
 @Service
 @RequiredArgsConstructor
@@ -54,12 +54,12 @@ public class ShareServiceImpl implements ShareService {
     public String createwrap(Long sid, String verification, String code, FileTransferInfo fileTransferInfo) {
         ShareInfo share = getShare(sid, verification);
         if (share.getExtractCode() != null && !code.equalsIgnoreCase(share.getExtractCode())) {
-            throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
+            throw new SfcJsonException(ShareError.SHARE_EXTRACT_ERROR);
         }
-        if (share.getType() != ShareType.DIR) throw new JsonException(400, "只能对文件夹分享进行打包");
+        if (share.getType() != ShareType.DIR) throw new SfcJsonException(400, "只能对文件夹分享进行打包");
 
         String path = fileRecordService.getPathByNodeId(share.getUid(), share.getNid())
-                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND));
         fileTransferInfo.setSource(path + fileTransferInfo.getSource());
 
         return wrapService.registerWrap(share.getUid(), fileTransferInfo);
@@ -68,21 +68,21 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public void deleteShare(Long sid, Long uid) {
         ShareInfo share = shareRepo.findById(sid).orElse(null);
-        if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
-        if (!share.getUid().equals(uid)) throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+        if (share == null) throw new SfcJsonException(ShareError.SHARE_NOT_FOUND);
+        if (!share.getUid().equals(uid)) throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
         shareRepo.deleteById(sid);
     }
 
     @Override
     public Resource getFileResource(ShareExtractorDTO extractor) throws IOException {
         ShareInfo share = shareRepo.findById(extractor.getSid()).orElse(null);
-        if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
-        if (!share.getVerification().equals(extractor.getVerification())) throw new JsonException(ShareError.SHARE_NOT_FOUND);
-        if (!share.validateExtractCode(extractor.getCode())) throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
+        if (share == null) throw new SfcJsonException(ShareError.SHARE_NOT_FOUND);
+        if (!share.getVerification().equals(extractor.getVerification())) throw new SfcJsonException(ShareError.SHARE_NOT_FOUND);
+        if (!share.validateExtractCode(extractor.getCode())) throw new SfcJsonException(ShareError.SHARE_EXTRACT_ERROR);
 
         // 文件类型的分享直接获取Resource
         String basePath = fileRecordService.getPathByNodeId(share.getUid(), share.getParentId())
-                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND));
         if (share.getType() == ShareType.FILE) {
             if (extractor.isThumbnail()) {
                 return fileSystemFactory.getMainFileSystem().getThumbnail(
@@ -122,21 +122,21 @@ public class ShareServiceImpl implements ShareService {
         ShareInfo share = shareRepo.findById(sid).orElse(null);
 
         // 校验存在
-        if (share == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
+        if (share == null) throw new SfcJsonException(ShareError.SHARE_NOT_FOUND);
 
         // 校验校验码
-        if (!share.getVerification().equals(verification)) throw new JsonException(ShareError.SHARE_NOT_FOUND);
+        if (!share.getVerification().equals(verification)) throw new SfcJsonException(ShareError.SHARE_NOT_FOUND);
 
         // 校验类型
         if (share.getType() == ShareType.FILE) throw new IllegalArgumentException("仅接受文件类型的分享");
 
         // 校验提取码
         if (StringUtils.hasLength(share.getExtractCode()) && !share.validateExtractCode(extractCode)) {
-            throw new JsonException(ShareError.SHARE_EXTRACT_ERROR);
+            throw new SfcJsonException(ShareError.SHARE_EXTRACT_ERROR);
         }
 
         String basePath = fileRecordService.getPathByNodeId(share.getUid(), share.getNid())
-                .orElseThrow(() -> new JsonException(FileSystemError.NODE_NOT_FOUND));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.NODE_NOT_FOUND));
         String fullPath = PathBuilder.formatPath(basePath + "/" + path, true);
         if ( !fullPath.startsWith(basePath)) throw new IllegalArgumentException("非法参数");
 
@@ -144,13 +144,13 @@ public class ShareServiceImpl implements ShareService {
 
         try {
             return fileSystemFactory.getMainFileSystem().getUserFileList(share.getUid(), fullPath);
-        } catch (NoSuchFileException e) { throw new JsonException(FileSystemError.NODE_NOT_FOUND); }
+        } catch (NoSuchFileException e) { throw new SfcJsonException(FileSystemError.NODE_NOT_FOUND); }
     }
 
     @Override
     public ShareInfo createShare(long uid, ShareDTO shareDTO) {
         FileInfo fileInfo = fileRecordService.getByPath(uid, appendPath(shareDTO.getPath(), shareDTO.getName()))
-                .orElseThrow(() -> new JsonException(FileSystemError.FILE_NOT_FOUND));
+                .orElseThrow(() -> new SfcJsonException(FileSystemError.FILE_NOT_FOUND));
         ShareInfo shareInfo = ShareInfo.valueOf(
                 shareDTO,
                 fileInfo.isFile() ? ShareType.FILE : ShareType.DIR,
@@ -164,10 +164,10 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public CommonPageInfo<ShareInfo> getUserShare(long uid, int page, int size, boolean hideKeyAttr) {
+    public SfcPageInfo<ShareInfo> getUserShare(long uid, int page, int size, boolean hideKeyAttr) {
         ShareInfo po = new ShareInfo();
         po.setUid(uid);
-        CommonPageInfo<ShareInfo> res = CommonPageInfo.of(
+        SfcPageInfo<ShareInfo> res = SfcPageInfo.of(
                 shareRepo.findAll(
                         Example.of(po, ExampleMatcher.matching()),
                         PageRequest.of(
@@ -177,7 +177,7 @@ public class ShareServiceImpl implements ShareService {
                         )
                 )
         );
-//        CommonPageInfo<SharePO> res = CommonPageInfo.of(shareDao.findAllByUidEquals(
+//        SfcPageInfo<SharePO> res = SfcPageInfo.of(shareDao.findAllByUidEquals(
 //                uid,
 //                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
 //        ));
@@ -192,21 +192,21 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public ShareInfo getShare(long sid, String verification) {
         ShareInfo po = shareRepo.findById(sid).orElse(null);
-        if (po == null) throw new JsonException(ShareError.SHARE_NOT_FOUND);
+        if (po == null) throw new SfcJsonException(ShareError.SHARE_NOT_FOUND);
 
         if (po.getType() == ShareType.DIR) {
             // 判断原分享目录是否失效
             String nid = po.getNid();
             fileRecordService.getPathByNodeId(po.getUid(), nid)
-                    .orElseThrow(() -> new JsonException(ShareError.SHARE_INVALID));
+                    .orElseThrow(() -> new SfcJsonException(ShareError.SHARE_INVALID));
         } else {
             // 判断分享的原文件是否失效
             FileInfo fi = fileRecordService.getFileInfoByNode(po.getUid(), po.getParentId(), po.getName());
-            if (fi == null) throw new JsonException(ShareError.SHARE_INVALID);
+            if (fi == null) throw new SfcJsonException(ShareError.SHARE_INVALID);
         }
 
-        if (!po.getVerification().equals(verification)) throw new JsonException(ShareError.SHARE_NOT_FOUND);
-        if (po.isExpired()) throw new JsonException(ShareError.SHARE_EXPIRED);
+        if (!po.getVerification().equals(verification)) throw new SfcJsonException(ShareError.SHARE_NOT_FOUND);
+        if (po.isExpired()) throw new SfcJsonException(ShareError.SHARE_EXPIRED);
 
         User user = userRepo.getUserById(po.getUid());
         if (user != null) po.setUsername(user.getUser());

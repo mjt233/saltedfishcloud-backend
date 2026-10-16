@@ -9,7 +9,7 @@ import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
@@ -55,8 +55,8 @@ public class SambaStorageFactory extends AbstractStorageFactory<SambaProperty, S
                 .basePath(params.get("path").toString())
                 .shareName(params.get("shareName").toString())
                 .host(params.get("host").toString())
-                .password(TypeUtils.toString(params.get("password")))
-                .username(TypeUtils.toString(params.get("username")))
+                .password(SfcTypeUtils.toString(params.get("password")))
+                .username(SfcTypeUtils.toString(params.get("username")))
                 .port(Integer.parseInt( Optional.ofNullable(params.get("port")).orElse("445").toString()))
                 .build();
     }

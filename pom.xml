@@ -12,6 +12,14 @@
     <modules>
         <module>sfc-cloud-api</module>
         <module>sfc-auth</module>
+        <!--
+            sfc-common：宿主与微服务共用的轻量共享库（不继承本 pom，自带 BOM）。
+            sfc-common-data：在 sfc-common 之上叠加 JPA 基座的共享数据访问模块（同样不继承本 pom）。
+            两者由本 <modules> 聚合，仅为让单次 reactor 构建能按依赖顺序解析它们；
+            "独立开发" 的硬标准（零宿主依赖、自带构建配置）不受影响。
+        -->
+        <module>sfc-common</module>
+        <module>sfc-common-data</module>
         <module>sfc-archive</module>
         <module>sfc-api</module>
         <module>sfc-task</module>
@@ -48,6 +56,11 @@
         <cloud.version>1.0.0</cloud.version>
         <!--   内部接口鉴权 SDK 版本。sfc-auth 未继承本 pom，其 <version> 需与 microservices/pom.xml 中的 auth.version 保持一致     -->
         <auth.version>1.0.0</auth.version>
+        <!--
+            共享基座版本。sfc-common（轻量：常量/信封/异常/工具/分页）与 sfc-common-data（JPA 基座）
+            均**不继承本 pom**，其 <version> 需与此处保持一致。
+        -->
+        <sfc.common.version>1.0.0</sfc.common.version>
         <oshi.version>6.4.0</oshi.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>

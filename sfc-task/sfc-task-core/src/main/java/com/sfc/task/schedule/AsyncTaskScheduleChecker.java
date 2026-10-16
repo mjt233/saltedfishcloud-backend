@@ -8,9 +8,9 @@ import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.xiaotao.saltedfishcloud.annotations.ClusterScheduleJob;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
     @Autowired
     private AsyncTaskManager asyncTaskManager;
 
-    private final Long nodeId = IdUtil.getId();
+    private final Long nodeId = SfcIdUtil.getId();
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -74,7 +74,7 @@ public class AsyncTaskScheduleChecker implements InitializingBean {
                 } else {
                     Object holdNodeId = cacheService.get(key);
                     // 找不到记录保持的节点id记录 或 保持的节点id与当前不符时，放弃任务
-                    if (holdNodeId == null || !Objects.equals(TypeUtils.toLong(holdNodeId), nodeId)) {
+                    if (holdNodeId == null || !Objects.equals(SfcTypeUtils.toLong(holdNodeId), nodeId)) {
                         executor.giveUp(taskId);
                         offlineIds.add(taskId);
                     } else {

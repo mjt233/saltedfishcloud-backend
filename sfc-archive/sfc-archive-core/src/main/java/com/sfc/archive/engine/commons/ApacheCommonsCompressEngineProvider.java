@@ -5,8 +5,8 @@ import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.EncryptionCapability;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -131,7 +131,7 @@ public class ApacheCommonsCompressEngineProvider extends AbstractArchiveEnginePr
             return;
         }
         // Apache Commons Compress 当前实现不支持这些格式的加密压缩。
-        throw new JsonException("Apache Commons Compress 不支持该格式的加密压缩: " + extension);
+        throw new SfcJsonException("Apache Commons Compress 不支持该格式的加密压缩: " + extension);
     }
 
     /**
@@ -148,7 +148,7 @@ public class ApacheCommonsCompressEngineProvider extends AbstractArchiveEnginePr
             return;
         }
         // Apache Commons Compress 当前实现不支持这些格式的加密解压。
-        throw new JsonException("Apache Commons Compress 不支持该格式的加密解压: " + extension);
+        throw new SfcJsonException("Apache Commons Compress 不支持该格式的加密解压: " + extension);
     }
 
     /**
@@ -159,7 +159,7 @@ public class ApacheCommonsCompressEngineProvider extends AbstractArchiveEnginePr
      */
     private boolean hasEncryptionPassword(ArchiveEngineProperty property) {
         return property.getEncryptionParam() != null
-                && StringUtils.hasText(property.getEncryptionParam().getPassword());
+                && SfcStringUtils.hasText(property.getEncryptionParam().getPassword());
     }
 }
 

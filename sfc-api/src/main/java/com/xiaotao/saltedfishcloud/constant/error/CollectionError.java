@@ -1,9 +1,10 @@
 package com.xiaotao.saltedfishcloud.constant.error;
 
 import lombok.Getter;
+import com.sfc.cloud.exception.SfcErrorInfo;
 
 @Getter
-public enum CollectionError implements ErrorInfo {
+public enum CollectionError implements SfcErrorInfo {
     // 文件收集模块
     COLLECTION_NOT_FOUND(3000, 404, "无效的收集任务ID"),
     COLLECTION_REQUIRE_LOGIN(3001, 401, "该收集任务要求登录"),

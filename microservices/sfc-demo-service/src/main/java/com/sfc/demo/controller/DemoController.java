@@ -2,7 +2,7 @@ package com.sfc.demo.controller;
 
 import com.sfc.cloud.remote.client.SfcCoreFileClient;
 import com.sfc.cloud.remote.model.SfcFileInfo;
-import com.sfc.cloud.remote.model.SfcJsonResult;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.sfc.cloud.trust.SfcTrustHeaders;
 import com.sfc.demo.feign.DemoFeign;
 import feign.Response;

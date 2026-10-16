@@ -15,6 +15,10 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.cloud.data.utils.SfcFunc;
+import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 @Slf4j
 public class PropertyUtils {
@@ -25,7 +29,7 @@ public class PropertyUtils {
         }
         for (ConfigNode node : nodes) {
             try {
-                if (StringUtils.hasText(node.getTypeRef())) {
+                if (SfcStringUtils.hasText(node.getTypeRef())) {
                     Class<?> refClass;
                     // 先从插件的直接加载器类型引用
                     try {
@@ -74,9 +78,9 @@ public class PropertyUtils {
         if ("".equals(property.value())) {
             ConfigKeyNameStrategy nameStrategy = property.defaultKeyNameStrategy() == ConfigKeyNameStrategy.INHERIT ? entity.defaultKeyNameStrategy() : property.defaultKeyNameStrategy();
             name = switch (nameStrategy) {
-                case KEBAB_CASE -> StringUtils.camelToKebab(fieldName);
+                case KEBAB_CASE -> SfcStringUtils.camelToKebab(fieldName);
                 case CAMEL_CASE -> fieldName;
-                case UNDER_SCORE_CASE -> StringUtils.camelToUnder(fieldName);
+                case UNDER_SCORE_CASE -> SfcStringUtils.camelToUnder(fieldName);
                 default -> throw new IllegalArgumentException("未实现的策略:" + nameStrategy);
             };
         } else {
@@ -155,7 +159,7 @@ public class PropertyUtils {
                     }
                     if (!"{}".equals(p.templateParams())) {
                         try {
-                            configNode.setParams(MapperHolder.parseJsonToMap(p.templateParams()));
+                            configNode.setParams(SfcMapperHolder.parseJsonToMap(p.templateParams()));
                         } catch (JsonProcessingException e) { throw new IllegalArgumentException(e); }
                     }
 
@@ -216,9 +220,9 @@ public class PropertyUtils {
      * @param func  配置类字段getter方法的lambda表达式。 e.g. SysLogRecord::getEnableLog
      * @return  配置key
      */
-    public static <T, R> ConfigFieldMeta parseLambdaConfigNameMeta(SFunc<T, R> func) {
+    public static <T, R> ConfigFieldMeta parseLambdaConfigNameMeta(SfcFunc<T, R> func) {
         try {
-            ClassUtils.LambdaMetaData lambdaMetaData = ClassUtils.parseGetterLambdaMetaData(func);
+            SfcClassUtils.LambdaMetaData lambdaMetaData = SfcClassUtils.parseGetterLambdaMetaData(func);
             Class<?> propertyEntityClass = lambdaMetaData.entityClass();
             Field field = lambdaMetaData.field();
             String fieldName = lambdaMetaData.fieldName();
@@ -258,7 +262,7 @@ public class PropertyUtils {
      * @param func  配置类字段getter方法的lambda表达式。 e.g. SysLogRecord::getEnableLog
      * @return  配置key
      */
-    public static <T,R> String parseLambdaConfigName(SFunc<T, R> func) {
+    public static <T,R> String parseLambdaConfigName(SfcFunc<T, R> func) {
         return parseLambdaConfigNameMeta(func).getConfigName();
     }
 }

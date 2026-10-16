@@ -12,14 +12,13 @@ import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
-import com.xiaotao.saltedfishcloud.constant.SysRole;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
-import com.xiaotao.saltedfishcloud.model.param.PageableRequest;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.constant.SfcSysRole;
+import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.cloud.model.param.SfcPageableRequest;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +61,7 @@ public class InvalidDataController {
      * 每个Provider可能支持多种类型，结果按类型扁平化返回。
      */
     @GetMapping("providers")
-    public JsonResult<List<FileTypeProviderInfo>> listProviders() {
+    public SfcJsonResult<List<FileTypeProviderInfo>> listProviders() {
         List<FileTypeProviderInfo> list = fileTypeChecker.getProviders().stream()
                 .flatMap(p -> p.getTypeInfoList().stream()
                         .map(typeInfo -> new FileTypeProviderInfo(
@@ -73,7 +72,7 @@ public class InvalidDataController {
                                 typeInfo.getMetadataDefines()
                         )))
                 .toList();
-        return JsonResultImpl.getInstance(list);
+        return SfcJsonResult.getInstance(list);
     }
 
     /**
@@ -91,15 +90,15 @@ public class InvalidDataController {
      * 发起失效数据检测（异步任务）
      */
     @PostMapping("detect")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<Long> detect() throws IOException {
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<Long> detect() throws IOException {
         checkConcurrentTask();
         AsyncTaskCreateParam param = new AsyncTaskCreateParam();
         param.setName("失效数据检测");
         param.setTaskType(DataManagerTaskType.INVALID_DATA_DETECT);
         param.setCpuOverhead(50);
         AsyncTaskRecord record = asyncTaskManager.createTask(param);
-        return JsonResultImpl.getInstance(record.getId());
+        return SfcJsonResult.getInstance(record.getId());
     }
 
     /**
@@ -113,18 +112,18 @@ public class InvalidDataController {
      * @return 创建成功后的异步任务ID
      */
     @PostMapping("identify")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<Long> identify(@RequestBody(required = false) IdentifyParam param) throws IOException {
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<Long> identify(@RequestBody(required = false) IdentifyParam param) throws IOException {
         checkConcurrentTask();
         AsyncTaskCreateParam taskParam = new AsyncTaskCreateParam();
         taskParam.setName("文件类型识别");
         taskParam.setTaskType(DataManagerTaskType.FILE_TYPE_CHECK);
         taskParam.setCpuOverhead(50);
         if (param != null && (param.getIds() != null || param.getReIdentify() != null)) {
-            taskParam.setParams(MapperHolder.toJson(param));
+            taskParam.setParams(SfcMapperHolder.toJson(param));
         }
         AsyncTaskRecord record = asyncTaskManager.createTask(taskParam);
-        return JsonResultImpl.getInstance(record.getId());
+        return SfcJsonResult.getInstance(record.getId());
     }
 
     /**
@@ -133,15 +132,15 @@ public class InvalidDataController {
      * @param filterId 可选，脚本筛选缓存ID。传此值时使用缓存中的筛选结果分页，忽略 query 中的 filterScript 字段。
      */
     @GetMapping("list")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<CommonPageInfo<InvalidDataRecord>> list(
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<SfcPageInfo<InvalidDataRecord>> list(
             InvalidDataQuery query,
             @RequestParam(required = false) String filterId,
-            PageableRequest pageableRequest) {
+            SfcPageableRequest pageableRequest) {
         if (filterId != null && !filterId.isBlank()) {
-            return JsonResultImpl.getInstance(invalidDataService.listByFilterId(filterId, pageableRequest));
+            return SfcJsonResult.getInstance(invalidDataService.listByFilterId(filterId, pageableRequest));
         }
-        return JsonResultImpl.getInstance(invalidDataService.list(query, pageableRequest));
+        return SfcJsonResult.getInstance(invalidDataService.list(query, pageableRequest));
     }
 
     /**
@@ -151,127 +150,127 @@ public class InvalidDataController {
      * 随后可通过 {@code GET /list?filterId=xxx&page=0&size=20} 进行分页查询。</p>
      */
     @PostMapping("filter")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<InvalidDataFilterResult> filter(@RequestBody InvalidDataQuery query) {
-        return JsonResultImpl.getInstance(invalidDataService.createFilter(query));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<InvalidDataFilterResult> filter(@RequestBody InvalidDataQuery query) {
+        return SfcJsonResult.getInstance(invalidDataService.createFilter(query));
     }
 
     /**
      * 获取失效数据详情
      */
     @GetMapping("detail/{id}")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<InvalidDataRecord> detail(@PathVariable Long id) {
-        return JsonResultImpl.getInstance(invalidDataService.getDetail(id));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<InvalidDataRecord> detail(@PathVariable Long id) {
+        return SfcJsonResult.getInstance(invalidDataService.getDetail(id));
     }
 
     /**
      * 批量发布为可认领
      */
     @PostMapping("publish")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> publish(@RequestBody List<Long> idList) {
-        return JsonResultImpl.getInstance(invalidDataService.publish(idList));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> publish(@RequestBody List<Long> idList) {
+        return SfcJsonResult.getInstance(invalidDataService.publish(idList));
     }
 
     /**
      * 批量取消发布
      */
     @PostMapping("unpublish")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> unpublish(@RequestBody List<Long> idList) {
-        return JsonResultImpl.getInstance(invalidDataService.unpublish(idList));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> unpublish(@RequestBody List<Long> idList) {
+        return SfcJsonResult.getInstance(invalidDataService.unpublish(idList));
     }
 
     /**
      * 批量快速修复
      */
     @PostMapping("quickFix")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> quickFix(@RequestBody List<Long> ids) {
-        return JsonResultImpl.getInstance(invalidDataService.quickFix(ids));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> quickFix(@RequestBody List<Long> ids) {
+        return SfcJsonResult.getInstance(invalidDataService.quickFix(ids));
     }
 
     /**
      * 修复所有待处理数据
      */
     @PostMapping("quickFix/all")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> quickFixAll() {
-        return JsonResultImpl.getInstance(invalidDataService.quickFixAll());
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> quickFixAll() {
+        return SfcJsonResult.getInstance(invalidDataService.quickFixAll());
     }
 
     /**
      * 批量丢弃
      */
     @PostMapping("discard")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> discard(@RequestBody List<Long> ids) {
-        return JsonResultImpl.getInstance(invalidDataService.discard(ids));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> discard(@RequestBody List<Long> ids) {
+        return SfcJsonResult.getInstance(invalidDataService.discard(ids));
     }
 
     /**
      * 丢弃所有可丢弃数据
      */
     @PostMapping("discard/all")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> discardAll() {
-        return JsonResultImpl.getInstance(invalidDataService.discardAll());
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> discardAll() {
+        return SfcJsonResult.getInstance(invalidDataService.discardAll());
     }
 
     /**
      * 按条件批量丢弃
      */
     @PostMapping("discard/byQuery")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> discardByQuery(@RequestBody InvalidDataQuery query) {
-        return JsonResultImpl.getInstance(invalidDataService.discardByQuery(query));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> discardByQuery(@RequestBody InvalidDataQuery query) {
+        return SfcJsonResult.getInstance(invalidDataService.discardByQuery(query));
     }
 
     /**
      * 按条件批量发布为可认领
      */
     @PostMapping("publish/byQuery")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> publishByQuery(@RequestBody InvalidDataQuery query) {
-        return JsonResultImpl.getInstance(invalidDataService.publishByQuery(query));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> publishByQuery(@RequestBody InvalidDataQuery query) {
+        return SfcJsonResult.getInstance(invalidDataService.publishByQuery(query));
     }
 
     /**
      * 按条件批量取消发布
      */
     @PostMapping("unpublish/byQuery")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> unpublishByQuery(@RequestBody InvalidDataQuery query) {
-        return JsonResultImpl.getInstance(invalidDataService.unpublishByQuery(query));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> unpublishByQuery(@RequestBody InvalidDataQuery query) {
+        return SfcJsonResult.getInstance(invalidDataService.unpublishByQuery(query));
     }
 
     /**
      * 标记处理完成（UNIQUE模式）
      */
     @PostMapping("markCompleted/{id}")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<?> markCompleted(@PathVariable Long id) {
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<?> markCompleted(@PathVariable Long id) {
         invalidDataService.markCompleted(id);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
      * 一键清理所有状态为已完成的失效数据
      */
     @PostMapping("cleanCompleted")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> cleanCompleted() {
-        return JsonResultImpl.getInstance(invalidDataService.cleanCompleted());
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> cleanCompleted() {
+        return SfcJsonResult.getInstance(invalidDataService.cleanCompleted());
     }
 
     /**
      * 一键将所有已认领的失效数据标记为已完成
      */
     @PostMapping("markClaimedCompleted")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> markClaimedCompleted() {
-        return JsonResultImpl.getInstance(invalidDataService.markAllClaimedAsCompleted());
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> markClaimedCompleted() {
+        return SfcJsonResult.getInstance(invalidDataService.markAllClaimedAsCompleted());
     }
 
     /**
@@ -280,9 +279,9 @@ public class InvalidDataController {
      * 解析每条记录认领后的保存路径与文件名，最多返回前 10 条预览结果。</p>
      */
     @PostMapping("batchClaim/preview")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<List<ClaimPreviewItem>> batchClaimPreview(@RequestBody @Valid BatchClaimParam param) {
-        return JsonResultImpl.getInstance(claimService.previewBatchClaim(param));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<List<ClaimPreviewItem>> batchClaimPreview(@RequestBody @Valid BatchClaimParam param) {
+        return SfcJsonResult.getInstance(claimService.previewBatchClaim(param));
     }
 
     /**
@@ -291,9 +290,9 @@ public class InvalidDataController {
      * 逐条解析保存路径与文件名后执行认领，跳过失败项继续处理后续记录。</p>
      */
     @PostMapping("batchClaim")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> batchClaim(@RequestBody @Valid BatchClaimParam param) {
-        return JsonResultImpl.getInstance(claimService.batchClaim(param));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> batchClaim(@RequestBody @Valid BatchClaimParam param) {
+        return SfcJsonResult.getInstance(claimService.batchClaim(param));
     }
 
     /**
@@ -302,9 +301,9 @@ public class InvalidDataController {
      * 将认领记录标记为已撤回，并将失效数据状态恢复为待处理。支持 Groovy 脚本过滤。</p>
      */
     @PostMapping("batchRevokeClaim/byQuery")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<BatchResult> revokeClaimByQuery(@RequestBody InvalidDataQuery query) {
-        return JsonResultImpl.getInstance(claimService.batchRevoke(query));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<BatchResult> revokeClaimByQuery(@RequestBody InvalidDataQuery query) {
+        return SfcJsonResult.getInstance(claimService.batchRevoke(query));
     }
 
     // === 普通用户查询 ===
@@ -313,8 +312,8 @@ public class InvalidDataController {
      * 查询已发布可认领的失效数据列表（分页+筛选，状态固定为已发布）
      */
     @GetMapping("publishedList")
-    public JsonResult<CommonPageInfo<InvalidDataRecord>> publishedList(InvalidDataQuery query, PageableRequest pageableRequest) {
-        return JsonResultImpl.getInstance(invalidDataService.listPublished(query, pageableRequest));
+    public SfcJsonResult<SfcPageInfo<InvalidDataRecord>> publishedList(InvalidDataQuery query, SfcPageableRequest pageableRequest) {
+        return SfcJsonResult.getInstance(invalidDataService.listPublished(query, pageableRequest));
     }
 
     // === 认领操作（普通用户+管理员） ===
@@ -323,25 +322,25 @@ public class InvalidDataController {
      * 认领失效数据（UNIQUE模式）
      */
     @PostMapping("claim")
-    public JsonResult<?> claim(@RequestBody @Valid ClaimParam param) throws IOException {
+    public SfcJsonResult<?> claim(@RequestBody @Valid ClaimParam param) throws IOException {
         claimService.claim(param);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
      * 查看某条失效数据的认领记录
      */
     @GetMapping("claims/{invalidDataId}")
-    @RolesAllowed(SysRole.ADMIN)
-    public JsonResult<List<ClaimRecord>> claims(@PathVariable Long invalidDataId) {
-        return JsonResultImpl.getInstance(claimService.listByInvalidDataId(invalidDataId));
+    @RolesAllowed(SfcSysRole.ADMIN)
+    public SfcJsonResult<List<ClaimRecord>> claims(@PathVariable Long invalidDataId) {
+        return SfcJsonResult.getInstance(claimService.listByInvalidDataId(invalidDataId));
     }
 
     /**
      * 查看我的认领记录
      */
     @GetMapping("myClaims")
-    public JsonResult<CommonPageInfo<ClaimRecord>> myClaims(@UID Long uid, Pageable pageable) {
-        return JsonResultImpl.getInstance(claimService.listByUid(uid, pageable));
+    public SfcJsonResult<SfcPageInfo<ClaimRecord>> myClaims(@SfcUID Long uid, Pageable pageable) {
+        return SfcJsonResult.getInstance(claimService.listByUid(uid, pageable));
     }
 }

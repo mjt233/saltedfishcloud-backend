@@ -1,22 +1,22 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.cloud.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
+import com.sfc.cloud.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferCallback;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.CopyAndMoveHandler;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import lombok.Getter;
 import lombok.Setter;
@@ -73,8 +73,8 @@ public abstract class AbstractRawStoreService implements StoreService {
 
     @Override
     public void clear() throws IOException {
-        handler.delete(StringUtils.appendPath(getPublicRoot()));
-        handler.delete(StringUtils.appendPath(getStoreRoot(), "user_file"));
+        handler.delete(SfcStringUtils.appendPath(getPublicRoot()));
+        handler.delete(SfcStringUtils.appendPath(getStoreRoot(), "user_file"));
     }
 
     private static class CopyAndMoveHandlerImpl extends CopyAndMoveHandler {
@@ -125,15 +125,15 @@ public abstract class AbstractRawStoreService implements StoreService {
     public abstract String getStoreRoot();
 
     public final String getUserFileRoot(long uid) {
-        if (uid == UserConstants.PUBLIC_USER_ID) {
+        if (uid == SfcUserConstants.PUBLIC_USER_ID) {
             return getPublicRoot();
         } else {
-            return StringUtils.appendPath(getStoreRoot(), "user_file", uid + "");
+            return SfcStringUtils.appendPath(getStoreRoot(), "user_file", uid + "");
         }
     }
 
     public final String getRepoRoot() {
-        return StringUtils.appendPath(getStoreRoot(), "repo");
+        return SfcStringUtils.appendPath(getStoreRoot(), "repo");
     }
 
     @Override
@@ -177,8 +177,8 @@ public abstract class AbstractRawStoreService implements StoreService {
     @Override
     public void storeByStream(FileInfo file, String savePath, OutputStreamConsumer<OutputStream> streamConsumer) throws IOException {
         final String root = getUserFileRoot(file.getUid());
-        final String rawPath = StringUtils.appendPath(root, savePath, file.getName());
-        final String tmpPath = rawPath + IdUtil.getId() + ".tmp";
+        final String rawPath = SfcStringUtils.appendPath(root, savePath, file.getName());
+        final String tmpPath = rawPath + SfcIdUtil.getId() + ".tmp";
         boolean isSuccess = false;
         try(OutputStream os = handler.newOutputStream(tmpPath)) {
             streamConsumer.accept(os).applyTo(file);
@@ -208,9 +208,9 @@ public abstract class AbstractRawStoreService implements StoreService {
         final String root = getPath(uid, path);
         for (String file : files) {
             if(!FileNameValidator.valid(file)) {
-                throw new JsonException(CommonError.NOT_ALLOW_PATH);
+                throw new SfcJsonException(SfcCommonError.NOT_ALLOW_PATH);
             }
-            handler.delete(StringUtils.appendPath(root, file));
+            handler.delete(SfcStringUtils.appendPath(root, file));
         }
         return files.size();
     }
@@ -223,9 +223,9 @@ public abstract class AbstractRawStoreService implements StoreService {
      * @return 资源完整存储路径
      */
     private String getPath(long uid, String...path) {
-        String root = (uid == UserConstants.PUBLIC_USER_ID ?
+        String root = (uid == SfcUserConstants.PUBLIC_USER_ID ?
                 getPublicRoot() :
-                StringUtils.appendPath(getUserFileRoot(uid))
+                SfcStringUtils.appendPath(getUserFileRoot(uid))
         );
         PathBuilder builder = new PathBuilder();
         for (String s : path) {
@@ -233,7 +233,7 @@ public abstract class AbstractRawStoreService implements StoreService {
                 builder.append(s);
             }
         }
-        return StringUtils.appendPath(root, builder.toString());
+        return SfcStringUtils.appendPath(root, builder.toString());
     }
 
     @Override
@@ -245,7 +245,7 @@ public abstract class AbstractRawStoreService implements StoreService {
         final String prefixRoot = getUserFileRoot(uid);
         files.forEach(fileInfo -> {
             fileInfo.setUid(uid);
-            fileInfo.setPath(StringUtils.removePrefix(prefixRoot, fileInfo.getPath()));
+            fileInfo.setPath(SfcStringUtils.removePrefix(prefixRoot, fileInfo.getPath()));
         });
         return files;
     }
@@ -290,20 +290,20 @@ public abstract class AbstractRawStoreService implements StoreService {
                     }
                 });
         for (String sourceFileName : sourceFileNames) {
-            final String src = StringUtils.appendPath(getUserFileRoot(param.getSourceUid()), param.getSourcePath(), sourceFileName);
-            final String dst = StringUtils.appendPath(getUserFileRoot(param.getTargetUid()), param.getTargetPath(), sourceFileName);
+            final String src = SfcStringUtils.appendPath(getUserFileRoot(param.getSourceUid()), param.getSourcePath(), sourceFileName);
+            final String dst = SfcStringUtils.appendPath(getUserFileRoot(param.getTargetUid()), param.getTargetPath(), sourceFileName);
             copyAndMoveHandler.copy(src, dst, param.getIsOverwrite(), callback);
         }
     }
 
     @Override
     public void move(long sourceUid, String source, long targetUid, String target, String name, boolean overwrite) throws IOException {
-        final String src = StringUtils.appendPath(getUserFileRoot(sourceUid), source, name);
-        final String dst = StringUtils.appendPath(getUserFileRoot(targetUid), target, name);
+        final String src = SfcStringUtils.appendPath(getUserFileRoot(sourceUid), source, name);
+        final String dst = SfcStringUtils.appendPath(getUserFileRoot(targetUid), target, name);
         final String dstParent = PathUtils.getParentPath(dst);
 
         if (!handler.exist(src)) {
-            throw new JsonException(FileSystemError.FILE_NOT_FOUND);
+            throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
         if (!handler.exist(dstParent)) {
             handler.mkdirs(dstParent);
@@ -320,7 +320,7 @@ public abstract class AbstractRawStoreService implements StoreService {
 
     @Override
     public void updateTime(long uid, String path, List<String> names, FileTimeAttribute attribute) throws IOException {
-        String parentPath = StringUtils.appendPath(getUserFileRoot(uid), path);
+        String parentPath = SfcStringUtils.appendPath(getUserFileRoot(uid), path);
         this.handler.updateTime(parentPath, names, attribute);
     }
 

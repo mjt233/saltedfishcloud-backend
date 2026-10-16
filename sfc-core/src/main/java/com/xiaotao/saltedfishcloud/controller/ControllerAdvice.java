@@ -1,12 +1,11 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.MessageException;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.breakpoint.exception.TaskNotFoundException;
 import com.xiaotao.saltedfishcloud.utils.RequestContextUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.dao.DuplicateKeyException;
@@ -44,7 +43,7 @@ public class ControllerAdvice {
     private HttpServletResponse response;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public JsonResult<String> validFormError(MethodArgumentNotValidException e) {
+    public SfcJsonResult<String> validFormError(MethodArgumentNotValidException e) {
         BindingResult bindingResult = e.getBindingResult();
         StringBuilder sb = new StringBuilder();
         bindingResult.getFieldErrors().forEach(error -> sb.append(error.getField()).append(error.getDefaultMessage()).append(";"));
@@ -52,7 +51,7 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(BindException.class)
-    public JsonResult<String> validError(BindException e) {
+    public SfcJsonResult<String> validError(BindException e) {
         List<FieldError> errors = e.getFieldErrors();
         StringBuilder sb = new StringBuilder();
         errors.forEach(error -> sb.append(error.getField()).append(' ').append(error.getDefaultMessage()).append(";"));
@@ -60,12 +59,12 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public JsonResult<String> requestParamsError(MissingServletRequestParameterException e) {
-        return JsonResultImpl.getInstance(422, null, e.getMessage());
+    public SfcJsonResult<String> requestParamsError(MissingServletRequestParameterException e) {
+        return SfcJsonResult.getInstance(422, null, e.getMessage());
     }
 
     @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class})
-    public JsonResult<String> paramsError(Exception e) {
+    public SfcJsonResult<String> paramsError(Exception e) {
         if (log.isDebugEnabled()) {
             log.debug("{}校验错误：",LOG_PREFIX, e);
         }
@@ -74,16 +73,16 @@ public class ControllerAdvice {
 
 
 
-    @ExceptionHandler(JsonException.class)
+    @ExceptionHandler(SfcJsonException.class)
     @SuppressWarnings("unchecked")
-    public JsonResult<Object> handle(JsonException e, HttpServletResponse response) {
+    public SfcJsonResult<Object> handle(SfcJsonException e, HttpServletResponse response) {
         if (log.isDebugEnabled()) {
             log.error("{}错误：",LOG_PREFIX, e);
         }
 
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes != null) {
-            Boolean isThumbnail = TypeUtils.toBoolean(requestAttributes.getAttribute("isThumbnail", RequestAttributes.SCOPE_REQUEST));
+            Boolean isThumbnail = SfcTypeUtils.toBoolean(requestAttributes.getAttribute("isThumbnail", RequestAttributes.SCOPE_REQUEST));
             if (isThumbnail) {
                 response.setStatus(404);
                 return null;
@@ -96,7 +95,7 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public JsonResult<String> handle(AccessDeniedException e) {
+    public SfcJsonResult<String> handle(AccessDeniedException e) {
         return responseError(403, e.getMessage());
     }
 
@@ -105,17 +104,17 @@ public class ControllerAdvice {
             NoSuchFileException.class,
             TaskNotFoundException.class
     })
-    public JsonResult<String> handle(Exception e) {
+    public SfcJsonResult<String> handle(Exception e) {
         log.debug("{}", LOG_PREFIX, e);
         return responseError(404, e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
-    public JsonResult<String> defaultHandle(Exception e, HttpServletResponse response) {
+    public SfcJsonResult<String> defaultHandle(Exception e, HttpServletResponse response) {
         if (e instanceof NoResourceFoundException) {
             log.warn("{} {}", LOG_PREFIX, e.getMessage());
             response.setStatus(404);
-            return JsonResultImpl.getInstance(404, 404, null, e.getMessage());
+            return SfcJsonResult.getInstance(404, 404, null, e.getMessage());
         } else if (isClientAbortException(e)) {
             log.debug("{} 客户端连接中断", LOG_PREFIX);
         } else {
@@ -130,7 +129,7 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(DuplicateKeyException.class)
-    public JsonResult<String> handle(DuplicateKeyException e) {
+    public SfcJsonResult<String> handle(DuplicateKeyException e) {
         return responseError(400, e.getMessage());
     }
 
@@ -146,21 +145,21 @@ public class ControllerAdvice {
             return null;
         } else {
             response.setStatus(500);
-            return JsonResultImpl.getInstance(500, null, "Server Error：" + e.getMessage());
+            return SfcJsonResult.getInstance(500, null, "Server Error：" + e.getMessage());
         }
     }
 
-    private JsonResult<String> responseError(int code, String message) {
+    private SfcJsonResult<String> responseError(int code, String message) {
         setStatusCode(code);
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes != null) {
-            Boolean isThumbnail = TypeUtils.toBoolean(requestAttributes.getAttribute("isThumbnail", RequestAttributes.SCOPE_REQUEST));
+            Boolean isThumbnail = SfcTypeUtils.toBoolean(requestAttributes.getAttribute("isThumbnail", RequestAttributes.SCOPE_REQUEST));
             if (isThumbnail) {
                 return null;
             }
         }
 
-        return JsonResultImpl.getInstance(code, null, message);
+        return SfcJsonResult.getInstance(code, null, message);
     }
 
     private void setStatusCode(int code) {

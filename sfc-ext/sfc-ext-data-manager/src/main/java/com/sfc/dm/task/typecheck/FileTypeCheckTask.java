@@ -10,7 +10,7 @@ import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import lombok.Setter;
@@ -153,9 +153,9 @@ public class FileTypeCheckTask implements AsyncTask {
             if (result != null) {
                 record.setFileType(result.getTypeId());
                 if (result.getDetail() != null && result.getDetail().getMetadata() != null) {
-                    record.setMetadata(MapperHolder.toJson(result.getDetail().getMetadata()));
+                    record.setMetadata(SfcMapperHolder.toJson(result.getDetail().getMetadata()));
                 }
-                record.setTypeCheckResult(MapperHolder.toJson(result));
+                record.setTypeCheckResult(SfcMapperHolder.toJson(result));
                 record.setNeedIdentify(false);
                 return result;
             }

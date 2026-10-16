@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.PoolUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.schmizz.sshj.SSHClient;
@@ -204,7 +204,7 @@ public class SFTPStorage implements Storage, Closeable {
                 } else {
                     List<FileInfo> fileInfos = listFiles(path);
                     List<String> subPaths = fileInfos.stream()
-                            .map(e -> StringUtils.appendPath(path, e.getName()))
+                            .map(e -> SfcStringUtils.appendPath(path, e.getName()))
                             .collect(Collectors.toList());
                     for (String subPath : subPaths) {
                         delete(subPath);
@@ -258,7 +258,7 @@ public class SFTPStorage implements Storage, Closeable {
     @Override
     public boolean rename(String path, String newName) throws IOException {
         try (SFTPClient sftpClient = getSFTPClient()) {
-            sftpClient.rename(path, StringUtils.appendPath(PathUtils.getParentPath(path), newName));
+            sftpClient.rename(path, SfcStringUtils.appendPath(PathUtils.getParentPath(path), newName));
         }
 
         return true;
@@ -322,7 +322,7 @@ public class SFTPStorage implements Storage, Closeable {
     public void updateTime(String path, List<String> names, FileTimeAttribute attribute) throws IOException {
         try (SFTPClient client = getSFTPClient()) {
             for (String name : names) {
-                String fullPath = StringUtils.appendPath(path, name);
+                String fullPath = SfcStringUtils.appendPath(path, name);
                 
                 // 获取当前文件属性
                 FileAttributes currentAttr = client.statExistence(fullPath);

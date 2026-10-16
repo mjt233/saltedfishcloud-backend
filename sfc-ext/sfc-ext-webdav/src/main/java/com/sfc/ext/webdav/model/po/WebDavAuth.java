@@ -1,6 +1,6 @@
 package com.sfc.ext.webdav.model.po;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
@@ -15,7 +15,7 @@ import lombok.Setter;
 })
 @Setter
 @Getter
-public class WebDavAuth extends AuditModel {
+public class WebDavAuth extends SfcAuditModel {
     /**
      * 摘要值，用于计算WebDAV的digest认证
      * <p>A1 = username : realm : password</p>

@@ -42,6 +42,7 @@ import java.util.jar.JarFile;
 import java.net.URLClassLoader;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
+import com.sfc.cloud.utils.SfcMapperHolder;
 
 @Slf4j
 public class PluginInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
@@ -88,7 +89,7 @@ public class PluginInitializer implements ApplicationContextInitializer<Configur
             startRegister(pluginManager, pluginResourceList);
 
             // 更新 Jackson 类型工厂的类加载器，使所有 Mapper 能访问插件类
-            MapperHolder.setTypeFactoryClassLoader(pluginClassLoader);
+            SfcMapperHolder.setTypeFactoryClassLoader(pluginClassLoader);
 
             context.addBeanFactoryPostProcessor(beanFactory -> {
                 beanFactory.registerSingleton("pluginManager", pluginManager);

@@ -8,11 +8,10 @@ import com.sfc.task.prog.ProgressDetector;
 import com.sfc.task.prog.ProgressRecord;
 import com.sfc.task.prog.ProgressRecordVO;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,8 +39,8 @@ public class AsyncTaskController {
      * 获取任务执行进度信息
      */
     @PostMapping("getProg")
-    public JsonResult<List<ProgressRecordVO>> getProg(@RequestBody List<Long> taskId) {
-        return JsonResultImpl.getInstance(taskId.stream().map(id -> {
+    public SfcJsonResult<List<ProgressRecordVO>> getProg(@RequestBody List<Long> taskId) {
+        return SfcJsonResult.getInstance(taskId.stream().map(id -> {
             ProgressRecord record = progressDetector.getRecord(id.toString());
             if (record == null) {
                 return null;
@@ -54,13 +53,13 @@ public class AsyncTaskController {
     }
 
     @GetMapping("listRecord")
-    public JsonResult<CommonPageInfo<AsyncTaskRecord>> listRecord(AsyncTaskQueryParam param) {
-        return JsonResultImpl.getInstance(asyncTaskRecordService.listRecord(param));
+    public SfcJsonResult<SfcPageInfo<AsyncTaskRecord>> listRecord(AsyncTaskQueryParam param) {
+        return SfcJsonResult.getInstance(asyncTaskRecordService.listRecord(param));
     }
 
     @GetMapping("getById")
-    public JsonResult<AsyncTaskRecord> getById(@RequestParam("taskId") Long taskId) {
-        return JsonResultImpl.getInstance(asyncTaskRecordRepo.getReferenceById(taskId));
+    public SfcJsonResult<AsyncTaskRecord> getById(@RequestParam("taskId") Long taskId) {
+        return SfcJsonResult.getInstance(asyncTaskRecordRepo.getReferenceById(taskId));
     }
 
     /**
@@ -70,13 +69,13 @@ public class AsyncTaskController {
      * @return  是否执行完成
      */
     @GetMapping("waitTaskExit")
-    public JsonResult<Boolean> waitTaskExit(@RequestParam("taskId") Long taskId,
+    public SfcJsonResult<Boolean> waitTaskExit(@RequestParam("taskId") Long taskId,
                                         @RequestParam("timeout") Long timeout) throws IOException {
         try {
             asyncTaskManager.waitTaskExit(taskId, timeout, TimeUnit.SECONDS);
-            return JsonResultImpl.getInstance(true);
+            return SfcJsonResult.getInstance(true);
         } catch (InterruptedException e) {
-            return JsonResultImpl.getInstance(false);
+            return SfcJsonResult.getInstance(false);
         }
     }
 
@@ -86,16 +85,16 @@ public class AsyncTaskController {
      * @return          新任务对象
      */
     @PostMapping("rerun")
-    public JsonResult<AsyncTaskRecord> rerun(@RequestParam("taskId") Long taskId) throws IOException {
-        return JsonResultImpl.getInstance(asyncTaskManager.rerun(taskId));
+    public SfcJsonResult<AsyncTaskRecord> rerun(@RequestParam("taskId") Long taskId) throws IOException {
+        return SfcJsonResult.getInstance(asyncTaskManager.rerun(taskId));
     }
 
     @RequestMapping("/interrupt")
-    public JsonResult<Object> interrupt(@RequestParam("taskId") Long taskId) throws IOException {
+    public SfcJsonResult<Object> interrupt(@RequestParam("taskId") Long taskId) throws IOException {
         AsyncTaskRecord record = asyncTaskRecordRepo.getReferenceById(taskId);
-        UIDValidator.validate(record.getUid(), true);
+        SfcUIDValidator.validate(record.getUid(), true);
         asyncTaskManager.interrupt(taskId);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -104,7 +103,7 @@ public class AsyncTaskController {
      * @return         日志正文
      */
     @GetMapping("getLog")
-    public JsonResult<String> getLog(@RequestParam("taskId") Long taskId) throws IOException {
-        return JsonResultImpl.getInstance(ResourceUtils.resourceToString(asyncTaskManager.getTaskLog(taskId, true)));
+    public SfcJsonResult<String> getLog(@RequestParam("taskId") Long taskId) throws IOException {
+        return SfcJsonResult.getInstance(ResourceUtils.resourceToString(asyncTaskManager.getTaskLog(taskId, true)));
     }
 }

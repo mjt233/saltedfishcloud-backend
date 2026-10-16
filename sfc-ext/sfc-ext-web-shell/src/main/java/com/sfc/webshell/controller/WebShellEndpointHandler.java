@@ -1,16 +1,16 @@
 package com.sfc.webshell.controller;
 
-import com.xiaotao.saltedfishcloud.constant.error.CommonError;
+import com.sfc.cloud.constant.SfcCommonError;
 import com.sfc.rpc.RPCRegistry;
 import com.sfc.webshell.constans.WebShellMQTopic;
 import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecuteRPCService;
 import com.sfc.webshell.service.ShellExecuteService;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 
@@ -64,11 +64,15 @@ public class WebShellEndpointHandler {
                 .getRPCClient(ShellExecuteRPCService.class)
                 .getSessionById(sessionId);
         if (sessionRecord == null) {
-            throw  new JsonException("找不到id为" + sessionId + "的webShell交互会话");
+            throw  new SfcJsonException("找不到id为" + sessionId + "的webShell交互会话");
         }
         Long shellSessionUid = sessionRecord.getUid();
-        if (!UIDValidator.validate(user, shellSessionUid, true)) {
-            throw new JsonException(CommonError.SYSTEM_FORBIDDEN);
+        // 共享基座的身份 SPI 只接受 uid + 是否管理员（不引入对宿主 UserPrincipal 的依赖），
+        // 因此就地解包；用三元表达式保留"user 为 null = 未登录"的语义（与宿主 3 参重载一致）。
+        Long currentUid = user == null ? null : user.getId();
+        boolean currentIsAdmin = user != null && user.isAdmin();
+        if (!SfcUIDValidator.validate(currentUid, currentIsAdmin, shellSessionUid, true)) {
+            throw new SfcJsonException(SfcCommonError.SYSTEM_FORBIDDEN);
         }
 
     }

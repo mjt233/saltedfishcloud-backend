@@ -2,12 +2,11 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.model.DesktopComponent;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.DesktopComponentConfig;
 import com.xiaotao.saltedfishcloud.service.desktop.DesktopComponentConfigService;
 import com.xiaotao.saltedfishcloud.service.desktop.DesktopComponentService;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.validation.SfcUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,17 +25,17 @@ public class DesktopController {
      * 列出所有可配置的组件
      */
     @GetMapping("listAllComponent")
-    public JsonResult<List<DesktopComponent>> listAllComponent() {
-        return JsonResultImpl.getInstance(desktopComponentService.listAllComponents());
+    public SfcJsonResult<List<DesktopComponent>> listAllComponent() {
+        return SfcJsonResult.getInstance(desktopComponentService.listAllComponents());
     }
 
     /**
      * 删除一个组件配置
      */
     @PostMapping("deleteConfig")
-    public JsonResult<Object> deleteConfig(@RequestParam("id") Long id) {
+    public SfcJsonResult<Object> deleteConfig(@RequestParam("id") Long id) {
         desktopComponentConfigService.remove(id);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 
     /**
@@ -45,8 +44,8 @@ public class DesktopController {
      */
     @GetMapping("listComponentConfig")
     @AllowAnonymous
-    public JsonResult<List<DesktopComponentConfig>> listComponentConfig(@UID @RequestParam("uid") Long uid) {
-        return JsonResultImpl.getInstance(desktopComponentConfigService.listByUid(uid));
+    public SfcJsonResult<List<DesktopComponentConfig>> listComponentConfig(@SfcUID @RequestParam("uid") Long uid) {
+        return SfcJsonResult.getInstance(desktopComponentConfigService.listByUid(uid));
     }
 
     /**
@@ -54,8 +53,8 @@ public class DesktopController {
      * @param config    配置信息
      */
     @PostMapping("saveComponentConfig")
-    public JsonResult<Object> saveComponentConfig(@RequestBody DesktopComponentConfig config) {
+    public SfcJsonResult<Object> saveComponentConfig(@RequestBody DesktopComponentConfig config) {
         desktopComponentConfigService.save(config);
-        return JsonResult.emptySuccess();
+        return SfcJsonResult.emptySuccess();
     }
 }

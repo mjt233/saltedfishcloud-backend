@@ -4,7 +4,7 @@ import com.sfc.archive.engine.AbstractArchiveEngineCompressor;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.model.CompressionLevel;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
@@ -57,10 +57,10 @@ public class CommonsCompressorStreamArchiveEngineCompressor extends AbstractArch
     @Override
     protected OutputStream openEntryOutputStream(ArchiveResource resource) {
         if (Boolean.TRUE.equals(resource.getIsDirectory())) {
-            throw new JsonException(extension + " 格式不支持目录压缩");
+            throw new SfcJsonException(extension + " 格式不支持目录压缩");
         }
         if (fileAdded) {
-            throw new JsonException(extension + " 格式仅支持单文件压缩");
+            throw new SfcJsonException(extension + " 格式仅支持单文件压缩");
         }
         fileAdded = true;
         return compressorOutputStream;
@@ -104,7 +104,7 @@ public class CommonsCompressorStreamArchiveEngineCompressor extends AbstractArch
         if (".bz2".equals(extension)) {
             return new BZip2CompressorOutputStream(targetOutput, CommonsCompressionLevelUtils.mapBzip2BlockSize(level));
         }
-        throw new JsonException("不支持的单流压缩格式: " + extension);
+        throw new SfcJsonException("不支持的单流压缩格式: " + extension);
     }
 }
 

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnableOverwriteException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
@@ -119,7 +119,7 @@ public interface StoreService {
      * @param input 输入的文件
      * @param targetDir    保存到的目标网盘目录位置（注意：不是本地真是路径）
      * @param fileInfo 文件信息
-     * @throws JsonException 存储文件出错
+     * @throws SfcJsonException 存储文件出错
      * @throws DuplicateKeyException UNIQUE模式下两个不相同的文件发生MD5碰撞
      * @throws UnableOverwriteException 保存位置存在同名的目录
      */

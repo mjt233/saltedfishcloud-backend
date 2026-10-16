@@ -5,7 +5,7 @@ import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.utils.EngineResourceUtils;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.FileHeader;
 import org.springframework.core.io.Resource;
@@ -94,7 +94,7 @@ public class Zip4jArchiveEngineDecompressor extends AbstractArchiveEngineDecompr
     public InputStream getInputStream(String archivePath) throws IOException {
         FileHeader fileHeader = zipFile.getFileHeader(normalizeArchivePath(archivePath));
         if (fileHeader == null || fileHeader.isDirectory()) {
-            throw new JsonException("压缩包内资源不存在: " + archivePath);
+            throw new SfcJsonException("压缩包内资源不存在: " + archivePath);
         }
         String normalizedArchivePath = EngineResourceUtils.normalizeArchivePath(fileHeader.getFileName());
         return wrapInputStreamWithCallback(normalizedArchivePath, fileHeader.getUncompressedSize(), zipFile.getInputStream(fileHeader));

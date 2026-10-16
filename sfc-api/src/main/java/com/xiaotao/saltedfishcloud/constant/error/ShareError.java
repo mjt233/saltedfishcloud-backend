@@ -1,9 +1,10 @@
 package com.xiaotao.saltedfishcloud.constant.error;
 
 import lombok.Getter;
+import com.sfc.cloud.exception.SfcErrorInfo;
 
 @Getter
-public enum ShareError implements ErrorInfo {
+public enum ShareError implements SfcErrorInfo {
     // 分享模块
     SHARE_NOT_FOUND(5000, 404, "分享不存在"),
     SHARE_EXTRACT_ERROR(5001, 400, "提取码错误"),

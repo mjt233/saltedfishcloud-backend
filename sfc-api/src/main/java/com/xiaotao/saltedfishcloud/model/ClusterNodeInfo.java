@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model;
 
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -63,7 +63,7 @@ public class ClusterNodeInfo implements Serializable {
      * @return      完整url
      */
     public String getRequestUrl(String url) {
-        return StringUtils.appendPath("http://" + this.getHost() + ":" + this.getHttpPort(), url);
+        return SfcStringUtils.appendPath("http://" + this.getHost() + ":" + this.getHttpPort(), url);
     }
 
     @Override

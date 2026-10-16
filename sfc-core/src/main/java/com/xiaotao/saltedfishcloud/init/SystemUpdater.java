@@ -13,8 +13,8 @@ import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.MigrateUtils;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -82,7 +82,7 @@ public class SystemUpdater {
         SysProperties sysProperties = SpringContextUtils.getContext().getBean(SysProperties.class);
         UserCustomStoreService userCustomStoreService = SpringContextUtils.getContext().getBean(UserCustomStoreService.class);
 
-        String oldUserProfilePath = StringUtils.appendPath(sysProperties.getStore().getRoot(), "user_profile");
+        String oldUserProfilePath = SfcStringUtils.appendPath(sysProperties.getStore().getRoot(), "user_profile");
         storageProvider.listFiles(oldUserProfilePath)
                 .stream()
                 .filter(FileInfo::isDir)
@@ -136,7 +136,7 @@ public class SystemUpdater {
                 .stream()
                 .map(mapRes -> {
                     HashMap<String, Object> newMap = new HashMap<>();
-                    mapRes.forEach((field, val) -> newMap.put(StringUtils.underToCamel(field), val));
+                    mapRes.forEach((field, val) -> newMap.put(SfcStringUtils.underToCamel(field), val));
                     return ObjectUtils.mapToBean(newMap, FileInfo.class);
                 })
                 .collect(Collectors.toList());
@@ -186,7 +186,7 @@ public class SystemUpdater {
         jdbcTemplate.query("SELECT * FROM proxy", new BeanPropertyRowMapper<>(ProxyInfo.class))
                 .forEach(proxyInfo -> jdbcTemplate.update(
                         "UPDATE proxy SET id = ?, uid = 0, create_at = ?, update_at = ? WHERE name = ?",
-                        IdUtil.getId(), now, now, proxyInfo.getName())
+                        SfcIdUtil.getId(), now, now, proxyInfo.getName())
                 );
 
         // 重新构建主键字段

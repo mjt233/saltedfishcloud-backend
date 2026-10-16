@@ -8,7 +8,7 @@ import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.manager.url.UrlManager;
 import com.sfc.onlyoffice.model.OfficeConfigProperty;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +39,7 @@ public class OfficeAutoConfiguration implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         configService.bindPropertyEntity(officeConfigProperty);
-        if (StringUtils.hasText(officeConfigProperty.getDocumentServerHost())) {
+        if (SfcStringUtils.hasText(officeConfigProperty.getDocumentServerHost())) {
             log.info("Office插件已就绪");
         } else {
             log.warn("Office插件已加载，但未进行配置");

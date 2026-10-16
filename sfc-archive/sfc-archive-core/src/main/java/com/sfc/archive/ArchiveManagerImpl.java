@@ -3,7 +3,7 @@ package com.sfc.archive;
 import com.sfc.archive.comporessor.ArchiveCompressor;
 import com.sfc.archive.extractor.ArchiveExtractor;
 import com.sfc.archive.model.ArchiveParam;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 
@@ -24,7 +24,7 @@ public class ArchiveManagerImpl implements ArchiveManager {
         if (compressorProvider != null) {
             return compressorProvider.getCompressor(param, outputStream);
         } else {
-            throw new JsonException("不支持压缩的类型: " + param.getType());
+            throw new SfcJsonException("不支持压缩的类型: " + param.getType());
         }
     }
 
@@ -34,7 +34,7 @@ public class ArchiveManagerImpl implements ArchiveManager {
         if (extractorProvider != null) {
             return extractorProvider.getExtractor(param, resource);
         } else {
-            throw new JsonException("不支持解压的类型: " + param.getType());
+            throw new SfcJsonException("不支持解压的类型: " + param.getType());
         }
     }
 

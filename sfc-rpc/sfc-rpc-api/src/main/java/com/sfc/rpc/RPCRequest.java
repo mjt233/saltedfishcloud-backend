@@ -1,6 +1,6 @@
 package com.sfc.rpc;
 
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -39,7 +39,7 @@ public class RPCRequest {
 
     public Long generateIdIfAbsent() {
         if (requestId == null) {
-            requestId = IdUtil.getId();
+            requestId = SfcIdUtil.getId();
         }
         return requestId;
     }

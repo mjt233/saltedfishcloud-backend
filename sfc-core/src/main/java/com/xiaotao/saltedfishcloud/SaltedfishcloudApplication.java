@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.ext.DefaultPluginManager;
 import com.xiaotao.saltedfishcloud.init.PluginInitializer;
 import com.xiaotao.saltedfishcloud.init.DataMigrateAndCheckInitializer;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import emergency.EmergencyApplication;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
@@ -116,8 +116,8 @@ public class SaltedfishcloudApplication {
         long used = runtime.totalMemory() - runtime.freeMemory();
         log.info("启动耗时：{}s 最大内存：{} 占用内存：{} 使用率：{}%",
                 (System.currentTimeMillis() - beginTime) / 1000.0,
-                StringUtils.getFormatSize(total),
-                StringUtils.getFormatSize(used),
+                SfcStringUtils.getFormatSize(total),
+                SfcStringUtils.getFormatSize(used),
                 (used * 100 / total)
         );
     }

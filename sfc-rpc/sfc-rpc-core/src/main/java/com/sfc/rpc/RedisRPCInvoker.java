@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sfc.rpc.exception.RPCIgnoreException;
 import com.sfc.rpc.support.RPCContextHolder;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,7 +125,7 @@ public class RedisRPCInvoker implements RPCInvoker {
             return request;
         }
         if (requestRawObj instanceof String requestJson) {
-            return MapperHolder.parseJson(requestJson, RPCRequest.class);
+            return SfcMapperHolder.parseJson(requestJson, RPCRequest.class);
         }
         throw new IllegalArgumentException("无法识别的RPC请求: " + requestRawObj.getClass());
     }
@@ -179,9 +179,9 @@ public class RedisRPCInvoker implements RPCInvoker {
         }
         Object result = response.getResult();
         if (result != null) {
-            response.setResult(MapperHolder.toJsonWithType(result));
+            response.setResult(SfcMapperHolder.toJsonWithType(result));
         }
-        redisTemplate.opsForList().leftPush(request.getResponseKey(), MapperHolder.toJsonWithType(response));
+        redisTemplate.opsForList().leftPush(request.getResponseKey(), SfcMapperHolder.toJsonWithType(response));
         redisTemplate.expire(request.getResponseKey(), DEFAULT_TIMEOUT);
     }
 
@@ -233,14 +233,14 @@ public class RedisRPCInvoker implements RPCInvoker {
         if (!(o instanceof String)) {
             throw new IllegalArgumentException("无法处理的redis rpc响应数据类型：" + o.getClass());
         }
-        RPCResponse rpcResponse = MapperHolder.parseJson((String) o, RPCResponse.class);
+        RPCResponse rpcResponse = SfcMapperHolder.parseJson((String) o, RPCResponse.class);
         if (resultType != null && rpcResponse.getResult() != null) {
             String resultJson = rpcResponse.getResult().toString();
             boolean isJsonArray = resultJson.startsWith("[\"") && resultJson.endsWith("]]");
             if ((!resultJson.startsWith("[") || isJsonArray) && Collection.class.isAssignableFrom(resultType)) {
-                rpcResponse.setResult(List.of(MapperHolder.withTypeMapper.readValue(resultJson, Object.class)));
+                rpcResponse.setResult(List.of(SfcMapperHolder.withTypeMapper.readValue(resultJson, Object.class)));
             } else {
-                rpcResponse.setResult(MapperHolder.parseJson(resultJson, resultType));
+                rpcResponse.setResult(SfcMapperHolder.parseJson(resultJson, resultType));
             }
         }
         return rpcResponse;
@@ -303,7 +303,7 @@ public class RedisRPCInvoker implements RPCInvoker {
      */
     protected void sendRequest(RPCRequest request) throws JsonProcessingException {
         request.generateIdIfAbsent();
-        redisTemplate.convertAndSend(ASYNC_TASK_RPC, MapperHolder.toJson(request));
+        redisTemplate.convertAndSend(ASYNC_TASK_RPC, SfcMapperHolder.toJson(request));
     }
 
     /**
@@ -319,7 +319,7 @@ public class RedisRPCInvoker implements RPCInvoker {
      */
     protected void initRedisTemplate() {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
-        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(MapperHolder.mapper, Object.class);
+        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(SfcMapperHolder.mapper, Object.class);
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(serializer);
         template.setConnectionFactory(redisConnectionFactory);

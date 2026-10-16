@@ -2,7 +2,7 @@
 
 > 本目录用于在**咸鱼云后端仓库内**统一维护各个微服务工程。
 > 与仓库内其它目录的本质区别：**这里的工程不继承 root `pom.xml`**——父 POM 是本目录的 [`pom.xml`](pom.xml)，而它的父 POM 才是 `spring-boot-starter-parent`（`<relativePath/>` 留空）。因此**不会被拖入咸鱼云那套约 208 个 jar 的技术栈**。
-> 模块依赖方向（也是构建顺序）：`sfc-common`（共享模型 / 工具 / 信任头常量 / 远程调用契约模型）→ `sfc-remote-client`（回调 core 的 OpenFeign SDK）、`sfc-gateway`、`sfc-demo-service`。
+> 模块依赖方向（也是构建顺序）：`sfc-common`（**已于 Phase 1 上提到仓库根目录** `../sfc-common`，宿主与微服务共用）→ `sfc-remote-client`（回调 core 的 OpenFeign SDK）、`sfc-gateway`、`sfc-demo-service`。
 > ⚠️ **现状校正（2026-10-11）**：本目录的工程**当前已在 root `pom.xml` 的 `<modules>` 中**（`microservices` 作为聚合器被引入），也就是说根目录执行 `mvn package` 会一并构建它们。这与本节早先"不进 root `<modules>`"的约定不同——属于**构建便利与"独立开发"之间的取舍现状**，本文档如实记录；"独立开发"的硬标准仍由下面两条保证：**不继承 root pom**、**零宿主依赖**（两者都可逐条验证）。
 > 若要恢复"完全不进 reactor"，只需从 root `<modules>` 移除 `microservices` 一项，各工程的独立构建命令（见 §三）无需改动。
 
@@ -17,7 +17,7 @@
 | 约束 | 原因 |
 |---|---|
 | **不继承 root pom** | 咸鱼云 root pom 在 `<dependencies>`（而非 `<dependencyManagement>`）里声明了 JPA / Security / Redis / Redisson 等整套技术栈，任何继承它的模块都会被无条件拖入约 208 个 jar——"独立开发"当场就不成立了 |
-| **零宿主依赖** | 不依赖任何**咸鱼云宿主侧**模块（`com.xiaotao.saltedfishcloud:*` 及宿主契约模块 `sfc-cloud-api`）。**唯一允许的仓库内依赖是本目录下自建**的共享模块 `com.sfc.cloud:sfc-common`。核验方式：`mvn -f microservices/pom.xml dependency:tree`，除 `com.sfc.cloud:sfc-common` 外不应命中任何仓库内坐标 |
+| **零宿主依赖** | 不依赖任何**咸鱼云宿主侧**模块（`com.xiaotao.saltedfishcloud:*` 及宿主契约模块 `sfc-cloud-api`）。允许的仓库内依赖只有两个**共享库**：`com.sfc.cloud:sfc-common`（轻量：常量/信封/异常/工具/分页，**已于 Phase 1 上提到仓库根目录**）与 `com.sfc.cloud:sfc-common-data`（JPA 基座，根目录）。<br>⚠️ **核验方式必须改**：不能再对 `microservices/pom.xml` 单独跑 `dependency:tree` —— `sfc-common` 已不在该 reactor 内，那样会从本地仓库解析到**旧快照**（见 §三 的警告）。请在**仓库根**执行 `mvn dependency:tree -pl :sfc-remote-client` 等，或直接全量构建 |
 | ~~不进 root `<modules>`~~ → **现状：已进**（2026-10-11 校正） | 早先的约定是"避免微服务被卷进 reactor 构建"。当前本目录**整个聚合工程**（`microservices` 及其三个模块）都在 root `<modules>` 中，好处是根目录一次 `mvn package` 就能产出全部产物；代价是"改微服务要重建宿主"这一耦合回来了。**若在意后者，从 root `<modules>` 移除 `microservices` 一项即可**——本目录的独立构建命令（§三）与之无关 |
 
 > 本目录内的工程应作为**独立的 Maven 工程**打开（IDEA 中单独打开 `microservices/` 目录）。
@@ -35,7 +35,8 @@
 
 | 工程 | 作用 | 状态 |
 |---|---|---|
-| [`sfc-common`](sfc-common/) | **共享库**（不是可运行进程）：跨进程实体模型 `UserPrincipal`、用户凭证解析与本地验签 `SecureUtils`、网关与微服务的信任头常量 `SfcTrustHeaders`，以及远程调用契约模型（`com.sfc.cloud.remote.model`：响应信封、文件模型、请求参数）。被下面三个工程以 jar 形式引用，**版本/依赖管理全部继承本目录的 `pom.xml`** | 已接入 |
+| [`sfc-common`](../sfc-common/) | **共享库**（不是可运行进程，**位于仓库根目录**）：跨进程实体模型 `UserPrincipal`、用户凭证解析与本地验签 `SecureUtils`、网关与微服务的信任头常量 `SfcTrustHeaders`、远程调用契约模型，以及 Phase 1 从宿主迁出的响应信封 `SfcJsonResult`、异常族、常量、字符串/JSON 工具与分页模型 `SfcPageInfo`/`SfcPageableRequest`。被宿主（`sfc-api`）与下面三个工程共同引用。**零 JPA 依赖**（网关无 JPA） | 已接入（**Phase 1 上提**） |
+| [`sfc-common-data`](../sfc-common-data/) | **共享库**（不是可运行进程，**位于仓库根目录**）：在 `sfc-common` 之上叠加 JPA/Spring Data 的数据访问基座 `SfcBaseModel`→`SfcAuditModel`、`SfcBaseRepo`、`SfcCrudService`/`SfcCrudServiceImpl`、雪花主键、`SfcDBUtils`、`SfcClassUtils`、`@SfcUID`。身份与事务经 SPI（`CurrentUserProvider` / `SfcTransactionManagerProvider`）注入 | 已接入（**Phase 1 新增**） |
 | [`sfc-remote-client`](sfc-remote-client/) | **远程客户端 SDK**（库，不是可运行进程）：OpenFeign 声明式接口，让微服务直接调用 core 的用户网盘文件操作（列出/删除/保存/复制/移动/重命名），凭证按「信任模式」自动透传。对应[路线图阶段 6.2](../../docs/plan/microservice/microservice-roadmap.md) | 已接入 |
 | [`sfc-demo-service`](sfc-demo-service/) | **微服务示例/探针**：验证"独立微服务 → Nacos 注册 → 咸鱼云能发现"，并提供 `whoami` / `echo` / `echo-body` / `stream` / `ws` 等验收探针（身份来自网关注入的 `X-Sfc-Uid`） | 已接入 |
 | [`sfc-gateway`](sfc-gateway/) | **独立网关**（Spring Cloud Gateway Server WebFlux）：整站**唯一入口**，承担入口透传（SPA / `/api/**` / WebSocket / OIDC）与微服务代理（`/api/ext/**`）。**不是微服务**——它不被任何服务反向调用 | **已接入**（[设计](../../docs/plan/microservice/microservice-gateway-design.md) · [预研实测报告](../../docs/plan/microservice/microservice-gateway-spike-report.md)） |
@@ -56,16 +57,23 @@
 # 前置：内部接口鉴权 SDK 在【仓库根 reactor】且不继承根 pom，先装进本地仓库
 mvn -pl sfc-auth install -DskipTests
 
-# 构建（在仓库根目录执行即可）——推荐：聚合器一次构建全部模块（含共享库 sfc-common）
-mvn -f microservices/pom.xml clean package -DskipTests
+# ✅ 推荐（也是当前唯一可靠的方式）：从【仓库根 reactor】构建。
+#    共享库 sfc-common / sfc-common-data 现在是根目录下的独立模块，只有根 reactor 才包含它们；
+#    根 <modules> 已包含 microservices，因此这一条会按依赖顺序把宿主与微服务一起构建。
+mvn clean package -DskipTests
 
-# 只构建其中一个工程：-am 会把它的上游 sfc-common 一并放进 reactor
-mvn -f microservices/pom.xml clean package -DskipTests -pl :sfc-remote-client -am
-mvn -f microservices/pom.xml clean package -DskipTests -pl :sfc-gateway -am
-mvn -f microservices/pom.xml clean package -DskipTests -pl :sfc-demo-service -am
+# 只构建微服务侧（仍是根 reactor；-pl 里写微服务模块的坐标）
+mvn package -DskipTests -pl :sfc-remote-client -am
+mvn package -DskipTests -pl :sfc-gateway -am
+mvn package -DskipTests -pl :sfc-demo-service -am
 
-# ⚠️ 不要再对子模块直接 `-f microservices/sfc-gateway/pom.xml`：
-#    两个工程现在都依赖共享库 sfc-common，单项目构建会要求它已在本地仓库（需先执行 install）。
+# ⚠️⚠️ 不要再对 `microservices/pom.xml` 单独构建（`mvn -f microservices/pom.xml …`）：
+#    Phase 1 把 sfc-common 上提到了仓库根目录，它**已不在本目录的 reactor 内**。
+#    那样构建时 Maven 会从**本地仓库**解析 `com.sfc.cloud:sfc-common`，
+#    而本地仓库里可能是一份**旧快照**（沙箱/CI 下还可能根本不存在）——
+#    表现为"构建成功但跑的是旧共享库"，属于静默错误，比直接失败更危险。
+#    同理 `-am` 也不会再把 sfc-common 拉进 reactor。
+# ⚠️ 也不要用 `-rf` 从中途恢复根 reactor 构建：跳过的模块会退化为从本地仓库解析共享库。
 
 # 运行
 #   网关必须先注入验签密钥：用 core 的会话密钥（DB 配置项 sys.safe.token）覆盖 SFC_JWT_SECRET，
@@ -81,7 +89,7 @@ java -Xmx512m -jar microservices/sfc-gateway/target/sfc-gateway-1.0.0.jar
 > 运行网关前请确认 Nacos 已启动、`sfc-core` 与目标微服务已注册（`group=SFC`、`namespace=public`），且已注入 `SFC_JWT_SECRET`。
 > 网关自身配置见其 [`application.yml`](sfc-gateway/src/main/resources/application.yml) 与 [README](sfc-gateway/README.md)。
 
-> ⚠️ 用 `-pl` 时，模块坐标是相对**本目录的聚合器**（`mvn -f microservices/pom.xml … -pl :sfc-gateway -am`）；**不要**在仓库根目录写 `-pl microservices/sfc-gateway`——从 root reactor 看它的坐标是 `microservices/sfc-gateway`，且会把咸鱼云宿主的整套依赖一起拉进构建。
+> ⚠️ **共享库版本必须与代码同源**：`sfc-common` / `sfc-common-data` 的版本由根 `pom.xml` 的 `sfc.common.version` 单点声明（当前 `1.0.0`），`sfc-ext/pom.xml` 因不继承根 pom 而自带同名属性。改动共享库后请**从根 reactor 全量构建**，不要依赖 `install` 到本地仓库的旧副本。
 
 ---
 

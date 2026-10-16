@@ -14,16 +14,15 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ArchiveError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.model.json.JsonResult;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -64,8 +63,8 @@ public class ArchiveController {
      * @return          任务id
      */
     @PostMapping("asyncCompress")
-    public JsonResult<Long> asyncCompress(@RequestBody DiskFileSystemCompressParam param) throws IOException {
-        return JsonResultImpl.getInstance(archiveService.asyncCompress(param));
+    public SfcJsonResult<Long> asyncCompress(@RequestBody DiskFileSystemCompressParam param) throws IOException {
+        return SfcJsonResult.getInstance(archiveService.asyncCompress(param));
     }
 
     /**
@@ -82,11 +81,11 @@ public class ArchiveController {
      */
     @PostMapping("asyncExtract")
     @Operation(summary = "创建文件在线解压异步任务")
-    public JsonResult<Long> asyncExtract(@RequestBody AsyncArchiveExtractParam param) throws IOException {
+    public SfcJsonResult<Long> asyncExtract(@RequestBody AsyncArchiveExtractParam param) throws IOException {
         // UID 安全校验：公共资源（uid=0）的写入仅允许管理员
-        UIDValidator.validateWithException(param.getUid(), true);
+        SfcUIDValidator.validateWithException(param.getUid(), true);
         if(!ValidPathValidator.isValid(param.getPath())) {
-            throw new JsonException(FileSystemError.INVALID_PATH);
+            throw new SfcJsonException(FileSystemError.INVALID_PATH);
         }
 
         // 构建异步任务记录
@@ -97,7 +96,7 @@ public class ArchiveController {
                 + " -> " + param.getPath());
         record.setTaskType(AsyncTaskType.ARCHIVE_EXTRACTOR);
         record.setCpuOverhead(20);
-        record.setParams(MapperHolder.toJson(param));
+        record.setParams(SfcMapperHolder.toJson(param));
 
         // 关联当前登录用户
         UserPrincipal curUser = SecureUtils.getSpringSecurityUser();
@@ -105,7 +104,7 @@ public class ArchiveController {
 
         // 提交任务
         asyncTaskManager.submitAsyncTask(record);
-        return JsonResultImpl.getInstance(record.getId());
+        return SfcJsonResult.getInstance(record.getId());
     }
 
     /**
@@ -121,7 +120,7 @@ public class ArchiveController {
      */
     @PostMapping("listResources")
     @Operation(summary = "读取压缩包内所有文件列表")
-    public JsonResult<List<ArchiveResource>> listResources(@RequestBody ListArchiveResourcesRequest request) throws IOException, UnsupportedProtocolException {
+    public SfcJsonResult<List<ArchiveResource>> listResources(@RequestBody ListArchiveResourcesRequest request) throws IOException, UnsupportedProtocolException {
 
         // 允许返回的压缩包资源列表最大条目数，超过后直接拒绝，防止内存占用过高。
         int maxArchiveResourceCount = 20000;
@@ -138,7 +137,7 @@ public class ArchiveController {
 
         // 非本地资源且引擎声明读取列表需本地文件时，拒绝执行，避免高 IO 开销。
         if (!isLocalFileResource(resource) && provider.requiresLocalResourceForList(resource, engineProperty)) {
-            throw new JsonException(ArchiveError.ARCHIVE_LIST_RESOURCE_NOT_SUPPORTED);
+            throw new SfcJsonException(ArchiveError.ARCHIVE_LIST_RESOURCE_NOT_SUPPORTED);
         }
 
         // 创建解压器
@@ -152,13 +151,13 @@ public class ArchiveController {
             List<ArchiveResource> resourceList = new ArrayList<>();
             while (iterator.hasNext()) {
                 if (resourceList.size() >= maxArchiveResourceCount) {
-                    throw new JsonException(ArchiveError.ARCHIVE_LIST_RESOURCE_TOO_MANY,
+                    throw new SfcJsonException(ArchiveError.ARCHIVE_LIST_RESOURCE_TOO_MANY,
                             "max=" + maxArchiveResourceCount);
                 }
                 resourceList.add(iterator.next());
             }
 
-            return JsonResultImpl.getInstance(resourceList);
+            return SfcJsonResult.getInstance(resourceList);
         }
     }
 

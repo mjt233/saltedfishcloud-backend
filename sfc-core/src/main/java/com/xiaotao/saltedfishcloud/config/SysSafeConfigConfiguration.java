@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.service.hello.HelloService;
 import com.xiaotao.saltedfishcloud.utils.JwtUtils;
 import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -45,7 +45,7 @@ public class SysSafeConfigConfiguration {
     private void initJwtSecret() {
         String secret = configService.getConfig(SysSafeConfig::getToken);
         if (secret == null) {
-            secret = StringUtils.getRandomString(32, true);
+            secret = SfcStringUtils.getRandomString(32, true);
             log.info("[初始化]生成token密钥");
             configService.setConfig(SysSafeConfig::getToken, secret);
         }

@@ -8,9 +8,9 @@ import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.log.LogLevel;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.ftplet.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ public class FtpUploadAndLogHandler extends DefaultFtplet {
     @Override
     public FtpletResult onLogin(FtpSession session, FtpRequest request) throws FtpException, IOException {
         String userName = Optional.ofNullable(session.getUser()).map(User::getName)
-                .or(() -> Optional.ofNullable(session.getAttribute("userName")).map(TypeUtils::toString))
+                .or(() -> Optional.ofNullable(session.getAttribute("userName")).map(SfcTypeUtils::toString))
                 .orElse("");
         String pwd = request.getArgument();
         logRecordManager.saveRecordAsync(LogRecord.builder()
@@ -48,7 +48,7 @@ public class FtpUploadAndLogHandler extends DefaultFtplet {
                         .type(FTP_LOGIN_LOG_TYPE)
                         .level(LogLevel.INFO)
                         .msgAbstract("用户名: " + userName + " 密码: " + pwd + " 是否成功:" + session.isLoggedIn())
-                        .msgDetail(MapperHolder.toJson(new HashMap<>(){{
+                        .msgDetail(SfcMapperHolder.toJson(new HashMap<>(){{
                             put("userName", userName);
                             put("password", pwd);
                             put("isSuccess", session.isLoggedIn());
@@ -94,7 +94,7 @@ public class FtpUploadAndLogHandler extends DefaultFtplet {
         log.debug("upload end");
 
         FtpPathInfo pathInfo = (FtpPathInfo) session.getAttribute("pathInfo");
-        long uid = TypeUtils.toLong(session.getAttribute("uid"));
+        long uid = SfcTypeUtils.toLong(session.getAttribute("uid"));
         String tmpDir = System.getProperty("java.io.tmpdir");
         String tag = uid + SecureUtils.getMd5(pathInfo.getFullPath());
 

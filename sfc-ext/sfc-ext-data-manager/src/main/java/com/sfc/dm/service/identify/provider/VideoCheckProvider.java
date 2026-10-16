@@ -8,7 +8,7 @@ import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.model.FormatInfo;
 import com.saltedfishcloud.ext.ve.model.StreamInfo;
 import com.saltedfishcloud.ext.ve.model.VideoInfo;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -162,7 +162,7 @@ public class VideoCheckProvider implements FileTypeCheckProvider {
             // 内嵌元数据
             Map<String, String> tags = videoInfo.getFormat().getTags();
             if (tags != null) {
-                metadata.put("inlineMetadata", MapperHolder.toJsonNoEx(tags));
+                metadata.put("inlineMetadata", SfcMapperHolder.toJsonNoEx(tags));
             }
         }
 

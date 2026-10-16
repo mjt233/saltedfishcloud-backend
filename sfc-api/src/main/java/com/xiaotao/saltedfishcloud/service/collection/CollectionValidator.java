@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.model.dto.SubmitFile;
 import com.xiaotao.saltedfishcloud.model.po.CollectionField;
 import com.xiaotao.saltedfishcloud.model.po.CollectionInfo;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import org.springframework.util.StringUtils;
 
@@ -77,7 +77,7 @@ public class CollectionValidator {
      */
     private static boolean validatePattern(CollectionInfo info, SubmitFile submitFile) {
         String pattern = info.getPattern();
-        if (com.xiaotao.saltedfishcloud.utils.StringUtils.matchRegex(pattern, submitFile.getFileParam().getName())) {
+        if (com.sfc.cloud.utils.SfcStringUtils.matchRegex(pattern, submitFile.getFileParam().getName())) {
             return true;
         } else {
             throw new CollectionCheckedException("文件名不符合正则约束：" + info.getPattern());
@@ -94,13 +94,13 @@ public class CollectionValidator {
             // 校验拓展名
             String ext = FileUtils.getSuffix(name);
             String extP = info.getExtPattern();
-            if (extP != null && !com.xiaotao.saltedfishcloud.utils.StringUtils.matchRegex(extP, ext)) {
+            if (extP != null && !com.sfc.cloud.utils.SfcStringUtils.matchRegex(extP, ext)) {
                 throw new CollectionCheckedException("文件拓展名" + ext + "不满足正则表达式:" + extP);
             }
 
 
             // 逐字段校验
-            List<CollectionField> fields = MapperHolder.mapper.readValue(info.getField(), CollectionParser.FIELD_LIST_TYPE_REFERENCE);
+            List<CollectionField> fields = SfcMapperHolder.mapper.readValue(info.getField(), CollectionParser.FIELD_LIST_TYPE_REFERENCE);
             Map<String, String> fieldMap = submitFile.getFieldMap();
             for (CollectionField field : fields) {
                 String fieldName = field.getName();
@@ -108,7 +108,7 @@ public class CollectionValidator {
                 if (fieldValue == null) throw new CollectionCheckedException("字段" + fieldName + "丢失");
                 if(StringUtils.hasLength(field.getPattern())) {
                     // 检查TEXT正则表达式约束
-                    if (!com.xiaotao.saltedfishcloud.utils.StringUtils.matchRegex(field.getPattern(), fieldValue)) {
+                    if (!com.sfc.cloud.utils.SfcStringUtils.matchRegex(field.getPattern(), fieldValue)) {
                         throw new CollectionCheckedException("字段" + fieldName + "的值不满足正则表达式约束：" + field.getPattern());
                     }
                 } else if (field.getType() == CollectionField.Type.OPTION) {

@@ -6,7 +6,7 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.constant.AsyncTaskType;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -27,7 +27,7 @@ public class FileCopyAsyncTaskFactory implements AsyncTaskFactory {
     public AsyncTask createTask(String params, AsyncTaskRecord asyncTaskRecord) {
         try {
             // 解析任务参数
-            SimpleFileTransferParam param = MapperHolder.parseJson(params, SimpleFileTransferParam.class);
+            SimpleFileTransferParam param = SfcMapperHolder.parseJson(params, SimpleFileTransferParam.class);
 
             // 创建任务实例
             FileCopyAsyncTask task = new FileCopyAsyncTask(params, param);

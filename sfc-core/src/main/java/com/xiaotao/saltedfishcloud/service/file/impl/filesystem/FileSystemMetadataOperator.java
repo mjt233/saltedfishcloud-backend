@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
-import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
+import com.sfc.cloud.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
@@ -236,7 +236,7 @@ public interface FileSystemMetadataOperator {
      * @param size 页大小
      * @return 搜索结果
      */
-    CommonPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size);
+    SfcPageInfo<FileInfo> search(long uid, String key, Integer page, Integer size);
 
     /**
      * 合并主存储状态与文件记录统计状态。

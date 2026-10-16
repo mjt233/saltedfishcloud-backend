@@ -12,6 +12,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.utils.SfcTypeUtils;
 
 public class ObjectUtils {
     private ObjectUtils() {}
@@ -48,7 +50,7 @@ public class ObjectUtils {
                     Method getter = property.getReadMethod();
                     if (getter != null) {
                         try {
-                            setter = clazz.getMethod("set" + StringUtils.camelToUpperCamel(property.getName()), getter.getReturnType());
+                            setter = clazz.getMethod("set" + SfcStringUtils.camelToUpperCamel(property.getName()), getter.getReturnType());
                         } catch (NoSuchMethodException ignore) {
                             continue;
                         }
@@ -56,7 +58,7 @@ public class ObjectUtils {
                 }
                 if (map.containsKey(property.getName()) && setter != null) {
                     Class<?> parameterType = setter.getParameterTypes()[0];
-                    setter.invoke(object, TypeUtils.convert(parameterType, map.get(property.getName())));
+                    setter.invoke(object, SfcTypeUtils.convert(parameterType, map.get(property.getName())));
                 }
             }
         } catch (IntrospectionException | InvocationTargetException | IllegalAccessException e) {

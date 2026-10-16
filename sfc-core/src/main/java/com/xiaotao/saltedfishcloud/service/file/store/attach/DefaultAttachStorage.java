@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.service.file.store.attach;
 
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.OutputStreamConsumer;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -78,7 +78,7 @@ public class DefaultAttachStorage implements AttachStorage {
             }
             if ("..".equals(segment)) {
                 if (safeSegments.isEmpty()) {
-                    throw new JsonException(400, "附属存储路径不能越过根目录：" + path);
+                    throw new SfcJsonException(400, "附属存储路径不能越过根目录：" + path);
                 }
                 safeSegments.removeLast();
             } else {
@@ -99,7 +99,7 @@ public class DefaultAttachStorage implements AttachStorage {
         if (normalizedRelativePath.isEmpty()) {
             return getStorageDomainRootPath();
         }
-        return StringUtils.appendPath(getStorageDomainRootPath(), normalizedRelativePath);
+        return SfcStringUtils.appendPath(getStorageDomainRootPath(), normalizedRelativePath);
     }
 
     /**
@@ -111,7 +111,7 @@ public class DefaultAttachStorage implements AttachStorage {
     private String resolveRelativeFilePath(String path) {
         String normalizedRelativePath = normalizeRelativePath(path);
         if (normalizedRelativePath.isEmpty()) {
-            throw new JsonException(400, "附属存储文件路径不能为空");
+            throw new SfcJsonException(400, "附属存储文件路径不能为空");
         }
         return normalizedRelativePath;
     }
@@ -131,7 +131,7 @@ public class DefaultAttachStorage implements AttachStorage {
     @Override
     public long saveFile(String path, OutputStreamConsumer<OutputStream> outputStreamConsumer) throws IOException {
         if (outputStreamConsumer == null) {
-            throw new JsonException(400, "输出流处理器不能为空");
+            throw new SfcJsonException(400, "输出流处理器不能为空");
         }
         String normalizedRelativePath = resolveRelativeFilePath(path);
         String targetPath = resolveStoragePath(normalizedRelativePath);

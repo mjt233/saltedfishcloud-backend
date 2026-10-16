@@ -5,7 +5,7 @@ import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.utils.EngineResourceUtils;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.springframework.core.io.Resource;
@@ -119,7 +119,7 @@ public class SevenZArchiveEngineDecompressor extends AbstractArchiveEngineDecomp
                 sevenZFile.close();
             }
         }
-        throw new JsonException("压缩包内资源不存在: " + archivePath);
+        throw new SfcJsonException("压缩包内资源不存在: " + archivePath);
     }
 
     @Override

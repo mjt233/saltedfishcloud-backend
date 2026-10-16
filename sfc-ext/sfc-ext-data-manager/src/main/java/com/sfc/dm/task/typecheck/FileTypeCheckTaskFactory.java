@@ -8,7 +8,7 @@ import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.cloud.utils.SfcMapperHolder;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
@@ -31,7 +31,7 @@ public class FileTypeCheckTaskFactory implements AsyncTaskFactory {
 
         if (params != null && !params.isEmpty()) {
             try {
-                IdentifyParam identifyParam = MapperHolder.parseJson(params, IdentifyParam.class);
+                IdentifyParam identifyParam = SfcMapperHolder.parseJson(params, IdentifyParam.class);
                 task.setTargetIds(identifyParam.getIds());
                 task.setReIdentify(Boolean.TRUE.equals(identifyParam.getReIdentify()));
             } catch (IOException e) {

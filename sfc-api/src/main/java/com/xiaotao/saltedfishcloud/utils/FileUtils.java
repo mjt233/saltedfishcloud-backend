@@ -16,6 +16,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import com.sfc.cloud.utils.SfcStringUtils;
 
 @Slf4j
 public class FileUtils {
@@ -118,7 +119,7 @@ public class FileUtils {
      * @throws IOException  任何IO错误
      */
     public static File saveStreamAsLocalTempFile(InputStream inputStream, String tempDir) throws IOException {
-        Path path = Paths.get(StringUtils.appendPath(tempDir, "xyy_temp", UUID.randomUUID().toString()));
+        Path path = Paths.get(SfcStringUtils.appendPath(tempDir, "xyy_temp", UUID.randomUUID().toString()));
         createParentDirectory(path);
         try(InputStream is = inputStream) {
             Files.copy(is, path);
@@ -238,7 +239,7 @@ public class FileUtils {
 
         //  检查子目录和文件同名情况下类型是否一致
         Consumer<File> consumer = file -> {
-            Path p = Paths.get(target + "/" + StringUtils.removePrefix(source, file.getPath()));
+            Path p = Paths.get(target + "/" + SfcStringUtils.removePrefix(source, file.getPath()));
             if (Files.exists(p)) {
                 if (file.isDirectory() != Files.isDirectory(p)) {
                     throw new UnsupportedOperationException("已存在文件与被移动文件类型不一致: " + file.getName());
@@ -249,12 +250,12 @@ public class FileUtils {
         sourceCollection.getDirList().forEach(consumer);
 
         for (File file : sourceCollection.getDirList()) {
-            Path p = Paths.get(target + "/" + StringUtils.removePrefix(source, file.getPath()));
+            Path p = Paths.get(target + "/" + SfcStringUtils.removePrefix(source, file.getPath()));
             if (!Files.exists(p)) Files.createDirectory(p);
         }
 
         for (File file : sourceCollection.getFileList()) {
-            Path p = Paths.get(target + "/" + StringUtils.removePrefix(source, file.getPath()));
+            Path p = Paths.get(target + "/" + SfcStringUtils.removePrefix(source, file.getPath()));
 
             // 若两个文件为同一份文件的链接，则原文件不会被删除。
             // 将目的地同名文件删除以避免该情况

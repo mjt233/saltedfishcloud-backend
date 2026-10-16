@@ -4,7 +4,7 @@ import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.function.IOExceptionBiFunction;
 import com.sfc.archive.model.ArchiveResource;
 import com.sfc.archive.utils.EngineResourceUtils;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.FilterInputStream;
@@ -72,7 +72,7 @@ public abstract class AbstractArchiveEngineDecompressor extends AbstractArchiveE
      */
     protected final void requireDecompressFunction(IOExceptionBiFunction<InputStream, ArchiveResource, Boolean> func) {
         if (func == null) {
-            throw new JsonException("func 不能为空");
+            throw new SfcJsonException("func 不能为空");
         }
     }
 
@@ -90,7 +90,7 @@ public abstract class AbstractArchiveEngineDecompressor extends AbstractArchiveE
                                                      ArchiveResource archiveResource) throws IOException {
         requireDecompressFunction(func);
         if (archiveResource == null) {
-            throw new JsonException("archiveResource 不能为空");
+            throw new SfcJsonException("archiveResource 不能为空");
         }
         return func.apply(inputStream, archiveResource);
     }
@@ -106,7 +106,7 @@ public abstract class AbstractArchiveEngineDecompressor extends AbstractArchiveE
     protected final InputStream wrapInputStreamWithCallback(String archivePath, long total, InputStream inputStream) {
         String normalizedPath = requireArchivePath(archivePath);
         if (inputStream == null) {
-            throw new JsonException("inputStream 不能为空");
+            throw new SfcJsonException("inputStream 不能为空");
         }
 
         invokeOnFileStart(normalizedPath);
@@ -185,7 +185,7 @@ public abstract class AbstractArchiveEngineDecompressor extends AbstractArchiveE
      */
     protected final String requireArchivePath(String archivePath) {
         if (archivePath == null || archivePath.isEmpty()) {
-            throw new JsonException("archivePath 不能为空");
+            throw new SfcJsonException("archivePath 不能为空");
         }
         return archivePath;
     }

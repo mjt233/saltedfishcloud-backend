@@ -12,17 +12,17 @@ import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecuteRecordService;
 import com.sfc.webshell.service.ShellExecuteService;
 import com.sfc.webshell.utils.ProcessUtils;
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
-import com.xiaotao.saltedfishcloud.model.CommonResult;
 import com.xiaotao.saltedfishcloud.model.RequestParam;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
@@ -173,7 +173,7 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
 
     @Override
     public ShellExecuteResult executeCommand(Long nodeId, ShellExecuteParameter parameter) throws IOException {
-        CommonResult<ShellExecuteResult> rpcResult = invokeNodeService(
+        SfcJsonResult<ShellExecuteResult> rpcResult = invokeNodeService(
                 nodeId,
                 parameter,
                 HttpMethod.POST,
@@ -279,7 +279,7 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
         ShellExecuteParameter parameter = session.getParameter();
         Date now = new Date();
         if (session.getId() == null) {
-            session.setId(IdUtil.getId());
+            session.setId(SfcIdUtil.getId());
         } else if(processMap.containsKey(session.getId())) {
             throw new IllegalArgumentException("会话已在运行中");
         }
@@ -287,11 +287,11 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
             session.setCreateAt(now);
         }
         if (session.getName() == null) {
-            session.setName(StringUtils.hasText(parameter.getName()) ? parameter.getName() : "会话" + session.getId());
+            session.setName(SfcStringUtils.hasText(parameter.getName()) ? parameter.getName() : "会话" + session.getId());
         }
         session.setRunning(true);
         session.setUpdateAt(now);
-        session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId()).orElse(UserConstants.PUBLIC_USER_ID));
+        session.setUid(Optional.ofNullable(SecureUtils.getSpringSecurityUser()).map(e -> e.getId()).orElse(SfcUserConstants.PUBLIC_USER_ID));
 
         // 根据参数创建进程
         long begin = System.currentTimeMillis();
@@ -373,7 +373,7 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
 
     @Override
     public ShellSessionRecord createSession(Long nodeId, ShellExecuteParameter parameter) throws IOException {
-        CommonResult<ShellSessionRecord> rpcResult = invokeNodeService(
+        SfcJsonResult<ShellSessionRecord> rpcResult = invokeNodeService(
                 nodeId,
                 parameter,
                 HttpMethod.POST,
@@ -400,7 +400,7 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
     public void kill(Long sessionId, long forceDelay) {
         Process process = getProcess(sessionId);
         if (process == null) {
-            throw new JsonException("会话id" + sessionId + "不存在");
+            throw new SfcJsonException("会话id" + sessionId + "不存在");
         }
         process.destroy();
 
@@ -442,11 +442,11 @@ public class ShellExecuteServiceImpl implements ShellExecuteService {
             }
 
             if (!session.getParameter().isPty()) {
-                throw new JsonException("不是一个pty模拟终端会话");
+                throw new SfcJsonException("不是一个pty模拟终端会话");
             }
             Process process = processMap.get(sessionId);
             if (process == null) {
-                throw new JsonException("会话进程已结束");
+                throw new SfcJsonException("会话进程已结束");
             }
             ((PtyProcess) process).setWinSize(new WinSize(Math.max(cols, 24), Math.max(rows, 80)));
             WinSize winSize = ((PtyProcess) process).getWinSize();

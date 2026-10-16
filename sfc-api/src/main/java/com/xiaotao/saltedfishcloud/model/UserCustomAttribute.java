@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
 @Table(indexes = {
         @Index(name = "idx_user_custom_attribute_uid", columnList = "uid")
 })
-public class UserCustomAttribute extends AuditModel {
+public class UserCustomAttribute extends SfcAuditModel {
     /**
      * 标签
      */

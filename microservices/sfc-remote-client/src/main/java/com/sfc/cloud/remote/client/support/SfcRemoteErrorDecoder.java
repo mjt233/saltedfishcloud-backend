@@ -1,7 +1,7 @@
 package com.sfc.cloud.remote.client.support;
 
 import com.sfc.cloud.remote.SfcRemoteApiException;
-import com.sfc.cloud.remote.model.SfcJsonResult;
+import com.sfc.cloud.model.json.SfcJsonResult;
 import feign.Response;
 import feign.Util;
 import feign.codec.ErrorDecoder;

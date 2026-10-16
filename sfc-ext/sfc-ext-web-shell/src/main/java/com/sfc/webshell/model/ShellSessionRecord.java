@@ -1,6 +1,6 @@
 package com.sfc.webshell.model;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import lombok.*;
 
 /**
@@ -11,7 +11,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShellSessionRecord extends AuditModel {
+public class ShellSessionRecord extends SfcAuditModel {
     /**
      * 执行主机
      */

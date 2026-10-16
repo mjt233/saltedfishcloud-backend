@@ -4,7 +4,7 @@ import com.sfc.cloud.model.ServiceDefinition;
 import com.sfc.cloud.model.ServiceInstance;
 import com.sfc.cloud.registry.ServiceRegistry;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -54,14 +54,14 @@ public class ServiceRegistryInitializer {
      * 与本项目既有的 {@code @EventListener(ApplicationReadyEvent.class)} 写法保持一致；
      * 事件本身不需要读取，故方法不声明参数。
      *
-     * @throws JsonException 配置的 provider 没有对应实现时抛出（见 {@link #serviceRegistryProvider}）
+     * @throws SfcJsonException 配置的 provider 没有对应实现时抛出（见 {@link #serviceRegistryProvider}）
      */
     @EventListener(ApplicationReadyEvent.class)
     public void registerSelf() {
         ServiceRegistry registry = serviceRegistryProvider.getIfAvailable();
         if (registry == null) {
             String provider = sysProperties.getService().getRegistryProvider();
-            throw new JsonException("未找到 ServiceRegistry 实现：sys.service.registry-provider = " + provider
+            throw new SfcJsonException("未找到 ServiceRegistry 实现：sys.service.registry-provider = " + provider
                     + "。使用 nacos 需安装并加载 sfc-ext-nacos 插件；否则请把该项配置为 local");
         }
         ServiceDefinition definition = ServiceDefinition.builder()
