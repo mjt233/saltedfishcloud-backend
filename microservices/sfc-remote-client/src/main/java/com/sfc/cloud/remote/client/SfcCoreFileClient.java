@@ -2,6 +2,7 @@ package com.sfc.cloud.remote.client;
 
 import com.sfc.cloud.remote.model.SfcFileInfo;
 import com.sfc.cloud.remote.model.SfcJsonResult;
+import com.sfc.cloud.remote.model.SfcPageInfo;
 import feign.Response;
 import org.springframework.core.io.Resource;
 
@@ -13,7 +14,7 @@ import java.util.Objects;
  */
 public class SfcCoreFileClient {
 
-    /** Feign 链路实现：列表 / 下载 / 重命名 / 复制 / 移动 / 删除 */
+    /** Feign 链路实现：列表 / 搜索 / 下载 / 重命名 / 复制 / 移动 / 删除 */
     private final SfcCoreFileFeignClient feignClient;
 
     /** 流式链路实现：上传 */
@@ -39,6 +40,25 @@ public class SfcCoreFileClient {
      */
     public SfcJsonResult<List<SfcFileInfo>> list(long uid, String path) {
         return feignClient.list(uid, path);
+    }
+
+    /**
+     * 搜索文件。
+     *
+     * <p>在目标用户网盘内按文件名进行全盘模糊匹配，不限定目录范围。分页结果中的路径信息见
+     * {@link SfcFileInfo#getParent()}（上级目录名称）。</p>
+     *
+     * <p>权限沿用 core 的 UID 校验规则：{@code uid=0}（公共网盘）允许匿名调用；其它用户网盘
+     * 要求调用链路上带有该用户登录态（或管理员）的凭证，否则 core 返回 403。</p>
+     *
+     * @param uid     资源所属用户ID，0 表示公共网盘
+     * @param keyword 搜索关键字，不能为空
+     * @param page    页码，从 0 开始
+     * @param size    每页数量，取值 1~100，超出上限时服务端按 100 处理
+     * @return 分页搜索结果
+     */
+    public SfcJsonResult<SfcPageInfo<SfcFileInfo>> search(long uid, String keyword, int page, int size) {
+        return feignClient.search(uid, keyword, page, size);
     }
 
     /**

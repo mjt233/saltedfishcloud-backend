@@ -6,6 +6,7 @@ import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.xiaotao.saltedfishcloud.model.CommonPageInfo;
 import com.xiaotao.saltedfishcloud.model.json.JsonResult;
 import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
@@ -50,6 +51,9 @@ public class FileV2Controller {
     /** 接口前缀 */
     public static final String PREFIX = "/api/internal/file/v2";
 
+    /** 单次搜索允许的最大分页大小，避免内部接口被超大分页请求拖垮 */
+    public static final int MAX_SEARCH_SIZE = 100;
+
     /** 文件系统管理器 */
     private final DiskFileSystemManager diskFileSystemManager;
 
@@ -69,6 +73,34 @@ public class FileV2Controller {
             }
         }
         return JsonResultImpl.getInstance(merged);
+    }
+
+    /**
+     * 搜索文件。
+     *
+     * <p>在目标用户的网盘内按文件名进行全盘模糊匹配，不限定目录范围；关键字中的空白字符会被视为
+     * 词间分隔（与 Web 端搜索一致），{@code %} 会被剔除以免影响 LIKE 语义。</p>
+     *
+     * @param uid     资源所属用户ID，0 表示公共网盘
+     * @param keyword 搜索关键字，不能为空
+     * @param page    页码，从 0 开始，负数按 0 处理
+     * @param size    每页数量，取值 1~{@value #MAX_SEARCH_SIZE}，超出上限时按上限处理
+     * @return 分页搜索结果
+     */
+    @GetMapping("search")
+    @AllowAnonymous
+    @NotBlock
+    public JsonResult<CommonPageInfo<FileInfo>> search(@RequestParam("uid") @UID long uid,
+                                                      @RequestParam("keyword") String keyword,
+                                                      @RequestParam(value = "page", defaultValue = "0") Integer page,
+                                                      @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        if (!StringUtils.hasText(keyword)) {
+            throw new JsonException(400, "搜索关键字不能为空");
+        }
+        int pageIndex = Math.max(page == null ? 0 : page, 0);
+        int pageSize = Math.min(Math.max(size == null ? 10 : size, 1), MAX_SEARCH_SIZE);
+        return JsonResultImpl.getInstance(
+                diskFileSystemManager.getMainFileSystem().search(uid, keyword.trim(), pageIndex, pageSize));
     }
 
     /** 下载文件 */

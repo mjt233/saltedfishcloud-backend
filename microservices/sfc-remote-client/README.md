@@ -1,7 +1,7 @@
 # sfc-remote-client —— 微服务回调 sfc-core 的远程客户端 SDK
 
 > 把 core 的网盘文件操作变成微服务里的普通方法调用，**唯一入口是 `SfcCoreFileClient` 一个 bean**：
-> **获取列表 / 下载 / 上传 / 重命名 / 复制 / 移动 / 删除**。
+> **获取列表 / 搜索 / 下载 / 上传 / 重命名 / 复制 / 移动 / 删除**。
 > 本模块是**库**（不是可运行进程）：不继承 root `pom.xml`、零宿主依赖、不产出可执行 jar。
 
 ---
@@ -27,12 +27,17 @@
 @Service
 @RequiredArgsConstructor
 public class MyDiskService {
-    /** 唯一入口：列表 / 下载 / 上传 / 重命名 / 复制 / 移动 / 删除都是同一个 bean */
+    /** 唯一入口：列表 / 搜索 / 下载 / 上传 / 重命名 / 复制 / 移动 / 删除都是同一个 bean */
     private final SfcCoreFileClient fileClient;
 
     /** 列出 uid=7 的 /docs 目录 */
     public List<SfcFileInfo> list() {
         return fileClient.list(7, "/docs").getDataOrThrow();
+    }
+
+    /** 在 uid=7 的网盘内全盘搜索文件名含"报表"的内容（page 从 0 开始，size 上限 100） */
+    public SfcPageInfo<SfcFileInfo> search() {
+        return fileClient.search(7, "报表", 0, 10).getDataOrThrow();
     }
 
     /** 上传本地文件（流式：边读边发，不整体进内存） */

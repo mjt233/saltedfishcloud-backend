@@ -3,6 +3,7 @@ package com.sfc.cloud.remote.client;
 import com.sfc.cloud.remote.constants.SfcServiceName;
 import com.sfc.cloud.remote.model.SfcFileInfo;
 import com.sfc.cloud.remote.model.SfcJsonResult;
+import com.sfc.cloud.remote.model.SfcPageInfo;
 import feign.Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +39,23 @@ public interface SfcCoreFileFeignClient {
     @GetMapping("list")
     SfcJsonResult<List<SfcFileInfo>> list(@RequestParam("uid") long uid,
                                           @RequestParam("path") String path);
+
+    /**
+     * 搜索文件。
+     *
+     * <p>在目标用户网盘内按文件名进行全盘模糊匹配，不限定目录范围。</p>
+     *
+     * @param uid     资源所属用户ID，0 表示公共网盘
+     * @param keyword 搜索关键字，不能为空
+     * @param page    页码，从 0 开始
+     * @param size    每页数量，取值 1~100，超出上限时服务端按 100 处理
+     * @return 分页搜索结果
+     */
+    @GetMapping("search")
+    SfcJsonResult<SfcPageInfo<SfcFileInfo>> search(@RequestParam("uid") long uid,
+                                                   @RequestParam("keyword") String keyword,
+                                                   @RequestParam("page") int page,
+                                                   @RequestParam("size") int size);
 
     /**
      * 下载文件。
