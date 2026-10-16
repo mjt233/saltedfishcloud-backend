@@ -20,8 +20,11 @@
 - **sfc-archive**: 内部分 `sfc-archive-api` + `sfc-archive-core`
 - **sfc-rpc**: 内部分 `sfc-rpc-api` + `sfc-rpc-core`
 
-
 此外：项目根 `pom.xml` 指定的 Java 版本为 Java 25 — 请在本地构建或运行时确保 JDK 版本兼容（或使用工具链/容器）。
+
+## 微服务机制
+
+项目存在微服务架构支持，如果涉及到微服务的创建，请参考文档 [docs/develop/microservice/index.md](./docs/develop/microservice/index.md)。
 
 ## 编码规范**（重要）**
 

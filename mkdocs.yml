@@ -69,6 +69,13 @@ nav:
       - 异步任务: develop/framework/async-task.md
       - 定时任务: develop/framework/schedule.md
       - 版本更新数据迁移钩子: develop/framework/version-update-hook.md
+    - 微服务:
+      - 概述: develop/microservice/index.md
+      - 搭建最简的微服务: develop/microservice/minimal-service.md
+      - 网关路由: develop/microservice/gateway-routing.md
+      - 服务发现与注册: develop/microservice/service-discovery.md
+      - 远程调用: develop/microservice/remote-call.md
+      - 接口鉴权机制: develop/microservice/authentication.md
     - 插件开发指南:
       - 创建插件: develop/plugin/create-plugin.md
       - Spring Boot集成: develop/plugin/springboot-integration.md
