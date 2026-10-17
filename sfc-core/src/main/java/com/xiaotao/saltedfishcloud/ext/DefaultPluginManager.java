@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.ext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
+import com.sfc.common.enums.PluginLoadType;
 import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.sfc.common.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.sfc.common.model.PluginInfo;
 import com.sfc.common.model.SfcResult;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.*;

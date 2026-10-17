@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
-import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.sfc.common.model.PluginInfo;
 import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;

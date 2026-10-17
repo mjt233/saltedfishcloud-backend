@@ -7,7 +7,7 @@ import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.ext.PluginProperty;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
 import com.sfc.common.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.sfc.common.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;

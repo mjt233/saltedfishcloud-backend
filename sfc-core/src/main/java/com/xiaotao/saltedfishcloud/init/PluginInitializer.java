@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.init;
 
-import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
+import com.sfc.common.enums.PluginLoadType;
 import com.xiaotao.saltedfishcloud.ext.*;
 import com.sfc.common.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.sfc.common.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.env.PropertiesPropertySourceLoader;

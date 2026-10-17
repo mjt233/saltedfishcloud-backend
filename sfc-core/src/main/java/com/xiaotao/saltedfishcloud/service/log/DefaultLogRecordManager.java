@@ -11,7 +11,7 @@ import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.ClusterNodeInfo;
 import com.sfc.common.model.SfcPageInfo;
 import com.sfc.common.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.sfc.common.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.config.SysLogConfig;
 import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
 import com.xiaotao.saltedfishcloud.model.param.RangeRequest;

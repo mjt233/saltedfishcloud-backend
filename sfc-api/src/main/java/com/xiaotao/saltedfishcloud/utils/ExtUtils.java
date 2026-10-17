@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.utils;
 import com.sfc.common.utils.PropertyUtils;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.sfc.common.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.sfc.common.model.PluginInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StreamUtils;
 

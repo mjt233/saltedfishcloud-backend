@@ -1,4 +1,4 @@
-package com.xiaotao.saltedfishcloud.enums;
+package com.sfc.common.enums;
 
 
 /**
